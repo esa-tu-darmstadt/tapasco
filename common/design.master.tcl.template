@@ -1,34 +1,34 @@
 #
 # Copyright (C) 2014 Jens Korinth, TU Darmstadt
 #
-# This file is part of ThreadPoolComposer (TPC).
+# This file is part of Tapasco (TPC).
 #
-# ThreadPoolComposer is free software: you can redistribute it and/or modify
+# Tapasco is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# ThreadPoolComposer is distributed in the hope that it will be useful,
+# Tapasco is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
 # @file		design.master.tcl.template
 # @brief 	Master template used to instantiate the Vivado Tcl script to create a design.
 # @author	J. Korinth (TU Darmstadt), jk@esa.cs.tu-darmstadt.de
 #
 #
-# check TPC_HOME env var
-if {![info exists ::env(TPC_HOME)]} {
-  puts "Missing environment variable 'TPC_HOME' - point to TPC root directory."
+# check TAPASCO_HOME env var
+if {![info exists ::env(TAPASCO_HOME)]} {
+  puts "Missing environment variable 'TAPASCO_HOME' - point to TPC root directory."
   exit 1
 }
 
 # source base lib
-source -notrace "$::env(TPC_HOME)/common/common.tcl"
+source -notrace "$::env(TAPASCO_HOME)/common/common.tcl"
 
 # source common procs
 @@HEADER@@
@@ -39,7 +39,7 @@ source -notrace @@ARCHITECTURE_TCL@@
 # source platform-specific Tcl scripts
 source -notrace @@PLATFORM_TCL@@
 
-set mode [tpc::get_generate_mode]
+set mode [tapasco::get_generate_mode]
 
 # check COMPILED_SIMLIB env var
 if {$mode == "sim" && ![info exists ::env(COMPILED_SIMLIB)]} {

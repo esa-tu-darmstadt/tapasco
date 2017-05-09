@@ -2,7 +2,7 @@
 \section{Introduction and Basic Concepts}\label{sec:overview}%
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection*{Aim of ThreadpoolComposer}
+\subsection*{Aim of Tapasco}
 \emph{Scalability} and \emph{energy efficiency} are ubiquitous requirements for modern high-performance applications, which are increasingly harder to meet with the homogeneous programming paradigms of the past decades.
 With the approaching end of \emph{Moore's law} and serious difficulties in further manufacturing miniaturization, many alternatives for future computing have been evaluated.
 Many-core systems consisting of several on-die general purpose CPUs are widely available at low cost, offering homogeneous parallel computing.
@@ -20,42 +20,42 @@ It therefore seems obvious that future computing architectures will need to util
 However, even if the software developer has isolated and condensed the most costly parts of the application's computations into so called \emph{kernels}, a task that is very common in modern software development (e.g., with OpenCL), there currently does not exist a heterogeneous runtime environment that includes FPGAs and DSPs, mostly because their programming requires specialist knowledge software developers do not commonly have.
 
 \medskip
-\tpc{} aims at closing this gap by providing software developers with a simple, but flexible workflow to design efficient configurations for FPGAs, which allows them to be easily integrated in runtime systems.
-Furthermore, \tpc{} proposes a very simple common programming interface which is suitable for both FPGAs and DSPs, which eases the integration of two currently excluded classes of devices as accelerators for heterogeneous computing.
+\tapasco{} aims at closing this gap by providing software developers with a simple, but flexible workflow to design efficient configurations for FPGAs, which allows them to be easily integrated in runtime systems.
+Furthermore, \tapasco{} proposes a very simple common programming interface which is suitable for both FPGAs and DSPs, which eases the integration of two currently excluded classes of devices as accelerators for heterogeneous computing.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection*{Application Development with ThreadpoolComposer}
+\subsection*{Application Development with Tapasco}
 Following an old advice by Donald Knuth, according to which \emph{premature optimization is the root of all evil}, parallel applications are commonly developed in an iterative manner:
 First, a functional prototype is developed on CPU only; this prototype is then being profiled to determine the most costly functions and computations, which are then isolated in \emph{kernels}, which may execute (partially) in parallel and can easily be mapped to multi- and many-core systems.
 Finally, specific optimization is applied to the kernels to optimize the execution on the targeted platform and/or devices.
 This model allows efficient usage of computational resources and enables reasonable scalability with extending resources.
-\tpc{} aims to integrate into this development flow after the kernel extraction phase, as \figref{fig:tpc-overview} illustrates.
+\tapasco{} aims to integrate into this development flow after the kernel extraction phase, as \figref{fig:tapasco-overview} illustrates.
 %
 \begin{figure}%[h!]
-  \centering\includegraphics[]{tikz/tpc-overview}
-  \caption{Overview of the Workflow using ThreadpoolComposer}
-  \label{fig:tpc-overview}
+  \centering\includegraphics[]{tikz/tapasco-overview}
+  \caption{Overview of the Workflow using Tapasco}
+  \label{fig:tapasco-overview}
 \end{figure}
 %
 
 \medskip
-The upper half of \figref{fig:tpc-overview} depicts the coarse grained steps for deriving a suitable FPGA configuration from a user application, while the bottom half denotes the intermediate products at each step.
-\tpc{} assumes that the first step, the extraction of kernels from the user application, has been done and a mechanism for orchestrating their parallel execution of the kernels has been devised (e.g., using FastFlow \cite{fastflow}).
-Each kernel is provided as a C/C++ function to the \tpc{} flow, which in the first step will turn them into descriptions of observationally equivalent hardware (i.e., hardware with the same input/output behavior).
+The upper half of \figref{fig:tapasco-overview} depicts the coarse grained steps for deriving a suitable FPGA configuration from a user application, while the bottom half denotes the intermediate products at each step.
+\tapasco{} assumes that the first step, the extraction of kernels from the user application, has been done and a mechanism for orchestrating their parallel execution of the kernels has been devised (e.g., using FastFlow \cite{fastflow}).
+Each kernel is provided as a C/C++ function to the \tapasco{} flow, which in the first step will turn them into descriptions of observationally equivalent hardware (i.e., hardware with the same input/output behavior).
 This behavioral transformation is often called \emph{High-Level Synthesis}.
 The resulting hardware modules can be instantiated, arranged and organized on the FPGA in a multitude of ways; this includes many electronic circuit design decisions, such as clock rates, bus protocols and use of hardware registers.
-\tpc{} bridges this gap for the software developer, requiring as input only an indication how the FPGA's area is to be used, i.e., the number of instances for each kernel in the configuration.
+\tapasco{} bridges this gap for the software developer, requiring as input only an indication how the FPGA's area is to be used, i.e., the number of instances for each kernel in the configuration.
 The last step in the flow is concerned with the actual realization of the abstract hardware descriptions with the physical resources available on the target FPGA and is often called \emph{Low-Level Synthesis}.
-The final result of the \tpc{} flow is a \emph{bitstream configuration}, which can be uploaded to the FPGA to activate the configuration.
+The final result of the \tapasco{} flow is a \emph{bitstream configuration}, which can be uploaded to the FPGA to activate the configuration.
 
 \medskip
-\tpc{} thus provides a completely automatic flow to generate a bitstream configuration for a given set of kernels and hides the technical layers which are unfamiliar for most software developers.
+\tapasco{} thus provides a completely automatic flow to generate a bitstream configuration for a given set of kernels and hides the technical layers which are unfamiliar for most software developers.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection*{What is ThreadpoolComposer?}
-\tpc{} is a command line tool based on Scala/sbt to compose \emph{hardware threadpool architectures} for FPGAs from C/C++ kernel code.
-\tpc{} conveniently wraps several steps in the design flow to use \emph{high-level synthesis} to create hardware threads, which are organized in an architecture called a \emph{threadpool}.
-The core idea of \tpc{} is to provide a flow that can
+\subsection*{What is Tapasco?}
+\tapasco{} is a command line tool based on Scala/sbt to compose \emph{hardware threadpool architectures} for FPGAs from C/C++ kernel code.
+\tapasco{} conveniently wraps several steps in the design flow to use \emph{high-level synthesis} to create hardware threads, which are organized in an architecture called a \emph{threadpool}.
+The core idea of \tapasco{} is to provide a flow that can
 \begin{enumerate}
   \item instantiate abstract \gloss{Architectures}, which organize hardware threads,
   \item abstract device/board-specifics in \gloss{Platforms}, to allow re-use of \gloss{Architectures} on multiple FPGA boards with minimal effort,
@@ -72,7 +72,7 @@ FPGA designs are developed in \emph{hardware description languages (HDL)} and of
 This lack of convenient access to the computing power of FPGAs needs to be tackled, if the low-energy deep parallelism of FPGAs is to be utilized to its full potential.
 
 \medskip
-Toward this goal, \tpc{} aims to ease the integration of FPGAs into modern parallel programming frameworks, such as X10, Chapel or REPARA C++.
+Toward this goal, \tapasco{} aims to ease the integration of FPGAs into modern parallel programming frameworks, such as X10, Chapel or REPARA C++.
 The central abstraction at the interface is the \emph{threadpool} (cf. \cite{threadpool})-- a software pattern many software developers are familiar with due to its popularity in parallel programming libraries.
 
 Throughout this document, it is assumed that a threadpool consists of \emph{m independent threads}, which can execute \gloss{Kernels}, i.e., small pieces of code performing a specific computation on data.
@@ -93,8 +93,8 @@ Instead, a threadpool provides an interface to schedule and monitor the executio
       y=6mm, x=7mm,
       every node/.append style={align=center},
       header/.style={font=\large\bfseries\sffamily, yshift=.5cm},
-      tpc/.style={line width=1.5pt, draw=esa4, rounded corners=3ex, top color=esa0, bottom color=white},
-      tpc node/.style={shape=circle, text width=3mm, draw=esa5, line width=1pt, anchor=center,
+      tapasco/.style={line width=1.5pt, draw=esa4, rounded corners=3ex, top color=esa0, bottom color=white},
+      tapasco node/.style={shape=circle, text width=3mm, draw=esa5, line width=1pt, anchor=center,
         top color=esa0, bottom color=esa3, font=\sffamily\footnotesize\bfseries\color{white}, align=center},
       conn/.style={draw, ->, >=latex, line width=1.25pt},
       slots/.style={draw=black!90, |<->|, >=angle 90, line width=1pt},
@@ -107,22 +107,22 @@ Instead, a threadpool provides an interface to schedule and monitor the executio
       job1/.append style={top color=kernel1t, bottom color=kernel1b},
       job2/.append style={top color=kernel2t, bottom color=kernel2b}
     ]
-    \def\tpcw{3}
-    \def\tpch{4}
-    \def\td{0.275*\tpch}
+    \def\tapascow{3}
+    \def\tapascoh{4}
+    \def\td{0.275*\tapascoh}
     \coordinate (c) at (0,0);
-    \coordinate (l) at (-\tpcw,0);
-    \coordinate (r) at (\tpcw,0);
-    \coordinate (s) at (-2*\tpcw,0);
-    \coordinate (t) at (0,\tpch);
+    \coordinate (l) at (-\tapascow,0);
+    \coordinate (r) at (\tapascow,0);
+    \coordinate (s) at (-2*\tapascow,0);
+    \coordinate (t) at (0,\tapascoh);
     \coordinate (m) at (0,0);
-    \coordinate (b) at (0,-\tpch);
+    \coordinate (b) at (0,-\tapascoh);
 
     \node [header] at (t) {Threadpool};
     %\node [header, fill=white] at (t) {Hardware Threadpool};
-    \path [tpc] (t -| l) rectangle (b -| r);
+    \path [tapasco] (t -| l) rectangle (b -| r);
     \node [font=\Large\bfseries, anchor=center] at (c) {\vdots};
-    \begin{scope}[every node/.style={tpc node}]
+    \begin{scope}[every node/.style={tapasco node}]
       \node (in) at (m -| l) {};
       \node (out) at (m -| r) {};
       \node (ln3) at (0, 3*\td) {};
@@ -149,14 +149,14 @@ Instead, a threadpool provides an interface to schedule and monitor the executio
       \end{scope}
     \end{scope}
     \begin{scope}[every path/.style={conn}]
-      \path (in) +(-.5*\tpcw,0) -- (in);
+      \path (in) +(-.5*\tapascow,0) -- (in);
       \foreach \y in {1, ..., 3} {
         \path (in) -- (ln\y);
         \path (ln\y) -- (out);
         \path (in) -- (bn\y);
         \path (bn\y) -- (out);
       }
-      \path (out) -- +(.5*\tpcw,0);
+      \path (out) -- +(.5*\tapascow,0);
     \end{scope}
     \begin{scope}[every node/.style={job}]
       \node [job0] (j0) at (in.north west) {};
@@ -193,7 +193,7 @@ All hardware instantiated in a FPGA fabric can be active at once; by transparent
 Furthermore, since the required minimal communication facilities a threadpool has to provide to its threads is very limited (send data -- start computation -- wait for finish -- fetch data), this abstraction often leads to designs with a low level of intra-device communication, thus facilitating better area utilization and higher clock rates.
 
 \medskip
-\tpc{} adopts this notion for FPGA designs and composes \emph{hardware threadpools} (see \figref{fig:hardware-threadpool}).
+\tapasco{} adopts this notion for FPGA designs and composes \emph{hardware threadpools} (see \figref{fig:hardware-threadpool}).
 Hardware threadpools implement the same interface as software threadpools, but with some restrictions:
 An FPGA hardware design is \emph{fixed}, i.e., the \emph{data path} is generated and implemented at compile time, and defined in the \emph{bitstream configuration}, a file which can be loaded into the FPGA to configure it.
 This means that the hardware is \emph{specialized to realize a single function}, as opposed to general purpose CPUs, which can run arbitrary programs composed from instructions specified in their ISA.
@@ -205,7 +205,7 @@ This leads to two reasonable restrictions regarding hardware threadpools:
 \end{enumerate}
 
 These two decisions, the \emph{number of threads} and the \emph{association of each thread with a \gloss{Kernel}} will be called a \gloss{Composition} in the following, each \gloss{Kernel} instance will be called a \gloss{hardware thread}.
-\gloss{Compositions} are the main input to \tpc{} and are turned into either \emph{bitstream configurations} or \emph{simulation environments}, each mode will be described in later sections.
+\gloss{Compositions} are the main input to \tapasco{} and are turned into either \emph{bitstream configurations} or \emph{simulation environments}, each mode will be described in later sections.
 
 \medskip
 \begin{note}
@@ -224,8 +224,8 @@ FPGAs are reconfigurable at runtime; it is therefore possible to change parts of
       y=6mm, x=7mm,
       every node/.append style={align=center},
       header/.style={font=\sffamily\large\bfseries, yshift=.5cm},
-      tpc/.style={line width=1.5pt, draw=esa4, rounded corners=3ex, top color=esa0, bottom color=white},
-      tpc node/.style={shape=circle, text width=3mm, draw=esa5, line width=1pt, anchor=center,
+      tapasco/.style={line width=1.5pt, draw=esa4, rounded corners=3ex, top color=esa0, bottom color=white},
+      tapasco node/.style={shape=circle, text width=3mm, draw=esa5, line width=1pt, anchor=center,
         top color=esa0, bottom color=esa3, font=\sffamily\footnotesize\bfseries\color{white}, align=center},
       conn/.style={draw, ->, >=latex, line width=1.25pt},
       slots/.style={draw=black!90, |<->|, >=angle 90, line width=1pt},
@@ -238,22 +238,22 @@ FPGAs are reconfigurable at runtime; it is therefore possible to change parts of
       job1/.append style={top color=kernel1t, bottom color=kernel1b},
       job2/.append style={top color=kernel2t, bottom color=kernel2b}
     ]
-    \def\tpcw{3}
-    \def\tpch{4}
-    \def\td{0.275*\tpch}
+    \def\tapascow{3}
+    \def\tapascoh{4}
+    \def\td{0.275*\tapascoh}
     \coordinate (c) at (0,0);
-    \coordinate (l) at (-\tpcw,0);
-    \coordinate (r) at (\tpcw,0);
-    \coordinate (s) at (-2*\tpcw,0);
-    \coordinate (t) at (0,\tpch);
+    \coordinate (l) at (-\tapascow,0);
+    \coordinate (r) at (\tapascow,0);
+    \coordinate (s) at (-2*\tapascow,0);
+    \coordinate (t) at (0,\tapascoh);
     \coordinate (m) at (0,0);
-    \coordinate (b) at (0,-\tpch);
+    \coordinate (b) at (0,-\tapascoh);
 
     \node [header] at (t) {Threadpool};
     \node [header, fill=white] at (t) {Hardware Threadpool};
-    \path [tpc] (t -| l) rectangle (b -| r);
+    \path [tapasco] (t -| l) rectangle (b -| r);
     \node [font=\Large\bfseries, anchor=center] at (c) {\vdots};
-    \begin{scope}[every node/.style={tpc node}]
+    \begin{scope}[every node/.style={tapasco node}]
       \node (in) at (m -| l) {};
       \node (out) at (m -| r) {};
       \begin{scope}[every node/.append style={transparent}]
@@ -282,14 +282,14 @@ FPGAs are reconfigurable at runtime; it is therefore possible to change parts of
       \end{scope}
     \end{scope}
     \begin{scope}[every path/.style={conn}]
-      \path (in) +(-.5*\tpcw,0) -- (in);
+      \path (in) +(-.5*\tapascow,0) -- (in);
       \foreach \y in {1, ..., 3} {
         \path (in) -- (ln\y);
         \path (ln\y) -- (out);
         \path (in) -- (bn\y);
         \path (bn\y) -- (out);
       }
-      \path (out) -- +(.5*\tpcw,0);
+      \path (out) -- +(.5*\tapascow,0);
     \end{scope}
     \begin{scope}[every node/.style={job}]
       \node [job0] (j0) at (in.north west) {};
@@ -328,7 +328,7 @@ While this gives a hardware designer an extended design space from which to care
 When a hardware design is fixed to a specific board, transfer to a different board is often highly difficult and may even be economically unfeasible.
 
 \medskip
-To alleviate this problem, \tpc{} uses a \emph{two-tiered design abstraction}:
+To alleviate this problem, \tapasco{} uses a \emph{two-tiered design abstraction}:
 
 \begin{enumerate}
   \item The \gloss{Architecture} is an abstract definition of the \emph{device-independent internal organization} of the threadpool. Among other things, this includes the choice of bus protocols used, the kind of memory access provided to the threads (e.g., streaming vs. random access), the size, number and location of caches used in the design. 
@@ -340,10 +340,10 @@ In practice, it is necessary to continue this abstraction on the software side (
 %
 \begin{figure}
   \begin{minipage}{.5\textwidth}%
-  \begin{center}\textbf{FPGA Design}\\\includegraphics[]{tikz/tpc-structure}\end{center}%
+  \begin{center}\textbf{FPGA Design}\\\includegraphics[]{tikz/tapasco-structure}\end{center}%
   \end{minipage}%
   \begin{minipage}{.5\textwidth}%
-  \begin{center}\textbf{API Hierarchy}\\\includegraphics{tikz/tpc-stack}\end{center}%
+  \begin{center}\textbf{API Hierarchy}\\\includegraphics{tikz/tapasco-stack}\end{center}%
   \end{minipage}
 
   \caption{Two-tiered Design Abstraction: Hardware and Software.}
@@ -351,7 +351,7 @@ In practice, it is necessary to continue this abstraction on the software side (
 \end{figure}
 %
 At some level beneath the user application, the organizational details must be known; e.g., which registers must be used to start a \gloss{Job}, how data can be sent to the device, and so on.
-To achieve this, the \tpc{} APIs continue the two-tiered abstraction and provides separate APIs for \gloss{Architecture} and \gloss{Platform}, called \gloss{TPC API} and \gloss{Platform API} respectively.
+To achieve this, the \tapasco{} APIs continue the two-tiered abstraction and provides separate APIs for \gloss{Architecture} and \gloss{Platform}, called \gloss{TPC API} and \gloss{Platform API} respectively.
 \figref{fig:two-tiered-design-abstraction} (right) illustrates this:
 \gloss{TPC API} is responsible for managing the \gloss{Threadpool}, e.g., scheduling and completion of \gloss{Jobs}, device and kernel management.
 It is itself implemented using the \gloss{Platform API}, which provides data transfer and signaling between host and FPGA.
@@ -364,7 +364,7 @@ Given an appropriate analysis of the user application, this can open up higher l
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection*{Flow Overview}\label{sec:flow-overview}%
-The overall flow of \tpc{} is depicted in \figref{fig:flow-overview} and can be divided into three distinct stages, each relying on a separate chain of tools:
+The overall flow of \tapasco{} is depicted in \figref{fig:flow-overview} and can be divided into three distinct stages, each relying on a separate chain of tools:
 
 \begin{enumerate}
   \item[(a)] \emph{High-Level Synthesis} --- The first step to compose a threadpool is to turn the C/C++ \gloss{Kernel} code into equivalent hardware descriptions using \emph{high-level synthesis}. A number of tools exist to perform this step, e.g., Xilinx's commercial solution Vivado HLS \cite{vivado-hls}, or the academic LegUp \cite{legup}. The outcome of this step is a number of \emph{IP Cores} in an industry-standard, open exchange format called \emph{IP-XACT} \cite{ip-xact}.
@@ -372,12 +372,12 @@ The overall flow of \tpc{} is depicted in \figref{fig:flow-overview} and can be 
   \item[(c)] \emph{Low-Level Synthesis} --- Finally, the last step requires either the preparation of simulation environment for external \emph{register transfer level (RTL) simulators} (such as Mentor ModelSim \cite{modelsim}) or the actual mapping of the RTL hardware description to the resources available on the FPGA. This process is also called \emph{place and route} and is exclusively done by the FPGA vendor's tools, due to the deep knowledge of the chip that is required for this task.
 \end{enumerate}
 
-The initial version of \tpc{} provides support for Vivado HLS \cite{vivado-hls}, Vivado IP Integrator and Vivado \cite{vivado}.
+The initial version of \tapasco{} provides support for Vivado HLS \cite{vivado-hls}, Vivado IP Integrator and Vivado \cite{vivado}.
 Support for LegUp \cite{legup} is planned for an upcoming release in the near future.
 
 \begin{figure}
-  \centering\includegraphics[width=\textwidth]{tikz/tpc-flow}
-  \caption{\tpc{} flow overview.}
+  \centering\includegraphics[width=\textwidth]{tikz/tapasco-flow}
+  \caption{\tapasco{} flow overview.}
   \label{fig:flow-overview}
 \end{figure}
 

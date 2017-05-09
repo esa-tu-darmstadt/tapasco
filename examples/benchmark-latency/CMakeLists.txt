@@ -4,11 +4,11 @@ set (CMAKE_INSTALL_PREFIX "..")
 include (../examples.cmake)
 
 add_executable(benchmark-latency benchmark-latency.c)
-target_link_libraries(benchmark-latency rt pthread tpc platform)
+target_link_libraries(benchmark-latency rt pthread tapasco platform)
 set_target_properties(benchmark-latency PROPERTIES COMPILE_FLAGS "-Wall -Werror -std=gnu99 -Wno-unused-function")
 
 add_executable(benchmark-latency++ benchmark-latency.cpp)
-target_link_libraries(benchmark-latency++ m pthread  atomic tpc platform)
+target_link_libraries(benchmark-latency++ m pthread  atomic tapasco platform)
 set_target_properties(benchmark-latency++ PROPERTIES COMPILE_FLAGS "-Wall -Werror -std=c++11 -Wno-unused-function -static-libstdc++ -flto")
 
 install(TARGETS benchmark-latency

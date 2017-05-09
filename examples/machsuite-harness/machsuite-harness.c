@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +22,7 @@
 #include <pthread.h>
 #include <assert.h>
 #include <fcntl.h>
-#include <tpc_api.h>
+#include <tapasco_api.h>
 #include "../benchmark-mem/timer.h"
 #include "machsuite-harness.h"
 
@@ -41,13 +41,13 @@ static long jobs;
 static long errors;
 static long mode;
 
-static tpc_ctx_t *ctx;
-static tpc_dev_ctx_t *dev;
+static tapasco_ctx_t *ctx;
+static tapasco_dev_ctx_t *dev;
 
-static inline void check_tpc(tpc_res_t const result)
+static inline void check_tapasco(tapasco_res_t const result)
 {
-	if (result != TPC_SUCCESS) {
-		fprintf(stderr, "tpc fatal error: %s\n", tpc_strerror(result));
+	if (result != TAPASCO_SUCCESS) {
+		fprintf(stderr, "tapasco fatal error: %s\n", tapasco_strerror(result));
 		exit(result);
 	}
 }
@@ -72,7 +72,7 @@ static inline double clock_period(void)
 	return period;
 }
 
-static void dump(tpc_job_id_t const j_id, void *d)
+static void dump(tapasco_job_id_t const j_id, void *d)
 {
 	static int dumps = 0;
 	char buf[1024] = "";
@@ -84,41 +84,41 @@ static void dump(tpc_job_id_t const j_id, void *d)
 	fclose(fp);
 }
 
-static inline void tpc_run(void)
+static inline void tapasco_run(void)
 {
-	tpc_res_t r;
+	tapasco_res_t r;
 	void *d = malloc(INPUT_SIZE);
-	assert(d && "out of memory: tpc_run");
-	tpc_handle_t h = tpc_device_alloc(dev, INPUT_SIZE, 0);
+	assert(d && "out of memory: tapasco_run");
+	tapasco_handle_t h = tapasco_device_alloc(dev, INPUT_SIZE, 0);
 	if (h <= 0) {
 		fprintf(stderr, "could not allocate memory\n");
 		__atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
 		free(d);
 		exit(1);
 	}
-	r = tpc_device_copy_to(dev, input_data, h, INPUT_SIZE, TPC_COPY_BLOCKING);
-	tpc_job_id_t j_id = tpc_device_acquire_job_id(dev, MACH_ID, 0);
-	if (r != TPC_SUCCESS) {
+	r = tapasco_device_copy_to(dev, input_data, h, INPUT_SIZE, TAPASCO_COPY_BLOCKING);
+	tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev, MACH_ID, 0);
+	if (r != TAPASCO_SUCCESS) {
 		fprintf(stderr, "job copy to failed\n");
 		__atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
 		exit(1);
 	} else {
-		tpc_device_job_set_arg(dev, j_id, 0, sizeof(h), &h);
-		r = tpc_device_job_launch(dev, j_id, TPC_JOB_LAUNCH_BLOCKING);
-		if (r != TPC_SUCCESS) {
+		tapasco_device_job_set_arg(dev, j_id, 0, sizeof(h), &h);
+		r = tapasco_device_job_launch(dev, j_id, TAPASCO_JOB_LAUNCH_BLOCKING);
+		if (r != TAPASCO_SUCCESS) {
 			fprintf(stderr, "job launch failed\n");
 			__atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
 		 	exit(1);
 		}
-		r = tpc_device_copy_from(dev, h, d, INPUT_SIZE, TPC_COPY_BLOCKING);
-		if (r != TPC_SUCCESS) {
+		r = tapasco_device_copy_from(dev, h, d, INPUT_SIZE, TAPASCO_COPY_BLOCKING);
+		if (r != TAPASCO_SUCCESS) {
 			fprintf(stderr, "job copy from failed\n");
 			__atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
 			exit(1);
 		}
 	}
-	tpc_device_free(dev, h);
-	tpc_device_release_job_id(dev, j_id);
+	tapasco_device_free(dev, h);
+	tapasco_device_release_job_id(dev, j_id);
 	if (memcmp(d, golden, INPUT_SIZE)) {
 		__atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
 		fprintf(stderr, "FPGA result is wrong\n");
@@ -143,7 +143,7 @@ static inline void *run(void *p)
 	long job;
 	while ((job = __atomic_fetch_sub(&jobs, 1, __ATOMIC_SEQ_CST)) > 0) {
 		if (mode)
-			tpc_run();
+			tapasco_run();
 		else
 			cpu_run();
 	}
@@ -214,9 +214,9 @@ int main(int argc, char **argv)
 	TIMER_INIT();
 
 	// initialize threadpool
-	check_tpc(tpc_init(&ctx));
-	check_tpc(tpc_create_device(ctx, 0, &dev, 0));
-	assert(tpc_device_func_instance_count(dev, MACH_ID) > 0);
+	check_tapasco(tapasco_init(&ctx));
+	check_tapasco(tapasco_create_device(ctx, 0, &dev, 0));
+	assert(tapasco_device_func_instance_count(dev, MACH_ID) > 0);
 
 	print_header(tc);
 	TIMER_START(total)
@@ -238,8 +238,8 @@ int main(int argc, char **argv)
 	fprintf(stderr, "Total duration: %llu us.\n", TIMER_USECS(total));
 
 	// de-initialize threadpool
-	tpc_destroy_device(ctx, dev);
-	tpc_deinit(ctx);
+	tapasco_destroy_device(ctx, dev);
+	tapasco_deinit(ctx);
 
 	//free(times);
 	free(threads);

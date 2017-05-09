@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file	memcheck-mt-ff.cc
 //! @brief	Initializes the first TPC device and iterates over a number
@@ -29,20 +29,20 @@
 #include <vector>
 #include <unistd.h>
 #include <cassert>
-#include <tpc_api.h>
+#include <tapasco_api.h>
 #include <ff/farm.hpp>
 using namespace ff;
-using namespace rpr::tpc;
+using namespace rpr::tapasco;
 
-static tpc_ctx_t *ctx;
-static tpc_dev_ctx_t *dev;
+static tapasco_ctx_t *ctx;
+static tapasco_dev_ctx_t *dev;
 static long int errs;
 static size_t const arr_szs[] = { 1, 2, 8, 10, 16, 1024, 2048, 4096 };
 
-static void check_tpc(tpc_res_t const result)
+static void check_tapasco(tapasco_res_t const result)
 {
-	if (result != TPC_SUCCESS) {
-		std::cerr << "tpc fatal error: " << tpc_strerror(result)
+	if (result != TAPASCO_SUCCESS) {
+		std::cerr << "tapasco fatal error: " << tapasco_strerror(result)
 				<< std::endl;
 		exit(result);
 	}
@@ -81,8 +81,8 @@ static int runTest(int const s)
 	int *rarr = (int *)malloc(arr_szs[s] * sizeof(int));
 	assert(rarr != NULL);
 
-	// get tpc handle
-	tpc_handle_t h = tpc_device_alloc(dev, arr_szs[s] * sizeof(int), 0);
+	// get tapasco handle
+	tapasco_handle_t h = tapasco_device_alloc(dev, arr_szs[s] * sizeof(int), 0);
 	std::cout << s << ": handle = 0x" << std::hex << std::setfill('0')
 			<< std::setw(8) << static_cast<uint32_t>(h)
 			<< ", size = " << arr_szs[s] * sizeof(int) << " bytes"
@@ -93,14 +93,14 @@ static int runTest(int const s)
 	int merr = 0;
 	std::cout << s << ": sizeof(arr) = " << sizeof(arr)
 			<< ", sizeof(rarr) = " << sizeof(rarr) << std::endl;
-	tpc_res_t res = tpc_device_copy_to(dev, arr, h,
-			arr_szs[s] * sizeof(int), TPC_COPY_BLOCKING);
-	if (res == TPC_SUCCESS) {
+	tapasco_res_t res = tapasco_device_copy_to(dev, arr, h,
+			arr_szs[s] * sizeof(int), TAPASCO_COPY_BLOCKING);
+	if (res == TAPASCO_SUCCESS) {
 		std::cout << s << ": copy-to successful, copying from ..." << std::endl;
-		res = tpc_device_copy_from(dev, h, rarr,
-				arr_szs[s] * sizeof(int), TPC_COPY_BLOCKING);
+		res = tapasco_device_copy_from(dev, h, rarr,
+				arr_szs[s] * sizeof(int), TAPASCO_COPY_BLOCKING);
 		std::cout << s << ": copy from finished" << std::endl;
-		if (res == TPC_SUCCESS) {
+		if (res == TAPASCO_SUCCESS) {
 			merr += compare_arrays(s, arr, rarr, arr_szs[s],
 					static_cast<unsigned int>(h));
 		} else {
@@ -112,7 +112,7 @@ static int runTest(int const s)
 		merr += 1;
 	}
 	__sync_add_and_fetch(&errs, merr);
-	tpc_device_free(dev, h);
+	tapasco_device_free(dev, h);
 
 	if (! merr)
 		std::cout << s << ": Array size " << arr_szs[s] << " ("
@@ -160,8 +160,8 @@ int main(int argc, char **argv)
 	std::cout << "Running memory transfer checks ..." << std::endl;
 
 	// initialize threadpool
-	check_tpc(tpc_init(&ctx));
-	check_tpc(tpc_create_device(ctx, 0, &dev, 0));
+	check_tapasco(tapasco_init(&ctx));
+	check_tapasco(tapasco_create_device(ctx, 0, &dev, 0));
 
 	// init ff_farm, one worker per configured processor
 	std::vector<ff_node *> f;
@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 		std::cerr << "FAILURE" << std::endl;
 
 	// de-initialize threadpool
-	tpc_destroy_device(ctx, dev);
-	tpc_deinit(ctx);
+	tapasco_destroy_device(ctx, dev);
+	tapasco_deinit(ctx);
 	return errs ? EXIT_FAILURE : EXIT_SUCCESS;
 }

@@ -3,15 +3,15 @@ project(platform-zynq)
 set(CMAKE_INSTALL_PREFIX "..")
 set(CMAKE_SKIP_RPATH true)
 
-if (NOT EXISTS "$ENV{TPC_HOME}")
-  message(FATAL_ERROR "Please set TPC_HOME environment variable to root directory of ThreadPoolComposer")
-endif (NOT EXISTS "$ENV{TPC_HOME}")
+if (NOT EXISTS "$ENV{TAPASCO_HOME}")
+  message(FATAL_ERROR "Please set TAPASCO_HOME environment variable to root directory of Tapasco")
+endif (NOT EXISTS "$ENV{TAPASCO_HOME}")
 
-include ("$ENV{TPC_HOME}/cmake/ThreadPoolComposer.cmake")
+include ("$ENV{TAPASCO_HOME}/cmake/Tapasco.cmake")
 
 set(SRCDIR "src")
 set(CMNDIR "../common")
-set(GCMNDIR "${TPC_HOME}/common")
+set(GCMNDIR "${TAPASCO_HOME}/common")
 set(COMPFLAGS "-Wall -Werror -g -O3 -std=gnu11")
 set(CMNSRCS "${CMNDIR}/src/platform_logging.c"
             "${CMNDIR}/src/platform_errors.c"
@@ -19,7 +19,7 @@ set(CMNSRCS "${CMNDIR}/src/platform_logging.c"
             "${CMNDIR}/src/platform_version.c"
             "${GCMNDIR}/src/gen_queue.c")
 set(SRCS "${SRCDIR}/platform_zynq.c")
-set(PLATFORM_LIBS_DIR "${TPC_HOME}/platform/lib")
+set(PLATFORM_LIBS_DIR "${TAPASCO_HOME}/platform/lib")
 
 include_directories("." "include" "${CMNDIR}/include" "${GCMNDIR}/include")
 set_source_files_properties(${CMNSRCS} ${SRCS} PROPERTIES COMPILE_FLAGS ${COMPFLAGS})
@@ -31,14 +31,14 @@ set_target_properties(platform-static PROPERTIES OUTPUT_NAME platform)
 set_target_properties(platform PROPERTIES COMPILE_FLAGS ${COMPFLAGS})
 set_target_properties(platform-static PROPERTIES COMPILE_FLAGS ${COMPFLAGS})
 
-if ("armv71" STREQUAL ${TPC_TARGET})
+if ("armv71" STREQUAL ${TAPASCO_TARGET})
 	target_link_libraries(platform atomic)
 	target_link_libraries(platform-static atomic)
 endif ()
 
 install(TARGETS platform platform-static
-        LIBRARY DESTINATION "lib/${TPC_TARGET}"
-        ARCHIVE DESTINATION "lib/${TPC_TARGET}/static")
+        LIBRARY DESTINATION "lib/${TAPASCO_TARGET}"
+        ARCHIVE DESTINATION "lib/${TAPASCO_TARGET}/static")
 
 get_filename_component(LIBSDIR "lib" REALPATH)
 add_custom_command(OUTPUT ${PLATFORM_LIBS_DIR}

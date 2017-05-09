@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file	benchmark-mem.c
 //! @brief	TPC API application that performs a simplistic benchmark on the
@@ -35,7 +35,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <assert.h>
-#include <tpc_api.h>
+#include <tapasco_api.h>
 #include "timer.h"
 
 #define TRANSFER_SZ				((size_t)(1024*1024*1024))
@@ -51,8 +51,8 @@ static l    transfers;
 static ul   errors;
 static l    mode;
 
-static tpc_ctx_t *ctx;
-static tpc_dev_ctx_t *dev;
+static tapasco_ctx_t *ctx;
+static tapasco_dev_ctx_t *dev;
 
 static void fill_with_random(void *d, size_t const sz)
 {
@@ -97,31 +97,31 @@ static inline void baseline_transfer(void *d)
 	free(h);
 }
 
-static inline void tpc_transfer(void *d)
+static inline void tapasco_transfer(void *d)
 {
-	tpc_handle_t h;
+	tapasco_handle_t h;
 	if (! d) {
 		__sync_fetch_and_add(&errors, 1);
 		return;
 	}
-	if (tpc_device_alloc(dev, &h, chunk_sz, 0) != TPC_SUCCESS) {
+	if (tapasco_device_alloc(dev, &h, chunk_sz, 0) != TAPASCO_SUCCESS) {
 		__sync_fetch_and_add(&errors, 1);
 		return;
 	}
 
 	switch (mode - 3) {
 	case 0:	/* read-only */
-		tpc_device_copy_from(dev, h, d, chunk_sz, TPC_DEVICE_COPY_BLOCKING);
+		tapasco_device_copy_from(dev, h, d, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING);
 		break;
 	case 1: /* write-only */
-		tpc_device_copy_to(dev, d, h, chunk_sz, TPC_DEVICE_COPY_BLOCKING);
+		tapasco_device_copy_to(dev, d, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING);
 		break;
 	case 2: /* read-write */
-		tpc_device_copy_to(dev, d, h, chunk_sz, TPC_DEVICE_COPY_BLOCKING);
-		tpc_device_copy_from(dev, h, d, chunk_sz, TPC_DEVICE_COPY_BLOCKING);
+		tapasco_device_copy_to(dev, d, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING);
+		tapasco_device_copy_from(dev, h, d, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING);
 		break;
 	}
-	tpc_device_free(dev, h, 0);
+	tapasco_device_free(dev, h, 0);
 }
 
 static void *transfer(void *p)
@@ -131,7 +131,7 @@ static void *transfer(void *p)
 		if (mode < 3)
 			baseline_transfer(d);
 		else
-			tpc_transfer(d);
+			tapasco_transfer(d);
 	}
 	free (d);
 	return NULL;
@@ -153,10 +153,10 @@ static void print_line(ul const *times)
 			(TRANSFER_SZ/(1024*1024)) / (times[5] / 1000000.0));
 }
 
-static void check_tpc(tpc_res_t const result)
+static void check_tapasco(tapasco_res_t const result)
 {
-	if (result != TPC_SUCCESS) {
-		fprintf(stderr, "tpc fatal error: %s\n", tpc_strerror(result));
+	if (result != TAPASCO_SUCCESS) {
+		fprintf(stderr, "tapasco fatal error: %s\n", tapasco_strerror(result));
 		exit(result);
 	}
 }
@@ -173,8 +173,8 @@ int main(int argc, char **argv)
 	fill_with_random(rnddata, pow(2, UPPER_BND));
 
 	// initialize threadpool
-	check_tpc(tpc_init(&ctx));
-	check_tpc(tpc_create_device(ctx, 0, &dev, 0));
+	check_tapasco(tapasco_init(&ctx));
+	check_tapasco(tapasco_create_device(ctx, 0, &dev, 0));
 
 	print_header();
 	TIMER_START(total)
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 	TIMER_STOP(total)
 	fprintf(stderr, "Total duration: %llu us.\n", TIMER_USECS(total));
 	// de-initialize threadpool
-	tpc_destroy_device(ctx, dev);
-	tpc_deinit(ctx);
+	tapasco_destroy_device(ctx, dev);
+	tapasco_deinit(ctx);
 	free(rnddata);
 }

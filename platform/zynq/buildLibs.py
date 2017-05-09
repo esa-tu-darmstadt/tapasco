@@ -6,9 +6,9 @@ clean = len(sys.argv) > 1 and sys.argv[1] == "clean"
 debug = len(sys.argv) > 1 and (sys.argv[1] == "debug" or sys.argv[1] == "driver_debug")
 driver_debug = len(sys.argv) > 1 and sys.argv[1] == "driver_debug"
 
-moddir = "$TPC_HOME/platform/zynq/module"
-pdir = "$TPC_HOME/platform/zynq/build"
-adir = "$TPC_HOME/arch/baseline/build"
+moddir = "$TAPASCO_HOME/platform/zynq/module"
+pdir = "$TAPASCO_HOME/platform/zynq/build"
+adir = "$TAPASCO_HOME/arch/baseline/build"
 
 if clean:
 	subprocess.call(["rm -rf " + pdir], shell=True)

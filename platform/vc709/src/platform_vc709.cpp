@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 David de la Chevallerie, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <iostream>       	// std::cout
 #include <ctime>			// to convert time_t to string
@@ -39,7 +39,7 @@ extern "C" {
 #include "buddy_allocator.hpp"
 
 #ifdef __cplusplus
-using namespace tpc::platform;
+using namespace tapasco::platform;
 #endif /* __cplusplus */
 
 #define INPUT_TESTS				0
@@ -109,7 +109,7 @@ static pthread_mutex_t ba_small_lock 	= PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP;
 static pthread_mutex_t ba_medium_lock 	= PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP;
 static pthread_mutex_t ba_large_lock 	= PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP;
 
-platform_ctl_addr_t tpc::platform::platform_address_get_slot_base(platform_slot_id_t const slot_id, platform_slot_region_id_t const region_id)
+platform_ctl_addr_t tapasco::platform::platform_address_get_slot_base(platform_slot_id_t const slot_id, platform_slot_region_id_t const region_id)
 {
 #if (INPUT_TESTS == 1)
 	if(slot_id >= MAX_SLOTS) {
@@ -137,7 +137,7 @@ platform_res_t helper_init(int* fd, const string& path)
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t tpc::platform::_platform_init(const char *const version)
+platform_res_t tapasco::platform::_platform_init(const char *const version)
 {
 	uint32_t data = 0;
 	platform_res_t res;
@@ -177,7 +177,7 @@ platform_res_t tpc::platform::_platform_init(const char *const version)
 	return PLATFORM_SUCCESS;
 }
 
-void tpc::platform::platform_deinit(void)
+void tapasco::platform::platform_deinit(void)
 {
 	LOG(LPLL_INIT, "Close devices");
 
@@ -194,7 +194,7 @@ void tpc::platform::platform_deinit(void)
 	platform_logging_exit();
 }
 
-platform_res_t tpc::platform::platform_alloc(size_t const len, platform_mem_addr_t *addr, platform_alloc_flags_t const flags)
+platform_res_t tapasco::platform::platform_alloc(size_t const len, platform_mem_addr_t *addr, platform_alloc_flags_t const flags)
 {
 	if(len > 0 && len <= ALLOC_SMALL_MAX) {
 		LOG(LPLL_MEM, "Using small allocator");
@@ -225,7 +225,7 @@ platform_res_t tpc::platform::platform_alloc(size_t const len, platform_mem_addr
 	return PLATFORM_SUCCESS;	
 }
 
-platform_res_t tpc::platform::platform_dealloc(platform_mem_addr_t const addr, platform_alloc_flags_t const flags)
+platform_res_t tapasco::platform::platform_dealloc(platform_mem_addr_t const addr, platform_alloc_flags_t const flags)
 {
 	LOG(LPLL_MEM, "Remove address %X ", addr);
 	
@@ -252,7 +252,7 @@ platform_res_t tpc::platform::platform_dealloc(platform_mem_addr_t const addr, p
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t tpc::platform::platform_read_mem(platform_mem_addr_t const start_addr, size_t const no_of_bytes, void *data, platform_mem_flags_t const flags)
+platform_res_t tapasco::platform::platform_read_mem(platform_mem_addr_t const start_addr, size_t const no_of_bytes, void *data, platform_mem_flags_t const flags)
 {
 	int err;
 	struct dma_ioctl_params params { 0 };
@@ -283,7 +283,7 @@ platform_res_t tpc::platform::platform_read_mem(platform_mem_addr_t const start_
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t tpc::platform::platform_write_mem(platform_mem_addr_t const start_addr, size_t const no_of_bytes, void const*data, platform_mem_flags_t const flags)
+platform_res_t tapasco::platform::platform_write_mem(platform_mem_addr_t const start_addr, size_t const no_of_bytes, void const*data, platform_mem_flags_t const flags)
 {
 	int err;
 	struct dma_ioctl_params params { 0 };
@@ -314,7 +314,7 @@ platform_res_t tpc::platform::platform_write_mem(platform_mem_addr_t const start
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t tpc::platform::platform_read_ctl(platform_ctl_addr_t const start_addr, size_t const no_of_bytes, void *data, platform_ctl_flags_t const flags)
+platform_res_t tapasco::platform::platform_read_ctl(platform_ctl_addr_t const start_addr, size_t const no_of_bytes, void *data, platform_ctl_flags_t const flags)
 {
 	int err;
 	struct user_rw_params params { 0 };
@@ -353,7 +353,7 @@ platform_res_t tpc::platform::platform_read_ctl(platform_ctl_addr_t const start_
 	return PLATFORM_SUCCESS;
 }
 		
-platform_res_t tpc::platform::platform_write_ctl(platform_ctl_addr_t const start_addr, size_t const no_of_bytes, void const*data, platform_ctl_flags_t const flags)
+platform_res_t tapasco::platform::platform_write_ctl(platform_ctl_addr_t const start_addr, size_t const no_of_bytes, void const*data, platform_ctl_flags_t const flags)
 {
 	int err;
 	struct user_rw_params params { 0 };
@@ -388,7 +388,7 @@ platform_res_t tpc::platform::platform_write_ctl(platform_ctl_addr_t const start
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t tpc::platform::platform_write_ctl_and_wait(platform_ctl_addr_t const w_addr, size_t const w_no_of_bytes, void const *w_data, uint32_t const event, platform_ctl_flags_t const flags)
+platform_res_t tapasco::platform::platform_write_ctl_and_wait(platform_ctl_addr_t const w_addr, size_t const w_no_of_bytes, void const *w_data, uint32_t const event, platform_ctl_flags_t const flags)
 {
 	int err = -ENOENT;
 	struct user_ioctl_params params { 0 };
@@ -434,7 +434,7 @@ platform_res_t tpc::platform::platform_write_ctl_and_wait(platform_ctl_addr_t co
 	return PLATFORM_SUCCESS;
 }
 
-platform_ctl_addr_t tpc::platform::platform_address_get_special_base(
+platform_ctl_addr_t tapasco::platform::platform_address_get_special_base(
 		platform_special_ctl_t const ent)
 {
 	switch (ent) {
@@ -448,12 +448,12 @@ platform_ctl_addr_t tpc::platform::platform_address_get_special_base(
 	return 0;
 }
 
-platform_res_t tpc::platform::platform_register_irq_callback(platform_irq_callback_t cb)
+platform_res_t tapasco::platform::platform_register_irq_callback(platform_irq_callback_t cb)
 {
 	return (platform_res_t) PERR_NOT_IMPLEMENTED;
 }
 
-platform_res_t tpc::platform::platform_stop(const int result)
+platform_res_t tapasco::platform::platform_stop(const int result)
 {
 	return (platform_res_t) PERR_NOT_IMPLEMENTED;
 }

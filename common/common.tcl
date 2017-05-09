@@ -1,26 +1,26 @@
 #
 # Copyright (C) 2014 Jens Korinth, TU Darmstadt
 #
-# This file is part of ThreadPoolComposer (TPC).
+# This file is part of Tapasco (TPC).
 #
-# ThreadPoolComposer is free software: you can redistribute it and/or modify
+# Tapasco is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# ThreadPoolComposer is distributed in the hope that it will be useful,
+# Tapasco is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
 # @file		common.tcl
 # @brief	Common Vivado Tcl helper procs to create block designs.
 # @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
-namespace eval tpc {
+namespace eval tapasco {
   namespace export createBinaryCounter
   namespace export createClockingWizard
   namespace export createConcat
@@ -51,7 +51,7 @@ namespace eval tpc {
   # check if we're running inside Vivado
   if {[llength [info commands version]] > 0} {
     # source IP catalog VLNVs for the current Vivado version
-    set cip [format "$::env(TPC_HOME)/common/common_%s.tcl" [version -short]]
+    set cip [format "$::env(TAPASCO_HOME)/common/common_%s.tcl" [version -short]]
     if {! [file exists $cip]} {
       puts "Could not find $cip, Vivado [version -short] is not supported yet!"
       exit 1
@@ -88,10 +88,10 @@ namespace eval tpc {
 
   # Instantiates a Zynq-7000 Processing System IP core.
   # @param name Name of the instance (default: ps7).
-  # @param preset Name of board preset to apply (default: tpc::get_board_preset).
-  # @param freq_mhz FCLK_0 frequency in MHz (default: tpc::get_design_frequency).
+  # @param preset Name of board preset to apply (default: tapasco::get_board_preset).
+  # @param freq_mhz FCLK_0 frequency in MHz (default: tapasco::get_design_frequency).
   # @return bd_cell of the instance.
-  proc createZynqPS {{name ps7} {preset [tpc::get_board_preset]} {freq_mhz [tpc::get_design_frequency]}} {
+  proc createZynqPS {{name ps7} {preset [tapasco::get_board_preset]} {freq_mhz [tapasco::get_design_frequency]}} {
     variable stdcomps
     puts "Creating Zynq-7000 series IP core ..."
     puts "  VLNV: [dict get $stdcomps ps vlnv]"
@@ -124,10 +124,10 @@ namespace eval tpc {
 
   # Instantiates a Zynq-7000 Processing System IP BFM simulation core.
   # @param name Name of the instance (default: ps7).
-  # @param preset Name of board preset to apply (default: tpc::get_board_preset).
-  # @param freq_mhz FCLK_0 frequency in MHz (default: tpc::get_design_frequency).
+  # @param preset Name of board preset to apply (default: tapasco::get_board_preset).
+  # @param freq_mhz FCLK_0 frequency in MHz (default: tapasco::get_design_frequency).
   # @return bd_cell of the instance.
-  proc createZynqBFM {{name ps7} {preset [tpc::get_board_preset]} {freq_mhz [tpc::get_design_frequency]}} {
+  proc createZynqBFM {{name ps7} {preset [tapasco::get_board_preset]} {freq_mhz [tapasco::get_design_frequency]}} {
     variable stdcomps
     puts "Creating Zynq-7000 series BFM IP core ..."
     puts "  VLNV: [dict get $stdcomps ps_bfm vlnv]"
@@ -245,7 +245,7 @@ namespace eval tpc {
       CONFIG.M64_WRITE_MAX_REQ {8} \
     ] $dd
     # read XDC file
-    #set folder [format "%s/common/ip/dual_dma_1.0" $::env(TPC_HOME)]
+    #set folder [format "%s/common/ip/dual_dma_1.0" $::env(TAPASCO_HOME)]
     # [get_property IP_DIR [get_ips [get_property CONFIG.Component_Name $dd]]]
     #set xdc ${folder}/dual.xdc
     #read_xdc -cells "*[get_property NAME $dd]" $xdc
@@ -292,7 +292,7 @@ namespace eval tpc {
     puts "  C_COUNTER_W: $cw"
 
     set oc [create_bd_cell -type ip -vlnv [dict get $stdcomps oled_ctrl vlnv] $name]
-    set xdc "$::env(TPC_HOME)/common/ip/oled_pc/constraints/oled.xdc"
+    set xdc "$::env(TAPASCO_HOME)/common/ip/oled_pc/constraints/oled.xdc"
     read_xdc $xdc
     set_property PROCESSING_ORDER LATE [get_files $xdc]
 
@@ -364,10 +364,10 @@ namespace eval tpc {
   # Instantiates a TPC status core.
   # @param name Name of the instance.
   # @param ids  List of kernel IDs.
-  proc createTpcStatus {name {ids {}}} {
+  proc createTapascoStatus {name {ids {}}} {
     variable stdcomps
     puts "Creating TPC Status ..."
-    puts "  VLNV: [dict get $stdcomps tpc_status vlnv]"
+    puts "  VLNV: [dict get $stdcomps tapasco_status vlnv]"
     puts "  IDs : $ids"
 
     # check if ids are given, otherwise fetch automatically
@@ -375,7 +375,7 @@ namespace eval tpc {
       set c $ids
     } {
       set c [list]
-      set composition [tpc::get_composition]
+      set composition [tapasco::get_composition]
       set no_kinds [llength [dict keys $composition]]
       for {set i 0} {$i < $no_kinds} {incr i} {
         set no_inst [dict get $composition $i count]
@@ -386,7 +386,7 @@ namespace eval tpc {
     }
 
     # create the IP core
-    set inst [create_bd_cell -type ip -vlnv [dict get $stdcomps tpc_status vlnv] $name]
+    set inst [create_bd_cell -type ip -vlnv [dict get $stdcomps tapasco_status vlnv] $name]
     # make properties list
     set props [list]
     set slot 0
@@ -468,16 +468,16 @@ namespace eval tpc {
   # Returns the current generation mode selected by the user.
   # Default: "sim"
   proc get_generate_mode {} {
-    if {[info exists ::env(TPC_MODE)]} {return $::env(TPC_MODE)} {return "bit"}
+    if {[info exists ::env(TAPASCO_MODE)]} {return $::env(TAPASCO_MODE)} {return "bit"}
   }
 
   # Returns the desired design clock frequency (in MHz) selected by the user.
   # Default: 250
   proc get_design_frequency {} {
-    global tpc_freq
-    if {[info exists ::env(TPC_FREQ)]} {
-      if {[string is integer $::env(TPC_FREQ)]} {return $::env(TPC_FREQ)} {return $tpc_freq}
-    } {return $tpc_freq}
+    global tapasco_freq
+    if {[info exists ::env(TAPASCO_FREQ)]} {
+      if {[string is integer $::env(TAPASCO_FREQ)]} {return $::env(TAPASCO_FREQ)} {return $tapasco_freq}
+    } {return $tapasco_freq}
   }
 
   # Returns the desired design clock period (in ns) selected by the user.
@@ -489,8 +489,8 @@ namespace eval tpc {
   # Returns the board preset selected by the user.
   # Default: ZC706
   proc get_board_preset {} {
-    global TPC_BOARD_PRESET
-    if {[info exists ::env(TPC_BOARD_PRESET)]} {return $::env(TPC_BOARD_PRESET)} {return $TPC_BOARD_PRESET}
+    global TAPASCO_BOARD_PRESET
+    if {[info exists ::env(TAPASCO_BOARD_PRESET)]} {return $::env(TAPASCO_BOARD_PRESET)} {return $TAPASCO_BOARD_PRESET}
   }
 
   # Returns an array of lists consisting of VLNV and instance count of kernels in
@@ -502,14 +502,14 @@ namespace eval tpc {
 
   # Returns the file name of the current Platform's SystemVerilog include header.
   proc get_platform_header {} {
-    global TPC_PLATFORM_HEADER
-    return $TPC_PLATFORM_HEADER
+    global TAPASCO_PLATFORM_HEADER
+    return $TAPASCO_PLATFORM_HEADER
   }
 
   # Returns the file name of the current Platform's SystemVerilog testbench module.
   proc get_sim_module {} {
-    global TPC_SIM_MODULE
-    return $TPC_SIM_MODULE
+    global TAPASCO_SIM_MODULE
+    return $TAPASCO_SIM_MODULE
   }
 
   # Returns a list of configured features for the Platform.
@@ -876,13 +876,13 @@ namespace eval tpc {
 
   # Returns the number of processors in the system.
   proc get_number_of_processors {} {
-    global tpc_jobs
-    if {![info exists tpc_jobs] && ![catch {open "/proc/cpuinfo"} f]} {
-      set tpc_jobs [regexp -all -line {^processor\s} [read $f]]
+    global tapasco_jobs
+    if {![info exists tapasco_jobs] && ![catch {open "/proc/cpuinfo"} f]} {
+      set tapasco_jobs [regexp -all -line {^processor\s} [read $f]]
       close $f
-      if {$tpc_jobs <= 0} { set tpc_jobs 1 }
+      if {$tapasco_jobs <= 0} { set tapasco_jobs 1 }
     }
-    return $tpc_jobs
+    return $tapasco_jobs
   }
 
   # Parses a Vivado timing report and report the worst negative slack (WNS) value.

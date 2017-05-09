@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file	memcheck-mt.cc
 //! @brief	Initializes the first TPC device and iterates over a number
@@ -30,20 +30,20 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <assert.h>
-#include <tpc_api.h>
+#include <tapasco_api.h>
 
 #define DEFAULT_RUNS					(1000)
 
-static tpc_ctx_t *ctx;
-static tpc_dev_ctx_t *dev;
+static tapasco_ctx_t *ctx;
+static tapasco_dev_ctx_t *dev;
 static long int errs;
 static long int runs;
 static size_t const arr_szs[] = { 1, 2, 8, 10, 16, 1024, 2048, 4096, 8192, 16384 };
 
-static void check_fpga(tpc_res_t const result)
+static void check_fpga(tapasco_res_t const result)
 {
-	if (result != TPC_SUCCESS) {
-		fprintf(stderr, "fpga fatal error: %s\n", tpc_strerror(result));
+	if (result != TAPASCO_SUCCESS) {
+		fprintf(stderr, "fpga fatal error: %s\n", tapasco_strerror(result));
 		exit(result);
 	}
 }
@@ -85,8 +85,8 @@ static void *test_thread(void *p)
 		int *rarr = (int *)malloc(arr_szs[s] * sizeof(int));
 		assert(rarr != NULL);
 
-		// get tpc handle
-		tpc_handle_t h = tpc_device_alloc(dev, arr_szs[s] * sizeof(int), 0);
+		// get tapasco handle
+		tapasco_handle_t h = tapasco_device_alloc(dev, arr_szs[s] * sizeof(int), 0);
 		// printf("%ld: handle = 0x%08lx, size = %zd bytes\n", s,
 		//		(unsigned long)h, arr_szs[s] * sizeof(int));
 		assert((unsigned long)h > 0);
@@ -95,14 +95,14 @@ static void *test_thread(void *p)
 		int merr = 0;
 		//printf("%ld: sizeof(arr) %zd, sizeof(rarr) %zd\n", s, sizeof(arr),
 		//		sizeof(rarr));
-		tpc_res_t res = tpc_device_copy_to(dev, arr, h,
-				arr_szs[s] * sizeof(int), TPC_COPY_BLOCKING);
-		if (res == TPC_SUCCESS) {
+		tapasco_res_t res = tapasco_device_copy_to(dev, arr, h,
+				arr_szs[s] * sizeof(int), TAPASCO_COPY_BLOCKING);
+		if (res == TAPASCO_SUCCESS) {
 			// printf("%ld: copy to successful, copying from ...\n", s);
-			res = tpc_device_copy_from(dev, h, rarr,
-					arr_szs[s] * sizeof(int), TPC_COPY_BLOCKING);
+			res = tapasco_device_copy_from(dev, h, rarr,
+					arr_szs[s] * sizeof(int), TAPASCO_COPY_BLOCKING);
 			// printf("%ld: copy from finished\n", s);
-			if (res == TPC_SUCCESS) {
+			if (res == TAPASCO_SUCCESS) {
 				merr += compare_arrays(s, arr, rarr, arr_szs[s], (unsigned int)h);
 			} else {
 				printf("%ld: Copy from device failed.\n", s);
@@ -113,7 +113,7 @@ static void *test_thread(void *p)
 			merr += 1;
 		}
 		__atomic_add_fetch(&errs, merr, __ATOMIC_SEQ_CST);
-		tpc_device_free(dev, h);
+		tapasco_device_free(dev, h);
 
 		if (! merr)
 			/*printf("%ld: Array size %zd (%zd byte) ok!\n",
@@ -142,8 +142,8 @@ int main(int argc, char **argv) {
 	setbuf(stdout, NULL);
 
 	// initialize FPGA
-	check_fpga(tpc_init(&ctx));
-	check_fpga(tpc_create_device(ctx, 0, &dev, 0));
+	check_fpga(tapasco_init(&ctx));
+	check_fpga(tapasco_create_device(ctx, 0, &dev, 0));
 
 	printf("Starting %lu threads ...\n", tc);
 	pthread_t *thrds = (pthread_t *)malloc(tc * sizeof(pthread_t));
@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
 
 	free(thrds);
 	// release device
-	tpc_destroy_device(ctx, dev);
-	tpc_deinit(ctx);
+	tapasco_destroy_device(ctx, dev);
+	tapasco_deinit(ctx);
 	return errs;
 }

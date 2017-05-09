@@ -1,6 +1,6 @@
 /**
  *  @file	Screen.hpp
- *  @brief	Base class of screens in tpc-debug.
+ *  @brief	Base class of screens in tapasco-debug.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #ifndef __SCREEN_HPP__

@@ -1,8 +1,8 @@
 MK ?= latexmk
 MKFLAGS += -pdf
 
-PDF = "ThreadpoolComposer.pdf"
-MAINTEX = ThreadpoolComposer.tex
+PDF = "Tapasco.pdf"
+MAINTEX = Tapasco.tex
 
 .PHONY: $(PDF) clean tikz tikz-clean
 

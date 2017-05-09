@@ -1,5 +1,5 @@
 # Common code snippets for Architecture implementations
-Every implementation of a new Architecture for *ThreadpoolComposer* must provide
+Every implementation of a new Architecture for *Tapasco* must provide
 an implementation of TPC API, and many tasks will have to be re-implemented with
 no significant changes. The code snippets in `src` are meant to be re-usable
 in new implementation and provide a quick way implement the job management and

@@ -3,8 +3,8 @@ ifeq ($(ARCH), arm)
 CROSS_COMPILE ?= arm-unknown-linux-gnueabihf-
 endif
 
-obj-m += tpc-platform-zynq.o
-tpc-platform-zynq-objs := zynq_module.o zynq_device.o zynq_dmamgmt.o zynq_irq.o zynq_ioctl.o
+obj-m += tapasco-platform-zynq.o
+tapasco-platform-zynq-objs := zynq_module.o zynq_device.o zynq_dmamgmt.o zynq_irq.o zynq_ioctl.o
 
 .PHONY:	all clean
 

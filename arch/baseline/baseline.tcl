@@ -1,20 +1,20 @@
 #
 # Copyright (C) 2014 Jens Korinth, TU Darmstadt
 #
-# This file is part of ThreadPoolComposer (TPC).
+# This file is part of Tapasco (TPC).
 #
-# ThreadPoolComposer is free software: you can redistribute it and/or modify
+# Tapasco is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# ThreadPoolComposer is distributed in the hope that it will be useful,
+# Tapasco is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
 # @file		baseline.tcl
 # @brief	Baseline architecture implementation: Connects up to 64 cores
@@ -37,7 +37,7 @@ namespace eval arch {
   set arch_irq_concats [list]
 
   # scan plugin directory
-  foreach f [glob -nocomplain -directory "$::env(TPC_HOME)/arch/baseline/plugins" "*.tcl"] {
+  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/arch/baseline/plugins" "*.tcl"] {
     source -notrace $f
   }
 
@@ -113,7 +113,7 @@ namespace eval arch {
       puts "  VLNV: $vlnv"
       for {set j 0} {$j < $no_inst} {incr j} {
         set name [format "target_ip_%02d_%03d" $i $j]
-        set inst [lindex [tpc::call_plugins "post-pe-create" [create_bd_cell -type ip -vlnv "$vlnv" $name]] 0]
+        set inst [lindex [tapasco::call_plugins "post-pe-create" [create_bd_cell -type ip -vlnv "$vlnv" $name]] 0]
         lappend insts $inst
       }
     }
@@ -133,7 +133,7 @@ namespace eval arch {
     for {set i 0} {$i < $no_kinds} {incr i} {
       set no_inst [dict get $composition $i count]
       set example [get_bd_cells [format "target_ip_%02d_000" $i]]
-      set masters [tpc::get_aximm_interfaces $example]
+      set masters [tapasco::get_aximm_interfaces $example]
       set ic_m [expr "$ic_m + [llength $masters] * $no_inst"]
 
       set masters_32b [get_bd_intf_pins -of_objects $example -filter { MODE == "Master" && VLNV == "xilinx.com:interface:aximm_rtl:1.0" && CONFIG.DATA_WIDTH == 32 }]
@@ -184,7 +184,7 @@ namespace eval arch {
     # generate output trees
     for {set i 0} {$i < [llength $mdist]} {incr i} {
       puts "  mdist[$i] = [lindex $mdist $i]"
-      set out [tpc::create_interconnect_tree "out_$i" [lindex $mdist $i]]
+      set out [tapasco::create_interconnect_tree "out_$i" [lindex $mdist $i]]
       connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $out] [lindex $ic_ports $i]
     }
 
@@ -202,7 +202,7 @@ namespace eval arch {
       set slaves  [get_bd_intf_pins -of $example -filter { MODE == "Slave" && VLNV == "xilinx.com:interface:aximm_rtl:1.0" }]
       set ic_s [expr "$ic_s + [llength $slaves] * $no_inst"]
     }
-    set in1 [tpc::create_interconnect_tree "in1" $ic_s false]
+    set in1 [tapasco::create_interconnect_tree "in1" $ic_s false]
 
     puts "Creating interconnects toward peripherals ..."
     puts "  $ic_s slaves to connect to host"
@@ -253,12 +253,12 @@ namespace eval arch {
   # Connects the threadpool to memory interconnects.
   proc arch_connect_mem {mem_ics ips} {
     # get PE masters
-    set masters [lsort -dictionary [tpc::get_aximm_interfaces $ips]]
+    set masters [lsort -dictionary [tapasco::get_aximm_interfaces $ips]]
     # interleave slaves of out ic trees
     set outs [get_bd_cells -filter {NAME =~ "out_*"}]
-    set sc [llength [tpc::get_aximm_interfaces $outs "Slave"]]
+    set sc [llength [tapasco::get_aximm_interfaces $outs "Slave"]]
     set tmp [list]
-    foreach out $outs { lappend tmp [tpc::get_aximm_interfaces $out "Slave"] }
+    foreach out $outs { lappend tmp [tapasco::get_aximm_interfaces $out "Slave"] }
     set outs $tmp
     set slaves [list]
     set j 0
@@ -301,7 +301,7 @@ namespace eval arch {
     set i 0
     set j 0
     set left [llength $ips]
-    set cc [tpc::createConcat "xlconcat_$j" [expr "[llength $ips] > 32 ? 32 : [llength $ips]"]]
+    set cc [tapasco::createConcat "xlconcat_$j" [expr "[llength $ips] > 32 ? 32 : [llength $ips]"]]
     lappend arch_irq_concats $cc
     foreach ip [lsort $ips] {
       foreach pin [get_bd_pins -of $ip -filter { TYPE == intr }] {
@@ -312,7 +312,7 @@ namespace eval arch {
           set i 0
   	incr j
   	if { $left > 0 } {
-  	  set cc [tpc::createConcat "xlconcat_$j" [expr "$left > 32 ? 32 : $left"]]
+  	  set cc [tapasco::createConcat "xlconcat_$j" [expr "$left > 32 ? 32 : $left"]]
   	  lappend arch_irq_concats $cc
   	}
         }
@@ -385,7 +385,7 @@ namespace eval arch {
     current_bd_instance $group
 
     # create instances of target IP
-    set kernels [tpc::get_composition]
+    set kernels [tapasco::get_composition]
     set insts [arch_create_instances $kernels]
     arch_check_instance_count $kernels
     set arch_mem_ics [arch_create_mem_interconnects $kernels $mgroups]

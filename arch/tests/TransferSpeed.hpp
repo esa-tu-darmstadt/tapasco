@@ -15,16 +15,16 @@
 #include <cmath>
 #include <unistd.h>
 #include <ncurses.h>
-#include <tpc_api.hpp>
+#include <tapasco_api.hpp>
 
 using namespace std;
 using namespace std::chrono;
-using namespace tpc;
+using namespace tapasco;
 
 /** Measurement class that can measure TPC memory transfer speeds. **/
 class TransferSpeed {
 public:
-  TransferSpeed(ThreadPoolComposer& tpc) : tpc(tpc) {}
+  TransferSpeed(Tapasco& tapasco) : tapasco(tapasco) {}
   virtual ~TransferSpeed() {}
 
   static constexpr long OP_ALLOCFREE = 0;
@@ -61,23 +61,23 @@ public:
 
 private:
   void transfer(volatile bool& stop, size_t const chunk_sz, long opmask) {
-    tpc_handle_t h;
+    tapasco_handle_t h;
     uint8_t *data = new uint8_t[chunk_sz];
     for (size_t i = 0; i < chunk_sz; ++i)
       data[i] = rand();
 
     while (! stop) {
-      if (tpc.alloc(h, chunk_sz, TPC_DEVICE_ALLOC_FLAGS_NONE) != TPC_SUCCESS)
+      if (tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE) != TAPASCO_SUCCESS)
         throw "allocation failed";
-      if (opmask & OP_COPYTO && tpc.copy_to(data, h, chunk_sz, TPC_DEVICE_COPY_BLOCKING) != TPC_SUCCESS)
+      if (opmask & OP_COPYTO && tapasco.copy_to(data, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS)
         throw "copy_to failed";
-      if (opmask & OP_COPYFROM && tpc.copy_from(h, data, chunk_sz, TPC_DEVICE_COPY_BLOCKING) != TPC_SUCCESS)
+      if (opmask & OP_COPYFROM && tapasco.copy_from(h, data, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS)
         throw "copy_from failed";
       if (opmask & OP_COPYFROM)
         bytes += chunk_sz;
       if (opmask & OP_COPYTO)
         bytes += chunk_sz;
-      tpc.free(h, TPC_DEVICE_ALLOC_FLAGS_NONE);
+      tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
     }
     delete data;
   }
@@ -90,7 +90,7 @@ private:
   }
 
   atomic<uint64_t> bytes { 0 };
-  ThreadPoolComposer& tpc;
+  Tapasco& tapasco;
 };
 
 #endif /* __TRANSFER_SPEED_HPP__ */

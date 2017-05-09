@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
  *  @file	multithreaded.cpp
@@ -33,79 +33,79 @@
 #include "Sudoku.hpp"
 #include "Sudoku_HLS.hpp"
 
-#include "tpc_api.h"
+#include "tapasco_api.h"
 
 #define SUDOKU_ID			77
 
 using namespace std;
-using namespace rpr::tpc;
+using namespace rpr::tapasco;
 
-static tpc_ctx_t *ctx;
-static tpc_dev_ctx_t *dev;
+static tapasco_ctx_t *ctx;
+static tapasco_dev_ctx_t *dev;
 
-static inline void check_tpc(tpc_res_t const result)
+static inline void check_tapasco(tapasco_res_t const result)
 {
-	if (result != TPC_SUCCESS) {
-		cerr << "tpc fatal error: " << tpc_strerror(result) << endl;
+	if (result != TAPASCO_SUCCESS) {
+		cerr << "tapasco fatal error: " << tapasco_strerror(result) << endl;
 		exit(result);
 	}
 }
 
-static void init_tpc()
+static void init_tapasco()
 {
-	check_tpc(tpc_init(&ctx));
-	check_tpc(tpc_create_device(ctx, 0, &dev, 0));
+	check_tapasco(tapasco_init(&ctx));
+	check_tapasco(tapasco_create_device(ctx, 0, &dev, 0));
 }
 
-static void exit_tpc()
+static void exit_tapasco()
 {
-	tpc_destroy_device(ctx, dev);
-	tpc_deinit(ctx);
+	tapasco_destroy_device(ctx, dev);
+	tapasco_deinit(ctx);
 }
 
 static bool fpga_sudoku(int grid[9][9])
 {
 	static atomic<unsigned long> errors {0};
 	uint32_t ret;
-	tpc_res_t r;
-	tpc_job_id_t j_id;
-	tpc_handle_t h = tpc_device_alloc(dev, 9*9*sizeof(int), 0);
+	tapasco_res_t r;
+	tapasco_job_id_t j_id;
+	tapasco_handle_t h = tapasco_device_alloc(dev, 9*9*sizeof(int), 0);
 	if (h <= 0) {
 		cerr << "could not allocate memory!";
 		errors.fetch_add(1);
 		return false;
 	}
 
-	r = tpc_device_copy_to(dev, grid, h, 9*9*sizeof(int), TPC_COPY_BLOCKING);
-	if (r != TPC_SUCCESS) {
-		cerr << "could not copy to device: " << tpc_strerror(r) << endl;
+	r = tapasco_device_copy_to(dev, grid, h, 9*9*sizeof(int), TAPASCO_COPY_BLOCKING);
+	if (r != TAPASCO_SUCCESS) {
+		cerr << "could not copy to device: " << tapasco_strerror(r) << endl;
 		errors.fetch_add(1);
-		tpc_device_free(dev, errors);
+		tapasco_device_free(dev, errors);
 		return false;
 	}
 
-	j_id = tpc_device_acquire_job_id(dev, SUDOKU_ID, TPC_ACQUIRE_JOB_ID_BLOCKING);
-	tpc_device_job_set_arg(dev, j_id, 0, sizeof(h), &h);
-	r = tpc_device_job_launch(dev, j_id, TPC_JOB_LAUNCH_BLOCKING);
-	if (r != TPC_SUCCESS) {
-		cerr << "could not launch kernel: " << tpc_strerror(r) << endl;
+	j_id = tapasco_device_acquire_job_id(dev, SUDOKU_ID, TAPASCO_ACQUIRE_JOB_ID_BLOCKING);
+	tapasco_device_job_set_arg(dev, j_id, 0, sizeof(h), &h);
+	r = tapasco_device_job_launch(dev, j_id, TAPASCO_JOB_LAUNCH_BLOCKING);
+	if (r != TAPASCO_SUCCESS) {
+		cerr << "could not launch kernel: " << tapasco_strerror(r) << endl;
 		errors.fetch_add(1);
-		tpc_device_release_job_id(dev, j_id);
-		tpc_device_free(dev, errors);
+		tapasco_device_release_job_id(dev, j_id);
+		tapasco_device_free(dev, errors);
 	}
 	usleep(1000);
-	tpc_device_job_get_return(dev, j_id, sizeof(ret), &ret);
+	tapasco_device_job_get_return(dev, j_id, sizeof(ret), &ret);
 
-	r = tpc_device_copy_from(dev, h, grid, 9*9*sizeof(int), TPC_COPY_BLOCKING);
-	if (r != TPC_SUCCESS) {
-		cerr << "could not copy from device: " << tpc_strerror(r) << endl;
+	r = tapasco_device_copy_from(dev, h, grid, 9*9*sizeof(int), TAPASCO_COPY_BLOCKING);
+	if (r != TAPASCO_SUCCESS) {
+		cerr << "could not copy from device: " << tapasco_strerror(r) << endl;
 		errors.fetch_add(1);
-		tpc_device_free(dev, errors);
+		tapasco_device_free(dev, errors);
 		return false;
 	}
 
-	tpc_device_release_job_id(dev, j_id);
-	tpc_device_free(dev, h);
+	tapasco_device_release_job_id(dev, j_id);
+	tapasco_device_free(dev, h);
 	return ret != 0;
 }
 
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 	cout << "Solving with " << thrdcnt << " threads ..." << endl;
 
 	if (mode)
-		init_tpc();
+		init_tapasco();
 
 	auto start = chrono::steady_clock::now();
 	for (; c < argc; ++c) {
@@ -186,6 +186,6 @@ int main(int argc, char *argv[])
 	cout << "Wall clock time for solving: " << chrono::duration<double, milli>(stop - start).count() << " ms." << endl;
 
 	if (mode)
-		exit_tpc();
+		exit_tapasco();
 }
 

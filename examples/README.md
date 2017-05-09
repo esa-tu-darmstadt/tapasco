@@ -1,7 +1,7 @@
-# ThreadpoolComposer Examples
+# Tapasco Examples
 ## Building the examples 
 This directory contains *TPC API* example programs for each of the trivial
-kernels contained in the initial release of *ThreadpoolComposer*. Each sub-
+kernels contained in the initial release of *Tapasco*. Each sub-
 directory contains a Makefile, you can build all variants automatically using
 
 ```
@@ -28,16 +28,16 @@ file `<KERNEL>.cfg` in their respective directory which can be used to compose
 a hardware threadpool with 48 instances of the kernel:
 
 ```
-cd $TPC_HOME && TPC_MODE=sim TPC_FREQ=250 sbt "compose configFile ..."
+cd $TAPASCO_HOME && TAPASCO_MODE=sim TAPASCO_FREQ=250 sbt "compose configFile ..."
 ```
 
 ## Running the examples
 The examples can be run against a virtual FPGA provided by simulation, see the
-ThreadpoolComposer documentation for more details.
+Tapasco documentation for more details.
 Every example will output some information about correctness of each run, and
 will conclude with either `SUCCESS!` or `FAILURE`. Verbose debug output for the
 underlying *TPC API* and *Platform API* implementations can be activated using
-the `source $TPC_HOME/sim_setup.sh`.
+the `source $TAPASCO_HOME/sim_setup.sh`.
 
 Note: Example programs must currently be run in the same directory as simulation.
 

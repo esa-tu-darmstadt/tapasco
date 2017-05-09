@@ -1,23 +1,23 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file	zynq_chardev.c
-//! @brief	Character device controlling ThreadpoolComposer threadpools for
+//! @brief	Character device controlling Tapasco threadpools for
 //!		the zynq TPC Platform.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
@@ -44,7 +44,7 @@ static int zynq_device_mmap(struct file *filp, struct vm_area_struct *vma)
 	} else if (minor == zynq_dev.miscdev[1].minor) {
 		start_addr = ZYNQ_DEVICE_INTC_BASE;
 	} else {
-		start_addr = ZYNQ_DEVICE_TPC_STATUS_BASE;
+		start_addr = ZYNQ_DEVICE_TAPASCO_STATUS_BASE;
 	}
 
 	LOG(ZYNQ_LL_DEVICE, "d%u: mmapping %zu bytes, from 0x%08lx-0x%08lx",
@@ -141,17 +141,17 @@ static int init_misc_devs(void)
 	}
 
 	zynq_dev.miscdev[2].minor = MISC_DYNAMIC_MINOR;
-	zynq_dev.miscdev[2].name  = ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME "_tpc_status";
+	zynq_dev.miscdev[2].name  = ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME "_tapasco_status";
 	zynq_dev.miscdev[2].fops  = &zynq_device_fops;
 
 	retval = misc_register(&zynq_dev.miscdev[2]);
 	if (retval < 0) {
 		ERR("could not create misc device '%s'", zynq_dev.miscdev[2].name);
-		goto err_tpc_status;
+		goto err_tapasco_status;
 	}
 	return retval;
 
-err_tpc_status:
+err_tapasco_status:
 	misc_deregister(&zynq_dev.miscdev[1]);
 err_gp1:
 	misc_deregister(&zynq_dev.miscdev[0]);
@@ -236,19 +236,19 @@ static int init_iomapping(void)
 		goto err_gp1;
 	}
 
-	zynq_dev.tpc_status = ioremap_nocache(ZYNQ_DEVICE_TPC_STATUS_BASE,
-			ZYNQ_DEVICE_TPC_STATUS_SIZE);
-	if (IS_ERR(zynq_dev.tpc_status)) {
+	zynq_dev.tapasco_status = ioremap_nocache(ZYNQ_DEVICE_TAPASCO_STATUS_BASE,
+			ZYNQ_DEVICE_TAPASCO_STATUS_SIZE);
+	if (IS_ERR(zynq_dev.tapasco_status)) {
 		ERR("could not ioremap the AXI register space at 0x%08x-0x%08x",
-				ZYNQ_DEVICE_TPC_STATUS_BASE,
-				ZYNQ_DEVICE_TPC_STATUS_BASE +
-				ZYNQ_DEVICE_TPC_STATUS_SIZE);
-		retval = PTR_ERR(zynq_dev.tpc_status);
-		goto err_tpc_status;
+				ZYNQ_DEVICE_TAPASCO_STATUS_BASE,
+				ZYNQ_DEVICE_TAPASCO_STATUS_BASE +
+				ZYNQ_DEVICE_TAPASCO_STATUS_SIZE);
+		retval = PTR_ERR(zynq_dev.tapasco_status);
+		goto err_tapasco_status;
 	}
 	return retval;
 
-err_tpc_status:
+err_tapasco_status:
 	iounmap(zynq_dev.gp_map[1]);
 err_gp1:
 	iounmap(zynq_dev.gp_map[0]);
@@ -258,7 +258,7 @@ err_gp0:
 
 static void exit_iomapping(void)
 {
-	iounmap(zynq_dev.tpc_status);
+	iounmap(zynq_dev.tapasco_status);
 	iounmap(zynq_dev.gp_map[1]);
 	iounmap(zynq_dev.gp_map[0]);
 }

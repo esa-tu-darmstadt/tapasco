@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /** @file 	platform_api.h
  *  @brief 	API for low-level FPGA integration. Provides basic methods to
@@ -28,21 +28,21 @@
  *  @version 	1.2
  *  @copyright	Copyright 2014, 2015 J. Korinth
  *
- *		This file is part of ThreadPoolComposer (TPC).
+ *		This file is part of Tapasco (TPC).
  *
- *  		ThreadPoolComposer is free software: you can redistribute it
+ *  		Tapasco is free software: you can redistribute it
  *		and/or modify it under the terms of the GNU Lesser General
  *		Public License as published by the Free Software Foundation,
  *		either version 3 of the License, or (at your option) any later
  *		version.
  *
- *  		ThreadPoolComposer is distributed in the hope that it will be
+ *  		Tapasco is distributed in the hope that it will be
  *		useful, but WITHOUT ANY WARRANTY; without even the implied
  *		warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *		See the GNU Lesser General Public License for more details.
  *
  *  		You should have received a copy of the GNU Lesser General Public
- *		License along with ThreadPoolComposer.  If not, see
+ *		License along with Tapasco.  If not, see
  *		<http://www.gnu.org/licenses/>.
  *  @details	### Change Log ###
  *		- **02/2016: Version 1.2.1 (jk)**
@@ -64,7 +64,7 @@
 #include <platform_errors.h>
 
 #ifdef __cplusplus
-namespace tpc { namespace platform { extern "C" {
+namespace tapasco { namespace platform { extern "C" {
 #include <cstdint>
 #else
 #include <stdint.h>
@@ -347,7 +347,7 @@ extern platform_res_t platform_wait_cycles(const int cycles);
 
 
 #ifdef __cplusplus
-} /* extern "C" */ } /* namespace platform */ } /* namespace tpc */
+} /* extern "C" */ } /* namespace platform */ } /* namespace tapasco */
 #endif
 
 #endif /* __PLATFORM_API_H__ */

@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <iostream>
 #include <iomanip>
@@ -26,7 +26,7 @@
 #include <future>
 #include <unistd.h>
 #include <cassert>
-#include <tpc_api.hpp>
+#include <tapasco_api.hpp>
 #include <platform_api.h>
 
 #define MIN_NSECS          (10000)
@@ -35,8 +35,8 @@
 #define JOBS               (10)
 
 using namespace std;
-using namespace tpc;
-using namespace tpc::platform;
+using namespace tapasco;
+using namespace tapasco::platform;
 
 struct config_t {
   unsigned long int min;
@@ -47,12 +47,12 @@ struct config_t {
 
 static long errors;
 
-static ThreadPoolComposer Tpc;
+static Tapasco Tapasco;
 
-static inline void check_tpc(tpc_res_t const result)
+static inline void check_tapasco(tapasco_res_t const result)
 {
-  if (result != TPC_SUCCESS) {
-    cerr << "Tpc fatal error: " << tpc_strerror(result) << endl;
+  if (result != TAPASCO_SUCCESS) {
+    cerr << "Tapasco fatal error: " << tapasco_strerror(result) << endl;
     exit(result);
   }
 }
@@ -65,9 +65,9 @@ static inline uint32_t clock_period(void)
     char buf[1024] = "";
     ifstream ifs("/sys/class/fclk/fclk0/set_rate", ifstream::in);
     if (! ifs.good()) {
-      cerr << "WARNING: could not open /sys/class/fclk/fclk0/set_rate, using TPC_FREQ" << endl;
-      assert(getenv("TPC_FREQ") && "must set TPC_FREQ env var!");
-      hz = stoi(string(getenv("TPC_FREQ"))) * 1000000;
+      cerr << "WARNING: could not open /sys/class/fclk/fclk0/set_rate, using TAPASCO_FREQ" << endl;
+      assert(getenv("TAPASCO_FREQ") && "must set TAPASCO_FREQ env var!");
+      hz = stoi(string(getenv("TAPASCO_FREQ"))) * 1000000;
     } else {
       ifs.read(buf, sizeof(buf) - 1);
       cerr << "fclk/set_rate = " << buf << endl;
@@ -87,10 +87,10 @@ static inline unsigned long cd_to_ns(unsigned long cd) {
   return cd * clock_period();
 }
 
-static inline uint32_t tpc_run(uint32_t cc)
+static inline uint32_t tapasco_run(uint32_t cc)
 {
   uint32_t ret = 0;
-  if (Tpc.launch_no_thread(14, ret, cc) != TPC_SUCCESS)
+  if (Tapasco.launch_no_thread(14, ret, cc) != TAPASCO_SUCCESS)
     __atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
   return ret;
 }
@@ -170,8 +170,8 @@ int main(int argc, char **argv)
   parse_args(argc, argv, &cfg);
 
   // initialize threadpool
-  //check_Tpc(Tpc.init());
-  uint32_t const n_inst = Tpc.func_instance_count(14);
+  //check_Tapasco(Tapasco.init());
+  uint32_t const n_inst = Tapasco.func_instance_count(14);
   cerr << "Found " << n_inst << " of timer kernel." << endl;
   if (! n_inst) {
     cerr << "ERROR: did not find any timer kernels." << endl;
@@ -190,7 +190,7 @@ int main(int argc, char **argv)
 
     auto run_start = chrono::high_resolution_clock::now();
     for (unsigned int j = 0; j < cfg.iterations; ++j)
-      run_latencies += tpc_run(rounded_cd);
+      run_latencies += tapasco_run(rounded_cd);
     auto run_d = chrono::duration_cast<chrono::nanoseconds>(chrono::high_resolution_clock::now() - run_start);
     auto run_time = run_d.count() / (double)cfg.iterations - (double)rounded_clk;
 

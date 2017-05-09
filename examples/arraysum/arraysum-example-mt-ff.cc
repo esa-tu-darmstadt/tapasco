@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file	arraysum-example-mt-ff.cc
 //! @brief	TPC API based example program exercising a hardware threadpool
@@ -27,17 +27,17 @@
 #include <vector>
 #include <unistd.h>
 #include <cassert>
-#include <tpc_api.h>
+#include <tapasco_api.h>
 #include <ff/farm.hpp>
 #include "arraysum.h"
 using namespace ff;
-using namespace rpr::tpc;
+using namespace rpr::tapasco;
 
 #define SZ							256
 #define RUNS							10000
 
-static tpc_ctx_t *ctx;
-static tpc_dev_ctx_t *dev;
+static tapasco_ctx_t *ctx;
+static tapasco_dev_ctx_t *dev;
 static int *arr;
 int errs = 0;
 
@@ -49,10 +49,10 @@ static void check(int const result)
 	}
 }
 
-static void check_tpc(tpc_res_t const result)
+static void check_tapasco(tapasco_res_t const result)
 {
-	if (result != TPC_SUCCESS) {
-		std::cerr << "tpc fatal error: " << tpc_strerror(result)
+	if (result != TAPASCO_SUCCESS) {
+		std::cerr << "tapasco fatal error: " << tapasco_strerror(result)
 				<< std::endl;
 		exit(result);
 	}
@@ -69,27 +69,27 @@ static int runTest(int const run)
 	int const golden = arraysum(&arr[run * SZ]);
 	printf("Golden output for run %d: %d\n", run, golden);
 	// allocate mem on device and copy array part
-	tpc_handle_t h = tpc_device_alloc(dev, SZ * sizeof(int), 0);
+	tapasco_handle_t h = tapasco_device_alloc(dev, SZ * sizeof(int), 0);
 	check(h != 0);
-	check_tpc(tpc_device_copy_to(dev, &arr[SZ * run], h, SZ * sizeof(int),
-			TPC_COPY_BLOCKING));
+	check_tapasco(tapasco_device_copy_to(dev, &arr[SZ * run], h, SZ * sizeof(int),
+			TAPASCO_COPY_BLOCKING));
 
 	// get a job id and set argument to handle
-	tpc_job_id_t j_id = tpc_device_acquire_job_id(dev, 10,
-			TPC_ACQUIRE_JOB_ID_BLOCKING);
+	tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev, 10,
+			TAPASCO_ACQUIRE_JOB_ID_BLOCKING);
 	printf("run %d: j_id = %d\n", run, j_id);
 	check(j_id > 0);
-	check_tpc(tpc_device_job_set_arg(dev, j_id, 0, sizeof(h), &h));
+	check_tapasco(tapasco_device_job_set_arg(dev, j_id, 0, sizeof(h), &h));
 
 	// shoot me to the moon!
-	check_tpc(tpc_device_job_launch(dev, j_id, TPC_JOB_LAUNCH_BLOCKING));
+	check_tapasco(tapasco_device_job_launch(dev, j_id, TAPASCO_JOB_LAUNCH_BLOCKING));
 
 	// get the result
 	int32_t r = 0;
-	check_tpc(tpc_device_job_get_return(dev, j_id, sizeof(r), &r));
+	check_tapasco(tapasco_device_job_get_return(dev, j_id, sizeof(r), &r));
 	printf("FPGA output for run %d: %d\n", run, r);
 	printf("\nRUN %d %s\n", run, r == golden ? "OK" : "NOT OK");
-	tpc_device_release_job_id(dev, j_id);
+	tapasco_device_release_job_id(dev, j_id);
 	return r == golden ? 0 : 1;
 }
 
@@ -124,12 +124,12 @@ int main(int argc, char **argv)
 	int errs = 0;
 
 	// initialize threadpool
-	check_tpc(tpc_init(&ctx));
-	check_tpc(tpc_create_device(ctx, 0, &dev, 0));
+	check_tapasco(tapasco_init(&ctx));
+	check_tapasco(tapasco_create_device(ctx, 0, &dev, 0));
 	// check arraysum instance count
-	std::cout << "instance count: " << tpc_device_func_instance_count(dev, 10)
+	std::cout << "instance count: " << tapasco_device_func_instance_count(dev, 10)
 			<< std::endl;
-	assert(tpc_device_func_instance_count(dev, 10));
+	assert(tapasco_device_func_instance_count(dev, 10));
 
 	// init whole array to subsequent numbers
 	arr = (int *)malloc(SZ * RUNS * sizeof(int));
@@ -155,8 +155,8 @@ int main(int argc, char **argv)
 		std::cerr << "FAILURE" << std::endl;
 
 	// de-initialize threadpool
-	tpc_destroy_device(ctx, dev);
-	tpc_deinit(ctx);
+	tapasco_destroy_device(ctx, dev);
+	tapasco_deinit(ctx);
 	free(arr);
 	return errs;
 }

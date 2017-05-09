@@ -3,7 +3,7 @@ Copyright 1986-2015 Xilinx, Inc. All Rights Reserved.
 | Tool Version     : Vivado v.2015.2 (lin64) Build 1266856 Fri Jun 26 16:35:25 MDT 2015
 | Date             : Thu Feb 23 10:43:47 2017
 | Host             : hpa0094 running 64-bit CentOS Linux release 7.3.1611 (Core)
-| Command          : report_power -quiet -file /home/jk81kama/tpc-itpc2/core/arrayinit/baseline/vc709/ipcore/power.rpt
+| Command          : report_power -quiet -file /home/jk81kama/tapasco-itapasco2/core/arrayinit/baseline/vc709/ipcore/power.rpt
 | Design           : arrayinit
 | Device           : xc7vx690tffg1761-2
 | Design State     : Routed

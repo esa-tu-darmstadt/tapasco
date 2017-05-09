@@ -1,11 +1,11 @@
 \section{System Requirements}
-\tpc{} requires a computer running a \textsf{Linux} operating system with a 3.x series kernel.
+\tapasco{} requires a computer running a \textsf{Linux} operating system with a 3.x series kernel.
 It has been tested on a system running Fedora 22 Linux distribution, more precisely \code{GNU/Linux 3.19.5-100.fc20.x86\_64}.
-The recommended Linux distribution for the Xilinx Zynq platforms is \emph{archlinux/ARM} \cite{archlinuxarm}, which is also the basis for the ready-for-use SDcard image files available on the \tpc{} website.
-No other system requirements have been identified for \tpc{}, however, the requirements of subsequently listed third-party software apply.
+The recommended Linux distribution for the Xilinx Zynq platforms is \emph{archlinux/ARM} \cite{archlinuxarm}, which is also the basis for the ready-for-use SDcard image files available on the \tapasco{} website.
+No other system requirements have been identified for \tapasco{}, however, the requirements of subsequently listed third-party software apply.
 
 \section{Prerequisites}
-\tpc{} is based on several third-party software components, the most important of which are listed in \tblref{tbl:thirdparty}.
+\tapasco{} is based on several third-party software components, the most important of which are listed in \tblref{tbl:thirdparty}.
 If nothing else is explicitly specified in the corresponding section, C/C++ code can be built by the GNU project toolchain, specifically the GNU C Compiler gcc \cite{gcc} and GNU make \cite{gmake}, Scala code by the Scala compiler \cite{scala} and \gloss{sbt} \cite{sbt} (for supported versions see \tblref{tbl:thirdparty}).
 It is likely possible to use different tools for these tasks, but is neither recommended nor supported.
 \emph{Xilinx Vivado Design Suite} is used for all synthesis tasks, but the capabilities of the Vivado Simulator (specifically the SystemVerilog DPI implementation) are not sufficient for simulation, hence simulation is tailored toward \emph{Mentor Graphics ModelSim}.

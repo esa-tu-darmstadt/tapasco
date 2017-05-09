@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file	zynq_platform.h
 //! @brief	General configuration parameters for zynq TPC Platform.
@@ -24,16 +24,16 @@
 #define __ZYNQ_PLATFORM_H__
 
 #define	ZYNQ_PLATFORM_MAXMEMHANDLES		((unsigned int)1024)
-#define ZYNQ_PLATFORM_DEVFILENAME		"tpc_platform_zynq"
+#define ZYNQ_PLATFORM_DEVFILENAME		"tapasco_platform_zynq"
 #define ZYNQ_PLATFORM_MEMHANDLEFILENAME		ZYNQ_PLATFORM_DEVFILENAME "_mem"
 #define ZYNQ_PLATFORM_ALLOCFILENAME		\
-		"/sys/class/misc/" ZYNQ_PLATFORM_DEVFILENAME "_tpc_status/alloc"
+		"/sys/class/misc/" ZYNQ_PLATFORM_DEVFILENAME "_tapasco_status/alloc"
 #define ZYNQ_PLATFORM_DEALLOCFILENAME		\
-		"/sys/class/misc/" ZYNQ_PLATFORM_DEVFILENAME "_tpc_status/dealloc"
+		"/sys/class/misc/" ZYNQ_PLATFORM_DEVFILENAME "_tapasco_status/dealloc"
 #define ZYNQ_PLATFORM_WAITFILENAME		\
-		"/sys/class/misc/" ZYNQ_PLATFORM_DEVFILENAME "_tpc_status/wait"
+		"/sys/class/misc/" ZYNQ_PLATFORM_DEVFILENAME "_tapasco_status/wait"
 #define ZYNQ_PLATFORM_BUFFERIDFILENAME		\
-		"/sys/class/misc/" ZYNQ_PLATFORM_DEVFILENAME "_tpc_status/bufferid"
+		"/sys/class/misc/" ZYNQ_PLATFORM_DEVFILENAME "_tapasco_status/bufferid"
 #define ZYNQ_PLATFORM_INTC_BASE			(0x81800000)
 #define ZYNQ_PLATFORM_INTC_OFFS			(0x00010000)
 #define ZYNQ_PLATFORM_INTC_NUM				(4)

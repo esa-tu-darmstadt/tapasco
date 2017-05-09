@@ -7,9 +7,9 @@
 #SBATCH -n @@CPUS@@
 #SBATCH -t @@TIMELIMIT@@
 
-export TPC_HOME=@@TPC_HOME@@
+export TAPASCO_HOME=@@TAPASCO_HOME@@
 source ~/vivado.sh
-pushd $TPC_HOME
+pushd $TAPASCO_HOME
 source ./setup.sh
 popd
 

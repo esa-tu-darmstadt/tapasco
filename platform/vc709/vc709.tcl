@@ -1,20 +1,20 @@
 #
 # Copyright (C) 2014 Jens Korinth, TU Darmstadt
 #
-# This file is part of ThreadPoolComposer (TPC).
+# This file is part of Tapasco (TPC).
 #
-# ThreadPoolComposer is free software: you can redistribute it and/or modify
+# Tapasco is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# ThreadPoolComposer is distributed in the hope that it will be useful,
+# Tapasco is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
 # @file		vc709.tcl
 # @brief	VC709 platform implementation.
@@ -26,8 +26,8 @@ namespace eval platform {
   namespace export max_masters
 
   # abort 'sim' runs
-  if {[tpc::get_generate_mode] != "bit"} {
-    puts "Invalid generate mode: [tpc::get_generate_mode]"
+  if {[tapasco::get_generate_mode] != "bit"} {
+    puts "Invalid generate mode: [tapasco::get_generate_mode]"
     puts "Platform support only: bit"
     exit 1
   }
@@ -70,7 +70,7 @@ namespace eval platform {
     set dma_irq [create_bd_pin -type "intr" -dir I "dma_irq"]
 
     # create PCIe interrupt controller
-    set pcie_intr_ctrl [tpc::createPCIeIntrCtrl "pcie_intr_ctrl"]
+    set pcie_intr_ctrl [tapasco::createPCIeIntrCtrl "pcie_intr_ctrl"]
     connect_bd_net [get_bd_pin -of_objects $pcie_intr_ctrl -filter {NAME == "irq_out"}] $irq_out
     connect_bd_net [get_bd_pin -of_objects $pcie_intr_ctrl -filter {NAME == "msi_vector_num"}] $msi_vector_num
     connect_bd_net $msi_enable [get_bd_pin -of_objects $pcie_intr_ctrl -filter {NAME == "msi_enable"}]
@@ -82,7 +82,7 @@ namespace eval platform {
     # create interrupt controllers and connect them to GP1
     set intcs [list]
     foreach irq $irqs {
-      set intc [tpc::createIntCtrl [format "axi_intc_%02d" [llength $intcs]]]
+      set intc [tapasco::createIntCtrl [format "axi_intc_%02d" [llength $intcs]]]
       lappend intcs $intc
       connect_bd_net -boundary_type upper $irq [get_bd_pins -of $intc -filter {NAME=="intr"}]
       connect_bd_net -boundary_type upper [get_bd_pins -of $intc -filter {NAME=="irq"}] [get_bd_pins -of $pcie_intr_ctrl -filter "NAME == [format "irq_in_%d" $curr_pcie_line]"]
@@ -90,7 +90,7 @@ namespace eval platform {
     }
 
     # tie-off surplus irq lines to constant zero
-    set const_zero [tpc::createConstant zero 1 0]
+    set const_zero [tapasco::createConstant zero 1 0]
 
     # tie-off unused DMA irq lines
     set open_irqs [list \
@@ -106,7 +106,7 @@ namespace eval platform {
     }
     connect_bd_net [get_bd_pins -of_objects $const_zero] $open_irqs
 
-    set intcic [tpc::createInterconnect "axi_intc_ic" 1 [llength $intcs]]
+    set intcic [tapasco::createInterconnect "axi_intc_ic" 1 [llength $intcs]]
     set i 0
     foreach intc $intcs {
       set slave [get_bd_intf_pins -of $intc -filter { MODE == "Slave" }]
@@ -165,21 +165,21 @@ namespace eval platform {
 
     # create instances of cores: MIG core, dual DMA, system cache
     set mig [create_mig_core "mig"]
-    set dual_dma [tpc::createDualDMA "dual_dma"]
-    set mig_ic [tpc::createInterconnect "mig_ic" 2 1]
+    set dual_dma [tapasco::createDualDMA "dual_dma"]
+    set mig_ic [tapasco::createInterconnect "mig_ic" 2 1]
     set_property -dict [list \
       CONFIG.M00_HAS_DATA_FIFO {2} \
       CONFIG.S00_HAS_DATA_FIFO {2} \
       CONFIG.S01_HAS_DATA_FIFO {2} \
     ] $mig_ic
 
-    set cf [tpc::get_platform_feature "Cache"]
-    set cache_en [tpc::is_platform_feature_enabled "Cache"]
+    set cf [tapasco::get_platform_feature "Cache"]
+    set cache_en [tapasco::is_platform_feature_enabled "Cache"]
     if {$cache_en} {
       puts "Platform configured w/L2 Cache, implementing ..."
-      set cache [tpc::createSystemCache "cache_l2" 1 \
-          [dict get [tpc::get_platform_feature "Cache"] "size"] \
-          [dict get [tpc::get_platform_feature "Cache"] "associativity"] \
+      set cache [tapasco::createSystemCache "cache_l2" 1 \
+          [dict get [tapasco::get_platform_feature "Cache"] "size"] \
+          [dict get [tapasco::get_platform_feature "Cache"] "associativity"] \
 	]
 
       # connect mig_ic master to cache_l2
@@ -230,7 +230,7 @@ namespace eval platform {
 
     # connect external design clk
     set ext_design_clk [get_bd_pins mig/ui_clk]
-    if {[tpc::get_design_frequency] != 200} {
+    if {[tapasco::get_design_frequency] != 200} {
       set ext_design_clk [get_bd_pins mig/ui_addn_clk_0]
     }
     connect_bd_net $ext_design_clk $design_clk
@@ -282,7 +282,7 @@ namespace eval platform {
       CONFIG.pl_link_cap_max_link_speed {8.0_GT/s} \
       CONFIG.pl_link_cap_max_link_width {X8} \
     ] $pcie
-    set mm_to_lite [tpc::createMmToLite "mm_to_lite"]
+    set mm_to_lite [tapasco::createMmToLite "mm_to_lite"]
 
     # connect PCIe slave to external port
     connect_bd_intf_net $s_axi [get_bd_intf_pins axi_pcie3_0/S_AXI]
@@ -337,9 +337,9 @@ namespace eval platform {
     set design_clk_peripheral_reset [create_bd_pin -type "rst" -dir "O" "design_clk_peripheral_aresetn"]
 
     # create reset generator
-    set pcie_rst_gen [tpc::createResetGen "pcie_rst_gen"]
-    set ddr_clk_rst_gen [tpc::createResetGen "ddr_clk_rst_gen"]
-    set design_clk_rst_gen [tpc::createResetGen "design_clk_rst_gen"]
+    set pcie_rst_gen [tapasco::createResetGen "pcie_rst_gen"]
+    set ddr_clk_rst_gen [tapasco::createResetGen "ddr_clk_rst_gen"]
+    set design_clk_rst_gen [tapasco::createResetGen "design_clk_rst_gen"]
 
     # connect external ports
     connect_bd_net $pcie_clk [get_bd_pins pcie_rst_gen/slowest_sync_clk]
@@ -370,7 +370,7 @@ namespace eval platform {
     set reset [ create_bd_port -dir I -type rst reset ]
     set_property -dict [ list CONFIG.POLARITY {ACTIVE_HIGH}  ] $reset
     # create the IP core itself
-    set mig_7series_0 [tpc::createMIG $name]
+    set mig_7series_0 [tapasco::createMIG $name]
     # generate the PRJ File for MIG
     set str_mig_folder [get_property IP_DIR [ get_ips [ get_property CONFIG.Component_Name $mig_7series_0 ] ] ]
     set str_mig_file_name mig_a.prj
@@ -394,7 +394,7 @@ namespace eval platform {
     set pcie_perst [ create_bd_port -dir I -type rst pcie_perst ]
     set_property -dict [ list CONFIG.POLARITY {ACTIVE_LOW}  ] $pcie_perst
     # create PCIe core
-    set axi_pcie3_0 [tpc::createPCIeBridge "axi_pcie3_0"]
+    set axi_pcie3_0 [tapasco::createPCIeBridge "axi_pcie3_0"]
     set_property -dict [list \
       CONFIG.SYS_RST_N_BOARD_INTERFACE {pcie_perst} \
       CONFIG.axi_data_width {256_bit} \
@@ -434,7 +434,7 @@ namespace eval platform {
     set inst [create_bd_cell -type ip -vlnv $vlnv $name]
     set port [create_bd_port -from 7 -to 0 -dir "O" "LED_Port"]
     connect_bd_net [get_bd_pins $inst/LED_Port] $port
-    read_xdc "$::env(TPC_HOME)/common/ip/GP_LED_1.0/gp_led.xdc"
+    read_xdc "$::env(TAPASCO_HOME)/common/ip/GP_LED_1.0/gp_led.xdc"
 
     # connect the inputs
     for {set i 0} {$i < 6 && [llength $inputs] > $i} {incr i} {
@@ -451,7 +451,7 @@ namespace eval platform {
     set inst [current_bd_instance]
     set engine [create_bd_cell -type hier dma_engine]
     current_bd_instance $engine
-    set dual_dma_0 [tpc::createDualDMA dual_dma_0]
+    set dual_dma_0 [tapasco::createDualDMA dual_dma_0]
     current_bd_instance $inst
   }
 
@@ -474,7 +474,7 @@ namespace eval platform {
     }
 
     # connect TPC status core
-    set status_segs [get_bd_addr_segs -of_objects [get_bd_cells "tpc_status"]]
+    set status_segs [get_bd_addr_segs -of_objects [get_bd_cells "tapasco_status"]]
     set offset 0x02800000
     set i 0
     foreach s $status_segs {
@@ -524,15 +524,15 @@ namespace eval platform {
     set ss_reset [platform_create_subsystem_reset]
 
     # create AXI infrastructure
-    set axi_ic_to_host [tpc::createInterconnect "axi_ic_to_host" 1 1]
-    set axi_ic_from_host [tpc::createInterconnect "axi_ic_from_host" 1 4]
+    set axi_ic_to_host [tapasco::createInterconnect "axi_ic_to_host" 1 1]
+    set axi_ic_from_host [tapasco::createInterconnect "axi_ic_from_host" 1 4]
     set_property -dict [list \
       CONFIG.S00_HAS_DATA_FIFO {2} \
     ] $axi_ic_from_host
 
     set axi_ic_to_mem [list]
     if {[llength [arch::get_masters]] > 0} {
-      set axi_ic_to_mem [tpc::createInterconnect "axi_ic_to_mem" [llength [arch::get_masters]] 1]
+      set axi_ic_to_mem [tapasco::createInterconnect "axi_ic_to_mem" [llength [arch::get_masters]] 1]
       set_property -dict [list "CONFIG.M00_HAS_DATA_FIFO" {2}] $axi_ic_to_mem
       connect_bd_intf_net [get_bd_intf_pins $axi_ic_to_mem/M00_AXI] [get_bd_intf_pins /Memory/s_axi_mem]
     }
@@ -545,10 +545,10 @@ namespace eval platform {
     }
 
     # setup LED core, if feature is configured
-    if {[tpc::is_platform_feature_enabled "LED"]} {
+    if {[tapasco::is_platform_feature_enabled "LED"]} {
       puts "Implementing Platform feature LED ..."
       # create and connect LED core
-      set const_one [tpc::createConstant "const_one" 1 1]
+      set const_one [tapasco::createConstant "const_one" 1 1]
       set led_inputs [list \
         [get_bd_pins "/PCIe/axi_pcie3_0/user_link_up"] \
         [get_bd_pins "/PCIe/axi_pcie3_0/msi_enable"] \
@@ -561,8 +561,8 @@ namespace eval platform {
     }
 
     # always create TPC status core
-    set tpc_status [tpc::createTpcStatus "tpc_status"]
-    connect_bd_intf_net [get_bd_intf_pins $axi_ic_from_host/M03_AXI] [get_bd_intf_pins $tpc_status/S00_AXI]
+    set tapasco_status [tapasco::createTapascoStatus "tapasco_status"]
+    connect_bd_intf_net [get_bd_intf_pins $axi_ic_from_host/M03_AXI] [get_bd_intf_pins $tapasco_status/S00_AXI]
 
     # connect PCIe <-> InterruptControl
     connect_bd_net [get_bd_pins $ss_pcie/msi_grant] [get_bd_pins $ss_int/msi_grant]
@@ -585,9 +585,9 @@ namespace eval platform {
       [get_bd_pins -of_objects $axi_ic_to_host -filter {TYPE == "clk" && DIR == "I"}] \
       [get_bd_pins -of_objects $axi_ic_from_host -filter {TYPE == "clk" && DIR == "I" && NAME != "M00_ACLK"}] \
       [get_bd_pins $ss_int/aclk] \
-      [get_bd_pins $tpc_status/s00_axi_aclk]
+      [get_bd_pins $tapasco_status/s00_axi_aclk]
 
-    if {[tpc::is_platform_feature_enabled "LED"]} {
+    if {[tapasco::is_platform_feature_enabled "LED"]} {
       connect_bd_net -net pcie_aclk_net $pcie_aclk [get_bd_pins $gp_led/aclk]
     }
 
@@ -608,9 +608,9 @@ namespace eval platform {
     # connect PCIe resets
     connect_bd_net -net pcie_aresetn_net [get_bd_pins $ss_pcie/pcie_aresetn] \
       [get_bd_pins $ss_reset/pcie_aresetn] \
-      [get_bd_pins $tpc_status/s00_axi_aresetn]
+      [get_bd_pins $tapasco_status/s00_axi_aresetn]
 
-    if {[tpc::is_platform_feature_enabled "LED"]} {
+    if {[tapasco::is_platform_feature_enabled "LED"]} {
       connect_bd_net -net pcie_aresetn_net [get_bd_pins $ss_pcie/pcie_aresetn] [get_bd_pins $gp_led/aresetn]
     }
     connect_bd_net [get_bd_pins $ss_mem/ddr_aresetn] \
@@ -677,13 +677,13 @@ namespace eval platform {
   proc generate {} {
     global bitstreamname
     # perform some action on the design
-    switch [tpc::get_generate_mode] {
+    switch [tapasco::get_generate_mode] {
       "sim" {
         # prepare ModelSim simulation
         update_compile_order -fileset sim_1
         set_property SOURCE_SET sources_1 [get_filesets sim_1]
-        import_files -fileset sim_1 -norecurse [tpc::get_platform_header]
-        import_files -fileset sim_1 -norecurse [tpc::get_sim_module]
+        import_files -fileset sim_1 -norecurse [tapasco::get_platform_header]
+        import_files -fileset sim_1 -norecurse [tapasco::get_sim_module]
         update_compile_order -fileset sim_1
         # Disabling source management mode.  This is to allow the top design properties to be set without GUI intervention.
         set_property source_mgmt_mode None [current_project]
@@ -706,7 +706,7 @@ namespace eval platform {
       }
       "bit" {
         # generate bitstream from given design and report utilization / timing closure
-        set jobs [tpc::get_number_of_processors]
+        set jobs [tapasco::get_number_of_processors]
         puts "  using $jobs parallel jobs"
 
         generate_target all [get_files system.bd]
@@ -716,10 +716,10 @@ namespace eval platform {
         launch_runs -jobs $jobs $synth_run
         wait_on_run $synth_run
         open_run $synth_run
-        read_xdc -cells {system_i/Memory/dual_dma} "$::env(TPC_HOME)/common/ip/dual_dma_1.0/dual_async_m32_m64.xdc"
+        read_xdc -cells {system_i/Memory/dual_dma} "$::env(TAPASCO_HOME)/common/ip/dual_dma_1.0/dual_async_m32_m64.xdc"
 
         # call plugins
-        tpc::call_plugins "post-synth"
+        tapasco::call_plugins "post-synth"
 
         set impl_run [get_runs impl_1]
         set_property FLOW {Vivado Implementation 2015} $impl_run
@@ -729,7 +729,7 @@ namespace eval platform {
         open_run $impl_run
 
         # call plugins
-        tpc::call_plugins "post-impl"
+        tapasco::call_plugins "post-impl"
 
         report_timing_summary -warn_on_violation -file timing.txt
         report_utilization -file utilization.txt
@@ -752,7 +752,7 @@ namespace eval platform {
   ##################################################################
 
   proc write_mig_file_design_1_mig_7series_0_0 { str_mig_prj_filepath } {
-    set freq [tpc::get_design_frequency]
+    set freq [tapasco::get_design_frequency]
     set div [format "%1.3f" [expr "800.0 / $freq"]]
     set rf  [format "%3.2f" [expr "800.0 / $div"]]
     puts "  target frequency: $freq, divisor: $div, approx. frequency: $rf"

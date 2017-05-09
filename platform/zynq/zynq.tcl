@@ -1,20 +1,20 @@
 #
 # Copyright (C) 2014 Jens Korinth, TU Darmstadt
 #
-# This file is part of ThreadPoolComposer (TPC).
+# This file is part of Tapasco (TPC).
 #
-# ThreadPoolComposer is free software: you can redistribute it and/or modify
+# Tapasco is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# ThreadPoolComposer is distributed in the hope that it will be useful,
+# Tapasco is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
 # @file		zynq.tcl
 # @brief	Zynq-7000 platform implementation: For simulation, there is an extra AXI 
@@ -29,18 +29,18 @@ namespace eval platform {
     namespace export generate
     namespace export max_masters
   
-    # check if TPC_HOME env var is set
-    if {![info exists ::env(TPC_HOME)]} {
-      puts "Could not find TPC root directory, please set environment variable 'TPC_HOME'."
+    # check if TAPASCO_HOME env var is set
+    if {![info exists ::env(TAPASCO_HOME)]} {
+      puts "Could not find TPC root directory, please set environment variable 'TAPASCO_HOME'."
       exit 1
     }
     # check if DPI server lib env var is set
-    if {[tpc::get_generate_mode] == "sim"} {
+    if {[tapasco::get_generate_mode] == "sim"} {
       puts "Simulation currently not supported."
       exit 1
     }
     # scan plugin directory
-    foreach f [glob -nocomplain -directory "$::env(TPC_HOME)/platform/zynq/plugins" "*.tcl"] {
+    foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/zynq/plugins" "*.tcl"] {
       source -notrace $f
     }
   
@@ -53,7 +53,7 @@ namespace eval platform {
       puts "Connecting clocks ..."
   
       set clk_inputs [get_bd_pins -of_objects [get_bd_cells] -filter { TYPE == "clk" && DIR == "I" }]
-      switch [tpc::get_generate_mode] {
+      switch [tapasco::get_generate_mode] {
         "sim" {
           puts "  simulation mode, creating external port to drive PS_CLK" 
           set clk_port [create_bd_port -dir "I" -type CLK clk]
@@ -82,11 +82,11 @@ namespace eval platform {
       set periph_resets [get_bd_pins -of_objects $ics -filter { TYPE == "rst" && NAME != "ARESETN" && DIR == "I" }]
       lappend periph_resets [get_bd_pins -filter { TYPE == "rst" && DIR == "I" && NAME != "ARESETN" } -of_objects [get_bd_cells -filter { NAME =~ axi_intc* }]]
       lappend periph_resets [get_bd_pins Threadpool/peripheral_aresetn]
-      lappend periph_resets [get_bd_pins "tpc_status/s00_axi_aresetn"]
+      lappend periph_resets [get_bd_pins "tapasco_status/s00_axi_aresetn"]
       puts "ic_resets = $ic_resets"
       puts "periph_resets = $periph_resets"
   
-      switch [tpc::get_generate_mode] {
+      switch [tapasco::get_generate_mode] {
         "sim" {
           puts "  simulation mode, creating active low external port to drive PS and rst_gen resets"
           set rst_port [create_bd_port -dir "I" -type RST rst]
@@ -116,17 +116,17 @@ namespace eval platform {
   
       # create interrupt controllers and connect them to GP1
       set intcs [list]
-      set cc [tpc::createConcat "intc_concat" [llength $irqs]]
+      set cc [tapasco::createConcat "intc_concat" [llength $irqs]]
       set i 0
       foreach irq $irqs {
-        set intc [tpc::createIntCtrl [format "axi_intc_%02d" $i]]
+        set intc [tapasco::createIntCtrl [format "axi_intc_%02d" $i]]
         lappend intcs $intc
         connect_bd_net -boundary_type upper $irq [get_bd_pins -of $intc -filter {NAME=="intr"}]
         connect_bd_net -boundary_type upper [get_bd_pins -of $intc -filter {NAME=="irq"}] [get_bd_pins -of $cc -filter "NAME == [format "In%d" $i]"]
         incr i
       }
   
-      set intcic [tpc::createInterconnect "axi_intc_ic" 1 [llength $intcs]]
+      set intcic [tapasco::createInterconnect "axi_intc_ic" 1 [llength $intcs]]
       set i 0
       foreach intc $intcs {
         set slave [get_bd_intf_pins -of $intc -filter { MODE == "Slave" }]
@@ -154,12 +154,12 @@ namespace eval platform {
       current_bd_instance $group
   
       # create OLED controller
-      set oled_ctrl [tpc::createOLEDController oled_ctrl]
+      set oled_ctrl [tapasco::createOLEDController oled_ctrl]
   
       # create ports
       set clk [create_bd_pin -type "clk" -dir I "aclk"]
       set rst [create_bd_pin -type "rst" -dir I "peripheral_aresetn"]
-      set op_cc [tpc::createConcat "op_cc" $no_intcs]
+      set op_cc [tapasco::createConcat "op_cc" $no_intcs]
       connect_bd_net [get_bd_pins -of_objects $op_cc -filter { DIR == "O" }] [get_bd_pins $oled_ctrl/intr]
       for {set i 0} {$i < $no_intcs} {incr i} {
         connect_bd_net [lindex $irqs $i] [get_bd_pins "$op_cc/In$i"]
@@ -181,7 +181,7 @@ namespace eval platform {
   
     # Create TPC status information core.
     # @param TPC composition dict.
-    proc createTpcStatus {composition} {
+    proc createTapascoStatus {composition} {
       set c [list]
       set no_kinds [llength [dict keys $composition]]
       for {set i 0} {$i < $no_kinds} {incr i} {
@@ -190,8 +190,8 @@ namespace eval platform {
           lappend c [dict get $composition $i id]
         }
       }
-      set tpc_status [tpc::createTpcStatus "tpc_status" $c]
-      return $tpc_status
+      set tapasco_status [tapasco::createTapascoStatus "tapasco_status" $c]
+      return $tapasco_status
     }
   
     # Create interrupt controller subsystem:
@@ -218,20 +218,20 @@ namespace eval platform {
       # create interrupt controllers and connect them to GP1
       set intcs [list]
       foreach irq $irqs {
-        set intc [tpc::createIntCtrl [format "axi_intc_%02d" [llength $intcs]]]
+        set intc [tapasco::createIntCtrl [format "axi_intc_%02d" [llength $intcs]]]
         connect_bd_net $irq [get_bd_pins -of $intc -filter {NAME=="intr"}]
         lappend intcs $intc
       }
   
       # concatenate interrupts and connect them to port
-      set int_cc [tpc::createConcat "int_cc" [llength $irqs]]
+      set int_cc [tapasco::createConcat "int_cc" [llength $irqs]]
       for {set i 0} {$i < [llength $irqs]} {incr i} {
         connect_bd_net [get_bd_pins "[lindex $intcs $i]/irq"] [get_bd_pins "$int_cc/In$i"]
       }
       connect_bd_net [get_bd_pins "$int_cc/dout"] $irq_out
       connect_bd_net $irq_out $ps_irq_in
   
-      set intcic [tpc::createInterconnect "axi_intc_ic" 1 [llength $intcs]]
+      set intcic [tapasco::createInterconnect "axi_intc_ic" 1 [llength $intcs]]
       set i 0
       foreach intc $intcs {
         set slave [get_bd_intf_pins -of $intc -filter { MODE == "Slave" }]
@@ -282,12 +282,12 @@ namespace eval platform {
       set fclk0_aresetn [create_bd_pin -type "rst" -dir "O" "ps_resetn"]
   
       # generate PS7 instance
-      switch [tpc::get_generate_mode] {
+      switch [tapasco::get_generate_mode] {
         "sim" {
-          set ps [tpc::createZynqBFM "ps7" [tpc::get_board_preset] [tpc::get_design_frequency]]
+          set ps [tapasco::createZynqBFM "ps7" [tapasco::get_board_preset] [tapasco::get_design_frequency]]
         }
         "bit" {
-          set ps [tpc::createZynqPS "ps7" [tpc::get_board_preset] [tpc::get_design_frequency]]
+          set ps [tapasco::createZynqPS "ps7" [tapasco::get_board_preset] [tapasco::get_design_frequency]]
         }
         default {
           puts "ERROR: unknown mode $mode."
@@ -296,7 +296,7 @@ namespace eval platform {
       }
       # activate ACP, HP0, HP2 and GP0/1 (+ FCLK1 @10MHz)
       set_property -dict [list \
-        CONFIG.preset [tpc::get_board_preset] \
+        CONFIG.preset [tapasco::get_board_preset] \
         CONFIG.PCW_USE_M_AXI_GP0 			{1} \
         CONFIG.PCW_USE_M_AXI_GP1 			{1} \
         CONFIG.PCW_USE_S_AXI_HP0 			{1} \
@@ -309,7 +309,7 @@ namespace eval platform {
         CONFIG.PCW_S_AXI_HP0_DATA_WIDTH 		{64} \
         CONFIG.PCW_S_AXI_HP2_DATA_WIDTH 		{64} \
         CONFIG.PCW_USE_DEFAULT_ACP_USER_VAL 		{1} \
-        CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ 		[tpc::get_design_frequency] \
+        CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ 		[tapasco::get_design_frequency] \
         CONFIG.PCW_FPGA1_PERIPHERAL_FREQMHZ 		{10} \
         CONFIG.PCW_USE_FABRIC_INTERRUPT 		{1} \
         CONFIG.PCW_IRQ_F2P_INTR 			{1} \
@@ -352,7 +352,7 @@ namespace eval platform {
       set ext_reset_ins [list]
       for {set i 0} {$i < [llength $clocks]} {incr i} {
         set clock [lindex $clocks $i]
-        set rst_gen [tpc::createResetGen "rst_gen_$i"]
+        set rst_gen [tapasco::createResetGen "rst_gen_$i"]
         set cn [get_property "NAME" [get_bd_pins $clock]]
         connect_bd_net $clock [get_bd_pins "$rst_gen/slowest_sync_clk"] 
         lappend ext_reset_ins [get_bd_pins "$rst_gen/ext_reset_in"]
@@ -378,7 +378,7 @@ namespace eval platform {
       }
   
       # connect TPC status core
-      set status_segs [get_bd_addr_segs -of_objects [get_bd_cells "tpc_status"]]
+      set status_segs [get_bd_addr_segs -of_objects [get_bd_cells "tapasco_status"]]
       set offset 0x77770000
       set i 0
       foreach s $status_segs {
@@ -397,7 +397,7 @@ namespace eval platform {
       # connect user IP: masters
       set pes [lsort [arch::get_processing_elements]]
       foreach pe $pes {
-        set masters [tpc::get_aximm_interfaces $pe]
+        set masters [tapasco::get_aximm_interfaces $pe]
         foreach m $masters {
           set slaves [find_bd_objs -relation addressable_slave $m]
           set spaces [get_bd_addr_spaces $pe/* -filter { NAME =~ "*m_axi*" || NAME =~ "*M_AXI*" }]
@@ -415,13 +415,13 @@ namespace eval platform {
 
       # create clocks and resets
       set mem_freq 200
-      if {[tpc::get_speed_grade] > -2} {
-        puts "  speed grade: [tpc::get_speed_grade], reducing mem speed to 158 MHz"
+      if {[tapasco::get_speed_grade] > -2} {
+        puts "  speed grade: [tapasco::get_speed_grade], reducing mem speed to 158 MHz"
         set mem_freq 158
       }
-      set ss_cnr [tpc::create_subsystem_clocks_and_resets [list \
-          "host" [tpc::get_design_frequency] \
-          "design" [tpc::get_design_frequency] \
+      set ss_cnr [tapasco::create_subsystem_clocks_and_resets [list \
+          "host" [tapasco::get_design_frequency] \
+          "design" [tapasco::get_design_frequency] \
           "memory" $mem_freq]]
       connect_bd_net [get_bd_pins -filter {TYPE == rst && DIR == O} -of_objects $ss_host] \
           [get_bd_pins -filter {TYPE == rst && DIR == I} -of_objects $ss_cnr]
@@ -440,16 +440,16 @@ namespace eval platform {
       connect_bd_net [get_bd_pins "$ss_cnr/host_peripheral_aresetn"] [get_bd_pins "$ss_int/peripheral_aresetn"]
   
       # create status core
-      set tpc_status [createTpcStatus [tpc::get_composition]]
-      set gp0_out [tpc::create_interconnect_tree "gp0_out" 2 false]
+      set tapasco_status [createTapascoStatus [tapasco::get_composition]]
+      set gp0_out [tapasco::create_interconnect_tree "gp0_out" 2 false]
       connect_bd_intf_net [get_bd_intf_pins "$ss_host/M_AXI_GP0"] [get_bd_intf_pins "$gp0_out/S000_AXI"]
       connect_bd_intf_net [get_bd_intf_pins "$gp0_out/M000_AXI"] [get_bd_intf_pins "/Threadpool/S_AXI"]
-      connect_bd_intf_net [get_bd_intf_pins "$gp0_out/M001_AXI"] [get_bd_intf_pins "$tpc_status/S00_AXI"]
+      connect_bd_intf_net [get_bd_intf_pins "$gp0_out/M001_AXI"] [get_bd_intf_pins "$tapasco_status/S00_AXI"]
       connect_bd_net [get_bd_pins "$ss_cnr/host_aclk"] \
-          [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $tpc_status] \
+          [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $tapasco_status] \
           [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $gp0_out]
       connect_bd_net [get_bd_pins "$ss_cnr/host_peripheral_aresetn"] \
-          [get_bd_pins -filter {TYPE == rst && DIR == I} -of_objects $tpc_status] \
+          [get_bd_pins -filter {TYPE == rst && DIR == I} -of_objects $tapasco_status] \
           [get_bd_pins -filter {DIR == I && NAME =~ "*peripheral_aresetn"} -of_objects $gp0_out]
       connect_bd_net [get_bd_pins "$ss_cnr/host_interconnect_aresetn"] \
           [get_bd_pins -filter {DIR == I && NAME =~ "*interconnect_aresetn"} -of_objects $gp0_out]
@@ -475,7 +475,7 @@ namespace eval platform {
       }
   
       # call plugins
-      tpc::call_plugins "post-bd"
+      tapasco::call_plugins "post-bd"
 
       platform_address_map
       validate_bd_design
@@ -596,13 +596,13 @@ namespace eval platform {
     proc generate {} {
       global bitstreamname
       # perform some action on the design
-      switch [tpc::get_generate_mode] {
+      switch [tapasco::get_generate_mode] {
         "sim" {
           # prepare ModelSim simulation
           update_compile_order -fileset sim_1
           set_property SOURCE_SET sources_1 [get_filesets sim_1]
-          import_files -fileset sim_1 -norecurse [tpc::get_platform_header]
-          import_files -fileset sim_1 -norecurse [tpc::get_sim_module]
+          import_files -fileset sim_1 -norecurse [tapasco::get_platform_header]
+          import_files -fileset sim_1 -norecurse [tapasco::get_sim_module]
           update_compile_order -fileset sim_1
           # Disabling source management mode.  This is to allow the top design properties to be set without GUI intervention.
           set_property source_mgmt_mode None [current_project]
@@ -624,7 +624,7 @@ namespace eval platform {
           } {}
         }
         "bit" {
-          set jobs [tpc::get_number_of_processors]
+          set jobs [tapasco::get_number_of_processors]
           puts "  using $jobs parallel jobs"
 
           # generate bitstream from given design and report utilization / timing closure
@@ -638,7 +638,7 @@ namespace eval platform {
           open_run $synth_run
 
           # call plugins
-          tpc::call_plugins "post-synth"
+          tapasco::call_plugins "post-synth"
 
           set impl_run [get_runs impl_1]
           #set_property FLOW {Vivado Implementation 2015} $impl_run
@@ -648,7 +648,7 @@ namespace eval platform {
           open_run $impl_run
 
           # call plugins
-          tpc::call_plugins "post-impl"
+          tapasco::call_plugins "post-impl"
 
           report_timing_summary -file timing.txt -warn_on_violation
           report_utilization -file utilization.txt

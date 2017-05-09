@@ -3,7 +3,7 @@ Copyright 1986-2015 Xilinx, Inc. All Rights Reserved.
 | Tool Version : Vivado v.2015.2 (lin64) Build 1266856 Fri Jun 26 16:35:25 MDT 2015
 | Date         : Sat Mar  4 17:48:15 2017
 | Host         : hla0001 running 64-bit CentOS Linux release 7.3.1611 (Core)
-| Command      : report_utilization -quiet -file /home/jk81kama/tpc-itpc2/core/arraysum/baseline/vc709/ipcore/utilization.rpt
+| Command      : report_utilization -quiet -file /home/jk81kama/tapasco-itapasco2/core/arraysum/baseline/vc709/ipcore/utilization.rpt
 | Design       : arraysum
 | Device       : xc7vx690t
 | Design State : Fully Placed

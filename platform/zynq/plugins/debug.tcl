@@ -1,20 +1,20 @@
 #
 # Copyright (C) 2014 Jens Korinth, TU Darmstadt
 #
-# This file is part of ThreadPoolComposer (TPC).
+# This file is part of Tapasco (TPC).
 #
-# ThreadPoolComposer is free software: you can redistribute it and/or modify
+# Tapasco is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# ThreadPoolComposer is distributed in the hope that it will be useful,
+# Tapasco is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
 # @file   debug.tcl
 # @brief  Plugin to add ILA cores to the design. GP0, HP0, HP2 and ACP are
@@ -68,10 +68,10 @@ namespace eval debug {
   }
 
   proc debug_feature {} {
-    if {[tpc::is_platform_feature_enabled "Debug"]} {
+    if {[tapasco::is_platform_feature_enabled "Debug"]} {
       puts "Creating ILA debug core, will require re-run of synthesis."
       # get config
-      set debug [tpc::get_platform_feature "Debug"]
+      set debug [tapasco::get_platform_feature "Debug"]
       puts "  Debug = $debug"
       # default values
       set depth        4096
@@ -92,19 +92,19 @@ namespace eval debug {
 	}
       }
       # create ILA core
-      tpc::create_debug_core [get_nets system_i/Host_fclk0_aclk] $dnl $depth $stages
+      tapasco::create_debug_core [get_nets system_i/Host_fclk0_aclk] $dnl $depth $stages
       reset_run synth
     }
   }
 
   proc write_ltx {} {
     global bitstreamname
-    if {[tpc::is_platform_feature_enabled "Debug"]} {
+    if {[tapasco::is_platform_feature_enabled "Debug"]} {
       puts "Writing debug probes into file ${bitstreamname}.ltx ..."
       write_debug_probes -force -verbose "${bitstreamname}.ltx"
     }
   }
 }
 
-tpc::register_plugin "platform::zynq::debug::debug_feature" "post-synth"
-tpc::register_plugin "platform::zynq::debug::write_ltx" "post-impl"
+tapasco::register_plugin "platform::zynq::debug::debug_feature" "post-synth"
+tapasco::register_plugin "platform::zynq::debug::write_ltx" "post-impl"

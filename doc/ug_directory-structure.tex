@@ -1,30 +1,30 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Directory Structure}\label{sec:directory-structure}%
-\tpc{} is organized in several \emph{fixed and configurable} subdirectories.
-\tblref{tbl:fixed-dirs} gives a short explanation for every directory in \tpchome{}.
-Almost all directories used in the \tpc{} flow are configurable via its command line arguments, e.g., the \code{kernel} directory where \tpc{} looks for \gloss{kernel.description} files of kernels (see \secref{sec:basic-usage} %on p.~\pageref{sec:basic-usage}
+\tapasco{} is organized in several \emph{fixed and configurable} subdirectories.
+\tblref{tbl:fixed-dirs} gives a short explanation for every directory in \tapascohome{}.
+Almost all directories used in the \tapasco{} flow are configurable via its command line arguments, e.g., the \code{kernel} directory where \tapasco{} looks for \gloss{kernel.description} files of kernels (see \secref{sec:basic-usage} %on p.~\pageref{sec:basic-usage}
 and \tblref{tbl:run-description} for details).
 
 \begin{longtable}[c]{>{\ttfamily}lp{.8\textwidth}}
-  \caption{Directories in \tpchome{}.}
+  \caption{Directories in \tapascohome{}.}
   \label{tbl:fixed-dirs}\\
   \toprule
   \normalfont\textbf{Path} & \normalfont\textbf{Usage}\\\midrule
   \endfirsthead
-  \caption[]{Directories in \tpchome{} (continued).}\\
+  \caption[]{Directories in \tapascohome{} (continued).}\\
   \toprule
   \normalfont\textbf{Path} & \normalfont\textbf{Usage}\\\midrule
   \endhead
   \bottomrule
   \endlastfoot
   arch & Contains threadpool architecture definitions and supporting files; one subdirectory per architecture, and a \code{common} directory for shared files. Each architecture usually contains a \code{lib} subdirectory containing the shared libraries for the architecture.\\\midrule
-  common & Supporting files for \tpc{}.\\\midrule
+  common & Supporting files for \tapasco{}.\\\midrule
   doc & Installation and User Guide and their sources.\\\midrule
   kernel & Contains example kernels.\\\midrule
   examples & Example programs using the \gloss{TPC API}.\\\midrule
   platform & Contains platform definitions and support files; one subdirectory per platform, and a \code{common} directory for shared files. Each platform usually contains a \code{lib} subdirectory containing the shared libraries for the platform.\\\midrule
   project & Contains build support files.\\\midrule
-  src & \tpc{} source files; organized in compliance with sbt defaults, refer to \cite{sbt}.\\
+  src & \tapasco{} source files; organized in compliance with sbt defaults, refer to \cite{sbt}.\\
 \end{longtable}
 
 

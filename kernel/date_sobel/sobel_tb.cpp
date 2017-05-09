@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <iostream>
 #include <iomanip>
@@ -29,7 +29,7 @@
 #include <cstring>
 #include <assert.h>
 #include <unistd.h>
-#include <tpc_api.hpp>
+#include <tapasco_api.hpp>
 
 #define __SYNTHESIS__
 #include "sobel.cpp"
@@ -38,7 +38,7 @@
 #define KID 3915
 
 using namespace std;
-using namespace rpr::tpc;
+using namespace rpr::tapasco;
 
 struct Image {
   uint8_t data[IMAGE_SIZE * IMAGE_SIZE];
@@ -71,11 +71,11 @@ void execute(Image *image, Image *result)
     sobel(image[c].data, result[c].data);
 }
 
-void fpga_execute(TPC *tpc, Image *image, Image *result)
+void fpga_execute(TPC *tapasco, Image *image, Image *result)
 {
   int c;
   while ((c = --jobs) >= 0)
-    tpc->launch_no_return(KID, image[c].data, result[c].data);
+    tapasco->launch_no_return(KID, image[c].data, result[c].data);
 }
 
 int main(int argc, char *argv[])
@@ -122,14 +122,14 @@ int main(int argc, char *argv[])
   for (int i = 0; i < NOF_IMAGES; ++i)
     memcpy (result[i].data, images[i].data, IMAGE_SIZE * IMAGE_SIZE);
 
-  TPC tpc;
-  assert(tpc.is_ready());
-  unsigned int ninst = tpc.func_instance_count(KID);//sysconf(_SC_NPROCESSORS_CONF); //
+  TPC tapasco;
+  assert(tapasco.is_ready());
+  unsigned int ninst = tapasco.func_instance_count(KID);//sysconf(_SC_NPROCESSORS_CONF); //
   jobs = NOF_IMAGES;
   cerr << "Found " << ninst << " instances of Sobel kernel." << endl;
   total_start = chrono::steady_clock::now();
   for (unsigned int i = 0; i < ninst; ++i)
-    fs.push_back(async(launch::async, fpga_execute, &tpc, images, result));
+    fs.push_back(async(launch::async, fpga_execute, &tapasco, images, result));
     //fs.push_back(async(launch::async, execute, images, result));
   for (auto& f : fs)
     f.get();

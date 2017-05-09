@@ -1,20 +1,20 @@
 #
 # Copyright (C) 2014 Jens Korinth, TU Darmstadt
 #
-# This file is part of ThreadPoolComposer (TPC).
+# This file is part of Tapasco (TPC).
 #
-# ThreadPoolComposer is free software: you can redistribute it and/or modify
+# Tapasco is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# ThreadPoolComposer is distributed in the hope that it will be useful,
+# Tapasco is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
 # @file   full_axi_slave_wrapper.tcl
 # @brief  PE-wrapper plugin that checks for full AXI3/4 slave protocols and
@@ -42,7 +42,7 @@ namespace eval full_axi_wrapper {
     
       # create slave ports
       set saxi_port [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave "S_AXI_LITE"]
-      set conv [tpc::createProtocolConverter "conv" "AXI4LITE" [get_property CONFIG.PROTOCOL $full_slave_ifs]]
+      set conv [tapasco::createProtocolConverter "conv" "AXI4LITE" [get_property CONFIG.PROTOCOL $full_slave_ifs]]
       connect_bd_intf_net $saxi_port [get_bd_intf_pins -of_objects $conv -filter {MODE == Slave}]
       connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master} -of_objects $conv] $full_slave_ifs
     
@@ -74,4 +74,4 @@ namespace eval full_axi_wrapper {
   }
 }
 
-tpc::register_plugin "arch::full_axi_wrapper::wrap_full_axi_interfaces" "post-pe-create"
+tapasco::register_plugin "arch::full_axi_wrapper::wrap_full_axi_interfaces" "post-pe-create"

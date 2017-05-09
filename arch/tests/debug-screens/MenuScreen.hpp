@@ -1,6 +1,6 @@
 /**
  *  @file	MenuScreen.hpp
- *  @brief	Base class for menu screens in tpc-debug.
+ *  @brief	Base class for menu screens in tapasco-debug.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #ifndef __MENU_SCREEN_HPP__

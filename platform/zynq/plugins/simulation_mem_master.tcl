@@ -1,20 +1,20 @@
 #
 # Copyright (C) 2014 Jens Korinth, TU Darmstadt
 #
-# This file is part of ThreadPoolComposer (TPC).
+# This file is part of Tapasco (TPC).
 #
-# ThreadPoolComposer is free software: you can redistribute it and/or modify
+# Tapasco is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# ThreadPoolComposer is distributed in the hope that it will be useful,
+# Tapasco is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
 # @file   simulation_mem_master.tcl
 # @brief  Plugin to add a AXI BFM master instance to access memory in Zynq sim.
@@ -23,11 +23,11 @@
 namespace eval simulation {
   proc create_mem_master {} {
     # create additional AXI BFM master to control memory in sim
-    if {[tpc::get_generate_mode] == "sim"} {
+    if {[tapasco::get_generate_mode] == "sim"} {
       puts "Creating AXI BFM Master to connect to the ACP port for memory access ..."
       set ps [get_bd_cell -hierarchical -filter {VLNV =~ "xilinx.com:ip:processing_system*"}]
-      set axi_bfm [tpc::createAxiBFM "axi_bfm_mem_master"]
-      set axi_bfm_ic [tpc::createInterconnect "axi_bfm_ic" 1 1]
+      set axi_bfm [tapasco::createAxiBFM "axi_bfm_mem_master"]
+      set axi_bfm_ic [tapasco::createInterconnect "axi_bfm_ic" 1 1]
 
       # activate HP3 port
       set_property -dict [list \
@@ -49,8 +49,8 @@ namespace eval simulation {
       # deactivate register slice (not supported?)
       set_property -dict [list CONFIG.S00_HAS_REGSLICE {0}] $axi_bfm_ic
   
-      connect_bd_intf_net [tpc::get_aximm_interfaces $axi_bfm_ic] $s_port
-      connect_bd_intf_net [tpc::get_aximm_interfaces $axi_bfm] [tpc::get_aximm_interfaces $axi_bfm_ic "Slave"]
+      connect_bd_intf_net [tapasco::get_aximm_interfaces $axi_bfm_ic] $s_port
+      connect_bd_intf_net [tapasco::get_aximm_interfaces $axi_bfm] [tapasco::get_aximm_interfaces $axi_bfm_ic "Slave"]
       connect_bd_net [get_bd_pin "$ps/FCLK_CLK0"] \
         [get_bd_pins "$axi_bfm/*" -filter {TYPE == "clk" && DIR == "I"}] \
 	[get_bd_pins "$axi_bfm_ic/*" -filter {TYPE == "clk" && DIR == "I"}] \
@@ -68,4 +68,4 @@ namespace eval simulation {
   }
 }
 
-tpc::register_plugin "platform::zynq::simulation::create_mem_master" "post-bd"
+tapasco::register_plugin "platform::zynq::simulation::create_mem_master" "post-bd"

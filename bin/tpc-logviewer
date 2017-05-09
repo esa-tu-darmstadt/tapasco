@@ -1,3 +1,0 @@
-#!/bin/bash
-JAVA_OPT="-Xms512M -Xmx1536M -Xss1M -XX:+CMSClassUnloadingEnabled"
-cd $TPC_HOME && sbt "logviewer $*"

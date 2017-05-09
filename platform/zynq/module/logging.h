@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file	logging.h
 //! @brief	Kernel logging helper functions:
@@ -24,8 +24,8 @@
 //!		bitfield indicators and can be defined by the user.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#ifndef __TPC_PLATFORM_LOGGING_H__
-#define __TPC_PLATFORM_LOGGING_H__
+#ifndef __TAPASCO_PLATFORM_LOGGING_H__
+#define __TAPASCO_PLATFORM_LOGGING_H__
 
 #include <linux/printk.h>
 
@@ -37,25 +37,25 @@ extern int logging_level;
 #endif
 
 #ifndef NDEBUG
-#define ERR(msg, ...)		tpc_platform_log(0, msg, ##__VA_ARGS__)
-#define WRN(msg, ...)		tpc_platform_log(1, msg, ##__VA_ARGS__)
-#define LOG(l, msg, ...)	tpc_platform_log((l), msg, ##__VA_ARGS__)
+#define ERR(msg, ...)		tapasco_platform_log(0, msg, ##__VA_ARGS__)
+#define WRN(msg, ...)		tapasco_platform_log(1, msg, ##__VA_ARGS__)
+#define LOG(l, msg, ...)	tapasco_platform_log((l), msg, ##__VA_ARGS__)
 
-#define tpc_platform_log(level, fmt, ...) do { \
+#define tapasco_platform_log(level, fmt, ...) do { \
 		switch ((int)level) { \
 		case 0: \
-			printk(KERN_ERR "tpc-platform-zynq: [%s] " \
+			printk(KERN_ERR "tapasco-platform-zynq: [%s] " \
 					fmt "\n", __func__, \
 					##__VA_ARGS__); \
 			break; \
 		case 1: \
-			printk(KERN_WARNING "tpc-platform-zynq: [%s] " \
+			printk(KERN_WARNING "tapasco-platform-zynq: [%s] " \
 					fmt "\n", __func__, \
 					##__VA_ARGS__); \
 			break; \
 		default: \
 			if (logging_level & level) \
-				printk(KERN_NOTICE "tpc_platform_zynq: [%s] " \
+				printk(KERN_NOTICE "tapasco_platform_zynq: [%s] " \
 						fmt "\n", __func__, \
 						##__VA_ARGS__); \
 			break; \
@@ -63,16 +63,16 @@ extern int logging_level;
 	} while(0)
 #else
 /* only errors and warnings, no other messages */
-#define ERR(fmt, ...)		printk(KERN_ERR "tpc-platform-zynq: [%s] " \
+#define ERR(fmt, ...)		printk(KERN_ERR "tapasco-platform-zynq: [%s] " \
 					fmt "\n", __func__, \
 					##__VA_ARGS__)
 
-#define WRN(fmt, ...)		printk(KERN_WARNING "tpc-platform-zynq: [%s] " \
+#define WRN(fmt, ...)		printk(KERN_WARNING "tapasco-platform-zynq: [%s] " \
 					fmt "\n", __func__, \
 					##__VA_ARGS__)
 
 #define LOG(l, msg, ...)
-#define tpc_platform_log(level, fmt, ...)
+#define tapasco_platform_log(level, fmt, ...)
 #endif
 
-#endif /* __TPC_PLATFORM_LOGGING_H__ */
+#endif /* __TAPASCO_PLATFORM_LOGGING_H__ */

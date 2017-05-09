@@ -1,4 +1,4 @@
-ThreadPoolComposer -- Getting Started
+Tapasco -- Getting Started
 =====================================
 This document will walk you through an example bitstream creation with TPC.
 But first we will discuss some basic terminology and explain how TPC works
@@ -98,7 +98,7 @@ description files:
     of desired instances. Can be provided inline in the _Configuration_.
 
 5.  _Configuration Descriptions_ (any name)
-    Can be provided as command line arguments to `tpc`, or (more conveniently)
+    Can be provided as command line arguments to `tapasco`, or (more conveniently)
     in a separate file. Contains all parameters for the current _Configuration_;
     the _Configuration_ determines for which _Platforms_, _Architectures_ and
     _Compositions_ bitstreams shall be generated, and configures optional 
@@ -113,7 +113,7 @@ description file.
 Directory Structure
 -------------------
 All paths in TPC can be reconfigured using _Configuration_ parameters, but when
-nothing else is specified, the default directory structure below `$TPC_HOME` is
+nothing else is specified, the default directory structure below `$TAPASCO_HOME` is
 used:
 
 *   `arch`
@@ -135,7 +135,7 @@ used:
     Base directory for _Architectures_; will be searched for
     `architecture.description`s.
 
-There are some more directories in `$TPC_HOME`, but only TPC developers need to
+There are some more directories in `$TAPASCO_HOME`, but only TPC developers need to
 concern themselves with them. As a TPC user it is sufficient to understand the
 directory structure above. Each base path can be reconfigured in the
 _Configuration_, which is most useful for _Kernels_, e.g., to switch between
@@ -150,12 +150,12 @@ letters of the latin alphabet by an offset of 13 (with wrap-around). There are
 documented uses of this "encryption" in the Roman Empire, where it was
 (presumably) used to keep people from reading messages "over the shoulder".
 
-We will use `itpc` to create a configuration file for us, so start it:
+We will use `itapasco` to create a configuration file for us, so start it:
 
-1.  `itpc`
+1.  `itapasco`
     TPC should greet you with a menu similar to this:
 
-        Welcome to interactive ThreadPoolComposer
+        Welcome to interactive Tapasco
         *****************************************
         
         What would you like to do?
@@ -203,7 +203,7 @@ We will use `itpc` to create a configuration file for us, so start it:
         	l: rot13
         Your choice: 
 
-6.  Next step is to build the composition, `itpc` lists the available _Kernels_
+6.  Next step is to build the composition, `itapasco` lists the available _Kernels_
     and _Cores_, choose `rot13` via the corresponding key.
 
         Number of instances[> 0]: 
@@ -215,7 +215,7 @@ We will use `itpc` to create a configuration file for us, so start it:
         	b: false
         Your choice: 
 
-8.  `itpc` will keep asking whether you want to add more kernels. Finish the
+8.  `itapasco` will keep asking whether you want to add more kernels. Finish the
     composition by `b<RETURN>`.
 
         LED: Enabled[]: 
@@ -223,7 +223,7 @@ We will use `itpc` to create a configuration file for us, so start it:
         	b: false
         Your choice: 
 
-9.  Next, `itpc` will query all currently implemented feature of the _Platform_:
+9.  Next, `itapasco` will query all currently implemented feature of the _Platform_:
     `LED` means that there\`s a simple controller for the on-board LEDs to
     to show the internal state (available on Zynq, VC709).
     `OLED` is only available on zedboard, shows the number of interrupts that
@@ -237,10 +237,10 @@ We will use `itpc` to create a configuration file for us, so start it:
 
         Enter filename for configuration[]: 
 
-10. Finally, `itpc` asks for a file name for your configuration file. Choose
+10. Finally, `itapasco` asks for a file name for your configuration file. Choose
     anything you like, e.g., `test.cfg`.
 
-        Run ThreadPoolComposer with this configuration now?[]: 
+        Run Tapasco with this configuration now?[]: 
         	a: true
         	b: false
         Your choice: 
@@ -253,7 +253,7 @@ logfiles, you can watch them via `tail --follow <FILE>` on a separate shell,
 if you like. 
 
 If everything went well, there should be a `.bit` file in 
-`$TPC_HOME/bd/<YOUR BD>/baseline/zedboard` afterwards (refer to the logging
+`$TAPASCO_HOME/bd/<YOUR BD>/baseline/zedboard` afterwards (refer to the logging
 output for the value of `<YOUR BD>` - if you had used an external _Composition_
 description file, it would use that name instead of the hash).
 

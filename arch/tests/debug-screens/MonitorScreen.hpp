@@ -1,17 +1,17 @@
 /**
  *  @file	MonitorScreen.hpp
- *  @brief	Register monitor screen for tpc-debug.
+ *  @brief	Register monitor screen for tapasco-debug.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #ifndef __MONITOR_SCREEN_HPP__
 #define __MONITOR_SCREEN_HPP__
 
-#include <tpc_api.hpp>
+#include <tapasco_api.hpp>
 #include "MenuScreen.hpp"
 
 class MonitorScreen : public MenuScreen {
 public:
-  MonitorScreen(ThreadPoolComposer *tpc) : MenuScreen("TPC Monitor", vector<string>()), tpc(tpc) {
+  MonitorScreen(Tapasco *tapasco) : MenuScreen("TPC Monitor", vector<string>()), tapasco(tapasco) {
     delay_us = 250;
     int r = check_bitstream();
     if (r) throw r;
@@ -293,7 +293,7 @@ private:
   vector<struct slot_t *> slots;
   vector<platform::platform_ctl_addr_t> intc_addr;
   uint32_t intc_isr[4];
-  ThreadPoolComposer *tpc;
+  Tapasco *tapasco;
 };
 
 #endif /* __MONITOR_SCREEN_HPP__*/

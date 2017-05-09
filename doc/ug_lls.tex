@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Low-Level Synthesis and Simulation}\label{sec:lls}%
-The last step in the \tpc{} flow generates either of two outputs.
+The last step in the \tapasco{} flow generates either of two outputs.
 When the environment variable \code{TPC\_MODE} is set to \code{sim}, a \emph{hardware/software co-simulation environment} for whole design simulation is created and ModelSim is launched to provide a \emph{virtual FPGA device} accessible to \gloss{TPC API} clients.
 This mode is described in \secref{sec:lls-sim}.
 The second mode is activated with \code{TPC\_MODE=bit} and performs low-level synthesis to generate a bitstream configuration for the FPGA; this mode is described in more detail in the next section.
@@ -9,15 +9,15 @@ The second mode is activated with \code{TPC\_MODE=bit} and performs low-level sy
 \subsection*{Low-Level Synthesis}\label{sec:lls-lls}
 The process of deriving a \emph{netlist} from a hardware description and mapping it to the actual resources of the FPGA is often subsumed under the term \emph{Low-Level Synthesis}.
 Since the latter part (often called \emph{place-and-route}) requires complete knowledge of the entire FPGA chip, it is (almost) always performed by vendor tools.
-\tpc{} calls \code{platform\_generate}, which in turn configures and starts the bitstream generation using Vivado.
+\tapasco{} calls \code{platform\_generate}, which in turn configures and starts the bitstream generation using Vivado.
 
 \medskip
 As mentioned previously, there are parameters which should be defined by the user for each bitstream generation, most importantly the \emph{clock frequency} and \emph{board preset} to be used.
 The latter is necessary if a \gloss{Platform} covers a family of similar boards/devices, e.g., the Zynq-7000 series of FPGAs, and provided by the board's vendor.
 These parameters can be passed via the command line, for example, to compose a bitstream at a clock frequency of 200 MHz for the ZC706 Zynq-7000 evaluation board:
 %
-\begin{lstlisting}[language=bash, morekeywords={TPC_FREQ, TPC_MODE, TPC_BOARD_PRESET}]
-TPC_MODE=bit TPC_FREQ=200 TPC_BOARD_PRESET=ZC706 sbt "compose configFile ..."
+\begin{lstlisting}[language=bash, morekeywords={TAPASCO_FREQ, TAPASCO_MODE, TAPASCO_BOARD_PRESET}]
+TAPASCO_MODE=bit TAPASCO_FREQ=200 TAPASCO_BOARD_PRESET=ZC706 sbt "compose configFile ..."
 \end{lstlisting}
 %
 
@@ -58,11 +58,11 @@ Each desired behavior modeled on a signal-/wire-level represents only exactly on
 \medskip
 The ideal solution to this problem is \emph{formal verification}, which comprises of deriving a formal mathematical model of the desired behavior from the specification and proving that the system's behavior is equivalent.
 In general, this task cannot be performed automatically, although there exist tools to help the developer and which can perform many proof steps without user interaction.
-However, for \tpc{} this approach is not feasible, we therefore decided to take an alternative approach by lifting the language abstraction level in which the tests are written, in order to achieve a better match between the tested states and the desired real-world behavior of the hardware.
+However, for \tapasco{} this approach is not feasible, we therefore decided to take an alternative approach by lifting the language abstraction level in which the tests are written, in order to achieve a better match between the tested states and the desired real-world behavior of the hardware.
 
 \medskip
 \paragraph{SystemVerilog DPI}
-\tpc{} is using the \emph{System Verilog Direct Programming Interface (DPI)}, which is part of the SystemVerilog standard specified in \cite{sv-spec}.
+\tapasco{} is using the \emph{System Verilog Direct Programming Interface (DPI)}, which is part of the SystemVerilog standard specified in \cite{sv-spec}.
 SystemVerilog is a superset of Verilog, which supports many language constructs which are not synthesizable, but ease simulation tasks as described above.
 DPI provides an interface between shared libraries written in C and simulated SystemVerilog hardware descriptions.
 Using DPI, the simulator can call user-defined C functions and vice versa.
@@ -71,12 +71,12 @@ Using DPI, the simulator can call user-defined C functions and vice versa.
 These facilities can be used to implement the \gloss{Platform API} presented in \secref{sec:device-independency} using SystemVerilog tasks.
 The \gloss{TPC API} implementation could transparently use these implementations on the virtual platform provided by the simulator in this way.
 However, this would require to compile the entire application into the shared library loaded by the RTL simulator, which is neither immediately possible nor desirable.
-To decouple the application code and the simulator, \tpc{} provides a client-server implementation of the \gloss{Platform API}, which connects a client-side library via \emph{socket inter-process communication (IPC)} to the server-side DPI library.
+To decouple the application code and the simulator, \tapasco{} provides a client-server implementation of the \gloss{Platform API}, which connects a client-side library via \emph{socket inter-process communication (IPC)} to the server-side DPI library.
 
 \medskip
 \figref{fig:dpi-sim} illustrates the setup during runtime:
 the user process running the application is depicted on the left-hand side; the user code is programmed against the \gloss{TPC API}, which in turn uses the \gloss{Platform API}. 
-On the right-hand side a second, independent process running the RTL simulator is depicted; it simulates a hardware description generated by \tpc{} and interfaces with the server library via DPI.
+On the right-hand side a second, independent process running the RTL simulator is depicted; it simulates a hardware description generated by \tapasco{} and interfaces with the server library via DPI.
 At the start of simulation, the server-side library is initialized and opens a configurable number of sockets for parallel communication and waits until each socket is connected (in order).
 On the other side, at the start of the user application the client-side library is initialized and attempts to connect to the server sockets.
 Once this process is finished, the client-side transmits all \gloss{Platform API} calls transparently via the sockets to the server-side at the simulator, providing a virtual remote \gloss{Platform}.

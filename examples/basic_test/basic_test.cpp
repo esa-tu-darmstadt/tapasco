@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
  *  @file	basic_test.cpp
@@ -37,14 +37,14 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <assert.h>
-#include <tpc_api.hpp>
+#include <tapasco_api.hpp>
 
 #define TEST_1
 #define TEST_2
 #define TEST_3
 
 using namespace std;
-using namespace tpc;
+using namespace tapasco;
 
 #define SZ			256
 #define RUNS			100000
@@ -52,7 +52,7 @@ using namespace tpc;
 #define T2_KID			10
 #define T3_KID			 9
 
-static ThreadPoolComposer Tpc;
+static Tapasco Tapasco;
 static atomic<int> runs;
 typedef int run_block[SZ];
 
@@ -67,7 +67,7 @@ bool test1_execute(int *arr)
     for (int i = 0; i < SZ; ++i)
       (*z)[i] = i;
 #else
-    if (Tpc.launch_no_return(T1_KID, OutOnly<run_block>{z}) != TPC_SUCCESS)
+    if (Tapasco.launch_no_return(T1_KID, OutOnly<run_block>{z}) != TAPASCO_SUCCESS)
       return false;
 #endif
   }
@@ -111,7 +111,7 @@ int test2_execute(int *arr)
       result += (*z)[i];
 #else
     int tr = 0;
-    if (Tpc.launch(T2_KID, tr, z) != TPC_SUCCESS)
+    if (Tapasco.launch(T2_KID, tr, z) != TAPASCO_SUCCESS)
       return -1;
     else
       result += tr;
@@ -143,9 +143,9 @@ void test3_execute(int *arr)
     for (int i = 0; i < SZ; ++i)
       (*z)[i] += 42;
 #else
-    tpc_res_t res;
-    if ((res = Tpc.launch_no_return(T3_KID, z)) != TPC_SUCCESS)
-      throw ThreadPoolComposer::tpc_error(res);
+    tapasco_res_t res;
+    if ((res = Tapasco.launch_no_return(T3_KID, z)) != TAPASCO_SUCCESS)
+      throw Tapasco::tapasco_error(res);
 #endif
   }
 }
@@ -168,15 +168,15 @@ int main(int argc, char **argv)
   int retval = 0;
   unsigned int tc = 1; // sysconf(_SC_NPROCESSORS_CONF);
 #ifndef CPU_EXECUTION
-  if (!Tpc.is_ready()) {
+  if (!Tapasco.is_ready()) {
     cerr << "TPC init failed." << endl;
     sleep(10);
     return 1;
   }
   const uint32_t cnt[] = {
-       Tpc.func_instance_count(T1_KID),
-       Tpc.func_instance_count(T2_KID),
-       Tpc.func_instance_count(T3_KID),
+       Tapasco.func_instance_count(T1_KID),
+       Tapasco.func_instance_count(T2_KID),
+       Tapasco.func_instance_count(T3_KID),
   };
   cout << "Instance counts" << endl
        << "  arrayinit   : " <<  cnt[0] << endl

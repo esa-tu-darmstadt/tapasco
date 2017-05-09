@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description Files}\label{sec:description-files}%
-The configuration of each step and part of \tpc{} is provided by \gloss{Description Files}.
+The configuration of each step and part of \tapasco{} is provided by \gloss{Description Files}.
 \gloss{Description Files} are plain-text configuration files, which provide key-value maps in the extremely simple line-based notation \code{<KEY> '=' <VALUE>}.
 The format is meant to be easily editable in text editor, as well as produceable by reasonably simple scripts or support tools.
 It is \emph{case-insensitive} and permits \emph{comment lines}, which start with a non-alphanumeric character. \lstref{lst:description-example} shows an example file.
@@ -8,7 +8,7 @@ In general, all paths to files are interpreted as relative to the \gloss{Descrip
 %
 \lstinputlisting[caption={Example Description File: 'add' Kernel.}, label={lst:description-example}, lastline=4, language=kernel]{misc/kernel.description}
 %
-\tpc{} uses five kinds of description files:
+\tapasco{} uses five kinds of description files:
 
 \begin{compactenum}
   \item \gloss{Kernel Descriptions}
@@ -22,7 +22,7 @@ Each of these files will be described in more detail in the following.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Kernel Descriptions}
 A \gloss{Kernel Description} contains additional information about a kernel, mostly concerning its interface.
-Most importantly, \tpc{} currently distinguishes two \emph{passing conventions} for arguments:
+Most importantly, \tapasco{} currently distinguishes two \emph{passing conventions} for arguments:
 %
 \begin{itemize}
   \item \emph{value arguments} are passed by-value; depending on the \gloss{Architecture}, they are often implemented using hardware registers.
@@ -66,7 +66,7 @@ Both arguments are passed by value, the \code{kernel.description} therefore look
 \subsection{Architecture Descriptions}
 An \gloss{Architecture Description} defines an abstract threadpool architecture, the required hardware thread interfaces and organizes supporting files to create the IP cores in high-level synthesis and instantiate the architecture during mid-level synthesis.
 \tblref{tbl:architecture-description} contains a description for all currently defined keys for \gloss{Architecture Description}.
-See \secref{sec:architecture-implementation} for details on implementing an \gloss{Architecture} for \tpc{}.
+See \secref{sec:architecture-implementation} for details on implementing an \gloss{Architecture} for \tapasco{}.
 
 \begin{longtable}[c]{>{\sffamily}L{0.2\textwidth}L{0.35\textwidth}>{\ttfamily\footnotesize}L{.35\textwidth}}
   \caption{Architecture Description: Description Keys.}
@@ -89,7 +89,7 @@ See \secref{sec:architecture-implementation} for details on implementing an \glo
 \subsection{Platform Descriptions}
 \gloss{Platform Descriptions} defines a platform for a given FPGA board/device by defining the connections between host and threadpool, threadpool and memory, and the signaling mechanism to be used.
 \tblref{tbl:platform-description} contains a description for all currently defined keys for \gloss{Platform Description}.
-See \secref{sec:platform-implementation} for details on implementing a \gloss{Platform} for \tpc{}.
+See \secref{sec:platform-implementation} for details on implementing a \gloss{Platform} for \tapasco{}.
 
 \begin{longtable}[c]{>{\sffamily}L{0.2\textwidth}L{0.35\textwidth}>{\ttfamily\footnotesize}L{.35\textwidth}}
   \caption{Platform Description: Description Keys.}
@@ -130,7 +130,7 @@ A \gloss{Run Description} file contains arguments which could otherwise be provi
   Architecture & Name of specific architecture to compose. & Architecture = baseline \\\midrule
   Bitstream & Name of specific \gloss{Bitstream Description} to compose. & Bitstream = example.bd \\\midrule
   BitstreamDir & Base directory for \gloss{Bitstream Descriptions}. Default: \code{bd} & bitstreamDir = myBitstreams \\\midrule
-  CommonDir & Base directory for \tpc{} common files. Default: \code{common} & commonDir = myCommon\\\midrule
+  CommonDir & Base directory for \tapasco{} common files. Default: \code{common} & commonDir = myCommon\\\midrule
   Kernel & HLS: Name of specific kernel to synthesize. & Kernel = add \\\midrule
   KernelDir & Base directory for \gloss{Kernel Descriptions}. Default: \code{kernel} & kernelDir = myKernels \\\midrule
   Platform & Name of specific platform to compose. & Platform = zynq \\\midrule

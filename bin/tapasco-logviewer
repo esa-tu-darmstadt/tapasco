@@ -1,0 +1,3 @@
+#!/bin/bash
+JAVA_OPT="-Xms512M -Xmx1536M -Xss1M -XX:+CMSClassUnloadingEnabled"
+cd $TAPASCO_HOME && sbt "logviewer $*"

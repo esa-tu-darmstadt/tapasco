@@ -1,6 +1,6 @@
-ThreadPoolComposer (TPC)!
+Tapasco (TPC)!
 =========================
-<img src="icon/threadpoolcomposer_bw.png" alt="ThreadPoolComposer logo" width="300px"/>
+<img src="icon/tapasco_icon.png" alt="Tapasco logo"/>
 
 System Requirements
 -------------------

@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +22,7 @@
 #include <pthread.h>
 #include <assert.h>
 #include <fcntl.h>
-#include <tpc_api.h>
+#include <tapasco_api.h>
 #include "../benchmark-mem/timer.h"
 
 #define	MIN_NSECS					(10000)
@@ -34,13 +34,13 @@ static long jobs;
 static long errors;
 static long mode;
 
-static tpc_ctx_t *ctx;
-static tpc_dev_ctx_t *dev;
+static tapasco_ctx_t *ctx;
+static tapasco_dev_ctx_t *dev;
 
-static inline void check_tpc(tpc_res_t const result)
+static inline void check_tapasco(tapasco_res_t const result)
 {
-	if (result != TPC_SUCCESS) {
-		fprintf(stderr, "tpc fatal error: %s\n", tpc_strerror(result));
+	if (result != TAPASCO_SUCCESS) {
+		fprintf(stderr, "tapasco fatal error: %s\n", tapasco_strerror(result));
 		exit(result);
 	}
 }
@@ -54,9 +54,9 @@ static inline double clock_period(void)
 		ssize_t rc;
 		int fd = open("/sys/class/fclk/fclk0/set_rate", O_RDONLY);
 		if (fd == -1) {
-			fprintf(stderr, "WARNING: could not open /sys/class/fclk/fclk0/set_rate, using TPC_FREQ\n");
-			assert(getenv("TPC_FREQ") && "must set TPC_FREQ env var!");
-			hz = strtoul(getenv("TPC_FREQ"), NULL, 0) * 1000000;
+			fprintf(stderr, "WARNING: could not open /sys/class/fclk/fclk0/set_rate, using TAPASCO_FREQ\n");
+			assert(getenv("TAPASCO_FREQ") && "must set TAPASCO_FREQ env var!");
+			hz = strtoul(getenv("TAPASCO_FREQ"), NULL, 0) * 1000000;
 		} else {
 			rc = read(fd, buf, 1023);
 			assert(rc);
@@ -77,14 +77,14 @@ static inline unsigned long ns_to_cd(unsigned long ns) {
 	return ns / (2 * clock_period()) - 1;
 }
 
-static inline void tpc_run(long cc)
+static inline void tapasco_run(long cc)
 {
-	tpc_job_id_t j_id = tpc_device_acquire_job_id(dev, 14, 0);
-	tpc_device_job_set_arg(dev, j_id, 0, sizeof(cc), &cc);
-	if (tpc_device_job_launch(dev, j_id, TPC_JOB_LAUNCH_BLOCKING) !=
-			TPC_SUCCESS)
+	tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev, 14, 0);
+	tapasco_device_job_set_arg(dev, j_id, 0, sizeof(cc), &cc);
+	if (tapasco_device_job_launch(dev, j_id, TAPASCO_JOB_LAUNCH_BLOCKING) !=
+			TAPASCO_SUCCESS)
 		__atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
-	tpc_device_release_job_id(dev, j_id);
+	tapasco_device_release_job_id(dev, j_id);
 }
 
 static inline void cpu_run(long us)
@@ -100,7 +100,7 @@ static inline void *run(void *p)
 	long us = clk / 1000;
 	while ((job = __atomic_fetch_sub(&jobs, 1, __ATOMIC_SEQ_CST)) > 0) {
 		if (mode == 0)
-			tpc_run(cc);
+			tapasco_run(cc);
 		else
 			cpu_run(us);
 	}
@@ -144,9 +144,9 @@ int main(int argc, char **argv)
 	TIMER_INIT();
 
 	// initialize threadpool
-	check_tpc(tpc_init(&ctx));
-	check_tpc(tpc_create_device(ctx, 0, &dev, 0));
-	assert(tpc_device_func_instance_count(dev, 14) > 0);
+	check_tapasco(tapasco_init(&ctx));
+	check_tapasco(tapasco_create_device(ctx, 0, &dev, 0));
+	assert(tapasco_device_func_instance_count(dev, 14) > 0);
 
 	clk_step = (MAX_NSECS - MIN_NSECS) / NSTEPS;
 	clk = MIN_NSECS;
@@ -173,6 +173,6 @@ int main(int argc, char **argv)
 	TIMER_STOP(total)
 	fprintf(stderr, "Total duration: %llu us.\n", TIMER_USECS(total));
 	// de-initialize threadpool
-	tpc_destroy_device(ctx, dev);
-	tpc_deinit(ctx);
+	tapasco_destroy_device(ctx, dev);
+	tapasco_deinit(ctx);
 }

@@ -1,21 +1,21 @@
 /**
  *  @file	InterruptStressTestScreen.hpp
- *  @brief	Interrupt stress test screen for tpc-debug.
+ *  @brief	Interrupt stress test screen for tapasco-debug.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #ifndef __INTERRUPT_STRESS_TEST_SCREEN_HPP__
 #define __INTERRUPT_STRESS_TEST_SCREEN_HPP__
 
 #include <stack>
-#include <tpc_api.hpp>
+#include <tapasco_api.hpp>
 #include "MenuScreen.hpp"
 
 using namespace std;
-using namespace tpc;
+using namespace tapasco;
 
 class InterruptStressTestScreen : public MenuScreen {
 public:
-  InterruptStressTestScreen(ThreadPoolComposer *tpc) : MenuScreen("Interrupt stress test", vector<string>()), tpc(tpc) {
+  InterruptStressTestScreen(Tapasco *tapasco) : MenuScreen("Interrupt stress test", vector<string>()), tapasco(tapasco) {
     delay_us = 250000;
     check_bitstream();
   }
@@ -23,7 +23,7 @@ public:
     while (threads.size() > 0) pop();
   }
 
-  static constexpr tpc_func_id_t COUNTER_ID { 14 };
+  static constexpr tapasco_func_id_t COUNTER_ID { 14 };
 
 protected:
   virtual void render() {
@@ -95,18 +95,18 @@ protected:
     *counters.back() = 0;
     stop.push_back(new bool);
     *stop.back() = false;
-    auto f = [](bool *stop, uint32_t *c, ThreadPoolComposer *tpc) {
+    auto f = [](bool *stop, uint32_t *c, Tapasco *tapasco) {
       while (! *stop) {
         (*c)++;
 	// up to 50ms delay
-	tpc_res_t r = tpc->launch_no_return(14, static_cast<uint32_t>(rand() % 5000000));
-	//tpc_res_t r = tpc->launch_no_return(14, static_cast<uint32_t>(1));
-	if (r != TPC_SUCCESS)
-	  throw ThreadPoolComposer::tpc_error(r);
+	tapasco_res_t r = tapasco->launch_no_return(14, static_cast<uint32_t>(rand() % 5000000));
+	//tapasco_res_t r = tapasco->launch_no_return(14, static_cast<uint32_t>(1));
+	if (r != TAPASCO_SUCCESS)
+	  throw Tapasco::tapasco_error(r);
       }
       return true;
     };
-    thread t {f, stop.back(), counters.back(), tpc};
+    thread t {f, stop.back(), counters.back(), tapasco};
     threads.push(move(t));
   }
 
@@ -147,7 +147,7 @@ private:
   uint32_t cycles[128];
   uint32_t retval[128];
   uint32_t intrdy[128];
-  ThreadPoolComposer *tpc;
+  Tapasco *tapasco;
 };
 
 #endif /* __INTERRUPT_STRESS_TEST_SCREEN_HPP__ */

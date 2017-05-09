@@ -1,4 +1,4 @@
-TPC_COMPOSITION = '14 0 0 0 0 0 0 0 0 0 0 0 0 14 '
+TAPASCO_COMPOSITION = '14 0 0 0 0 0 0 0 0 0 0 0 0 14 '
 Kernel Runtime (us),Ideal (1 cores), CPU (1 core), FPGA (1 core),Ideal (2 cores), CPU (2 core), FPGA (2 core)
 10.00, 1.0000, 0.2628, 0.1295, 2.0000, 0.2682, 0.2685
 76.00, 1.0000, 0.7288, 0.5292, 2.0000, 1.0844, 1.0845

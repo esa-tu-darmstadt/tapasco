@@ -1,10 +1,10 @@
-val tpcVersion = "2017.1-SNAPSHOT"
+val tapascoVersion = "2017.1-SNAPSHOT"
 
 organization := "de.tu_darmstadt.esa.cs"
 
-version := tpcVersion
+version := tapascoVersion
 
-name := "ThreadPoolComposer"
+name := "Tapasco"
 
 scalaVersion := "2.12.1"
 
@@ -57,39 +57,39 @@ scalacOptions in (Compile,doc) ++= Seq(
 
 fork in run := true
 
-val tpc = inputKey[Unit]("Run ThreadPoolComposer command.")
+val tapasco = inputKey[Unit]("Run Tapasco command.")
 
-tpc := (runMain in Compile).partialInput (" de.tu_darmstadt.cs.esa.threadpoolcomposer.ThreadPoolComposer ").evaluated
+tapasco := (runMain in Compile).partialInput (" de.tu_darmstadt.cs.esa.tapasco.Tapasco ").evaluated
 
-val itpc = InputKey[Unit]("itpc", "Run interactive ThreadPoolComposer GUI.")
+val itapasco = InputKey[Unit]("itapasco", "Run interactive Tapasco GUI.")
 
-fullRunInputTask(itpc, Compile, "de.tu_darmstadt.cs.esa.threadpoolcomposer.ThreadPoolComposer", "itpc")
+fullRunInputTask(itapasco, Compile, "de.tu_darmstadt.cs.esa.tapasco.Tapasco", "itapasco")
 
-fork in itpc := true
+fork in itapasco := true
 
-javaOptions in itpc += "-splash:icon/threadpoolcomposer_icon.png"
+javaOptions in itapasco += "-splash:icon/tapasco_icon.png"
 
 val logviewer = inputKey[Unit]("Run interactive DSE log viewer.")
 
-fullRunInputTask(logviewer, Compile, "de.tu_darmstadt.cs.esa.threadpoolcomposer.itpc.executables.LogViewer")
+fullRunInputTask(logviewer, Compile, "de.tu_darmstadt.cs.esa.tapasco.itapasco.executables.LogViewer")
 
-javaOptions in logviewer += "-splash:icon/threadpoolcomposer_icon.png"
+javaOptions in logviewer += "-splash:icon/tapasco_icon.png"
 
 val reportviewer = inputKey[Unit]("Run interactive report viewer.")
 
-fullRunInputTask(reportviewer, Compile, "de.tu_darmstadt.cs.esa.threadpoolcomposer.itpc.executables.ReportViewer")
+fullRunInputTask(reportviewer, Compile, "de.tu_darmstadt.cs.esa.tapasco.itapasco.executables.ReportViewer")
 
-javaOptions in reportviewer += "-splash:icon/threadpoolcomposer_icon.png"
+javaOptions in reportviewer += "-splash:icon/tapasco_icon.png"
 
 fork := true
 
 test in assembly := {}
 
-assemblyJarName := "ThreadPoolComposer-" + tpcVersion + ".jar"
+assemblyJarName := "Tapasco-" + tapascoVersion + ".jar"
 
 parallelExecution in Test := false
 
 fork in Test := false
 
-mainClass in assembly := Some("de.tu_darmstadt.cs.esa.threadpoolcomposer.ThreadPoolComposer")
+mainClass in assembly := Some("de.tu_darmstadt.cs.esa.tapasco.Tapasco")
 

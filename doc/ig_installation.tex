@@ -1,35 +1,35 @@
-\section{Installation of ThreadpoolComposer}%
+\section{Installation of Tapasco}%
 \begin{enumerate}
-  \item Extract the \tpc{} archive to a suitable location.
+  \item Extract the \tapasco{} archive to a suitable location.
 %
 \begin{lstlisting}[language=bash]
-~$ mkdir tpc && cd tpc && tar xvzf ../REPARA_D5.1_v1.0.tar.gz
+~$ mkdir tapasco && cd tapasco && tar xvzf ../REPARA_D5.1_v1.0.tar.gz
 \end{lstlisting}
 %
   \item Set the \code{TPC\_HOME} environment variable to that location, e.g.,
 %
 \begin{lstlisting}[language=bash]
-~$ export TPC_HOME=~/tpc
+~$ export TAPASCO_HOME=~/tapasco
 \end{lstlisting}
 %
   \item Make sure that the system has a working internet connection for the next step.
-  \item Change into that directory and compile \tpc{}:
+  \item Change into that directory and compile \tapasco{}:
         \begin{lstlisting}[language=bash]
-~$ cd $TPC_HOME && sbt compile && sbt doc
-[info] Loading project definition from /tmp/tpc/project
-[info] Updating {file:/tmp/tpc/project/}tpc-build...
+~$ cd $TAPASCO_HOME && sbt compile && sbt doc
+[info] Loading project definition from /tmp/tapasco/project
+[info] Updating {file:/tmp/tapasco/project/}tapasco-build...
 [info] Resolving org.scala-sbt#compiler-interface;0.13.1 ...
 
 ...
 [info] Done updating.
-[info] Set current project to tpc (in build file:/tmp/tpc/)
+[info] Set current project to tapasco (in build file:/tmp/tapasco/)
 Building dependencies ...
-make: Entering directory `/tmp/tpc/arch/baseline'
+make: Entering directory `/tmp/tapasco/arch/baseline'
 mkdir -p lib
-cc -g -O3 -fPIC -Iinclude -I../common/include -I/tmp/tpc/platform/common/include -I../common/src -std=gnu99 -pedantic-errors -Wall -Werror  -shared -o lib/libtpc-baseline-sim.so src/tpc_sim.c src/tpc_device.c src/tpc_address_map.c ../common/src/tpc_errors.c ../common/src/tpc_functions.c ../common/src/tpc_scheduler.c ../common/src/tpc_jobs.c
-cc -g -O3 -fPIC -Iinclude -I../common/include -I/tmp/tpc/platform/common/include -I../common/src -std=gnu99 -pedantic-errors -Wall -Werror  -shared -o lib/libtpc-baseline-bit.so src/tpc_sim.c src/tpc_device.c src/tpc_address_map.c ../common/src/tpc_errors.c ../common/src/tpc_functions.c ../common/src/tpc_scheduler.c ../common/src/tpc_jobs.c
-make: Leaving directory `/tmp/tpc/arch/baseline'
-make: Entering directory `/tmp/tpc/platform/zynq'
+cc -g -O3 -fPIC -Iinclude -I../common/include -I/tmp/tapasco/platform/common/include -I../common/src -std=gnu99 -pedantic-errors -Wall -Werror  -shared -o lib/libtapasco-baseline-sim.so src/tapasco_sim.c src/tapasco_device.c src/tapasco_address_map.c ../common/src/tapasco_errors.c ../common/src/tapasco_functions.c ../common/src/tapasco_scheduler.c ../common/src/tapasco_jobs.c
+cc -g -O3 -fPIC -Iinclude -I../common/include -I/tmp/tapasco/platform/common/include -I../common/src -std=gnu99 -pedantic-errors -Wall -Werror  -shared -o lib/libtapasco-baseline-bit.so src/tapasco_sim.c src/tapasco_device.c src/tapasco_address_map.c ../common/src/tapasco_errors.c ../common/src/tapasco_functions.c ../common/src/tapasco_scheduler.c ../common/src/tapasco_jobs.c
+make: Leaving directory `/tmp/tapasco/arch/baseline'
+make: Entering directory `/tmp/tapasco/platform/zynq'
 mkdir -p lib
 cd include && /opt/cad/mentor/modelsim/latest/modeltech/bin/vlib work  && /opt/cad/mentor/modelsim/latest/modeltech/bin/vlog -dpiheader platform_dpi.h -sv ../sv/platform-dpi.sv +incdir+../include && rm -rf work transcript
 Model Technology ModelSim SE-64 vlog 10.0c_1 Compiler 2011.08 Aug 26 2011
@@ -39,16 +39,16 @@ Top level modules:
   tb
 cc -O3 -fPIC -I/opt/cad/mentor/modelsim/latest/modeltech/include -Iinclude -I../common/include -std=gnu99 -pedantic-errors -Wall -Werror  -shared -pthread -o lib/libplatform-server.so src/platform_server.c
 cc -O3 -fPIC -I/opt/cad/mentor/modelsim/latest/modeltech/include -Iinclude -I../common/include -std=gnu99 -pedantic-errors -Wall -Werror  -shared -pthread -o lib/libplatform-client.so src/platform_client.c
-make: Leaving directory `/tmp/tpc/platform/zynq'
-[info] Updating {file:/tmp/tpc/}tpc...
+make: Leaving directory `/tmp/tapasco/platform/zynq'
+[info] Updating {file:/tmp/tapasco/}tapasco...
 [info] Resolving com.dongxiguo#fastring_2.10;0.2.4 ...
 [info] Done updating.
-[info] Compiling 11 Scala sources to /tmp/tpc/target/scala-2.10/classes...
+[info] Compiling 11 Scala sources to /tmp/tapasco/target/scala-2.10/classes...
 [success] Total time: 13 s, completed Feb 10, 2015 5:45:43 PM
 
-[info] Loading project definition from /tmp/tpc/project
-[info] Set current project to tpc (in build file:/tmp/tpc/)
-[info] Main Scala API documentation to /tmp/tpc/target/scala-2.10/api...
+[info] Loading project definition from /tmp/tapasco/project
+[info] Set current project to tapasco (in build file:/tmp/tapasco/)
+[info] Main Scala API documentation to /tmp/tapasco/target/scala-2.10/api...
 model contains 21 documentable templates
 [info] Main Scala API documentation successful.
 [success] Total time: 10 s, completed Feb 10, 2015 5:45:56 PM

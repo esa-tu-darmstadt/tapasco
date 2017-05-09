@@ -1,5 +1,5 @@
 This chapter discusses the exemplary \gloss{Architecture} called \code{baseline} in \secref{sec:baseline-architecture} and \gloss{Platform} for Zynq-7000 series devices \code{zynq} in \secref{sec:zynq-platform}.
-Finally, some of the examples which are part of the \tpc{} archive are discussed and a small tutorial shows how ModelSim can be used to perform hardware/software co-simulation using the \tpc{} libraries.
+Finally, some of the examples which are part of the \tapasco{} archive are discussed and a small tutorial shows how ModelSim can be used to perform hardware/software co-simulation using the \tapasco{} libraries.
 \figref{fig:baseline-zynq} illustrates a complete design for the exemplary \gloss{Architecture} and \gloss{Platform} for hypothetical \gloss{Composition} of \gloss{Kernels} "A-E" and is explained in detail in the following sections.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -21,7 +21,7 @@ To connect the threadpool register space, \code{zynq} uses the \code{GP0} port (
 
 \paragraph{Memory Connection}
 To access the shared main memory, the Zynq-7000 also offers several hard IP AXI4 Slave interfaces.
-Since \tpc{} is currently only providing thread-private memory to the hardware threads, memory coherency is not a primary concern.
+Since \tapasco{} is currently only providing thread-private memory to the hardware threads, memory coherency is not a primary concern.
 The hardware threads can therefore be connected to the fastest AXI4 slaves, \code{HP0}-\code{HP2}, both of which can support up to 16 parallel masters, giving a total of 48 possible master interfaces.
 
 \paragraph{Signaling}
@@ -48,7 +48,7 @@ Since the simulator cannot actually access the memory located in the client proc
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{The Baseline Architecture}\label{sec:baseline-architecture}
-The \code{baseline} architecture serves as a proof-of-concept implementation for \tpc{}, it shall support up to 48 independent hardware threads.
+The \code{baseline} architecture serves as a proof-of-concept implementation for \tapasco{}, it shall support up to 48 independent hardware threads.
 It is intended to be the simplest organization of a hardware threadpool which can be realized using only standard Xilinx IP components and the AXI4 bus.
 Furthermore, as the name already suggests, this \gloss{Architecture} provides a reasonable baseline to compare future optimizations against.
 

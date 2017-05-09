@@ -20,21 +20,21 @@
 #include <cmath>
 #include <unistd.h>
 #include <ncurses.h>
-#include <tpc_api.hpp>
+#include <tapasco_api.hpp>
 
 using namespace std;
 using namespace std::chrono;
-using namespace tpc;
+using namespace tapasco;
 
 /**
  * Measures interrupt latency added by software layers in TPC.
  **/
 class InterruptLatency {
 public:
-  static tpc_func_id_t const COUNTER_ID = 14;
+  static tapasco_func_id_t const COUNTER_ID = 14;
 
-  InterruptLatency(ThreadPoolComposer& tpc) : tpc(tpc) {
-    if (tpc.func_instance_count(COUNTER_ID) == 0)
+  InterruptLatency(Tapasco& tapasco) : tapasco(tapasco) {
+    if (tapasco.func_instance_count(COUNTER_ID) == 0)
       throw "need at least one instance of 'Counter' (14) in bitstream";
   }
   virtual ~InterruptLatency() {}
@@ -65,13 +65,13 @@ public:
 
 private:
   void trigger(volatile bool& stop, uint32_t const clock_cycles, CumulativeAverage<double>& cavg) {
-    tpc_res_t res;
+    tapasco_res_t res;
     while (! stop) {
       auto tstart = high_resolution_clock::now();
       // if 0, use 1us - 100ms interval (clock period is 10ns)
       uint32_t cc = clock_cycles > 0 ? clock_cycles : (rand() % (10000000 - 100) + 100);
-      if ((res = tpc.launch_no_return(COUNTER_ID, cc)) != TPC_SUCCESS)
-        throw ThreadPoolComposer::tpc_error(res);
+      if ((res = tapasco.launch_no_return(COUNTER_ID, cc)) != TAPASCO_SUCCESS)
+        throw Tapasco::tapasco_error(res);
       microseconds const d = duration_cast<microseconds>(high_resolution_clock::now() - tstart);
       cavg.update(d.count() - cc / 100);
     }
@@ -84,7 +84,7 @@ private:
     return tmp.str();
   }
 
-  ThreadPoolComposer& tpc;
+  Tapasco& tapasco;
 };
 
 #endif /* __INTERRUPT_LATENCY_HPP__ */

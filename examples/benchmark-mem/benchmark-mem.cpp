@@ -1,20 +1,20 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file  benchmark-mem.c
 //! @brief  TPC API application that performs a simplistic benchmark on the
@@ -39,7 +39,7 @@
 #include <unistd.h>
 #include <cassert>
 #include <atomic>
-#include <tpc_api.hpp>
+#include <tapasco_api.hpp>
 
 constexpr size_t TRANSFER_SZ {1024*1024*1024};
 constexpr size_t RNDDATA_SZ  {TRANSFER_SZ / 32};
@@ -47,7 +47,7 @@ constexpr unsigned long UPPER_BND {25};
 constexpr unsigned long LOWER_BND {12};
 
 using namespace std;
-using namespace rpr::tpc;
+using namespace rpr::tapasco;
 
 typedef unsigned long int ul;
 typedef long int l;
@@ -58,10 +58,10 @@ static atomic<l>   transfers;
 static atomic<ul>  errors;
 static l           mode;
 
-static TPC<0> tpc;
+static TPC<0> tapasco;
 
-inline tpc_device_copy_flag_t operator|(tpc_device_copy_flag_t a, tpc_device_copy_flag_t b) {
-	return static_cast<tpc_device_copy_flag_t>(static_cast<int>(a) | static_cast<int>(b));
+inline tapasco_device_copy_flag_t operator|(tapasco_device_copy_flag_t a, tapasco_device_copy_flag_t b) {
+	return static_cast<tapasco_device_copy_flag_t>(static_cast<int>(a) | static_cast<int>(b));
 }
 
 static void fill_with_random(char *d, size_t const sz)
@@ -100,35 +100,35 @@ static inline void baseline_transfer(void *d)
   delete[] h;
 }
 
-static inline void tpc_transfer(void *d)
+static inline void tapasco_transfer(void *d)
 {
-  tpc_handle_t h = 0;
+  tapasco_handle_t h = 0;
   if (! d) {
     errors++;
     return;
   }
-  if (tpc.alloc(h, chunk_sz, TPC_DEVICE_ALLOC_FLAGS_NONE) != TPC_SUCCESS) {
+  if (tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE) != TAPASCO_SUCCESS) {
     errors++;
     return;
   }
 
   switch (mode - 3) {
   case 0:  /* read-only */
-    if (tpc.copy_from(h, d, chunk_sz, TPC_DEVICE_COPY_BLOCKING) != TPC_SUCCESS)
+    if (tapasco.copy_from(h, d, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS)
       errors++;
     break;
   case 1: /* write-only */
-    if (tpc.copy_to(d, h, chunk_sz, TPC_DEVICE_COPY_BLOCKING) != TPC_SUCCESS)
+    if (tapasco.copy_to(d, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS)
       errors++;
     break;
   case 2: /* read-write */
-    if (tpc.copy_to(d, h, chunk_sz, TPC_DEVICE_COPY_BLOCKING) == TPC_SUCCESS) {
-      if (tpc.copy_from(h, d, chunk_sz, TPC_DEVICE_COPY_BLOCKING) != TPC_SUCCESS)
+    if (tapasco.copy_to(d, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) == TAPASCO_SUCCESS) {
+      if (tapasco.copy_from(h, d, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS)
         errors++;
     } else errors++;
     break;
   }
-  if (h) tpc.free(h, TPC_DEVICE_ALLOC_FLAGS_NONE);
+  if (h) tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
 }
 
 static void transfer()
@@ -140,7 +140,7 @@ static void transfer()
     if (mode < 3)
       baseline_transfer(&rnddata[off]);
     else
-      tpc_transfer(&rnddata[off]);
+      tapasco_transfer(&rnddata[off]);
   }
 }
 
@@ -161,10 +161,10 @@ static void print_line(ul const *times)
        << endl;
 }
 
-static void check_tpc(tpc_res_t const result)
+static void check_tapasco(tapasco_res_t const result)
 {
-  if (result != TPC_SUCCESS) {
-    cerr << "tpc fatal error: " << tpc_strerror(result) << endl;
+  if (result != TAPASCO_SUCCESS) {
+    cerr << "tapasco fatal error: " << tapasco_strerror(result) << endl;
     exit(result);
   }
 }
@@ -179,7 +179,7 @@ int main(int argc, char **argv)
   fill_with_random((char *)rnddata, RNDDATA_SZ);
 
   // initialize threadpool
-  check_tpc(tpc.init());
+  check_tapasco(tapasco.init());
 
   print_header();
   auto total_start = chrono::steady_clock::now();

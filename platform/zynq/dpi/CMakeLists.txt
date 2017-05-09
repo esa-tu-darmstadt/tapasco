@@ -3,14 +3,14 @@ project(platform-zynq-dpi)
 set(CMAKE_INSTALL_PREFIX "..")
 set(CMAKE_SKIP_RPATH true)
 
-if (NOT EXISTS "$ENV{TPC_HOME}")
-  message(FATAL_ERROR "Please set TPC_HOME environment variable to root directory of ThreadPoolComposer")
-endif (NOT EXISTS "$ENV{TPC_HOME}")
+if (NOT EXISTS "$ENV{TAPASCO_HOME}")
+  message(FATAL_ERROR "Please set TAPASCO_HOME environment variable to root directory of Tapasco")
+endif (NOT EXISTS "$ENV{TAPASCO_HOME}")
 
 set(ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 set(SRCDIR "../src")
 set(CMNDIR "../../common")
-set(GCMNDIR "${TPC_HOME}/common")
+set(GCMNDIR "${TAPASCO_HOME}/common")
 set(CMNSRCS "${CMNDIR}/src/platform_logging.c"
             "${CMNDIR}/src/platform_errors.c"
             "${SRCDIR}/platform_address_map.c"

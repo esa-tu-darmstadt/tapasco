@@ -1,23 +1,23 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of ThreadPoolComposer (TPC).
+// This file is part of Tapasco (TPC).
 //
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// ThreadPoolComposer is distributed in the hope that it will be useful,
+// Tapasco is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file	zynq_module.c
-//! @brief	ThreadpoolComposer support module: Device driver implementation
+//! @brief	Tapasco support module: Device driver implementation
 //!		for Zynq-7000 series devices. Provides support functions to
 //!		implement Platform API upon.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
@@ -93,5 +93,5 @@ module_exit(zynq_module_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)");
-MODULE_DESCRIPTION("ThreadpoolComposer Platform Module: Zynq-7000 series");
+MODULE_DESCRIPTION("Tapasco Platform Module: Zynq-7000 series");
 MODULE_VERSION("1.1");
