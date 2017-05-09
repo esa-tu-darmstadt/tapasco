@@ -1,0 +1,95 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Low-Level Synthesis and Simulation}\label{sec:lls}%
+The last step in the \tpc{} flow generates either of two outputs.
+When the environment variable \code{TPC\_MODE} is set to \code{sim}, a \emph{hardware/software co-simulation environment} for whole design simulation is created and ModelSim is launched to provide a \emph{virtual FPGA device} accessible to \gloss{TPC API} clients.
+This mode is described in \secref{sec:lls-sim}.
+The second mode is activated with \code{TPC\_MODE=bit} and performs low-level synthesis to generate a bitstream configuration for the FPGA; this mode is described in more detail in the next section.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Low-Level Synthesis}\label{sec:lls-lls}
+The process of deriving a \emph{netlist} from a hardware description and mapping it to the actual resources of the FPGA is often subsumed under the term \emph{Low-Level Synthesis}.
+Since the latter part (often called \emph{place-and-route}) requires complete knowledge of the entire FPGA chip, it is (almost) always performed by vendor tools.
+\tpc{} calls \code{platform\_generate}, which in turn configures and starts the bitstream generation using Vivado.
+
+\medskip
+As mentioned previously, there are parameters which should be defined by the user for each bitstream generation, most importantly the \emph{clock frequency} and \emph{board preset} to be used.
+The latter is necessary if a \gloss{Platform} covers a family of similar boards/devices, e.g., the Zynq-7000 series of FPGAs, and provided by the board's vendor.
+These parameters can be passed via the command line, for example, to compose a bitstream at a clock frequency of 200 MHz for the ZC706 Zynq-7000 evaluation board:
+%
+\begin{lstlisting}[language=bash, morekeywords={TPC_FREQ, TPC_MODE, TPC_BOARD_PRESET}]
+TPC_MODE=bit TPC_FREQ=200 TPC_BOARD_PRESET=ZC706 sbt "compose configFile ..."
+\end{lstlisting}
+%
+
+\medskip
+\begin{note}
+Low-level synthesis is a highly complex task which is itself comprised of several NP-complete problems; it is not uncommon for this process to take hours, even days on modern machines.
+Also note that, depending on the heuristic strategy used to solve these problems, two identically configured runs may result in slightly different results.
+\end{note}
+
+\medskip
+If the process was successful, the resulting bitstream will be located in a \code{.bit} file in a subdirectory of the configured bitstream directory for this run (see \tblref{tbl:run-description}).
+Furthermore, in the same location as the \code{.bit} file, there will be two files called \code{utilization.txt} and \code{timing.txt} which provide additional information about the bitstream.
+The former contains several measures concerning the utilization of the FPGA's resources, e.g., the percentage of lookup-tables and flip-flops used for the design, the latter contains \emph{important information about the timing} and should always be checked prior to using the bitstream, since it is possible that the design could be placed and routed, but the timing constraints are violated.
+The resulting hardware \emph{may} work, but may also be unstable and produce unexpected results.
+
+\medskip
+\begin{note}[Remark]
+A utilization $\geq 60\%$ in any category is commonly considered a good result, utilizations $\geq 80\%$ are usually not feasible at the maximum clock rate of the FPGA.
+\end{note}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Hardware/Software Co-Simulation}\label{sec:lls-sim}%
+Engineering any moderately complex system is a difficult task and each engineering discipline has come up with ways to tackle the complexity and manage a iterative, stable development of large systems.
+In software engineering, developing bottom-up while testing top-down has proven to be an effective technique, that is often subsumed under the \emph{test-driven development} paradigm:
+the core idea is to design the interfaces between software components first, and formally specify their behavior. 
+Specification is accompanied (or often replaced) by writing \emph{unit tests}, which isolate one specific behavior and check if it complies with the specification.
+This approach allows to test the overall design early and fix potential problems, as well as providing a way to do regression testing on changes implemented later in the process, and has been used in the industry with overwhelming success, especially for safety- or security-critical applications.
+
+\medskip
+In hardware development, a similar approach is used with \emph{self-checking testbenches}:
+The \emph{design-under-test (DUT)} is instantiated in a wrapper module, that provides input stimuli to the DUT and checks the output behavior.
+Such tests are written in hardware description languages themselves, and are executed within RTL simulators (such as Mentor Modelsim \cite{modelsim}).
+However, this approach does not scale well to whole designs, for simple reasons:
+in such testbenches, the desired behavior is defined on signal-/wire-level; for reasonably small hardware interfaces this is tedious, but possible.
+But when combining several such modules into a larger design, there is a combinatorial explosion of the state space of the system.
+Each desired behavior modeled on a signal-/wire-level represents only exactly one state in the powerset of all possible input and output states of all components; with each new component, the coverage achieved by the tests decreases exponentially.
+
+\medskip
+The ideal solution to this problem is \emph{formal verification}, which comprises of deriving a formal mathematical model of the desired behavior from the specification and proving that the system's behavior is equivalent.
+In general, this task cannot be performed automatically, although there exist tools to help the developer and which can perform many proof steps without user interaction.
+However, for \tpc{} this approach is not feasible, we therefore decided to take an alternative approach by lifting the language abstraction level in which the tests are written, in order to achieve a better match between the tested states and the desired real-world behavior of the hardware.
+
+\medskip
+\paragraph{SystemVerilog DPI}
+\tpc{} is using the \emph{System Verilog Direct Programming Interface (DPI)}, which is part of the SystemVerilog standard specified in \cite{sv-spec}.
+SystemVerilog is a superset of Verilog, which supports many language constructs which are not synthesizable, but ease simulation tasks as described above.
+DPI provides an interface between shared libraries written in C and simulated SystemVerilog hardware descriptions.
+Using DPI, the simulator can call user-defined C functions and vice versa.
+
+\medskip
+These facilities can be used to implement the \gloss{Platform API} presented in \secref{sec:device-independency} using SystemVerilog tasks.
+The \gloss{TPC API} implementation could transparently use these implementations on the virtual platform provided by the simulator in this way.
+However, this would require to compile the entire application into the shared library loaded by the RTL simulator, which is neither immediately possible nor desirable.
+To decouple the application code and the simulator, \tpc{} provides a client-server implementation of the \gloss{Platform API}, which connects a client-side library via \emph{socket inter-process communication (IPC)} to the server-side DPI library.
+
+\medskip
+\figref{fig:dpi-sim} illustrates the setup during runtime:
+the user process running the application is depicted on the left-hand side; the user code is programmed against the \gloss{TPC API}, which in turn uses the \gloss{Platform API}. 
+On the right-hand side a second, independent process running the RTL simulator is depicted; it simulates a hardware description generated by \tpc{} and interfaces with the server library via DPI.
+At the start of simulation, the server-side library is initialized and opens a configurable number of sockets for parallel communication and waits until each socket is connected (in order).
+On the other side, at the start of the user application the client-side library is initialized and attempts to connect to the server sockets.
+Once this process is finished, the client-side transmits all \gloss{Platform API} calls transparently via the sockets to the server-side at the simulator, providing a virtual remote \gloss{Platform}.
+%
+\begin{figure}
+  \centering%
+  \includegraphics[width=.8\textwidth]{tikz/advsimcomm.pdf}
+  \caption{Runtime setup of the hardware/software co-simulation.}
+  \label{fig:dpi-sim}
+\end{figure}
+
+\medskip
+One major benefit of this approach is that the original user application can be used to drive the simulation without recompilation.
+This eases the reproduction of bugs in the application and allows to create meaningful test scenarios for simulation.
+A short tutorial on how to implement and use such a simulation is given in \secref{sec:examples}.
+

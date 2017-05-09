@@ -1,0 +1,16 @@
+{
+	"Platforms" : ["Plat1", "Plat2"],
+	"Architectures" : ["Arch1", "Arch3"],
+	"PlatformDir" : "platform",
+	"ArchDir" : "arch",
+	"KernelDir": "kernel",
+	"Compositions" : ["test.bd", "../correct-composition.json"],
+	"Composition" : {
+		"Composition" :
+		[
+			{"Kernel" : "Kern1", "Count" : 12},
+			{"Kernel" : "Kern2", "Count" : 3}
+		],
+		"Description" : "inline composition"
+	}
+}

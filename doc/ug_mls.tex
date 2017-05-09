@@ -1,0 +1,110 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Mid-Level Synthesis}\label{sec:mls}%
+Mid-Level Synthesis (MLS) in \tpc{} is driven by the interaction of three Tcl libraries:
+%
+\begin{itemize}
+  \item \code{common.tcl} is provided by \tpc{} for all \gloss{Architecture} and \gloss{Platform} implementations. It contains supporting functions to query the user configuration, e.g., \code{tpc\_\allowbreak get\_\allowbreak design\_\allowbreak frequency} returns the desired clock frequency.
+  \item \code{architecture.tcl} is provided by the \gloss{Architecture} implementation and contains functions to instantiate the abstract architecture and query input and output interfaces.
+  \item \code{platform.tcl} is provided by the \gloss{Platform} implementation and contains functions to instantiate the board-specific infrastructure and connect the \gloss{Architecture} inputs and outputs to the board interfaces, thus connecting to the host system.
+\end{itemize}
+%
+\tblref{tbl:common.tcl}, \tblref{tbl:architecture.tcl} and \tblref{tbl:platform.tcl} list and explain the available calls in each library.
+\figref{fig:mls-sd} shows an exemplary interaction between the library calls during a \code{compose} execution.
+
+\medskip
+\begin{note}
+Tcl is a weakly-typed scripting language that does not support formal interfaces, therefore there is no binding header file to fix these APIs.
+\end{note}
+%
+\begin{figure}[p]
+  \begin{sequencediagram}
+  \tikzstyle{every node}+=[font=\sffamily]
+  \newthread{t}{ThreadpoolComposer}
+  \newinst[1]{a}{architecture.tcl}
+  \newinst[2]{p}{platform.tcl}
+  \newinst[3]{c}{common.tcl}
+  
+  \begin{call}{t}{arch\_create}{a}{}
+    \begin{call}{a}{tpc\_get\_generate\_mode}{c}{}\end{call}
+    \begin{call}{a}{tpc\_get\_design\_frequency/period}{c}{}\end{call}
+    \begin{call}{a}{tpc\_get\_board\_preset}{c}{}\end{call}
+    \begin{call}{a}{tpc\_get\_composition}{c}{}\end{call}
+    \begin{call}{a}{\ldots}{c}{}\end{call}
+  \end{call}
+  \begin{call}{t}{platform\_create}{p}{}
+    \begin{call}{p}{tpc\_get\_generate\_mode}{c}{}\end{call}
+    \begin{call}{p}{tpc\_create\_std\_component}{c}{}\end{call}
+    \begin{call}{p}{arch\_get\_masters}{a}{}\end{call}
+    \begin{call}{p}{arch\_get\_slaves}{a}{}\end{call}
+    \begin{call}{p}{\ldots}{c}{}\end{call}
+  \end{call}
+  \begin{call}{t}{platform\_generate}{p}{}
+    \begin{call}{p}{tpc\_get\_generate\_mode}{c}{}\end{call}
+    \begin{call}{p}{\ldots}{c}{}\end{call}
+  \end{call}
+  \end{sequencediagram}
+  \caption{Sample interaction of Tcl libraries in Mid-Level Synthesis}
+  \label{fig:mls-sd}
+\end{figure}
+%
+\begin{longtable}[c]{>{\ttfamily}L{0.45\textwidth}L{0.45\textwidth}}
+  \caption{common.tcl: API calls.}
+  \label{tbl:common.tcl}\\
+  \toprule
+  \normalfont\textbf{Function} & \textbf{Comment}\\\midrule
+  \endhead
+  \bottomrule
+  \endlastfoot
+  tpc\_create\_std\_component & Simple interface to instantiate common components from an IP catalog via VLNV (vendor-library-name-version) identifier.\\\midrule
+  tpc\_get\_board\_preset & Returns the board preset identifier, e.g., \code{"ZC706"}.\\\midrule
+  tpc\_get\_composition & Returns an array of (VLNV, count) pairs reflecting threadpool composition.\\\midrule
+  tpc\_get\_design\_frequency & Returns the user-configured design frequency in MHz.\\\midrule
+  tpc\_get\_design\_period & Returns the user-configured design clock period in ns.\\\midrule
+  tpc\_get\_platform\_header & Returns a list of filenames of SystemVerilog headers required for simulation of the \gloss{Platform}.\\\midrule
+  tpc\_get\_sim\_module & Returns the file name of the main simulation harness SystemVerilog module of the \gloss{Platform} (i.e., the top-level for simulation).\\
+\end{longtable}
+%
+\begin{longtable}[c]{>{\ttfamily}L{0.45\textwidth}L{0.45\textwidth}}
+  \caption{architecture.tcl: API calls.}
+  \label{tbl:architecture.tcl}\\
+  \toprule
+  \normalfont\textbf{Function} & \textbf{Comment}\\\midrule
+  \endhead
+  \bottomrule
+  \endlastfoot
+  arch\_create & Instantiates the threadpool \gloss{Architecture}.\\\midrule
+  arch\_get\_irqs & Returns an array of interrupt wires to be connected to the signaling mechanism.\\\midrule
+  arch\_get\_masters & Returns a list of outgoing master interfaces to be connected to memory. \gloss{Platform}-specific limits may apply (e.g., for 'zynq' currently up to four).\\\midrule
+  arch\_get\_slaves & Returns a list of incoming slave interfaces which connect to the hardware registers of the threadpool and its threads to be connected to the host. \gloss{Platform}-specific limits may apply.\\
+\end{longtable}
+%
+\begin{longtable}[c]{>{\ttfamily}L{0.45\textwidth}L{0.45\textwidth}}
+  \caption{platform.tcl: API calls.}
+  \label{tbl:platform.tcl}\\
+  \toprule
+  \normalfont\textbf{Function} & \textbf{Comment}\\\midrule
+  \endhead
+  \bottomrule
+  \endlastfoot
+  platform\_create & Instantiates the \gloss{Platform} and connects the \gloss{Architecture}.\\\midrule
+  platform\_generate & Depending on execution mode (\code{sim}/\code{bit}), either triggers low-level synthesis to generate a bitstream for the design, or creates a simulation environment.\\
+\end{longtable}
+%
+\paragraph{Dynamic Configuration}
+Some configuration parameters should be defined by the user for each individual run, e.g., bitstream vs. simulation mode.
+The API in \code{common.tcl} provides methods to the \gloss{Architecture} and \gloss{Platform} implementations to query these parameters.
+From the user side, these parameters can be set using environment variables.
+The names of the interpreted variables and their meaning are listed in \tblref{tbl:mls-envvars}.
+%
+\begin{longtable}[c]{>{\ttfamily}L{.35\textwidth}L{.55\textwidth}}
+  \caption{Mid-Level Synthesis: Environment variables.}
+  \label{tbl:mls-envvars}\\
+  \toprule
+  \normalfont\textbf{Variable} & \textbf{Usage} \\\midrule
+  \endhead
+  \bottomrule
+  \endlastfoot
+  TPC\_FREQ & Desired design frequency in MHz. \\\midrule
+  TPC\_MODE & Composition mode: \code{sim} for simulation, \code{bit} for bitstream generation.\\\midrule
+  TPC\_BOARD\_PRESET & Name of board preset when building for a family of devices with a single \gloss{Platform}, e.g., \code{zc706}.\\
+\end{longtable}

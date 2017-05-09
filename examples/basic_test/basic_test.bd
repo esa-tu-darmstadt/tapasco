@@ -1,0 +1,14 @@
+{
+	"Description" : "Basic test PEs for memory accesses: read, write, r+w.",
+	"Composition" : [
+		{"Kernel" : "arrayinit", "Count" : 1},
+		{"Kernel" : "arraysum", "Count" : 1},
+		{"Kernel" : "arrayupdate", "Count" : 1},
+		{"Kernel" : "arraysum", "Count" : 1},
+		{"Kernel" : "arrayupdate", "Count" : 1},
+		{"Kernel" : "arrayinit", "Count" : 1},
+		{"Kernel" : "arrayinit", "Count" : 1},
+		{"Kernel" : "arrayupdate", "Count" : 1},
+		{"Kernel" : "arraysum", "Count" : 1}
+	]
+}

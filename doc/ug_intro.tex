@@ -1,0 +1,383 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction and Basic Concepts}\label{sec:overview}%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Aim of ThreadpoolComposer}
+\emph{Scalability} and \emph{energy efficiency} are ubiquitous requirements for modern high-performance applications, which are increasingly harder to meet with the homogeneous programming paradigms of the past decades.
+With the approaching end of \emph{Moore's law} and serious difficulties in further manufacturing miniaturization, many alternatives for future computing have been evaluated.
+Many-core systems consisting of several on-die general purpose CPUs are widely available at low cost, offering homogeneous parallel computing.
+New programming paradigms and supporting runtimes for such systems (such as FastFlow \cite{fastflow}) have shown that is possible to efficiently and conveniently utilize the processing power available from such systems.
+
+\medskip
+On the other hand, graphics processors (GPUs) have taken on a wider field of computations by offering programmable pipelines and have been shown to be very useful at heavy number crunching problems, especially when energy consumption is of no concern.
+Recently, heterogeneous runtimes (such as OpenCL) have demonstrated that GPUs can be used to accelerate many software tasks with little programming overhead.
+Even extending on the raw floating point computing power of GPUs, Digital Signal Processors (DSPs) are particularly useful for signal processing and floating point computations.
+Furthermore, field-programmable gate arrays (FPGAs) are reaching the 20nm manufacturing scale now and provide huge amounts of reconfigurable computing resources at extremely low energy consumption levels.
+
+\medskip
+From a computational perspective, each device class is particularly well suited for certain problems, but none of them is the ultimate answer to all challenges modern applications face.
+It therefore seems obvious that future computing architectures will need to utilize all of these device classes in order to provide optimal solutions in terms of energy efficiency and performance.
+However, even if the software developer has isolated and condensed the most costly parts of the application's computations into so called \emph{kernels}, a task that is very common in modern software development (e.g., with OpenCL), there currently does not exist a heterogeneous runtime environment that includes FPGAs and DSPs, mostly because their programming requires specialist knowledge software developers do not commonly have.
+
+\medskip
+\tpc{} aims at closing this gap by providing software developers with a simple, but flexible workflow to design efficient configurations for FPGAs, which allows them to be easily integrated in runtime systems.
+Furthermore, \tpc{} proposes a very simple common programming interface which is suitable for both FPGAs and DSPs, which eases the integration of two currently excluded classes of devices as accelerators for heterogeneous computing.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Application Development with ThreadpoolComposer}
+Following an old advice by Donald Knuth, according to which \emph{premature optimization is the root of all evil}, parallel applications are commonly developed in an iterative manner:
+First, a functional prototype is developed on CPU only; this prototype is then being profiled to determine the most costly functions and computations, which are then isolated in \emph{kernels}, which may execute (partially) in parallel and can easily be mapped to multi- and many-core systems.
+Finally, specific optimization is applied to the kernels to optimize the execution on the targeted platform and/or devices.
+This model allows efficient usage of computational resources and enables reasonable scalability with extending resources.
+\tpc{} aims to integrate into this development flow after the kernel extraction phase, as \figref{fig:tpc-overview} illustrates.
+%
+\begin{figure}%[h!]
+  \centering\includegraphics[]{tikz/tpc-overview}
+  \caption{Overview of the Workflow using ThreadpoolComposer}
+  \label{fig:tpc-overview}
+\end{figure}
+%
+
+\medskip
+The upper half of \figref{fig:tpc-overview} depicts the coarse grained steps for deriving a suitable FPGA configuration from a user application, while the bottom half denotes the intermediate products at each step.
+\tpc{} assumes that the first step, the extraction of kernels from the user application, has been done and a mechanism for orchestrating their parallel execution of the kernels has been devised (e.g., using FastFlow \cite{fastflow}).
+Each kernel is provided as a C/C++ function to the \tpc{} flow, which in the first step will turn them into descriptions of observationally equivalent hardware (i.e., hardware with the same input/output behavior).
+This behavioral transformation is often called \emph{High-Level Synthesis}.
+The resulting hardware modules can be instantiated, arranged and organized on the FPGA in a multitude of ways; this includes many electronic circuit design decisions, such as clock rates, bus protocols and use of hardware registers.
+\tpc{} bridges this gap for the software developer, requiring as input only an indication how the FPGA's area is to be used, i.e., the number of instances for each kernel in the configuration.
+The last step in the flow is concerned with the actual realization of the abstract hardware descriptions with the physical resources available on the target FPGA and is often called \emph{Low-Level Synthesis}.
+The final result of the \tpc{} flow is a \emph{bitstream configuration}, which can be uploaded to the FPGA to activate the configuration.
+
+\medskip
+\tpc{} thus provides a completely automatic flow to generate a bitstream configuration for a given set of kernels and hides the technical layers which are unfamiliar for most software developers.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{What is ThreadpoolComposer?}
+\tpc{} is a command line tool based on Scala/sbt to compose \emph{hardware threadpool architectures} for FPGAs from C/C++ kernel code.
+\tpc{} conveniently wraps several steps in the design flow to use \emph{high-level synthesis} to create hardware threads, which are organized in an architecture called a \emph{threadpool}.
+The core idea of \tpc{} is to provide a flow that can
+\begin{enumerate}
+  \item instantiate abstract \gloss{Architectures}, which organize hardware threads,
+  \item abstract device/board-specifics in \gloss{Platforms}, to allow re-use of \gloss{Architectures} on multiple FPGA boards with minimal effort,
+  \item provide a \emph{uniform application programming interface (API)} towards the threadpool.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Threadpools}
+Regardless of their widespread availability for more than 20 years now, FPGAs have yet to enter mainstream computing.
+Even today, FPGA applications are usually reserved for highly-specialized expert domains, and FPGAs are seldom -- if at all -- integrated in consumer hardware.
+One of several reasons for this is the difficulty of programming:
+
+FPGA designs are developed in \emph{hardware description languages (HDL)} and often require a high-level of electronics expertise modern software developers simply do not have.
+This lack of convenient access to the computing power of FPGAs needs to be tackled, if the low-energy deep parallelism of FPGAs is to be utilized to its full potential.
+
+\medskip
+Toward this goal, \tpc{} aims to ease the integration of FPGAs into modern parallel programming frameworks, such as X10, Chapel or REPARA C++.
+The central abstraction at the interface is the \emph{threadpool} (cf. \cite{threadpool})-- a software pattern many software developers are familiar with due to its popularity in parallel programming libraries.
+
+Throughout this document, it is assumed that a threadpool consists of \emph{m independent threads}, which can execute \gloss{Kernels}, i.e., small pieces of code performing a specific computation on data.
+These threads are usually invisible at the user interface.
+Instead, a threadpool provides an interface to schedule and monitor the execution of a \gloss{Job}, i.e., a set of parameters required for a single execution of a \gloss{Kernel}.
+\gloss{Jobs} can be \emph{submitted to} and \emph{collected from} the threadpool in an out-of-order fashion.
+\figref{fig:cpu-threadpool} illustrates the general concept.
+
+\begin{figure}
+  \colorlet{kernel0t}{pink!80!black}
+  \colorlet{kernel0b}{pink!30!black}
+  \colorlet{kernel1t}{yellow!80!black}
+  \colorlet{kernel1b}{yellow!30!black}
+  \colorlet{kernel2t}{cyan!80!black}
+  \colorlet{kernel2b}{cyan!30!black}
+  \begin{center}%
+  \begin{tikzpicture}[
+      y=6mm, x=7mm,
+      every node/.append style={align=center},
+      header/.style={font=\large\bfseries\sffamily, yshift=.5cm},
+      tpc/.style={line width=1.5pt, draw=esa4, rounded corners=3ex, top color=esa0, bottom color=white},
+      tpc node/.style={shape=circle, text width=3mm, draw=esa5, line width=1pt, anchor=center,
+        top color=esa0, bottom color=esa3, font=\sffamily\footnotesize\bfseries\color{white}, align=center},
+      conn/.style={draw, ->, >=latex, line width=1.25pt},
+      slots/.style={draw=black!90, |<->|, >=angle 90, line width=1pt},
+      slots label/.style={fill=white, font=\sffamily\color{black!90}, rounded corners, rotate=90},
+      kernel0/.append style={top color=kernel0t, bottom color=kernel0b},
+      kernel1/.append style={top color=kernel1t, bottom color=kernel1b},
+      kernel2/.append style={top color=kernel2t, bottom color=kernel2b},
+      job/.style={shape=rectangle, top color=esa0, bottom color=esa5, draw=black, anchor=east, font=\sffamily\scriptsize\color{white}},
+      job0/.append style={top color=kernel0t, bottom color=kernel0b},
+      job1/.append style={top color=kernel1t, bottom color=kernel1b},
+      job2/.append style={top color=kernel2t, bottom color=kernel2b}
+    ]
+    \def\tpcw{3}
+    \def\tpch{4}
+    \def\td{0.275*\tpch}
+    \coordinate (c) at (0,0);
+    \coordinate (l) at (-\tpcw,0);
+    \coordinate (r) at (\tpcw,0);
+    \coordinate (s) at (-2*\tpcw,0);
+    \coordinate (t) at (0,\tpch);
+    \coordinate (m) at (0,0);
+    \coordinate (b) at (0,-\tpch);
+
+    \node [header] at (t) {Threadpool};
+    %\node [header, fill=white] at (t) {Hardware Threadpool};
+    \path [tpc] (t -| l) rectangle (b -| r);
+    \node [font=\Large\bfseries, anchor=center] at (c) {\vdots};
+    \begin{scope}[every node/.style={tpc node}]
+      \node (in) at (m -| l) {};
+      \node (out) at (m -| r) {};
+      \node (ln3) at (0, 3*\td) {};
+      \node (ln2) at (0, 2*\td) {};
+      \node (ln1) at (0, 1*\td) {};
+      \node (bn1) at (0, -1*\td) {};
+      \node (bn2) at (0, -2*\td) {};
+      \node (bn3) at (0, -3*\td) {};
+
+      \begin{scope}[every node/.append style={transparent}]
+        \node [kernel0] at (ln3) {};
+        \node [kernel2] at (ln2) {};
+        \node [kernel2] at (ln1) {};
+        \node [kernel2] at (bn1) {};
+        \node [kernel1] at (bn2) {};
+        \node [kernel1] at (bn3) {};
+
+        \node [kernel1] at (ln3) {};
+        \node [kernel1] at (ln2) {};
+        \node [kernel1] at (ln1) {};
+        \node [kernel2] at (bn1) {};
+        \node [kernel2] at (bn2) {};
+        \node [kernel2] at (bn3) {};
+      \end{scope}
+    \end{scope}
+    \begin{scope}[every path/.style={conn}]
+      \path (in) +(-.5*\tpcw,0) -- (in);
+      \foreach \y in {1, ..., 3} {
+        \path (in) -- (ln\y);
+        \path (ln\y) -- (out);
+        \path (in) -- (bn\y);
+        \path (bn\y) -- (out);
+      }
+      \path (out) -- +(.5*\tpcw,0);
+    \end{scope}
+    \begin{scope}[every node/.style={job}]
+      \node [job0] (j0) at (in.north west) {};
+      \node [job0] (j1) at (j0.west) {};
+      \node [job1] (j2) at (j1.west) {};
+      \node [job2] (j3) at (j2.west) {};
+      \node [job1] (j4) at (j3.west) {};
+
+      \node [job0] (ji0) at (bn1.north west) {};
+      \node [job1] (ji1) at (bn2.north west) {};
+      \node [job2] (ji2) at (bn3.north west) {};
+      \node [job2] (ji3) at (ln1.north west) {};
+      \node [job1] (ji4) at (ln2.north west) {};
+      \node [job2] (ji5) at (ln3.north west) {};
+
+      \node [job2, anchor=west] (j5) at (out.north east) {};
+      \node [job0, anchor=west] (j6) at (j5.east) {};
+      \node [job1, anchor=west] (j7) at (j6.east) {};
+      \node [job0, anchor=west] (j8) at (j7.east) {};
+    \end{scope}
+
+    \path [slots] (s |- t) -- (s |- b) node [pos=0.5, slots label] {\# threads};
+  \end{tikzpicture}
+  \end{center}
+
+  \caption[CPU threadpool illustration]{CPU threadpool illustration: Each box represents a \gloss{Job} for a \gloss{Kernel}, different colors indicate different target \gloss{Kernels}, each circle represents CPU thread; \gloss{Jobs} can be distributed among threads arbitrarily and may arrive \emph{out-of-order} at the threadpool exit.}
+  \label{fig:cpu-threadpool}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Hardware Threadpools}
+The threadpool abstraction is particularly useful and well-suited for FPGAs:
+All hardware instantiated in a FPGA fabric can be active at once; by transparently instantiating a kernel multiple times this spatial parallelism can be utilized.
+Furthermore, since the required minimal communication facilities a threadpool has to provide to its threads is very limited (send data -- start computation -- wait for finish -- fetch data), this abstraction often leads to designs with a low level of intra-device communication, thus facilitating better area utilization and higher clock rates.
+
+\medskip
+\tpc{} adopts this notion for FPGA designs and composes \emph{hardware threadpools} (see \figref{fig:hardware-threadpool}).
+Hardware threadpools implement the same interface as software threadpools, but with some restrictions:
+An FPGA hardware design is \emph{fixed}, i.e., the \emph{data path} is generated and implemented at compile time, and defined in the \emph{bitstream configuration}, a file which can be loaded into the FPGA to configure it.
+This means that the hardware is \emph{specialized to realize a single function}, as opposed to general purpose CPUs, which can run arbitrary programs composed from instructions specified in their ISA.
+This leads to two reasonable restrictions regarding hardware threadpools:
+
+\begin{enumerate}
+  \item the number of threads is constant and defined at compile time
+  \item each thread can only execute a single kernel which must be assigned at compile time
+\end{enumerate}
+
+These two decisions, the \emph{number of threads} and the \emph{association of each thread with a \gloss{Kernel}} will be called a \gloss{Composition} in the following, each \gloss{Kernel} instance will be called a \gloss{hardware thread}.
+\gloss{Compositions} are the main input to \tpc{} and are turned into either \emph{bitstream configurations} or \emph{simulation environments}, each mode will be described in later sections.
+
+\medskip
+\begin{note}
+FPGAs are reconfigurable at runtime; it is therefore possible to change parts of a or even the entire design during runtime, which allows multiple threadpool compositions to be used by a single application.
+\end{note}
+
+\begin{figure}
+  \colorlet{kernel0t}{pink!80!black}
+  \colorlet{kernel0b}{pink!30!black}
+  \colorlet{kernel1t}{yellow!80!black}
+  \colorlet{kernel1b}{yellow!30!black}
+  \colorlet{kernel2t}{cyan!80!black}
+  \colorlet{kernel2b}{cyan!30!black}
+  \begin{center}%
+  \begin{tikzpicture}[
+      y=6mm, x=7mm,
+      every node/.append style={align=center},
+      header/.style={font=\sffamily\large\bfseries, yshift=.5cm},
+      tpc/.style={line width=1.5pt, draw=esa4, rounded corners=3ex, top color=esa0, bottom color=white},
+      tpc node/.style={shape=circle, text width=3mm, draw=esa5, line width=1pt, anchor=center,
+        top color=esa0, bottom color=esa3, font=\sffamily\footnotesize\bfseries\color{white}, align=center},
+      conn/.style={draw, ->, >=latex, line width=1.25pt},
+      slots/.style={draw=black!90, |<->|, >=angle 90, line width=1pt},
+      slots label/.style={fill=white, font=\sffamily\color{black!90}, rounded corners, rotate=90},
+      kernel0/.append style={top color=kernel0t, bottom color=kernel0b},
+      kernel1/.append style={top color=kernel1t, bottom color=kernel1b},
+      kernel2/.append style={top color=kernel2t, bottom color=kernel2b},
+      job/.style={shape=rectangle, top color=esa0, bottom color=esa5, draw=black, anchor=east, font=\sffamily\scriptsize\color{white}},
+      job0/.append style={top color=kernel0t, bottom color=kernel0b},
+      job1/.append style={top color=kernel1t, bottom color=kernel1b},
+      job2/.append style={top color=kernel2t, bottom color=kernel2b}
+    ]
+    \def\tpcw{3}
+    \def\tpch{4}
+    \def\td{0.275*\tpch}
+    \coordinate (c) at (0,0);
+    \coordinate (l) at (-\tpcw,0);
+    \coordinate (r) at (\tpcw,0);
+    \coordinate (s) at (-2*\tpcw,0);
+    \coordinate (t) at (0,\tpch);
+    \coordinate (m) at (0,0);
+    \coordinate (b) at (0,-\tpch);
+
+    \node [header] at (t) {Threadpool};
+    \node [header, fill=white] at (t) {Hardware Threadpool};
+    \path [tpc] (t -| l) rectangle (b -| r);
+    \node [font=\Large\bfseries, anchor=center] at (c) {\vdots};
+    \begin{scope}[every node/.style={tpc node}]
+      \node (in) at (m -| l) {};
+      \node (out) at (m -| r) {};
+      \begin{scope}[every node/.append style={transparent}]
+        \node (ln3) at (0, 3*\td) {};
+        \node (ln2) at (0, 2*\td) {};
+        \node (ln1) at (0, 1*\td) {};
+        \node (bn1) at (0, -1*\td) {};
+        \node (bn2) at (0, -2*\td) {};
+        \node (bn3) at (0, -3*\td) {};
+      \end{scope}
+
+        \node [kernel0] at (ln3) {};
+        \node [kernel2] at (ln2) {};
+        \node [kernel2] at (ln1) {};
+        \node [kernel2] at (bn1) {};
+        \node [kernel1] at (bn2) {};
+        \node [kernel1] at (bn3) {};
+
+      \begin{scope}[every node/.append style={transparent}]
+        \node [kernel1] at (ln3) {};
+        \node [kernel1] at (ln2) {};
+        \node [kernel1] at (ln1) {};
+        \node [kernel2] at (bn1) {};
+        \node [kernel2] at (bn2) {};
+        \node [kernel2] at (bn3) {};
+      \end{scope}
+    \end{scope}
+    \begin{scope}[every path/.style={conn}]
+      \path (in) +(-.5*\tpcw,0) -- (in);
+      \foreach \y in {1, ..., 3} {
+        \path (in) -- (ln\y);
+        \path (ln\y) -- (out);
+        \path (in) -- (bn\y);
+        \path (bn\y) -- (out);
+      }
+      \path (out) -- +(.5*\tpcw,0);
+    \end{scope}
+    \begin{scope}[every node/.style={job}]
+      \node [job0] (j0) at (in.north west) {};
+      \node [job0] (j1) at (j0.west) {};
+      \node [job1] (j2) at (j1.west) {};
+      \node [job2] (j3) at (j2.west) {};
+      \node [job1] (j4) at (j3.west) {};
+
+      \node [job2] (ji0) at (bn1.north west) {};
+      \node [job1] (ji1) at (bn2.north west) {};
+      \node [job1] (ji2) at (bn3.north west) {};
+      \node [job2] (ji3) at (ln1.north west) {};
+      \node [job2] (ji4) at (ln2.north west) {};
+      \node [job0] (ji5) at (ln3.north west) {};
+
+      \node [job2, anchor=west] (j5) at (out.north east) {};
+      \node [job0, anchor=west] (j6) at (j5.east) {};
+      \node [job1, anchor=west] (j7) at (j6.east) {};
+      \node [job0, anchor=west] (j8) at (j7.east) {};
+    \end{scope}
+
+    \path [slots] (s |- t) -- (s |- b) node [pos=0.5, slots label] {\# threads};
+  \end{tikzpicture}
+  \end{center}
+
+  \caption[Hardware threadpool illustration]{Hardware threadpool illustration: Each box represents a \gloss{Job} for a \gloss{Kernel}, different colors indicate different target \gloss{Kernels}, the blue circles represents CPU threads performing submit/collect operations at the threadpool interface, each colored circle represents a hardware thread, i.e., a hardware instance of a \gloss{Kernel}; \gloss{Jobs} must be assigned to a hardware thread implementing the correct \gloss{Kernel}, but can be distributed among hardware threads implementing this \gloss{Kernel} arbitrarily (e.g., any yellow \gloss{Job} can be executed by the two yellow hardware threads).}
+  \label{fig:hardware-threadpool}
+\end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Device Independence}\label{sec:device-independency}%
+Compared to other accelerator devices (such as GPUs), which commonly are relatively homogeneous on the hardware interface level, FPGA boards vary wildly in design, intent and capabilities, and are often custom-designed for a specific application.
+Pre-assembled FPGA boards range from tiny embedded variants connected via GPIO pins (suitable, e.g., for wireless sensor networks) with only a few thousand \emph{lookup-tables (LUTs)}, up to high-performance data center PCIe appliances with millions of ASIC-equivalent gates.
+While this gives a hardware designer an extended design space from which to carefully chose the ideal FPGA for the application at hand, this also means that each board is rather unique and requires significant amount of time and expertise to "bring up".
+When a hardware design is fixed to a specific board, transfer to a different board is often highly difficult and may even be economically unfeasible.
+
+\medskip
+To alleviate this problem, \tpc{} uses a \emph{two-tiered design abstraction}:
+
+\begin{enumerate}
+  \item The \gloss{Architecture} is an abstract definition of the \emph{device-independent internal organization} of the threadpool. Among other things, this includes the choice of bus protocols used, the kind of memory access provided to the threads (e.g., streaming vs. random access), the size, number and location of caches used in the design. 
+  \item The \gloss{Platform}, on the other hand, describes the entire \emph{device-dependent part of the design}, e.g., how memory controllers are setup and connected, how the host access to thread registers is provided, how interrupts are generated, and more.
+\end{enumerate}
+
+In theory, this should allow to define \gloss{Architectures} independently of the \gloss{Platform}, thus requiring to define the \gloss{Platform} only once for each supported FPGA device.
+In practice, it is necessary to continue this abstraction on the software side (see right-hand side of \figref{fig:two-tiered-design-abstraction}):
+%
+\begin{figure}
+  \begin{minipage}{.5\textwidth}%
+  \begin{center}\textbf{FPGA Design}\\\includegraphics[]{tikz/tpc-structure}\end{center}%
+  \end{minipage}%
+  \begin{minipage}{.5\textwidth}%
+  \begin{center}\textbf{API Hierarchy}\\\includegraphics{tikz/tpc-stack}\end{center}%
+  \end{minipage}
+
+  \caption{Two-tiered Design Abstraction: Hardware and Software.}
+  \label{fig:two-tiered-design-abstraction}
+\end{figure}
+%
+At some level beneath the user application, the organizational details must be known; e.g., which registers must be used to start a \gloss{Job}, how data can be sent to the device, and so on.
+To achieve this, the \tpc{} APIs continue the two-tiered abstraction and provides separate APIs for \gloss{Architecture} and \gloss{Platform}, called \gloss{TPC API} and \gloss{Platform API} respectively.
+\figref{fig:two-tiered-design-abstraction} (right) illustrates this:
+\gloss{TPC API} is responsible for managing the \gloss{Threadpool}, e.g., scheduling and completion of \gloss{Jobs}, device and kernel management.
+It is itself implemented using the \gloss{Platform API}, which provides data transfer and signaling between host and FPGA.
+
+\medskip
+A significant advantage of this coarse structure is the ability \emph{to change \gloss{Platforms} and \gloss{Architectures}} (possibly even at runtime) with great ease.
+This opens up new possibilities regarding design space exploration, and makes it feasible to, e.g., change from a random-access to streaming architecture during different phases of the same program.
+Furthermore, the original application can transparently be run against a \emph{virtual device provided by a hardware simulator} without requiring a re-compilation, an approach that is described in detail in \secref{sec:lls-sim}.
+Given an appropriate analysis of the user application, this can open up higher levels of automated design customization and flexibility for FPGA accelerators.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection*{Flow Overview}\label{sec:flow-overview}%
+The overall flow of \tpc{} is depicted in \figref{fig:flow-overview} and can be divided into three distinct stages, each relying on a separate chain of tools:
+
+\begin{enumerate}
+  \item[(a)] \emph{High-Level Synthesis} --- The first step to compose a threadpool is to turn the C/C++ \gloss{Kernel} code into equivalent hardware descriptions using \emph{high-level synthesis}. A number of tools exist to perform this step, e.g., Xilinx's commercial solution Vivado HLS \cite{vivado-hls}, or the academic LegUp \cite{legup}. The outcome of this step is a number of \emph{IP Cores} in an industry-standard, open exchange format called \emph{IP-XACT} \cite{ip-xact}.
+  \item[(b)] \emph{Mid-Level Synthesis} --- The second step is to create a \emph{top-level design}, i.e., instantiate the kernels according to the \gloss{Composition}, and connect them to host and memory using the \gloss{Architecture} and \gloss{Platform} templates. Some tools exist to perform this step, e.g., the open-source Kactus2 \cite{kactus2}, but the currently most powerful tool available is the Vivado IP Integrator (also due to its Tcl scripting interface), which is part of the Vivado Design Suite \cite{vivado}.
+  \item[(c)] \emph{Low-Level Synthesis} --- Finally, the last step requires either the preparation of simulation environment for external \emph{register transfer level (RTL) simulators} (such as Mentor ModelSim \cite{modelsim}) or the actual mapping of the RTL hardware description to the resources available on the FPGA. This process is also called \emph{place and route} and is exclusively done by the FPGA vendor's tools, due to the deep knowledge of the chip that is required for this task.
+\end{enumerate}
+
+The initial version of \tpc{} provides support for Vivado HLS \cite{vivado-hls}, Vivado IP Integrator and Vivado \cite{vivado}.
+Support for LegUp \cite{legup} is planned for an upcoming release in the near future.
+
+\begin{figure}
+  \centering\includegraphics[width=\textwidth]{tikz/tpc-flow}
+  \caption{\tpc{} flow overview.}
+  \label{fig:flow-overview}
+\end{figure}
+

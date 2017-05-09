@@ -1,0 +1,14 @@
+{
+	"Description" : "Sobel Kernel, DATE'15 Paper, version with localized memory.",
+	"Name" : "sobel-memloc",
+	"Id" : 3915,
+	"Version" : "1.0",
+	"TopFunction" : "sobel_memloc",
+	"Files" : ["../sobel.cpp"],
+	"TestbenchFiles" : ["../sobel.cpp"],
+	"TestbenchCompilerFlags" : ["-DSOBEL_MEMLOC"],
+	"Arguments" : [
+		{"Name" : "if_input_image", "Passing" : "by reference"},
+		{"Name" : "if_output_image", "Passing" : "by reference"}
+	]
+}

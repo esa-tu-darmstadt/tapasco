@@ -1,0 +1,2 @@
+#!/bin/bash
+cd $TPC_HOME && java -Xms512M -Xmx1536M -Xss1M -XX:+CMSClassUnloadingEnabled -jar target/scala-2.12/ThreadPoolComposer-2017.1-SNAPSHOT.jar $*

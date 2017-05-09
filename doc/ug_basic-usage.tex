@@ -1,0 +1,83 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Basic Usage}\label{sec:basic-usage}%
+This section aims to give a quick tutorial on the basic usage of \tpc{}.
+\tpc{} can be run in \tpchome{} via \gloss{sbt} and provides two general commands:
+
+\begin{itemize}
+  \item \code{\bfseries hls} --- Performs high-level synthesis for given architectures and kernels.
+  \item \code{\bfseries compose} --- Composes a threadpool for given architectures, platforms and bitstream descriptions.
+\end{itemize}
+
+Both commands can be started by \gloss{sbt} and given a list of parameters, for example:
+%
+\begin{lstlisting}[language=bash]
+~$ sbt "hls architecture baseline kernel add"
+~$ sbt "compose architecture baseline bitstreamDir mybitstreams"
+\end{lstlisting}
+%
+The parameters are usually pairs of case-insensitive key and value, separated by spaces, can be given in any order and are described in more detail in \tblref{tbl:run-description}.
+By default, \tpc{} executes in \emph{batch mode}, i.e., it scans the currently set base directories for platform, architecture, kernel and bitstream descriptions, which must be named \code{platform|\allowbreak architecture|\allowbreak kernel|\allowbreak  bitstream.description}, but may reside in arbitrarily nested subdirectories of their corresponding base directory (cf. \figref{fig:dirs}).
+%
+\begin{figure}
+  \centering%
+  \includegraphics[]{tikz/directory-structure}
+  \caption{Sample directory structure.}
+  \label{fig:dirs}
+\end{figure}
+%
+Each base directory can be changed using a command line argument (see also \tblref{tbl:run-description}):
+%
+\begin{lstlisting}[language=bash]
+~$ sbt "compose archDir otherArchs kernelDir otherKernels/myKernels"
+\end{lstlisting}
+%
+Directories are interpreted as paths relative to \tpchome{}, unless an absolute path is given.
+In \emph{batch mode}, \tpc{} will build every combination of architecture-platform-bitstream, if possible in parallel.
+
+\medskip
+Since this can easily explode combinatorially, the user can provide filters for each component to select specific architectures, platforms, kernels or bitstreams. E.g., to build the kernel \code{add} for the architecture \code{baseline}:
+%
+\begin{lstlisting}[language=bash]
+~$ sbt "hls architecture baseline kernel add"
+\end{lstlisting}
+%
+\tpc{} will scan the default directory \code{kernel/} for a \code{kernel.description} defining \code{add} and will report an error if it could not be found, or multiple conflicting definitions were found.
+See \secref{sec:directory-structure} for more information about the default directory structure.
+In this case, the user can also supply the filename of a specific \gloss{Kernel Description}:
+%
+\begin{lstlisting}[language=bash]
+~$ sbt "hls architecture baseline kernel mykernels/mydesc.kd"
+\end{lstlisting}
+%
+If the kernel was found, \tpc{} will continue in the same manner to look for an \gloss{Architecture Description} called \code{baseline}.
+The same mechanism also applies to \gloss{Platform Descriptions} and \gloss{Bitstream Descriptions}, example:
+To compose a threadpool for the \code{baseline} architecture using the \code{zynq} platform and a composition defined in \code{example.bd} use
+%
+\begin{lstlisting}[language=bash]
+~$ sbt "compose architecture baseline platform zynq bitstream example.bd"
+\end{lstlisting}
+%
+By default, the result of high-level synthesis will be placed in \code{cores}, the results of threadpool composition in \code{bd}.
+\tpc{} will also look for the IP cores in the given directory and only build kernel-architecture combinations that are missing, example:
+%
+\begin{lstlisting}[language=bash]
+~$ sbt "compose architecture baseline platform zynq bitstream example.bd coreDir myCores"
+\end{lstlisting}
+%
+Finally, all previously mentioned command line arguments can also be moved to an external file (see \tblref{tbl:run-description}) called and referenced using the \code{configFile} argument.
+E.g., the previously used commands can be moved into a file \code{myconfig.d} in \tpchome{} with the following contents:
+%
+\begin{lstlisting}[language=run]
+Architecture = baseline
+Platform = zynq
+Bitstream = example.bd
+\end{lstlisting}
+%
+And the execution can be started using
+%
+\begin{lstlisting}[language=bash]
+~$ sbt "compose configFile myconfig.d"
+\end{lstlisting}
+%
+A complete listing of all currently defined arguments can be found in \tblref{tbl:run-description}.
+Unknown arguments will be ignored.

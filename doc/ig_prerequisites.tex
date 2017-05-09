@@ -1,0 +1,119 @@
+\section{System Requirements}
+\tpc{} requires a computer running a \textsf{Linux} operating system with a 3.x series kernel.
+It has been tested on a system running Fedora 22 Linux distribution, more precisely \code{GNU/Linux 3.19.5-100.fc20.x86\_64}.
+The recommended Linux distribution for the Xilinx Zynq platforms is \emph{archlinux/ARM} \cite{archlinuxarm}, which is also the basis for the ready-for-use SDcard image files available on the \tpc{} website.
+No other system requirements have been identified for \tpc{}, however, the requirements of subsequently listed third-party software apply.
+
+\section{Prerequisites}
+\tpc{} is based on several third-party software components, the most important of which are listed in \tblref{tbl:thirdparty}.
+If nothing else is explicitly specified in the corresponding section, C/C++ code can be built by the GNU project toolchain, specifically the GNU C Compiler gcc \cite{gcc} and GNU make \cite{gmake}, Scala code by the Scala compiler \cite{scala} and \gloss{sbt} \cite{sbt} (for supported versions see \tblref{tbl:thirdparty}).
+It is likely possible to use different tools for these tasks, but is neither recommended nor supported.
+\emph{Xilinx Vivado Design Suite} is used for all synthesis tasks, but the capabilities of the Vivado Simulator (specifically the SystemVerilog DPI implementation) are not sufficient for simulation, hence simulation is tailored toward \emph{Mentor Graphics ModelSim}.
+With the exception of \gloss{sbt}, for which a micro-installation guide is provided in the next paragraph, a working installation of the software components is assumed.
+Please refer to the corresponding vendor's documentation for installation instructions.
+
+\begin{longtable}[c]{llcc}
+  \caption{Third-party software components and compatible versions}
+  \label{tbl:thirdparty}\\
+  \toprule
+  \textbf{Software Name} & \textbf{Vendor} & \textbf{Version} & \textbf{Mandatory}\\\midrule
+  \endhead
+  \bottomrule
+  \endlastfoot
+  gcc/g++ & Free Software Foundation, Inc. & $\geq$ 4.9 & Yes\\\midrule
+  ModelSim SE & Mentor Graphics Corporation & $\geq$ 10.0c\_1 & No\\\midrule
+  sbt & Typesafe, Inc. & $\geq$0.13.5 & Yes\\\midrule
+  Scala & \begin{minipage}{5cm}Programming Methods Laboratory of École Polytechnique Fédérale de Lausanne\end{minipage} & 2.10 & Yes\\\midrule
+  Vivado Design Suite & Xilinx, Inc. & 2015.2 & Yes\\
+\end{longtable}
+
+\subsection*{Installation of sbt}
+In case no precompiled package for \gloss{sbt} is provided for your Linux distribution, a very simple manual installation of \gloss{sbt} is possible:
+
+\begin{enumerate}
+  \item Download a compatible version of \code{sbt-launch.jar} at\\
+        \url{https://repo.typesafe.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/}.
+  \item Put \code{sbt-launch.jar} in a directory in the \code{PATH} environment variable, e.g., \code{\textasciitilde/bin}, or adapt your \code{PATH} accordingly.
+  \item At the same location, create a script \code{sbt}, with the following contents:
+        \begin{lstlisting}[language=bash]
+SBT_OPTS="-Xms512M -Xmx1536M -Xss1M -XX:+CMSClassUnloadingEnabled \
+  -XX:MaxPermSize=256M"
+java $SBT_OPTS -jar `dirname $0`/sbt-launch.jar "$@"
+	\end{lstlisting}
+\end{enumerate}
+
+Check if the installation was successful by running \code{sbt version} on a command line, it should finish without errors.
+For more information about \gloss{sbt}, refer to \cite{sbt}.
+
+\section{Paths and other preparations}
+Make sure that all software components listed in \tblref{tbl:thirdparty} are accessible from the command line.
+If necessary, add their location to the \code{PATH} environment variable or source appropriate scripts supplied by the vendor.
+To check this, make sure you can run the following commands from the command line:
+
+\begin{lstlisting}[language=bash, breaklines=true]
+~$ echo exit | vivado_hls -i
+~$ echo exit | vivado -nojournal -nolog -mode tcl 
+~$ echo quit | vsim -c
+~$ gcc -v
+~$ sbt version
+\end{lstlisting}
+
+Running the commands should yield output similar to this:
+\begin{lstlisting}[language=bash, breaklines=true]
+~$ echo exit | vivado_hls -i
+================================================================
+  Vivado(TM) HLS - High-Level Synthesis from C, C++ and SystemC
+  Version 2015.2
+  Build 1266856 on Fri Jun 26 16:57:37 PM 2015
+  Copyright (C) 2015 Xilinx Inc. All rights reserved.
+================================================================
+@I [LIC-101] Checked out feature [VIVADO_HLS]
+@I [HLS-10] Running '/opt/cad/xilinx/vivado/Vivado_HLS/2015.2/bin/unwrapped/lnx64.o/vivado_hls'
+            for user 'jk' on host 'mountdoom.esa.informatik.tu-darmstadt.de' (Linux_x86_64 version 3.19.5-100.fc20.x86_64) on Mon Nov 02 11:05:24 CET 2015
+            in directory '/home/jk/rcu/doc'
+@E [HLS-70] There is an error calling 'vivado_hls'; try "-help'.
+@I [LIC-101] Checked in feature [VIVADO_HLS]
+================================================================
+  Vivado(TM) HLS - High-Level Synthesis from C, C++ and SystemC
+  Version 2014.3
+  Build 1034051 on Fri Oct 03 16:32:44 PM 2014
+  Copyright (C) 2014 Xilinx Inc. All rights reserved.
+================================================================
+@I [LIC-101] Checked out feature [VIVADO_HLS]
+@I [HLS-10] Running '/opt/cad/xilinx/vivado/Vivado_HLS/2014.3/bin/unwrapped/lnx64.o/vivado_hls'
+            for user 'jk' on host 'mountdoom.esa.informatik.tu-darmstadt.de' (Linux_x86_64 version 3.17.8-200.fc20.x86_64) on Tue Feb 10 17:28:49 CET 2015
+            in directory '/home/jk'
+@E [HLS-70] There is an error calling 'vivado_hls'; try "-help'.
+@I [LIC-101] Checked in feature [VIVADO_HLS]
+~ $ echo exit | vivado -nojournal -nolog -mode tcl 
+****** Vivado v2015.2 (64-bit)
+  **** SW Build 1266856 on Fri Jun 26 16:35:25 MDT 2015
+  **** IP Build 1264090 on Wed Jun 24 14:22:01 MDT 2015
+    ** Copyright 1986-2015 Xilinx, Inc. All Rights Reserved.
+
+exit
+INFO: [Common 17-206] Exiting Vivado at Mon Nov  2 11:06:22 2015...
+~$ echo quit | vsim -c
+Reading /opt/cad/mentor/modelsim/modelsim-10.0c_1/modeltech/tcl/vsim/pref.tcl 
+
+# 10.0c_1
+
+#  
+ModelSim> quit
+~$ gcc -v
+Using built-in specs.
+COLLECT_GCC=gcc
+COLLECT_LTO_WRAPPER=/usr/local/libexec/gcc/x86_64-unknown-linux-gnu/5.2.0/lto-wrapper
+Target: x86_64-unknown-linux-gnu
+Configured with: ../5.2.0/configure
+Thread model: posix
+gcc version 5.2.0 (GCC)
+~$ sbt version
+
+[info] Set current project to jk (in build file:/home/jk/)
+[info] 0.1-SNAPSHOT
+~$
+\end{lstlisting}
+
+\input{ig_compile_simlib.tex}
+\input{ig_installation.tex}

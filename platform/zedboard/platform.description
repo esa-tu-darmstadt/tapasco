@@ -1,0 +1,16 @@
+{
+	"Name" : "zedboard",
+	"Description" : "zedboard Platform",
+	"TclLibrary" : "zedboard.tcl",
+	"Part" : "xc7z020clg484-1",
+	"BoardPart" : "em.avnet.com:zed:part0:1.2",
+	"BoardPreset" : "zedboard",
+	"Harness" : "../zynq/include/platform-harness.svh",
+	"API" : "../zynq/include/platform-api.svh",
+	"TestbenchTemplate" : "../zynq/sv/platform-dpi.sv",
+	"TargetUtilization" : 97,
+	"SlotCount" : 128,
+	"ValueArgTemplate" : "../zynq/valueargs.directives.template",
+	"ReferenceArgTemplate" : "../zynq/referenceargs.directives.template",
+	"Benchmark" : "zedboard.benchmark"
+}

@@ -1,0 +1,6 @@
+HWSWCOSIM ?= "/scratch/jk/rcu/hwswcosim"
+TARGETNAME ?= client
+
+$(TARGETNAME)-rcu: $(TARGETSRCS) $(COMMONDIR)/client.c
+	$(CC) $(CFLAGS) -I$(HWSWCOSIM)/include -L$(HWSWCOSIM)/lib -lrcu-client -o $(TARGETNAME)-rcu $^
+

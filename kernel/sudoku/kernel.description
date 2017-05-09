@@ -1,0 +1,11 @@
+{
+	"Name" : "sudoku",
+	"Version" : "1.1",
+	"TopFunction" : "sudoku_solve",
+	"Files" : ["src/Sudoku.cpp", "src/Sudoku_HLS.cpp"],
+	"Id" : 77,
+	"TestbenchFiles" : ["src/main.cpp", "hard_sudoku.txt", "hard_sudoku_solution.txt"],
+	"TestbenchCompilerFlags" : ["-lrt"],
+	"Arguments" : [{"Name" : "grid", "Passing" : "by reference"}],
+	"OtherDirectives" : "sudoku.dir"
+}

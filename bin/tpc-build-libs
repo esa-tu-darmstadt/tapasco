@@ -1,0 +1,49 @@
+#!/usr/bin/python
+import argparse
+import sys
+import subprocess
+from   socket import gethostname
+import os
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--mode', help='build mode (default: %(default)s)', default='release', choices=['clean', 'release', 'debug', 'driver_debug'])
+parser.add_argument('--rebuild', help='force rebuild libs (default: %(default)s)', action='store_true')
+args = parser.parse_args()
+
+clean        = args.mode == 'clean'
+debug        = args.mode == 'debug' or args.mode == 'driver_debug'
+driver_debug = args.mode == 'driver_debug'
+
+print 'Build mode: ' + args.mode
+
+if not 'TPC_PLATFORM' in os.environ:
+	print('Environment variable TPC_PLATFORM is not set, guessing Platform ...')
+	if gethostname() in ['zed', 'zedboard', 'zc706', 'zynq']:
+		os.environ['TPC_PLATFORM'] = 'zynq'
+	else:
+		os.environ['TPC_PLATFORM'] = 'vc709'
+
+print('Platform: ' + os.environ['TPC_PLATFORM'])
+
+moddir = '$TPC_HOME/platform/$TPC_PLATFORM/module'
+pdir   = '$TPC_HOME/platform/$TPC_PLATFORM/build'
+adir   = '$TPC_HOME/arch/baseline/build'
+
+if clean or args.rebuild:
+	subprocess.call(['rm -rf ' + pdir], shell=True)
+	subprocess.call(['rm -rf ' + adir], shell=True)
+	subprocess.call(['cd ' + moddir + ' && make clean'], shell=True)
+
+if not clean:
+	if debug:
+	    print('Building debug mode libraries...')
+	else:
+	    print('Building release mode libraries, pass "debug" as first argument to build debug libs...')
+	
+	if os.environ['TPC_PLATFORM'] is 'vc709':
+		print 'cd ' + moddir + ' && make ' + ('DEBUG_VERBOSE=y ' if driver_debug else ' ')
+		subprocess.call(['cd ' + moddir + ' && make ' + ('DEBUG_VERBOSE=y ' if driver_debug else ' ')], shell=True)
+	else:
+		subprocess.call(['cd ' + moddir + ' && make ' + ('' if driver_debug else 'release ')], shell=True)
+	subprocess.call(['mkdir -p ' + pdir + ' && cd ' + pdir + ' && cmake ' + ('' if debug else '-DCMAKE_BUILD_TYPE=Release') + ' .. && make && make install'], shell=True)
+	subprocess.call(['mkdir -p ' + adir + ' && cd ' + adir + ' && cmake ' + ('' if debug else '-DCMAKE_BUILD_TYPE=Release') + ' .. && make && make install'], shell=True)

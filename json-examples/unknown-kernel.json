@@ -1,0 +1,13 @@
+{
+	"UnknownKey": ["Some", "stuff"],
+	"Name" : "sudoku",
+	"Version" : "1.0",
+	"TopFunction" : "sudoku_solve",
+	"Files" : ["src/Sudoku.cpp", "src/Sudoku_HLS.cpp"],
+	"Id" : 42,
+	"TestbenchFiles" : ["src/main.cpp", "hard_sudoku.txt", "hard_sudoku_solution.txt"],
+	"UnknownKey2" : "ignore this",
+	"TestbenchCompilerFlags" : ["-lrt"],
+	"Arguments" : [{"Name" : "grid", "Passing" : "by reference"}],
+	"OtherDirectives" : "sudoku.dir"
+}

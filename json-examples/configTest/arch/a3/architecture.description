@@ -1,0 +1,5 @@
+{
+	"Name" : "Arch3",
+	"Description" : "Baseline Architecture with SW-based thread pool control.",
+	"TclLibrary" : "../arch.tcl"
+}

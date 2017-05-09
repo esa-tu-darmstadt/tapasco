@@ -1,0 +1,5 @@
+#set_directive_dependence -variable grid -dependent true -direction RAW sudoku_solve
+#set_directive_dependence -variable grid -dependent true -direction RAW Sudoku::solve
+#set_directive_dependence -variable stack -dependent true -direction RAW Sudoku::solve
+#set_directive_dependence -variable grid -dependent true -direction RAW Sudoku::safe
+set_directive_inline -recursive sudoku_solve

@@ -1,0 +1,3 @@
+KERNEL=="tpc_platform*" OWNER="tpc" GROUP="tpc"
+KERNEL=="tpc_platform*" RUN+="/bin/chown tpc:tpc /sys/class/misc/tpc_platform_zynq_tpc_status/pending_ev" RUN+="/bin/chown tpc:tpc /sys/class/misc/tpc_platform_zynq_tpc_status/total_ev" RUN+="/bin/chown tpc:tpc /sys/class/misc/tpc_platform_zynq_tpc_status/wait"
+SUBSYSTEM=="tpc_memory" OWNER="tpc" GROUP="tpc"

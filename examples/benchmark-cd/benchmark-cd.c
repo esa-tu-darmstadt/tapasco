@@ -1,0 +1,178 @@
+//
+// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+//
+// This file is part of ThreadPoolComposer (TPC).
+//
+// ThreadPoolComposer is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// ThreadPoolComposer is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
+//
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <assert.h>
+#include <fcntl.h>
+#include <tpc_api.h>
+#include "../benchmark-mem/timer.h"
+
+#define	MIN_NSECS					(10000)
+#define MAX_NSECS					(1000000)
+#define NSTEPS						(15)
+#define JOBS						(1000)
+
+static long jobs;
+static long errors;
+static long mode;
+
+static tpc_ctx_t *ctx;
+static tpc_dev_ctx_t *dev;
+
+static inline void check_tpc(tpc_res_t const result)
+{
+	if (result != TPC_SUCCESS) {
+		fprintf(stderr, "tpc fatal error: %s\n", tpc_strerror(result));
+		exit(result);
+	}
+}
+
+static inline double clock_period(void)
+{
+	static double period = 0.0;
+	if (period == 0.0) {
+		unsigned long hz;
+		char buf[1024] = "";
+		ssize_t rc;
+		int fd = open("/sys/class/fclk/fclk0/set_rate", O_RDONLY);
+		if (fd == -1) {
+			fprintf(stderr, "WARNING: could not open /sys/class/fclk/fclk0/set_rate, using TPC_FREQ\n");
+			assert(getenv("TPC_FREQ") && "must set TPC_FREQ env var!");
+			hz = strtoul(getenv("TPC_FREQ"), NULL, 0) * 1000000;
+		} else {
+			rc = read(fd, buf, 1023);
+			assert(rc);
+			fprintf(stderr, "fclk/set_rate = %s", buf);
+			close(fd);
+			hz = strtoul(buf, NULL, 0);
+		}
+		period = 1.0 / (hz / 1000000000.0);
+		fprintf(stderr, "period = %3.2f ns\n", period);
+	}
+	return period;
+}
+
+static inline unsigned long ns_to_cd(unsigned long ns) {
+	// convert to countdown value:
+	// t = 2 * period + n * 2 * period
+	// i.e., 2 cycles init + 2 cycles per loop iteration
+	return ns / (2 * clock_period()) - 1;
+}
+
+static inline void tpc_run(long cc)
+{
+	tpc_job_id_t j_id = tpc_device_acquire_job_id(dev, 14, 0);
+	tpc_device_job_set_arg(dev, j_id, 0, sizeof(cc), &cc);
+	if (tpc_device_job_launch(dev, j_id, TPC_JOB_LAUNCH_BLOCKING) !=
+			TPC_SUCCESS)
+		__atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
+	tpc_device_release_job_id(dev, j_id);
+}
+
+static inline void cpu_run(long us)
+{
+	usleep(us);
+}
+
+static inline void *run(void *p)
+{
+	long job;
+	long clk = (long)p;
+	long cc = ns_to_cd(clk);
+	long us = clk / 1000;
+	while ((job = __atomic_fetch_sub(&jobs, 1, __ATOMIC_SEQ_CST)) > 0) {
+		if (mode == 0)
+			tpc_run(cc);
+		else
+			cpu_run(us);
+	}
+	return NULL;
+}
+
+static inline void print_header(void)
+{
+	long const pc = sysconf(_SC_NPROCESSORS_CONF);
+	printf("Kernel Runtime (us)");
+	for (int no_p = 1; no_p <= pc; ++no_p)
+		printf(",Ideal (%d cores), CPU (%d core), FPGA (%d core)",
+				no_p, no_p, no_p);
+	printf("\n\n");
+}
+
+static inline void print_line(double clk, double *t)
+{
+	long const pc = sysconf(_SC_NPROCESSORS_CONF);
+	printf("%3.2f", clk);
+	for (int no_p = 1; no_p <= pc; ++no_p) {
+		double cpu_t = 1.0 / (t[no_p - 1] / clk / JOBS);
+		double fpga_t = 1.0 / (t[no_p + pc - 1] / clk / JOBS);
+		printf(", %3.4f, %3.4f, %3.4f", (float)no_p, cpu_t, fpga_t);
+	}
+	/*printf("%3.2f, %3.2f, %3.2f", clk, ideal_1, ideal_n);
+	for (int i = 0; i < sysconf(_SC_NPROCESSORS_CONF) * 2; ++i) {
+		double const actual = 1.0 / (t[i] / clk / JOBS);
+		printf(", %3.8f", actual);
+	}*/
+	printf("\n");
+}
+
+int main(int argc, char **argv)
+{
+	long clk_step, clk;
+	pthread_t threads[sysconf(_SC_NPROCESSORS_CONF)];
+	double times[sysconf(_SC_NPROCESSORS_CONF) * 2];
+
+	// init timer and data
+	TIMER_INIT();
+
+	// initialize threadpool
+	check_tpc(tpc_init(&ctx));
+	check_tpc(tpc_create_device(ctx, 0, &dev, 0));
+	assert(tpc_device_func_instance_count(dev, 14) > 0);
+
+	clk_step = (MAX_NSECS - MIN_NSECS) / NSTEPS;
+	clk = MIN_NSECS;
+	print_header();
+	TIMER_START(total)
+	for (int i = 0; i <= NSTEPS; ++i, clk += clk_step) {
+		for (mode = 0; mode < sysconf(_SC_NPROCESSORS_CONF) * 2; ++mode) {
+			//for (int nt = 1; nt <= 1/*sysconf(_SC_NPROCESSORS_CONF)*/; ++nt) {
+			//	
+				jobs = JOBS;
+				int const nt = mode % sysconf(_SC_NPROCESSORS_CONF) + 1;
+				errors = 0;
+				TIMER_START(run)
+				for (int i = 0; i < nt; ++i)
+					pthread_create(&threads[i], NULL, run, (void *)clk);
+				for (int i = 0; i < nt; ++i)
+					pthread_join(threads[i], NULL);
+				TIMER_STOP(run)
+				times[mode] = errors ? 0.0 : TIMER_USECS(run);
+			//}
+		}
+		print_line(clk / 1000.0, times);
+	}
+	TIMER_STOP(total)
+	fprintf(stderr, "Total duration: %llu us.\n", TIMER_USECS(total));
+	// de-initialize threadpool
+	tpc_destroy_device(ctx, dev);
+	tpc_deinit(ctx);
+}

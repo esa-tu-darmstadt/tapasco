@@ -1,0 +1,10 @@
+
+
+OPTION psf_version = 2.1;
+
+BEGIN DRIVER mm_to_lite
+	OPTION supported_peripherals = (mm_to_lite);
+	OPTION copyfiles = all;
+	OPTION VERSION = 1.0;
+	OPTION NAME = mm_to_lite;
+END DRIVER

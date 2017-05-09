@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 2.7)
+project(arrayinit)
+set (CMAKE_INSTALL_PREFIX "..")
+include (../examples.cmake)
+
+include_directories(../../kernel/arrayinit)
+
+add_executable(arrayinit arrayinit-example.c ../../kernel/arrayinit/arrayinit.c)
+target_link_libraries(arrayinit rt pthread tpc platform)
+set_target_properties(arrayinit PROPERTIES COMPILE_FLAGS "-g -Wall -Werror -std=gnu99 -Wno-unused-label")
+
+install(TARGETS arrayinit
+        RUNTIME DESTINATION bin/${ARCH})

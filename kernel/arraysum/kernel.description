@@ -1,0 +1,9 @@
+{
+	"Name" : "arraysum",
+	"TopFunction" : "arraysum",
+	"Version" : "1.0",
+	"Id" : 10,
+	"Files" : ["arraysum.c"],
+	"TestbenchFiles" : ["arraysum-tb.c"],
+	"Arguments" : [{"Name" : "arr", "Passing" : "by reference"}]
+}

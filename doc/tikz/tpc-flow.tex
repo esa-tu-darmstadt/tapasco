@@ -1,0 +1,70 @@
+\documentclass [border=0pt,10pt] {standalone}
+\usepackage{tikz}
+\usetikzlibrary{calc, patterns}
+\renewcommand\rmdefault{\sfdefault}
+\input{../esacolors}
+
+\begin{document}
+\begin{tikzpicture} [ line width=2pt,
+    main arrow/.style={fill=black!20, draw=black!70, line cap=round, line width=2pt},
+    tool/.style={draw=esa4, fill=white, rounded corners},
+    tool label/.style={font=\bfseries, align=center},
+    tpc/.style={font=\bfseries\Large\color{white}},
+    tpc step/.style={fill=white, rounded corners, draw=esa4},
+    tpc step label/.style={font=\bfseries, align=center},
+    tool execution/.style={font=\bfseries, yshift=-3pt}
+  ]
+  \def\width{25}
+  \def\height{5}
+  \def\swidth{0.125*\width}
+  \def\gapwidth{0.5}
+  \def\mainarrowdepth{0*\gapwidth}
+  \def\subarrowdepth{0.5*\gapwidth}
+  \def\tpcstepwidth{60pt}
+
+  \coordinate (t) at (0,.2*\height);
+  \coordinate (m) at (0,0);
+  \coordinate (b) at (0,-.45*\height);
+  \coordinate (tt) at (0,-.5*\gapwidth);
+  \coordinate (tb) at ($(b) +(0,.5*\gapwidth)$);
+  \coordinate (tm) at ($(m)!.5!(b)$);
+
+  \coordinate (l) at (-.5*\width,0);
+  \coordinate (c) at (0,0);
+  \coordinate (r) at (.5*\width,0);
+
+  \foreach \d in {1, 2, 3} {
+    \coordinate (s\d) at (${\d - 2}*(0.3*\width,0)$);
+    \coordinate (ls\d) at ($(s\d) - (.5*\swidth,0)$);
+    \coordinate (lls\d) at ($(ls\d) - (\gapwidth,0)$);
+    \coordinate (rs\d) at ($(s\d) + (.5*\swidth,0)$);
+    \coordinate (rrs\d) at ($(rs\d) + (\gapwidth,0)$);
+  }
+
+  \foreach \ts/\l/\r in {1/l/lls1, 2/rrs1/lls2, 3/rrs2/lls3, 4/rrs3/r}
+    \coordinate (ts\ts) at ($(\l)!.5!(\r)$);
+
+  \foreach \d/\l in {1/{High-Level\\Synthesis\\(Vivado HLS)}, 2/{Mid-Level\\Synthesis\\(Vivado IP\\Integrator)}, 3/{Low-Level\\Synthesis\\(Vivado)}}
+    \path [tool] (ls\d |- tt) rectangle (rs\d |- tb) node [pos=0.5, tool label] (n\d) {\l};
+
+  \shade [main arrow, top color=esa0, bottom color=esa3, draw=esa4] (l |- b) -- 
+    (lls1 |- b) -- ($(lls1 |- tm) +(\subarrowdepth,0)$) -- (lls1 |- m) -- (rrs1 |- m) -- (rrs1 |- b) --
+    (lls2 |- b) -- ($(lls2 |- tm) +(\subarrowdepth,0)$) -- (lls2 |- m) -- (rrs2 |- m) -- (rrs2 |- b) --
+    (lls3 |- b) -- ($(lls3 |- tm) +(\subarrowdepth,0)$) -- (lls3 |- m) -- (rrs3 |- m) -- (rrs3 |- b) --
+    (r |- b) -- ($(r |- m) +(\mainarrowdepth,0)$) -- (r |- t) -- (l |- t) -- ($(l |- m) +(\mainarrowdepth,0)$) -- cycle;
+
+  \node [tpc] (tpc) at ($(t)!.5!(m)$) {ThreadpoolComposer};
+
+  \foreach \ts/\l in {1/{Kernel\\Preparation}, 2/{Threadpool\\Composition}, 3/{Platform\\Integration}, 4/{Evaluation}}
+    \path [tpc step] ($(ts\ts |- tt) - (0.5*\tpcstepwidth,0)$) rectangle ($(ts\ts |- tb) + (0.5*\tpcstepwidth,0)$) node [pos=.5, tpc step label] {\l};
+
+  \foreach \ts/\l in {1/{(a)}, 2/{(b)}, 3/{(c)}}
+    \node [tool execution] at (s\ts |- b) {\l};
+
+  %\foreach \vaxis in {l, c, r, ls1, s1, rs1, ls2, s2, rs2, ls3, s3, rs3}
+  %  \draw [->] (\vaxis) -- +(0,1);
+  %\foreach \haxis in {t, m, b}
+  %  \draw [->] (\haxis) -- +(1,0);
+
+\end{tikzpicture}
+\end{document}

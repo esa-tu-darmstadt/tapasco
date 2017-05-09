@@ -1,0 +1,2 @@
+# Example composition: instantiate 'warraw' 48 times.
+Composition = warraw 48

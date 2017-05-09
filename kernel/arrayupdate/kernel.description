@@ -1,0 +1,10 @@
+{
+	"Description" : "Trivial kernel: Update each element by adding 42.",
+	"Name" : "arrayupdate",
+	"Id" : 9,
+	"Version" : "1.0",
+	"TopFunction" : "arrayupdate",
+	"Files" : ["arrayupdate.c"],
+	"TestbenchFiles" : ["arrayupdate-tb.c"],
+	"Arguments" : [{"Name":"arr","Passing":"by reference"}]
+}
