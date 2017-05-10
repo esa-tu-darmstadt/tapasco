@@ -16,7 +16,7 @@ Prerequisites
 -------------
 To use TPC, you'll need working installations of
 
-* Vivado Design Suite 2015.2 or newer
+* Vivado Design Suite 2016.2 or newer
 * Java SDK 7+
 * sbt 0.13.x
 * git
@@ -24,7 +24,7 @@ To use TPC, you'll need working installations of
 If you want to use the High-Level Synthesis flow for generating custom IP
 cores, you'll also need:
 
-* Vivado HLS 2015.2+
+* Vivado HLS 2016.2+
 
 Check that at least the following are in your `$PATH`:
 
