@@ -110,8 +110,6 @@ object EvaluateIP {
     val r = InterruptibleProcess(Process(vivadoCmd, files.baseDir.toFile),
         waitMillis = Some(24 * 60 * 60 * 1000)).!(io)
 
-    // remove files from zip
-    files.files.map(f => deleteOnExit(f.toFile))
     if (r == InterruptibleProcess.TIMEOUT_RETCODE) {
       logger.error("%s: Vivado timeout error".format(runPrefix))
     } else {
@@ -122,10 +120,11 @@ object EvaluateIP {
         writeXMLReport(reportFile, ur, dpd, targetPeriod)
         logger.info("{} finished successfully, report in {}", runPrefix: Any, reportFile)
         // clean up files on exit
-        deleteOnExit(files.tclFile.toFile)
         deleteOnExit(files.baseDir.toFile)
-        deleteOnExit(files.logFile.toFile)
         deleteOnExit(files.baseDir.resolve(".Xil").toFile) // also remove Xilinx's crap
+        files.files.map(f => deleteOnExit(f.toFile)) // remove files from zip only on success, else keep
+        deleteOnExit(files.tclFile.toFile)
+        deleteOnExit(files.logFile.toFile)
       } else {
         logger.error("%s: Vivado finished with error (%d)".format(runPrefix, r))
       }
