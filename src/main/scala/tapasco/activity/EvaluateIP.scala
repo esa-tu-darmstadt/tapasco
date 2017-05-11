@@ -26,8 +26,10 @@ import  de.tu_darmstadt.cs.esa.tapasco._
 import  de.tu_darmstadt.cs.esa.tapasco.reports._
 import  de.tu_darmstadt.cs.esa.tapasco.util._
 import  de.tu_darmstadt.cs.esa.tapasco.util.ZipUtils._
+import  Logging._
 import  java.nio.file.{Files, Path}
 import  scala.sys.process._
+import  scala.xml.XML
 
 /** EvaluateIP is the out-of-context synthesis activity.
   * The EvaluateIP activity performs an out-of-context synthesis and
@@ -68,18 +70,33 @@ object EvaluateIP {
         """\.vh$""".r,
         """\.xci$""".r,
         """\.saif$""".r,
-        """subcore.*""".r),
+        """subcore.*""".r,
+        """component.xml$""".r),
         Seq("""hdl/ip/""".r)
       )
     // partition files
     final private val suflen = 4
     lazy val tcl_files  = files filter (_.toString.endsWith(".tcl"))
-    lazy val v_files    = files filter (f => """\.v$""".r.findFirstIn(f.toString).nonEmpty)
-    lazy val vhd_files  = (files filter (f => """\.vhd$""".r.findFirstIn(f.toString).nonEmpty))
-                            .filter (f => ! v_files.map(_.toString).contains(f.toString.dropRight(suflen) + ".v"))
+    lazy val v_files    = files collect {
+      case f if """\.v$""".r.findFirstIn(f.toString).nonEmpty && !includes.contains(f.getFileName) => f
+    }
+    lazy val vhd_files  = files collect {
+      case f if """\.vhd$""".r.findFirstIn(f.toString).nonEmpty &&
+                !(v_files map (_.toString) contains (f.toString.dropRight(suflen) + ".v")) &&
+                !includes.contains(f.getFileName) => f
+    }
     lazy val hdl_files  = v_files ++ vhd_files
     lazy val logFile    = baseDir.resolve("evaluate.log")
     lazy val tclFile    = baseDir.resolve("evaluate.tcl")
+    lazy val ipxact     = files collectFirst { case f if f.toString.endsWith("component.xml") => f }
+    lazy val includes   = catchAllDefault[Seq[Path]](Seq[Path](), "could not parse component.xml: ") {
+      (XML.loadFile(ipxact.get.toString) \\ "component" \\ "fileSet" filter { fs: scala.xml.Node =>
+        (fs \ "name").text equals "xilinx_anylanguagesynthesis_view_fileset"
+      }) \ "file" collect {
+        case f if (f \ "isIncludeFile").nonEmpty && (f \ "isIncludeFile").text.equals("true") =>
+          java.nio.file.Paths.get((f \ "name").text).getFileName
+      }
+    }
   }
 
   /** Perform the evaluation.
