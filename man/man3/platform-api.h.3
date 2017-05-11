@@ -1,0 +1,24 @@
+.TH platform-api.h 1 "May 11, 2017" "version 2017.1"  "USER COMMANDS"
+.SH NAME
+platform-api.h \- Header include for libplatform(3), defines the Platform API.
+.SH DESCRIPTION
+TaPaSCo microarchitectures consist of two parts: The
+.I Architecture
+and the
+.I Platform.
+Architecture is resonsible for the organization and wiring of the processing
+elements, as well as their control interface. Platform is responsible for the
+rest of the design, e.g., the communication to the host, access to memory,
+peripherals.
+.PP
+platform-api.h defines the programming interface at Platform level. It should
+not be used directly, only implementations of tpc-api.h(3) should use it to
+implement their functionality in Platform-agnostic manner.
+.PP
+Platform API defines low-level interactions with the Platform, e.g., provides
+access to the memory and register spaces
+.PP
+Each Platform provides its own implementation of platform-api.h in
+libplatform(3).
+.SH SEE ALSO
+tapasco(1), libtapasco(3), tapasco-api.h(3), libplatform(3)

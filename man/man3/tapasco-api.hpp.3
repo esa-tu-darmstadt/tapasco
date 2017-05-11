@@ -1,0 +1,22 @@
+.TH tapasco-api.h 1 "May 11, 2017" "version 2017.1"  "USER COMMANDS"
+.SH NAME
+tapasco-api.h \- C++ header include for libtapasco(3), define Tapasco API.
+.SH DESCRIPTION
+TaPaSCo microarchitectures consist of two parts: The
+.I Architecture
+and the
+.I Platform.
+Architecture is resonsible for the organization and wiring of the processing
+elements, as well as their control interface. Platform is responsible for the
+rest of the design, e.g., the communication to the host, access to memory,
+peripherals.
+.PP
+tapasco-api.h(3) defines the user-facing API for applications, i.e., the 
+interface user applications program against to interface with TaPaSCo hardware.
+It defines methods to query bitstreams, transfer data from and to the device,
+configure and launch jobs, among other things (see inline documentation).
+.PP
+tapasco-api.hpp defines a convenient wrapper for tapasco-api.h(3), removing most
+of the boiler plate code. See inline documentation for details.
+.SH SEE ALSO
+tapasco(1), libtapasco(3)

@@ -1,0 +1,339 @@
+.TH tapasco 1 "May 11, 2017" "version 2017.1"  "USER COMMANDS"
+.SH NAME
+tapasco \- The Task Parallel System Composer
+.SH SYNOPSIS
+.B tapasco
+[global options]* [jobs]*
+.SH DESCRIPTION
+The
+.B Task Parallel System Composer (TaPaSCo, or TPC)
+is an FPGA toolchain to compose a task parallel on\-chip microarchitecture for
+multiple instances of application\-specific processing elements (PEs). TaPaSCo
+features an automatic design space exploration approach: It can vary both target
+operating frequency, as well as number of PE instances to aim for the ideal
+trade\-off between area utilization and frequency (the performance sweet spot
+for FPGA architectures).
+
+." *****************************************************************************
+.SH GLOBAL OPTIONS
+Global options affect all jobs in this run of tapasco.
+.TP
+\-\-archDir [PATH]
+.RS
+Base directory for architecture descriptions
+.RE
+.TP
+\-\-compositionDir [PATH]
+.RS
+Output base directory for Compose jobs
+.RE
+.TP
+\-\-coreDir [PATH}
+.RS
+Output base directory for HLS jobs, synthesized cores
+.RE
+.TP
+\-\-kernelDir [PATH]
+.RS
+Base directory for kernel descriptions (HLS)
+.RE
+.TP
+\-\-platformDir [PATH]
+.RS
+Base directory for platform descriptions
+.RE
+.TP
+\-\-logFile [FILE]
+.RS
+Path to output log file
+.RE
+.TP
+\-\-configFile [FILE]
+.RS
+Path to Json file with Configuration
+.RE
+.TP
+\-\-jobsFile [FILE]
+.RS
+Path to Json file with Jobs array
+.RE
+.TP
+\-\-slurm
+.RS
+Activate SLURM cluster execution (requires SLURM/sbatch)
+.RE
+
+." *****************************************************************************
+.SH COMPOSITION SYNTAX
+Compositions are a sequence of pairs of processing elements and their instance
+count. They can be specified as separate Json files, or inline:
+.PP
+\'[\' [NAME] \'x\' [COUNT] (\',\' [NAME] \'x\' [COUNT])* \']\'
+.TP
+where NAME is a valid PE identifier and COUNT a positive number > 0.
+.SS Example
+[counter x 24, arrayinit x 42]
+
+." *****************************************************************************
+.SH JOBS
+A
+.B job
+is a set of parameters for one of the activities TaPaSCo can perform:
+bulkimport, compose, corestats, dse, hls, import.
+See below for descriptions of the jobs and their corresponding activities.
+.PP
+Any number of consecutive jobs can be specified and will be executed
+sequentially. There is a Json format for all jobs, and a
+.B job file
+containing a Json array of jobs can be specified instead.
+
+." -----------------------------------------------------------------------------
+.SS bulkimport \-\-csv [FILE]
+Parses a file in
+.I  CSV (comma-separated values)
+format containing the following header:
+.PP
+.SM "Zip, ID, Description, Architecture, Platform, Avg Runtime (clock cycles)"
+.PP
+where Zip is the path to zip file, ID is the TaPaSCO function ID (used to call
+the PE in the APIs), Description is an optional text, Architecture and Platform
+are the names of the import Target.
+.PP
+.TP
+bulkimport \-\-csv [FILE]
+.RS
+[FILE] should be in comma-separated values (CSV) format and must contain the
+header line.
+.RE
+
+." -----------------------------------------------------------------------------
+.SS compose [composition] [frequency] [implementation]? [options]*
+Composes a microarchitecture for the given Composition. Will produce a .bit
+bitstream file in the \-\-compositionDir.
+.PP
+.B Mandatory Arguments
+.TP
+\-\-composition {[FILE] | [DEF]}
+.RS
+Threadpool composition, either in a separate Json file, or inline as arguments
+(see COMPOSITION SYNTAX).
+.RE
+.TP
+\-\-designFrequency [NUM]
+.RS
+Target design frequency (PE clock) in MHz.
+.RE
+.TP
+\-\-implementation [NAME]
+Composer implementation (default: Vivado)
+.PP
+.B Options
+.TP
+\-\-architectures|\-a [NAME] (\',\' [NAME])*
+.RS
+Filter for Architectures, restrict set of Architectures to names.
+.RE
+.TP
+\-\-platforms|-p [NAME] (\',\' [NAME])*
+.RS
+Filter for Platforms, restrict set of Platforms to names.
+.RE
+.TP
+\-\-debugMode [NAME]
+.RS
+Activates the given debug mode; currently implemented modes are:
+.RS
+.PP
+\'r\' generates random results, ranging from Success, PlacerErrors to
+TimingFailures
+.PP
+\'p\' always generate PlacerError
+.PP
+\'t\' always generate TimingFailure and
+.PP
+\'s\' always generate a Success, w/o reports.
+.RE
+.RE
+
+." -----------------------------------------------------------------------------
+.SS corestats [options]
+Collects results for all Cores in in coreDir from different reports (synthesis,
+utilization, power, ...) and stores them in one CSV file per Target, i.e.,
+Architecture + Platform combination.
+.PP
+.B Options
+.TP
+\-\-prefix [PREFIX]
+.RS
+Prefix file names with [PREFIX]. Files will be called
+"[PREFIX][ARCH]@[PLATFORM].csv".
+.RE
+.TP
+\-\-architectures|\-a [NAME] (\',\' [NAME])*
+.RS
+Filter for Architectures, restrict set of Architectures to names.
+.RE
+.TP
+\-\-platforms|-p [NAME] (\',\' [NAME])*
+.RS
+Filter for Platforms, restrict set of Platforms to names.
+.RE
+
+." -----------------------------------------------------------------------------
+.SS dse [composition] [dimensions] [batch size] [options]*
+Perform automatic
+.I design space exploration (DSE)
+for the given Composition, Targets (Architecture + Platform) and dimensions.
+.PP
+.B Mandatory Arguments
+.TP
+\-\-composition {[FILE] | [DEF]}
+.RS
+Threadpool composition, either in a separate Json file, or inline as arguments
+(see COMPOSITION SYNTAX).
+.RE
+.TP
+\-\-dimensions [dimension] [\',\' [dimension]]* where [dimension] is one of
+.RS
+.I area
+activate utilization variation, i.e., linear scaling of PE instance counts
+.PP
+.I frequency
+activate frequency variation, i.e., automatic selection of PE clock frequency
+.PP
+.I alternatives
+activate alternative implementations, i.e., allow TaPaSCo to replace any PE with
+a PE with the same ID.
+.RS
+.PP
+Example:
+Let "counter" and "countdown" both have ID 14; then a Composition
+.RS
+[counter x 12]
+.RE
+may be changed by the DSE to be
+.RS
+[countdown x 12]
+.RE
+.RE
+.RE
+.TP
+\-\-batchSize [NUM]
+.RS
+Excute [NUM] runs in parallel in each batch; should not exceed the number of
+available processors and licences.
+.RE
+
+.PP
+.B Options
+.TP
+\-\-basePath [PATH]
+.RS
+Output base directory for all Compositions etc. (default: $TAPASCO_HOME/DSE_[TIMESTAMP]).
+.RE
+.TP
+\-\-heuristic [heuristic]
+Select design space ordering heuristic (default: job throughput).
+.TP
+\-\-frequency [NUM]
+.RS
+Initial target design frequency (PE clock) in MHz.
+.RE
+.TP
+\-\-implementation [NAME]
+.RS
+Composer implementation (default: Vivado)
+.RE
+.TP
+\-\-architectures|\-a [NAME] (\',\' [NAME])*
+.RS
+Filter for Architectures, restrict set of Architectures to names.
+.RE
+.TP
+\-\-platforms|-p [NAME] (\',\' [NAME])*
+.RS
+Filter for Platforms, restrict set of Platforms to names.
+.RE
+.TP
+\-\-debugMode [NAME]
+.RS
+Activates the given debug mode; see compose.
+.RE
+
+." -----------------------------------------------------------------------------
+.SS hls [options]*
+Execute High-Level Synthesis to turn Kernel into Core instances for the
+specified Targets (Architecture + Platform).
+.PP
+.B Options
+.TP
+\-\-implementation [NAME]
+.RS
+Composer implementation (default: VivadoHLS)
+.RE
+.TP
+\-\-kernels|-k [NAME] (\',\' [NAME])*
+.RS
+Filter for Kernels, restrict set of Kernels to names.
+.RE
+.TP
+\-\-architectures|\-a [NAME] (\',\' [NAME])*
+.RS
+Filter for Architectures, restrict set of Architectures to names.
+.RE
+.TP
+\-\-platforms|-p [NAME] (\',\' [NAME])*
+.RS
+Filter for Platforms, restrict set of Platforms to names.
+.RE
+
+." -----------------------------------------------------------------------------
+.SS import [options]*
+Imports a existing IP-XACT core archive into the core library of TaPaSCo for the
+specified Targets (Architecture + Platform). Will perform
+.I out-of-context (OOC) synthesis
+if existing reports cannot be found, to generate estimates for area utilization,
+max. operating frequency and power consumption.
+.PP
+.B Options
+.TP
+\-\-zip [FILE]
+.RS
+Path to .zip file containing IP-XACT core (sources + component.xml).
+.RE
+.TP
+\-\-id [NUM]
+.RS
+Kernel ID (> 0) for use in TaPaSCO (used by APIs).
+.RE
+.TP
+\-\-averageClockCycles [NUM]
+.RS
+Avg. clock cycles per execution (optional).
+.RE
+.TP
+\-\-description "[TEXT]"
+.RS
+Kernel description text (optional).
+.RE
+.TP
+\-\-architectures|\-a [NAME] (\',\' [NAME])*
+.RS
+Filter for Architectures, restrict set of Architectures to names.
+.RE
+.TP
+\-\-platforms|-p [NAME] (\',\' [NAME])*
+.RS
+Filter for Platforms, restrict set of Platforms to names.
+.RE
+.SH ENVIRONMENT
+.TP
+.B TAPASCO_HOME
+.RS
+Path to TaPaSCo root installation folder (where setup.sh is located).
+.RE
+
+.SH SEE ALSO
+itapasco(1), tapasco-build-libs(1), tapasco-logviewer(1),
+tapasco-reportviewer(1), tapasco-load-bitstream(8), libtapasco(3),
+libplatform(3), tapasco-api.h(3), tapasco-api.hpp(3), platform-api.h(3)
