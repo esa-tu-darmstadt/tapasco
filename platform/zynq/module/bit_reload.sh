@@ -17,24 +17,55 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-BITSTREAM=$1
-if [[ "$BITSTREAM" != /* ]]; then
-  BITSTREAM=$PWD/$BITSTREAM
-fi
 
-if [[ -e $BITSTREAM ]]; then
-  pushd $TAPASCO_HOME/platform/zynq/module
-  if [[ `lsmod | grep tapasco | wc -l` -eq 1 ]]; then
-    sudo ./unload.sh
-  fi
-  echo "Loading bitstream $BITSTREAM ..."
-  sudo sh -c "cat $BITSTREAM > /dev/xdevcfg"
-  echo "Done!"
-  echo "Loading kernel module ..."
-  sudo ./load.sh
-  popd
-  echo "Done."
+show_usage() {
+	cat << EOF
+Usage: ${0##*/} [-v|--verbose] [--d|--drv-reload] BITSTREAM
+Program FPGA via /dev/xdevcfg.
+
+	-v	enable verbose output
+	-d	reload device driver
+EOF
+}
+
+# init vars
+BITSTREAM=""
+VERBOSE=0
+RELOADD=1
+
+OPTIND=1
+while getopts vd opt; do
+	case $opt in
+		v)
+			VERBOSE=1
+			;;
+		d)
+			RELOADD=1
+			;;
+		*)
+			echo "unknown option: $opt"
+			show_usage
+			exit 1
+			;;
+	esac
+done
+shift "$((OPTIND-1))"
+
+BITSTREAM="$1"
+if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit ]] && [[ -e $BITSTREAM ]]
+then
+	pushd $TAPASCO_HOME/platform/zynq/module
+	if [[ `lsmod | grep tapasco | wc -l` -eq 1 ]]; then
+	sudo ./unload.sh
+	fi
+	echo "Loading bitstream $BITSTREAM ..."
+	sudo sh -c "cat $BITSTREAM > /dev/xdevcfg"
+	echo "Done!"
+	echo "Loading kernel module ..."
+	sudo ./load.sh
+	popd
+	echo "Done."
 else
-  echo "ERROR: $BITSTREAM does not exist"
+	show_usage
+	exit 1
 fi
-

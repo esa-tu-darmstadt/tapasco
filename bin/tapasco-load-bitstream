@@ -26,8 +26,8 @@ if args.verbose:
 	print 'Reload Driver: {0}'.format(str(args.reload_driver))
 	print 'Platform: {0}'.format(os.environ['TAPASCO_PLATFORM'])
 
-path = 'module/hotplug_stuff/' if os.environ['TAPASCO_PLATFORM'] is 'vc709' else 'module/'
-reld = 'drv_reload' if args.reload_driver else ''
-verb = 'verbose' if args.reload_driver and args.verbose else ''
-cmd = '$TAPASCO_HOME/platform/$TAPASCO_PLATFORM/{0}bit_reload.sh {1} {2} {3}'.format(path, args.bitstream, reld, verb)
+path = 'module/'
+reld = '-d' if args.reload_driver else ''
+verb = '-v' if args.verbose else ''
+cmd = '$TAPASCO_HOME/platform/$TAPASCO_PLATFORM/{0}bit_reload.sh {1} {2} {3}'.format(path, verb, reld, args.bitstream)
 subprocess.call([cmd], shell=True)
