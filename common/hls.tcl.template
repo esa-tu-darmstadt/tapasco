@@ -69,7 +69,7 @@ if {$do_cosim > 0} {
   set oldpwd [pwd]
   cd "@@PROJECT@@/@@SOLUTION@@/sim/verilog"
   puts "Creating SAIF ..."
-  exec "./sim.sh"
+  exec -ignorestderr "./sim.sh"
   puts "SAIF dumping done."
   cd $oldpwd
   set saif [glob -nocomplain -directory @@PROJECT@@/@@SOLUTION@@/sim/verilog/ *.saif]
@@ -92,13 +92,13 @@ if {$do_cosim > 0} {
 # re-package
 set oldpwd [pwd]
 cd "@@PROJECT@@/@@SOLUTION@@/impl/ip"
-exec "$::env(TAPASCO_HOME)/common/hls_patch_supported_families.sh"
+exec -ignorestderr "$::env(TAPASCO_HOME)/common/hls_patch_supported_families.sh"
 # also add subcore Tcl scripts to zip
-exec "$::env(TAPASCO_HOME)/common/hls_patch_subcores.sh"
+exec -ignorestderr "$::env(TAPASCO_HOME)/common/hls_patch_subcores.sh"
 if {$do_cosim > 0} {
-  exec "$::env(TAPASCO_HOME)/common/hls_patch_saif.sh"
+  exec -ignorestderr "$::env(TAPASCO_HOME)/common/hls_patch_saif.sh"
 }
-exec "[pwd]/pack.sh"
+exec -ignorestderr "[pwd]/pack.sh"
 # we're done
 cd $oldpwd
 exit
