@@ -24,6 +24,7 @@ private class ConcreteRun(val no: Int, val element: DesignSpace.Element, val tar
 
   def start(signal: Option[CountDownLatch]): Unit = {
     val id = "%05d".format(no)
+    implicit val maxThreads: Option[Int] = Some(1) // limit number of threads in DSE to control load
     val t = new ComposeTask(
       composition     = element.composition,
       designFrequency = element.frequency,

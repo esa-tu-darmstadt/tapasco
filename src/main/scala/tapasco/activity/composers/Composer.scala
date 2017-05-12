@@ -30,25 +30,22 @@ import  de.tu_darmstadt.cs.esa.tapasco.reports._
     using an external tool (e.g., Vivado). **/
 trait Composer {
   import Composer._
-  // FIXME this seems not a clean approach
-  private final val MAX_CPUS = 8
-  var maxThreads: Int = Seq(Runtime.getRuntime().availableProcessors(), MAX_CPUS).min
 
   /** Returns the approximate peak memory usage per process in GiB. **/
   def maxMemoryUsagePerProcess: Int
 
   /** Start run of external tool.
-   *  @param maxThreads maximum number of parallel threads to use
    *  @param bd Composition to synthesize
    *  @param target Platform and Architecture combination to synthesize for
    *  @param f target design frequency (PE speed)
-   *  @param platformFeatures Platform features (optional).
    *  @param archFeatures ArchitectureFeatures (optional).
+   *  @param platformFeatures Platform features (optional).
    *  @param cfg implicit Configuration instance
+   *  @param maxThreads maximum number of parallel threads to use (default: unlimited)
    *  @return Composer.Result with error code / additional data
    **/
   def compose(bd: Composition, target: Target, f: Double = 0, archFeatures: Seq[Feature] = Seq(),
-      platformFeatures: Seq[Feature] = Seq())(implicit cfg: Configuration): Result
+      platformFeatures: Seq[Feature] = Seq())(implicit cfg: Configuration, maxThreads: Option[Int] = None): Result
 
   /** Removes all intermediate files for the run, leaving results.
    *  @param bd Composition to synthesize
@@ -77,8 +74,8 @@ object Composer {
     }
   }
 
-  def apply(i: Implementation)(implicit cfg: Configuration): Composer = i match {
-    case Implementation.Vivado => new VivadoComposer()(cfg)
+  def apply(i: Implementation)(implicit cfg: Configuration, maxThreads: Option[Int]): Composer = i match {
+    case Implementation.Vivado => new VivadoComposer()(cfg, maxThreads)
   }
 
   /** Extended result with additional information as provided by the tool. **/

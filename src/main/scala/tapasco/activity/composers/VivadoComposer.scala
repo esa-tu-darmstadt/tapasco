@@ -36,7 +36,7 @@ import  ComposeResult._
 import  LogFormatter._
 
 /** Implementation of [[Composer]] for Vivado Design Suite. */
-class VivadoComposer()(implicit cfg: Configuration) extends Composer {
+class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) extends Composer {
   import VivadoComposer._
   private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
 
@@ -45,7 +45,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
 
   /** @inheritdoc */
   def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, archFeatures: Seq[Feature] = Seq(),
-      platformFeatures: Seq[Feature] = Seq()) (implicit cfg: Configuration): Composer.Result = {
+      platformFeatures: Seq[Feature] = Seq()) (implicit cfg: Configuration, maxThreads: Option[Int]): Composer.Result = {
+    logger.debug("VivadoComposer uses at most {} threads", maxThreads getOrElse "unlimited")
     // create output struct
     val files = VivadoComposer.Files(bd, target, f)
     // create output directory
@@ -187,8 +188,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     target. pd.api.getOrElse("missing") + "}" + NL +
     "set TAPASCO_SIM_MODULE " + target.pd.testbenchTemplate.getOrElse("missing") + NL +
     "set TAPASCO_BOARD_PRESET " + target.pd.boardPreset + NL +
-    "set_param general.maxThreads " + maxThreads + NL +
-    "set tapasco_jobs " + maxThreads + NL +
+    (maxThreads map (mt => "set_param general.maxThreads %d%s".format(mt, NL)) getOrElse "") +
+    (maxThreads map (mt => "set tapasco_jobs %d%s".format(mt, NL)) getOrElse "") +
     "set tapasco_freq " + f + NL +
     (platformFeatures.map { f => new FeatureTclPrinter("platform").toTcl(f) } mkString NL) +
     (archFeatures.map { f => new FeatureTclPrinter("architecture").toTcl(f) } mkString NL) + NL

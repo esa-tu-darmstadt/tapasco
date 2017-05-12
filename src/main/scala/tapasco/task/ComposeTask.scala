@@ -16,15 +16,15 @@ import  scala.util.Properties.{lineSeparator => NL}
  * It will run the composition tool (e.g., Xilinx Vivado) as a separate process
  * and return the result (see [[activity.composers]]).
  **/
-class ComposeTask(
-    composition: Composition,
-    designFrequency: Heuristics.Frequency,
-    implementation: Composer.Implementation,
-    target: Target,
-    features: Option[Seq[Feature]] = None,
-    logFile: Option[String] = None,
-    debugMode: Option[String] = None,
-    val onComplete: Boolean => Unit)(implicit cfg: Configuration) extends Task with LogTracking {
+class ComposeTask(composition: Composition,
+                  designFrequency: Heuristics.Frequency,
+                  implementation: Composer.Implementation,
+                  target: Target,
+                  features: Option[Seq[Feature]] = None,
+                  logFile: Option[String] = None,
+                  debugMode: Option[String] = None,
+                  val onComplete: Boolean => Unit)
+                 (implicit cfg: Configuration, maxThreads: Option[Int] = None) extends Task with LogTracking {
   private[this] implicit val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   private[this] val _slurm = Slurm.enabled
   private[this] var _composerResult: Option[Composer.Result] = None
@@ -41,8 +41,7 @@ class ComposeTask(
 
   private def nodeExecution: Boolean = {
     val appender = LogFileTracker.setupLogFileAppender(_logFile.toString)
-    val composer = Composer(implementation)
-    composer.maxThreads = 1
+    val composer = Composer(implementation)(cfg, maxThreads)
     _logger.debug("launching compose run for {}@{} [current thread: {}], logfile {}",
       target.ad.name: Object, target.pd.name: Object, Thread.currentThread.getName(): Object, _logFile: Object)
     if (debugMode.isEmpty) {
