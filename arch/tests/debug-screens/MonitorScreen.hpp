@@ -17,7 +17,7 @@ public:
     if (r) throw r;
   }
   virtual ~MonitorScreen() {
-    for (struct slot_t *sp : slots) delete sp;
+    for (slot_t *sp : slots) delete sp;
   }
 
 protected:
@@ -30,7 +30,7 @@ protected:
     int start_col = (cols - w * colc) / 2;
     int sid = 0;
     int y = h;
-    for (const struct slot_t *sp : slots) {
+    for (const slot_t *sp : slots) {
       render_slot(sp, start_row, start_col);
       if (--y > 0)
         start_row += rowc;
@@ -72,7 +72,7 @@ protected:
 	intc_isr[intc] = 0xDEADBEEF;
       }
     }
-    for (struct slot_t *sp : slots) {
+    for (slot_t *sp : slots) {
       if (platform::platform_read_ctl(sp->base_addr + 0x0c, 4, &sp->isr,
           platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS) {
 	sp->isr = 0xDEADBEEF;
@@ -108,7 +108,7 @@ private:
     platform::platform_ctl_addr_t base_addr;
   };
 
-  void render_slot(const struct slot_t *slot, int start_row, int start_col) {
+  void render_slot(const slot_t *slot, int start_row, int start_col) {
     attron(A_REVERSE);
     mvprintw(start_row++, start_col, "#  : %10u ", slot->slot_id);
     mvprintw(start_row, start_col, "ID :");
@@ -290,7 +290,7 @@ private:
     return cnt > 0 ? 0 : -3;
   }
 
-  vector<struct slot_t *> slots;
+  vector<slot_t *> slots;
   vector<platform::platform_ctl_addr_t> intc_addr;
   uint32_t intc_isr[4];
   Tapasco *tapasco;

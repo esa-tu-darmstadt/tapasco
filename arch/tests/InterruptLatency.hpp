@@ -8,8 +8,8 @@
  *              should run at 100 Mhz (assumption of timing calculations).
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#ifndef __INTERRUPT_LATENCY_HPP__
-#define __INTERRUPT_LATENCY_HPP__
+#ifndef INTERRUPT_LATENCY_HPP__
+#define INTERRUPT_LATENCY_HPP__
 
 #include <atomic>
 #include <thread>
@@ -51,14 +51,44 @@ public:
     int x, y;
     getyx(stdscr, y, x);
     future<void> f = async(launch::async, [&]() { trigger(stop, clock_cycles, cavg); });
+    const size_t m_runs = 100.0 * pow(M_E, -log(runtime_usecs / 10000.0));
+    const size_t min_runs = m_runs > 100 ? m_runs : 100;
     do {
       mvprintw(y, x, "Runtime: %8zu us, Latency: %8.2f", runtime_usecs, cavg());
+      move(y, 0);
+      clrtoeol();
+      mvprintw(y, x, "Runtime: %8zu us, Latency: % 12.1f, Min: % 12.1f, Max: % 12.1f, Count: %zu/%zu",
+        runtime_usecs, cavg(), cavg.min(), cavg.max(), cavg.size(), min_runs);
       refresh();
       usleep(1000);
-    } while (getch() == ERR && (fabs(cavg.delta()) > 0.01 || cavg.size() < 10000));
+    } while (getch() == ERR && (fabs(cavg.delta()) > 0.01 || cavg.size() < min_runs));
     stop = true;
     f.get();
     move(y+1, 0);
+    endwin();
+    return cavg();
+  }
+
+  double atcycles(uint32_t const clock_cycles, size_t const min_runs = 100) {
+    CumulativeAverage<double> cavg { 0 };
+    bool stop = false;
+    initscr(); noecho(); curs_set(0); timeout(0);
+    int x, y, maxx, maxy;
+    getyx(stdscr, y, x);
+    getmaxyx(stdscr, maxy, maxx);
+    future<void> f = async(launch::async, [&]() { trigger(stop, clock_cycles, cavg); });
+    do {
+      move(y, 0);
+      clrtoeol();
+      mvprintw(y, x, "Runtime: %12zu cc, Latency: % 12.1f, Min: % 12.1f, Max: % 12.1f, Count: %zu/%zu",
+        clock_cycles, cavg(), cavg.min(), cavg.max(), cavg.size(), min_runs);
+      refresh();
+      usleep(1000);
+    } while (getch() == ERR && (fabs(cavg.delta()) > 0.001 || cavg.size() < min_runs));
+    stop = true;
+    f.get();
+
+    move((y+1) % maxy, 0);
     endwin();
     return cavg();
   }
@@ -87,5 +117,5 @@ private:
   Tapasco& tapasco;
 };
 
-#endif /* __INTERRUPT_LATENCY_HPP__ */
+#endif /* INTERRUPT_LATENCY_HPP__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

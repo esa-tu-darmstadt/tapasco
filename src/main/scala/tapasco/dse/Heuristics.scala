@@ -51,7 +51,7 @@ object Heuristics {
     def apply(bd: Composition, freq: Frequency, target: Target): Configuration => Value = cfg => {
       val maxClockCycles: Seq[Int] = bd.composition map (ce => findAverageClockCycles(ce.kernel, target)(cfg))
       val t = 1.0 / (freq * 1000000.0)
-      val t_irq = target.pd.benchmark map (_.interruptLatency / 1000000000.0) getOrElse 0.0
+      val t_irq = target.pd.benchmark map (_.latency(maxClockCycles.max) / 1000000000.0) getOrElse 0.0
       val jobsla = maxClockCycles map (_ * t + t_irq/* + t_setup*/)
       bd.composition map (_.count) zip jobsla map (x => x._1 / x._2) reduce (_ + _)
     }

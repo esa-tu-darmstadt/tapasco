@@ -86,13 +86,18 @@ package object json {
       (JsPath \ "ReadWrite").format[Double]
     ) (TransferSpeedMeasurement.apply _, unlift(TransferSpeedMeasurement.unapply _))
 
+  implicit val interruptLatencyFormat: Format[InterruptLatency] = (
+      (JsPath \ "Cycle Count").format[Int] ~
+      (JsPath \ "Latency").format[Double]
+    ) (InterruptLatency.apply _, unlift(InterruptLatency.unapply _))
+
   implicit val benchmarkReads: Reads[Benchmark] = (
       (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
       (JsPath \ "Timestamp").read[LocalDateTime] ~
       (JsPath \ "Host").read[Host] ~
       (JsPath \ "Library Versions").read[LibraryVersions] ~
       (JsPath \ "Transfer Speed").read[Seq[TransferSpeedMeasurement]] ~
-      (JsPath \ "Job Roundtrip Overhead").read[Double]
+      (JsPath \ "Interrupt Latency").read[Seq[InterruptLatency]]
     ) (Benchmark. apply _)
   implicit val benchmarkWrites: Writes[Benchmark] = (
       (JsPath \ "DescPath").write[Path].transform((js: JsObject) => js - "DescPath") ~
@@ -100,7 +105,7 @@ package object json {
       (JsPath \ "Host").write[Host] ~
       (JsPath \ "Library Versions").write[LibraryVersions] ~
       (JsPath \ "Transfer Speed").write[Seq[TransferSpeedMeasurement]] ~
-      (JsPath \ "Job Roundtrip Overhead").write[Double]
+      (JsPath \ "Interrupt Latency").write[Seq[InterruptLatency]]
     ) (unlift(Benchmark.unapply _))
   /* Benchmark @} */
 

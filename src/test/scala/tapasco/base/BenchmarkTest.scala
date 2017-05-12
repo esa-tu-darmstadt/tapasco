@@ -62,6 +62,16 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
     })
   }
 
+  "All interrupt latency measurements" should "be read and written correctly" in {
+    import play.api.libs.json._
+
+    check(forAll { ilm: InterruptLatency =>
+      val json = Json.prettyPrint(Json.toJson(ilm))
+      val ptsm = Json.fromJson[InterruptLatency](Json.parse(json))
+      ptsm.get.equals(ilm)
+    })
+  }
+
   "All valid benchmarks" should "be read and written correctly" in {
     import play.api.libs.json._
 
@@ -100,7 +110,8 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
     c.host.release should equal ("3.19.8-100.fc20.x86_64")
     c.host.version should equal ("#1 SMP Tue May 12 17:08:50 UTC 2015")
     // interrupt latency
-    c.interruptLatency should equal (90.900809919008182)
+    c.interruptLatency should equal (List(InterruptLatency(1,7.0), InterruptLatency(2,7.5), InterruptLatency(4,8.0),
+      InterruptLatency(123456,10.0)))
     // library versions
     c.libraryVersions.platform should equal ("1.2.1")
     c.libraryVersions.tapasco should equal ("1.2")
@@ -120,37 +131,6 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
     ce.readWrite should equal (55.568662824206989)
   }
   
-  "A Benchmark file with unknown entries" should "be parsed correctly" in {
-    val oc = Benchmark.from(jsonPath.resolve("correct-benchmark.json"))
-    lazy val c = oc.right.get
-    assert(oc.isRight)
-    // host data
-    c.host.machine should equal ("x86_64")
-    c.host.node should equal ("mountdoom")
-    c.host.operatingSystem should equal ("Linux")
-    c.host.release should equal ("3.19.8-100.fc20.x86_64")
-    c.host.version should equal ("#1 SMP Tue May 12 17:08:50 UTC 2015")
-    // interrupt latency
-    c.interruptLatency should equal (90.900809919008182)
-    // library versions
-    c.libraryVersions.platform should equal ("1.2.1")
-    c.libraryVersions.tapasco should equal ("1.2")
-    // timestamp
-    c.timestamp should equal (LocalDate.of(2016, 4, 20).atTime(16,33,49))
-    // transfer speed
-    c.transferSpeed should have length (18)
-    var ce = c.transferSpeed(17)
-    ce.chunkSize should equal (33554432)
-    ce.read should equal (3322.1144740468026)
-    ce.write should equal (3178.9272608933888)
-    ce.readWrite should equal (3182.0719464635727)
-    ce = c.transferSpeed(0)
-    ce.chunkSize should equal (256)
-    ce.read should equal (49.329030801393962)
-    ce.write should equal (48.829431984156649)
-    ce.readWrite should equal (55.568662824206989)
-  }
-
   "An invalid Benchmark file" should "not be parsed" in {
     val oc1 = Benchmark.from(jsonPath.resolve("invalid-benchmark.json"))
     assert(oc1.isLeft)
@@ -172,6 +152,12 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
     rw <- Gen.posNum[Double]
   } yield TransferSpeedMeasurement(cs, r, w, rw)
   implicit val arbTsm: Arbitrary[TransferSpeedMeasurement] = Arbitrary(tsmGen)
+
+  val ilmGen: Gen[InterruptLatency] = for {
+    cl <- posIntsPowerTwo
+    l  <- Gen.posNum[Double]
+  } yield InterruptLatency(cl, l)
+  implicit val arbIlm: Arbitrary[InterruptLatency] = Arbitrary(ilmGen)
 
   val hostGen = for {
     machine <- Arbitrary.arbitrary[String]
@@ -197,7 +183,7 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
     host <- Arbitrary.arbitrary[Host]
     lv <- Arbitrary.arbitrary[LibraryVersions]
     tsm <- Arbitrary.arbitrary[Seq[TransferSpeedMeasurement]]
-    il <- Gen.posNum[Double]
+    il <- Arbitrary.arbitrary[Seq[InterruptLatency]]
   } yield Benchmark(java.nio.file.Paths.get("N/A"), timestamp, host, lv, tsm, il)
   implicit val arbBenchmark: Arbitrary[Benchmark] = Arbitrary(benchmarkGen)
 

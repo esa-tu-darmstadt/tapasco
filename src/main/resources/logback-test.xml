@@ -20,14 +20,7 @@
     <appender-ref ref="STDOUT" />
   </root>
 
-  <logger name="de.tu_darmstadt.cs.esa.tapasco.itapasco" level="debug">
+  <logger name="de.tu_darmstadt.cs.esa.tapasco.jobs.executors" level="trace">
     <appender-ref ref="STDOUT-DETAIL" />
   </logger>
-
-  <logger name="de.tu_darmstadt.cs.esa.tapasco.itapasco.view" level="trace"/>
-
-  <logger name="de.tu_darmstadt.cs.esa.tapasco.itapasco.controller" level="trace"/>
-
-  <logger name="de.tu_darmstadt.cs.esa.tapasco.itapasco.common" level="trace"/>
-
 </configuration>

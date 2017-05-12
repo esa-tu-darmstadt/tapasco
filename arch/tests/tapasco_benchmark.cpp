@@ -37,6 +37,14 @@ struct transfer_speed_t {
     }; }
 };
 
+struct interrupt_latency_t {
+  size_t cycle_count;
+  double latency_us;
+  Json to_json() const { return Json::object {
+      {"Cycle Count", static_cast<double>(cycle_count)},
+      {"Latency", latency_us}
+    }; }
+};
 
 int main(int argc, const char *argv[]) {
   Tapasco tapasco;
@@ -45,7 +53,9 @@ int main(int argc, const char *argv[]) {
   struct utsname uts;
   uname(&uts);
   vector<Json> speed;
-  struct transfer_speed_t ts;
+  //struct transfer_speed_t ts;
+  vector<Json> latency;
+  struct interrupt_latency_t ls;
 
   string platform = "vc709";
   if (argc < 2) {
@@ -67,7 +77,7 @@ int main(int argc, const char *argv[]) {
 
   // measure for chunk sizes 2^8 - 2^31 (2GB) bytes
   for (int i = 8; i < 32; ++i) {
-    ts.chunk_sz = 1 << i;
+    /*ts.chunk_sz = 1 << i;
     ts.speed_r  = tp(ts.chunk_sz, TransferSpeed::OP_COPYFROM);
     ts.speed_w  = tp(ts.chunk_sz, TransferSpeed::OP_COPYTO);
     ts.speed_rw = tp(ts.chunk_sz, TransferSpeed::OP_COPYFROM | TransferSpeed::OP_COPYTO);
@@ -77,12 +87,16 @@ int main(int argc, const char *argv[]) {
 	 << ", r/w: " << ts.speed_rw << " MiB/s"
 	 << endl;
     Json json = ts.to_json();
-    speed.push_back(json);
+    speed.push_back(json);*/
   }
 
-  // measure average job roundtrip latency in the interval 1us - 100ms
-  double const rl = il(0);
-  cout << "Latency @ random runtime between 1us-100ms: " << rl << " us" << endl;
+  // measure average job roundtrip latency for clock cycles counts
+  // between 2^0 and 2^31
+  for (size_t i = 0; i < 32; ++i) {
+    ls.cycle_count = 1UL << i;
+    ls.latency_us  = il.atcycles(ls.cycle_count);
+    cout << "Latency @ " << ls.cycle_count << "cc runtime: " << ls.latency_us << " us" << endl;
+  }
 
   // record current time
   time_t tt = chrono::system_clock::to_time_t(chrono::system_clock::now());
@@ -102,9 +116,9 @@ int main(int argc, const char *argv[]) {
       }
     },
     {"Transfer Speed", speed},
-    {"Job Roundtrip Overhead", rl},
+    {"Interrupt Latency", latency},
     {"Library Versions", Json::object {
-        {"TPC API", tapasco::tapasco_version()},
+        {"Tapasco API",  tapasco::tapasco_version()},
         {"Platform API", platform::platform_version()}
       }
     }
