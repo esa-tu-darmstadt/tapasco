@@ -78,8 +78,8 @@ object Tapasco {
       } else {
         logger.error("invalid arguments: {}", c.left.get.toString)
         logger.error(Usage())
+        false
       }
-      c.isRight
     } catch { case ex: Exception =>
       logger.error(ex.toString)
       logger.error("Stack trace: {}", ex.getStackTrace() map (_.toString) mkString "\n")
