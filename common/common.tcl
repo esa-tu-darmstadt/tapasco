@@ -475,9 +475,7 @@ namespace eval tapasco {
   # Default: 250
   proc get_design_frequency {} {
     global tapasco_freq
-    if {[info exists ::env(TAPASCO_FREQ)]} {
-      if {[string is integer $::env(TAPASCO_FREQ)]} {return $::env(TAPASCO_FREQ)} {return $tapasco_freq}
-    } {return $tapasco_freq}
+    return $tapasco_freq
   }
 
   # Returns the desired design clock period (in ns) selected by the user.
