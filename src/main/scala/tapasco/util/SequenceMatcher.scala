@@ -49,3 +49,20 @@ private[tapasco] class SequenceMatcher[T](ors : Regex*)(implicit mustMatchEveryL
     }
   }
 }
+
+/** Repeats a [[SequenceMatcher]] to generate a Seq[T]. */
+private[tapasco] class RepSeqMatcher[T](ors: Regex*)(implicit mustMatchEveryLine: Boolean = false,
+    cons: Seq[Match] => T = identity[Seq[Match]] _) {
+  private var matcher = new SequenceMatcher(ors:_*)(mustMatchEveryLine, cons)
+  private val _result = new scala.collection.mutable.ArrayBuffer[T]()
+  def update(line: String): Boolean = {
+    matcher.update(line)
+    if (matcher.matched) {
+      _result += matcher.result.get
+      matcher = new SequenceMatcher(ors:_*)(mustMatchEveryLine, cons)
+    }
+    matcher.matched
+  }
+  def result: Option[Seq[T]] = if (_result.isEmpty) None else Some(_result.toSeq)
+  def matched: Boolean = _result.nonEmpty
+}

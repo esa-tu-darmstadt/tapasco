@@ -21,7 +21,7 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.reports
-import  de.tu_darmstadt.cs.esa.tapasco.util.SequenceMatcher
+import  de.tu_darmstadt.cs.esa.tapasco.util._
 import  java.nio.file.Path
 import  scala.io.Source
 
@@ -52,7 +52,7 @@ object TimingReport {
     )(cons = ms => ms(2).group(1).toDouble)
 
   /** Extracts the maximal delay path. **/
-  private def maxDelayPathMatcher: SequenceMatcher[TimingPath] = new SequenceMatcher(
+  private def maxDelayPathMatcher: RepSeqMatcher[TimingPath] = new RepSeqMatcher(
       """^Max Delay Path.*""".r,
       """.*""".r,
       """^Slack[^:]*:\s*(-?\d+\.\d*).*""".r,
@@ -62,7 +62,7 @@ object TimingReport {
     )(true, ms => TimingPath(ms(3).group("source"), ms(5).group(1), ms(2).group(1).toDouble))
 
   /** Extracts the minimal delay path. **/
-  private def minDelayPathMatcher: SequenceMatcher[TimingPath] = new SequenceMatcher(
+  private def minDelayPathMatcher: RepSeqMatcher[TimingPath] = new RepSeqMatcher(
       """^Min Delay Path.*""".r,
       """.*""".r,
       """^Slack[^:]*:\s*(-?\d+\.\d*).*""".r,
@@ -94,8 +94,8 @@ object TimingReport {
         file = sr,
         worstNegativeSlack = wns.result.get,
         dataPathDelay = dpd.result.get,
-        maxDelayPath = max.result.get,
-        minDelayPath = min.result.get,
+        maxDelayPath = max.result.get.sortBy(_.slack).head,
+        minDelayPath = min.result.get.sortBy(_.slack).last,
         timingMet = wns.result.get >= -0.3
       ))
     } else { None }
