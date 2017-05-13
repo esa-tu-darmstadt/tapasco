@@ -130,8 +130,8 @@ class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) ext
       "TESTBENCH_MODULE" -> target.pd.testbenchTemplate.toString,
       "PRELOAD_FILES"    -> "",
       "PART"             -> target.pd.part,
-      "BOARD_PART"       -> target.pd.boardPart,
-      "BOARD_PRESET"     -> target.pd.boardPreset,
+      "BOARD_PART"       -> (target.pd.boardPart getOrElse "{}"),
+      "BOARD_PRESET"     -> (target.pd.boardPreset getOrElse "{}"),
       "PLATFORM_TCL"     -> target.pd.tclLibrary.toString,
       "ARCHITECTURE_TCL" -> target.ad.tclLibrary.toString,
       "COMPOSITION"      -> composition
@@ -187,7 +187,7 @@ class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) ext
     "set TAPASCO_PLATFORM_HEADER {" + target.pd.harness.getOrElse("missing") + " " +
     target. pd.api.getOrElse("missing") + "}" + NL +
     "set TAPASCO_SIM_MODULE " + target.pd.testbenchTemplate.getOrElse("missing") + NL +
-    "set TAPASCO_BOARD_PRESET " + target.pd.boardPreset + NL +
+    (target.pd.boardPreset map (bp => "set tapasco_board_preset %s%s".format(bp, NL)) getOrElse "") +
     (maxThreads map (mt => "set_param general.maxThreads %d%s".format(mt, NL)) getOrElse "") +
     (maxThreads map (mt => "set tapasco_jobs %d%s".format(mt, NL)) getOrElse "") +
     "set tapasco_freq " + f + NL +

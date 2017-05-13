@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2014 Jens Korinth, TU Darmstadt
+# Copyright (C) 2017 Jens Korinth, TU Darmstadt
 #
 # This file is part of Tapasco (TPC).
 #
@@ -16,32 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-source -notrace $::env(TAPASCO_HOME)/platform/zynq/zynq.tcl
-
-namespace eval platform {
-  namespace export create
-  namespace export generate
-  namespace export max_masters
-  namespace export create_clock_port
-
-  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/pynq/plugins" "*.tcl"] {
-    puts "Found plugin: $f"
-    source -notrace $f
-  }
-
-  proc max_masters {} {
-    return [zynq::max_masters]
-  }
-
-  proc create {} {
-    return [zynq::create]
-  }
-
-  proc generate {} {
-    return [zynq::generate]
-  }
-
-  proc create_clock_port {{name "clk"}} {
-    set clk [create_bd_port -dir I $name]
+# @file   clock_constraint.tcl
+# @brief  Plugin to constraint the sys_clk to the right pin on PyNQ.
+#         Workaround: PyNQ does not have a Vivado board definition fil
+# @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+#
+namespace eval clock_constraint {
+  # Constraints the input pins called 'sys_clk'
+  proc create_clock_constraint {} {
+    set clk [get_ports "sys_clk"]
+    set_property -dict { PACKAGE_PIN H16 IOSTANDARD LVCMOS33 } $clk
+    create_clock -add -name sys_clk_pin -period 10.00 -waveform {0 5} $clk
   }
 }
+
+tapasco::register_plugin "platform::clock_constraint::create_clock_constraint" "post-synth"

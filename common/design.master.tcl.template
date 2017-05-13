@@ -52,7 +52,9 @@ set bitstreamname @@BITSTREAM_NAME@@
 
 # setup the project
 create_project @@PROJECT_NAME@@ [pwd]/@@PROJECT_NAME@@ -part {@@PART@@} -force
-set_property board_part {@@BOARD_PART@@} [current_project]
+if {"@@BOARD_PART@@" != ""} {
+  set_property board_part {@@BOARD_PART@@} [current_project]
+}
 
 # configure message limits:
 # suppress messages about no matching pins/ports

@@ -44,8 +44,8 @@ class PlatformSpec extends FlatSpec with Matchers {
     c.name should equal ("zynq")
     c.tclLibrary should equal (jsonPath.resolve("zynq.tcl"))
     c.part should equal ("xc7z045ffg900-2")
-    c.boardPart should equal ("xilinx.com:zc706:part0:1.1")
-    c.boardPreset should equal ("ZC706")
+    c.boardPart should equal (Some("xilinx.com:zc706:part0:1.1"))
+    c.boardPreset should equal (Some("ZC706"))
     c.targetUtilization should equal (55)
     c.supportedFrequencies should contain inOrderOnly (250, 200, 150, 100, 42)
   }
@@ -57,8 +57,8 @@ class PlatformSpec extends FlatSpec with Matchers {
     c.name should equal ("zynq")
     c.tclLibrary should equal (jsonPath.resolve("zynq.tcl"))
     c.part should equal ("xc7z045ffg900-2")
-    c.boardPart should equal ("xilinx.com:zc706:part0:1.1")
-    c.boardPreset should equal ("ZC706")
+    c.boardPart should equal (Some("xilinx.com:zc706:part0:1.1"))
+    c.boardPreset should equal (Some("ZC706"))
     c.targetUtilization should equal (55)
     c.supportedFrequencies should contain inOrderOnly (250, 200, 150, 100, 42)
   }

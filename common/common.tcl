@@ -113,12 +113,16 @@ namespace eval tapasco {
         CONFIG.PCW_S_AXI_HP2_DATA_WIDTH {64}\
       ]
 
-    set ps [create_bd_cell -type ip -vlnv [dict get $stdcomps ps vlnv] $name]
     puts "  Preset: $preset"
     puts "  FCLK0 : $freq_mhz"
-    set_property -dict [list CONFIG.preset $preset] $ps
-    apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_external "FIXED_IO, DDR" apply_board_preset "1" Master "Disable" Slave "Disable" } $ps
-    set_property -dict $paramlist $ps
+
+    set ps [create_bd_cell -type ip -vlnv [dict get $stdcomps ps vlnv] $name]
+    if {$preset != {}} {
+      set_property -dict [list CONFIG.preset $preset] $ps
+      apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_external "FIXED_IO, DDR" apply_board_preset "1" Master "Disable" Slave "Disable" } $ps
+    } {
+      apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_external "FIXED_IO, DDR" apply_board_preset "0" Master "Disable" Slave "Disable" } $ps
+    }
     return $ps
   }
 
@@ -487,8 +491,8 @@ namespace eval tapasco {
   # Returns the board preset selected by the user.
   # Default: ZC706
   proc get_board_preset {} {
-    global TAPASCO_BOARD_PRESET
-    if {[info exists ::env(TAPASCO_BOARD_PRESET)]} {return $::env(TAPASCO_BOARD_PRESET)} {return $TAPASCO_BOARD_PRESET}
+    global tapasco_board_preset
+    if {[info exists tapasco_board_preset]} {return $tapasco_board_preset} {return {}}
   }
 
   # Returns an array of lists consisting of VLNV and instance count of kernels in
@@ -806,7 +810,16 @@ namespace eval tapasco {
         set cport [get_bd_pins -filter {DIR == I} -of_objects $clk]
       }
       puts "  clk: $clk, cport: $cport"
-      apply_bd_automation -rule xilinx.com:bd_rule:board -config "Board_Interface $clk_mode" $cport
+      if {$cport != {}} {
+        # apply board automation
+        apply_bd_automation -rule xilinx.com:bd_rule:board -config "Board_Interface $clk_mode" $cport
+        puts "board automation worked, moving on"
+      } {
+        # last resort: try to call platform::create_clock_port
+        set clk_mode "sys_clk"
+        set cport [platform::create_clock_port $clk_mode]
+        connect_bd_net $cport [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $clk]
+      }
     }
 
     for {set i 0; set clkn 1} {$i < [llength $freqs]} {incr i 2} {

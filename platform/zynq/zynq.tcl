@@ -294,9 +294,11 @@ namespace eval platform {
           exit 1
         }
       }
+      if {[tapasco::get_board_preset] != {}} {
+        set_property -dict [list CONFIG.preset [tapasco::get_board_preset]] $ps
+      }
       # activate ACP, HP0, HP2 and GP0/1 (+ FCLK1 @10MHz)
       set_property -dict [list \
-        CONFIG.preset [tapasco::get_board_preset] \
         CONFIG.PCW_USE_M_AXI_GP0 			{1} \
         CONFIG.PCW_USE_M_AXI_GP1 			{1} \
         CONFIG.PCW_USE_S_AXI_HP0 			{1} \
