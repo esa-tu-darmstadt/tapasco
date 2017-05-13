@@ -23,6 +23,7 @@
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
 import  json._
+import  org.scalacheck._
 import  org.scalatest._
 import  org.scalatest.prop.Checkers
 import  java.nio.file._
@@ -136,6 +137,91 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
     assert(oc1.isLeft)
   }
 
+  "Transfer speeds" should "be correcty interpolated between two values" in {
+    check(forAll { (bm: Benchmark, a: TransferSpeedMeasurement, b: TransferSpeedMeasurement) =>
+        (a.chunkSize != b.chunkSize) ==> {
+      val data = Seq(a, b).sortBy(_.chunkSize)
+      val l = if (a.chunkSize < b.chunkSize) a else b
+      val r = if (a.chunkSize < b.chunkSize) b else a
+      val mbm = bm.copy(transferSpeed = data)
+      val cs = Gen.choose(0, r.chunkSize + 1)
+      def interpolate(cs: Int, lcs: Int, ls: Double, rcs: Int, rs: Double): Double =
+         (((cs - lcs).toDouble / (rcs - lcs).toDouble)) * (rs  - ls) + ls
+      forAll(cs) { n => n match {
+        case n if n <= l.chunkSize => mbm.speed(n) equals (l.read, l.write, l.readWrite)
+        case n if n >= r.chunkSize => mbm.speed(n) equals (r.read, r.write, r.readWrite)
+        case n => mbm.speed(n) equals (interpolate(n, l.chunkSize, l.read, r.chunkSize, r.read),
+                                       interpolate(n, l.chunkSize, l.write, r.chunkSize, r.write),
+                                       interpolate(n, l.chunkSize, l.readWrite, r.chunkSize, r.readWrite))
+      }}
+    }})
+  }
+
+  "Transfer speeds" should "be correcty interpolated between three values" in {
+    check(forAll { (bm: Benchmark, a: TransferSpeedMeasurement, b: TransferSpeedMeasurement,
+        c: TransferSpeedMeasurement) => (a.chunkSize != b.chunkSize && b.chunkSize != c.chunkSize &&
+            a.chunkSize != c.chunkSize)  ==> {
+      val data = Seq(a, b, c).sortBy(_.chunkSize)
+      val bot = data.head
+      val mid = data.tail.head
+      val top = data.last
+      val mbm = bm.copy(transferSpeed = data)
+      val cs = Gen.choose(0, top.chunkSize + 1)
+      def interpolate(cs: Int, lcs: Int, ls: Double, rcs: Int, rs: Double): Double =
+         (((cs - lcs).toDouble / (rcs - lcs).toDouble)) * (rs  - ls) + ls
+      forAll(cs) { n => {
+        val l = if (n <= mid.chunkSize) bot else mid
+        val r = if (n <= mid.chunkSize) mid else top
+        n match {
+          case n if n <= l.chunkSize => mbm.speed(n) equals (l.read, l.write, l.readWrite)
+          case n if n >= r.chunkSize => mbm.speed(n) equals (r.read, r.write, r.readWrite)
+          case n => mbm.speed(n) equals (interpolate(n, l.chunkSize, l.read, r.chunkSize, r.read),
+                                         interpolate(n, l.chunkSize, l.write, r.chunkSize, r.write),
+                                         interpolate(n, l.chunkSize, l.readWrite, r.chunkSize, r.readWrite))
+      }}}}
+    })
+  }
+
+  "Interrupt latency" should "be correcty interpolated between two values" in {
+    check(forAll { (bm: Benchmark, a: InterruptLatency, b: InterruptLatency) =>
+        (a.clockCycles != b.clockCycles) ==> {
+      val data = Seq(a, b).sortBy(_.clockCycles)
+      val l = if (a.clockCycles < b .clockCycles) a else b
+      val r = if (a.clockCycles < b .clockCycles) b else a
+      val mbm = bm.copy(interruptLatency = data)
+      val cc = Gen.choose(0, b.clockCycles + 1)
+      forAll(cc) { n => n match {
+        case n if n <= l.clockCycles => mbm.latency(n) equals l.latency 
+        case n if n >= r.clockCycles => mbm.latency(n) equals r.latency
+        case n => mbm.latency(n) equals
+         (((n - l.clockCycles).toDouble / (r.clockCycles - l.clockCycles).toDouble)) *
+         (r.latency  - l.latency) + l.latency
+      }}
+    }})
+  }
+
+  "Interrupt latency" should "be correcty interpolated between three values" in {
+    check(forAll { (bm: Benchmark, a: InterruptLatency, b: InterruptLatency, c: InterruptLatency) =>
+        (a.clockCycles != b.clockCycles && b.clockCycles != c.clockCycles && a.clockCycles != c.clockCycles) ==> {
+      val data = Seq(a, b).sortBy(_.clockCycles)
+      val bot = data.head
+      val mid = data.tail.head
+      val top = data.last
+      val mbm = bm.copy(interruptLatency = data)
+      val cc = Gen.choose(0, b.clockCycles + 1)
+      forAll(cc) { n => {
+        val l = if (n <= mid.clockCycles) bot else mid
+        val r = if (n <= mid.clockCycles) mid else top
+        n match {
+          case n if n <= l.clockCycles => mbm.latency(n) equals l.latency 
+          case n if n >= r.clockCycles => mbm.latency(n) equals r.latency
+          case n => mbm.latency(n) equals
+           (((n - l.clockCycles).toDouble / (r.clockCycles - l.clockCycles).toDouble)) *
+           (r.latency  - l.latency) + l.latency
+      }}}
+    }})
+  }
+
   /* @{ Generators and Arbitraries */
   import org.scalacheck._
   val lvGen: Gen[LibraryVersions] = for {
@@ -144,7 +230,7 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
   } yield LibraryVersions(v1, v2)
   implicit val arbLv: Arbitrary[LibraryVersions] = Arbitrary(lvGen)
 
-  val posIntsPowerTwo: Gen[Int] = Gen.posNum[Int] map (n => 1 << n)
+  val posIntsPowerTwo: Gen[Int] = Gen.posNum[Int] map (n => 1 << (n % 31))
   val tsmGen: Gen[TransferSpeedMeasurement] = for {
     cs <- posIntsPowerTwo
     r  <- Gen.posNum[Double]
@@ -171,7 +257,7 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
   val localDateTimeGen = for {
     year  <- Gen.choose(1970, 3500)
     month <- Gen.choose(1, 12)
-    day   <- Gen.choose(1, 29)
+    day   <- Gen.choose(1, 28)
     hour  <- Gen.choose(0, 23)
     min   <- Gen.choose(0, 59)
     sec   <- Gen.choose(0, 59)

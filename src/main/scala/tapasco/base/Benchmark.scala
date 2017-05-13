@@ -28,9 +28,13 @@ import  builder._
 import  java.time.LocalDateTime
 import  java.nio.file._
 
+/** Versions of libtapasco and libplatform used to generate data. */
 final case class LibraryVersions(platform: String, tapasco: String)
+/** Host information. */
 final case class Host(machine: String, node: String, operatingSystem: String, release: String, version: String)
+/** Transfer speed measurement: R/W/RW speeds at given chunk size (in bytes). */
 final case class TransferSpeedMeasurement(chunkSize: Int, read: Double, write: Double, readWrite: Double)
+/** Interrupt latency in us at given PE runtime (in clock cycles). */
 final case class InterruptLatency(clockCycles: Int, latency: Double)
 /** Defines an interpolation on [[InterruptLatency]] elements. */
 final class LatencyInterpolator(data: Seq[InterruptLatency])
@@ -57,6 +61,14 @@ final class TransferSpeedInterpolator(data: Seq[TransferSpeedMeasurement])
      f * (right._2._3 - left._2._3) + left._2._3)
   }
 }
+/** Platform benchmark data.
+ *  @param descPath Source file path.
+ *  @param timestamp Timestamp of data.
+ *  @param host Host information.
+ *  @param libraryVersions Version strings of the host's Tapasco libraries.
+ *  @param transferSpeed Transfer speed (in MiB/s) across chunk sizes (bytes).
+ *  @param interruptLatency IRQ turnaround time (in us) across PE runtimes (clock cycles).
+ **/
 final case class Benchmark (
       descPath: Path,
       timestamp: LocalDateTime,
