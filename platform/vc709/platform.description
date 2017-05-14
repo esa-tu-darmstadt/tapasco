@@ -6,6 +6,5 @@
 	"BoardPart" : "xilinx.com:vc709:part0:1.5",
 	"BoardPreset" : "VC709",
 	"TargetUtilization" : 90,
-	"SlotCount" : 128,
 	"Benchmark" : "vc709.benchmark"
 }

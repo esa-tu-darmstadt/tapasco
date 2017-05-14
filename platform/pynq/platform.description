@@ -4,7 +4,6 @@
 	"TclLibrary" : "pynq.tcl",
 	"Part" : "xc7z020clg400-1",
 	"TargetUtilization" : 99,
-	"SlotCount" : 128,
 	"ValueArgTemplate" : "../zynq/valueargs.directives.template",
 	"ReferenceArgTemplate" : "../zynq/referenceargs.directives.template"
 }

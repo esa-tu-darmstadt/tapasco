@@ -9,7 +9,6 @@
 	"API" : "../zynq/include/platform-api.svh",
 	"TestbenchTemplate" : "../zynq/sv/platform-dpi.sv",
 	"TargetUtilization" : 97,
-	"SlotCount" : 128,
 	"ValueArgTemplate" : "../zynq/valueargs.directives.template",
 	"ReferenceArgTemplate" : "../zynq/referenceargs.directives.template",
 	"Benchmark" : "zedboard.benchmark"

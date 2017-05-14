@@ -281,7 +281,7 @@ package object json {
     (JsPath \ "BoardPreset").readNullable[String] (minLength[String](4)) ~
     (JsPath \ "TargetUtilization").read[Int] (min(5) keepAnd max(100)) ~
     (JsPath \ "SupportedFrequencies").readNullable[Seq[Int]] (minLength[Seq[Int]](1)) .map (_ getOrElse (50 to 450 by 5)) ~
-    (JsPath \ "SlotCount").read[Int] (min(1) keepAnd max(255)) ~
+    (JsPath \ "SlotCount").readNullable[Int] (min(1) keepAnd max(255)) ~
     (JsPath \ "Description").readNullable[String] (minLength[String](1)) ~
     (JsPath \ "Harness").readNullable[Path] ~
     (JsPath \ "API").readNullable[Path] ~
@@ -298,7 +298,7 @@ package object json {
     (JsPath \ "BoardPreset").writeNullable[String] ~
     (JsPath \ "TargetUtilization").write[Int] ~
     (JsPath \ "SupportedFrequencies").write[Seq[Int]] ~
-    (JsPath \ "SlotCount").write[Int] ~
+    (JsPath \ "SlotCount").writeNullable[Int] ~
     (JsPath \ "Description").writeNullable[String] ~
     (JsPath \ "Harness").writeNullable[Path] ~
     (JsPath \ "API").writeNullable[Path] ~

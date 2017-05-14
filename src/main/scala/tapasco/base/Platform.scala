@@ -36,7 +36,7 @@ case class Platform (
       boardPreset: Option[String],
       targetUtilization: Int,
       supportedFrequencies: Seq[Int],
-      slotCount: Int,
+      private val _slotCount: Option[Int],
       description: Option[String],
       private val _harness: Option[Path],
       private val _api: Option[Path],
@@ -48,10 +48,13 @@ case class Platform (
   val api: Option[Path]               = _api map (resolve _)
   val testbenchTemplate: Option[Path] = _testbenchTemplate map (resolve _)
   val benchmark: Option[Benchmark]    = _benchmark flatMap (p => Benchmark.from(resolve(p)).toOption)
+  val slotCount: Int                  = _slotCount getOrElse Platform.DEFAULT_SLOTCOUNT
   require (mustExist(tclLibrary), "Tcl library %s does not exist".format(tclLibrary.toString))
   harness foreach           { p => require(mustExist(p), "harness file %s does not exist".format(p.toString)) }
   api foreach               { p => require(mustExist(p), "api file %s does not exist".format(p.toString)) }
   testbenchTemplate foreach { p => require(mustExist(p), "testbench template %s does not exist".format(p.toString)) }
 }
 
-object Platform extends Builds[Platform]
+object Platform extends Builds[Platform] {
+  private final val DEFAULT_SLOTCOUNT: Int = 128
+}

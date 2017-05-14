@@ -6,6 +6,5 @@
 	"BoardPart" : "xilinx.com:zc706:part0:1.1",
 	"BoardPreset" : "ZC706",
 	"TargetUtilization" : 97,
-	"SlotCount" : 128,
 	"Benchmark" : "zc706.benchmark"
 }
