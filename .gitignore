@@ -10,6 +10,7 @@ target
 /bd
 itpc/**
 arch/**/lib
+arch/tests/json11.*
 doc/**/*.aux
 doc/**/*.pdf
 doc/**/*.log
