@@ -22,8 +22,8 @@ libraryDependencies ++= Seq(
   "net.sf.jung" % "jung-graph-impl" % "2.1.1",
   "com.google.guava" % "guava" % "19.0",
   "com.google.code.findbugs" % "jsr305" % "3.0.1",
-  "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-  "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
+  "org.scalatest" %% "scalatest" % "3.0.3" % "test",
+  "org.scalacheck" %% "scalacheck" % "1.13.5" % "test"
 )
 
 scalacOptions ++= Seq(
