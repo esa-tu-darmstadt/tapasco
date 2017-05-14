@@ -122,7 +122,7 @@ final object Slurm extends Publisher {
   }
 
   /** Check via `squeue` if the SLURM job is still running. */
-  def isRunning(id: Int): Boolean = catchAllDefault[Boolean](false, "Slurm `squeue` failed: ") {
+  def isRunning(id: Int): Boolean = catchAllDefault[Boolean](true, "Slurm `squeue` failed: ") {
     val squeue = "squeue -h".!!
     logger.trace("squeue output: {}", squeue)
     ! "%d".format(id).r.findFirstIn(squeue).isEmpty
