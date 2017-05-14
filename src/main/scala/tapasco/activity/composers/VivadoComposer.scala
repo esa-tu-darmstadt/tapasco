@@ -130,8 +130,8 @@ class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) ext
       "TESTBENCH_MODULE" -> target.pd.testbenchTemplate.toString,
       "PRELOAD_FILES"    -> "",
       "PART"             -> target.pd.part,
-      "BOARD_PART"       -> (target.pd.boardPart getOrElse "{}"),
-      "BOARD_PRESET"     -> (target.pd.boardPreset getOrElse "{}"),
+      "BOARD_PART"       -> (target.pd.boardPart getOrElse ""),
+      "BOARD_PRESET"     -> (target.pd.boardPreset getOrElse ""),
       "PLATFORM_TCL"     -> target.pd.tclLibrary.toString,
       "ARCHITECTURE_TCL" -> target.ad.tclLibrary.toString,
       "COMPOSITION"      -> composition

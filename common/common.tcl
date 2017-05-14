@@ -95,29 +95,11 @@ namespace eval tapasco {
     variable stdcomps
     puts "Creating Zynq-7000 series IP core ..."
     puts "  VLNV: [dict get $stdcomps ps vlnv]"
-
-    set paramlist [list \
-        CONFIG.PCW_APU_PERIPHERAL_FREQMHZ {800} \
-        CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ $freq_mhz \
-        CONFIG.PCW_USE_FABRIC_INTERRUPT {1} \
-        CONFIG.PCW_IRQ_F2P_INTR {1} \
-        CONFIG.PCW_TTC0_PERIPHERAL_ENABLE {0} \
-        CONFIG.PCW_USE_M_AXI_GP0 {1}\
-        CONFIG.PCW_USE_M_AXI_GP1 {1}\
-        CONFIG.PCW_USE_S_AXI_HP0 {1}\
-        CONFIG.PCW_USE_S_AXI_HP1 {0}\
-        CONFIG.PCW_USE_S_AXI_HP2 {1}\
-        CONFIG.PCW_USE_S_AXI_HP3 {0}\
-        CONFIG.PCW_USE_S_AXI_ACP {1}\
-        CONFIG.PCW_S_AXI_HP0_DATA_WIDTH {64}\
-        CONFIG.PCW_S_AXI_HP2_DATA_WIDTH {64}\
-      ]
-
     puts "  Preset: $preset"
     puts "  FCLK0 : $freq_mhz"
 
     set ps [create_bd_cell -type ip -vlnv [dict get $stdcomps ps vlnv] $name]
-    if {$preset != {}} {
+    if {$preset != {} && $preset != ""} {
       set_property -dict [list CONFIG.preset $preset] $ps
       apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_external "FIXED_IO, DDR" apply_board_preset "1" Master "Disable" Slave "Disable" } $ps
     } {

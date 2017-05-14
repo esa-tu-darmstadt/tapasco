@@ -18,7 +18,7 @@
 #
 # @file   clock_constraint.tcl
 # @brief  Plugin to constraint the sys_clk to the right pin on PyNQ.
-#         Workaround: PyNQ does not have a Vivado board definition fil
+#         Workaround: PyNQ does not have a Vivado board definition file.
 # @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
 namespace eval clock_constraint {
