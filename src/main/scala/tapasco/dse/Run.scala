@@ -1,6 +1,7 @@
 package de.tu_darmstadt.cs.esa.tapasco.dse
 import  de.tu_darmstadt.cs.esa.tapasco.task._
 import  de.tu_darmstadt.cs.esa.tapasco.base._
+import  de.tu_darmstadt.cs.esa.tapasco.util._
 import  de.tu_darmstadt.cs.esa.tapasco.activity.composers._
 import  java.util.concurrent.CountDownLatch
 
@@ -10,14 +11,18 @@ sealed private trait Run extends Startable with Ordered[Run] {
   def target: Target
   def result: Option[Composer.Result]
   def task: Option[ComposeTask]
+  def area: AreaEstimate
   def compare(that: Run): Int =
-    (this.element.h, this.element.frequency) compare (that.element.h, this.element.frequency)
+    (this.area, this.element.h, this.element.frequency) compare (that.area, that.element.h, that.element.frequency)
 }
 
 private class ConcreteRun(val no: Int, val element: DesignSpace.Element, val target: Target, val debugMode: Option[String])
                          (implicit exploration: Exploration, configuration: Configuration) extends Run {
   private[this] var _result: Option[Composer.Result] = None
   private[this] var _task: Option[ComposeTask] = None
+  lazy val area = AreaUtilization(target, element.composition) getOrElse {
+    throw new Exception("could not get area estimation for %s".format(element))
+  }
 
   def result: Option[Composer.Result] = _result
   def task: Option[ComposeTask] = _task
