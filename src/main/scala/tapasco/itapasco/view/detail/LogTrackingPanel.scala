@@ -13,7 +13,6 @@ import  java.awt.Color
 class LogTrackingPanel(val task: Task with LogTracking) extends BorderPanel with Listener[MultiFileWatcher.Event] {
   import java.nio.file.Paths
   import scala.util.Properties.{lineSeparator => NL}
-  import scala.util.matching.Regex
   private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
 
   private[this] val log = new TextArea {
@@ -23,15 +22,24 @@ class LogTrackingPanel(val task: Task with LogTracking) extends BorderPanel with
     editable = false
   }
   private[this] val mfw = new MultiFileWatcher
-  private[this] val newFileRegex = new Regex("""output in (\S*)$""")
+  private[this] val newFileRegex = Seq(
+    """(?i)output in (\S*)$""".r.unanchored,
+    """(?i)\s*(\S*synth_1/runme\.log)$""".r.unanchored,
+    """(?i)\s*(\S*impl_1/runme\.log)$""".r.unanchored)
 
   def update(e: MultiFileWatcher.Event): Unit = e match {
     case LinesAdded(src, ls) => ls map { l =>
       log.append(l + NL)
       log.caret.position = log.text.length
 
-      val ms = newFileRegex.findAllMatchIn(l)
-      ms foreach { m => mfw += Paths.get(m.group(1)) }
+      newFileRegex foreach { rx => rx.findAllMatchIn(l) foreach { m =>
+        Option(m.group(1)) match {
+          case Some(p) if p.trim().nonEmpty =>
+            mfw += Paths.get(p)
+            logger.trace("adding new file: {}", p)
+          case _ => {}
+        }
+      }}
     }
   }
 
