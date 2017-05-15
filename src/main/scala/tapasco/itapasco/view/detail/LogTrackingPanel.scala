@@ -24,8 +24,8 @@ class LogTrackingPanel(val task: Task with LogTracking) extends BorderPanel with
   private[this] val mfw = new MultiFileWatcher
   private[this] val newFileRegex = Seq(
     """(?i)output in (\S*)$""".r.unanchored,
-    """(?i)\s*(\S*synth_1/runme\.log)$""".r.unanchored,
-    """(?i)\s*(\S*impl_1/runme\.log)$""".r.unanchored)
+    """(?i)\s*(\S*/synth_1/runme\.log)$""".r.unanchored,
+    """(?i)\s*(\S*/impl_1/runme\.log)$""".r.unanchored)
 
   def update(e: MultiFileWatcher.Event): Unit = e match {
     case LinesAdded(src, ls) => ls map { l =>
