@@ -64,7 +64,7 @@ object ComposerLog {
 
   private val RE_ERROR   = """(?i)^[^_]*error""".r
   private val RE_WARNING = """(?i)warn""".r
-  private val RE_PLACER = """(?i)Placer could not place all instances""".r
+  private val RE_PLACER = """(?i)(Placer could not place all instances)|(ERROR:\s*\[Place)""".r
   private val RE_TIMING = """Timing 38-282""".r
 }
 
