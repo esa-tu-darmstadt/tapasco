@@ -85,7 +85,7 @@ object CoreStatistics {
   }
 
   private def dumpAvgClockCycles(r: SynthesisReport): String =
-    Core.from(r.file.getParent.resolveSibling("core.description")) map { cd =>
+    Core.from(r.file.getParent.resolveSibling("core.json")) map { cd =>
         Seq(cd.averageClockCycles.getOrElse(""),
             (for (t <- r.timing; c <- cd.averageClockCycles)
               yield "%2.2f" format (1.0 / ((t.clockPeriod * c) / 1000000000.0f))).getOrElse("")

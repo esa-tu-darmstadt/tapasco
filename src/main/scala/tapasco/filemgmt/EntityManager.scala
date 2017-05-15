@@ -76,11 +76,11 @@ class EntityManager(val bpm: BasePathManager) extends Publisher {
   /* @{ Internals */
   /** Internal map of description regexes. **/
   private val _filters: Map[Entity, Regex] = Map(
-    Entities.Architectures -> """architecture.description$""".r.unanchored,
-    Entities.Compositions  -> """.bd$""".r.unanchored,
-    Entities.Cores         -> """core.description$""".r.unanchored,
-    Entities.Kernels       -> """kernel.description$""".r.unanchored,
-    Entities.Platforms     -> """platform.description$""".r.unanchored
+    Entities.Architectures -> """architecture.json$""".r.unanchored,
+    Entities.Compositions  -> """composition.json$""".r.unanchored,
+    Entities.Cores         -> """core.json$""".r.unanchored,
+    Entities.Kernels       -> """kernel.json$""".r.unanchored,
+    Entities.Platforms     -> """platform.json$""".r.unanchored
   )
 
   /** Issue warning for failed builds (at least once). */

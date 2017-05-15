@@ -57,7 +57,7 @@ object Import {
     logger.trace("found VLNV in zip " + zip + ": " + vlnv)
     // extract version and name from VLNV, create Core
     val c = Core(
-        descPath = zip.resolveSibling("core.description"),
+        descPath = zip.resolveSibling("core.json"),
         _zipPath = zip.getFileName,
         name = vlnv.name,
         id = id,
@@ -66,8 +66,8 @@ object Import {
         Some("imported from %s on %s".format(zip.toAbsolutePath.toString, java.time.LocalDateTime.now().toString)),
         acc)
 
-    // write core.description to output directory (as per config)
-    val p = cfg.outputDir(c, t).resolve("ipcore").resolve("core.description")
+    // write core.json to output directory (as per config)
+    val p = cfg.outputDir(c, t).resolve("ipcore").resolve("core.json")
     importCore(c, t, p)
   }
 
@@ -105,7 +105,7 @@ object Import {
     // finally, evaluate the ip core and store the report with the link
     val res = evaluateCore(c, t)
 
-    // write core.description
+    // write core.json
     logger.debug("writing core description: {}", p.toString)
     Core.to(c, p)
     res
