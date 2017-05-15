@@ -52,16 +52,14 @@ trait Configuration {
     coreDir.resolve(kernel.name.toString).resolve(target.ad.name).resolve(target.pd.name)
 
   /** Returns the default output directory for the given composition, target and frequency.
-   *
-   *  Pattern is currently: `[KERNELNAME]_[COUNT] (___[KERNELNAME]_[COUNT])*--[FREQ]`
-   *  where `[KERNELNAME]` is the kernel name with all spaces replaced by '_'.
-   *  _Example_: `arrayinit_12__12___counter_3--90.0`
+   *  _Example_: `arrayinit__counter/020_042/075.0/baseline/pynq`
    */
-  def outputDir(composition: Composition, target: Target, freq: Heuristics.Frequency): Path =
-    compositionDir.resolve("%s--%3.1f".format(
-      (composition.composition map (ce => "%s__%d".format(ce.kernel, ce.count))) mkString "___",
-      freq).replaceAll(" ", "_")
-    ).resolve(target.ad.name).resolve(target.pd.name)
+  def outputDir(composition: Composition, target: Target, freq: Heuristics.Frequency): Path = compositionDir
+    .resolve(composition.composition map (_.kernel.replaceAll(" ", "_")) mkString "__")
+    .resolve(composition.composition map (ce => "%03d".format(ce.count)) mkString "_")
+    .resolve("%05.1f".format(freq))
+    .resolve(target.ad.name)
+    .resolve(target.pd.name)
 
   /** Returns the default output directory for the given core and target. */
   def outputDir(core: Core, target: Target): Path =
