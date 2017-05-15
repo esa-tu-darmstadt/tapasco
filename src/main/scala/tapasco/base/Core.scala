@@ -36,7 +36,7 @@ case class Core (
       description: Option[String],
       averageClockCycles: Option[Int]
     ) extends Description(descPath) {
-  val zipPath: Path = resolve(_zipPath)
+  val zipPath: Path = resolve(_zipPath).toAbsolutePath
   require(mustExist(zipPath), "zip file %s does not exist".format(zipPath.toString))
   lazy val target: Target = _target
 }

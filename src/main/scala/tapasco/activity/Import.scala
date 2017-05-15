@@ -58,53 +58,52 @@ object Import {
     // extract version and name from VLNV, create Core
     val c = Core(
         descPath = zip.resolveSibling("core.description"),
-        _zipPath = zip,
+        _zipPath = zip.getFileName,
         name = vlnv.name,
         id = id,
         version = vlnv.version.toString,
         _target = t,
-        Some("imported from %s on %s".format(zip.toString, java.time.LocalDateTime.now().toString)),
+        Some("imported from %s on %s".format(zip.toAbsolutePath.toString, java.time.LocalDateTime.now().toString)),
         acc)
 
     // write core.description to output directory (as per config)
-    val p = cfg.outputDir(c, t).resolve("core.description")
-    if (! p.toFile.exists) {
-      importCore(zip, c, t, p)
-    } else {
-      logger.info("core already exists in {}, skipping", p)
-      true
-    }
+    val p = cfg.outputDir(c, t).resolve("ipcore").resolve("core.description")
+    importCore(c, t, p)
   }
 
   /**
    * Imports the IP-XACT .zip to the default path structure (ipcore/) and performs
    * out-of-context synthesis (if no report from HLS was found).
-   * @param zip Path to IP-XACT .zip.
    * @param c Core description.
    * @param t Target platform and architecture.
    * @param p Output path for core description file.
    * @param cfg Implicit [[Configuration]].
    **/
-  private def importCore(zip: Path, c: Core, t: Target, p: Path)(implicit cfg: Configuration): Boolean = {
+  private def importCore(c: Core, t: Target, p: Path)(implicit cfg: Configuration): Boolean = {
     Files.createDirectories(p.getParent)
-    logger.trace("created directories: {}", p.getParent.toString)
+    logger.trace("created output directories: {}", p.getParent.toString)
 
     // add link to original .zip in the 'ipcore' subdir
-    val linkp = cfg.outputDir(c, t).resolve("ipcore").resolve(c.zipPath.toString)
-    if (! linkp.toFile.equals(zip.toAbsolutePath.toFile)) {
+    val linkp = cfg.outputDir(c, t).resolve("ipcore").resolve(c.zipPath.getFileName.toString)
+    if (! linkp.toFile.equals(c.zipPath.toAbsolutePath.toFile)) {
       Files.createDirectories(linkp.getParent)
       logger.trace("created directories: {}", linkp.getParent.toString)
-      if (linkp.toFile.exists) linkp.toFile.delete()
-      try {
-        java.nio.file.Files.createSymbolicLink(linkp, zip.toAbsolutePath)
-      } catch { case ex: java.nio.file.FileSystemException => {
-        logger.warn("cannot create link " + linkp + " -> " + zip + ", copying data")
-        java.nio.file.Files.copy(zip, linkp, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
-      }}
+      if (linkp.toFile.exists) {
+        logger.debug("file {} already exists, skipping copy/link step")
+      } else {
+        logger.trace("creating symbolic link {} -> {}", linkp: Any, c.zipPath.toAbsolutePath)
+        try   { java.nio.file.Files.createSymbolicLink(linkp, c.zipPath.toAbsolutePath) }
+        catch { case ex: java.nio.file.FileSystemException => {
+          logger.warn("cannot create link {} -> {}, copying data", linkp: Any, c.zipPath)
+          java.nio.file.Files.copy(c.zipPath, linkp, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        }}
+      }
+    } else {
+      logger.debug("{} is the same as {}, no copy/link required", linkp: Any, c.zipPath.toAbsolutePath)
     }
 
     // finally, evaluate the ip core and store the report with the link
-    val res = evaluateCore(zip, c, t)
+    val res = evaluateCore(c, t)
 
     // write core.description
     logger.debug("writing core description: {}", p.toString)
@@ -115,12 +114,11 @@ object Import {
   /**
    * Searches for an existing synthesis report, otherwise performs out-of-context synthesis and
    * place-and-route to produce area and Fmax estimates
-   * @param zip Path to IP-XACT .zip.
    * @param c Core description.
    * @param t Target Architecture + Platform combination.
    * @param cfg Implicit [[Configuration]].
    **/
-  private def evaluateCore(zip: Path, c: Core, t: Target)(implicit cfg: Configuration): Boolean = {
+  private def evaluateCore(c: Core, t: Target)(implicit cfg: Configuration): Boolean = {
     logger.trace("looking for SynthesisReport ...")
     val period = 1000.0 / t.pd.supportedFrequencies.sortWith(_>_).head
     val report = cfg.outputDir(c, t).resolve("ipcore").resolve("%s_export.xml".format(c.name))
@@ -132,7 +130,7 @@ object Import {
       true
     } getOrElse {
       logger.info("SynthesisReport for {} not found, starting evaluation ...", c.name)
-      EvaluateIP(zip, period, t.pd.part, report)
+      EvaluateIP(c.zipPath, period, t.pd.part, report)
     }
   }
 }
