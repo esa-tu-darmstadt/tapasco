@@ -127,7 +127,6 @@ class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) ext
       "PROJECT_NAME"     -> "[tapasco::get_generate_mode]",
       "BITSTREAM_NAME"   -> projectName,
       "HEADER"           -> header,
-      "TESTBENCH_MODULE" -> target.pd.testbenchTemplate.toString,
       "PRELOAD_FILES"    -> "",
       "PART"             -> target.pd.part,
       "BOARD_PART"       -> (target.pd.boardPart getOrElse ""),
@@ -184,13 +183,10 @@ class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) ext
   /** Produces the header section of the main Tcl file, containing several global vars. **/
   private def makeHeader(bd: Composition, target: Target, f: Heuristics.Frequency, archFeatures: Seq[Feature],
       platformFeatures: Seq[Feature]): String =
-    "set TAPASCO_PLATFORM_HEADER {" + target.pd.harness.getOrElse("missing") + " " +
-    target. pd.api.getOrElse("missing") + "}" + NL +
-    "set TAPASCO_SIM_MODULE " + target.pd.testbenchTemplate.getOrElse("missing") + NL +
+    "set tapasco_freq %3.0f%s".format(f, NL) +
     (target.pd.boardPreset map (bp => "set tapasco_board_preset %s%s".format(bp, NL)) getOrElse "") +
-    (maxThreads map (mt => "set_param general.maxThreads %d%s".format(mt, NL)) getOrElse "") +
     (maxThreads map (mt => "set tapasco_jobs %d%s".format(mt, NL)) getOrElse "") +
-    "set tapasco_freq " + f + NL +
+    (maxThreads map (mt => "set_param general.maxThreads %d%s".format(mt, NL)) getOrElse "") +
     (platformFeatures.map { f => new FeatureTclPrinter("platform").toTcl(f) } mkString NL) +
     (archFeatures.map { f => new FeatureTclPrinter("architecture").toTcl(f) } mkString NL) + NL
 }

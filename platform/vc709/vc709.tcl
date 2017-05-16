@@ -22,14 +22,11 @@
 #
 namespace eval platform {
   namespace export create
-  namespace export generate
   namespace export max_masters
 
-  # abort 'sim' runs
-  if {[tapasco::get_generate_mode] != "bit"} {
-    puts "Invalid generate mode: [tapasco::get_generate_mode]"
-    puts "Platform support only: bit"
-    exit 1
+  # scan plugin directory
+  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/vc709/plugins" "*.tcl"] {
+    source -notrace $f
   }
 
   proc max_masters {} {
@@ -671,80 +668,6 @@ namespace eval platform {
     platform_address_map
     validate_bd_design
     save_bd_design
-  }
-
-  # Platform API: Main entry point to generate bitstream or simulation environement.
-  proc generate {} {
-    global bitstreamname
-    # perform some action on the design
-    switch [tapasco::get_generate_mode] {
-      "sim" {
-        # prepare ModelSim simulation
-        update_compile_order -fileset sim_1
-        set_property SOURCE_SET sources_1 [get_filesets sim_1]
-        import_files -fileset sim_1 -norecurse [tapasco::get_platform_header]
-        import_files -fileset sim_1 -norecurse [tapasco::get_sim_module]
-        update_compile_order -fileset sim_1
-        # Disabling source management mode.  This is to allow the top design properties to be set without GUI intervention.
-        set_property source_mgmt_mode None [current_project]
-        set_property top tb [get_filesets sim_1]
-        # Re-enabling previously disabled source management mode.
-        set_property source_mgmt_mode All [current_project]
-        update_compile_order -fileset sim_1
-
-        # generate simulation scripts
-        launch_simulation -scripts_only
-        # patch scripts: console mode only, use DPI
-        [exec sed -i {s+bin_path/vsim+bin_path/vsim -c -keepstdout -sv_lib \$LIBPLATFORM_SERVER_LIB+} [pwd]/sim/sim.sim/sim_1/behav/simulate.sh]
-        [exec sed -i {s+^vsim+vsim -sv_lib $::env(LIBPLATFORM_SERVER_LIB)+} [pwd]/sim/sim.sim/sim_1/behav/tb_simulate.do]
-        cd [pwd]/sim/sim.sim/sim_1/behav
-        if {[catch {exec >@stdout 2>@stderr [pwd]/compile.sh}] == 0} {
-          if {[catch {exec >@stdout 2>@stderr [pwd]/elaborate.sh}] == 0} {
-            [exec >@stdout 2>@stderr [pwd]/simulate.sh]
-          } {}
-        } {}
-      }
-      "bit" {
-        # generate bitstream from given design and report utilization / timing closure
-        set jobs [tapasco::get_number_of_processors]
-        puts "  using $jobs parallel jobs"
-
-        generate_target all [get_files system.bd]
-        set synth_run [get_runs synth_1]
-        #set_property FLOW {Vivado Synthesis 2015} $synth_run
-        current_run $synth_run
-        launch_runs -jobs $jobs $synth_run
-        wait_on_run $synth_run
-        open_run $synth_run
-        read_xdc -cells {system_i/Memory/dual_dma} "$::env(TAPASCO_HOME)/common/ip/dual_dma_1.0/dual_async_m32_m64.xdc"
-
-        # call plugins
-        tapasco::call_plugins "post-synth"
-
-        set impl_run [get_runs impl_1]
-        set_property FLOW {Vivado Implementation 2015} $impl_run
-        current_run $impl_run
-        launch_runs -jobs $jobs -to_step route_design $impl_run
-        wait_on_run $impl_run
-        open_run $impl_run
-
-        # call plugins
-        tapasco::call_plugins "post-impl"
-
-        report_timing_summary -warn_on_violation -file timing.txt
-        report_utilization -file utilization.txt
-        report_utilization -file utilization_userlogic.txt -cells [get_cells -hierarchical -filter {NAME =~ *target_ip_*}]
-        report_power -file power.txt
-        if {[get_property PROGRESS [get_runs $impl_run]] != "100%"} {
-          error "ERROR: impl failed!"
-        }
-        write_bitstream -force "${bitstreamname}.bit"
-      }
-      default {
-        puts "Don't know what to do for mode '$mode'."
-        exit 1
-      }
-    }
   }
 
   ##################################################################

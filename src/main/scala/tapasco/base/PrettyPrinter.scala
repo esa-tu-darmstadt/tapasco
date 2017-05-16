@@ -44,10 +44,7 @@ private object PrettyPrinter {
       "BoardPart = " + p.boardPart,
       "BoardPreset = " + p.boardPreset,
       "TargetUtilization = " + p.targetUtilization + "%",
-      "SlotCount = " + p.slotCount,
-      "Harness = " + p.harness,
-      "API = " + p.api,
-      "TestbenchTemplate = " + p.testbenchTemplate
+      "SlotCount = " + p.slotCount
     ) mkString NL
 
   def printKernelArg(ka: Kernel.Argument): String = ka.name + " " + ka.passingConvention

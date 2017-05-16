@@ -3,7 +3,5 @@
 	"Description" : "PyNQ-Z1 Python Productivity for Zynq",
 	"TclLibrary" : "pynq.tcl",
 	"Part" : "xc7z020clg400-1",
-	"TargetUtilization" : 99,
-	"ValueArgTemplate" : "../zynq/valueargs.directives.template",
-	"ReferenceArgTemplate" : "../zynq/referenceargs.directives.template"
+	"TargetUtilization" : 99
 }

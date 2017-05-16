@@ -20,7 +20,6 @@ source -notrace $::env(TAPASCO_HOME)/platform/zynq/zynq.tcl
 
 namespace eval platform {
   namespace export create
-  namespace export generate
   namespace export max_masters
   namespace export create_clock_port
   namespace export createZynqPS
@@ -36,10 +35,6 @@ namespace eval platform {
 
   proc create {} {
     return [zynq::create]
-  }
-
-  proc generate {} {
-    return [zynq::generate]
   }
 
   proc create_clock_port {{name "clk"}} {

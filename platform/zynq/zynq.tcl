@@ -26,17 +26,11 @@
 namespace eval platform {
   namespace eval zynq {
     namespace export create
-    namespace export generate
     namespace export max_masters
   
     # check if TAPASCO_HOME env var is set
     if {![info exists ::env(TAPASCO_HOME)]} {
       puts "Could not find TPC root directory, please set environment variable 'TAPASCO_HOME'."
-      exit 1
-    }
-    # check if DPI server lib env var is set
-    if {[tapasco::get_generate_mode] == "sim"} {
-      puts "Simulation currently not supported."
       exit 1
     }
     # scan plugin directory
@@ -53,23 +47,9 @@ namespace eval platform {
       puts "Connecting clocks ..."
   
       set clk_inputs [get_bd_pins -of_objects [get_bd_cells] -filter { TYPE == "clk" && DIR == "I" }]
-      switch [tapasco::get_generate_mode] {
-        "sim" {
-          puts "  simulation mode, creating external port to drive PS_CLK" 
-          set clk_port [create_bd_port -dir "I" -type CLK clk]
-          connect_bd_net $clk_port [get_bd_pins -of_objects $ps -filter { NAME == "PS_CLK" }]
-          connect_bd_net [get_bd_pins -of_objects $ps -filter { NAME == "FCLK_CLK0" }] $clk_inputs
-        }
-        "bit" {
-          puts "  bitstream mode, connecting to FCLK_CLK0 port of PS7"
-          set clk_inputs [get_bd_pins -of_objects [get_bd_cells] -filter { TYPE == "clk" && DIR == "I" }]
-          connect_bd_net [get_bd_pins -of_objects $ps -filter { NAME == "FCLK_CLK0" }] $clk_inputs
-        }
-        default {
-          puts "Don't know how to connect clock for mode '$mode'."
-          exit 1
-        }
-      }
+      puts "  connecting to FCLK_CLK0 port of PS7"
+      set clk_inputs [get_bd_pins -of_objects [get_bd_cells] -filter { TYPE == "clk" && DIR == "I" }]
+      connect_bd_net [get_bd_pins -of_objects $ps -filter { NAME == "FCLK_CLK0" }] $clk_inputs
     }
   
     # Setup the reset network.
@@ -86,28 +66,10 @@ namespace eval platform {
       puts "ic_resets = $ic_resets"
       puts "periph_resets = $periph_resets"
   
-      switch [tapasco::get_generate_mode] {
-        "sim" {
-          puts "  simulation mode, creating active low external port to drive PS and rst_gen resets"
-          set rst_port [create_bd_port -dir "I" -type RST rst]
-          set ext_resets [get_bd_pins -of_objects $rst_gen -filter { NAME == "ext_reset_in" }]
-          lappend ext_resets [get_bd_pins -of_objects $ps -filter { NAME == "PS_SRSTB" || NAME == "PS_PORB" }]
-          connect_bd_net $rst_port $ext_resets
-  
-          connect_bd_net [get_bd_pins -of_objects $rst_gen -filter { NAME == "interconnect_aresetn" }] $ic_resets
-          connect_bd_net [get_bd_pins -of_objects $rst_gen -filter { NAME == "peripheral_aresetn" }] $periph_resets
-        }
-        "bit" {
-          puts "  bitstream mode, connecting to FCLK_RESET0_N on PS7"
-          connect_bd_net [get_bd_pins -of_objects $ps -filter { NAME == "FCLK_RESET0_N" }] [get_bd_pins -of_objects $rst_gen -filter { NAME == "ext_reset_in" }]
-          connect_bd_net [get_bd_pins -of_objects $rst_gen -filter { NAME == "interconnect_aresetn" }] $ic_resets
-          connect_bd_net [get_bd_pins -of_objects $rst_gen -filter { NAME == "peripheral_aresetn" }] $periph_resets
-        }
-        default {
-          puts "Don't know how to connect reset for mode '$mode'."
-          exit 1
-        }
-      }
+      puts "  connecting to FCLK_RESET0_N on PS7"
+      connect_bd_net [get_bd_pins -of_objects $ps -filter { NAME == "FCLK_RESET0_N" }] [get_bd_pins -of_objects $rst_gen -filter { NAME == "ext_reset_in" }]
+      connect_bd_net [get_bd_pins -of_objects $rst_gen -filter { NAME == "interconnect_aresetn" }] $ic_resets
+      connect_bd_net [get_bd_pins -of_objects $rst_gen -filter { NAME == "peripheral_aresetn" }] $periph_resets
     }
   
     # Setup interrupts.
@@ -141,42 +103,6 @@ namespace eval platform {
       # connect interconnect to the host at GP1
       connect_bd_intf_net [get_bd_intf_pins -of $ps -filter {NAME=="M_AXI_GP1"}] [get_bd_intf_pins -of $intcic -filter {MODE=="Slave"}]
       return $intcs
-    }
-  
-    # Creates the optional OLED controller indicating interrupts.
-    # @param ps Processing System instance
-    proc create_subsystem_oled {name irqs} {
-      # number of INTC's
-      set no_intcs [llength $irqs]
-      # make new group for OLED
-      set instance [current_bd_instance .]
-      set group [create_bd_cell -type hier $name]
-      current_bd_instance $group
-  
-      # create OLED controller
-      set oled_ctrl [tapasco::createOLEDController oled_ctrl]
-  
-      # create ports
-      set clk [create_bd_pin -type "clk" -dir I "aclk"]
-      set rst [create_bd_pin -type "rst" -dir I "peripheral_aresetn"]
-      set op_cc [tapasco::createConcat "op_cc" $no_intcs]
-      connect_bd_net [get_bd_pins -of_objects $op_cc -filter { DIR == "O" }] [get_bd_pins $oled_ctrl/intr]
-      for {set i 0} {$i < $no_intcs} {incr i} {
-        connect_bd_net [lindex $irqs $i] [get_bd_pins "$op_cc/In$i"]
-      }
-  
-      # connect clock port
-      connect_bd_net $clk [get_bd_pins -of_objects $oled_ctrl -filter { TYPE == "clk" && DIR == "I" }]
-  
-      # connect reset
-      connect_bd_net $rst [get_bd_pins $oled_ctrl/rst_n]
-  
-      # create external port 'oled'
-      set op [create_bd_intf_port -mode "master" -vlnv "esa.cs.tu-darmstadt.de:user:oled_rtl:1.0" "oled"]
-      connect_bd_intf_net [get_bd_intf_pins -of_objects $oled_ctrl] $op
-  
-      current_bd_instance $instance
-      return $group
     }
   
     # Create TPC status information core.
@@ -282,18 +208,7 @@ namespace eval platform {
       set fclk0_aresetn [create_bd_pin -type "rst" -dir "O" "ps_resetn"]
   
       # generate PS7 instance
-      switch [tapasco::get_generate_mode] {
-        "sim" {
-          set ps [tapasco::createZynqBFM "ps7" [tapasco::get_board_preset] [tapasco::get_design_frequency]]
-        }
-        "bit" {
-          set ps [tapasco::createZynqPS "ps7" [tapasco::get_board_preset] [tapasco::get_design_frequency]]
-        }
-        default {
-          puts "ERROR: unknown mode $mode."
-          exit 1
-        }
-      }
+      set ps [tapasco::createZynqPS "ps7" [tapasco::get_board_preset] [tapasco::get_design_frequency]]
       if {[tapasco::get_board_preset] != {}} {
         set_property -dict [list CONFIG.preset [tapasco::get_board_preset]] $ps
       }
@@ -592,80 +507,6 @@ namespace eval platform {
         ]
       }
       return $ret
-    }
-  
-    # Platform API: Main entry point to generate bitstream or simulation environement.
-    proc generate {} {
-      global bitstreamname
-      # perform some action on the design
-      switch [tapasco::get_generate_mode] {
-        "sim" {
-          # prepare ModelSim simulation
-          update_compile_order -fileset sim_1
-          set_property SOURCE_SET sources_1 [get_filesets sim_1]
-          import_files -fileset sim_1 -norecurse [tapasco::get_platform_header]
-          import_files -fileset sim_1 -norecurse [tapasco::get_sim_module]
-          update_compile_order -fileset sim_1
-          # Disabling source management mode.  This is to allow the top design properties to be set without GUI intervention.
-          set_property source_mgmt_mode None [current_project]
-          set_property top tb [get_filesets sim_1]
-          # Re-enabling previously disabled source management mode.
-          set_property source_mgmt_mode All [current_project]
-          update_compile_order -fileset sim_1
-
-          # generate simulation scripts
-          launch_simulation -scripts_only
-          # patch scripts: console mode only, use DPI
-          [exec sed -i {s+bin_path/vsim+bin_path/vsim -c -keepstdout -sv_lib \$LIBPLATFORM_SERVER_LIB+} [pwd]/sim/sim.sim/sim_1/behav/simulate.sh]
-          [exec sed -i {s+^vsim+vsim -sv_lib $::env(LIBPLATFORM_SERVER_LIB)+} [pwd]/sim/sim.sim/sim_1/behav/tb_simulate.do]
-          cd [pwd]/sim/sim.sim/sim_1/behav
-          if {[catch {exec >@stdout 2>@stderr [pwd]/compile.sh}] == 0} {
-            if {[catch {exec >@stdout 2>@stderr [pwd]/elaborate.sh}] == 0} {
-              [exec >@stdout 2>@stderr [pwd]/simulate.sh]
-            } {}
-          } {}
-        }
-        "bit" {
-          set jobs [tapasco::get_number_of_processors]
-          puts "  using $jobs parallel jobs"
-
-          # generate bitstream from given design and report utilization / timing closure
-          generate_target all [get_files system.bd]
-          set synth_run [get_runs synth_1]
-          #set_property FLOW {Vivado Synthesis 2015} $synth_run
-          #set_property strategy Flow_PerfOptimized_High $synth_run
-          current_run $synth_run
-          launch_runs -jobs $jobs $synth_run
-          wait_on_run $synth_run
-          open_run $synth_run
-
-          # call plugins
-          tapasco::call_plugins "post-synth"
-
-          set impl_run [get_runs impl_1]
-          #set_property FLOW {Vivado Implementation 2015} $impl_run
-          current_run $impl_run
-          launch_runs -jobs $jobs -to_step route_design $impl_run
-          wait_on_run $impl_run
-          open_run $impl_run
-
-          # call plugins
-          tapasco::call_plugins "post-impl"
-
-          report_timing_summary -file timing.txt -warn_on_violation
-          report_utilization -file utilization.txt
-          report_utilization -file utilization_userlogic.txt -cells [get_cells -hierarchical -filter {NAME =~ *target_ip_*}]
-          report_power -file power.txt
-          if {[get_property PROGRESS $impl_run] != "100%"} {
-            error "ERROR: impl failed!"
-          }
-          write_bitstream -force "${bitstreamname}.bit"
-        }
-        default {
-          puts "Don't know what to do for mode '$mode'."
-          exit 1
-        }
-      }
     }
   }
 }

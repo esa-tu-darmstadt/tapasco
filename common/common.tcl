@@ -40,10 +40,8 @@ namespace eval tapasco {
   namespace export get_composition
   namespace export get_design_frequency
   namespace export get_design_period
-  namespace export get_generate_mode
   namespace export get_number_of_processors
-  namespace export get_platform_header
-  namespace export get_sim_module
+  namespace export get_speed_grade
   namespace export get_wns_from_timing_report
 
   namespace export create_interconnect_tree
@@ -454,7 +452,7 @@ namespace eval tapasco {
   # Returns the current generation mode selected by the user.
   # Default: "sim"
   proc get_generate_mode {} {
-    if {[info exists ::env(TAPASCO_MODE)]} {return $::env(TAPASCO_MODE)} {return "bit"}
+    return "bit"
   }
 
   # Returns the desired design clock frequency (in MHz) selected by the user.
@@ -484,18 +482,6 @@ namespace eval tapasco {
     return $kernels
   }
 
-  # Returns the file name of the current Platform's SystemVerilog include header.
-  proc get_platform_header {} {
-    global TAPASCO_PLATFORM_HEADER
-    return $TAPASCO_PLATFORM_HEADER
-  }
-
-  # Returns the file name of the current Platform's SystemVerilog testbench module.
-  proc get_sim_module {} {
-    global TAPASCO_SIM_MODULE
-    return $TAPASCO_SIM_MODULE
-  }
-
   # Returns a list of configured features for the Platform.
   proc get_platform_features {} {
     global platformfeatures
@@ -505,7 +491,11 @@ namespace eval tapasco {
   # Returns a dictionary with the configuration of given Platform feature.
   proc get_platform_feature {feature} {
     global platformfeatures
-    if {[info exists platformfeatures] && [dict exists $platformfeatures $feature]} { return [dict get $platformfeatures $feature] } { return [dict create] }
+    if {[info exists platformfeatures] && [dict exists $platformfeatures $feature]} {
+      return [dict get $platformfeatures $feature]
+    } else {
+      return [dict create]
+    }
   }
 
   # Returns true, if given feature is configured and enabled.
@@ -514,8 +504,8 @@ namespace eval tapasco {
     if {[info exists platformfeatures]} {
       if {[dict exists $platformfeatures $feature]} {
         if {[dict get $platformfeatures $feature "enabled"] == "true"} {
-    return true
-  }
+          return true
+        }
       }
     }
     return false

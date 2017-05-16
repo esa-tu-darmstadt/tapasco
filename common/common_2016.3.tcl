@@ -2,7 +2,6 @@
 dict set stdcomps axi_ic vlnv "xilinx.com:ip:axi_interconnect:2.1"
 dict set stdcomps ps vlnv "xilinx.com:ip:processing_system7:5.5"
 dict set stdcomps ps_bfm vlnv "xilinx.com:ip:processing_system7_bfm:2.0"
-dict set stdcomps axi_bfm vlnv "xilinx.com:ip:cdn_axi_bfm:5.0"
 dict set stdcomps axi_irqc vlnv "xilinx.com:ip:axi_intc:4.1"
 dict set stdcomps axi_cache vlnv "xilinx.com:ip:system_cache:3.0"
 dict set stdcomps xlconcat vlnv "xilinx.com:ip:xlconcat:2.1"

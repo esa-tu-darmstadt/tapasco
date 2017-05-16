@@ -37,15 +37,8 @@ source -notrace "$::env(TAPASCO_HOME)/common/common.tcl"
 source -notrace @@ARCHITECTURE_TCL@@
 
 # source platform-specific Tcl scripts
+source -notrace "$env(TAPASCO_HOME)/platform/common/platform.tcl"
 source -notrace @@PLATFORM_TCL@@
-
-set mode [tapasco::get_generate_mode]
-
-# check COMPILED_SIMLIB env var
-if {$mode == "sim" && ![info exists ::env(COMPILED_SIMLIB)]} {
-  puts "Missing environment variable 'COMPILED_SIMLIB' - point to directory containing Vivado Simlib compiled for ModelSim (see UG900)."
-  exit 1
-}
 
 # name of the bitstream description file
 set bitstreamname @@BITSTREAM_NAME@@
@@ -70,16 +63,6 @@ set_msg_config -suppress -id {[xilinx.com:ip:axi_intc:4.1-7]}
 # loadout-specific configuration
 @@COMPOSITION@@
 
-# ModelSim
-if {$mode == "sim"} {
-  set_property target_simulator ModelSim [current_project]
-  set_property compxlib.compiled_library_dir "$::env(COMPILED_SIMLIB)" [current_project]
-  set_property -name {modelsim.simulate.vlog.more_options} -value {-sv} -objects [current_fileset -simset]
-  set_property -name {modelsim.simulate.vsim.more_options} -value {-c -keepstdout} -objects [current_fileset -simset]
-  set_property -name {modelsim.simulate.runtime} -value {-all} -objects [current_fileset -simset]
-  set_property -name {modelsim.simulate.log_all_signals} -value {true} -objects [current_fileset -simset]
-}
-
 # create design
 create_bd_design -quiet "system"
 
@@ -90,8 +73,8 @@ arch::create
 platform::create
 
 # create wrapper
-make_wrapper -files [get_files [pwd]/$mode/@@PROJECT_NAME@@.srcs/sources_1/bd/system/system.bd] -top
-add_files -norecurse [pwd]/$mode/@@PROJECT_NAME@@.srcs/sources_1/bd/system/hdl/system_wrapper.v
+make_wrapper -files [get_files [pwd]/[tapasco::get_generate_mode]/@@PROJECT_NAME@@.srcs/sources_1/bd/system/system.bd] -top
+add_files -norecurse [pwd]/[tapasco::get_generate_mode]/@@PROJECT_NAME@@.srcs/sources_1/bd/system/hdl/system_wrapper.v
 update_compile_order -fileset sources_1
 
 # generate according to the mode
@@ -99,4 +82,3 @@ platform::generate
 
 # exit successfully
 exit
-
