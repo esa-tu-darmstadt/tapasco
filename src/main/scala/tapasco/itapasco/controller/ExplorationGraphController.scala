@@ -94,7 +94,7 @@ class ExplorationGraphController extends ViewController {
         egp.detailPanel.element = n
         Graph.graph.result(n) foreach { cr => {
           _logger.trace("{} -> {}", n: Any, cr)
-          cr.synth foreach  { Reports += _ }
+          cr.util foreach   { Reports += _ }
           cr.timing foreach { Reports += _ }
           cr.power foreach  { Reports += _ }
         }}

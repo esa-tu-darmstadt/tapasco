@@ -81,11 +81,11 @@ object Composer {
   /** Extended result with additional information as provided by the tool. **/
   final case class Result(
     result: ComposeResult,
-    bit:    Option[String]          = None,
-    log:    Option[ComposerLog]     = None,
-    synth:  Option[SynthesisReport] = None,
-    timing: Option[TimingReport]    = None,
-    power:  Option[PowerReport]     = None
+    bit:    Option[String]            = None,
+    log:    Option[ComposerLog]       = None,
+    util:   Option[UtilizationReport] = None,
+    timing: Option[TimingReport]      = None,
+    power:  Option[PowerReport]       = None
   )
 
   /** Result of the external process execution. **/

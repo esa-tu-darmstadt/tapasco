@@ -80,13 +80,13 @@ private class DesignSpaceExplorationTask(
       // log the result
       _logger.info("DSE%s run %s for %s finished, result: %s;{}".format(dimensions, composition, target, result.nonEmpty),
           result map ( res =>
-            (" best result: %s @ %1.3f, bitstream file: '%s', logfile: '%s', synthesis report: '%s', " +
+            (" best result: %s @ %1.3f, bitstream file: '%s', logfile: '%s', utilization report: '%s', " +
             "timing report: '%s', power report: '%s'").format(
               res._1.composition,
               res._1.frequency,
               res._2.bit getOrElse "",
               res._2.log map (_.file) getOrElse "",
-              res._2.synth map (_.file) getOrElse "",
+              res._2.util map (_.file) getOrElse "",
               res._2.timing map (_.file) getOrElse "",
               res._2.power map (_.file) getOrElse "")) getOrElse "")
       // return success, if result is not empty

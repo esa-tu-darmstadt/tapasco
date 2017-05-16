@@ -57,14 +57,14 @@ class ComposeTask(composition: Composition,
 
     _logger.trace("_composerResult = {}", _composerResult: Any)
     _logger.info(("compose run %s@%2.3f MHz for %s finished, result: %s, bitstream file: '%s', " +
-        "logfile: '%s', synthesis report: '%s', timing report: '%s', power report: '%s'").format(
+        "logfile: '%s', utilization report: '%s', timing report: '%s', power report: '%s'").format(
         composition: Any,
         designFrequency,
         target,
         _composerResult map (_.result) getOrElse "",
         _composerResult map (_.bit) getOrElse "",
         _composerResult flatMap (_.log map (_.file)) getOrElse "",
-        _composerResult flatMap (_.synth map (_.file)) getOrElse "",
+        _composerResult flatMap (_.util map (_.file)) getOrElse "",
         _composerResult flatMap (_.timing map (_.file)) getOrElse "",
         _composerResult flatMap (_.power map (_.file)) getOrElse ""))
 
@@ -146,7 +146,7 @@ object ComposeTask {
   private final val RE_LOG    = """compose run .*result: \S+.*logfile: '([^']+)'""".r.unanchored
   private final val RE_TIMING = """compose run .*result: \S+.*timing report: '([^']+)'""".r.unanchored
   private final val RE_POWER  = """compose run .*result: \S+.*power report: '([^']+)'""".r.unanchored
-  private final val RE_SYNTH  = """compose run .*result: \S+.*synth report: '([^']+)'""".r.unanchored
+  private final val RE_UTIL   = """compose run .*result: \S+.*utilization report: '([^']+)'""".r.unanchored
   private final val RE_RRANDOM = """(?i)(random|r(?:nd)?)""".r
   private final val RE_RPLACER = """(?i)(placer|p(?:lc)?)""".r
   private final val RE_RTIMING = """(?i)(timing|t(?:mg)?)""".r
@@ -169,16 +169,16 @@ object ComposeTask {
         logger.trace("power path: {}", mkpath(m))
         PowerReport(mkpath(m))
       })
-      val synth = RE_SYNTH.findFirstMatchIn(lines) flatMap (m   => {
-        logger.trace("synth path: {}", mkpath(m))
-        SynthesisReport(mkpath(m))
+      val util = RE_UTIL.findFirstMatchIn(lines) flatMap (m   => {
+        logger.trace("utilization path: {}", mkpath(m))
+        UtilizationReport(mkpath(m))
       })
       val timing = RE_TIMING.findFirstMatchIn(lines) flatMap (m => {
         logger.trace("timing path: {}", mkpath(m))
         TimingReport(mkpath(m))
       })
-      logger.debug("result = {}, llog = {}, power = {}, synth = {}, timing = {}", result, llog, power, synth, timing)
-      result map (r => Composer.Result(r, log = llog, power = power, synth = synth, timing = timing))
+      logger.debug("result = {}, llog = {}, power = {}, util = {}, timing = {}", result, llog, power, util, timing)
+      result map (r => Composer.Result(r, log = llog, power = power, util = util, timing = timing))
     }
 
   // scalastyle:off magic.number

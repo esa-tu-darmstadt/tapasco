@@ -25,12 +25,12 @@ package object json {
     def writes(r: ComposeResult): JsValue = JsString(r.toString)
   }
 
-  private def mkComposerResult(r: ComposeResult, bit: Option[String], log: Option[String], synth: Option[String],
+  private def mkComposerResult(r: ComposeResult, bit: Option[String], log: Option[String], util: Option[String],
       timing: Option[String], power: Option[String]) = Composer.Result(
     r,
     bit,
     log flatMap    (f => ComposerLog(Paths.get(f))),
-    synth flatMap  (f => SynthesisReport(Paths.get(f))),
+    util flatMap   (f => UtilizationReport(Paths.get(f))),
     timing flatMap (f => TimingReport(Paths.get(f))),
     power flatMap  (f => PowerReport(Paths.get(f)))
   )
@@ -39,7 +39,7 @@ package object json {
     r.result,
     r.bit,
     r.log map (_.file.toString),
-    r.synth map (_.file.toString),
+    r.util map (_.file.toString),
     r.timing map (_.file.toString),
     r.power map (_.file.toString)
   )
@@ -48,7 +48,7 @@ package object json {
     (JsPath \ "Result").format[ComposeResult] ~
     (JsPath \ "Bitstream").formatNullable[String] ~
     (JsPath \ "Log").formatNullable[String] ~
-    (JsPath \ "SynthesisReport").formatNullable[String] ~
+    (JsPath \ "UtilizationReport").formatNullable[String] ~
     (JsPath \ "TimingReport").formatNullable[String] ~
     (JsPath \ "PowerReport").formatNullable[String]
   ) (mkComposerResult _, wrComposerResult _)
