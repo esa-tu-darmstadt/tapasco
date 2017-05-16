@@ -3,11 +3,13 @@
 *.log
 *.swp
 *.swo
+*.o
 **/tags
 **/build
 target
 /core
 /bd
+/DSE_*
 itpc/**
 arch/**/lib
 arch/tests/json11.*
