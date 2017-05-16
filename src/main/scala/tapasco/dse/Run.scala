@@ -13,7 +13,8 @@ sealed private trait Run extends Startable with Ordered[Run] {
   def task: Option[ComposeTask]
   def area: AreaEstimate
   def compare(that: Run): Int =
-    (this.area, this.element.h, this.element.frequency) compare (that.area, that.element.h, that.element.frequency)
+    (this.area.utilization, this.element.h, this.element.frequency) compare
+    (that.area.utilization, that.element.h, that.element.frequency)
 }
 
 private class ConcreteRun(val no: Int, val element: DesignSpace.Element, val target: Target, val debugMode: Option[String])
