@@ -54,7 +54,7 @@ class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) ext
     // create Tcl script
     mkTclScript(fromTemplate = Common.commonDir.resolve("design.master.tcl.template"),
                 to           = files.tclFile,
-                projectName  = bd.id,
+                projectName  = Composer.mkProjectName(bd, target, f),
                 header       = makeHeader(bd, target, f, archFeatures, platformFeatures),
                 target       = target,
                 composition  = composition(bd, target))

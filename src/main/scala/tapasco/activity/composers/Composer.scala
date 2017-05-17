@@ -24,6 +24,7 @@
  **/
 package de.tu_darmstadt.cs.esa.tapasco.activity.composers
 import  de.tu_darmstadt.cs.esa.tapasco.base._
+import  de.tu_darmstadt.cs.esa.tapasco.dse._
 import  de.tu_darmstadt.cs.esa.tapasco.reports._
 
 /** Wrapper trait for synthesis tools: basic interface to synthesise compositions
@@ -77,6 +78,12 @@ object Composer {
   def apply(i: Implementation)(implicit cfg: Configuration, maxThreads: Option[Int]): Composer = i match {
     case Implementation.Vivado => new VivadoComposer()(cfg, maxThreads)
   }
+
+  /** Make a name for the Composer project. */
+  def mkProjectName(c: Composition, t: Target, f: Heuristics.Frequency): String = "%s--%s--%s".format(
+    "%s-%s".format(t.ad.name, t.pd.name),
+    c.composition map (ce => "%s_%d".format(ce.kernel.replaceAll(" ", "-"), ce.count)) mkString ("_"),
+    "%05.1f".format(f))
 
   /** Extended result with additional information as provided by the tool. **/
   final case class Result(
