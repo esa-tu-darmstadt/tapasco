@@ -27,11 +27,7 @@
 #include "zynq_logging.h"
 #include "zynq_device.h"
 
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,18,0)
-#define ZYNQ_IRQ_BASE_IRQ					(61)
-#else
-#define ZYNQ_IRQ_BASE_IRQ					(44)
-#endif
+#define ZYNQ_IRQ_BASE_IRQ					(45)
 
 extern struct zynq_device zynq_dev;
 
