@@ -131,13 +131,13 @@ tapasco_func_slot_id_t tapasco_functions_acquire(tapasco_functions_t *ctx,
 		tapasco_func_id_t const f_id) {
 	tapasco_func_t **funcs = ctx->func;
 	int len = TAPASCO_MAX_INSTANCES;
-	while (len && ! reserve_func(*funcs, f_id) && (*funcs)->id) {
+	while (len && *funcs && ! reserve_func(*funcs, f_id) && (*funcs)->id) {
 		--len;
 		++funcs;
 	}
 	LOG(LALL_FUNCTIONS, "func_id = %d, slotid = %d",
-			f_id, len > 0  ? (*funcs)->slot_id : -1);
-	return len > 0 ? (*funcs)->slot_id : -1;
+			f_id, len > 0 && funcs && *funcs  ? (*funcs)->slot_id : -1);
+	return len > 0 && *funcs ? (*funcs)->slot_id : -1;
 }
 
 inline
