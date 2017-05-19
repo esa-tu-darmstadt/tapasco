@@ -69,7 +69,7 @@ public:
     return cavg();
   }
 
-  double atcycles(uint32_t const clock_cycles, size_t const min_runs = 100) {
+  double atcycles(uint32_t const clock_cycles, size_t const min_runs = 100, double *min = NULL, double *max = NULL) {
     CumulativeAverage<double> cavg { 0 };
     bool stop = false;
     initscr(); noecho(); curs_set(0); timeout(0);
@@ -90,6 +90,8 @@ public:
 
     move((y+1) % maxy, 0);
     endwin();
+    if (min) *min = cavg.min();
+    if (max) *max = cavg.max();
     return cavg();
   }
 

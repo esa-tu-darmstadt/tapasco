@@ -62,7 +62,8 @@ public:
 private:
   void transfer(volatile bool& stop, size_t const chunk_sz, long opmask) {
     tapasco_handle_t h;
-    uint8_t *data = new uint8_t[chunk_sz];
+    uint8_t *data = new (std::nothrow) uint8_t[chunk_sz];
+    if (! data) return;
     for (size_t i = 0; i < chunk_sz; ++i)
       data[i] = rand();
 
@@ -79,7 +80,7 @@ private:
         bytes += chunk_sz;
       tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
     }
-    delete data;
+    delete[] data;
   }
 
   static const std::string maskToString(long const opmask) {

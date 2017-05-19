@@ -40,9 +40,13 @@ struct transfer_speed_t {
 struct interrupt_latency_t {
   size_t cycle_count;
   double latency_us;
+  double min_latency_us;
+  double max_latency_us;
   Json to_json() const { return Json::object {
       {"Cycle Count", static_cast<double>(cycle_count)},
-      {"Latency", latency_us}
+      {"Avg Latency", latency_us},
+      {"Min Latency", min_latency_us},
+      {"Max Latency", max_latency_us}
     }; }
 };
 
@@ -53,7 +57,7 @@ int main(int argc, const char *argv[]) {
   struct utsname uts;
   uname(&uts);
   vector<Json> speed;
-  //struct transfer_speed_t ts;
+  struct transfer_speed_t ts;
   vector<Json> latency;
   struct interrupt_latency_t ls;
 
@@ -76,26 +80,30 @@ int main(int argc, const char *argv[]) {
   }
 
   // measure for chunk sizes 2^8 - 2^31 (2GB) bytes
-  for (int i = 8; i < 32; ++i) {
-    /*ts.chunk_sz = 1 << i;
+  for (int i = 10; i < 32; ++i) {
+    ts.chunk_sz = 1 << i;
     ts.speed_r  = tp(ts.chunk_sz, TransferSpeed::OP_COPYFROM);
     ts.speed_w  = tp(ts.chunk_sz, TransferSpeed::OP_COPYTO);
     ts.speed_rw = tp(ts.chunk_sz, TransferSpeed::OP_COPYFROM | TransferSpeed::OP_COPYTO);
-    cout << "Transfer speed @ chunk_sz = " << (ts.chunk_sz/1024) << " KiB:" 
-         << " read " << ts.speed_r << " MiB/s" 
-         << ", write: " << ts.speed_w << " MiB/s"
-	 << ", r/w: " << ts.speed_rw << " MiB/s"
-	 << endl;
-    Json json = ts.to_json();
-    speed.push_back(json);*/
+    cout << "Transfer speed @ chunk_sz = " << (ts.chunk_sz/1024) << " KiB:"
+         << " read "    << ts.speed_r  << " MiB/s"
+         << ", write: " << ts.speed_w  << " MiB/s"
+         << ", r/w: "   << ts.speed_rw << " MiB/s"
+         << endl;
+    if (ts.speed_r > 0.0 || ts.speed_w > 0 || ts.speed_rw > 0) {
+      Json json = ts.to_json();
+      speed.push_back(json);
+    } else break;
   }
 
   // measure average job roundtrip latency for clock cycles counts
   // between 2^0 and 2^31
   for (size_t i = 0; i < 32; ++i) {
     ls.cycle_count = 1UL << i;
-    ls.latency_us  = il.atcycles(ls.cycle_count);
+    ls.latency_us  = il.atcycles(ls.cycle_count, 10, &ls.min_latency_us, &ls.max_latency_us);
     cout << "Latency @ " << ls.cycle_count << "cc runtime: " << ls.latency_us << " us" << endl;
+    Json json = ls.to_json();
+    latency.push_back(json);
   }
 
   // record current time
@@ -123,10 +131,10 @@ int main(int argc, const char *argv[]) {
       }
     }
   };
-  
+
   // dump it
   stringstream ss;
-  ss << getenv("TAPASCO_HOME") << "/platform/" << platform << "/" << platform << ".benchmark";
+  ss << platform << ".benchmark";
   cout << "Dumping benchmark JSON to " << (argc >= 2 ? argv[1] : ss.str()) << endl;
   ofstream f(argc >= 2 ? argv[1] : ss.str());
   f << benchmark.dump();

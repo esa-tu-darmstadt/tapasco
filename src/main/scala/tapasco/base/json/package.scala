@@ -68,7 +68,7 @@ package object json {
 
   implicit val libraryVersionsFormat: Format[LibraryVersions] = (
       (JsPath \ "Platform API").format[String] ~
-      (JsPath \ "TPC API").format[String]
+      (JsPath \ "Tapasco API").format[String]
     ) (LibraryVersions.apply _, unlift(LibraryVersions.unapply _))
 
   implicit val hostFormat: Format[Host] = (
@@ -88,7 +88,9 @@ package object json {
 
   implicit val interruptLatencyFormat: Format[InterruptLatency] = (
       (JsPath \ "Cycle Count").format[Int] ~
-      (JsPath \ "Latency").format[Double]
+      (JsPath \ "Avg Latency").format[Double] ~
+      (JsPath \ "Min Latency").format[Double] ~
+      (JsPath \ "Max Latency").format[Double]
     ) (InterruptLatency.apply _, unlift(InterruptLatency.unapply _))
 
   implicit val benchmarkReads: Reads[Benchmark] = (

@@ -35,7 +35,7 @@ final case class Host(machine: String, node: String, operatingSystem: String, re
 /** Transfer speed measurement: R/W/RW speeds at given chunk size (in bytes). */
 final case class TransferSpeedMeasurement(chunkSize: Int, read: Double, write: Double, readWrite: Double)
 /** Interrupt latency in us at given PE runtime (in clock cycles). */
-final case class InterruptLatency(clockCycles: Int, latency: Double)
+final case class InterruptLatency(clockCycles: Int, latency: Double, min: Double, max: Double)
 /** Defines an interpolation on [[InterruptLatency]] elements. */
 final class LatencyInterpolator(data: Seq[InterruptLatency])
     extends LinearInterpolator[Int, Double](data map { il => (il.clockCycles, il.latency) }) {
