@@ -33,6 +33,14 @@ int main(int argc, char *argv[])
     menu.show();
     exit_ncurses();
   } catch (int e) {
+    exit_ncurses();
     cerr << "Error code: " << e << endl;
+  } catch (tapasco::Tapasco::tapasco_error e) {
+    exit_ncurses();
+    cerr << e.what() << endl;
+  } catch (runtime_error e) {
+    exit_ncurses();
+    cerr << "Unknown error occurred." << endl;
+    exit(1);
   }
 }
