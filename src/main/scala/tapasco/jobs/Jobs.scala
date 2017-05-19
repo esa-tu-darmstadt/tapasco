@@ -60,6 +60,10 @@ final case class ComposeJob(
   /** Returns the list of [[base.Platform]] instances selected in this job. */
   def platforms: Set[Platform] =
     FileAssetManager.entities.platforms filter (p => _platforms map (_.contains(p.name)) getOrElse true)
+
+  /** Returns a list of [[base.Target]]s selected in this job. */
+  def targets: Seq[Target] =
+    for { a <- architectures.toSeq.sortBy(_.name); p <- platforms.toSeq.sortBy(_.name) } yield Target(a, p)
 }
 
 /**
