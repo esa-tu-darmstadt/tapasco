@@ -27,14 +27,14 @@
 
 #define TAPASCO_MAX_INSTANCES			128
 
-static platform_ctl_addr_t _bases[TAPASCO_MAX_INSTANCES] = { -1 };
+static platform_ctl_addr_t _bases[TAPASCO_MAX_INSTANCES] = { 0 };
 
 static inline tapasco_reg_addr_t base_addr(uint32_t const slot_id) {
 	assert(slot_id < TAPASCO_MAX_INSTANCES);
 	tapasco_reg_addr_t ret = _bases[slot_id];
-	if (ret == -1)
-		ret = _bases[slot_id] = platform_address_get_slot_base(slot_id, 0);
-	assert(ret != -1);
+	if (! ret)
+		ret = (_bases[slot_id] = platform_address_get_slot_base(slot_id, 0));
+	assert(ret > 0);
 	return ret;
 }
 
