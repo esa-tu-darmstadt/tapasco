@@ -2,11 +2,19 @@
 BOARD=${1:-zedboard}
 VERSION=${2:-2016.4}
 SDCARD=${3:-}
+IMGSIZE=${4:-4096}
 DIR="$BOARD/$VERSION"
 LOGDIR="$DIR/logs"
 CROSS_COMPILE=${CROSS_COMPILE:=arm-linux-gnueabihf-}
 ROOTFS_IMG="$PWD/rootfs.img"
+PYNQ_VERSION="pynq_z1_image_2017_02_10"
+PYNQ_IMAGE="$PWD/pynq/$PYNQ_VERSION.zip"
+PYNQ_IMAGE_URL="https://s3-us-west-2.amazonaws.com/digilent/Products/PYNQ/$PYNQ_VERSION.zip"
+OUTPUT_IMAGE="$DIR/${BOARD}_${VERSION}.img"
 ### LOGFILES ###################################################################
+FETCH_LINUX_LOG="$PWD/$LOGDIR/fetch-linux.log"
+FETCH_UBOOT_LOG="$PWD/$LOGDIR/fetch-uboot.log"
+FETCH_PYNQ_IMG_LOG="$PWD/pynq/fetch-pynq-img.log"
 BUILD_LINUX_LOG="$PWD/$LOGDIR/build-linux.log"
 BUILD_UBOOT_LOG="$PWD/$LOGDIR/build-uboot.log"
 BUILD_SSBL_LOG="$PWD/$LOGDIR/build-ssbl.log"
@@ -14,12 +22,11 @@ BUILD_UIMAGE_LOG="$PWD/$LOGDIR/build-uimage.log"
 BUILD_FSBL_LOG="$PWD/$LOGDIR/build-fsbl.log"
 BUILD_BOOTBIN_LOG="$PWD/$LOGDIR/build-bootbin.log"
 BUILD_DEVICETREE_LOG="$PWD/$LOGDIR/build-devicetree.log"
+BUILD_OUTPUT_IMAGE_LOG="$PWD/$LOGDIR/build-output-image.log"
 PREPARE_SD_LOG="$PWD/$LOGDIR/prepare-sd.log"
-EXTRACT_BL_LOG="$PWD/extract-bl.log"
-EXTRACT_RFS_LOG="$PWD/extract-rfs.log"
-PYNQ_VERSION="pynq_z1_image_2017_02_10"
-PYNQ_IMAGE="$PWD/pynq/$PYNQ_VERSION.zip"
-PYNQ_IMAGE_URL="https://s3-us-west-2.amazonaws.com/digilent/Products/PYNQ/$PYNQ_VERSION.zip"
+EXTRACT_BL_LOG="$PWD/pynq/logs/extract-bl.log"
+EXTRACT_RFS_LOG="$PWD/pynq/logs/extract-rfs.log"
+
 # fetch status
 FETCH_UBOOT_OK=1
 FETCH_LINUX_OK=1
@@ -32,15 +39,24 @@ PREPARE_SD_OK=1
 
 print_usage () {
 	cat << EOF
-Usage: ${0##*/} BOARD VERSION [DEVICE]
+Usage: ${0##*/} BOARD VERSION [DEVICE] [DISK SIZE]
 Build a boot image for the given BOARD and VERSION (git tag). If DEVICE is
 given, repartition the device as a bootable SD card (WARNING: all data will
 be lost).
 	BOARD		one of zc706, zedboard
 	VERSION		Vivado Design Suite version, e.g., 2016.4
 	DEVICE		SD card device, e.g., /dev/sdb (optional)
+	DISK SIZE	Size of the image in MiB (optional, default: 4096)
 EOF
 	exit 1
+}
+
+error_exit () {
+	echo ${1:-"unknown error"} >&2 && exit 1
+}
+
+error_ret () {
+	echo ${1:-"error in script"} >&2 && return 1
 }
 
 check_board () {
@@ -60,92 +76,96 @@ check_board () {
 }
 
 check_compiler () {
-	gcc=`which ${CROSS_COMPILE}gcc`
-	if [[ $? -ne 0 ]]; then
-		echo "Compiler ${CROSS_COMPILE}gcc not found in path."
-		exit 1
-	fi
+	which ${CROSS_COMPILE}gcc &> /dev/null ||
+	error_exit "Compiler ${CROSS_COMPILE}gcc not found in path."
 }
 
 check_hsi () {
-	hsi=`which hsi`
-	if [[ $? -ne 0 ]]; then
-		echo "Xilinx hsi tool is not in PATH, please source Vivado settings."
-		exit 1
-	fi
+	which hsi &> /dev/null ||
+	error_exit "Xilinx hsi tool is not in PATH, please source Vivado settings."
 }
 
 check_vivado () {
-	viv=`which vivado`
-	if [[ $? -ne 0 ]]; then
-		echo "Xilinx Vivado is not in PATH, please source Vivado settings."
-		exit 1
-	fi
+	which vivado &> /dev/null ||
+	error_exit "Xilinx Vivado is not in PATH, please source Vivado settings."
 }
 
 check_bootgen () {
-	viv=`which bootgen`
-	if [[ $? -ne 0 ]]; then
-		echo "Xilinx bootgen tool is not in PATH, please source Vivado settings."
-		exit 1
-	fi
+	which bootgen &> /dev/null ||
+	error_exit "Xilinx bootgen tool is not in PATH, please source Vivado settings."
+}
+
+check_image_tools () {
+	which kpartx &> /dev/null ||
+	error_exit "Partitioning helper 'kpartx' not found, please install package."
 }
 
 check_sdcard () {
-	if [[ -n $SDCARD && ! -e $SDCARD ]]; then
-	 	echo "SD card device $SDCARD does not exist!"
-		exit 1
-	fi
+	[[ -z $SDCARD || -e $SDCARD ]] ||
+	error_exit "SD card device $SDCARD does not exist!"
 }
 
-get_linux () {
+fetch_linux () {
 	if [[ ! -d $DIR/linux-xlnx ]]; then
-		# echo "Fetching linux $VERSION ..."
-		mkdir -p "$DIR" > /dev/null &&
-		pushd $DIR > /dev/null &&
-		if [[ ! -d linux-xlnx ]]; then git clone -b xilinx-v$VERSION --depth 1 https://github.com/xilinx/linux-xlnx > /dev/null; fi &&
-		popd > /dev/null
+		echo "Fetching linux $VERSION ..."
+		git clone -b xilinx-v$VERSION --depth 1 https://github.com/xilinx/linux-xlnx.git $DIR/linux-xlnx ||
+		return $(error_ret "$LINENO: could not clone linux git")
+	else
+		echo "$DIR/linux-xln already exists, skipping."
 	fi
 }
 
-get_u-boot () {
+fetch_u-boot () {
 	if [[ ! -d $DIR/u-boot-xlnx ]]; then
-		# echo "Fetching u-boot $VERSION ..."
-		mkdir -p "$DIR" > /dev/null &&
-		pushd $DIR > /dev/null &&
-		if [[ ! -d u-boot-xlnx ]]; then git clone -b xilinx-v$VERSION --depth 1 https://github.com/xilinx/u-boot-xlnx > /dev/null; fi &&
-		popd > /dev/null
+		echo "Fetching u-boot $VERSION ..."
+		git clone -b xilinx-v$VERSION --depth 1 https://github.com/xilinx/u-boot-xlnx.git $DIR/u-boot-xlnx ||
+		return $(error_ret "$LINENO: could not clone u-boot git")
+	else
+		echo "$DIR/u-boot-xlnx already exists, skipping."
 	fi
 }
 
-get_pynq_image () {
+fetch_pynq_image () {
+	IMG=${PYNQ_VERSION}.img
+	BD=`dirname $PYNQ_IMAGE`
 	if [[ ! -f $PYNQ_IMAGE ]]; then
-		# echo "Fetching PyNQ standard image ..."
-		mkdir -p `dirname $PYNQ_IMAGE` 2> /dev/null &&
-		curl -s $PYNQ_IMAGE_URL -o $PYNQ_IMAGE
+		echo "Fetching PyNQ standard image ..."
+		mkdir -p $BD || return $(error_ret "$LINENO: could not create $BD")
+		curl -s $PYNQ_IMAGE_URL -o $PYNQ_IMAGE ||
+		return $(error_ret "$LINENO: could not fetch $PYNQ_IMAGE_URL")
+	fi
+	if [[ ! -f $PWD/pynq/$IMG ]]; then
+		echo "Unzipping $PYNQ_IMAGE to extract $IMG ..."
+		pushd $PWD/pynq &&
+		unzip -u $PYNQ_IMAGE &&
+		popd > /dev/null
 	fi
 }
 
 extract_pynq_bl () {
 	if [[ ! -f $PWD/pynq/BOOT.BIN ]]; then
-		pushd $PWD/pynq > $EXTRACT_BL_LOG 2>&1 &&
-		IMG=${PYNQ_VERSION}.img
-		if [[ -f $IMG ]]; then
-			echo "Unzipping $PYNQ_IMAGE to extract $IMG ..." >> $EXTRACT_BL_LOG 2>&1 &&
-			unzip -u $PYNQ_IMAGE >> $EXTRACT_BL_LOG 2>&1
-		fi &&
-		mkdir -p img >> $EXTRACT_BL_LOG  2>&1 &&
-		sudo mount -oloop,offset=1M $IMG img >> $EXTRACT_BL_LOG 2>&1 &&
-		sudo cp img/BOOT.BIN $VERSION/BOOT.BIN >> $EXTRACT_BL_LOG 2>&1 && 
-		sudo chown $USER $VERSION/BOOT.BIN >> $EXTRACT_BL_LOG 2>&1 &&
-		sudo cp img/devicetree.dtb $VERSION/devicetree.dtb >> $EXTRACT_BL_LOG 2>&1 &&
-		sudo chown $USER $VERSION/devicetree.dtb >> $EXTRACT_BL_LOG 2>&1 &&
-		sudo cp img/uEnv.txt ../uenv/uEnv-pynq.txt >> $EXTRACT_BL_LOG 2>&1 &&
-		sudo chown $USER ../uenv/uEnv-pynq.txt >> $EXTRACT_BL_LOG 2>&1 &&
-		sudo umount img >> $EXTRACT_BL_LOG 2>&1 &&
-		rmdir img >> $EXTRACT_BL_LOG 2>&1 &&
-		echo "BOOT.BIN and devicetree.dtb are ready in $DIR." >> $EXTRACT_BL_LOG 2>&1
+		pushd $PWD/pynq &&
+		mkdir -p img || return $(error_ret "$LINENO: could not create img dir")
+		sudo mount -oloop,offset=1M $IMG img ||
+			return $(error_ret "$LINENO: could not mount $IMAGE")
+		sudo cp img/BOOT.BIN $VERSION/BOOT.BIN ||
+			return $(error_ret "$LINENO: could not copy img/BOOT.BIN")
+		sudo chown $USER $VERSION/BOOT.BIN ||
+			return $(error_ret "$LINENO: could not chown $USER $VERSION/BOOT.BIN")
+		sudo cp img/devicetree.dtb $VERSION/devicetree.dtb ||
+			return $(error_ret "$LINENO: could cp img/devicetree.dtb")
+		sudo chown $USER $VERSION/devicetree.dtb ||
+			return $(error_ret "$LINENO: could not chown $USER $VERSION/devicetree.dtb")
+		sudo cp img/uEnv.txt ../uenv/uEnv-pynq.txt ||
+			return $(error_ret "$LINENO: could not cp img/uEnv.txt")
+		sudo chown $USER ../uenv/uEnv-pynq.txt ||
+			return $(error_ret "$LINENO: could not chown $USER uenv/uEnv-pynq.txt")
+		sudo umount img ||
+			return $(error_ret "$LINENO: could not umount img")
+		rmdir img ||
+			return $(error_ret "$LINENO: could not remove img")
 	fi
+	echo "BOOT.BIN and devicetree.dtb are ready in $DIR."
 }
 
 extract_pynq_rootfs () {
@@ -153,14 +173,17 @@ extract_pynq_rootfs () {
 		IMG=$PWD/pynq/${PYNQ_VERSION}.img
 		START=$(fdisk -l $IMG | awk 'END { print $2 }')
 		COUNT=$(fdisk -l $IMG | awk 'END { print $4 }')
-		echo "Extracting root image from $IMG, start=$START and count = $COUNT" > $EXTRACT_RFS_LOG 2>&1 &&
-		dd if=$IMG of=$ROOTFS_IMG skip=$START count=$COUNT >> $EXTRACT_RFS_LOG 2>&1
+		echo "Extracting root image from $IMG, start=$START and count = $COUNT"
+		dd if=$IMG of=$ROOTFS_IMG skip=$START count=$COUNT ||
+			return $(error_ret "$LINENO: extracting rootfs via dd failed")
+	else
+		echo "$ROOTFS_IMG already exists, skipping."
 	fi
 }
 
 build_u-boot () {
 	if [[ ! -e $DIR/u-boot-xlnx/tools/mkimage ]]; then
-		# echo "Building u-boot $VERSION ..."
+		echo "Building u-boot $VERSION ..."
 		case $BOARD in
 			"zedboard")
 				DEFCONFIG=zynq_zed_defconfig
@@ -171,50 +194,61 @@ build_u-boot () {
 			"pynq")
 				DEFCONFIG=zynq_zed_defconfig
 				;;
+			*)
+				return $(error_ret "unknown board: $BOARD")
+				;;
 		esac
-		make -C $DIR/u-boot-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG > /dev/null 2>&1 &&
-		make -C $DIR/u-boot-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm tools > $BUILD_UBOOT_LOG 2>&1
+		make -C $DIR/u-boot-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG ||
+			return $(error_ret "$LINENO: could make defconfig $DEFCONFIG")
+		make -C $DIR/u-boot-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm tools ||
+			return $(error_ret "$LINENO: could not build u-boot tools")
 	else
-		echo "$DIR/u-boot-xlnx/tools/mkimage already exists, skipping." >> $BUILD_UBOOT_LOG
+		echo "$DIR/u-boot-xlnx/tools/mkimage already exists, skipping."
 	fi
 }
 
 build_linux () {
 	if [[ ! -e $DIR/linux-xlnx/arch/arm/boot/Image ]]; then
-		# echo "Building linux $VERSION .."
+		echo "Building linux $VERSION .."
 		DEFCONFIG=tapasco_zynq_defconfig
 		CONFIGFILE="$PWD/configs/tapasco_zynq_defconfig"
-		cp $CONFIGFILE $DIR/linux-xlnx/arch/arm/configs/ &&\
-		make -C $DIR/linux-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG > /dev/null &&
-		make -C $DIR/linux-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm -j > $BUILD_LINUX_LOG 2>&1
+		cp $CONFIGFILE $DIR/linux-xlnx/arch/arm/configs/ ||
+			return $(error_ret "$LINENO: could not copy config")
+		make -C $DIR/linux-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG ||
+			return $(error_ret "$LINENO: could not make defconfig")
+		make -C $DIR/linux-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm -j ||
+			return $(error_ret "$LINENO: could not build kernel")
 	else
-		echo "$DIR/linux-xlnx/arch/arm/boot/Image already exists, skipping." >> $BUILD_LINUX_LOG
+		echo "$DIR/linux-xlnx/arch/arm/boot/Image already exists, skipping."
 	fi
 }
 
 build_ssbl () {
 	if [[ ! -e $DIR/u-boot-xlnx/u-boot ]]; then
-		# echo "Building second stage boot loader ..."
+		echo "Building second stage boot loader ..."
 		DTC=$PWD/$DIR/linux-xlnx/scripts/dtc/dtc
-		make -C $DIR/u-boot-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm DTC=$DTC u-boot > $BUILD_SSBL_LOG 2>&1
+		make -C $DIR/u-boot-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm DTC=$DTC u-boot ||
+			return $(error_ret "$LINENO: could not build u-boot")
 	else
-		echo "$DIR/u-boot-xlnx/u-boot already exists, skipping." >> $BUILD_SSBL_LOG
+		echo "$DIR/u-boot-xlnx/u-boot already exists, skipping."
 	fi
-	cp $DIR/u-boot-xlnx/u-boot $DIR/u-boot-xlnx/u-boot.elf >> $BUILD_SSBL_LOG 2>&1
+	cp $DIR/u-boot-xlnx/u-boot $DIR/u-boot-xlnx/u-boot.elf ||
+		return $(error_ret "$LINENO: could not copy to $DIR/u-boot-xlnx/u-boot.elf failed")
 }
 
 build_uimage () {
 	if [[ ! -e $DIR/linux-xlnx/arch/arm/boot/uImage ]]; then
-	# "Building uImage ..."
-	make -C $DIR/linux-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm PATH=$PATH:$PWD/$DIR/u-boot-xlnx/tools UIMAGE_LOADADDR=0x8000 uImage > $BUILD_UIMAGE_LOG 2>&1
+		echo "Building uImage ..."
+		make -C $DIR/linux-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm PATH=$PATH:$PWD/$DIR/u-boot-xlnx/tools UIMAGE_LOADADDR=0x8000 uImage ||
+			return $(error_ret "$LINENO: could not build uImage")
 	else
-		echo "$DIR/linux-xlnx/arch/arm/boot/uImage already exists, skipping." >> $BUILD_UIMAGE_LOG
+		echo "$DIR/linux-xlnx/arch/arm/boot/uImage already exists, skipping."
 	fi
 }
 
 build_fsbl () {
 	if [[ ! -f $DIR/fsbl/executable.elf ]]; then
-		mkdir -p $DIR/fsbl > /dev/null &&
+		mkdir -p $DIR/fsbl || return $(error_ret "$LINENO: could not create $DIR/fsbl")
 		pushd $DIR/fsbl > /dev/null &&
 		cat > project.tcl << EOF
 package require json
@@ -276,93 +310,150 @@ EOF
 		cat > hsi.tcl << EOF
 generate_app -hw [open_hw_design $BOARD.hdf] -os standalone -proc ps7_cortexa9_0 -app zynq_fsbl -compile -sw fsbl -dir .
 EOF
-		vivado -nolog -nojournal -notrace -mode batch -source project.tcl > $BUILD_FSBL_LOG 2>&1 &&
-		hsi -nolog -nojournal -notrace -mode batch -source hsi.tcl >> $BUILD_FSBL_LOG 2>&1
+		vivado -nolog -nojournal -notrace -mode batch -source project.tcl ||
+			return $(error_ret "$LINENO: Vivado could not build FSBL project")
+		hsi -nolog -nojournal -notrace -mode batch -source hsi.tcl ||
+			return $(error_ret "$LINENO: hsi could not build FSBL")
 	else
-		echo "$BOARD/fsbl/executable.elf already exists, skipping." >> $BUILD_FSBL_LOG
+		echo "$BOARD/fsbl/executable.elf already exists, skipping."
 	fi
 }
 
 build_bootbin () {
-	# "Building BOOT.BIN ..."
-	cat > $DIR/bootimage.bif << EOF
+	echo "Building BOOT.BIN ..."
+	cat > $PWD/$DIR/bootimage.bif << EOF
 image : {
-	[bootloader]fsbl/executable.elf
-	u-boot-xlnx/u-boot.elf
+	[bootloader]$PWD/$DIR/fsbl/executable.elf
+	$PWD/$DIR/u-boot-xlnx/u-boot.elf
 }
 EOF
-	pushd $DIR > /dev/null &&
-	bootgen -image bootimage.bif -w on -o BOOT.BIN > $BUILD_BOOTBIN_LOG 2>&1 &&
-	popd > /dev/null
+	bootgen -image $DIR/bootimage.bif -w on -o $DIR/BOOT.BIN ||
+		return $(error_ret "$LINENO: could not generate BOOT.bin")
+	echo "$DIR/BOOT.BIN ready."
 }
 
 build_devtree () {
-	# "Building devicetree ..."
+	echo "Building devicetree ..."
 	case $BOARD in
 		"zedboard")
-			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ > $BUILD_DEVICETREE_LOG 2>&1
-			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ > $BUILD_DEVICETREE_LOG 2>&1
+			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
+			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
 			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zed.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts 
 			;;
 		"zc706")
-			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ > $BUILD_DEVICETREE_LOG 2>&1
-			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ > $BUILD_DEVICETREE_LOG 2>&1
+			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
+			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
 			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zed.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts 
 			;;
 	esac
-	pushd $DIR > /dev/null &&
-	linux-xlnx/scripts/dtc/dtc -I dts -O dtb -o devicetree.dtb devicetree.dts > $BUILD_DEVICETREE_LOG 2>&1 &&
-	popd > /dev/null
+	$DIR/linux-xlnx/scripts/dtc/dtc -I dts -O dtb -o $DIR/devicetree.dtb $DIR/devicetree.dts ||
+		return $(error_ret "$LINENO: could not build devicetree.dtb")
+	echo "$DIR/devicetree.dtb ready."
+}
+
+build_output_image () {
+	# size of image (in MiB)
+	IMGSIZE=${1:-4096}
+	# default root size: 3.7GB (in 512B sectors)
+	ROOTSZ=${2:-$((($IMGSIZE - 358) * 1024 * 1024 / 512))}
+	if [[ ! -f $OUTPUT_IMAGE ]]; then
+		echo "Building $OUTPUT_IMAGE ($IMGSIZE MiB, rootfs $ROOTSZ sectors)..."
+		echo "Creating empty disk image ..."
+		dd if=/dev/zero of=$OUTPUT_IMAGE bs=1M count=$IMGSIZE conv=sparse ||
+			return $(error_ret "$LINENO: could not init $OUTPUT_IMAGE")
+		echo "Mounting image to /dev/loop0 ..."
+		sudo losetup -D
+		LOOPDEV=$(sudo losetup -f --show $OUTPUT_IMAGE) ||
+			return $(error_ret "$LINENO: could losetup $OUTPUT_IMAGE")
+		echo "Partitioning image in $LOOPDEV ..."
+		sudo sfdisk $LOOPDEV << EOF
+2048 204800 c, *
+206848 $ROOTSZ 83 -
+EOF
+		if [[ $? -ne 0 ]]; then
+			sudo losetup -d $LOOPDEV
+			return $(error_ret "$LINENO: could not partition $OUTPUT_IMAGE")
+		fi
+		echo "Unmounting image in $LOOPDEV ..."
+		sudo losetup -d $LOOPDEV
+		echo "Mounting partitions in $OUTPUT_IMAGE ..."
+		sudo kpartx -a $OUTPUT_IMAGE ||
+			return $(error_ret "$LINENO: could not kpartx -a $OUTPUT_IMAGE")
+		LD=`basename $LOOPDEV`
+		LD1=${LD}p1
+		LD2=${LD}p2
+		echo "Making BOOT partition in /dev/mapper/$LD1 ..."
+		if ! sudo mkfs.vfat -F 32 -n BOOT /dev/mapper/$LD1; then
+			sudo kpartx -d $OUTPUT_IMAGE
+			return $(error_ret "$LINENO: could make BOOT partition")
+		fi
+		echo "Making Ext4 partition in /dev/mapper/$LD2 ..."
+		if ! sudo mkfs.ext4 -F -L root /dev/mapper/$LD2; then
+			sudo kpartx -d $OUTPUT_IMAGE
+			return $(error_ret "$LINENO: could not make ROOT partition")
+		fi
+		echo "Copying files to BOOT ..."
+		if ! copy_files_to_boot /dev/mapper/$LD1; then
+			sudo kpartx -d $OUTPUT_IMAGE
+			return "$LINENO: copying files to boot failed"
+		fi
+		echo "Copying files to root ..."
+		if ! copy_files_to_root /dev/mapper/$LD2; then
+			sudo kpartx -d $OUTPUT_IMAGE
+			return "$LINENO: copying files to rootfs failed"
+		fi
+		echo "Unmounting partitions ..."
+		sudo kpartx -d $OUTPUT_IMAGE &&
+		echo "Done, $OUTPUT_IMAGE is ready!"
+	else
+		echo "$OUTPUT_IMAGE already exists, skipping."
+	fi
 }
 
 prepare_sd () {
-	echo "Erasing first 4GiB of SDcard $SDCARD ..." > $PREPARE_SD_LOG &&
-	#sudo dd if=/dev/zero of=$SDCARD bs=1M count=4096 >> $PREPARE_SD_LOG 2>&1 &&
-	sudo dd if=/dev/zero of=$SDCARD bs=1024 count=1 >> $PREPARE_SD_LOG 2>&1 &&
-	echo "Repartitioning SDcard $SDCARD ..." >> $PREPARE_SD_LOG &&
-	sudo sfdisk ${SDCARD} >> $PREPARE_SD_LOG 2>&1 << EOF
-2048 204800 c, *
-206848 7655424 83 -
-EOF
-	sudo mkfs.vfat -F 32 -n BOOT ${SDCARD}1 >> $PREPARE_SD_LOG 2>&1
-	sudo mkfs.ext4 -F -L root ${SDCARD}2 >> $PREPARE_SD_LOG 2>&1
-	copy_files_to_boot &&
-	copy_files_to_root
+	echo "dd'ing $OUTPUT_IMAGE to $SDCARD, this will take a while ..."
+	sudo dd if=$OUTPUT_IMAGE of=$SDCARD bs=10M ||
+		return $(error_ret "$LINENO: could not dd $OUTPUT_IMAGE to $SDCARD")
+	echo "$SDCARD ready."
 }
 
 copy_files_to_boot () {
-	TO=`basename ${SDCARD}1`
-	echo "Preparing BOOT partition ..." >> $PREPARE_SD_LOG &&
-	mkdir -p $TO >> $PREPARE_SD_LOG 2>&1 &&
-	sudo mount ${SDCARD}1 $TO >> $PREPARE_SD_LOG 2>&1 &&
-	echo "Copying $DIR/BOOT.BIN to $TO ..." >> $PREPARE_SD_LOG 2>&1 &&
-	sudo cp $DIR/BOOT.BIN $TO >> $PREPARE_SD_LOG 2>&1 &&
-	echo "Copying $DIR/linux-xlnx/arch/arm/boot/uImage to $TO ..." >> $PREPARE_SD_LOG 2>&1 &&
-	sudo cp $DIR/linux-xlnx/arch/arm/boot/uImage $TO >> $PREPARE_SD_LOG 2>&1 &&
-	echo "Copying $DIR/devicetree.dtb to $TO ..." >> $PREPARE_SD_LOG 2>&1 &&
-	sudo cp $DIR/devicetree.dtb $TO >> $PREPARE_SD_LOG 2>&1 &&
-	echo "Copying uenv/uEnv-$BOARD.txt to $TO/uEnv.txt ..." >> $PREPARE_SD_LOG 2>&1 &&
-	sudo cp uenv/uEnv-$BOARD.txt $TO/uEnv.txt >> $PREPARE_SD_LOG 2>&1
-	sudo umount $TO >> $PREPARE_SD_LOG 2>&1 &&
+	DEV=${1:-${SDCARD}1}
+	TO="$DIR/`basename $DEV`"
+	echo "Preparing BOOT partition $TO ..."
+	mkdir -p $TO || return $(error_ret "$LINENO: could not create $TO")
+	sudo mount $DEV $TO || return $(error_ret "$LINENO: could not mount $DEV -> $TO")
+	echo "Copying $DIR/BOOT.BIN to $TO ..."
+	sudo cp $DIR/BOOT.BIN $TO
+	echo "Copying $DIR/linux-xlnx/arch/arm/boot/uImage to $TO ..."
+	sudo cp $DIR/linux-xlnx/arch/arm/boot/uImage $TO
+	echo "Copying $DIR/devicetree.dtb to $TO ..."
+	sudo cp $DIR/devicetree.dtb $TO
+	echo "Copying uenv/uEnv-$BOARD.txt to $TO/uEnv.txt ..."
+	sudo cp uenv/uEnv-$BOARD.txt $TO/uEnv.txt
+	sudo umount $TO
 	rmdir $TO 2> /dev/null &&
-	echo "Boot partition ready." >> $PREPARE_SD_LOG
+	echo "Boot partition ready."
 }
 
 copy_files_to_root () {
-	TO=`basename ${SDCARD}2`
-	echo "dd'ing rootfs onto second partition, this will take a while ..." >> $PREPARE_SD_LOG &&
-	sudo dd if=$ROOTFS_IMG of=${SDCARD}2 bs=10M >> $PREPARE_SD_LOG 2>&1
-	mkdir -p $TO 2> /dev/null
-	sudo mount ${SDCARD}2 $TO >> $PREPARE_SD_LOG 2>&1 >> $PREPARE_SD_LOG 2>&1 &&
-	echo "Setting hostname to $BOARD ... " >> $PREPARE_SD_LOG &&
-	sudo sh -c "echo $BOARD > $TO/etc/hostname" >> $PREPARE_SD_LOG 2>&1 &&
+	DEV=${1:-${SDCARD}2}
+	TO="$DIR/`basename $DEV`"
+	echo "dd'ing rootfs onto second partition $TO, this will take a while ..."
+	sudo dd if=$ROOTFS_IMG of=$DEV bs=10M ||
+		return $(error_ret "$LINENO: could not copy $ROOTFS_IMG to $DEV")
+	mkdir -p $TO || return $(error_ret "$LINENO: could not create $TO")
+	sudo mount $DEV $TO ||
+		return $(error_ret "$LINENO: could not mount $DEV -> $TO")
+	echo "Setting hostname to $BOARD ... "
+	sudo sh -c "echo $BOARD > $TO/etc/hostname"
 	#echo "Copying Linux to /linux-xlnx ... " >> $PREPARE_SD_LOG &&
 	#sudo sh -c "cp -r $DIR/linux-xlnx $TO/" >> $PREPARE_SD_LOG 2>&1 &&
-	echo "Replacing rc.local ... " >> $PREPARE_SD_LOG &&
-	sudo sh -c "cp $PWD/misc/rc.local $TO/etc/rc.local" >> $PREPARE_SD_LOG 2>&1 &&
-	sudo umount $TO >> $PREPARE_SD_LOG 2>&1 &&
+	echo "Replacing rc.local ... "
+	sudo sh -c "cp $PWD/misc/rc.local $TO/etc/rc.local"
+	sudo umount $TO
 	rmdir $TO 2> /dev/null &&
-	echo "RootFS partition ready." >> $PREPARE_SD_LOG
+	echo "RootFS partition ready."
 }
 
 ################################################################################
@@ -376,87 +467,62 @@ check_board
 check_compiler
 check_hsi
 check_vivado
+check_image_tools
 check_sdcard
 echo "And so it begins ..."
 ################################################################################
-if [[ $BOARD != "pynq" ]]; then
-	echo "Fetching Linux kernel and U-Boot sources ..."
-else
-	echo "Fetching Linux kernel, U-Boot sources and PyNQ default image ..."
-fi
-FETCH_LINUX_OK=$(get_linux; echo $? &)
-FETCH_UBOOT_OK=$(get_u-boot; echo $? &)
-FETCH_PYNQ_OK=$(if [[ $BOARD == "pynq" ]]; then get_pynq_image; fi; echo $? &)
-wait
-if [[ $FETCH_LINUX_OK -ne 0 ]]; then
-	echo "Fetching Linux failed, check logs.."
-	exit 1
-fi
-if [[ $FETCH_UBOOT_OK -ne 0 ]]; then
-	echo "Fetching U-Boot failed, check logs."
-	exit 1
-fi
-if [[ $FETCH_PYNQ_OK -ne 0 ]]; then
-	echo "Fetching PyNQ failed, check logs."
-	exit 1
-fi
+echo "Fetching Linux kernel, U-Boot sources and PyNQ default image ..."
+mkdir -p `dirname $FETCH_PYNQ_IMG_LOG` &> /dev/null
+fetch_linux &> $FETCH_LINUX_LOG &
+FETCH_LINUX_OK=$!
+fetch_u-boot &> $FETCH_UBOOT_LOG &
+FETCH_UBOOT_OK=$!
+fetch_pynq_image &> $FETCH_PYNQ_IMG_LOG &
+FETCH_PYNQ_OK=$!
+
+wait $FETCH_LINUX_OK || error_exit "Fetching Linux failed, check log: $FETCH_LINUX_LOG"
+wait $FETCH_UBOOT_OK || error_exit "Fetching U-Boot failed, check logs: $FETCH_UBOOT_LOG"
+wait $FETCH_PYNQ_OK  || error_exit "Fetching PyNQ failed, check log: $FETCH_PYNQ_IMG_LOG"
+
 ################################################################################
 echo "Ok, got the sources, will build now ..."
 echo "Building Linux kernel (output in $BUILD_LINUX_LOG) and U-Boot tools (output in $BUILD_UBOOT_LOG)..."
-BUILD_LINUX_OK=$(build_linux; echo $? &)
-BUILD_UBOOT_OK=$(build_u-boot; echo $? &)
-wait
-if [[ $BUILD_LINUX_OK -ne 0 ]]; then
-	echo "Building Linux failed, check log: $BUILD_LINUX_LOG"
-	exit 1
-fi
-if [[ $BUILD_UBOOT_OK -ne 0 ]]; then
-	echo "Building U-Boot failed, check log: $BUILD_UBOOT_LOG"
-	exit 1
-fi
+build_linux &> $BUILD_LINUX_LOG &
+BUILD_LINUX_OK=$!
+build_u-boot &> $BUILD_UBOOT_LOG &
+BUILD_UBOOT_OK=$!
+wait $BUILD_LINUX_OK || error_exit "Building Linux failed, check log: $BUILD_LINUX_LOG"
+wait $BUILD_UBOOT_OK || error_exit "Building U-Boot failed, check log: $BUILD_UBOOT_LOG"
 ################################################################################
 if [[ $BOARD != "pynq" ]]; then
 	echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and uImage (output in $BUILD_UIMAGE_LOG) ..."
 else
 	echo "Building uImage (output in $BUILD_UIMAGE_LOG) ..."
 fi
-BUILD_UIMAGE_OK=$(build_uimage; echo $? &)
-BUILD_SSBL_OK=$(if [[ $BOARD != "pynq" ]]; then build_ssbl; fi; echo $? &)
-wait
-if [[ $BUILD_UIMAGE_OK -ne 0 ]]; then
-	"Building uImage failed, check log: $BUILD_UIMAGE_LOG"
-	exit 1
-fi
-if [[ $BUILD_SSBL_OK -ne 0 ]]; then
-	"Building U-Boot SSBL failed, check log: $BUILD_SSBL_LOG"
-	exit 1
-fi
+build_uimage &> $BUILD_UIMAGE_LOG &
+BUILD_UIMAGE_OK=$!
+if [[ $BOARD != "pynq" ]]; then build_ssbl; fi &
+BUILD_SSBL_OK=$!
+wait $BUILD_UIMAGE_OK || error_exit "Building uImage failed, check log: $BUILD_UIMAGE_LOG"
+wait $BUILD_SSBL_OK || error_exit "Building U-Boot SSBL failed, check log: $BUILD_SSBL_LOG"
 ################################################################################
 if [[ $BOARD != "pynq" ]]; then
 	echo "Build FSBL (output in $BUILD_FSBL_LOG) ..."
-	BUILD_FSBL_OK=$(build_fsbl; echo $? &)
-	wait
-	if [[ $BUILD_FSBL_OK -ne 0 ]]; then
-		"Building FSBL failed, check log: $BUILD_FSBL_LOG"
-		exit 1
-	fi
+	build_fsbl &> $BUILD_FSBL_LOG &
+	wait || error_exit "Building FSBL failed, check log: $BUILD_FSBL_LOG"
+
 	echo "Building devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
-	BUILD_BOOTBIN_OK=$(build_bootbin; echo $? &)
-	BUILD_DEVICETREE_OK=$(build_devtree; echo $? &)
-	wait
-	if [[ $BUILD_BOOTBIN_OK -ne 0 ]]; then
-		echo "Building BOOT.BIN failed, check log: $BUILD_BOOTBIN_LOG"
-		exit 1
-	fi
+
+	build_bootbin &> $BUILD_BOOTBIN_LOG &
+	BUILD_BOOTBIN_OK=$!
+	build_devtree &> $BUILD_DEVICETREE_LOG &
+	BUILD_DEVICETREE_OK=$!
+	wait $BUILD_BOOTBIN_OK || error_exit "Building BOOT.BIN failed, check log: $BUILD_BOOTBIN_LOG"
 	echo "Done - find BOOT.BIN is here: $DIR/BOOT.BIN."
-	if [[ $BUILD_DEVICETREE_OK -ne 0 ]]; then
-		echo "Building devicetree failed, check log: $BUILD_DEVICETREE_LOG"
-		exit 1
-	fi
+	wait $BUILD_DEVICETREE_OK || error_exit "Building devicetree failed, check log: $BUILD_DEVICETREE_LOG"
 else
 	echo "Extract FSBL and devicetree from $PYNQ_IMAGE (output in $EXTRACT_BL_LOG) ..."
-	EXTRACT_PYNQ_OK=$(extract_pynq_bl; echo $? &)
-	wait
+	extract_pynq_bl &> EXTRACT_BL_LOG
 	if [[ ! -f $DIR/BOOT.BIN ]]; then
 		echo "Extracting FSBL failed, check log: $EXTRACT_BL_LOG"
 		exit 1
@@ -468,19 +534,18 @@ else
 fi
 ################################################################################
 echo "Extracting root FS (output in $EXTRACT_RFS_LOG) ..."
-EXTRACT_RFS_OK=$(extract_pynq_rootfs; echo $? &)
-wait
-if [[ $EXTRACT_RFS_OK -ne 0 ]]; then
-	echo "Extracting root FS failed, check log: $EXTRACT_RFS_LOG"
-fi
+extract_pynq_rootfs &> $EXTRACT_RFS_LOG
+[[ $? -eq 0 ]] || error_exit "Extracting root FS failed, check log: $EXTRACT_RFS_LOG"
+################################################################################
+echo "Building image in $OUTPUT_IMAGE (output in $BUILD_OUTPUT_IMAGE_LOG) ..."
+build_output_image $IMGSIZE &> $BUILD_OUTPUT_IMAGE_LOG
+[[ $? -eq 0 ]] || error_exit "Building output image failed, check log: $BUILD_OUTPUT_IMAGE_LOG"
+echo "SD card image ready: $OUTPUT_IMAGE"
 ################################################################################
 if [[ -n $SDCARD ]]; then
 	echo "Preparing $SDCARD, this may take a while (output in $PREPARE_SD_LOG) ..."
-	PREPARE_SD_OK=$(prepare_sd; echo $? &)
-	if [[ $PREPARE_SD_OK -ne 0 ]]; then
-		echo "Preparing SD card failed, check log: $PREPARE_SD_LOG"
-		exit 1
-	fi
-	sync
+	prepare_sd &> $PREPARE_DS_LOG
+	[[ $? -eq 0 ]] || error_exit "Preparing SD card failed, check log: $PREPARE_SD_LOG"
+	sync &&
 	echo "SD card $SDCARD successfully prepared, ready to boot!"
 fi
