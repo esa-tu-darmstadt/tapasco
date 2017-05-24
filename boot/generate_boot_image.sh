@@ -24,18 +24,8 @@ BUILD_BOOTBIN_LOG="$PWD/$LOGDIR/build-bootbin.log"
 BUILD_DEVICETREE_LOG="$PWD/$LOGDIR/build-devicetree.log"
 BUILD_OUTPUT_IMAGE_LOG="$PWD/$LOGDIR/build-output-image.log"
 PREPARE_SD_LOG="$PWD/$LOGDIR/prepare-sd.log"
-EXTRACT_BL_LOG="$PWD/pynq/logs/extract-bl.log"
-EXTRACT_RFS_LOG="$PWD/pynq/logs/extract-rfs.log"
-
-# fetch status
-FETCH_UBOOT_OK=1
-FETCH_LINUX_OK=1
-FETCH_PYNQ_IMAGE_OK=1
-# build status
-BUILD_UBOOT_OK=1
-BUILD_LINUX_OK=1
-BUILD_UIMAGE_OK=1
-PREPARE_SD_OK=1
+EXTRACT_BL_LOG="$PWD/pynq/extract-bl.log"
+EXTRACT_RFS_LOG="$PWD/pynq/extract-rfs.log"
 
 print_usage () {
 	cat << EOF
@@ -354,7 +344,7 @@ build_devtree () {
 build_output_image () {
 	# size of image (in MiB)
 	IMGSIZE=${1:-4096}
-	# default root size: 3.7GB (in 512B sectors)
+	# default root size: MAX - 358 MiB (converted to 512B sectors)
 	ROOTSZ=${2:-$((($IMGSIZE - 358) * 1024 * 1024 / 512))}
 	if [[ ! -f $OUTPUT_IMAGE ]]; then
 		echo "Building $OUTPUT_IMAGE ($IMGSIZE MiB, rootfs $ROOTSZ sectors)..."
@@ -424,13 +414,15 @@ copy_files_to_boot () {
 	mkdir -p $TO || return $(error_ret "$LINENO: could not create $TO")
 	sudo mount $DEV $TO || return $(error_ret "$LINENO: could not mount $DEV -> $TO")
 	echo "Copying $DIR/BOOT.BIN to $TO ..."
-	sudo cp $DIR/BOOT.BIN $TO
+	sudo cp $DIR/BOOT.BIN $TO || echo >&2 "$LINENO: WARNING: could not copy BOOT.BIN"
 	echo "Copying $DIR/linux-xlnx/arch/arm/boot/uImage to $TO ..."
-	sudo cp $DIR/linux-xlnx/arch/arm/boot/uImage $TO
+	sudo cp $DIR/linux-xlnx/arch/arm/boot/uImage $TO ||
+		echo >&2 "$LINENO: WARNING: could not copy uImage"
 	echo "Copying $DIR/devicetree.dtb to $TO ..."
-	sudo cp $DIR/devicetree.dtb $TO
+	sudo cp $DIR/devicetree.dtb $TO || echo >&2 "$LINENO: WARNING: could copy devicetree"
 	echo "Copying uenv/uEnv-$BOARD.txt to $TO/uEnv.txt ..."
-	sudo cp uenv/uEnv-$BOARD.txt $TO/uEnv.txt
+	sudo cp uenv/uEnv-$BOARD.txt $TO/uEnv.txt ||
+		echo >&2 "$LINENO: WARNING: could not copy uEnv.txt"
 	sudo umount $TO
 	rmdir $TO 2> /dev/null &&
 	echo "Boot partition ready."
@@ -443,14 +435,24 @@ copy_files_to_root () {
 	sudo dd if=$ROOTFS_IMG of=$DEV bs=10M ||
 		return $(error_ret "$LINENO: could not copy $ROOTFS_IMG to $DEV")
 	mkdir -p $TO || return $(error_ret "$LINENO: could not create $TO")
-	sudo mount $DEV $TO ||
+	sudo mount -onoacl $DEV $TO ||
 		return $(error_ret "$LINENO: could not mount $DEV -> $TO")
 	echo "Setting hostname to $BOARD ... "
-	sudo sh -c "echo $BOARD > $TO/etc/hostname"
-	#echo "Copying Linux to /linux-xlnx ... " >> $PREPARE_SD_LOG &&
-	#sudo sh -c "cp -r $DIR/linux-xlnx $TO/" >> $PREPARE_SD_LOG 2>&1 &&
+	sudo sh -c "echo $BOARD > $TO/etc/hostname" ||
+		echo >&2 "$LINENO: WARNING: could not set hostname"
 	echo "Replacing rc.local ... "
-	sudo sh -c "cp $PWD/misc/rc.local $TO/etc/rc.local"
+	sudo sh -c "cp --no-preserve=ownership $PWD/misc/rc.local $TO/etc/rc.local" ||
+		echo >&2 "$LINENO: WARNING: could not copy rc.local"
+	if [[ $IMGSIZE -gt 4096 ]]; then
+		echo "Copying linux tree to /linux-xlnx ..."
+		sudo sh -c "cp -r --no-preserve=ownership $DIR/linux-xlnx $TO/linux-xlnx" ||
+			echo >&2 "$LINENO: WARNING: could not copy linux-xlnx"
+	else
+		echo >&2 "$LINENO: WARNING: image size $IMGSIZE < 4096 MiB, not enough space to copy linux tree"
+	fi
+	echo "Removing Jupyter stuff from home ..."
+	sudo sh -c "find $TO/home/xilinx/* -maxdepth 0 | xargs rm -rf" ||
+		echo >&2 "$LINENO: WARNING: could not delete Jupyter stuff"
 	sudo umount $TO
 	rmdir $TO 2> /dev/null &&
 	echo "RootFS partition ready."
@@ -462,13 +464,15 @@ echo "Cross compiler ABI is set to $CROSS_COMPILE."
 echo "Board is $BOARD."
 echo "Version is $VERSION."
 echo "SD card device is $SDCARD."
-mkdir -p $LOGDIR 2> /dev/null
+echo "Image size: $IMGSIZE MiB"
 check_board
 check_compiler
 check_hsi
 check_vivado
 check_image_tools
 check_sdcard
+mkdir -p $LOGDIR 2> /dev/null
+mkdir -p `dirname $PYNQ_IMAGE` 2> /dev/null
 echo "And so it begins ..."
 ################################################################################
 echo "Fetching Linux kernel, U-Boot sources and PyNQ default image ..."

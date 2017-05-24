@@ -13,6 +13,7 @@
 
 # Adding Jupyter scripts to bring up network and start Jupyter server
 /root/0_resizefs.sh
+chown -R xilinx:xilinx /linux-xlnx >/dev/null 2>&1
 #/root/1_network.sh >/dev/null 2>&1 &
 #/root/2_jupyter_server.sh
 #/root/3_pl_server.sh
