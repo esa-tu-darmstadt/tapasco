@@ -28,6 +28,7 @@ print('Platform: ' + os.environ['TAPASCO_PLATFORM'])
 moddir = '$TAPASCO_HOME/platform/$TAPASCO_PLATFORM/module'
 pdir   = '$TAPASCO_HOME/platform/$TAPASCO_PLATFORM/build'
 adir   = '$TAPASCO_HOME/arch/baseline/build'
+tdir   = '$TAPASCO_HOME/arch/tests/build'
 
 if clean or args.rebuild:
 	subprocess.call(['rm -rf ' + pdir], shell=True)
@@ -50,3 +51,4 @@ if not clean:
 		subprocess.call(['cd ' + moddir + ' && make ' + ('' if driver_debug else 'release ')], shell=True)
 	subprocess.call(['mkdir -p ' + pdir + ' && cd ' + pdir + ' && cmake ' + ('' if debug else '-DCMAKE_BUILD_TYPE=Release') + ' .. && make && make install'], shell=True)
 	subprocess.call(['mkdir -p ' + adir + ' && cd ' + adir + ' && cmake ' + ('' if debug else '-DCMAKE_BUILD_TYPE=Release') + ' .. && make && make install'], shell=True)
+	subprocess.call(['mkdir -p ' + tdir + ' && cd ' + tdir + ' && cmake ' + ('' if debug else '-DCMAKE_BUILD_TYPE=Release') + ' .. && make && make install'], shell=True)
