@@ -140,18 +140,15 @@ fetch_pynq_image () {
 extract_pynq_bl () {
 	IMG=${PYNQ_VERSION}.img
 	if [[ ! -f $PWD/pynq/BOOT.BIN ]]; then
-		pushd $PWD/pynq &&
-		mkdir -p img || return $(error_ret "$LINENO: could not create img dir")
+		pushd $PWD/pynq &> /dev/null
+		mkdir -p img ||
+			return $(error_ret "$LINENO: could not create img dir")
 		dusudo mount -oloop,offset=1M $IMG img ||
 			return $(error_ret "$LINENO: could not mount $IMAGE")
 		dusudo cp img/BOOT.BIN $VERSION/BOOT.BIN ||
 			return $(error_ret "$LINENO: could not copy img/BOOT.BIN")
 		dusudo chown $USER $VERSION/BOOT.BIN ||
 			return $(error_ret "$LINENO: could not chown $USER $VERSION/BOOT.BIN")
-		dusudo cp img/devicetree.dtb $VERSION/devicetree.dtb ||
-			return $(error_ret "$LINENO: could cp img/devicetree.dtb")
-		dusudo chown $USER $VERSION/devicetree.dtb ||
-			return $(error_ret "$LINENO: could not chown $USER $VERSION/devicetree.dtb")
 		dusudo cp img/uEnv.txt ../uenv/uEnv-pynq.txt ||
 			return $(error_ret "$LINENO: could not cp img/uEnv.txt")
 		dusudo chown $USER ../uenv/uEnv-pynq.txt ||
@@ -160,6 +157,7 @@ extract_pynq_bl () {
 			return $(error_ret "$LINENO: could not umount img")
 		rmdir img ||
 			return $(error_ret "$LINENO: could not remove img")
+		popd &> /dev/null
 	else
 		echo "$DIR/BOOT.BIN already exists, skipping."
 	fi
