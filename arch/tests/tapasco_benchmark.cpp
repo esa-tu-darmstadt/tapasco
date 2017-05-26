@@ -70,7 +70,8 @@ int main(int argc, const char *argv[]) {
         cerr << "Could not get host name, guessing vc709 Platform" << endl;
       else {
         cout << "Host name: " << n << endl;
-	if (string(n).compare("zed") == 0 || string(n).compare("zedboard"))
+	platform = n;
+	if (string(n).compare("zed") == 0 || string(n).compare("zedboard") == 0)
 	  platform = "zedboard";
 	if (string(n).compare("zc706") == 0)
 	  platform = "zc706";
