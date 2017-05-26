@@ -33,13 +33,13 @@ final case class LibraryVersions(platform: String, tapasco: String)
 /** Host information. */
 final case class Host(machine: String, node: String, operatingSystem: String, release: String, version: String)
 /** Transfer speed measurement: R/W/RW speeds at given chunk size (in bytes). */
-final case class TransferSpeedMeasurement(chunkSize: Int, read: Double, write: Double, readWrite: Double)
+final case class TransferSpeedMeasurement(chunkSize: Long, read: Double, write: Double, readWrite: Double)
 /** Interrupt latency in us at given PE runtime (in clock cycles). */
-final case class InterruptLatency(clockCycles: Int, latency: Double, min: Double, max: Double)
+final case class InterruptLatency(clockCycles: Long, latency: Double, min: Double, max: Double)
 /** Defines an interpolation on [[InterruptLatency]] elements. */
 final class LatencyInterpolator(data: Seq[InterruptLatency])
-    extends LinearInterpolator[Int, Double](data map { il => (il.clockCycles, il.latency) }) {
-  def interpolate(cc: Int, left: (Int, Double), right: (Int, Double)): Double = {
+    extends LinearInterpolator[Long, Double](data map { il => (il.clockCycles, il.latency) }) {
+  def interpolate(cc: Long, left: (Long, Double), right: (Long, Double)): Double = {
     val l = left._1.toDouble
     val r = right._1.toDouble
     ((cc.toDouble - l) / (r - l)) * (right._2 - left._2) + left._2
@@ -47,12 +47,12 @@ final class LatencyInterpolator(data: Seq[InterruptLatency])
 }
 /** Defines an interpolation on [[TransferSpeedMeasurements]]. */
 final class TransferSpeedInterpolator(data: Seq[TransferSpeedMeasurement])
-    extends LinearInterpolator[Int, (Double, Double, Double)](data map { ts: TransferSpeedMeasurement =>
+    extends LinearInterpolator[Long, (Double, Double, Double)](data map { ts: TransferSpeedMeasurement =>
       (ts.chunkSize, (ts.read, ts.write, ts.readWrite))
     }) {
   /** Shorthand type. */
   type Rwrw = (Double, Double, Double)
-  def interpolate(cs: Int, left: (Int, Rwrw), right: (Int, Rwrw)): Rwrw = {
+  def interpolate(cs: Long, left: (Long, Rwrw), right: (Long, Rwrw)): Rwrw = {
     val l = left._1.toDouble
     val r = right._1.toDouble
     val f = (cs.toDouble - l) / (r - l)

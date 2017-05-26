@@ -80,14 +80,14 @@ package object json {
     ) (Host.apply _, unlift(Host.unapply _))
 
   implicit val transferSpeedMeasurementFormat: Format[TransferSpeedMeasurement] = (
-      (JsPath \ "Chunk Size").format[Int] ~
+      (JsPath \ "Chunk Size").format[Long] ~
       (JsPath \ "Read").format[Double] ~
       (JsPath \ "Write").format[Double] ~
       (JsPath \ "ReadWrite").format[Double]
     ) (TransferSpeedMeasurement.apply _, unlift(TransferSpeedMeasurement.unapply _))
 
   implicit val interruptLatencyFormat: Format[InterruptLatency] = (
-      (JsPath \ "Cycle Count").format[Int] ~
+      (JsPath \ "Cycle Count").format[Long] ~
       (JsPath \ "Avg Latency").format[Double] ~
       (JsPath \ "Min Latency").format[Double] ~
       (JsPath \ "Max Latency").format[Double]
