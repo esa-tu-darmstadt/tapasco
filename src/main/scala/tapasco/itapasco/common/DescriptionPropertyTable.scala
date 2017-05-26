@@ -60,10 +60,13 @@ private object DescriptionPropertiesTable {
       Array("TclLibrary", p.tclLibrary)) ++ descToData(p.benchmark)
     case bm: Benchmark => Array[Array[Any]](
       Array("Benchmark Timestamp", bm.timestamp),
-      Array("Host", bm.host),
+      Array("Host Machine", bm.host.machine),
+      Array("Host Node", bm.host.node),
+      Array("Host OS", bm.host.operatingSystem),
+      Array("Host OS Release", bm.host.release),
+      Array("Host OS Version", bm.host.version),
       Array("libtapasco", bm.libraryVersions.tapasco),
-      Array("libplatform", bm.libraryVersions.platform),
-      Array("Interrupt Latency (avg)", bm.interruptLatency))
+      Array("libplatform", bm.libraryVersions.platform))
     case core: Core => Array(
       Array("Name", core.name),
       Array("Description", core.description),
