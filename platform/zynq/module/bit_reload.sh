@@ -54,18 +54,18 @@ shift "$((OPTIND-1))"
 BITSTREAM="$1"
 if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit ]] && [[ -e $BITSTREAM ]]
 then
-	pushd $TAPASCO_HOME/platform/zynq/module
+	pushd $TAPASCO_HOME/platform/zynq/module &> /dev/null
 	if [[ `lsmod | grep tapasco | wc -l` -eq 1 ]]; then
 	sudo ./unload.sh
 	fi
-	popd
+	popd &> /dev/null
 	echo "Loading bitstream $BITSTREAM ..."
 	sudo sh -c "cat $BITSTREAM > /dev/xdevcfg"
 	echo "Done!"
-	pushd $TAPASCO_HOME/platform/zynq/module
+	pushd $TAPASCO_HOME/platform/zynq/module &> /dev/null
 	echo "Loading kernel module ..."
 	sudo ./load.sh
-	popd
+	popd &> /dev/null
 	echo "Done."
 else
 	show_usage
