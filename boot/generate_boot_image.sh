@@ -1,8 +1,8 @@
 #!/bin/bash
 BOARD=${1:-zedboard}
 VERSION=${2:-2016.4}
-SDCARD=${3:-}
-IMGSIZE=${4:-4096}
+IMGSIZE=${3:-8192}
+SDCARD=${4:-}
 DIR="$BOARD/$VERSION"
 LOGDIR="$DIR/logs"
 CROSS_COMPILE=${CROSS_COMPILE:=arm-linux-gnueabihf-}
@@ -10,6 +10,7 @@ ROOTFS_IMG="$PWD/rootfs.img"
 PYNQ_VERSION="pynq_z1_image_2017_02_10"
 PYNQ_IMAGE="$PWD/pynq/$PYNQ_VERSION.zip"
 PYNQ_IMAGE_URL="https://s3-us-west-2.amazonaws.com/digilent/Products/PYNQ/$PYNQ_VERSION.zip"
+UDEV_RULES="$TAPASCO_HOME/platform/zynq/module/99-tapasco.rules"
 OUTPUT_IMAGE="$DIR/${BOARD}_${VERSION}.img"
 ### LOGFILES ###################################################################
 FETCH_LINUX_LOG="$PWD/$LOGDIR/fetch-linux.log"
@@ -35,10 +36,14 @@ given, repartition the device as a bootable SD card (WARNING: all data will
 be lost).
 	BOARD		one of zc706, zedboard
 	VERSION		Vivado Design Suite version, e.g., 2016.4
+	DISK SIZE	Size of the image in MiB (optional, default: 8192)
 	DEVICE		SD card device, e.g., /dev/sdb (optional)
-	DISK SIZE	Size of the image in MiB (optional, default: 4096)
 EOF
 	exit 1
+}
+
+dusudo () {
+	[[ -z $1 ]] || echo $SUDOPW | sudo --stdin "$@"
 }
 
 error_exit () {
@@ -133,32 +138,42 @@ fetch_pynq_image () {
 }
 
 extract_pynq_bl () {
+	IMG=${PYNQ_VERSION}.img
 	if [[ ! -f $PWD/pynq/BOOT.BIN ]]; then
 		pushd $PWD/pynq &&
 		mkdir -p img || return $(error_ret "$LINENO: could not create img dir")
-		sudo mount -oloop,offset=1M $IMG img ||
+		dusudo mount -oloop,offset=1M $IMG img ||
 			return $(error_ret "$LINENO: could not mount $IMAGE")
-		sudo cp img/BOOT.BIN $VERSION/BOOT.BIN ||
+		dusudo cp img/BOOT.BIN $VERSION/BOOT.BIN ||
 			return $(error_ret "$LINENO: could not copy img/BOOT.BIN")
-		sudo chown $USER $VERSION/BOOT.BIN ||
+		dusudo chown $USER $VERSION/BOOT.BIN ||
 			return $(error_ret "$LINENO: could not chown $USER $VERSION/BOOT.BIN")
-		sudo cp img/devicetree.dtb $VERSION/devicetree.dtb ||
+		dusudo cp img/devicetree.dtb $VERSION/devicetree.dtb ||
 			return $(error_ret "$LINENO: could cp img/devicetree.dtb")
-		sudo chown $USER $VERSION/devicetree.dtb ||
+		dusudo chown $USER $VERSION/devicetree.dtb ||
 			return $(error_ret "$LINENO: could not chown $USER $VERSION/devicetree.dtb")
-		sudo cp img/uEnv.txt ../uenv/uEnv-pynq.txt ||
+		dusudo cp img/uEnv.txt ../uenv/uEnv-pynq.txt ||
 			return $(error_ret "$LINENO: could not cp img/uEnv.txt")
-		sudo chown $USER ../uenv/uEnv-pynq.txt ||
+		dusudo chown $USER ../uenv/uEnv-pynq.txt ||
 			return $(error_ret "$LINENO: could not chown $USER uenv/uEnv-pynq.txt")
-		sudo umount img ||
+		dusudo umount img ||
 			return $(error_ret "$LINENO: could not umount img")
 		rmdir img ||
 			return $(error_ret "$LINENO: could not remove img")
+	else
+		echo "$DIR/BOOT.BIN already exists, skipping."
+	fi
+	if [[ ! -f $DIR/devicetree.dtb ]]; then
+		$DIR/linux-xlnx/scripts/dtc/dtc -I dts -O dtb -o $DIR/devicetree.dtb $PWD/pynq/devicetree.dts ||
+			return $(error_ret "$LINENO: could not build devicetree")
+	else
+		echo "$DIR/devicetree.dtb already exists, skipping."
 	fi
 	echo "BOOT.BIN and devicetree.dtb are ready in $DIR."
 }
 
 extract_pynq_rootfs () {
+	IMG=${PYNQ_VERSION}.img
 	if [[ ! -f $ROOTFS_IMG ]]; then
 		IMG=$PWD/pynq/${PYNQ_VERSION}.img
 		START=$(fdisk -l $IMG | awk 'END { print $2 }')
@@ -327,13 +342,19 @@ build_devtree () {
 	case $BOARD in
 		"zedboard")
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
+			cat $PWD/misc/zynq-7000.dtsi.patch | patch $DIR/zynq-7000.dtsi &&
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
 			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zed.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts 
+			echo >> $DIR/devicetree.dts
+			echo "/include/ \"$PWD/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
 			;;
 		"zc706")
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
+			cat $PWD/misc/zynq-7000.dtsi.patch | patch $DIR/zynq-7000.dtsi &&
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
 			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zed.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts 
+			echo >> $DIR/devicetree.dts
+			echo "/include/ \"$PWD/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
 			;;
 	esac
 	$DIR/linux-xlnx/scripts/dtc/dtc -I dts -O dtb -o $DIR/devicetree.dtb $DIR/devicetree.dts ||
@@ -343,7 +364,7 @@ build_devtree () {
 
 build_output_image () {
 	# size of image (in MiB)
-	IMGSIZE=${1:-4096}
+	IMGSIZE=${1:-8192}
 	# default root size: MAX - 358 MiB (converted to 512B sectors)
 	ROOTSZ=${2:-$((($IMGSIZE - 358) * 1024 * 1024 / 512))}
 	if [[ ! -f $OUTPUT_IMAGE ]]; then
@@ -351,49 +372,55 @@ build_output_image () {
 		echo "Creating empty disk image ..."
 		dd if=/dev/zero of=$OUTPUT_IMAGE bs=1M count=$IMGSIZE conv=sparse ||
 			return $(error_ret "$LINENO: could not init $OUTPUT_IMAGE")
-		echo "Mounting image to /dev/loop0 ..."
-		sudo losetup -D
-		LOOPDEV=$(sudo losetup -f --show $OUTPUT_IMAGE) ||
+		# remove all loopback devices
+		dusudo losetup -D
+		echo "Mounting image to loopback device ..."
+		LOOPDEV=$(dusudo losetup -f --show $OUTPUT_IMAGE) ||
 			return $(error_ret "$LINENO: could losetup $OUTPUT_IMAGE")
 		echo "Partitioning image in $LOOPDEV ..."
-		sudo sfdisk $LOOPDEV << EOF
+		cat > $DIR/sfdisk.script << EOF
 2048 204800 c, *
 206848 $ROOTSZ 83 -
 EOF
+		dusudo sh -c "cat $DIR/sfdisk.script | sfdisk $LOOPDEV"
 		if [[ $? -ne 0 ]]; then
-			sudo losetup -d $LOOPDEV
+			dusudo losetup -d $LOOPDEV
 			return $(error_ret "$LINENO: could not partition $OUTPUT_IMAGE")
 		fi
 		echo "Unmounting image in $LOOPDEV ..."
-		sudo losetup -d $LOOPDEV
+		dusudo losetup -d $LOOPDEV
 		echo "Mounting partitions in $OUTPUT_IMAGE ..."
-		sudo kpartx -a $OUTPUT_IMAGE ||
+		dusudo kpartx -a $OUTPUT_IMAGE ||
 			return $(error_ret "$LINENO: could not kpartx -a $OUTPUT_IMAGE")
 		LD=`basename $LOOPDEV`
 		LD1=${LD}p1
 		LD2=${LD}p2
 		echo "Making BOOT partition in /dev/mapper/$LD1 ..."
-		if ! sudo mkfs.vfat -F 32 -n BOOT /dev/mapper/$LD1; then
-			sudo kpartx -d $OUTPUT_IMAGE
-			return $(error_ret "$LINENO: could make BOOT partition")
+		dusudo mkfs.vfat -F 32 -n BOOT /dev/mapper/$LD1 
+		if [[ $? -ne 0 ]]; then
+			dusudo kpartx -d $OUTPUT_IMAGE
+			return $(error_ret "$LINENO: could not make BOOT partition")
 		fi
 		echo "Making Ext4 partition in /dev/mapper/$LD2 ..."
-		if ! sudo mkfs.ext4 -F -L root /dev/mapper/$LD2; then
-			sudo kpartx -d $OUTPUT_IMAGE
+		dusudo mkfs.ext4 -F -L root /dev/mapper/$LD2
+		if [[ $? -ne 0 ]]; then
+			dusudo kpartx -d $OUTPUT_IMAGE
 			return $(error_ret "$LINENO: could not make ROOT partition")
 		fi
 		echo "Copying files to BOOT ..."
-		if ! copy_files_to_boot /dev/mapper/$LD1; then
-			sudo kpartx -d $OUTPUT_IMAGE
+		copy_files_to_boot /dev/mapper/$LD1
+		if [[ $? -ne 0 ]]; then
+			dusudo kpartx -d $OUTPUT_IMAGE
 			return "$LINENO: copying files to boot failed"
 		fi
 		echo "Copying files to root ..."
-		if ! copy_files_to_root /dev/mapper/$LD2; then
-			sudo kpartx -d $OUTPUT_IMAGE
+		copy_files_to_root /dev/mapper/$LD2
+		if [[ $? -ne 0 ]]; then
+			dusudo kpartx -d $OUTPUT_IMAGE
 			return "$LINENO: copying files to rootfs failed"
 		fi
 		echo "Unmounting partitions ..."
-		sudo kpartx -d $OUTPUT_IMAGE &&
+		dusudo kpartx -d $OUTPUT_IMAGE &&
 		echo "Done, $OUTPUT_IMAGE is ready!"
 	else
 		echo "$OUTPUT_IMAGE already exists, skipping."
@@ -402,7 +429,7 @@ EOF
 
 prepare_sd () {
 	echo "dd'ing $OUTPUT_IMAGE to $SDCARD, this will take a while ..."
-	sudo dd if=$OUTPUT_IMAGE of=$SDCARD bs=10M ||
+	dusudo dd if=$OUTPUT_IMAGE of=$SDCARD bs=10M ||
 		return $(error_ret "$LINENO: could not dd $OUTPUT_IMAGE to $SDCARD")
 	echo "$SDCARD ready."
 }
@@ -412,18 +439,18 @@ copy_files_to_boot () {
 	TO="$DIR/`basename $DEV`"
 	echo "Preparing BOOT partition $TO ..."
 	mkdir -p $TO || return $(error_ret "$LINENO: could not create $TO")
-	sudo mount $DEV $TO || return $(error_ret "$LINENO: could not mount $DEV -> $TO")
+	dusudo mount $DEV $TO || return $(error_ret "$LINENO: could not mount $DEV -> $TO")
 	echo "Copying $DIR/BOOT.BIN to $TO ..."
-	sudo cp $DIR/BOOT.BIN $TO || echo >&2 "$LINENO: WARNING: could not copy BOOT.BIN"
+	dusudo cp $DIR/BOOT.BIN $TO || echo >&2 "$LINENO: WARNING: could not copy BOOT.BIN"
 	echo "Copying $DIR/linux-xlnx/arch/arm/boot/uImage to $TO ..."
-	sudo cp $DIR/linux-xlnx/arch/arm/boot/uImage $TO ||
+	dusudo cp $DIR/linux-xlnx/arch/arm/boot/uImage $TO ||
 		echo >&2 "$LINENO: WARNING: could not copy uImage"
 	echo "Copying $DIR/devicetree.dtb to $TO ..."
-	sudo cp $DIR/devicetree.dtb $TO || echo >&2 "$LINENO: WARNING: could copy devicetree"
+	dusudo cp $DIR/devicetree.dtb $TO || echo >&2 "$LINENO: WARNING: could copy devicetree"
 	echo "Copying uenv/uEnv-$BOARD.txt to $TO/uEnv.txt ..."
-	sudo cp uenv/uEnv-$BOARD.txt $TO/uEnv.txt ||
+	dusudo cp uenv/uEnv-$BOARD.txt $TO/uEnv.txt ||
 		echo >&2 "$LINENO: WARNING: could not copy uEnv.txt"
-	sudo umount $TO
+	dusudo umount $TO
 	rmdir $TO 2> /dev/null &&
 	echo "Boot partition ready."
 }
@@ -432,28 +459,43 @@ copy_files_to_root () {
 	DEV=${1:-${SDCARD}2}
 	TO="$DIR/`basename $DEV`"
 	echo "dd'ing rootfs onto second partition $TO, this will take a while ..."
-	sudo dd if=$ROOTFS_IMG of=$DEV bs=10M ||
+	dusudo dd if=$ROOTFS_IMG of=$DEV bs=10M ||
 		return $(error_ret "$LINENO: could not copy $ROOTFS_IMG to $DEV")
+	dusudo resize2fs $DEV ||
+		return $(error_ret "$LINENO: could not resize $DEV")
 	mkdir -p $TO || return $(error_ret "$LINENO: could not create $TO")
-	sudo mount -onoacl $DEV $TO ||
+	dusudo mount -onoacl $DEV $TO ||
 		return $(error_ret "$LINENO: could not mount $DEV -> $TO")
 	echo "Setting hostname to $BOARD ... "
-	sudo sh -c "echo $BOARD > $TO/etc/hostname" ||
+	dusudo sh -c "echo $BOARD > $TO/etc/hostname" ||
 		echo >&2 "$LINENO: WARNING: could not set hostname"
+	echo "Updating /etc/hosts ..."
+	dusudo sed -i "s/pynq/$BOARD/g" $TO/etc/hosts ||
+		echo >&2 "$LINENO: WARNING: could not update /etc/hosts"
+	echo "Setting env vars ... "
+	dusudo sh -c "echo export LINUX_HOME=/linux-xlnx >> $TO/home/xilinx/.bashrc" ||
+		echo >&2 "$LINENO: WARNING: could not set env var LINUX_HOME"
+	dusudo sh -c "echo export TAPASCO_HOME=~/tapasco >> $TO/home/xilinx/.bashrc" ||
+		echo >&2 "$LINENO: WARNING: could not set env var TAPASCO_HOME"
+	dusudo sh -c "echo export PATH=\\\$PATH:\\\$TAPASCO_HOME/bin >> $TO/home/xilinx/.bashrc" ||
+		echo >&2 "$LINENO: WARNING: could not set env PATH."
 	echo "Replacing rc.local ... "
-	sudo sh -c "cp --no-preserve=ownership $PWD/misc/rc.local $TO/etc/rc.local" ||
+	dusudo sh -c "cp --no-preserve=ownership $PWD/misc/rc.local $TO/etc/rc.local" ||
 		echo >&2 "$LINENO: WARNING: could not copy rc.local"
 	if [[ $IMGSIZE -gt 4096 ]]; then
 		echo "Copying linux tree to /linux-xlnx ..."
-		sudo sh -c "cp -r --no-preserve=ownership $DIR/linux-xlnx $TO/linux-xlnx" ||
+		dusudo sh -c "cp -r --no-preserve=ownership,timestamps $DIR/linux-xlnx $TO/linux-xlnx" ||
 			echo >&2 "$LINENO: WARNING: could not copy linux-xlnx"
 	else
 		echo >&2 "$LINENO: WARNING: image size $IMGSIZE < 4096 MiB, not enough space to copy linux tree"
 	fi
+	echo "Copying udev rules ..."
+	dusudo sh -c "cat $UDEV_RULES | sed 's/OWNER\"tapasco\"/OWNER=\"xilinx\"/g' | sed 's/GROUP=\"tapasco\"/GROUP=\"xilinx\"/g' | sed 's/tapasco:tapasco/xilinx:xilinx/g' > $TO/etc/udev/rules.d/99-tapasco.rules" ||
+		echo >&2 "$LINENO: WARNING: could not write udev rules"
 	echo "Removing Jupyter stuff from home ..."
-	sudo sh -c "find $TO/home/xilinx/* -maxdepth 0 | xargs rm -rf" ||
+	dusudo sh -c "find $TO/home/xilinx/* -maxdepth 0 | xargs rm -rf" ||
 		echo >&2 "$LINENO: WARNING: could not delete Jupyter stuff"
-	sudo umount $TO
+	dusudo umount $TO
 	rmdir $TO 2> /dev/null &&
 	echo "RootFS partition ready."
 }
@@ -471,6 +513,8 @@ check_hsi
 check_vivado
 check_image_tools
 check_sdcard
+read -p "Enter sudo password: " -s SUDOPW
+[[ -n $SUDOPW ]] || error_exit "dusudo password may not be empty"
 mkdir -p $LOGDIR 2> /dev/null
 mkdir -p `dirname $PYNQ_IMAGE` 2> /dev/null
 echo "And so it begins ..."
@@ -505,7 +549,7 @@ else
 fi
 build_uimage &> $BUILD_UIMAGE_LOG &
 BUILD_UIMAGE_OK=$!
-if [[ $BOARD != "pynq" ]]; then build_ssbl; fi &
+if [[ $BOARD != "pynq" ]]; then build_ssbl &> $BUILD_SSBL_LOG; fi &
 BUILD_SSBL_OK=$!
 wait $BUILD_UIMAGE_OK || error_exit "Building uImage failed, check log: $BUILD_UIMAGE_LOG"
 wait $BUILD_SSBL_OK || error_exit "Building U-Boot SSBL failed, check log: $BUILD_SSBL_LOG"
@@ -526,7 +570,8 @@ if [[ $BOARD != "pynq" ]]; then
 	wait $BUILD_DEVICETREE_OK || error_exit "Building devicetree failed, check log: $BUILD_DEVICETREE_LOG"
 else
 	echo "Extract FSBL and devicetree from $PYNQ_IMAGE (output in $EXTRACT_BL_LOG) ..."
-	extract_pynq_bl &> EXTRACT_BL_LOG
+	extract_pynq_bl &> $EXTRACT_BL_LOG &
+	wait || error_exit "Extraction of FSBL and devicetree from $PYNQ_IMAGE failed, check log: $EXTRACT_BL_LOG"
 	if [[ ! -f $DIR/BOOT.BIN ]]; then
 		echo "Extracting FSBL failed, check log: $EXTRACT_BL_LOG"
 		exit 1
@@ -543,12 +588,15 @@ extract_pynq_rootfs &> $EXTRACT_RFS_LOG
 ################################################################################
 echo "Building image in $OUTPUT_IMAGE (output in $BUILD_OUTPUT_IMAGE_LOG) ..."
 build_output_image $IMGSIZE &> $BUILD_OUTPUT_IMAGE_LOG
-[[ $? -eq 0 ]] || error_exit "Building output image failed, check log: $BUILD_OUTPUT_IMAGE_LOG"
+if [[ $? -ne 0 ]]; then
+	# rm -f $OUTPUT_IMAGE &> /dev/null
+	error_exit "Building output image failed, check log: $BUILD_OUTPUT_IMAGE_LOG"
+fi
 echo "SD card image ready: $OUTPUT_IMAGE"
 ################################################################################
 if [[ -n $SDCARD ]]; then
 	echo "Preparing $SDCARD, this may take a while (output in $PREPARE_SD_LOG) ..."
-	prepare_sd &> $PREPARE_DS_LOG
+	prepare_sd &> $PREPARE_SD_LOG
 	[[ $? -eq 0 ]] || error_exit "Preparing SD card failed, check log: $PREPARE_SD_LOG"
 	sync &&
 	echo "SD card $SDCARD successfully prepared, ready to boot!"
