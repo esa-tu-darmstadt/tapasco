@@ -44,7 +44,6 @@
 #define TEST_3
 
 using namespace std;
-using namespace tapasco;
 
 #define SZ			256
 #define RUNS			100000
@@ -52,7 +51,7 @@ using namespace tapasco;
 #define T2_KID			10
 #define T3_KID			 9
 
-static Tapasco Tapasco;
+static tapasco::Tapasco Tapasco;
 static atomic<int> runs;
 typedef int run_block[SZ];
 
@@ -67,7 +66,7 @@ bool test1_execute(int *arr)
     for (int i = 0; i < SZ; ++i)
       (*z)[i] = i;
 #else
-    if (Tapasco.launch_no_return(T1_KID, OutOnly<run_block>{z}) != TAPASCO_SUCCESS)
+    if (Tapasco.launch_no_return(T1_KID, tapasco::OutOnly<run_block>{z}) != tapasco::TAPASCO_SUCCESS)
       return false;
 #endif
   }
@@ -111,7 +110,7 @@ int test2_execute(int *arr)
       result += (*z)[i];
 #else
     int tr = 0;
-    if (Tapasco.launch(T2_KID, tr, z) != TAPASCO_SUCCESS)
+    if (Tapasco.launch(T2_KID, tr, z) != tapasco::TAPASCO_SUCCESS)
       return -1;
     else
       result += tr;
@@ -143,9 +142,9 @@ void test3_execute(int *arr)
     for (int i = 0; i < SZ; ++i)
       (*z)[i] += 42;
 #else
-    tapasco_res_t res;
-    if ((res = Tapasco.launch_no_return(T3_KID, z)) != TAPASCO_SUCCESS)
-      throw Tapasco::tapasco_error(res);
+    tapasco::tapasco_res_t res;
+    if ((res = Tapasco.launch_no_return(T3_KID, z)) != tapasco::TAPASCO_SUCCESS)
+      throw tapasco::Tapasco::tapasco_error(res);
 #endif
   }
 }

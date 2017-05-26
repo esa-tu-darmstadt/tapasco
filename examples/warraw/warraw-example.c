@@ -95,33 +95,34 @@ int main(int argc, char **argv) {
 		printf("Golden output for run %d: %d\n", run, golden);
 
 		// allocate mem on device and copy array part
-		tapasco_handle_t h = tapasco_device_alloc(dev, SZ * sizeof(int), 
-				TAPASCO_COPY_BLOCKING);
+		tapasco_handle_t h;
+		check_tapasco(tapasco_device_alloc(dev, &h, SZ * sizeof(int), 
+				TAPASCO_DEVICE_COPY_BLOCKING));
 		check(h != 0);
 		check_tapasco(tapasco_device_copy_to(dev, &arr[SZ * run], h,
-				SZ * sizeof(int), TAPASCO_COPY_BLOCKING));
+				SZ * sizeof(int), TAPASCO_DEVICE_COPY_BLOCKING));
 
 		// get a job id and set argument to handle
 		tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev, 12, 
-				TAPASCO_ACQUIRE_JOB_ID_BLOCKING);
+				TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
 		check(j_id > 0);
 		check_tapasco(tapasco_device_job_set_arg(dev, j_id, 0, sizeof(h), &h));
 
 		// shoot me to the moon!
 		check_tapasco(tapasco_device_job_launch(dev, j_id,
-				TAPASCO_JOB_LAUNCH_BLOCKING));
+				TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING));
 
 		// get the result
 		int32_t r = 0;
 		check_tapasco(tapasco_device_job_get_return(dev, j_id, sizeof(r), &r));
 		check_tapasco(tapasco_device_copy_from(dev, h, &arr[SZ * run],
-				SZ * sizeof(int), TAPASCO_COPY_BLOCKING));
+				SZ * sizeof(int), TAPASCO_DEVICE_COPY_BLOCKING));
 		printf("TPC output for run %d: %d\n", run, r);
 		unsigned int errs = check_arrays(&arr[SZ * run],
 				&golden_arr[SZ * run], SZ);
 		printf("\nRUN %d %s\n", run, r == golden && errs == 0 ?
 				"OK" : "NOT OK");
-		tapasco_device_free(dev, h);
+		tapasco_device_free(dev, h, 0);
 		tapasco_device_release_job_id(dev, j_id);
 	}
 

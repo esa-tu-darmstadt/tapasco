@@ -88,25 +88,26 @@ int main(int argc, char **argv)
 
 	for (int run = 0; run < RUNS; ++run) {
 		// allocate mem on device and copy array part
-		tapasco_handle_t h = tapasco_device_alloc(dev, SZ * sizeof(int), 0);
+		tapasco_handle_t h;
+		check_tapasco(tapasco_device_alloc(dev, &h, SZ * sizeof(int), 0));
 		check(h != 0);
 
 		// get a job id and set argument to handle
 		tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev, 11,
-				TAPASCO_ACQUIRE_JOB_ID_BLOCKING);
+				TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
 		check(j_id > 0);
 		check_tapasco(tapasco_device_job_set_arg(dev, j_id, 0, sizeof(h), &h));
 
 		// shoot me to the moon!
 		check_tapasco(tapasco_device_job_launch(dev, j_id,
-				TAPASCO_JOB_LAUNCH_BLOCKING));
+				TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING));
 
 		// get the result
 		check_tapasco(tapasco_device_copy_from(dev, h, &arr[SZ * run],
-				SZ * sizeof(int), TAPASCO_COPY_BLOCKING));
+				SZ * sizeof(int), TAPASCO_DEVICE_COPY_BLOCKING));
 		unsigned int errs = check_array(&arr[SZ * run], SZ);
 		printf("\nRUN %d %s\n", run, errs == 0 ? "OK" : "NOT OK");
-		tapasco_device_free(dev, h);
+		tapasco_device_free(dev, h, 0);
 		tapasco_device_release_job_id(dev, j_id);
 	}
 

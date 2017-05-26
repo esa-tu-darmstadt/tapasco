@@ -6,7 +6,7 @@ include (../examples.cmake)
 include_directories(../../kernel/warraw)
 
 add_executable(warraw warraw-example.c ../../kernel/warraw/warraw.c)
-target_link_libraries(warraw rt pthread tapasco platform-client)
+target_link_libraries(warraw rt pthread tapasco platform atomic)
 set_target_properties(warraw PROPERTIES COMPILE_FLAGS "-g -Wall -Werror -std=gnu99 -Wno-unused-label")
 
 install(TARGETS warraw
