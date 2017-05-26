@@ -33,6 +33,7 @@ tdir   = '$TAPASCO_HOME/arch/tests/build'
 if clean or args.rebuild:
 	subprocess.call(['rm -rf ' + pdir], shell=True)
 	subprocess.call(['rm -rf ' + adir], shell=True)
+	subprocess.call(['rm -rf ' + tdir], shell=True)
 	subprocess.call(['cd ' + moddir + ' && make clean'], shell=True)
 
 if not clean:
