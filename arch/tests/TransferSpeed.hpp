@@ -40,18 +40,18 @@ public:
     initscr(); noecho(); curs_set(0); timeout(0);
     int x, y;
     getyx(stdscr, y, x);
-    auto tstart = high_resolution_clock::now();
+    auto tstart = steady_clock::now();
     double b = 0.0;
-    duration<double> d = high_resolution_clock::now() - tstart;
+    duration<double> d = steady_clock::now() - tstart;
     future<void> f = async(launch::async, [&]() { transfer(stop, chunk_sz, opmask); });
     do {
       b = bytes.load() / (1024.0 * 1024.0);
-      d = high_resolution_clock::now() - tstart;
+      d = steady_clock::now() - tstart;
       mvprintw(y, x, "Chunk size: %8.2f KiB, Mask: %s, Speed: %8.2f MiB/s",
           cs, ms.c_str(), cavg());
       refresh();
-      usleep(1000);
-    } while (getch() == ERR && (fabs(cavg.update(b / d.count())) > 0.01 || cavg.size() < 10000));
+      usleep(1000000);
+    } while (getch() == ERR && (fabs(cavg.update(b / d.count())) > 0.1 || cavg.size() < 30));
     stop = true;
     f.get();
     move(y+1, 0);

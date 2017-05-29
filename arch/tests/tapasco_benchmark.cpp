@@ -18,6 +18,7 @@
 #include "CumulativeAverage.hpp"
 #include "TransferSpeed.hpp"
 #include "InterruptLatency.hpp"
+#include "JobThroughput.hpp"
 #include "json11.hpp"
 
 using namespace std;
@@ -50,16 +51,28 @@ struct interrupt_latency_t {
     }; }
 };
 
+struct job_throughput_t {
+  size_t num_threads;
+  double jobs_per_sec;
+  Json to_json() const { return Json::object {
+      {"Number of threads", static_cast<double>(num_threads)},
+      {"Jobs per second", jobs_per_sec}
+    }; }
+};
+
 int main(int argc, const char *argv[]) {
   Tapasco tapasco;
   TransferSpeed tp { tapasco };
   InterruptLatency il { tapasco };
+  JobThroughput jt { tapasco };
   struct utsname uts;
   uname(&uts);
   vector<Json> speed;
   struct transfer_speed_t ts;
   vector<Json> latency;
   struct interrupt_latency_t ls;
+  vector<Json> jobs;
+  struct job_throughput_t js;
 
   string platform = "vc709";
   if (argc < 2) {
@@ -70,17 +83,17 @@ int main(int argc, const char *argv[]) {
         cerr << "Could not get host name, guessing vc709 Platform" << endl;
       else {
         cout << "Host name: " << n << endl;
-	platform = n;
-	if (string(n).compare("zed") == 0 || string(n).compare("zedboard") == 0)
-	  platform = "zedboard";
-	if (string(n).compare("zc706") == 0)
-	  platform = "zc706";
-	cout << "Guessing " << platform << " Platform" << endl;
+        platform = n;
+        if (string(n).compare("zed") == 0 || string(n).compare("zedboard") == 0)
+          platform = "zedboard";
+        if (string(n).compare("zc706") == 0)
+          platform = "zc706";
+        cout << "Guessing " << platform << " Platform" << endl;
       }
     } else platform = getenv("TAPASCO_PLATFORM");
   }
 
-  // measure for chunk sizes 2^8 - 2^31 (2GB) bytes
+  // measure for chunk sizes 2^10 (1KiB) - 2^31 (2GB) bytes
   for (int i = 10; i < 32; ++i) {
     ts.chunk_sz = 1 << i;
     ts.speed_r  = tp(ts.chunk_sz, TransferSpeed::OP_COPYFROM);
@@ -107,6 +120,17 @@ int main(int argc, const char *argv[]) {
     latency.push_back(json);
   }
 
+  size_t i = 1;
+  double prev = -1;
+  js.jobs_per_sec = -1;
+  do {
+    prev = js.jobs_per_sec;
+    js.num_threads = i;
+    js.jobs_per_sec = jt(i);
+    ++i;
+    jobs.push_back(js.to_json());
+  } while (i <= 128 && (i <= 8 || js.jobs_per_sec > prev));
+
   // record current time
   time_t tt = chrono::system_clock::to_time_t(chrono::system_clock::now());
   tm tm = *localtime(&tt);
@@ -118,14 +142,15 @@ int main(int argc, const char *argv[]) {
     {"Timestamp", str.str()},
     {"Host", Json::object {
         {"Operating System", uts.sysname},
-	{"Node", uts.nodename},
-	{"Release", uts.release},
-	{"Version", uts.version},
-	{"Machine", uts.machine}
+        {"Node", uts.nodename},
+        {"Release", uts.release},
+        {"Version", uts.version},
+        {"Machine", uts.machine}
       }
     },
     {"Transfer Speed", speed},
     {"Interrupt Latency", latency},
+    {"Job Throughput", jobs},
     {"Library Versions", Json::object {
         {"Tapasco API",  tapasco::tapasco_version()},
         {"Platform API", platform::platform_version()}
