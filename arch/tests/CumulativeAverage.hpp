@@ -16,7 +16,7 @@ template <typename T> class CumulativeAverage {
 public:
   CumulativeAverage(T const init) : _data({.value = init, .delta = init,
       .min = std::numeric_limits<T>::max(), .max = std::numeric_limits<T>::min(),
-      .count = 1}) {}
+      .count = 0}) {}
   virtual ~CumulativeAverage() {}
 
   T update(T const t) {
@@ -24,6 +24,7 @@ public:
     struct data_t n;
     do {
       o = _data.load();
+      n = o;
       n.count = o.count + 1;
       n.value = (o.value * o.count + t) / n.count;
       n.delta = n.value - o.value;
@@ -37,8 +38,8 @@ public:
   T operator ()() const { return _data.load().value; }
   size_t size()   const { return _data.load().count; }
   T delta()       const { return _data.load().delta; }
-  T min()         const { T min = _data.load().min; return min < std::numeric_limits<T>::max() ? min : -1; }
-  T max()         const { T max = _data.load().max; return max > std::numeric_limits<T>::min() ? max : -1; }
+  T min()         const { data_t d = _data.load(); return d.count ? d.min : -1; }
+  T max()         const { data_t d = _data.load(); return d.count ? d.max : -1; }
 private:
   struct data_t {
     T      value;
