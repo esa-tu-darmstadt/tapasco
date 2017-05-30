@@ -36,6 +36,8 @@ final case class Host(machine: String, node: String, operatingSystem: String, re
 final case class TransferSpeedMeasurement(chunkSize: Long, read: Double, write: Double, readWrite: Double)
 /** Interrupt latency in us at given PE runtime (in clock cycles). */
 final case class InterruptLatency(clockCycles: Long, latency: Double, min: Double, max: Double)
+/** Jobs per second with given number of threads. */
+final case class JobThroughput(numberOfThreads: Int, jobsPerSecond: Double)
 /** Defines an interpolation on [[InterruptLatency]] elements. */
 final class LatencyInterpolator(data: Seq[InterruptLatency])
     extends LinearInterpolator[Long, Double](data map { il => (il.clockCycles, il.latency) }) {
@@ -75,7 +77,8 @@ final case class Benchmark (
       host: Host,
       libraryVersions: LibraryVersions,
       transferSpeed: Seq[TransferSpeedMeasurement],
-      interruptLatency: Seq[InterruptLatency]
+      interruptLatency: Seq[InterruptLatency],
+      jobThroughput: Seq[JobThroughput]
     ) extends Description(descPath) {
   /** Function to compute interpolated latency values. */
   lazy val latency = new LatencyInterpolator(interruptLatency)

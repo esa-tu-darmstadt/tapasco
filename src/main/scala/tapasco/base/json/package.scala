@@ -93,13 +93,19 @@ package object json {
       (JsPath \ "Max Latency").format[Double]
     ) (InterruptLatency.apply _, unlift(InterruptLatency.unapply _))
 
+  implicit val jobThroughputFormat: Format[JobThroughput] = (
+      (JsPath \ "Number of threads").format[Int] ~
+      (JsPath \ "Jobs per second").format[Double]
+    ) (JobThroughput.apply _, unlift(JobThroughput.unapply _))
+
   implicit val benchmarkReads: Reads[Benchmark] = (
       (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
       (JsPath \ "Timestamp").read[LocalDateTime] ~
       (JsPath \ "Host").read[Host] ~
       (JsPath \ "Library Versions").read[LibraryVersions] ~
       (JsPath \ "Transfer Speed").read[Seq[TransferSpeedMeasurement]] ~
-      (JsPath \ "Interrupt Latency").read[Seq[InterruptLatency]]
+      (JsPath \ "Interrupt Latency").read[Seq[InterruptLatency]] ~
+      (JsPath \ "Job Throughput").read[Seq[JobThroughput]]
     ) (Benchmark. apply _)
   implicit val benchmarkWrites: Writes[Benchmark] = (
       (JsPath \ "DescPath").write[Path].transform((js: JsObject) => js - "DescPath") ~
@@ -107,7 +113,8 @@ package object json {
       (JsPath \ "Host").write[Host] ~
       (JsPath \ "Library Versions").write[LibraryVersions] ~
       (JsPath \ "Transfer Speed").write[Seq[TransferSpeedMeasurement]] ~
-      (JsPath \ "Interrupt Latency").write[Seq[InterruptLatency]]
+      (JsPath \ "Interrupt Latency").write[Seq[InterruptLatency]] ~
+      (JsPath \ "Job Throughput").write[Seq[JobThroughput]]
     ) (unlift(Benchmark.unapply _))
   /* Benchmark @} */
 

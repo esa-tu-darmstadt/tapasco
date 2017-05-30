@@ -105,31 +105,45 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
     lazy val c = oc.right.get
     assert(oc.isRight)
     // host data
-    c.host.machine should be ("x86_64")
-    c.host.node should equal ("mountdoom")
+    c.host.machine should be ("armv7l")
+    c.host.node should equal ("pynq")
     c.host.operatingSystem should equal ("Linux")
-    c.host.release should equal ("3.19.8-100.fc20.x86_64")
-    c.host.version should equal ("#1 SMP Tue May 12 17:08:50 UTC 2015")
+    c.host.release should equal ("4.6.0-tapasco")
+    c.host.version should equal ("#1 SMP PREEMPT Fri May 26 16:26:16 CEST 2017")
+    // job throughput
+    c.jobThroughput should have length (8)
+    c.jobThroughput should equal (List(
+        JobThroughput(1, 119074.73866666667),
+        JobThroughput(2, 246078.71600000001),
+        JobThroughput(3, 237654.358),
+        JobThroughput(4, 231967.13166666668),
+        JobThroughput(5, 226561.87117590103),
+        JobThroughput(6, 222900.86777777775),
+        JobThroughput(7, 218548.3080264527),
+        JobThroughput(8, 215949.0373333333)))
     // interrupt latency
-    c.interruptLatency should equal (List(InterruptLatency(1,7.0), InterruptLatency(2,7.5), InterruptLatency(4,8.0),
-      InterruptLatency(123456,10.0)))
+    c.interruptLatency should have length (3)
+    c.interruptLatency should equal (List(
+        InterruptLatency(1, 10.01592947927347, 9, 156),
+        InterruptLatency(2, 164.85714285714286, 162, 171),
+        InterruptLatency(2147483648L, 276.69565217391295, 269, 282)))
     // library versions
     c.libraryVersions.platform should equal ("1.2.1")
     c.libraryVersions.tapasco should equal ("1.2")
     // timestamp
-    c.timestamp should equal (LocalDate.of(2016, 4, 20).atTime(16,33,49))
+    c.timestamp should equal (LocalDate.of(2017, 5, 30).atTime(13,8,55))
     // transfer speed
-    c.transferSpeed should have length (18)
-    var ce = c.transferSpeed(17)
-    ce.chunkSize should equal (33554432)
-    ce.read should equal (3322.1144740468026)
-    ce.write should equal (3178.9272608933888)
-    ce.readWrite should equal (3182.0719464635727)
+    c.transferSpeed should have length (3)
+    var ce = c.transferSpeed(1)
+    ce.chunkSize should equal (2048)
+    ce.read should equal (36.913918454834466)
+    ce.write should equal (42.449135015215866)
+    ce.readWrite should equal (69.51085992539018)
     ce = c.transferSpeed(0)
-    ce.chunkSize should equal (256)
-    ce.read should equal (49.329030801393962)
-    ce.write should equal (48.829431984156649)
-    ce.readWrite should equal (55.568662824206989)
+    ce.chunkSize should equal (1024)
+    ce.read should equal (20.078207396701792)
+    ce.write should equal (21.68177044056579)
+    ce.readWrite should equal (37.784625316971535)
   }
   
   "An invalid Benchmark file" should "not be parsed" in {
@@ -145,14 +159,14 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
       val r = if (a.chunkSize < b.chunkSize) b else a
       val mbm = bm.copy(transferSpeed = data)
       val cs = Gen.choose(0, r.chunkSize + 1)
-      def interpolate(cs: Int, lcs: Int, ls: Double, rcs: Int, rs: Double): Double =
+      def interpolate(cs: Long, lcs: Long, ls: Double, rcs: Long, rs: Double): Double =
          (((cs - lcs).toDouble / (rcs - lcs).toDouble)) * (rs  - ls) + ls
       forAll(cs) { n => n match {
         case n if n <= l.chunkSize => mbm.speed(n) equals (l.read, l.write, l.readWrite)
         case n if n >= r.chunkSize => mbm.speed(n) equals (r.read, r.write, r.readWrite)
-        case n => mbm.speed(n) equals (interpolate(n, l.chunkSize, l.read, r.chunkSize, r.read),
-                                       interpolate(n, l.chunkSize, l.write, r.chunkSize, r.write),
-                                       interpolate(n, l.chunkSize, l.readWrite, r.chunkSize, r.readWrite))
+        case n => mbm.speed(n) equals ((interpolate(n, l.chunkSize, l.read, r.chunkSize, r.read),
+                                        interpolate(n, l.chunkSize, l.write, r.chunkSize, r.write),
+                                        interpolate(n, l.chunkSize, l.readWrite, r.chunkSize, r.readWrite)))
       }}
     }})
   }
@@ -167,7 +181,7 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
       val top = data.last
       val mbm = bm.copy(transferSpeed = data)
       val cs = Gen.choose(0, top.chunkSize + 1)
-      def interpolate(cs: Int, lcs: Int, ls: Double, rcs: Int, rs: Double): Double =
+      def interpolate(cs: Long, lcs: Long, ls: Double, rcs: Long, rs: Double): Double =
          (((cs - lcs).toDouble / (rcs - lcs).toDouble)) * (rs  - ls) + ls
       forAll(cs) { n => {
         val l = if (n <= mid.chunkSize) bot else mid
@@ -241,9 +255,18 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
 
   val ilmGen: Gen[InterruptLatency] = for {
     cl <- posIntsPowerTwo
-    l  <- Gen.posNum[Double]
-  } yield InterruptLatency(cl, l)
+    v1  <- Gen.posNum[Double]
+    v2  <- Gen.posNum[Double]
+    v3  <- Gen.posNum[Double]
+    vs = Seq(v1, v2, v3).sorted
+  } yield InterruptLatency(cl, vs(1), vs(0), vs(1))
   implicit val arbIlm: Arbitrary[InterruptLatency] = Arbitrary(ilmGen)
+
+  val jtGen: Gen[JobThroughput] = for {
+    t <- Gen.posNum[Int]
+    j <- Gen.posNum[Double]
+  } yield JobThroughput(t, j)
+  implicit val arbJt: Arbitrary[JobThroughput] = Arbitrary(jtGen)
 
   val hostGen = for {
     machine <- Arbitrary.arbitrary[String]
@@ -266,11 +289,12 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
 
   val benchmarkGen = for {
     timestamp <- Arbitrary.arbitrary[LocalDateTime]
-    host <- Arbitrary.arbitrary[Host]
-    lv <- Arbitrary.arbitrary[LibraryVersions]
-    tsm <- Arbitrary.arbitrary[Seq[TransferSpeedMeasurement]]
-    il <- Arbitrary.arbitrary[Seq[InterruptLatency]]
-  } yield Benchmark(java.nio.file.Paths.get("N/A"), timestamp, host, lv, tsm, il)
+    host      <- Arbitrary.arbitrary[Host]
+    lv        <- Arbitrary.arbitrary[LibraryVersions]
+    tsm       <- Arbitrary.arbitrary[Seq[TransferSpeedMeasurement]]
+    il        <- Arbitrary.arbitrary[Seq[InterruptLatency]]
+    jtp       <- Arbitrary.arbitrary[Seq[JobThroughput]]
+  } yield Benchmark(java.nio.file.Paths.get("N/A"), timestamp, host, lv, tsm, il, jtp)
   implicit val arbBenchmark: Arbitrary[Benchmark] = Arbitrary(benchmarkGen)
 
   /* Generators and Arbitraries @} */
