@@ -64,6 +64,9 @@ public:
     } while (c == ERR && (fabs(cavg.delta()) > 0.01 || cavg.size() < min_runs));
     stop = true;
     f.get();
+    mvprintw(y, x, "Runtime: %12zu cc, Latency: % 12.1f, Min: % 12.1f, Max: % 12.1f, Count: %zu/%zu",
+      clock_cycles, cavg(), cavg.min(), cavg.max(), cavg.size(), min_runs);
+    refresh();
 
     move((y+1) % maxy, 0);
     if (min) *min = cavg.min();
@@ -75,12 +78,12 @@ private:
   void trigger(volatile bool& stop, uint32_t const clock_cycles, CumulativeAverage<double>& cavg) {
     tapasco_res_t res;
     while (! stop) {
-      auto tstart = steady_clock::now();
+      auto tstart = high_resolution_clock::now();
       // if 0, use 1us - 100ms interval (clock period is 10ns)
       uint32_t cc = clock_cycles > 0 ? clock_cycles : (rand() % (10000000 - 100) + 100);
       if ((res = tapasco.launch_no_return(COUNTER_ID, cc)) != TAPASCO_SUCCESS)
         throw Tapasco::tapasco_error(res);
-      microseconds const d = duration_cast<microseconds>(steady_clock::now() - tstart);
+      microseconds const d = duration_cast<microseconds>(high_resolution_clock::now() - tstart);
       cavg.update(d.count() - cc / 100);
     }
   }

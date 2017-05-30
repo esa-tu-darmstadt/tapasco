@@ -36,7 +36,7 @@ public:
     int x, y;
     getyx(stdscr, y, x);
     vector<future<void> > threads;
-    auto const t_start = steady_clock::now();
+    auto const t_start = high_resolution_clock::now();
     for (size_t t = 0; t < num_threads; ++t)
       threads.push_back(async(launch::async, [&]() { run(stop, jobs); }));
     auto c = getch();
@@ -48,7 +48,7 @@ public:
       refresh();
       usleep(5000000);
       auto const j = jobs.load();
-      auto const t = steady_clock::now();
+      auto const t = high_resolution_clock::now();
       auto const s = duration_cast<seconds>(t - t_start);
       auto const v = s.count() > 0 ? static_cast<double>(j) / static_cast<double>(s.count()) : 0.0;
       if (v > 10.0) cavg.update(v);
@@ -59,6 +59,12 @@ public:
     stop = true;
     for (auto &f : threads)
       f.get();
+
+    move(y, 0);
+    clrtoeol();
+    mvprintw(y, x, "Num threads: % 2zu, jobs/second: % 12.1f, max: % 12.f, min: % 12.1f",
+        num_threads, cavg(), cavg.max(), cavg.min());
+    refresh();
     move(y+1, 0);
     return cavg();
   }

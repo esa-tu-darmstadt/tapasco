@@ -39,9 +39,9 @@ public:
     bytes = 0;
     int x, y;
     getyx(stdscr, y, x);
-    auto tstart = steady_clock::now();
+    auto tstart = high_resolution_clock::now();
     double b = 0.0;
-    duration<double> d = steady_clock::now() - tstart;
+    duration<double> d = high_resolution_clock::now() - tstart;
     future<void> f = async(launch::async, [&]() { transfer(stop, chunk_sz, opmask); });
     auto c = getch();
     do {
@@ -50,13 +50,17 @@ public:
       refresh();
       usleep(1000000);
       b = bytes.load() / (1024.0 * 1024.0);
-      d = steady_clock::now() - tstart;
+      d = high_resolution_clock::now() - tstart;
       // exit gracefully on ctrl+c
       c = getch();
       if (c == 3) { endwin(); exit(3); }
     } while (c == ERR && (fabs(cavg.update(b / d.count())) > 0.1 || cavg.size() < 30));
     stop = true;
     f.get();
+
+    mvprintw(y, x, "Chunk size: %8.2f KiB, Mask: %s, Speed: %8.2f MiB/s",
+        cs, ms.c_str(), cavg());
+    refresh();
     move(y+1, 0);
     return cavg();
   }
