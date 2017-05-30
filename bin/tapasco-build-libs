@@ -34,6 +34,7 @@ if clean or args.rebuild:
 	subprocess.call(['rm -rf ' + pdir], shell=True)
 	subprocess.call(['rm -rf ' + adir], shell=True)
 	subprocess.call(['rm -rf ' + tdir], shell=True)
+	subprocess.call(['rm -rf $TAPASCO/home/arch/lib $TAPASCO_HOME/platform/lib'], shell=True)
 	subprocess.call(['cd ' + moddir + ' && make clean'], shell=True)
 
 if not clean:
@@ -42,14 +43,14 @@ if not clean:
 	else:
 		print('Building release mode libraries, pass "debug" as first argument to build debug libs...')
 	
-	if not os.environ['LINUX_HOME'] is None:
+	if 'LINUX_HOME' in os.environ:
 		subprocess.call(['make -C ' + os.environ['LINUX_HOME'] + ' scripts'], shell=True)
-	
-	if os.environ['TAPASCO_PLATFORM'] is 'vc709':
-		print 'cd ' + moddir + ' && make ' + ('DEBUG_VERBOSE=y ' if driver_debug else ' ')
-		subprocess.call(['cd ' + moddir + ' && make ' + ('DEBUG_VERBOSE=y ' if driver_debug else ' ')], shell=True)
-	else:
-		subprocess.call(['cd ' + moddir + ' && make ' + ('' if driver_debug else 'release ')], shell=True)
+        else:
+		if os.environ['TAPASCO_PLATFORM'] is 'vc709':
+			print 'cd ' + moddir + ' && make ' + ('DEBUG_VERBOSE=y ' if driver_debug else ' ')
+			subprocess.call(['cd ' + moddir + ' && make ' + ('DEBUG_VERBOSE=y ' if driver_debug else ' ')], shell=True)
+		else:
+			subprocess.call(['cd ' + moddir + ' && make ' + ('' if driver_debug else 'release ')], shell=True)
 	subprocess.call(['mkdir -p ' + pdir + ' && cd ' + pdir + ' && cmake ' + ('' if debug else '-DCMAKE_BUILD_TYPE=Release') + ' .. && make && make install'], shell=True)
 	subprocess.call(['mkdir -p ' + adir + ' && cd ' + adir + ' && cmake ' + ('' if debug else '-DCMAKE_BUILD_TYPE=Release') + ' .. && make && make install'], shell=True)
 	subprocess.call(['mkdir -p ' + tdir + ' && cd ' + tdir + ' && cmake ' + ('' if debug else '-DCMAKE_BUILD_TYPE=Release') + ' .. && make && make install'], shell=True)
