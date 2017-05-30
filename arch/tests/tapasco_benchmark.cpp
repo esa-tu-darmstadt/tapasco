@@ -13,8 +13,8 @@
 #include <ctime>
 #include <vector>
 #include <sys/utsname.h>
-#include <tapasco.hpp>
-#include <platform.h>
+#include <tapasco_api.hpp>
+#include <platform_api.h>
 #include "CumulativeAverage.hpp"
 #include "TransferSpeed.hpp"
 #include "InterruptLatency.hpp"
@@ -24,6 +24,12 @@
 using namespace std;
 using namespace tapasco;
 using namespace json11;
+
+typedef enum {
+  MEASURE_TRANSFER_SPEED    = (1 << 0),
+  MEASURE_INTERRUPT_LATENCY = (1 << 1),
+  MEASURE_JOB_THROUGHPUT    = (1 << 2)
+} measure_t;
 
 struct transfer_speed_t {
   size_t chunk_sz;
@@ -61,6 +67,19 @@ struct job_throughput_t {
 };
 
 int main(int argc, const char *argv[]) {
+  measure_t mode = static_cast<measure_t>(MEASURE_TRANSFER_SPEED | MEASURE_INTERRUPT_LATENCY | MEASURE_JOB_THROUGHPUT);
+  if (argc > 1 && string(argv[0]).size()) {
+    switch (argv[1][0]) {
+    case 'm': mode = MEASURE_TRANSFER_SPEED; break;
+    case 'i': mode = MEASURE_INTERRUPT_LATENCY; break;
+    case 'j': mode = MEASURE_JOB_THROUGHPUT; break;
+    case 'a': break;
+    default:
+      cerr << "Unknown mode: " << argv[0][0] << ". Choose one of a(ll), i(nterrupt latency), j(ob throughput), m(emory transfer speed)." << endl;
+      exit(1);
+    }
+  }
+
   initscr(); noecho(); curs_set(1); timeout(0); raw();
   try {
     Tapasco tapasco;
@@ -77,26 +96,24 @@ int main(int argc, const char *argv[]) {
     struct job_throughput_t js;
 
     string platform = "vc709";
-    if (argc < 2) {
-      if (getenv("TAPASCO_PLATFORM") == NULL) {
-        char n[256] { "" };
-        cout << "Environment variable TAPASCO_PLATFORM is not set, guessing Platform ..." << endl;
-        if (gethostname(n, 255))
-          cerr << "Could not get host name, guessing vc709 Platform" << endl;
-        else {
-          cout << "Host name: " << n << endl;
-          platform = n;
-          if (string(n).compare("zed") == 0 || string(n).compare("zedboard") == 0)
-            platform = "zedboard";
-          if (string(n).compare("zc706") == 0)
-            platform = "zc706";
-          cout << "Guessing " << platform << " Platform" << endl;
-        }
-      } else platform = getenv("TAPASCO_PLATFORM");
-    }
+    if (getenv("TAPASCO_PLATFORM") == NULL) {
+      char n[256] { "" };
+      cout << "Environment variable TAPASCO_PLATFORM is not set, guessing Platform ..." << endl;
+      if (gethostname(n, 255))
+        cerr << "Could not get host name, guessing vc709 Platform" << endl;
+      else {
+        cout << "Host name: " << n << endl;
+        platform = n;
+        if (string(n).compare("zed") == 0 || string(n).compare("zedboard") == 0)
+          platform = "zedboard";
+        if (string(n).compare("zc706") == 0)
+          platform = "zc706";
+        cout << "Guessing " << platform << " Platform" << endl;
+      }
+    } else platform = getenv("TAPASCO_PLATFORM");
 
     // measure for chunk sizes 2^10 (1KiB) - 2^31 (2GB) bytes
-    for (int i = 10; i < 32; ++i) {
+    for (int i = 10; mode & MEASURE_TRANSFER_SPEED && i < 32; ++i) {
       ts.chunk_sz = 1 << i;
       ts.speed_r  = tp(ts.chunk_sz, TransferSpeed::OP_COPYFROM);
       ts.speed_w  = tp(ts.chunk_sz, TransferSpeed::OP_COPYTO);
@@ -114,7 +131,7 @@ int main(int argc, const char *argv[]) {
 
     // measure average job roundtrip latency for clock cycles counts
     // between 2^0 and 2^31
-    for (size_t i = 0; i < 32; ++i) {
+    for (size_t i = 0; mode & MEASURE_INTERRUPT_LATENCY && i < 32; ++i) {
       ls.cycle_count = 1UL << i;
       ls.latency_us  = il.atcycles(ls.cycle_count, 10, &ls.min_latency_us, &ls.max_latency_us);
       // cout << "Latency @ " << ls.cycle_count << "cc runtime: " << ls.latency_us << " us" << endl;
@@ -122,16 +139,18 @@ int main(int argc, const char *argv[]) {
       latency.push_back(json);
     }
 
-    size_t i = 1;
-    double prev = -1;
-    js.jobs_per_sec = -1;
-    do {
-      prev = js.jobs_per_sec;
-      js.num_threads = i;
-      js.jobs_per_sec = jt(i);
-      ++i;
-      jobs.push_back(js.to_json());
-    } while (i <= 128 && (i <= 8 || js.jobs_per_sec > prev));
+    if (mode & MEASURE_JOB_THROUGHPUT) {
+      size_t i = 1;
+      double prev = -1;
+      js.jobs_per_sec = -1;
+      do {
+        prev = js.jobs_per_sec;
+        js.num_threads = i;
+        js.jobs_per_sec = jt(i);
+        ++i;
+        jobs.push_back(js.to_json());
+      } while (i <= 128 && (i <= 8 || js.jobs_per_sec > prev));
+    }
 
     // record current time
     time_t tt = chrono::system_clock::to_time_t(chrono::system_clock::now());
