@@ -11,7 +11,6 @@
 #include <sstream>
 #include <chrono>
 #include <ctime>
-#include <csignal>
 #include <vector>
 #include <sys/utsname.h>
 #include <tapasco_api.hpp>
@@ -61,15 +60,8 @@ struct job_throughput_t {
     }; }
 };
 
-void signalHandler(int sig) {
-  cerr << "Signal %d received, aborting." << endl;
-  endwin();
-  exit(1);
-}
-
 int main(int argc, const char *argv[]) {
-  // trap ctrl-c
-  signal(SIGINT, signalHandler);
+  initscr(); noecho(); curs_set(1); timeout(0); raw();
   try {
     Tapasco tapasco;
     TransferSpeed tp { tapasco };
@@ -179,5 +171,6 @@ int main(int argc, const char *argv[]) {
     endwin();
     throw;
   }
+  endwin();
 }
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

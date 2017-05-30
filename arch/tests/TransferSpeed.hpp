@@ -37,13 +37,13 @@ public:
     CumulativeAverage<double> cavg { 0 };
     bool stop = false;
     bytes = 0;
-    initscr(); noecho(); curs_set(0); timeout(0);
     int x, y;
     getyx(stdscr, y, x);
     auto tstart = steady_clock::now();
     double b = 0.0;
     duration<double> d = steady_clock::now() - tstart;
     future<void> f = async(launch::async, [&]() { transfer(stop, chunk_sz, opmask); });
+    auto c = getch();
     do {
       mvprintw(y, x, "Chunk size: %8.2f KiB, Mask: %s, Speed: %8.2f MiB/s",
           cs, ms.c_str(), cavg());
@@ -51,11 +51,13 @@ public:
       usleep(1000000);
       b = bytes.load() / (1024.0 * 1024.0);
       d = steady_clock::now() - tstart;
-    } while (getch() == ERR && (fabs(cavg.update(b / d.count())) > 0.1 || cavg.size() < 30));
+      // exit gracefully on ctrl+c
+      c = getch();
+      if (c == 3) { endwin(); exit(3); }
+    } while (c == ERR && (fabs(cavg.update(b / d.count())) > 0.1 || cavg.size() < 30));
     stop = true;
     f.get();
     move(y+1, 0);
-    endwin();
     return cavg();
   }
 
@@ -85,7 +87,7 @@ private:
 
   static const std::string maskToString(long const opmask) {
     stringstream tmp;
-    tmp << (opmask & OP_COPYFROM ? "r" : " ") 
+    tmp << (opmask & OP_COPYFROM ? "r" : " ")
         << (opmask & OP_COPYTO   ? "w" : " ");
     return tmp.str();
   }

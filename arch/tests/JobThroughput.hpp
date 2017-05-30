@@ -33,13 +33,13 @@ public:
     CumulativeAverage<double> cavg { 0 };
     jobs.store(0U);
     bool stop = false;
-    initscr(); noecho(); curs_set(0); timeout(0);
     int x, y;
     getyx(stdscr, y, x);
     vector<future<void> > threads;
     auto const t_start = steady_clock::now();
     for (size_t t = 0; t < num_threads; ++t)
       threads.push_back(async(launch::async, [&]() { run(stop, jobs); }));
+    auto c = getch();
     do {
       move(y, 0);
       clrtoeol();
@@ -52,12 +52,14 @@ public:
       auto const s = duration_cast<seconds>(t - t_start);
       auto const v = s.count() > 0 ? static_cast<double>(j) / static_cast<double>(s.count()) : 0.0;
       if (v > 10.0) cavg.update(v);
+      c = getch();
+      // exit gracefully on ctrl+c
+      if (c == 3) { endwin(); exit(3); }
     } while(getch() == ERR && (fabs(cavg.delta()) > 10.0 || cavg.size() < 5));
     stop = true;
     for (auto &f : threads)
       f.get();
     move(y+1, 0);
-    endwin();
     return cavg();
   }
 

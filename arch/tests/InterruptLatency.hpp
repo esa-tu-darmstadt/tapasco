@@ -43,40 +43,14 @@ public:
   static constexpr long OP_COPYFROM  = 1;
   static constexpr long OP_COPYTO    = 2;
 
-  /*double operator()(size_t const runtime_usecs) {
-    CumulativeAverage<double> cavg { 0 };
-    uint32_t clock_cycles = runtime_usecs * 100; // assuming 100Mhz clock
-    bool stop = false;
-    initscr(); noecho(); curs_set(0); timeout(0);
-    int x, y;
-    getyx(stdscr, y, x);
-    future<void> f = async(launch::async, [&]() { trigger(stop, clock_cycles, cavg); });
-    const size_t m_runs = 100.0 * pow(M_E, -log(runtime_usecs / 10000.0));
-    const size_t min_runs = m_runs > 100 ? m_runs : 100;
-    do {
-      mvprintw(y, x, "Runtime: %8zu us, Latency: %8.2f", runtime_usecs, cavg());
-      move(y, 0);
-      clrtoeol();
-      mvprintw(y, x, "Runtime: %8zu us, Latency: % 12.1f, Min: % 12.1f, Max: % 12.1f, Count: %zu/%zu",
-        runtime_usecs, cavg(), cavg.min(), cavg.max(), cavg.size(), min_runs);
-      refresh();
-      usleep(1000);
-    } while (getch() == ERR && (fabs(cavg.delta()) > 0.01 || cavg.size() < min_runs));
-    stop = true;
-    f.get();
-    move(y+1, 0);
-    endwin();
-    return cavg();
-  }*/
-
   double atcycles(uint32_t const clock_cycles, size_t const min_runs = 100, double *min = NULL, double *max = NULL) {
     CumulativeAverage<double> cavg { 0 };
     bool stop = false;
-    initscr(); noecho(); curs_set(0); timeout(0);
     int x, y, maxx, maxy;
     getyx(stdscr, y, x);
     getmaxyx(stdscr, maxy, maxx);
     future<void> f = async(launch::async, [&]() { trigger(stop, clock_cycles, cavg); });
+    auto c = getch();
     do {
       move(y, 0);
       clrtoeol();
@@ -84,12 +58,14 @@ public:
         clock_cycles, cavg(), cavg.min(), cavg.max(), cavg.size(), min_runs);
       refresh();
       usleep(1000000);
-    } while (getch() == ERR && (fabs(cavg.delta()) > 0.01 || cavg.size() < min_runs));
+      // exit gracefully on ctrl+c
+      c = getch();
+      if (c == 3) { endwin(); exit(3); }
+    } while (c == ERR && (fabs(cavg.delta()) > 0.01 || cavg.size() < min_runs));
     stop = true;
     f.get();
 
     move((y+1) % maxy, 0);
-    endwin();
     if (min) *min = cavg.min();
     if (max) *max = cavg.max();
     return cavg();
