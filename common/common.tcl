@@ -449,12 +449,6 @@ namespace eval tapasco {
     return [get_bd_intf_pins -of_objects $cell -filter "VLNV =~ xilinx.com:interface:aximm_rtl:* && MODE == $mode"]
   }
 
-  # Returns the current generation mode selected by the user.
-  # Default: "sim"
-  proc get_generate_mode {} {
-    return "bit"
-  }
-
   # Returns the desired design clock frequency (in MHz) selected by the user.
   # Default: 250
   proc get_design_frequency {} {

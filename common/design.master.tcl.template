@@ -73,8 +73,8 @@ arch::create
 platform::create
 
 # create wrapper
-make_wrapper -files [get_files [pwd]/[tapasco::get_generate_mode]/@@PROJECT_NAME@@.srcs/sources_1/bd/system/system.bd] -top
-add_files -norecurse [pwd]/[tapasco::get_generate_mode]/@@PROJECT_NAME@@.srcs/sources_1/bd/system/hdl/system_wrapper.v
+make_wrapper -files [get_files [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/system.bd] -top
+add_files -norecurse [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/hdl/system_wrapper.v
 update_compile_order -fileset sources_1
 
 # generate according to the mode

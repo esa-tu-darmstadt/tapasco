@@ -124,7 +124,7 @@ class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) ext
       composition: String): Unit = {
     // needles for template
     val needles: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map(
-      "PROJECT_NAME"     -> "[tapasco::get_generate_mode]",
+      "PROJECT_NAME"     -> "microarch",
       "BITSTREAM_NAME"   -> projectName,
       "HEADER"           -> header,
       "PRELOAD_FILES"    -> "",
@@ -172,7 +172,6 @@ class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) ext
 
     repoPaths + (for (i <- 0 until elems.length) yield
       List(
-        //"update_ip_catalog -add_ip {" + elems(i)._4.toString + "} -repo_path [pwd]/[tapasco::get_generate_mode]",
         "dict set kernels {" + i + "} vlnv {" + elems(i)._5 + "}",
         "dict set kernels {" + i + "} count {" + elems(i)._2 + "}",
         "dict set kernels {" + i + "} id {" + elems(i)._3.id + "}",
