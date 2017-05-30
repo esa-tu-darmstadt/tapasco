@@ -71,11 +71,13 @@ private:
 
     while (! stop) {
       if (tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE) != TAPASCO_SUCCESS)
-        throw "allocation failed";
+        return;
       if (opmask & OP_COPYTO && tapasco.copy_to(data, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS)
-        throw "copy_to failed";
-      if (opmask & OP_COPYFROM && tapasco.copy_from(h, data, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS)
-        throw "copy_from failed";
+        return;
+      if (opmask & OP_COPYFROM && tapasco.copy_from(h, data, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS) {
+        tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+        return;
+      }
       if (opmask & OP_COPYFROM)
         bytes += chunk_sz;
       if (opmask & OP_COPYTO)
