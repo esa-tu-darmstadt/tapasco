@@ -101,11 +101,11 @@ int main(int argc, const char *argv[]) {
       ts.speed_r  = tp(ts.chunk_sz, TransferSpeed::OP_COPYFROM);
       ts.speed_w  = tp(ts.chunk_sz, TransferSpeed::OP_COPYTO);
       ts.speed_rw = tp(ts.chunk_sz, TransferSpeed::OP_COPYFROM | TransferSpeed::OP_COPYTO);
-      cout << "Transfer speed @ chunk_sz = " << (ts.chunk_sz/1024) << " KiB:"
+      /*cout << "Transfer speed @ chunk_sz = " << (ts.chunk_sz/1024) << " KiB:"
            << " read "    << ts.speed_r  << " MiB/s"
            << ", write: " << ts.speed_w  << " MiB/s"
            << ", r/w: "   << ts.speed_rw << " MiB/s"
-           << endl;
+           << endl;*/
       if (ts.speed_r > 0.0 || ts.speed_w > 0 || ts.speed_rw > 0) {
         Json json = ts.to_json();
         speed.push_back(json);
@@ -117,7 +117,7 @@ int main(int argc, const char *argv[]) {
     for (size_t i = 0; i < 32; ++i) {
       ls.cycle_count = 1UL << i;
       ls.latency_us  = il.atcycles(ls.cycle_count, 10, &ls.min_latency_us, &ls.max_latency_us);
-      cout << "Latency @ " << ls.cycle_count << "cc runtime: " << ls.latency_us << " us" << endl;
+      // cout << "Latency @ " << ls.cycle_count << "cc runtime: " << ls.latency_us << " us" << endl;
       Json json = ls.to_json();
       latency.push_back(json);
     }
@@ -159,11 +159,12 @@ int main(int argc, const char *argv[]) {
         }
       }
     };
+    endwin();
 
     // dump it
     stringstream ss;
     ss << platform << ".benchmark";
-    cout << "Dumping benchmark JSON to " << (argc >= 2 ? argv[1] : ss.str()) << endl;
+    cout << "Dumping benchmark Json to " << (argc >= 2 ? argv[1] : ss.str()) << endl;
     ofstream f(argc >= 2 ? argv[1] : ss.str());
     f << benchmark.dump();
     f.close();
@@ -171,6 +172,5 @@ int main(int argc, const char *argv[]) {
     endwin();
     throw;
   }
-  endwin();
 }
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */
