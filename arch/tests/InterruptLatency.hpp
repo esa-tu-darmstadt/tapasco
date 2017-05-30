@@ -43,7 +43,7 @@ public:
   static constexpr long OP_COPYFROM  = 1;
   static constexpr long OP_COPYTO    = 2;
 
-  double operator()(size_t const runtime_usecs) {
+  /*double operator()(size_t const runtime_usecs) {
     CumulativeAverage<double> cavg { 0 };
     uint32_t clock_cycles = runtime_usecs * 100; // assuming 100Mhz clock
     bool stop = false;
@@ -67,7 +67,7 @@ public:
     move(y+1, 0);
     endwin();
     return cavg();
-  }
+  }*/
 
   double atcycles(uint32_t const clock_cycles, size_t const min_runs = 100, double *min = NULL, double *max = NULL) {
     CumulativeAverage<double> cavg { 0 };
@@ -83,8 +83,8 @@ public:
       mvprintw(y, x, "Runtime: %12zu cc, Latency: % 12.1f, Min: % 12.1f, Max: % 12.1f, Count: %zu/%zu",
         clock_cycles, cavg(), cavg.min(), cavg.max(), cavg.size(), min_runs);
       refresh();
-      usleep(1000);
-    } while (getch() == ERR && (fabs(cavg.delta()) > 0.001 || cavg.size() < min_runs));
+      usleep(1000000);
+    } while (getch() == ERR && (fabs(cavg.delta()) > 0.01 || cavg.size() < min_runs));
     stop = true;
     f.get();
 
