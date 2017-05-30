@@ -14,7 +14,7 @@
 #include <vector>
 #include <sys/utsname.h>
 #include <tapasco.hpp>
-#include <platform_api.h>
+#include <platform.h>
 #include "CumulativeAverage.hpp"
 #include "TransferSpeed.hpp"
 #include "InterruptLatency.hpp"
