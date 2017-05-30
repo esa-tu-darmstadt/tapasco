@@ -13,7 +13,7 @@
 #include <ctime>
 #include <vector>
 #include <sys/utsname.h>
-#include <tapasco_api.hpp>
+#include <tapasco.hpp>
 #include <platform_api.h>
 #include "CumulativeAverage.hpp"
 #include "TransferSpeed.hpp"
