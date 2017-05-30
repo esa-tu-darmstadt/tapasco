@@ -41,8 +41,8 @@ class ArchitectureSpec extends FlatSpec with Matchers {
     val oc = Architecture.from(jsonPath.resolve("correct-arch.json"))
     lazy val c = oc.right.get
     assert(oc.isRight)
-    c.name should equal ("baseline")
-    c.tclLibrary should equal (jsonPath.resolve("baseline.tcl"))
+    c.name should equal ("axi4mm")
+    c.tclLibrary should equal (jsonPath.resolve("axi4mm.tcl"))
     c.valueArgTemplate should equal (jsonPath.resolve("valuearg.directives.template"))
     c.referenceArgTemplate should equal (jsonPath.resolve("referencearg.directives.template"))
   }
@@ -51,8 +51,8 @@ class ArchitectureSpec extends FlatSpec with Matchers {
     val oc = Architecture.from(jsonPath.resolve("unknown-arch.json"))
     lazy val c = oc.right.get
     assert(oc.isRight)
-    c.name should equal ("baseline")
-    c.tclLibrary should equal (jsonPath.resolve("baseline.tcl"))
+    c.name should equal ("axi4mm")
+    c.tclLibrary should equal (jsonPath.resolve("axi4mm.tcl"))
     c.valueArgTemplate should equal (jsonPath.resolve("valuearg.directives.template"))
     c.referenceArgTemplate should equal (jsonPath.resolve("referencearg.directives.template"))
   }

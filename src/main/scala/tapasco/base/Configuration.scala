@@ -52,7 +52,7 @@ trait Configuration {
     coreDir.resolve(kernel.name.toString).resolve(target.ad.name).resolve(target.pd.name)
 
   /** Returns the default output directory for the given composition, target and frequency.
-   *  _Example_: `arrayinit__counter/020_042/075.0/baseline/pynq`
+   *  _Example_: `arrayinit__counter/020_042/075.0/axi4mm/pynq`
    */
   def outputDir(composition: Composition, target: Target, freq: Heuristics.Frequency): Path = compositionDir
     .resolve(target.ad.name)

@@ -19,12 +19,12 @@ object JobExamples {
   val composeJob = ComposeJob(composition,
                               123.0,
                               "Vivado",
-                              Some(Seq("baseline")),
+                              Some(Seq("axi4mm")),
                               Some(Seq("pynq", "zedboard")),
                               None, // FIXME Features missing
                               Some("r"))
   val coreStatisticsJob = CoreStatisticsJob(Some("somePrefix_"),
-                                            Some(Seq("baseline")),
+                                            Some(Seq("axi4mm")),
                                             Some(Seq("vc709", "zc706")))
   val dseJob = DesignSpaceExplorationJob(composition,
                                          123.0,
@@ -32,19 +32,19 @@ object JobExamples {
                                          Heuristics.ThroughputHeuristic,
                                          16,
                                          Some(Paths.get("nonstandard/base/path")),
-                                         Some(Seq("baseline")),
+                                         Some(Seq("axi4mm")),
                                          Some(Seq("pynq", "vc709")),
                                          None, // FIXME Features missing
                                          Some("r"))
   val hlsJob = HighLevelSynthesisJob("VivadoHLS",
-                                     Some(Seq("baseline")),
+                                     Some(Seq("axi4mm")),
                                      Some(Seq("zedboard", "zc706")),
                                      Some(Seq("counter", "arraysum")))
   val importJob = ImportJob(Paths.get("path/to/ipxact-archive.zip"),
                             42,
                             Some("Optional description of the core."),
                             Some(13124425),
-                            Some(Seq("baseline")),
+                            Some(Seq("axi4mm")),
                             Some(Seq("zedboard", "zc706")))
 
   val jobs: Seq[Job] = Seq(bulkImportJob, composeJob, coreStatisticsJob, dseJob, hlsJob, importJob)

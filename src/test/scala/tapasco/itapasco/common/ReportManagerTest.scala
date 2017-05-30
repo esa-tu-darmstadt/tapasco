@@ -47,10 +47,10 @@ class ReportManagerSpec extends FlatSpec with Matchers {
   }
 
   private def setupStructure(p: Path): (Path, Path, Path, Path) = {
-    val cosimPath = p.resolve("arraysum").resolve("baseline").resolve("vc709").resolve("ipcore")
+    val cosimPath = p.resolve("arraysum").resolve("axi4mm").resolve("vc709").resolve("ipcore")
     val powerPath = p.resolve("arrayinit").resolve("blueline").resolve("zedboard").resolve("ipcore")
     val synthPath = p.resolve("aes").resolve("blackline").resolve("zc706").resolve("ipcore")
-    val timingPath = p.resolve("test").resolve("baseline").resolve("zc706").resolve("ipcore")
+    val timingPath = p.resolve("test").resolve("axi4mm").resolve("zc706").resolve("ipcore")
     Files.createDirectories(cosimPath)
     Files.createDirectories(powerPath)
     Files.createDirectories(synthPath)
@@ -79,7 +79,7 @@ class ReportManagerSpec extends FlatSpec with Matchers {
     assert(rc.powerReports.size == 1)
     assert(rc.timingReports.size == 1)
 
-    val r1 = rc.cosimReport("arraysum", "baseline", "vc709")
+    val r1 = rc.cosimReport("arraysum", "axi4mm", "vc709")
     assert(r1.nonEmpty)
     assert(r1.get.latency.avg == 280)
 
@@ -92,7 +92,7 @@ class ReportManagerSpec extends FlatSpec with Matchers {
     assert(r3.get.area.nonEmpty)
     assert(r3.get.area.get.resources.FF == 776)
 
-    val r4 = rc.timingReport("test", "baseline", "zc706")
+    val r4 = rc.timingReport("test", "axi4mm", "zc706")
     assert(r4.nonEmpty)
     assert(r4.get.worstNegativeSlack == -5.703)
 
@@ -116,7 +116,7 @@ class ReportManagerSpec extends FlatSpec with Matchers {
     assert(rc.powerReports.size == 1)
     assert(rc.timingReports.size == 1)
 
-    val r1 = rc.cosimReport("arraysum", "baseline", "vc709")
+    val r1 = rc.cosimReport("arraysum", "axi4mm", "vc709")
     assert(r1.nonEmpty)
     assert(r1.get.latency.avg == 280)
 
@@ -125,7 +125,7 @@ class ReportManagerSpec extends FlatSpec with Matchers {
       StandardCopyOption.REPLACE_EXISTING)
     Thread.sleep(FS_SLEEP)
 
-    val r2 = rc.cosimReport("arraysum", "baseline", "vc709")
+    val r2 = rc.cosimReport("arraysum", "axi4mm", "vc709")
     assert(r2.nonEmpty)
     assert(r2.get.latency.avg == 2279)
 

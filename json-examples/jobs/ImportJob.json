@@ -4,6 +4,6 @@
   "Id" : 42,
   "Description" : "Optional description of the core.",
   "Average Clock Cycles" : 13124425,
-  "Architectures" : [ "baseline" ],
+  "Architectures" : [ "axi4mm" ],
   "Platforms" : [ "zedboard", "zc706" ]
 }

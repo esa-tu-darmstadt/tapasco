@@ -1,5 +1,5 @@
 {
-	"Name" : "baseline",
+	"Name" : "axi4mm",
 	"Description" : "Baseline Architecture with SW-based thread pool control.",
 	"TestAPI" : "test-api.svh",
 	"TestHarness" : "test-harness.svh",

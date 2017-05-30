@@ -1,6 +1,0 @@
-{
-	"Name" : "baseline",
-	"Description" : "Baseline Architecture with SW-based thread pool control.",
-	"TclLibrary" : "baseline.tcl",
-	"HLSTclTemplate" : "../../common/hls.tcl.template"
-}

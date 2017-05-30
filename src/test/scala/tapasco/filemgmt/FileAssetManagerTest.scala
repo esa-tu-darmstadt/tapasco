@@ -60,11 +60,11 @@ class FileAssetManagerSpec extends FlatSpec with Matchers {
 
   "Creating new core.jsons during runtime" should "be reflected in the caches" in {
     val p = Files.createTempDirectory("tapasco-fileassetmanager-")
-    val d = p.resolve("Test").resolve("baseline").resolve("vc709").resolve("ipcore")
+    val d = p.resolve("Test").resolve("axi4mm").resolve("vc709").resolve("ipcore")
     Files.createDirectories(d)
     FileAssetManager.basepath(Entities.Cores).set(p)
     assert(FileAssetManager.entities.cores.size == 0)
-    val zip = d.resolve("test_baseline.zip")
+    val zip = d.resolve("test_axi4mm.zip")
     val cf = d.resolve("core.json")
     Files.createFile(zip)
     val t = Target(FileAssetManager.entities.architectures.toSeq.head, FileAssetManager.entities.platforms.toSeq.head)

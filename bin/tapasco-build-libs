@@ -27,7 +27,7 @@ print('Platform: ' + os.environ['TAPASCO_PLATFORM'])
 
 moddir = '$TAPASCO_HOME/platform/$TAPASCO_PLATFORM/module'
 pdir   = '$TAPASCO_HOME/platform/$TAPASCO_PLATFORM/build'
-adir   = '$TAPASCO_HOME/arch/baseline/build'
+adir   = '$TAPASCO_HOME/arch/axi4mm/build'
 tdir   = '$TAPASCO_HOME/arch/tests/build'
 
 if clean or args.rebuild:

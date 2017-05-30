@@ -16,12 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-# @file		baseline.tcl
-# @brief	Baseline architecture implementation: Connects up to 64 cores
-# 		(resp. 64 master interfaces, 256 slaves interfaces), host
-# 		connection to AXI slaves via GP0 and a two-level interconnect
-# 		hierarchy, memory connection from AXI masters via independent
-# 		interconnects to HP0-2.
+# @file		axi4mm.tcl
+# @brief	AXI4 memory mapped master/slave interface based Architectures.
 # @author	J. Korinth, TU Darmstadt (jk@esa.tu-darmstadt.de)
 #
 namespace eval arch {
@@ -37,14 +33,14 @@ namespace eval arch {
   set arch_irq_concats [list]
 
   # scan plugin directory
-  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/arch/baseline/plugins" "*.tcl"] {
+  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/arch/axi4mm/plugins" "*.tcl"] {
     source -notrace $f
   }
 
   # Returns a list of the bd_cells of slave interfaces of the threadpool.
   proc get_slaves {} {
     set inst [current_bd_instance]
-    current_bd_instance "Threadpool"
+    current_bd_instance "Architecture"
     set r [list [get_bd_intf_pins -of [get_bd_cells "in1"] -filter { MODE == "Slave" }]]
     current_bd_instance $inst
     return $r
@@ -57,12 +53,12 @@ namespace eval arch {
   }
 
   proc get_processing_elements {} {
-    return [get_bd_cells "Threadpool/target*"]
+    return [get_bd_cells "Architecture/target*"]
   }
 
   # Returns a list of interrupt lines from the threadpool.
   proc get_irqs {} {
-    return [get_bd_pins -of_objects [get_bd_cells "Threadpool"] -filter {TYPE == "intr" && DIR == "O"}]
+    return [get_bd_pins -of_objects [get_bd_cells "Architecture"] -filter {TYPE == "intr" && DIR == "O"}]
   }
 
   # Checks, if the current composition can be instantiated. Exits script with
@@ -380,7 +376,7 @@ namespace eval arch {
     }
 
     # create hierarchical group
-    set group [create_bd_cell -type hier "Threadpool"]
+    set group [create_bd_cell -type hier "Architecture"]
     set instance [current_bd_instance .]
     current_bd_instance $group
 

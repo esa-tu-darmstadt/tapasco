@@ -5,6 +5,6 @@
 	"TestHarness" : "test-harness.svh",
 	"VerilogIncludeAPI" : "test-api.svh",
 	"VerilogIncludeHarness" : "test-harness.svh",
-	"TclLibrary" : "baseline.tcl",
+	"TclLibrary" : "axi4mm.tcl",
 	"UnknownKey2" : "should be ignored"
 }

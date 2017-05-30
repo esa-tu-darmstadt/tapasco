@@ -18,7 +18,7 @@ Terminology
 *   _Architecture_
     The basic template for your hardware thread pool, i.e., the organisation
     of your _Core instances. Currently there is only one such _Architecture_
-    called `baseline`.
+    called `axi4mm`.
 
 *   _ThreadPool_
     Consists of a number of _Processing Elements (PEs)_, which can all operate
@@ -253,7 +253,7 @@ logfiles, you can watch them via `tail --follow <FILE>` on a separate shell,
 if you like. 
 
 If everything went well, there should be a `.bit` file in 
-`$TAPASCO_HOME/bd/<YOUR BD>/baseline/zedboard` afterwards (refer to the logging
+`$TAPASCO_HOME/bd/<YOUR BD>/axi4mm/zedboard` afterwards (refer to the logging
 output for the value of `<YOUR BD>` - if you had used an external _Composition_
 description file, it would use that name instead of the hash).
 

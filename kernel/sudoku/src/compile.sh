@@ -17,4 +17,4 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-${CROSS_COMPILE}g++ -o sudoku_mt -std=c++11 -Wall -Werror -g -pthread -I/scratch/jk/rcu/arch/common/include -I/scratch/jk/rcu/platform/common/include -L/scratch/jk/rcu/arch/baseline/lib/${ARCH} -L/scratch/jk/rcu/platform/zynq/lib/${ARCH} -lrt -ltapasco -lplatform-client multithreaded.cpp Sudoku.cpp Sudoku_HLS.cpp
+${CROSS_COMPILE}g++ -o sudoku_mt -std=c++11 -Wall -Werror -g -pthread -I/scratch/jk/rcu/arch/common/include -I/scratch/jk/rcu/platform/common/include -L/scratch/jk/rcu/arch/axi4mm/lib/${ARCH} -L/scratch/jk/rcu/platform/zynq/lib/${ARCH} -lrt -ltapasco -lplatform-client multithreaded.cpp Sudoku.cpp Sudoku_HLS.cpp

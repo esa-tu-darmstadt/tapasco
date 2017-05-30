@@ -19,7 +19,7 @@
   "Heuristic" : "Job Throughput",
   "Batch Size" : 16,
   "Output Path" : "nonstandard/base/path",
-  "Architectures" : [ "baseline" ],
+  "Architectures" : [ "axi4mm" ],
   "Platforms" : [ "pynq", "vc709" ],
   "DebugMode" : "r"
 }

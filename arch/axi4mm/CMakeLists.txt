@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
-project(arch-baseline)
+project(arch-axi4mm)
 set(CMAKE_INSTALL_PREFIX "..")
 set(CMAKE_SKIP_RPATH true)
 

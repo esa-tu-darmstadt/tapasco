@@ -4,7 +4,7 @@
 	"Version" : "0.1",
 	"Id" : 42,
 	"Target": {
-		"Architecture": "baseline",
+		"Architecture": "axi4mm",
 		"Platform": "zedboard"
 	},
 	"Description" : "A correct core description.",

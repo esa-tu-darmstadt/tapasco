@@ -12,7 +12,7 @@
   },
   "Design Frequency" : 123,
   "Implementation" : "Vivado",
-  "Architectures" : [ "baseline" ],
+  "Architectures" : [ "axi4mm" ],
   "Platforms" : [ "pynq", "zedboard" ],
   "DebugMode" : "r"
 }
