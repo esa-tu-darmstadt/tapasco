@@ -14,7 +14,7 @@
 #include <future>
 #include <vector>
 #include <ncurses.h>
-#include <tapasco_api.hpp>
+#include <tapasco.hpp>
 
 using namespace std;
 using namespace std::chrono;

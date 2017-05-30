@@ -22,10 +22,10 @@
 //!		addresses. Supporting file for re-use.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#ifndef __TAPASCO_ADDRESS_MAP_H__
-#define __TAPASCO_ADDRESS_MAP_H__
+#ifndef TAPASCO_ADDRESS_MAP_H__
+#define TAPASCO_ADDRESS_MAP_H__
 
-#include <tapasco_api.h>
+#include <tapasco.h>
 
 /** Register space address type (opaque). */
 typedef uint32_t tapasco_reg_addr_t;
@@ -64,6 +64,4 @@ tapasco_reg_addr_t tapasco_address_map_func_arg_register(tapasco_dev_ctx_t *dev_
 tapasco_reg_addr_t tapasco_address_map_func_reg(tapasco_dev_ctx_t *dev_ctx,
 		uint32_t const slot_id, tapasco_func_reg_t const reg);
 
-#endif /* __TAPASCO_ADDRESS_MAP_H__ */
-
-
+#endif /* TAPASCO_ADDRESS_MAP_H__ */

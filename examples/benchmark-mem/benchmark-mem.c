@@ -35,7 +35,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <assert.h>
-#include <tapasco_api.h>
+#include <tapasco.h>
 #include "timer.h"
 
 #define TRANSFER_SZ				((size_t)(1024*1024*1024))

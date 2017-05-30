@@ -3,11 +3,11 @@
  *  @brief	Interrupt stress test screen for tapasco-debug.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#ifndef __INTERRUPT_STRESS_TEST_SCREEN_HPP__
-#define __INTERRUPT_STRESS_TEST_SCREEN_HPP__
+#ifndef INTERRUPT_STRESS_TEST_SCREEN_HPP__
+#define INTERRUPT_STRESS_TEST_SCREEN_HPP__
 
 #include <stack>
-#include <tapasco_api.hpp>
+#include <tapasco.hpp>
 #include "MenuScreen.hpp"
 
 using namespace std;
@@ -150,5 +150,5 @@ private:
   Tapasco *tapasco;
 };
 
-#endif /* __INTERRUPT_STRESS_TEST_SCREEN_HPP__ */
+#endif /* INTERRUPT_STRESS_TEST_SCREEN_HPP__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

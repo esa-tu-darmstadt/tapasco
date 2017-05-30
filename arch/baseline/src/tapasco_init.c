@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <tapasco_api.h>
+#include <tapasco.h>
 #include <tapasco_errors.h>
 #include <tapasco_jobs.h>
 #include <tapasco_functions.h>

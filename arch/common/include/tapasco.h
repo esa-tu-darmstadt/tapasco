@@ -16,13 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-//! @file 	tapasco_api.h
+//! @file 	tapasco.h
 //! @brief	Tapasco API for hardware threadpool integration.
 //!		Low-level API to interface hardware accelerators programmed with
 //!		Tapasco support.
 //! @authors 	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //! @authors 	D. de la Chevallerie, TU Darmstadt (dc@esa.cs.tu-darmstadt.de)
-//! @version 	1.2
+//! @version 	1.2.1
 //! @copyright  Copyright 2014, 2015 J. Korinth, TU Darmstadt
 //!
 //!		This file is part of Tapasco (TPC).
@@ -42,6 +42,8 @@
 //!		License along with Tapasco.  If not, see
 //!		<http://www.gnu.org/licenses/>.
 //! @details	### Change Log ###
+//!		- Version 1.2.1 (jk)
+//!		  + renamed to 'tapasco.h'
 //!		- Version 1.2 (jk)
 //!		  + removed 'rpr' namespace
 //!		- Version 1.1 (jk)
@@ -54,8 +56,8 @@
 //!
 //! @todo 	device enumeration?
 //!
-#ifndef __TAPASCO_API_H__
-#define __TAPASCO_API_H__
+#ifndef TAPASCO_API_H__
+#define TAPASCO_API_H__
 
 #ifdef __cplusplus
 #include <cstdint>
@@ -157,7 +159,7 @@ typedef enum {
  *  @{
  **/
 
-#define TAPASCO_API_VERSION					"1.2"
+#define TAPASCO_API_VERSION					"1.2.1"
 
 /**
  * Returns the version string of the library.
@@ -409,5 +411,5 @@ tapasco_res_t tapasco_device_job_get_return(tapasco_dev_ctx_t *dev_ctx,
 } /* extern "C" */ } /* namespace tapasco */
 #endif /* __cplusplus */
 
-#endif /* __TAPASCO_API_H__ */
+#endif /* TAPASCO_API_H__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

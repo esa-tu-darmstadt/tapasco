@@ -20,10 +20,10 @@
 //! @brief	Error messages and codes.
 //! @authors	J. Korinth (jk@esa.cs.tu-darmstadt.de)
 //!
-#ifndef __TAPASCO_API_ERROR_H__
-#define __TAPASCO_API_ERROR_H__
+#ifndef TAPASCO_API_ERROR_H__
+#define TAPASCO_API_ERROR_H__
 
-#include <tapasco_api.h>
+#include <tapasco.h>
 
 #ifdef __cplusplus
 namespace rpr { namespace tapasco { extern "C" {
@@ -62,4 +62,4 @@ typedef enum {
 } /* extern "C" */ } /* namespace tapasco */ } /* namespace rpr */
 #endif /* __cplusplus */
 
-#endif /* __TAPASCO_API_ERROR_H__ */
+#endif /* TAPASCO_API_ERROR_H__ */

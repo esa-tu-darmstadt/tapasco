@@ -20,13 +20,12 @@
 //! @brief	Device context struct and helper methods.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //! 
-#ifndef __TAPASCO_DEVICE_H__
-#define __TAPASCO_DEVICE_H__
+#ifndef TAPASCO_DEVICE_H__
+#define TAPASCO_DEVICE_H__
 
-#include <tapasco_api.h>
+#include <tapasco.h>
 #include <tapasco_functions.h>
 
 tapasco_functions_t *tapasco_device_functions(tapasco_dev_ctx_t *dev_ctx);
 
-#endif /* __TAPASCO_DEVICE_H__ */
-
+#endif /* TAPASCO_DEVICE_H__ */

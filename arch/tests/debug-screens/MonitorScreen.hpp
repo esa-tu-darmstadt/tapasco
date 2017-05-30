@@ -3,10 +3,10 @@
  *  @brief	Register monitor screen for tapasco-debug.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#ifndef __MONITOR_SCREEN_HPP__
-#define __MONITOR_SCREEN_HPP__
+#ifndef MONITOR_SCREEN_HPP__
+#define MONITOR_SCREEN_HPP__
 
-#include <tapasco_api.hpp>
+#include <tapasco.hpp>
 #include "MenuScreen.hpp"
 
 class MonitorScreen : public MenuScreen {
@@ -296,5 +296,5 @@ private:
   Tapasco *tapasco;
 };
 
-#endif /* __MONITOR_SCREEN_HPP__*/
+#endif /* MONITOR_SCREEN_HPP__*/
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

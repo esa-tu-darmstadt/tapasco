@@ -3,8 +3,8 @@
  *  @brief	Measures the transfer speed via TPC for a given chunk size.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#ifndef __TRANSFER_SPEED_HPP__
-#define __TRANSFER_SPEED_HPP__
+#ifndef TRANSFER_SPEED_HPP__
+#define TRANSFER_SPEED_HPP__
 
 #include <atomic>
 #include <thread>
@@ -15,7 +15,7 @@
 #include <cmath>
 #include <unistd.h>
 #include <ncurses.h>
-#include <tapasco_api.hpp>
+#include <tapasco.hpp>
 
 using namespace std;
 using namespace std::chrono;
@@ -98,5 +98,5 @@ private:
   Tapasco& tapasco;
 };
 
-#endif /* __TRANSFER_SPEED_HPP__ */
+#endif /* TRANSFER_SPEED_HPP__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

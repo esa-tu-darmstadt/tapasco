@@ -21,10 +21,10 @@
  *  @brief	
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#ifndef __TAPASCO_STATUS_H__
-#define __TAPASCO_STATUS_H__
+#ifndef TAPASCO_STATUS_H__
+#define TAPASCO_STATUS_H__
 
-#include <tapasco_api.h>
+#include <tapasco.h>
 #include <tapasco_functions.h>
 
 typedef struct tapasco_status tapasco_status_t;
@@ -35,4 +35,4 @@ struct tapasco_status {
 tapasco_res_t tapasco_status_init(tapasco_status_t **status);
 void tapasco_status_deinit(tapasco_status_t *status);
 
-#endif /* __TAPASCO_STATUS_H__ */
+#endif /* TAPASCO_STATUS_H__ */

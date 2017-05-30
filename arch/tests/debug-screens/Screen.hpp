@@ -3,8 +3,8 @@
  *  @brief	Base class of screens in tapasco-debug.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#ifndef __SCREEN_HPP__
-#define __SCREEN_HPP__
+#ifndef SCREEN_HPP__
+#define SCREEN_HPP__
 
 #include <ncurses.h>
 #include <unistd.h>
@@ -29,5 +29,5 @@ protected:
   unsigned long delay_us { 500 };
 };
 
-#endif  /* __SCREEN_HPP__ */
+#endif  /* SCREEN_HPP__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

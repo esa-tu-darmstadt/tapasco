@@ -37,7 +37,7 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <assert.h>
-#include <tapasco_api.hpp>
+#include <tapasco.hpp>
 
 #define TEST_1
 #define TEST_2

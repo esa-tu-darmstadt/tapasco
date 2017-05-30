@@ -27,7 +27,7 @@
 #include <vector>
 #include <unistd.h>
 #include <cassert>
-#include <tapasco_api.h>
+#include <tapasco.h>
 #include <ff/farm.hpp>
 #include "arrayinit.h"
 using namespace ff;

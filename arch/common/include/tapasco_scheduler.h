@@ -20,10 +20,10 @@
 //! @brief	Defines micro API for job scheduling on hardware threadpools.
 //! @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#ifndef __TAPASCO_SCHEDULER_H__
-#define __TAPASCO_SCHEDULER_H__
+#ifndef TAPASCO_SCHEDULER_H__
+#define TAPASCO_SCHEDULER_H__
 
-#include <tapasco_api.h>
+#include <tapasco.h>
 #include <tapasco_jobs.h>
 #include <tapasco_functions.h>
 
@@ -41,5 +41,5 @@ tapasco_res_t tapasco_scheduler_launch(
 		tapasco_functions_t *functions,
 		tapasco_job_id_t const j_id);
 
-#endif /* __TAPASCO_SCHEDULER_H__ */
+#endif /* TAPASCO_SCHEDULER_H__ */
 

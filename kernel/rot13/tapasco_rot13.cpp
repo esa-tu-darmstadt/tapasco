@@ -27,7 +27,7 @@
 #include <future>
 #include <atomic>
 #include <assert.h>
-#include <tapasco_api.hpp>
+#include <tapasco.hpp>
 
 using namespace std;
 using namespace tapasco;

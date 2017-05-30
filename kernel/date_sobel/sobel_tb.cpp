@@ -29,7 +29,7 @@
 #include <cstring>
 #include <assert.h>
 #include <unistd.h>
-#include <tapasco_api.hpp>
+#include <tapasco.hpp>
 
 #define __SYNTHESIS__
 #include "sobel.cpp"

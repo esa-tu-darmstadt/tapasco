@@ -26,7 +26,7 @@
 #include <future>
 #include <unistd.h>
 #include <cassert>
-#include <tapasco_api.hpp>
+#include <tapasco.hpp>
 #include <platform.h>
 
 #define MIN_NSECS          (10000)

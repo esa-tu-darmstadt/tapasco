@@ -20,11 +20,11 @@
 //! @brief	Unit tests for jobs micro API implementations.
 //! @authors 	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#ifndef __TAPASCO_COMMON_JOBS_TEST_H__
-#define __TAPASCO_COMMON_JOBS_TEST_H__
+#ifndef TAPASCO_COMMON_JOBS_TEST_H__
+#define TAPASCO_COMMON_JOBS_TEST_H__
 
 #include <check.h>
 
 TCase *jobs_testcase(void);
 
-#endif /* __TAPASCO_COMMON_JOBS_TEST_H__ */
+#endif /* TAPASCO_COMMON_JOBS_TEST_H__ */

@@ -20,8 +20,8 @@
 //! @brief	Defines a micro API for threadpool job management.
 //! @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#ifndef __TAPASCO_API_JOBS_H__
-#define __TAPASCO_API_JOBS_H__
+#ifndef TAPASCO_API_JOBS_H__
+#define TAPASCO_API_JOBS_H__
 
 #ifdef __cplusplus
 	#include <cstdint>
@@ -35,11 +35,11 @@
 	#include <assert.h>
 #endif
 
-#include <tapasco_api.h>
+#include <tapasco.h>
 #include "tapasco_errors.h"
 
 #define TAPASCO_JOBS_Q_SZ						250
-#define	TAPASCO_JOB_MAX_ARGS					32
+#define	TAPASCO_JOB_MAX_ARGS						32
 
 #ifdef __cplusplus
 namespace rpr { namespace tapasco { extern "C" {
@@ -216,6 +216,4 @@ void tapasco_jobs_release(tapasco_jobs_t *jobs, tapasco_job_id_t const j_id);
 } /* extern "C" */ } /* namespace tapasco */ } /* namespace rpr */
 #endif
 
-#endif /* __TAPASCO_API_JOBS_H__ */
-
-
+#endif /* TAPASCO_API_JOBS_H__ */

@@ -26,7 +26,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <tapasco_api.h>
+#include <tapasco.h>
 #include <assert.h>
 #include <pthread.h>
 #include "arrayinit.h"

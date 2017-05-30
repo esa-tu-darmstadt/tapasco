@@ -24,8 +24,8 @@
  *  		Random data is preallocated in memory block to avoid L2 effects.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#ifndef __TAPASCO_LOGGING_TEST_H__
-#define __TAPASCO_LOGGING_TEST_H__
+#ifndef TAPASCO_LOGGING_TEST_H__
+#define TAPASCO_LOGGING_TEST_H__
 #include <unistd.h>
 
 // should exceed size of L2 cache to prevent caching effects
@@ -33,5 +33,4 @@
 #define DEFAULT_LOGS					10000000
 #define DEFAULT_THREADS					(sysconf(_SC_NPROCESSORS_CONF))
 
-#endif /* __TAPASCO_LOGGING_TEST_H__ */
-
+#endif /* TAPASCO_LOGGING_TEST_H__ */

@@ -20,7 +20,7 @@
 #include <cmath>
 #include <unistd.h>
 #include <ncurses.h>
-#include <tapasco_api.hpp>
+#include <tapasco.hpp>
 
 using namespace std;
 using namespace std::chrono;

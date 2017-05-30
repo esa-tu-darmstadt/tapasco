@@ -3,8 +3,8 @@
  *  @brief	Base class for menu screens in tapasco-debug.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#ifndef __MENU_SCREEN_HPP__
-#define __MENU_SCREEN_HPP__
+#ifndef MENU_SCREEN_HPP__
+#define MENU_SCREEN_HPP__
 
 #include <vector>
 #include "Screen.hpp"
@@ -58,5 +58,5 @@ protected:
   const string text_keys { "1234567890abcdefghijklmnopqrstuvwxyz" };
 };
 
-#endif /* __MENU_SCREEN_HPP__ */
+#endif /* MENU_SCREEN_HPP__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

@@ -21,10 +21,10 @@
 //!             hardware threadpool, perform enumeration, locking etc.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#ifndef __TAPASCO_FUNCTIONS_H__
-#define __TAPASCO_FUNCTIONS_H__
+#ifndef TAPASCO_FUNCTIONS_H__
+#define TAPASCO_FUNCTIONS_H__
 
-#include <tapasco_api.h>
+#include <tapasco.h>
 
 #define TAPASCO_MAX_INSTANCES					128
 
@@ -83,5 +83,4 @@ void tapasco_functions_release(tapasco_functions_t *ctx, tapasco_func_slot_id_t 
  **/
 uint32_t tapasco_functions_count(tapasco_functions_t const *ctx, tapasco_func_id_t const f_id);
 
-#endif /* __TAPASCO_FUNCTIONS_H__ */
-
+#endif /* TAPASCO_FUNCTIONS_H__ */

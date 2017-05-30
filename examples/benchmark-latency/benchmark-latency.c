@@ -22,7 +22,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <tapasco_api.h>
+#include <tapasco.h>
 #include <platform.h>
 #include "../benchmark-mem/timer.h"
 

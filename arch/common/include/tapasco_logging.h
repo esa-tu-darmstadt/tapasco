@@ -24,8 +24,8 @@
 //!		are always activated.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#ifndef __TAPASCO_LOGGING_H__
-#define __TAPASCO_LOGGING_H__
+#ifndef TAPASCO_LOGGING_H__
+#define TAPASCO_LOGGING_H__
 
 #define LIBTAPASCO_LOGLEVELS \
 	_LALL(INIT,		(1 << 1)) \
@@ -54,4 +54,4 @@ void tapasco_log(tapasco_ll_t const level, char *fmt, ...);
 #define WRN(msg, ...)		tapasco_log(1, "[%s] " msg "\n", __func__, ##__VA_ARGS__)
 #define LOG(l, msg, ...)	tapasco_log(l, "[%s] " msg "\n", __func__, ##__VA_ARGS__)
 
-#endif /* __TAPASCO_LOGGING_H__ */
+#endif /* TAPASCO_LOGGING_H__ */

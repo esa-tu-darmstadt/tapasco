@@ -33,7 +33,7 @@
 #include "Sudoku.hpp"
 #include "Sudoku_HLS.hpp"
 
-#include "tapasco_api.h"
+#include "tapasco.h"
 
 #define SUDOKU_ID			77
 

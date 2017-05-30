@@ -32,7 +32,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-#include "tapasco_api.h"
+#include "tapasco.h"
 #include "tapasco_logging_benchmark.h"
 #include "tapasco_logging.h"
 

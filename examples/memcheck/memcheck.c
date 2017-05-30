@@ -28,7 +28,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <tapasco_api.h>
+#include <tapasco.h>
 
 static tapasco_ctx_t *ctx;
 static tapasco_dev_ctx_t *dev;

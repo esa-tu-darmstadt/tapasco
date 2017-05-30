@@ -22,7 +22,7 @@
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #include <string.h>
-#include <tapasco_api.h>
+#include <tapasco.h>
 #include <tapasco_errors.h>
 
 const char *const tapasco_version()

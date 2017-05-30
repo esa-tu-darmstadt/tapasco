@@ -20,11 +20,11 @@
 //! @brief	Unit tests for functions micro API implementation.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#ifndef __TAPASCO_COMMON_FUNCTIONS_TEST_H__
-#define __TAPASCO_COMMON_FUNCTIONS_TEST_H__
+#ifndef TAPASCO_COMMON_FUNCTIONS_TEST_H__
+#define TAPASCO_COMMON_FUNCTIONS_TEST_H__
 
 #include <check.h>
 
 TCase *functions_testcase(void);
 
-#endif /* __TAPASCO_COMMON_FUNCTIONS_TEST_H__ */
+#endif /* TAPASCO_COMMON_FUNCTIONS_TEST_H__ */

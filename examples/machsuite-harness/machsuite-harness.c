@@ -22,7 +22,7 @@
 #include <pthread.h>
 #include <assert.h>
 #include <fcntl.h>
-#include <tapasco_api.h>
+#include <tapasco.h>
 #include "../benchmark-mem/timer.h"
 #include "machsuite-harness.h"
 

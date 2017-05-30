@@ -39,7 +39,7 @@
 #include <unistd.h>
 #include <cassert>
 #include <atomic>
-#include <tapasco_api.hpp>
+#include <tapasco.hpp>
 
 constexpr size_t TRANSFER_SZ {1024*1024*1024};
 constexpr size_t RNDDATA_SZ  {TRANSFER_SZ / 32};

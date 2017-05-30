@@ -3,10 +3,10 @@
  *  @brief	Kernel map screen for tapasco-debug.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#ifndef __TAPASCO_STATUS_SCREEN_HPP__
-#define __TAPASCO_STATUS_SCREEN_HPP__
+#ifndef TAPASCO_STATUS_SCREEN_HPP__
+#define TAPASCO_STATUS_SCREEN_HPP__
 
-#include <tapasco_api.hpp>
+#include <tapasco.hpp>
 #include <platform.h>
 #include "MenuScreen.hpp"
 using namespace tapasco;
@@ -65,5 +65,5 @@ private:
   const string text_press_key { "--- press any key to exit ---" };
 };
 
-#endif /* __TAPASCO_STATUS_SCREEN_HPP__ */
+#endif /* TAPASCO_STATUS_SCREEN_HPP__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

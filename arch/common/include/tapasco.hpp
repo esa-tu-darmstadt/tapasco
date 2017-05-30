@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-//! @file 	tapasco_api.hpp
+//! @file 	tapasco.hpp
 //! @brief	Primitive C++ wrapper class for TPC API: Simplifies calls to
 //!		FPG and handling of device memory, jobs, etc.
 //! @authors 	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
@@ -40,6 +40,8 @@
 //!		License along with Tapasco.  If not, see
 //!		<http://www.gnu.org/licenses/>.
 //! @details	### Change Log ###
+//!		- 03/2016 Version 1.2.1 (jk)
+//!		  + renamed to 'tapasco.hpp'
 //!		- 03/2016 Version 1.2 (jk)
 //!		  + added compiler check: header requires g++ >= 5.x.x
 //!		- 02/2016 Version 1.2 (jk)
@@ -61,8 +63,8 @@
 //!		- 08/2015 Version 1.0 (jk) 
 //!		  + initial prototype version
 //!
-#ifndef __TAPASCO_API_HPP__
-#define __TAPASCO_API_HPP__
+#ifndef TAPASCO_API_HPP__
+#define TAPASCO_API_HPP__
 
 #ifndef __clang__
 #if __GNUC__ && __GNUC__< 5
@@ -70,7 +72,7 @@
 #endif
 #endif
 
-#include <tapasco_api.h>
+#include <tapasco.h>
 #include <type_traits>
 #include <stdexcept>
 #include <future>
@@ -103,7 +105,7 @@ struct OutOnly final {
 };
 
 /**
- * C++ Wrapper class for TPC API. Currently wraps a single device.
+ * C++ Wrapper class for TaPaSCo API. Currently wraps a single device.
  **/
 struct Tapasco {
   /**
@@ -468,4 +470,4 @@ private:
 
 } /* namespace tapasco */
 
-#endif /* __TAPASCO_API_HPP__ */
+#endif /* TAPASCO_API_HPP__ */

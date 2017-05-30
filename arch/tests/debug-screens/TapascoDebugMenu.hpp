@@ -3,10 +3,10 @@
  *  @brief	Main menu of tapasco-debug.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#ifndef __TAPASCO_DEBUG_MENU_HPP__
-#define __TAPASCO_DEBUG_MENU_HPP__
+#ifndef TAPASCO_DEBUG_MENU_HPP__
+#define TAPASCO_DEBUG_MENU_HPP__
 
-#include <tapasco_api.hpp>
+#include <tapasco.hpp>
 #include "MenuScreen.hpp"
 #include "TapascoStatusScreen.hpp"
 #include "InterruptStressTestScreen.hpp"
@@ -48,5 +48,5 @@ private:
   Tapasco tapasco;
 };
 
-#endif /* __TAPASCO_DEBUG_MENU_HPP__ */
+#endif /* TAPASCO_DEBUG_MENU_HPP__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */
