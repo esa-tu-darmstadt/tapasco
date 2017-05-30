@@ -7,7 +7,7 @@
 #define __TAPASCO_STATUS_SCREEN_HPP__
 
 #include <tapasco_api.hpp>
-#include <platform_api.h>
+#include <platform.h>
 #include "MenuScreen.hpp"
 using namespace tapasco;
 

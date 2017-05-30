@@ -28,7 +28,7 @@
 #include <stdint.h>
 #include <errno.h>
 
-#include <platform_api.h>
+#include <platform.h>
 #include "common.h"
 
 #define SLOTS_BASE					(platform_address_get_slot_base(0,0))

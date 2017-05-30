@@ -27,7 +27,7 @@
 #include <tapasco_address_map.h>
 #include <tapasco_device.h>
 #include <tapasco_logging.h>
-#include <platform_api.h>
+#include <platform.h>
 
 tapasco_res_t tapasco_scheduler_launch(
 		tapasco_dev_ctx_t *dev_ctx,

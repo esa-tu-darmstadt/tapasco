@@ -21,7 +21,7 @@
  *  @brief	Implementation for platform API address calls.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#include <platform_api.h>
+#include <platform.h>
 
 platform_ctl_addr_t platform_address_get_slot_base(
 		platform_slot_id_t const slot_id,

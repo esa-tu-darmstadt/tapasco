@@ -27,7 +27,7 @@
 #include <unistd.h>
 #include <cassert>
 #include <tapasco_api.hpp>
-#include <platform_api.h>
+#include <platform.h>
 
 #define MIN_NSECS          (10000)
 #define MAX_NSECS          (1000000)
@@ -35,7 +35,6 @@
 #define JOBS               (10)
 
 using namespace std;
-using namespace tapasco;
 using namespace tapasco::platform;
 
 struct config_t {
@@ -47,11 +46,11 @@ struct config_t {
 
 static long errors;
 
-static Tapasco Tapasco;
+static tapasco::Tapasco Tapasco;
 
-static inline void check_tapasco(tapasco_res_t const result)
+static inline void check_tapasco(tapasco::tapasco_res_t const result)
 {
-  if (result != TAPASCO_SUCCESS) {
+  if (result != tapasco::TAPASCO_SUCCESS) {
     cerr << "Tapasco fatal error: " << tapasco_strerror(result) << endl;
     exit(result);
   }
@@ -90,7 +89,7 @@ static inline unsigned long cd_to_ns(unsigned long cd) {
 static inline uint32_t tapasco_run(uint32_t cc)
 {
   uint32_t ret = 0;
-  if (Tapasco.launch_no_thread(14, ret, cc) != TAPASCO_SUCCESS)
+  if (Tapasco.launch(14, ret, cc) != tapasco::TAPASCO_SUCCESS)
     __atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
   return ret;
 }

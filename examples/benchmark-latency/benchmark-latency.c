@@ -23,7 +23,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <tapasco_api.h>
-#include <platform_api.h>
+#include <platform.h>
 #include "../benchmark-mem/timer.h"
 
 #define	MIN_NSECS					(10000)

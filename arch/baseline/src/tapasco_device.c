@@ -29,7 +29,7 @@
 #include <tapasco_address_map.h>
 #include <tapasco_scheduler.h>
 #include <tapasco_logging.h>
-#include <platform_api.h>
+#include <platform.h>
 #include <platform_errors.h>
 
 /** Internal device struct implementation. */

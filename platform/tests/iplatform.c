@@ -34,7 +34,7 @@
 #include <ncurses.h>
 #include <sys/ioctl.h>
 #include <sched.h>
-#include <platform_api.h>
+#include <platform.h>
 
 static long thrdcnt = 0;
 static volatile int stop = 0;

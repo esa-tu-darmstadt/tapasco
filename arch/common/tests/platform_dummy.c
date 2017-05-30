@@ -21,7 +21,7 @@
 //!		errors.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#include <platform_api.h>
+#include <platform.h>
 
 platform_res_t platform_read_mem(
 		platform_mem_addr_t const start_addr,

@@ -29,7 +29,7 @@
 #include <tapasco_jobs.h>
 #include <tapasco_functions.h>
 #include <tapasco_logging.h>
-#include <platform_api.h>
+#include <platform.h>
 #include <platform_errors.h>
 
 // declare logging exit for flushing

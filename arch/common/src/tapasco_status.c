@@ -28,7 +28,7 @@
 	#include <stdint.h>
 	#include <string.h>
 #endif
-#include <platform_api.h>
+#include <platform.h>
 #include <tapasco_status.h>
 #include <tapasco_logging.h>
 #include <tapasco_errors.h>

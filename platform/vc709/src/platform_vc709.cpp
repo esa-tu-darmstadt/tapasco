@@ -35,7 +35,7 @@ extern "C" {
 }
 	
 #include "platform_errors.h"
-#include "platform_api.h"
+#include "platform.h"
 #include "buddy_allocator.hpp"
 
 #ifdef __cplusplus

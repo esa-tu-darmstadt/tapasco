@@ -30,7 +30,7 @@
 #include <tapasco_address_map.h>
 #include <tapasco_logging.h>
 #include <tapasco_status.h>
-#include <platform_api.h>
+#include <platform.h>
 
 /** State of functions, e.g., busy or idle. */
 typedef enum {

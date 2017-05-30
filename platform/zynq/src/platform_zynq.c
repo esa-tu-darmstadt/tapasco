@@ -21,7 +21,7 @@
 //!		loadable kernel module. Communicates with the Zynq fabric via 
 //!		device driver.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
-//! @version	1.1
+//! @version	1.2
 //! @copyright  Copyright 2014, 2015 J. Korinth
 //!
 //!		This file is part of Tapasco (TPC).
@@ -54,7 +54,7 @@
 #include <assert.h>
 #include <module/zynq_platform.h>
 #include <module/zynq_ioctl_cmds.h>
-#include <platform_api.h>
+#include <platform.h>
 #include <platform_errors.h>
 #include "platform_logging.h"
 

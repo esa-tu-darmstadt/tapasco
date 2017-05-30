@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-/** @file 	platform_api.h
+/** @file 	platform.h
  *  @brief 	API for low-level FPGA integration. Provides basic methods to
  *  		interact with two different address spaces on the device: The
  *  		memory address space refers to device-local memories, the
@@ -45,6 +45,8 @@
  *		License along with Tapasco.  If not, see
  *		<http://www.gnu.org/licenses/>.
  *  @details	### Change Log ###
+ *		- **05/2017: Version 1.2.2
+ *		  + renamed to platform.h
  *		- **02/2016: Version 1.2.1 (jk)**
  *  		  + added special address for the interrupt controllers, so that
  *  		    they can be accessed in a standard way using Platform API
@@ -58,8 +60,8 @@
  *		- **10/2014: Version 1.0 (jk)**
  *  		  + initial prototype version
  **/
-#ifndef __PLATFORM_API_H__
-#define __PLATFORM_API_H__
+#ifndef PLATFORM_API_H__
+#define PLATFORM_API_H__
 
 #include <platform_errors.h>
 
@@ -138,7 +140,7 @@ typedef enum {
  *  @{
  **/
 
-#define PLATFORM_API_VERSION				"1.2.1"
+#define PLATFORM_API_VERSION				"1.2.2"
 
 /**
  * Returns the version string of the library.
@@ -350,5 +352,5 @@ extern platform_res_t platform_wait_cycles(const int cycles);
 } /* extern "C" */ } /* namespace platform */ } /* namespace tapasco */
 #endif
 
-#endif /* __PLATFORM_API_H__ */
+#endif /* PLATFORM_API_H__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

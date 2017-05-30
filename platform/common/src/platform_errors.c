@@ -20,7 +20,7 @@
 //! @brief	Error messages and codes.
 //! @authors	J. Korinth (jk@esa.cs.tu-darmstadt.de)
 //!
-#include <platform_api.h>
+#include <platform.h>
 #include <platform_errors.h>
 
 #ifdef _X

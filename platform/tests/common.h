@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <platform_errors.h>
-#include <platform_api.h>
+#include <platform.h>
 
 static inline int check(platform_res_t res)
 {

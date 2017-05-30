@@ -32,7 +32,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include <platform_api.h>
+#include <platform.h>
 #include "common.h"
 
 #define LOWER_BND					(2)

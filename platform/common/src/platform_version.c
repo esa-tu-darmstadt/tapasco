@@ -22,7 +22,7 @@
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #include <string.h>
-#include <platform_api.h>
+#include <platform.h>
 #include <platform_errors.h>
 
 const char *const platform_version()

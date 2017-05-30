@@ -23,7 +23,7 @@
 //!
 #include <assert.h>
 #include <tapasco_address_map.h>
-#include <platform_api.h>
+#include <platform.h>
 
 #define TAPASCO_MAX_INSTANCES			128
 
