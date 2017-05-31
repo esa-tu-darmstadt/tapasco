@@ -1,7 +1,7 @@
 //
 // Copyright (C) 2015 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TPC).
+// This file is part of Tapasco (TAPASCO).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -17,13 +17,13 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file 	tapasco.hpp
-//! @brief	Primitive C++ wrapper class for TPC API: Simplifies calls to
+//! @brief	Primitive C++ wrapper class for TAPASCO API: Simplifies calls to
 //!		FPG and handling of device memory, jobs, etc.
 //! @authors 	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //! @version 	1.2
 //! @copyright  Copyright 2015 J. Korinth, TU Darmstadt
 //!
-//!		This file is part of Tapasco (TPC).
+//!		This file is part of Tapasco (TAPASCO).
 //!
 //!  		Tapasco is free software: you can redistribute it
 //!		and/or modify it under the terms of the GNU Lesser General
@@ -40,12 +40,14 @@
 //!		License along with Tapasco.  If not, see
 //!		<http://www.gnu.org/licenses/>.
 //! @details	### Change Log ###
+//!		- 03/2016 Version 1.3 (jk)
+//!		  + added device capabilities
 //!		- 03/2016 Version 1.2.1 (jk)
 //!		  + renamed to 'tapasco.hpp'
 //!		- 03/2016 Version 1.2 (jk)
 //!		  + added compiler check: header requires g++ >= 5.x.x
 //!		- 02/2016 Version 1.2 (jk)
-//!               + renamed class to 'Tapasco' instead of 'TPC' acro
+//!               + renamed class to 'Tapasco' instead of 'TAPASCO' acro
 //!		  + removed rpr namespace
 //!		  + moved device id to class instance member (instead of type)
 //!		  + new async_launch* methods return futures
@@ -58,13 +60,13 @@
 //!               + added compile-time flag TAPASCO_COPY_MT to use multi-threaded
 //!                 data transfers (based on std::future + async)
 //!		- 10/2015 Version 1.1 (jk)
-//!		  + updated to TPC API 1.1
+//!		  + updated to TAPASCO API 1.1
 //!		  + several minor improvements (error handling, copying)
 //!		- 08/2015 Version 1.0 (jk) 
 //!		  + initial prototype version
 //!
-#ifndef TAPASCO_API_HPP__
-#define TAPASCO_API_HPP__
+#ifndef TAPASCO_HPP__
+#define TAPASCO_HPP__
 
 #ifndef __clang__
 #if __GNUC__ && __GNUC__< 5
@@ -90,7 +92,7 @@ using namespace std;
 namespace tapasco {
 
 /**
- * Type annotation for TPC launch argument pointers: output only, i.e., only copy
+ * Type annotation for TAPASCO launch argument pointers: output only, i.e., only copy
  * from device to host after execution, don't copy from host to device prior.
  * The other two possibilities (input-only, in-and-out/reference) can be expressed
  * via the type system (const vs. non-const), but this use pattern requires a
@@ -111,7 +113,7 @@ struct Tapasco {
   /**
    * Constructor. Initializes device by default.
    * Note: Need to check is_ready if using auto-initialization before use.
-   * @param initialize initializes TPC during constructor (may throw exception!)
+   * @param initialize initializes TAPASCO during constructor (may throw exception!)
    * @param dev_id device id of this instance (default: 0)
    **/
   Tapasco(bool const initialize = true, tapasco_dev_id_t const dev_id = 0) {
@@ -128,7 +130,7 @@ struct Tapasco {
     }
   }
 
-  /** A TPC runtime error. **/
+  /** A TAPASCO runtime error. **/
   class tapasco_error : public runtime_error {
   public:
     explicit tapasco_error (const string& msg) : runtime_error(msg) {}
@@ -312,6 +314,16 @@ struct Tapasco {
     return tapasco_device_func_instance_count(dev_ctx, func_id);
   }
 
+  /**
+   * Checks if the current bitstream supports a given capability.
+   * @param cap capability to check
+   * @return TAPASCO_SUCCESS, if capability is available, TAPASCO_FAILURE otherwise
+   **/
+  tapasco_res_t has_capability(tapasco_device_capability_t cap) const noexcept
+  {
+    return tapasco_device_has_capability(dev_ctx, cap);
+  }
+
 private:
   /** Sets a single value argument. **/
   template<typename T>
@@ -470,4 +482,4 @@ private:
 
 } /* namespace tapasco */
 
-#endif /* TAPASCO_API_HPP__ */
+#endif /* TAPASCO_HPP__ */

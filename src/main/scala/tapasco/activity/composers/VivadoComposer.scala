@@ -183,6 +183,8 @@ class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) ext
   private def makeHeader(bd: Composition, target: Target, f: Heuristics.Frequency, archFeatures: Seq[Feature],
       platformFeatures: Seq[Feature]): String =
     "set tapasco_freq %3.0f%s".format(f, NL) +
+    (target.pd.hostFrequency map (f => "set tapasco_host_freq %3.0f%s".format(f, NL)) getOrElse "") +
+    (target.pd.memFrequency map (f => "set tapasco_mem_freq %3.0f%s".format(f, NL)) getOrElse "") +
     (target.pd.boardPreset map (bp => "set tapasco_board_preset %s%s".format(bp, NL)) getOrElse "") +
     (maxThreads map (mt => "set tapasco_jobs %d%s".format(mt, NL)) getOrElse "") +
     (maxThreads map (mt => "set_param general.maxThreads %d%s".format(mt, NL)) getOrElse "") +

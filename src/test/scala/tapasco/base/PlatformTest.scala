@@ -76,4 +76,16 @@ class PlatformSpec extends FlatSpec with Matchers {
     assert(oc.isRight)
     c.benchmark should not be empty
   }
+
+  "A Platform with host frequency" should "be parsed correctly" in {
+    val oc = Platform.from(jsonPath.resolve("correct-platform-hostfreq.json"))
+    assert(oc.isRight)
+    oc.right.get.hostFrequency should equal (Some(42.0))
+  }
+
+  "A Platform with mem frequency" should "be parsed correctly" in {
+    val oc = Platform.from(jsonPath.resolve("correct-platform-memfreq.json"))
+    assert(oc.isRight)
+    oc.right.get.memFrequency should equal (Some(158.2))
+  }
 }

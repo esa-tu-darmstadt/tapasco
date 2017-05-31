@@ -1,7 +1,7 @@
 //
 // Copyright (C) 2014 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TPC).
+// This file is part of Tapasco (TAPASCO).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -25,7 +25,7 @@
 //! @version 	1.2.1
 //! @copyright  Copyright 2014, 2015 J. Korinth, TU Darmstadt
 //!
-//!		This file is part of Tapasco (TPC).
+//!		This file is part of Tapasco (TAPASCO).
 //!
 //!  		Tapasco is free software: you can redistribute it
 //!		and/or modify it under the terms of the GNU Lesser General
@@ -42,6 +42,8 @@
 //!		License along with Tapasco.  If not, see
 //!		<http://www.gnu.org/licenses/>.
 //! @details	### Change Log ###
+//!		- Version 1.3 (jk)
+//!		  + added device capabilities
 //!		- Version 1.2.1 (jk)
 //!		  + renamed to 'tapasco.h'
 //!		- Version 1.2 (jk)
@@ -56,8 +58,8 @@
 //!
 //! @todo 	device enumeration?
 //!
-#ifndef TAPASCO_API_H__
-#define TAPASCO_API_H__
+#ifndef TAPASCO_H__
+#define TAPASCO_H__
 
 #ifdef __cplusplus
 #include <cstdint>
@@ -152,6 +154,15 @@ typedef enum {
 	TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING	= 1,
 } tapasco_device_job_launch_flag_t;
 
+/** Capabilities: Optional device capabilities. **/
+typedef enum {
+	/** PCIe devices: Adress Translation Services and Page Request Interface
+	 *  support activated. **/
+	TAPASCO_DEVICE_CAP_ATSPRI			= 1,
+	/** PCIe devices: interactive ATS check core is present. **/
+	TAPASCO_DEVICE_CAP_ATSCHECK			= 2,
+} tapasco_device_capability_t;
+
 /** @} **/
 
 
@@ -159,7 +170,7 @@ typedef enum {
  *  @{
  **/
 
-#define TAPASCO_API_VERSION					"1.2.1"
+#define TAPASCO_API_VERSION					"1.3"
 
 /**
  * Returns the version string of the library.
@@ -197,7 +208,7 @@ const char *const tapasco_strerror(tapasco_res_t const res);
 /**
  * Global initialization: Setup a context for management of threadpool devices.
  * Should not be called directly; @see tapasco_init.
- * @param version version string of expected TPC API version
+ * @param version version string of expected TAPASCO API version
  * @param pctx pointer to context pointer (will be set on success)
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
@@ -407,9 +418,25 @@ tapasco_res_t tapasco_device_job_get_return(tapasco_dev_ctx_t *dev_ctx,
 
 /** @} **/
 
+
+/** @defgroup caps Device capability query
+ *  @{
+ **/
+
+/**
+ * Checks if the specified capability is available in the current bitstream.
+ * @param dev_ctx device context
+ * @param cap capability
+ * @return TAPASCO_SUCCESS, if available, TAPASCO_FAILURE otherwise.
+ **/
+tapasco_res_t tapasco_device_has_capability(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_device_capability_t cap);
+
+/** @} **/
+
 #ifdef __cplusplus
 } /* extern "C" */ } /* namespace tapasco */
 #endif /* __cplusplus */
 
-#endif /* TAPASCO_API_H__ */
+#endif /* TAPASCO_H__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

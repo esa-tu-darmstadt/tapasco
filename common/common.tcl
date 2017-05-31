@@ -60,6 +60,11 @@ namespace eval tapasco {
     puts "Skipping IP catalog."
   }
 
+  # Returns the Tapasco version.
+  proc get_tapasco_version {} {
+    return "2017.1"
+  }
+
   # Instantiates an AXI4 Interconnect IP.
   # @param name Name of the instance.
   # @param no_slaves Number of AXI4 Slave interfaces.
@@ -381,7 +386,18 @@ namespace eval tapasco {
       }
       incr slot
     }
+    # get version strings
+    set vversion [split [version -short] {.}]
+    set tversion [split [tapasco::get_tapasco_version] {.}]
+
     lappend props "CONFIG.C_INTC_COUNT" "[expr [llength $c] > 96 ? 4 : ([llength $c] > 64 ? 3 : ([llength $c] > 32 ? 2 : 1))]"
+    lappend props "CONFIG.C_GEN_TS" "[clock seconds]"
+    lappend props "CONFIG.C_VIVADO_VERSION" [format "0x%04x%04x" [expr [lindex $vversion 0]] [expr [lindex $vversion 1]]]
+    lappend props "CONFIG.C_TAPASCO_VERSION" [format "0x%04x%04x" [expr [lindex $tversion 0]] [expr [lindex $tversion 1]]]
+    lappend props "CONFIG.C_HOST_CLK_MHZ" [format "%d" [tapasco::get_host_frequency]]
+    lappend props "CONFIG.C_MEM_CLK_MHZ" [format "%d" [tapasco::get_mem_frequency]]
+    lappend props "CONFIG.C_DESIGN_CLK_MHZ" [format "%d" [tapasco::get_design_frequency]]
+
     puts "  properties: $props"
     set_property -dict $props $inst
     return $inst
@@ -449,11 +465,47 @@ namespace eval tapasco {
     return [get_bd_intf_pins -of_objects $cell -filter "VLNV =~ xilinx.com:interface:aximm_rtl:* && MODE == $mode"]
   }
 
+  # Returns a key-value list of frequencies in the design.
+  proc get_frequencies {} {
+    return [list "host" [get_host_frequency] "design" [get_design_frequency] "memory" [get_mem_frequency]]
+  }
+
+  # Returns the host interface clock frequency (in MHz).
+  proc get_host_frequency {} {
+    global tapasco_host_freq
+    if {[info exists tapasco_host_freq]} {
+      return $tapasco_host_freq
+    } else {
+      puts "WARNING: tapasco_host_freq is not set, using design frequency of [tapasco::get_design_frequency] MHz"
+      return [tapasco::get_design_frequency]
+    }
+  }
+
+  # Returns the memory interface clock frequency (in MHz).
+  proc get_mem_frequency {} {
+    global tapasco_mem_freq
+    if {[info exists tapasco_mem_freq]} {
+      return $tapasco_mem_freq
+    } else {
+      set mem_freq 200
+      if {[tapasco::get_speed_grade] > -2} {
+        puts "  speed grade: [tapasco::get_speed_grade], reducing mem speed to 158 MHz"
+        set mem_freq 158
+      }
+      puts "WARNING: tapasco_mem_freq is not set! Using fallback: $mem_freq MHz"
+      return $mem_freq
+    }
+  }
+
   # Returns the desired design clock frequency (in MHz) selected by the user.
-  # Default: 250
+  # Default: 50 MHz
   proc get_design_frequency {} {
     global tapasco_freq
-    return $tapasco_freq
+    if {[info exists tapasco_freq]} {
+      return $tapasco_freq
+    } else {
+      error "ERROR: tapasco_freq is not set!"
+    }
   }
 
   # Returns the desired design clock period (in ns) selected by the user.
@@ -746,7 +798,7 @@ namespace eval tapasco {
   # @param freqs list of name frequency (MHz) pairs, e.g., [list design 100 memory 250]
   # @param name Name of the subsystem group
   # @return Subsystem group
-  proc create_subsystem_clocks_and_resets {freqs {name ClockResets}} {
+  proc create_subsystem_clocks_and_resets {{freqs [get_frequencies]} {name ClockResets}} {
     puts "Creating clock and reset subsystem ..."
     puts "  frequencies: $freqs"
     set instance [current_bd_instance .]

@@ -38,7 +38,9 @@ case class Platform (
       supportedFrequencies: Seq[Int],
       private val _slotCount: Option[Int],
       description: Option[String],
-      private val _benchmark: Option[Path]
+      private val _benchmark: Option[Path],
+      hostFrequency: Option[Double],
+      memFrequency: Option[Double]
     ) extends Description(descPath) {
   val tclLibrary: Path                = resolve(_tclLibrary)
   val benchmark: Option[Benchmark]    = _benchmark flatMap (p => Benchmark.from(resolve(p)).toOption)

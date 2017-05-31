@@ -292,7 +292,9 @@ package object json {
     (JsPath \ "SupportedFrequencies").readNullable[Seq[Int]] (minLength[Seq[Int]](1)) .map (_ getOrElse (50 to 450 by 5)) ~
     (JsPath \ "SlotCount").readNullable[Int] (min(1) keepAnd max(255)) ~
     (JsPath \ "Description").readNullable[String] (minLength[String](1)) ~
-    (JsPath \ "Benchmark").readNullable[Path]
+    (JsPath \ "Benchmark").readNullable[Path] ~
+    (JsPath \ "HostFrequency").readNullable[Double] ~
+    (JsPath \ "MemFrequency").readNullable[Double]
   ) (Platform.apply _)
   // scalastyle:on magic.number
   implicit def platformWrites: Writes[Platform] = (
@@ -306,7 +308,9 @@ package object json {
     (JsPath \ "SupportedFrequencies").write[Seq[Int]] ~
     (JsPath \ "SlotCount").writeNullable[Int] ~
     (JsPath \ "Description").writeNullable[String] ~
-    (JsPath \ "Benchmark").writeNullable[Path]
+    (JsPath \ "Benchmark").writeNullable[Path] ~
+    (JsPath \ "HostFrequency").writeNullable[Double] ~
+    (JsPath \ "MemFrequency").writeNullable[Double]
   ) (unlift(Platform.unapply _))
   /* Platform @} */
 
