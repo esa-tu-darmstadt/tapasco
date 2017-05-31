@@ -58,10 +58,10 @@ namespace eval platform {
   
       set ics [get_bd_cells -filter "VLNV =~ *axi_interconnect*"]
       set ic_resets [get_bd_pins -of_objects $ics -filter { TYPE == "rst" && NAME == "ARESETN" }]
-      lappend ic_resets [get_bd_pins Threadpool/interconnect_aresetn]
+      lappend ic_resets [get_bd_pins uArch/interconnect_aresetn]
       set periph_resets [get_bd_pins -of_objects $ics -filter { TYPE == "rst" && NAME != "ARESETN" && DIR == "I" }]
       lappend periph_resets [get_bd_pins -filter { TYPE == "rst" && DIR == "I" && NAME != "ARESETN" } -of_objects [get_bd_cells -filter { NAME =~ axi_intc* }]]
-      lappend periph_resets [get_bd_pins Threadpool/peripheral_aresetn]
+      lappend periph_resets [get_bd_pins uArch/peripheral_aresetn]
       lappend periph_resets [get_bd_pins "tapasco_status/s00_axi_aresetn"]
       puts "ic_resets = $ic_resets"
       puts "periph_resets = $periph_resets"
@@ -305,7 +305,7 @@ namespace eval platform {
       }
   
       # connect user IP: slaves
-      set usrs [lsort [get_bd_addr_segs "/Threadpool/*"]]
+      set usrs [lsort [get_bd_addr_segs "/uArch/*"]]
       set offset 0x43C00000
       for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
         create_bd_addr_seg -range 64K -offset $offset $host_addr_space [lindex $usrs $i] "USR_SEG$i"
@@ -345,7 +345,7 @@ namespace eval platform {
 
       foreach clk [list "host" "design" "memory"] {
         foreach p [list "aclk" "interconnect_aresetn" "peripheral_aresetn"] {
-          connect_bd_net [get_bd_pins "$ss_cnr/${clk}_${p}"] [get_bd_pins "Threadpool/${clk}_${p}"]
+          connect_bd_net [get_bd_pins "$ss_cnr/${clk}_${p}"] [get_bd_pins "uArch/${clk}_${p}"]
         }
       }
   
@@ -360,7 +360,7 @@ namespace eval platform {
       set tapasco_status [createTapascoStatus [tapasco::get_composition]]
       set gp0_out [tapasco::create_interconnect_tree "gp0_out" 2 false]
       connect_bd_intf_net [get_bd_intf_pins "$ss_host/M_AXI_GP0"] [get_bd_intf_pins "$gp0_out/S000_AXI"]
-      connect_bd_intf_net [get_bd_intf_pins "$gp0_out/M000_AXI"] [get_bd_intf_pins "/Threadpool/S_AXI"]
+      connect_bd_intf_net [get_bd_intf_pins "$gp0_out/M000_AXI"] [get_bd_intf_pins "/uArch/S_AXI"]
       connect_bd_intf_net [get_bd_intf_pins "$gp0_out/M001_AXI"] [get_bd_intf_pins "$tapasco_status/S00_AXI"]
       connect_bd_net [get_bd_pins "$ss_cnr/host_aclk"] \
           [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $tapasco_status] \
@@ -403,7 +403,7 @@ namespace eval platform {
       set host_prefix "system_i/Host"
       set ps_prefix "system_i/Host/ps7"
       set int_prefix "system_i/InterruptControl_"
-      set tp_prefix "system_i/Threadpool_"
+      set tp_prefix "system_i/uArch_"
   
       set ret [list \
           "$host_prefix/irq_out*" \

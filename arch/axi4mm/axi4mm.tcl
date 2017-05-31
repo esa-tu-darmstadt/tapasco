@@ -40,7 +40,7 @@ namespace eval arch {
   # Returns a list of the bd_cells of slave interfaces of the threadpool.
   proc get_slaves {} {
     set inst [current_bd_instance]
-    current_bd_instance "Architecture"
+    current_bd_instance "uArch"
     set r [list [get_bd_intf_pins -of [get_bd_cells "in1"] -filter { MODE == "Slave" }]]
     current_bd_instance $inst
     return $r
@@ -53,12 +53,12 @@ namespace eval arch {
   }
 
   proc get_processing_elements {} {
-    return [get_bd_cells "Architecture/target*"]
+    return [get_bd_cells "uArch/target*"]
   }
 
   # Returns a list of interrupt lines from the threadpool.
   proc get_irqs {} {
-    return [get_bd_pins -of_objects [get_bd_cells "Architecture"] -filter {TYPE == "intr" && DIR == "O"}]
+    return [get_bd_pins -of_objects [get_bd_cells "uArch"] -filter {TYPE == "intr" && DIR == "O"}]
   }
 
   # Checks, if the current composition can be instantiated. Exits script with
@@ -376,7 +376,7 @@ namespace eval arch {
     }
 
     # create hierarchical group
-    set group [create_bd_cell -type hier "Architecture"]
+    set group [create_bd_cell -type hier "uArch"]
     set instance [current_bd_instance .]
     current_bd_instance $group
 

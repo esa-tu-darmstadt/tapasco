@@ -481,7 +481,7 @@ namespace eval platform {
     }
 
     # connect user IP
-    set usrs [lsort [get_bd_addr_segs "/Threadpool/*"]]
+    set usrs [lsort [get_bd_addr_segs "/uArch/*"]]
     set offset 0x02000000
     for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
       create_bd_addr_seg -range 64K -offset $offset $master_addr_space [lindex $usrs $i] "USR_SEG$i"
@@ -499,7 +499,7 @@ namespace eval platform {
       create_bd_addr_seg -range 4G -offset 0 $ms $ts "SEG_$ms"
     }
     # conenct user IP
-    set usrs [lsort [get_bd_addr_spaces /Threadpool/* -filter { NAME =~ "*m_axi*" || NAME =~ "*M_AXI*" }]]
+    set usrs [lsort [get_bd_addr_spaces /uArch/* -filter { NAME =~ "*m_axi*" || NAME =~ "*M_AXI*" }]]
     set ts [get_bd_addr_segs /Memory/mig/*]
     foreach u $usrs {
       create_bd_addr_seg -range [get_property RANGE $u] -offset 0 $u $ts "SEG_$u"
@@ -591,7 +591,7 @@ namespace eval platform {
     set design_clk_receivers [list \
       [get_bd_pins $ss_mem/design_clk] \
       [get_bd_pins $ss_reset/design_aclk] \
-      [get_bd_pins Threadpool/*aclk] \
+      [get_bd_pins uArch/*aclk] \
       [get_bd_pins $axi_ic_from_host/M00_ACLK] \
     ]
 
@@ -639,7 +639,7 @@ namespace eval platform {
 
     set design_rst_receivers [list \
       [get_bd_pins $ss_mem/design_peripheral_aresetn] \
-      [get_bd_pins Threadpool/*peripheral_aresetn] \
+      [get_bd_pins uArch/*peripheral_aresetn] \
       [get_bd_pins $axi_ic_from_host/M00_ARESETN] \
     ]
 
@@ -651,12 +651,12 @@ namespace eval platform {
 
     connect_bd_net $design_clk_ic_aresetn \
       [get_bd_pins $ss_mem/interconnect_aresetn] \
-      [get_bd_pins Threadpool/*interconnect_aresetn] \
+      [get_bd_pins uArch/*interconnect_aresetn] \
       [get_bd_pins $axi_ic_to_mem/ARESETN]
 
     # connect AXI from host to system
     connect_bd_intf_net [get_bd_intf_pins $ss_pcie/m_axi] [get_bd_intf_pins $axi_ic_from_host/S00_AXI]
-    connect_bd_intf_net [get_bd_intf_pins $axi_ic_from_host/M00_AXI] [get_bd_intf_pins Threadpool/S_AXI]
+    connect_bd_intf_net [get_bd_intf_pins $axi_ic_from_host/M00_AXI] [get_bd_intf_pins uArch/S_AXI]
     connect_bd_intf_net [get_bd_intf_pins $axi_ic_from_host/M01_AXI] [get_bd_intf_pins $ss_int/S_AXI]
     connect_bd_intf_net [get_bd_intf_pins $axi_ic_from_host/M02_AXI] [get_bd_intf_pins $ss_mem/s_axi_ddma]
 
