@@ -95,6 +95,8 @@ static const char *user_dev_path[4] = {
 #define INTC2_ADDRESS			0x00420000
 #define INTC3_ADDRESS			0x00430000
 
+#define ATSPRI_ADDRESS			0x00390000
+
 static struct {
 	int					fd_dma_engine[NUM_DMA_DEV];
 	int					fd_user[NUM_USER_DEV];
@@ -318,7 +320,7 @@ platform_res_t tapasco::platform::platform_read_ctl(platform_ctl_addr_t const st
 {
 	int err;
 	struct user_rw_params params { 0 };
-	if (start_addr == INTC0_ADDRESS || start_addr == INTC1_ADDRESS || start_addr == INTC2_ADDRESS || start_addr == INTC3_ADDRESS)
+	if (start_addr == INTC0_ADDRESS || start_addr == INTC1_ADDRESS || start_addr == INTC2_ADDRESS || start_addr == INTC3_ADDRESS || (start_addr & 0xFFFF0000) == ATSPRI_ADDRESS || flags == PLATFORM_CTL_FLAGS_RAW)
 	  params.fpga_addr = start_addr;
 	else
 	  params.fpga_addr = start_addr + USER_ADDRESS_OFFSET;
@@ -357,7 +359,10 @@ platform_res_t tapasco::platform::platform_write_ctl(platform_ctl_addr_t const s
 {
 	int err;
 	struct user_rw_params params { 0 };
-	params.fpga_addr = start_addr + USER_ADDRESS_OFFSET;
+	if ((start_addr & 0xFFFF0000) == ATSPRI_ADDRESS || flags == PLATFORM_CTL_FLAGS_RAW)
+	  params.fpga_addr = start_addr;
+	else
+	  params.fpga_addr = start_addr + USER_ADDRESS_OFFSET;
 	params.host_addr = (uint64_t) data;
 	params.btt = no_of_bytes;
 
@@ -440,6 +445,7 @@ platform_ctl_addr_t tapasco::platform::platform_address_get_special_base(
 	switch (ent) {
 	// TPC Status IP core is fixed at 0x0280_0000 (physically)
 	case PLATFORM_SPECIAL_CTL_STATUS: return HW_ID_ADDR;
+	case PLATFORM_SPECIAL_CTL_ATSPRI: return 0x390000;
 	case PLATFORM_SPECIAL_CTL_INTC0 : return 0x400000;
 	case PLATFORM_SPECIAL_CTL_INTC1 : return 0x410000;
 	case PLATFORM_SPECIAL_CTL_INTC2 : return 0x420000;

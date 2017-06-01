@@ -22,10 +22,9 @@
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
 #include <assert.h>
+#include <tapasco_global.h>
 #include <tapasco_address_map.h>
 #include <platform.h>
-
-#define TAPASCO_MAX_INSTANCES			128
 
 static platform_ctl_addr_t _bases[TAPASCO_MAX_INSTANCES] = { 0 };
 
@@ -34,7 +33,7 @@ static inline tapasco_reg_addr_t base_addr(uint32_t const slot_id) {
 	tapasco_reg_addr_t ret = _bases[slot_id];
 	if (! ret)
 		ret = (_bases[slot_id] = platform_address_get_slot_base(slot_id, 0));
-	assert(ret > 0);
+	assert(slot_id == 0 || ret > 0);
 	return ret;
 }
 

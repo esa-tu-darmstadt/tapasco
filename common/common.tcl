@@ -26,12 +26,16 @@ namespace eval tapasco {
   namespace export createConcat
   namespace export createConstant
   namespace export createDualDMA
+  namespace export createDWidthConverter
+  namespace export createRegisterSlice
   namespace export createIntCtrl
   namespace export createInterconnect
   namespace export createMIG
   namespace export createOLEDController
   namespace export createPCIeBridge
   namespace export createPCIeIntrCtrl
+  namespace export createMSIXIntrCtrl
+  namespace export createProtocolConverter
   namespace export createSlice
   namespace export createSystemCache
   namespace export createZynqBFM
@@ -241,20 +245,14 @@ namespace eval tapasco {
     return $dd
   }
 
-  # Instantiates a PCIe interrupt controller.
+  # Instantiates a MSIX interrupt controller.
   # @param name Name of the instance.
-  proc createPCIeIntrCtrl {name} {
+  proc createMSIXIntrCtrl {name} {
     variable stdcomps
-    puts "Creating PCIe Interrupt Controller ..."
-    puts "  VLNV: [dict get $stdcomps pcie_intr_ctrl vlnv]"
+    puts "Creating MSIX Interrupt Controller ..."
+    puts "  VLNV: [dict get $stdcomps msix_intr_ctrl vlnv]"
 
-    set ic [create_bd_cell -type ip -vlnv [dict get $stdcomps pcie_intr_ctrl vlnv] $name]
-    set_property -dict [list \
-      CONFIG.IRQ_DELAY {10} \
-      CONFIG.IRQ_RECAP {NORMAL} \
-      CONFIG.IRQ_TIMEOUT {1000} \
-      CONFIG.IRQ_RECAP_CHECK {"0"} \
-    ] $ic
+    set ic [create_bd_cell -type ip -vlnv [dict get $stdcomps msix_intr_ctrl vlnv] $name]
     return $ic
   }
 
@@ -415,6 +413,31 @@ namespace eval tapasco {
 
     set inst [create_bd_cell -type ip -vlnv $vlnv $name]
     set_property -dict [list CONFIG.MI_PROTOCOL $to CONFIG.SI_PROTOCOL $from] $inst
+    return $inst
+  }
+
+  # Instantiates an AXI datawidth converter.
+  # @param name Name of the instance.
+  # @param from Data width on slave side (default: 256)
+  # @param to   Data width on master side (default: 64)
+  proc createDWidthConverter {name {from "256"} {to "64"}} {
+    variable stdcomps
+    puts "Creating AXI Datawidth converter $name $from -> $to ..."
+    set vlnv [dict get $stdcomps dwidth_conv vlnv]
+    puts "  VLNV: $vlnv"
+
+    set inst [create_bd_cell -type ip -vlnv $vlnv $name]
+    set_property -dict [list CCONFIG.SI_DATA_WIDTH $from CONFIG.MI_DATA_WIDTH $to] $inst
+    return $inst
+  }
+
+  proc createRegisterSlice {name} {
+    variable stdcomps
+    puts "Creating AXI Register Slice $name"
+    set vlnv [dict get $stdcomps axi_reg_slice vlnv]
+    puts "  VLNV: $vlnv"
+
+    set inst [create_bd_cell -type ip -vlnv $vlnv $name]
     return $inst
   }
 

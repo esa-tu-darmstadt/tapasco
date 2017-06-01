@@ -25,8 +25,8 @@
 #define TAPASCO_FUNCTIONS_H__
 
 #include <tapasco.h>
-
-#define TAPASCO_MAX_INSTANCES					128
+#include <tapasco_global.h>
+#include <tapasco_status.h>
 
 /**
  * Identifies a 'slot' in the configuration, i.e., one possible instantiation
@@ -39,10 +39,12 @@ typedef struct tapasco_functions tapasco_functions_t;
 
 /**
  * Initializes a function struct by populating with current data from device.
+ * @param status pointer to internal status core struct.
  * @param funcs pointer to internal functions struct pointer.
  * @return TAPASCO_SUCCESS if successful.
  **/
-tapasco_res_t tapasco_functions_init(tapasco_functions_t **funcs);
+tapasco_res_t tapasco_functions_init(const tapasco_status_t *status,
+		tapasco_functions_t **funcs);
 
 /**
  * Releases the given function struct an allocated memory.

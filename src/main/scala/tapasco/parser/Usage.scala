@@ -17,13 +17,13 @@ object Usage {
       --jobsFile [FILE]         Path to Json file with Jobs array
       --slurm                   Activate SLURM cluster execution (requires sbatch)
 
-    Bulk Import Job: bulkimport [options]
+    Bulk Import Job: bulkimport [options*]
       --csv [FILE]              [FILE] should be in comma-separated values (CSV) format
                                 and must contain the following header line and columns:
 
       "Zip, ID, Description, Architecture, Platform, Avg Runtime (clock cycles)"
 
-    Compose Statistics Job: corestats [composition] [frequency] [options]
+    Compose Job: compose [composition] [frequency] [implementation?] [options*] [features*]
       --composition {[FILE] | [DEF]}        Threadpool composition, either in a separate
                                             file, or inline as arguments (see below)
       --designFrequency [NUM]               Target design frequency (PE clock) in MHz
@@ -34,15 +34,17 @@ object Usage {
       --platforms|-p [NAME[, NAME]*]        Filter for Platform names
       --debugMode [NAME]                    Activate a debug mode
 
+      --features [feature[, feature]*]      Configure optional features.
+
       Composition Syntax: '[' [NAME] x [NUM] [',' [NAME] x [NUM]]* ']'
       Example:            "[counter x 12, arraysum x 4]"
 
-    Core Statistics Job: corestats [options]
+    Core Statistics Job: corestats [options*]
       --prefix "[PREFIX]"                   File name prefix for CSV output files
       --architectures|-a [NAME[, NAME]*]    Filter for Architecture names
       --platforms|-p [NAME[, NAME]*]        Filter for Platform names
 
-    Design Space Exploration: dse [composition] [dimensions] [batch size] [options*]
+    Design Space Exploration: dse [composition] [dimensions] [batch size] [options*] [features*]
       --composition {[FILE] | [DEF]}        Threadpool composition, either in a separate
                                             file, or inline as arguments (see below)
       --dimensions [area | frequency | alternatives] ["," [area | frequency | alternatives]]*
@@ -61,17 +63,18 @@ object Usage {
       --platforms|-p [NAME[, NAME]*]        Filter for Platform names
       --debugMode [NAME]                    Activate a debug mode
 
+      --features [feature[, feature]*]      Configure optional features.
 
       Composition Syntax: '[' [NAME] x [NUM] [',' [NAME] x [NUM]]* ']'
       Example:            "[counter x 12, arraysum x 4]"
 
-    High-Level Synthesis Job: hls [options]
+    High-Level Synthesis Job: hls [options*]
       --implementation|-i [NAME]            HLS implementation (default: VivadoHLS)
       --kernels|-k [NAME[, NAME]*]          Filter for Kernel names
       --architectures|-a [NAME[, NAME]*]    Filter for Architecture names
       --platforms|-p [NAME[, NAME]*]        Filter for Platform names
 
-    Import Job: import [options]
+    Import Job: import [options*]
       --zip [FILE]                          Path to .zip file containing IP-XACT core
       --id [NUM]                            Kernel ID (> 0) for use in TPC
       --averageClockCycles [NUM]            Avg. clock cycles per execution (optional)

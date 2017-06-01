@@ -23,7 +23,9 @@
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
 
-sealed abstract class Feature(val enabled: Boolean)
+sealed abstract class Feature(val enabled: Boolean) {
+  def shortName: String = this.getClass.getSimpleName
+}
 
 // scalastyle:off magic.number
 object Feature {
@@ -40,6 +42,8 @@ object Feature {
       }
       ok
     }
+
+    override def shortName: String = "Cache(%d,%d)".format(size, associativity)
 
     require (cacheSizeSupported(size), "cache size %d is not supported".format(size))
   }
@@ -61,5 +65,7 @@ object Feature {
     depth foreach { d => require(dataDepthSupported(d), "data depth %d not supported".format(d)) }
     stages foreach { s => require(stagesSupported(s), "%d stages not supported".format(s)) }
   }
+  final case class BlueDma(override val enabled: Boolean) extends Feature(enabled)
+  final case class AtsPri(override val enabled: Boolean) extends Feature(enabled)
 }
 // scalastyle:on magic.number

@@ -9,7 +9,8 @@ private object FeatureParser {
 
   /* @{ Features */
   private def features: Parser[Seq[Feature]] =
-    param("features", false) ~> rep1sep(featureLed | featureOled | featureCache | featureDebug, LIST_SEP)
+    param("features", false) ~> rep1sep(featureLed | featureOled | featureCache | featureDebug |
+        featureBlueDma | featureAtsPri, LIST_SEP)
 
   private def featureLed: Parser[Feature] = """^(?i)led""".r ^^ { _ => Feature.LED(true) }
 
@@ -41,6 +42,10 @@ private object FeatureParser {
       nets = m flatMap (_.get("nets") map (_.split(":")))
     )
   }
+
+  private def featureBlueDma: Parser[Feature] = """^(?i)bluedma""".r ^^ { _ => Feature.BlueDma(true) }
+
+  private def featureAtsPri: Parser[Feature] = """^(?i)ats\+?pri""".r ^^ { _ => Feature.AtsPri(true) }
   /* Features @} */
 }
 // vim: foldmarker=@{,@} foldmethod=marker foldlevel=0

@@ -48,6 +48,8 @@ class FeatureTclPrinter(prefix: String) {
       if (useDefaults.isEmpty) "" else pre + "Debug use_defaults " + useDefaults.get,
       if (nets.isEmpty) "" else pre + "Debug nets [list " + nets.get.map(n => "{" + n + "}").mkString(" ") + "] "
       ).mkString(NL)
+    case BlueDma(enabled) => pre + "BlueDMA enabled " + enabled
+    case AtsPri(enabled)  => pre + "ATS-PRI enabled " + enabled
 
     case _ => "unknown feature"
   }

@@ -25,7 +25,7 @@
 #define TAPASCO_STATUS_H__
 
 #include <tapasco.h>
-#include <tapasco_functions.h>
+#include <tapasco_global.h>
 
 typedef struct tapasco_status tapasco_status_t;
 struct tapasco_status {

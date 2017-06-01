@@ -54,12 +54,13 @@ trait Configuration {
   /** Returns the default output directory for the given composition, target and frequency.
    *  _Example_: `arrayinit__counter/020_042/075.0/axi4mm/pynq`
    */
-  def outputDir(composition: Composition, target: Target, freq: Heuristics.Frequency): Path = compositionDir
+  def outputDir(composition: Composition, target: Target, freq: Heuristics.Frequency,
+                features: Seq[Feature] = Seq()): Path = compositionDir
     .resolve(target.ad.name)
     .resolve(target.pd.name)
     .resolve(composition.composition map (_.kernel.replaceAll(" ", "_")) mkString "__")
     .resolve(composition.composition map (ce => "%03d".format(ce.count)) mkString "_")
-    .resolve("%05.1f".format(freq))
+    .resolve("%05.1f%s".format(freq, (features filter (_.enabled) map ("+" + _.shortName)).sorted mkString ""))
 
   /** Returns the default output directory for the given core and target. */
   def outputDir(core: Core, target: Target): Path =

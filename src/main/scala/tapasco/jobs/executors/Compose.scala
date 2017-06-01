@@ -78,6 +78,7 @@ private object Compose extends Executor[ComposeJob] {
           designFrequency = job.designFrequency,
           implementation = job.implementation,
           target = t,
+          features = job.features,
           debugMode = job.debugMode,
           onComplete = _ => signal.release())
 

@@ -63,7 +63,7 @@ namespace eval leds {
     set inst [create_bd_cell -type ip -vlnv $vlnv $name]
     set port [create_bd_port -from 7 -to 0 -dir "O" "LED_Port"]
     connect_bd_net [get_bd_pins $inst/LED_Port] $port
-    read_xdc "$::env(TPC_HOME)/common/ip/GP_LED_1.0/gp_led.xdc"
+    read_xdc "$::env(TAPASCO_HOME)/common/ip/GP_LED_1.0/gp_led.xdc"
 
     # connect the inputs
     for {set i 0} {$i < 6 && [llength $inputs] > $i} {incr i} {

@@ -25,6 +25,7 @@ set_target_properties (tapasco-benchmark PROPERTIES COMPILE_FLAGS ${ADD_CXXFLAGS
 set_target_properties (tapasco-benchmark PROPERTIES LINK_FLAGS ${ADD_LDFLAGS})
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/json11.cpp ${CMAKE_CURRENT_SOURCE_DIR}/json11.hpp
+  COMMAND rm -rf json11
   COMMAND git clone https://github.com/dropbox/json11.git
   COMMAND cp json11/json11.* ${CMAKE_CURRENT_SOURCE_DIR}
   )

@@ -29,6 +29,7 @@
 #include <tapasco_address_map.h>
 #include <tapasco_scheduler.h>
 #include <tapasco_logging.h>
+#include <tapasco_status.h>
 #include <platform.h>
 #include <platform_errors.h>
 
@@ -38,6 +39,7 @@ struct tapasco_dev_ctx {
 	tapasco_jobs_t *jobs;
 	tapasco_ctx_t *ctx;
 	tapasco_dev_id_t id;
+	tapasco_status_t *status;
 };
 
 /** Interrupt handler callback. */
@@ -59,7 +61,9 @@ tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx, tapasco_dev_id_t const d
 {
 	tapasco_dev_ctx_t *p = (tapasco_dev_ctx_t *)malloc(sizeof(struct tapasco_dev_ctx));
 	if (p) {
-		tapasco_res_t res = tapasco_functions_init(&p->functions);
+		tapasco_res_t res = tapasco_status_init(&p->status);
+		res = res == TAPASCO_SUCCESS ? tapasco_functions_init(p->status,
+				&p->functions) : res;
 		res = res == TAPASCO_SUCCESS ? tapasco_jobs_init(&p->jobs) : res;
 		if (res != TAPASCO_SUCCESS) return res;
 		p->ctx = ctx;
@@ -78,6 +82,7 @@ void tapasco_destroy_device(tapasco_ctx_t *ctx, tapasco_dev_ctx_t *dev_ctx)
 	platform_stop(0);
 	tapasco_jobs_deinit(dev_ctx->jobs);
 	tapasco_functions_deinit(dev_ctx->functions);
+	tapasco_status_deinit(dev_ctx->status);
 	free(dev_ctx);
 }
 
@@ -196,6 +201,20 @@ tapasco_res_t tapasco_device_job_get_return(tapasco_dev_ctx_t *dev_ctx,
 		void *ret_value)
 {
 	return tapasco_jobs_get_return(dev_ctx->jobs, j_id, ret_len, ret_value);
+}
+
+tapasco_res_t tapasco_device_has_capability(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_device_capability_t cap)
+{
+	switch (cap) {
+	case TAPASCO_DEVICE_CAP_ATSPRI:
+		return tapasco_status_has_capability_0(dev_ctx->status, TAPASCO_CAP0_ATSPRI);
+	case TAPASCO_DEVICE_CAP_ATSCHECK:
+		return tapasco_status_has_capability_0(dev_ctx->status, TAPASCO_CAP0_ATSCHECK);
+	default:
+		WRN("unknown capability: %d (0x%0x)", cap, cap);
+		return TAPASCO_FAILURE;
+	}
 }
 
 void irq_handler(int const event)

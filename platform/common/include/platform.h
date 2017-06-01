@@ -45,6 +45,9 @@
  *		License along with Tapasco.  If not, see
  *		<http://www.gnu.org/licenses/>.
  *  @details	### Change Log ###
+ *		- **06/2016: Version 1.3 (jk)**
+ *		  + added 'raw' mode for read/write to bypass address filters
+ *  		  + added special address for the ATS/PRI checker
  *		- **05/2017: Version 1.2.2
  *		  + renamed to platform.h
  *		- **02/2016: Version 1.2.1 (jk)**
@@ -116,6 +119,8 @@ typedef enum {
 	PLATFORM_SPECIAL_CTL_INTC2,
 	/** Interrupt controller #3. **/
 	PLATFORM_SPECIAL_CTL_INTC3,
+	/** ATS/PRI checker. **/
+	PLATFORM_SPECIAL_CTL_ATSPRI,
 } platform_special_ctl_t;
 
 typedef enum {
@@ -125,7 +130,8 @@ typedef enum {
 
 typedef enum {
 	/** no flags **/
-	PLATFORM_CTL_FLAGS_NONE			= 0
+	PLATFORM_CTL_FLAGS_NONE			= 0,
+	PLATFORM_CTL_FLAGS_RAW			= 1
 } platform_ctl_flags_t;
 
 typedef enum {
@@ -140,7 +146,7 @@ typedef enum {
  *  @{
  **/
 
-#define PLATFORM_API_VERSION				"1.2.2"
+#define PLATFORM_API_VERSION				"1.3"
 
 /**
  * Returns the version string of the library.

@@ -29,7 +29,6 @@
 #include <tapasco_errors.h>
 #include <tapasco_address_map.h>
 #include <tapasco_logging.h>
-#include <tapasco_status.h>
 #include <platform.h>
 
 /** State of functions, e.g., busy or idle. */
@@ -73,16 +72,13 @@ static void setup_functions_from_status(tapasco_status_t const *status,
 		p->func[i] = status->id[i] ? tapasco_functions_create(status->id[i], i) : NULL;
 }
 
-tapasco_res_t tapasco_functions_init(tapasco_functions_t **funcs) {
+tapasco_res_t tapasco_functions_init(const tapasco_status_t *status, tapasco_functions_t **funcs) {
 	tapasco_res_t res = TAPASCO_SUCCESS;
 	*funcs = (tapasco_functions_t *)malloc(sizeof(tapasco_functions_t));
 	if (! funcs) return TAPASCO_ERR_OUT_OF_MEMORY;
 	memset(*funcs, 0, sizeof(tapasco_functions_t));
-	tapasco_status_t *status = NULL;
-	res = tapasco_status_init(&status);
-	if (res == TAPASCO_SUCCESS)
-		setup_functions_from_status(status, *funcs);
-	tapasco_status_deinit(status);
+	assert (status);
+	setup_functions_from_status(status, *funcs);
 	return res;
 }
 

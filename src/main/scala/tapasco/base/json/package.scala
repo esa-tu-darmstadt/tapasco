@@ -217,15 +217,36 @@ package object json {
     (JsPath \ "Nets").writeNullable[Seq[String]]
   ) (unlift(Feature.Debug.unapply _ andThen (_ map ("Debug" +: _))))
 
+  private val readsBlueDmaFeature: Reads[Feature] = (
+    (JsPath \ "Feature").read[String] (verifying[String](_ equals "BlueDMA")) ~>
+    (JsPath \ "Enabled").readNullable[Boolean].map (_ getOrElse true)
+  ) .fmap(Feature.BlueDma.apply _)
+  private val writesBlueDmaFeature: Writes[Feature.BlueDma] = (
+    (JsPath \ "Feature").write[String] ~
+    (JsPath \ "Enabled").write[Boolean]
+  ) (unlift(Feature.BlueDma.unapply _ andThen (_ map (("BlueDMA", _)))))
+
+  private val readsAtsPriFeature: Reads[Feature] = (
+    (JsPath \ "Feature").read[String] (verifying[String](_ equals "ATS+PRI")) ~>
+    (JsPath \ "Enabled").readNullable[Boolean].map (_ getOrElse true)
+  ) .fmap(Feature.AtsPri.apply _)
+  private val writesAtsPriFeature: Writes[Feature.AtsPri] = (
+    (JsPath \ "Feature").write[String] ~
+    (JsPath \ "Enabled").write[Boolean]
+  ) (unlift(Feature.AtsPri.unapply _ andThen (_ map (("ATS+PRI", _)))))
+
   implicit val readsFeature: Reads[Feature] =
-    readsLEDFeature | readsOLEDFeature | readsCacheFeature | readsDebugFeature
+    readsLEDFeature | readsOLEDFeature | readsCacheFeature | readsDebugFeature |
+    readsBlueDmaFeature | readsAtsPriFeature
 
   implicit object writesFeature extends Writes[Feature] {
     def writes(f: Feature): JsValue = f match {
-      case f: Feature.LED   => writesLEDFeature.writes(f)
-      case f: Feature.OLED  => writesOLEDFeature.writes(f)
-      case f: Feature.Cache => writesCacheFeature.writes(f)
-      case f: Feature.Debug => writesDebugFeature.writes(f)
+      case f: Feature.LED     => writesLEDFeature.writes(f)
+      case f: Feature.OLED    => writesOLEDFeature.writes(f)
+      case f: Feature.Cache   => writesCacheFeature.writes(f)
+      case f: Feature.Debug   => writesDebugFeature.writes(f)
+      case f: Feature.BlueDma => writesBlueDmaFeature.writes(f)
+      case f: Feature.AtsPri  => writesAtsPriFeature.writes(f)
     }
   }
   /* Features @} */

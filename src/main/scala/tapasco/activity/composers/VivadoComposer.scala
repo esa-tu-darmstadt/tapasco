@@ -24,6 +24,7 @@
 package de.tu_darmstadt.cs.esa.tapasco.activity.composers
 import  de.tu_darmstadt.cs.esa.tapasco.Common
 import  de.tu_darmstadt.cs.esa.tapasco.base._
+import  de.tu_darmstadt.cs.esa.tapasco.base.json._
 import  de.tu_darmstadt.cs.esa.tapasco.base.tcl._
 import  de.tu_darmstadt.cs.esa.tapasco.util._
 import  de.tu_darmstadt.cs.esa.tapasco.reports._
@@ -48,9 +49,11 @@ class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) ext
       platformFeatures: Seq[Feature] = Seq()) (implicit cfg: Configuration, maxThreads: Option[Int]): Composer.Result = {
     logger.debug("VivadoComposer uses at most {} threads", maxThreads getOrElse "unlimited")
     // create output struct
-    val files = VivadoComposer.Files(bd, target, f)
+    val files = VivadoComposer.Files(bd, target, f, archFeatures ++ platformFeatures)
     // create output directory
     java.nio.file.Files.createDirectories(files.outdir)
+    // dump configuration
+    Configuration.to(cfg, files.outdir.resolve("config.json"))
     // create Tcl script
     mkTclScript(fromTemplate = Common.commonDir.resolve("design.master.tcl.template"),
                 to           = files.tclFile,
@@ -200,9 +203,9 @@ object VivadoComposer {
   final val SLACK_THRESHOLD: Double = -0.3
 
   /** Output files and directories for a run. */
-  private final case class Files(c: Composition, t: Target, f: Heuristics.Frequency)
+  private final case class Files(c: Composition, t: Target, f: Heuristics.Frequency, fs: Seq[Feature])
                                 (implicit cfg: Configuration) {
-    lazy val outdir: Path    = cfg.outputDir(c, t, f)
+    lazy val outdir: Path    = cfg.outputDir(c, t, f, fs)
     lazy val logFile: Path   = outdir.resolve("%s.log".format(c.id))
     lazy val tclFile: Path   = outdir.resolve("%s.tcl".format(t.pd.name))
     lazy val bitFile: Path   = outdir.resolve("%s.bit".format(c.id))

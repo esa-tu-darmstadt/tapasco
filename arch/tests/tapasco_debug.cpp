@@ -42,5 +42,9 @@ int main(int argc, char *argv[])
     exit_ncurses();
     cerr << "Unknown error occurred." << endl;
     exit(1);
+  } catch (...) {
+    exit_ncurses();
+    cerr << "ERROR" << endl;
+    throw;
   }
 }

@@ -187,6 +187,9 @@ int main(int argc, const char *argv[]) {
     ofstream f(argc >= 2 ? argv[1] : ss.str());
     f << benchmark.dump();
     f.close();
+  } catch (const char *msg) {
+    endwin();
+    cerr << "ERROR: " << msg << endl;
   } catch (...) {
     endwin();
     throw;
