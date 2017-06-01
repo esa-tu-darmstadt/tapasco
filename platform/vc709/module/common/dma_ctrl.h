@@ -67,17 +67,24 @@
 
 /******************************************************************************/
 
+void dma_ctrl_init(void * device_base_addr);
+
 /* interrupt handler used by dma engines registered in pcie_device.c */
-void ack_irq(int i);
-irqreturn_t intr_handler_dma_0(int irq, void * dev_id);
-irqreturn_t intr_handler_dma_1(int irq, void * dev_id);
-irqreturn_t intr_handler_dma_2(int irq, void * dev_id);
-irqreturn_t intr_handler_dma_3(int irq, void * dev_id);
+irqreturn_t intr_handler_dma(int irq, void * dev_id);
 
 /* setting registers to start dma transfer specific to used engine (Xilinx, custom) */
 void transmit_from_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr);
 void transmit_to_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr);
 
 /******************************************************************************/
+
+/* DMA Specific implementations */
+irqreturn_t blue_dma_intr_handler(int irq, void * dev_id);
+void blue_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr);
+void blue_dma_transmit_to_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr);
+
+irqreturn_t dual_dma_intr_handler_dma(int irq, void * dev_id);
+void dual_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr);
+void dual_dma_transmit_to_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr);
 
 #endif // __DMA_CTRL_H

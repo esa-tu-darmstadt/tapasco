@@ -1,5 +1,6 @@
 //
 // Copyright (C) 2014 David de la Chevallerie, TU Darmstadt
+// Copyright (C) 2017 Jaco A. Hofmann, TU Darmstadt
 //
 // This file is part of Tapasco (TPC).
 //
@@ -39,12 +40,11 @@ static struct file_operations dma_fops = {
 	.release        = dma_close,
 	.unlocked_ioctl = dma_ioctl,
 	.read           = dma_read,
-	.write          = dma_write,
-	.mmap			= dma_mmap
+	.write          = dma_write
 };
 
 /* private data used to hold additional information throughout multiple system calls */
-static struct priv_data_struct priv_data[FFLINK_DMA_NODES];
+static struct priv_data_struct priv_data;
 
 /* char device structure basically for dev_t and fops */
 static struct cdev char_dma_cdev;	
@@ -52,6 +52,9 @@ static struct cdev char_dma_cdev;
 static dev_t char_dma_dev_t;
 /* device class entry for sysfs */
 struct class *char_dma_class;
+
+static int device_opened = 0;
+static DEFINE_SPINLOCK(device_open_close_mutex);
 
 /******************************************************************************/
 /* helper functions used by sys-calls */
@@ -89,7 +92,7 @@ static void transmit_to_user(void * user_buffer, void * kvirt_buffer, dma_addr_t
 static void transmit_from_user(void * user_buffer, void * kvirt_buffer, dma_addr_t dma_handle, int btt)
 {
 	int copy_count;
-	fflink_info("user_buf %lX kvirt_buf %lX \nsize %d dma_handle %lX\n", (unsigned long) user_buffer, (unsigned long) kvirt_buffer, btt, (unsigned long) dma_handle);
+	fflink_info("user_buf %lX kvirt_buf %lX \nsize %d dma_handle %lX\n", (unsigned long) user_buffer, (unsigned long) kvirt_buffer, dma_cache_fit(btt), (unsigned long) dma_handle);
 	
 	dma_sync_single_for_cpu(&get_pcie_dev()->dev, dma_handle, dma_cache_fit(btt), PCI_DMA_TODEVICE);
 	// copy data from user
@@ -101,20 +104,6 @@ static void transmit_from_user(void * user_buffer, void * kvirt_buffer, dma_addr
 }
 
 /**
- * @brief Exchanges data between both pointers
- * @param a Pointer to first date
- * @param b Pointer to second date
- * @return none
- * */
-static void switch_index(unsigned int * a, unsigned int * b)
-{
-	unsigned int tmp = *a;
-	
-	*a = *b;
-	*b = tmp;
-}
-
-/**
  * @brief Ensures that return value is always >= btt and multiple of cache_line_size
  * 	to invalidate/flush only complete cache lines
  * @param btt Bytes to transfer
@@ -122,41 +111,10 @@ static void switch_index(unsigned int * a, unsigned int * b)
  * */
 static unsigned int dma_cache_fit(unsigned int btt)
 {
-	if((btt & (priv_data[0].cache_lsize -1)) > 0)
-		return (btt & priv_data[0].cache_mask) + priv_data[0].cache_lsize;
+	if((btt & (priv_data.cache_lsize -1)) > 0)
+		return (btt & priv_data.cache_mask) + priv_data.cache_lsize;
 	else
-		return btt & priv_data[0].cache_mask;
-	
-}
-
-/**
- * @brief Determines the size of each transfer, when using double_buffering
- * @param count Total number of bytes to transfer
- * @return Byte size for one transfer
- * */
-static unsigned int calc_transfer_size(int count)
-{
-	if(count > DOUBLE_BUFFER_LIMIT && count <= 2*BUFFER_SIZE_USED)
-		return count/2;	
-	else if(count <= DOUBLE_BUFFER_LIMIT)
-		return count;
-	else
-		return BUFFER_SIZE_USED;
-}
-
-/**
- * @brief Determines the kernel virtual addresses of all buffers
- * @param p Priv_data for corresponding minor node
- * @return none
- * */
-static void dma_page_to_virt(struct priv_data_struct * p) 
-{
-	 int i;
-	 
-	 for(i = 0; i < PBUF_SIZE; i++) {
-		 p->kvirt_pbuf_h2l[i] = page_address(p->pbuf_h2l[i]);
-		 p->kvirt_pbuf_l2h[i] = page_address(p->pbuf_l2h[i]);
-	 }
+		return btt & priv_data.cache_mask;
 }
 
 /**
@@ -168,37 +126,24 @@ static void dma_page_to_virt(struct priv_data_struct * p)
  * @param direction Whether writeable or readable
  * @return Zero, if all buffers could be allocated and mapped
  * */
-static int dma_alloc_pbufs(struct page * p[], dma_addr_t handle[], gfp_t zone, int direction) 
+static int dma_alloc_pbufs(void** p, dma_addr_t *handle, gfp_t zone, int direction)
 {
-	int i, dma_err, err = 0;
-	void *page_ptr;
-	
-	fflink_notice("Allocate %d tuple of 2^%d Pages or %lu Byte\n or %lu MByte with Bit-Mask %llX in direction %d (1=H2L 2=L2H)\n", 
-	PBUF_SIZE, BUFFER_ORDER, BUFFER_SIZE, (BUFFER_SIZE/(1024*1024)), DMA_BIT_MASK(DMA_MAX_BIT), direction);
-
-	for(i = 0; i < PBUF_SIZE; i++) {
-		p[i] = 0;
-		handle[i] = 0;
-		
-		if(IS_ERR(p[i] = alloc_pages(zone, BUFFER_ORDER))) {
-			fflink_warn("Cannot allocate 2^%d Pages in iteration %d\n", BUFFER_ORDER, i);
-			err = -ENOMEM;
-		} else {
-			page_ptr = page_address(p[i]);
-			handle[i] = pci_map_single(get_pcie_dev(), page_ptr, BUFFER_SIZE, direction);
-			fflink_info("PCI-Mapping Address (Handle map_single): %llX\n", (unsigned long long int) handle[i]);
-			}	
-		}
-		
-		dma_err = pci_dma_mapping_error(get_pcie_dev(), handle[i]);
-		if(dma_err) {
-			fflink_warn("pci_map mapping error in iteration %d\n", i);
+	int err = 0;
+	*p = kmalloc(BUFFER_SIZE, zone);
+	if(*p) {
+		memset(*p, 0, BUFFER_SIZE);
+		*handle = dma_map_single(&get_pcie_dev()->dev,  *p, BUFFER_SIZE, direction);
+		if(dma_mapping_error(&get_pcie_dev()->dev, *handle)) {
+			fflink_warn("DMA Mapping error\n");
 			err = -EFAULT;
-			handle[i] = 0;
+		}
+	} else {
+		fflink_warn("Couldn't retrieve enough memory\n");
+		err = -EFAULT;
 	}
 	
 	return err;
-} 
+}
 
 /**
  * @brief Free kernel buffers
@@ -207,23 +152,13 @@ static int dma_alloc_pbufs(struct page * p[], dma_addr_t handle[], gfp_t zone, i
  * @param direction Whether writeable or readable
  * @return none
  * */
-static void dma_free_pbufs(struct page * p[], dma_addr_t handle[], int direction)
+static void dma_free_pbufs(void *p, dma_addr_t handle, int direction)
 {
-	int i;
-	
-	for(i = 0; i < PBUF_SIZE; i++) {
-		if(handle[i]) {
-			//fflink_driver_info("Unmap pci-mapping in iteration %d\n", i);
-			pci_unmap_single(get_pcie_dev(), handle[i], BUFFER_SIZE, direction);
-		} else {
-			fflink_notice("No pci-mapping in iteration %d\n", i);
-		}
-		if(p[i]) {
-			//fflink_info("Free 2^%d Pages at %llX\n", order, (unsigned long long) p[i]);
-			__free_pages(p[i], BUFFER_ORDER);
-		} else {
-			fflink_notice("No Pages in iteration %d\n", i);
-		}
+	if(handle) {
+		dma_unmap_single(&get_pcie_dev()->dev, handle, BUFFER_SIZE, direction);
+	}
+	if(p) {
+		kfree(p);
 	}
 }
 
@@ -233,51 +168,29 @@ static void dma_free_pbufs(struct page * p[], dma_addr_t handle[], int direction
  * @param node Minor number
  * @return none
  * */
-static void dma_init_pdata(struct priv_data_struct * p, int node) 
+static void dma_init_pdata(struct priv_data_struct * p) 
 {
 	/* cache size and mask needed for alignemt */
 	p->cache_lsize = cache_line_size();
 	p->cache_mask = ~(cache_line_size() -1);
+
+	p->dma_handle_h2l = 0;
+	p->dma_handle_l2h = 0;
+
+	p->kvirt_h2l = 0;
+	p->kvirt_l2h = 0;
 	
-	p->minor = node;
 	p->ctrl_base_addr = (void *) AXI_CTRL_BASE_ADDR;
 	
 	/* init control structures for synchron sys-calls */
 	mutex_init(&p->rw_mutex);
 	init_waitqueue_head(&p->rw_wait_queue);
 	p->condition_rw = false;
-	mutex_init(&p->mmap_rbuf_mutex);
-	mutex_init(&p->mmap_wbuf_mutex);
 	
-	/* additional information for sys-calls depending on minor number*/
-	switch(node) {
-		case 0:
-			p->mem_addr_h2l = (void *) RAM_BASE_ADDR_0;
-			p->mem_addr_l2h = (void *) RAM_BASE_ADDR_0;
-			p->device_base_addr = (void *) DMA_BASE_ADDR_0;
-			break;
-		case 1: 
-			p->mem_addr_h2l = (void *) RAM_BASE_ADDR_1;
-			p->mem_addr_l2h = (void *) RAM_BASE_ADDR_1;
-			p->device_base_addr = (void *) DMA_BASE_ADDR_1;
-			break;
-		case 2: 
-			p->mem_addr_h2l = (void *) RAM_BASE_ADDR_2;
-			p->mem_addr_l2h = (void *) RAM_BASE_ADDR_2;
-			p->device_base_addr = (void *) DMA_BASE_ADDR_2;
-			break;
-		case 3: 
-			p->mem_addr_h2l = (void *) RAM_BASE_ADDR_3;
-			p->mem_addr_l2h = (void *) RAM_BASE_ADDR_3;
-			p->device_base_addr = (void *) DMA_BASE_ADDR_3;
-			break;
-		default: 
-			fflink_warn("wrong minor node opened %d\n", node);
-			break;
-	}
+	p->mem_addr_h2l = (void *) RAM_BASE_ADDR_0;
+	p->mem_addr_l2h = (void *) RAM_BASE_ADDR_0;
+	p->device_base_addr = (void *) DMA_BASE_ADDR_0;
 }
-
-
 
 /******************************************************************************/
 
@@ -291,60 +204,7 @@ static void dma_init_pdata(struct priv_data_struct * p, int node)
  * */
 static inline int read_device(int count, char __user *buf, void * mem_addr, struct priv_data_struct *p)
 {
-	if(FFLINK_DOUBLE_BUFFERING == 1)
-		return read_with_double(count, buf, mem_addr, p);
-	else
-		return read_with_bounce(count, buf, mem_addr, p);
-}
-
-/**
- * @brief Double-buffering implementation to transfer data from FPGA to Main memory
- * @param count Bytes to be transferred
- * @param buf Pointer to user space buffer
- * @param mem_addr Hardware address on the FPGA
- * @param p Pointer to priv_data of associated minor node, needed for kernel buffers and sleeping
- * @return Zero, if transfer was successful, error code otherwise
- * */
-static int read_with_double(int count, char __user *buf, void * mem_addr, struct priv_data_struct *p)
-{
-	int current_count = count;
-	unsigned int copy_size = calc_transfer_size(count), tic = 1, toc = 2;
-	fflink_notice("outstanding %d bytes - \n\t\t user addr %lX - mem addr %lx - with copy_size: %u\n", current_count, (unsigned long) buf, (unsigned long) mem_addr, copy_size);
-	
-	transmit_from_device(mem_addr, p->dma_handle_l2h[tic], copy_size, p->device_base_addr);
-	current_count -= copy_size;
-	mem_addr += copy_size;
-	
-	while(current_count > 0) {
-		fflink_info("outstanding %d bytes - \n\t\t user addr %lX - mem addr %lx - tic %d - toc %d\n", current_count, (unsigned long) buf, (unsigned long) mem_addr, tic, toc);
-		if(wait_event_interruptible(p->rw_wait_queue, p->condition_rw == true)) {
-			fflink_warn("got killed while hanging in waiting queue\n");
-			return -EACCES;
-		}
-		p->condition_rw = false;
-		
-		if(current_count <= BUFFER_SIZE_USED) {
-			transmit_from_device(mem_addr, p->dma_handle_l2h[toc], current_count, p->device_base_addr);
-			transmit_to_user(buf, p->kvirt_pbuf_l2h[tic], p->dma_handle_l2h[tic], current_count);			
-		} else {
-			transmit_from_device(mem_addr, p->dma_handle_l2h[toc], BUFFER_SIZE_USED, p->device_base_addr);
-			transmit_to_user(buf, p->kvirt_pbuf_l2h[tic], p->dma_handle_l2h[tic], BUFFER_SIZE_USED);
-		}
-		
-		current_count -= copy_size;
-		buf += copy_size;
-		mem_addr += copy_size;
-		switch_index(&tic, &toc);	
-	}
-	
-	if(wait_event_interruptible(p->rw_wait_queue, p->condition_rw == true)) {
-		fflink_warn("got killed while hanging in waiting queue\n");
-		return -EACCES;
-	}
-	p->condition_rw = false;
-	transmit_to_user(buf, p->kvirt_pbuf_l2h[tic], p->dma_handle_l2h[tic], copy_size);
-	
-	return 0;
+	return read_with_bounce(count, buf, mem_addr, p);
 }
 
 /**
@@ -368,13 +228,13 @@ static int read_with_bounce(int count, char __user *buf, void * mem_addr, struct
 		else
 			copy_size = BUFFER_SIZE;
 		
-		transmit_from_device(mem_addr, p->dma_handle_l2h[1], copy_size, p->device_base_addr);
+		transmit_from_device(mem_addr, p->dma_handle_l2h, copy_size, p->device_base_addr);
 		if(wait_event_interruptible(p->rw_wait_queue, p->condition_rw == true)) {
 			fflink_warn("got killed while hanging in waiting queue\n");
 			return -EACCES;
 		}
 		p->condition_rw = false;
-		transmit_to_user(buf, p->kvirt_pbuf_l2h[1], p->dma_handle_l2h[1], copy_size);
+		transmit_to_user(buf, p->kvirt_l2h, p->dma_handle_l2h, copy_size);
 		
 		buf += BUFFER_SIZE;
 		mem_addr += BUFFER_SIZE;
@@ -395,60 +255,7 @@ static int read_with_bounce(int count, char __user *buf, void * mem_addr, struct
  * */
 static inline int write_device(int count, const char __user *buf, void * mem_addr, struct priv_data_struct *p)
 {
-	if(FFLINK_DOUBLE_BUFFERING == 1)
-		return write_with_double(count, buf, mem_addr, p);
-	else
-		return write_with_bounce(count, buf, mem_addr, p);
-}
-
-/**
- * @brief Double-buffering implementation to transfer data from Main to FPGA memory
- * @param count Bytes to be transferred
- * @param buf Pointer to user space buffer
- * @param mem_addr Hardware address on the FPGA
- * @param p Pointer to priv_data of associated minor node, needed for kernel buffers and sleeping
- * @return Zero, if transfer was successful, error code otherwise
- * */
-static int write_with_double(int count, const char __user *buf, void * mem_addr, struct priv_data_struct *p)
-{
-	int current_count = count;
-	unsigned int copy_size = calc_transfer_size(count), tic = 1, toc = 2;
-	fflink_notice("outstanding %d bytes - \n\t\t user addr %lX - mem addr %lx - with copy_size: %u\n", current_count, (unsigned long) buf, (unsigned long) mem_addr, copy_size);
-
-	transmit_from_user((void *) buf, p->kvirt_pbuf_h2l[tic], p->dma_handle_h2l[tic], copy_size);
-	current_count -= copy_size;
-	buf += copy_size;
-	
-	while(current_count > 0) {
-		fflink_info("outstanding %d bytes - \n\t\t user addr %lX - mem addr %lx\n", current_count, (unsigned long) buf, (unsigned long) p->mem_addr_h2l);
-		if(current_count <= BUFFER_SIZE_USED) {
-			transmit_to_device(mem_addr, p->dma_handle_h2l[tic], current_count, p->device_base_addr);
-			transmit_from_user((void *) buf, p->kvirt_pbuf_h2l[toc], p->dma_handle_h2l[toc], current_count);
-		} else {
-			transmit_to_device(mem_addr, p->dma_handle_h2l[tic], BUFFER_SIZE_USED , p->device_base_addr);
-			transmit_from_user((void *) buf, p->kvirt_pbuf_h2l[toc], p->dma_handle_h2l[toc], BUFFER_SIZE_USED);
-		}
-		
-		current_count -= copy_size;
-		buf += copy_size;
-		mem_addr += copy_size;
-		switch_index(&tic, &toc);
-		
-		if(wait_event_interruptible(p->rw_wait_queue, p->condition_rw == true)) {
-			fflink_warn("got killed while hanging in waiting queue\n");
-			return -EACCES;
-		}
-		p->condition_rw = false;
-	}
-	
-	transmit_to_device(mem_addr, p->dma_handle_h2l[tic], copy_size , p->device_base_addr);
-	if(wait_event_interruptible(p->rw_wait_queue, p->condition_rw == true)) {
-		fflink_warn("got killed while hanging in waiting queue\n");
-			return -EACCES;
-	}
-	p->condition_rw = false;	
-	
-	return 0;
+	return write_with_bounce(count, buf, mem_addr, p);
 }
 
 /**
@@ -467,11 +274,11 @@ static int write_with_bounce(int count, const char __user *buf, void * mem_addr,
 	while(current_count > 0) {
 		fflink_info("outstanding %d bytes - \n\t\t user addr %lX - mem addr %lx\n", current_count, (unsigned long) buf, (unsigned long) mem_addr);
 		if(current_count <= BUFFER_SIZE) {
-			transmit_from_user((void *) buf, p->kvirt_pbuf_h2l[1], p->dma_handle_h2l[1], current_count);
-			transmit_to_device(mem_addr, p->dma_handle_h2l[1], current_count, p->device_base_addr);
+			transmit_from_user((void *) buf, p->kvirt_h2l, p->dma_handle_h2l, current_count);
+			transmit_to_device(mem_addr, p->dma_handle_h2l, current_count, p->device_base_addr);
 		} else {
-			transmit_from_user((void *) buf, p->kvirt_pbuf_h2l[1], p->dma_handle_h2l[1], BUFFER_SIZE);
-			transmit_to_device(mem_addr, p->dma_handle_h2l[1], BUFFER_SIZE , p->device_base_addr);
+			transmit_from_user((void *) buf, p->kvirt_h2l, p->dma_handle_h2l, BUFFER_SIZE);
+			transmit_to_device(mem_addr, p->dma_handle_h2l, BUFFER_SIZE , p->device_base_addr);
 		}
 		buf += BUFFER_SIZE;
 		mem_addr += BUFFER_SIZE;
@@ -486,6 +293,51 @@ static int write_with_bounce(int count, const char __user *buf, void * mem_addr,
 	return 0;
 }
 
+static int dma_initialize(void) {
+	int err_1 = 0, err_2 = 0, err_return = 0;
+	gfp_t zone = GFP_DMA32;
+
+	fflink_notice("Initializing private data");
+	
+	dma_init_pdata(&priv_data);
+	dma_set_mask_and_coherent(&get_pcie_dev()->dev, DMA_BIT_MASK(DMA_MAX_BIT));
+
+	/* get buffers for dma, this could possibly go wrong */
+	if(DMA_MAX_BIT == 32) {
+		zone = GFP_DMA32;
+	} else if (DMA_MAX_BIT == 64) {
+		zone = GFP_DMA32;
+	} else {
+		fflink_warn("Wrong bit mask setting - only 32/64 supported, but have %d\n", DMA_MAX_BIT);
+		err_return = -EFAULT;
+		goto open_failed;
+	}
+
+	err_1 = dma_alloc_pbufs(&priv_data.kvirt_h2l, &priv_data.dma_handle_h2l, zone, PCI_DMA_TODEVICE);
+	err_2 = dma_alloc_pbufs(&priv_data.kvirt_l2h, &priv_data.dma_handle_l2h, zone, PCI_DMA_FROMDEVICE);
+	
+	if(err_1 != 0 || err_2 != 0) {
+		fflink_warn("Error during device creation. Error codes: Write direction: %d Read direction: %d\n", err_1, err_2);
+		err_return = -ENOSPC;
+		goto open_failed_deinit;
+	}
+
+	return 0;
+
+open_failed_deinit:
+	dma_free_pbufs(priv_data.kvirt_h2l, priv_data.dma_handle_h2l, PCI_DMA_TODEVICE);
+	dma_free_pbufs(priv_data.kvirt_l2h, priv_data.dma_handle_l2h, PCI_DMA_FROMDEVICE);
+open_failed:
+	return err_return;
+}
+
+static void dma_deinit(void) {
+	fflink_notice("Device not used anymore, removing it.\n");
+	
+	dma_free_pbufs(priv_data.kvirt_h2l, priv_data.dma_handle_h2l, PCI_DMA_TODEVICE);
+	dma_free_pbufs(priv_data.kvirt_l2h, priv_data.dma_handle_l2h, PCI_DMA_FROMDEVICE);
+}
+
 /******************************************************************************/
 /* functions for user-space interaction */
 
@@ -498,39 +350,15 @@ static int write_with_bounce(int count, const char __user *buf, void * mem_addr,
  * */
 static int dma_open(struct inode *inode, struct file *filp)
 {
-	int err_1 = 0, err_2 = 0;
-	fflink_notice("Called for device (<%d,%d>)\n", imajor(inode), iminor(inode));
-	
-	/* currently maximal four engines are supported - see switch case in dma_init */
-	if(iminor(inode) < FFLINK_DMA_NODES && iminor(inode) >= 0 && iminor(inode) < 4)
-		dma_init_pdata(&priv_data[iminor(inode)], iminor(inode));
-	else
-		return -ENODEV;
-	
-	/* set filp for further sys calls to this minor number */
-	filp->private_data = &priv_data[iminor(inode)];
 
-	/* get buffers for dma, this could possibly go wrong */
-	if(DMA_MAX_BIT == 32) {
-		err_1 = dma_alloc_pbufs(priv_data[iminor(inode)].pbuf_h2l, priv_data[iminor(inode)].dma_handle_h2l, GFP_DMA32, PCI_DMA_TODEVICE);
-		err_2 = dma_alloc_pbufs(priv_data[iminor(inode)].pbuf_l2h, priv_data[iminor(inode)].dma_handle_l2h, GFP_DMA32, PCI_DMA_FROMDEVICE);
-	} else if (DMA_MAX_BIT == 64) {
-		err_1 = dma_alloc_pbufs(priv_data[iminor(inode)].pbuf_h2l, priv_data[iminor(inode)].dma_handle_h2l, GFP_KERNEL, PCI_DMA_TODEVICE);
-		err_2 = dma_alloc_pbufs(priv_data[iminor(inode)].pbuf_l2h, priv_data[iminor(inode)].dma_handle_l2h, GFP_KERNEL, PCI_DMA_FROMDEVICE);
-	} else {
-		fflink_warn("Wrong bit mask setting - only 32/64 supported, but have %d\n", DMA_MAX_BIT);
-		return -EFAULT;
-	}
-	
-	dma_page_to_virt(&priv_data[iminor(inode)]);
-	
-	if(err_1 != 0 || err_2 != 0) {
-		fflink_warn("Error is here %d %d %d %d\n", err_1, err_2, imajor(inode), iminor(inode));
-		dma_free_pbufs(priv_data[iminor(inode)].pbuf_h2l, priv_data[iminor(inode)].dma_handle_h2l, PCI_DMA_TODEVICE);
-		dma_free_pbufs(priv_data[iminor(inode)].pbuf_l2h, priv_data[iminor(inode)].dma_handle_l2h, PCI_DMA_FROMDEVICE);
-		return -ENOSPC;
-	}
-	
+	spin_lock(&device_open_close_mutex);
+
+	fflink_notice("Already %d files in use.\n", device_opened);
+
+	++device_opened;
+	/* set filp for further sys calls to this minor number */
+	filp->private_data = &priv_data;
+	spin_unlock(&device_open_close_mutex);
 	return 0;
 }
 
@@ -542,19 +370,10 @@ static int dma_open(struct inode *inode, struct file *filp)
  * */
 static int dma_close(struct inode *inode, struct file *filp)
 {
-	struct priv_data_struct * p = (struct priv_data_struct *) filp->private_data;
-	fflink_notice("Close called for device (<%d,%d>)\n", imajor(inode), iminor(inode));
-	
-	// release mutex, which might be locked from mmap call
-	// shall be refactored to more general approach, when using multiple mmap buffers
-	mutex_trylock(&p->mmap_rbuf_mutex);
-	mutex_unlock(&p->mmap_rbuf_mutex);
-	mutex_trylock(&p->mmap_wbuf_mutex);
-	mutex_unlock(&p->mmap_wbuf_mutex);
-	
-	dma_free_pbufs(priv_data[iminor(inode)].pbuf_h2l, priv_data[iminor(inode)].dma_handle_h2l, PCI_DMA_TODEVICE);
-	dma_free_pbufs(priv_data[iminor(inode)].pbuf_l2h, priv_data[iminor(inode)].dma_handle_l2h, PCI_DMA_FROMDEVICE);
-	
+	spin_lock(&device_open_close_mutex);
+	--device_opened;
+	fflink_notice("Still %d files in use.\n", device_opened);
+	spin_unlock(&device_open_close_mutex);
 	return 0;
 }
 
@@ -574,7 +393,7 @@ static ssize_t dma_read(struct file *filp, char __user *buf, size_t count, loff_
 {
 	int err = 0;
 	struct priv_data_struct * p = (struct priv_data_struct *) filp->private_data;
-	fflink_notice("Called for device minor %d\n", p->minor);
+	fflink_notice("Called for device minor %d\n", 0);
 	
 	if(mutex_lock_interruptible(&p->rw_mutex)) {
 		fflink_warn("got killed while aquiring the mutex\n");
@@ -600,7 +419,7 @@ static ssize_t dma_write(struct file *filp, const char __user *buf, size_t count
 {
 	int err = 0;
 	struct priv_data_struct * p = (struct priv_data_struct *) filp->private_data;
-	fflink_notice("Called for device minor %d\n", p->minor);
+	fflink_notice("Called for device minor %d\n", 0);
 	
 	if(mutex_lock_interruptible(&p->rw_mutex)) {
 		fflink_warn("got killed while aquiring the mutex\n");
@@ -627,7 +446,7 @@ static long dma_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long i
 {
 	struct priv_data_struct * p = (struct priv_data_struct *) filp->private_data;
 	struct dma_ioctl_params params;
-	fflink_notice("Called with number %X for minor %u\n", ioctl_num, p->minor);
+	fflink_notice("Called with number %X for minor %u\n", ioctl_num, 0);
 	
 	if(_IOC_SIZE(ioctl_num) != sizeof(struct dma_ioctl_params)) {
 		fflink_warn("Wrong size to read out registers %d vs %ld\n", _IOC_SIZE(ioctl_num), sizeof(struct dma_ioctl_params));
@@ -647,29 +466,29 @@ static long dma_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long i
 			fflink_info("IOCTL_CMD_DMA_READ_MMAP with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
 			fflink_info("Btt: %d\n", params.btt);
 			
-			dma_sync_single_for_device(&get_pcie_dev()->dev, p->dma_handle_l2h[0], dma_cache_fit(params.btt), PCI_DMA_TODEVICE);
-			transmit_from_device(p->mem_addr_l2h, p->dma_handle_l2h[0], params.btt, p->device_base_addr);
+			dma_sync_single_for_device(&get_pcie_dev()->dev, p->dma_handle_l2h, dma_cache_fit(params.btt), PCI_DMA_TODEVICE);
+			transmit_from_device(p->mem_addr_l2h, p->dma_handle_l2h, params.btt, p->device_base_addr);
 			if(wait_event_interruptible(p->rw_wait_queue, p->condition_rw == true)) {
 				fflink_warn("got killed while hanging in waiting queue\n");
 				break;
 			}
 			p->condition_rw = false;	
 				
-			dma_sync_single_for_cpu(&get_pcie_dev()->dev, p->dma_handle_l2h[0], dma_cache_fit(params.btt), PCI_DMA_TODEVICE);
+			dma_sync_single_for_cpu(&get_pcie_dev()->dev, p->dma_handle_l2h, dma_cache_fit(params.btt), PCI_DMA_TODEVICE);
 			break;
 		case IOCTL_CMD_DMA_WRITE_MMAP:
 			fflink_info("IOCTL_CMD_DMA_WRITE_MMAP with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
 			fflink_info("Btt: %d\n", params.btt);
 			
-			dma_sync_single_for_device(&get_pcie_dev()->dev, p->dma_handle_h2l[0], dma_cache_fit(params.btt), PCI_DMA_TODEVICE);
-			transmit_to_device(p->mem_addr_h2l, p->dma_handle_h2l[0], params.btt, p->device_base_addr);
+			dma_sync_single_for_device(&get_pcie_dev()->dev, p->dma_handle_h2l, dma_cache_fit(params.btt), PCI_DMA_TODEVICE);
+			transmit_to_device(p->mem_addr_h2l, p->dma_handle_h2l, params.btt, p->device_base_addr);
 			if(wait_event_interruptible(p->rw_wait_queue, p->condition_rw == true)) {
 				fflink_warn("got killed while hanging in waiting queue\n");
 				break;
 			}
 			p->condition_rw = false;
 			
-			dma_sync_single_for_cpu(&get_pcie_dev()->dev, p->dma_handle_h2l[0], dma_cache_fit(params.btt), PCI_DMA_TODEVICE);
+			dma_sync_single_for_cpu(&get_pcie_dev()->dev, p->dma_handle_h2l, dma_cache_fit(params.btt), PCI_DMA_TODEVICE);
 			break;
 		case IOCTL_CMD_DMA_READ_BUF:
 			fflink_info("IOCTL_CMD_DMA_READ_BUF with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
@@ -705,48 +524,6 @@ static long dma_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long i
 }
 
 /******************************************************************************/
-/* function for user-space interaction */
-
-/**
- * @brief Tries to hand kernel buffer to user-space for zero copy
-	Currently one buffer in each direction can be used for each char_device
- * @param filp Needed to identify device node and get access to corresponding buffers
- * @param vma Struct of virtual memory representation, will be modified to allow user-space access 
- * @return Zero, if memory could be mapped, error code otherwise
- * */
-static int dma_mmap(struct file *filp, struct vm_area_struct *vma)
-{
-	struct priv_data_struct * p = (struct priv_data_struct *) filp->private_data;
-	fflink_notice("Map buffer with %lu Kbyte to user space for minor %u\n", BUFFER_SIZE/1024, p->minor);
-		
-	/* change here vma->vm_page_prot if neccessary */
-	//vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-	if(((1 << _PAGE_BIT_RW) & vma->vm_page_prot.pgprot) && p->kvirt_pbuf_h2l[0]){
-		fflink_info("Give user writable physical addr %lX\n", (unsigned long) virt_to_phys(p->kvirt_pbuf_h2l[0]));
-		if(mutex_lock_interruptible(&p->mmap_wbuf_mutex)) {
-			fflink_warn("got killed while aquiring the mutex\n");
-			return -ENOSPC;
-		}
-			
-		dma_sync_single_for_cpu(&get_pcie_dev()->dev, p->dma_handle_h2l[0], BUFFER_SIZE, PCI_DMA_TODEVICE);
-		return vm_iomap_memory(vma, virt_to_phys(p->kvirt_pbuf_h2l[0]), BUFFER_SIZE);
-		
-	} else if(p->kvirt_pbuf_l2h[0]) {
-		fflink_info("Give user readable physical addr %lX\n", (unsigned long) virt_to_phys(p->kvirt_pbuf_l2h[0]));	
-		if(mutex_lock_interruptible(&p->mmap_rbuf_mutex)) {
-			fflink_warn("got killed while aquiring the mutex\n");
-			return -ENOSPC;
-		}
-		
-		dma_sync_single_for_cpu(&get_pcie_dev()->dev, p->dma_handle_l2h[0], BUFFER_SIZE, PCI_DMA_FROMDEVICE);
-		return vm_iomap_memory(vma, virt_to_phys(p->kvirt_pbuf_l2h[0]), BUFFER_SIZE);
-	}
-	
-	fflink_warn("probably wrong flags - invalid memory unlikely\n");
-	return -EACCES;
-}
-
-/******************************************************************************/
 /* helper functions externally called e.g. to (un/)load this char device */
 
 /**
@@ -756,8 +533,8 @@ static int dma_mmap(struct file *filp, struct vm_area_struct *vma)
  * */
 void * get_dev_addr(int i)
 {
-	BUG_ON(i < 0 || i >= FFLINK_DMA_NODES);
-	return priv_data[i].device_base_addr;
+	BUG_ON(i < 0 || i >= 1);
+	return priv_data.device_base_addr;
 }
 
 /**
@@ -767,11 +544,11 @@ void * get_dev_addr(int i)
  * */
 void wake_up_queue(int i)
 {
-	BUG_ON(i < 0 || i >= FFLINK_DMA_NODES);
-	priv_data[i].condition_rw = true;
-	wake_up_interruptible_sync(&priv_data[i].rw_wait_queue);
+	BUG_ON(i < 0 || i >= 1);
+	priv_data.condition_rw = true;
+	wake_up_interruptible_sync(&priv_data.rw_wait_queue);
 }
-	
+
 /**
  * @brief Registers char device with multiple minor nodes in /dev
  * @param none
@@ -779,15 +556,15 @@ void wake_up_queue(int i)
  * */
 int char_dma_register(void)
 {
-	int err = 0, i;
+	int err = 0;
 	struct device *device = NULL;
 	
 	fflink_info("Try to add char_device to /dev\n");
 	
 	/* create device class to register under sysfs */
-	err = alloc_chrdev_region(&char_dma_dev_t, 0, FFLINK_DMA_NODES, FFLINK_DMA_NAME);
+	err = alloc_chrdev_region(&char_dma_dev_t, 0, 1, FFLINK_DMA_NAME);
 	if (err < 0 || MINOR(char_dma_dev_t) != 0) {
-		fflink_warn("failed to allocate chrdev with %d minors\n", FFLINK_DMA_NODES);
+		fflink_warn("failed to allocate chrdev with %d minors\n", 1);
 		goto error_no_device;
 	}
 	
@@ -802,34 +579,32 @@ int char_dma_register(void)
 	char_dma_cdev.owner = THIS_MODULE;
 	
 	/* try to add char dev */
-	err = cdev_add(&char_dma_cdev, char_dma_dev_t, FFLINK_DMA_NODES);
+	err = cdev_add(&char_dma_cdev, char_dma_dev_t, 1);
 	if (err) {
 		fflink_warn("failed to add char dev\n");
 		goto error_add_to_system;
 	}
 
-	for(i = 0; i < FFLINK_DMA_NODES; i++) {
-		/* create device file via udev */
-		device = device_create(char_dma_class, NULL, MKDEV(MAJOR(char_dma_dev_t), MINOR(char_dma_dev_t)+i), NULL, FFLINK_DMA_NAME "_%d", MINOR(char_dma_dev_t)+i);
-		if (IS_ERR(device)) {
-			err = PTR_ERR(device);
-			fflink_warn("failed while device create %d\n", MINOR(char_dma_dev_t));
-			goto error_device_create;
-		}
+	/* create device file via udev */
+	device = device_create(char_dma_class, NULL, MKDEV(MAJOR(char_dma_dev_t), MINOR(char_dma_dev_t)), NULL, FFLINK_DMA_NAME "_%d", MINOR(char_dma_dev_t));
+	if (IS_ERR(device)) {
+		err = PTR_ERR(device);
+		fflink_warn("failed while device create %d\n", MINOR(char_dma_dev_t));
+		goto error_device_create;
 	}
 	
-	return 0;
+	dma_ctrl_init((void *) DMA_BASE_ADDR_0);
+
+	return dma_initialize();
 	
 	/* tidy up for everything successfully allocated */
 error_device_create:
-	for(i = i - 1; i >= 0; i--) {
-		device_destroy(char_dma_class, MKDEV(MAJOR(char_dma_dev_t), MINOR(char_dma_dev_t)+i));
-	}
+	device_destroy(char_dma_class, MKDEV(MAJOR(char_dma_dev_t), MINOR(char_dma_dev_t)));
 	cdev_del(&char_dma_cdev);
 error_add_to_system:
 	class_destroy(char_dma_class);
 error_class_invalid:
-	unregister_chrdev_region(char_dma_dev_t, FFLINK_DMA_NODES);
+	unregister_chrdev_region(char_dma_dev_t, 1);
 error_no_device:
 	return -ENODEV;
 }
@@ -840,20 +615,18 @@ error_no_device:
  * @return none
  * */
 void char_dma_unregister(void)
-{
-	int i;
-	
+{	
 	fflink_info("Tidy up\n");
+
+	dma_deinit();
 	
-	for(i = 0; i < FFLINK_DMA_NODES; i++) {
-		device_destroy(char_dma_class, MKDEV(MAJOR(char_dma_dev_t), MINOR(char_dma_dev_t)+i));
-	}
+	device_destroy(char_dma_class, MKDEV(MAJOR(char_dma_dev_t), MINOR(char_dma_dev_t)));
 	
 	cdev_del(&char_dma_cdev);
 	
 	class_destroy(char_dma_class);
 	
-	unregister_chrdev_region(char_dma_dev_t, FFLINK_DMA_NODES);
+	unregister_chrdev_region(char_dma_dev_t, 1);
 }
 
 /******************************************************************************/

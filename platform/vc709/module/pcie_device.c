@@ -21,7 +21,7 @@
  * @brief Implementation of all the pcie-device related functions - the code will lookup the dev_id on the pcie-bus
 	if a matching pcie-device is found, the pcie-device will probed and a basic configuration of the core is done
 	expects the device to provide a bar0 register space, which will be used for access to its registers afterwards
-	in addition up to 8 msi interrupts will be allocated for the char-devices of ffLink 
+	in addition at least 8 msi interrupts will be allocated for the char-devices of ffLink 
  * */
 
 /******************************************************************************/
@@ -75,8 +75,8 @@ static int claim_device(struct pci_dev *pdev)
 		fflink_warn("Cannot remap Bar 0 address to kernel space\n");
 		goto error_pci_remap;
 	}
-	fflink_info("Remapped Bar 0 Address is: %llx\n", (unsigned long long int) pci_data.kvirt_addr_bar0);
-	
+	fflink_info("Remapped Bar 0 Address is: %llx\n", (unsigned long long int) pci_data.kvirt_addr_bar2);
+
 	return 0;
 
 error_pci_remap:	
@@ -94,28 +94,19 @@ error_pci_en:
  * */
 static int configure_device(struct pci_dev *pdev)
 {
-	int err = 0;
+	//int err = 0;
 	u16 ctrl_reg = 0;
+	int mps_start = 0;
+
 	
-	/* dma mask to set dma-able area
-     * currently pci specific code, but could be implemented with dma-api directly */
-	//err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(DMA_MAX_BIT));
-	err = pci_set_dma_mask(pdev, DMA_BIT_MASK(DMA_MAX_BIT));
-	if(err) {
-		fflink_warn("%u-bit area is not completly dma-able\n", DMA_MAX_BIT);
-		goto error_pci_dma_mask;
+	fflink_warn("Trying to find optimal MPS and ReadRQ Settings\n");
+	for(mps_start = 256; mps_start >= 128; mps_start /= 2) {
+		if(pcie_set_mps(pdev, mps_start) == 0) break;
 	}
-	err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(DMA_MAX_BIT));
-	if(err) {
-		fflink_warn("%u-bit area is not completly dma-able (consistent)\n", DMA_MAX_BIT);
-		goto error_pci_dma_mask;
+	for(mps_start = 4096; mps_start >= 128; mps_start /= 2) {
+		if(pcie_set_readrq(pdev, mps_start) == 0) break;
 	}
-	
-	/* FIXME: Bytes hardcoded and could change with newer kernel versions
-	 * set MPS to 256 Byte (0x20 for 256 or 0x60 for 512) */
-	pcie_capability_read_word(pdev, PCI_EXP_DEVCTL, &ctrl_reg);
-	fflink_info("Settings of PCI_EXP_DEVCTL: %X\n", ctrl_reg);
-	pcie_capability_write_word(pdev, PCI_EXP_DEVCTL, ctrl_reg | 0x20);
+	fflink_warn("Settings of MPS: %d and Maximum Read Request %d\n", pcie_get_mps(pdev), pcie_get_readrq(pdev));
 	
 	/* set RCB to maximum */
 	pcie_capability_read_word(pdev, PCI_EXP_LNKCTL, &ctrl_reg);
@@ -124,8 +115,8 @@ static int configure_device(struct pci_dev *pdev)
 	
 	return 0;
 	
-error_pci_dma_mask:
-	return -EINVAL;
+//error_pci_dma_mask:
+//	return -EINVAL;
 }
 
 /**
@@ -141,47 +132,47 @@ static int register_intr_handler(struct pci_dev *pdev, int c)
 	 * alternatively function will be called from free_irq as well with flag IRQF_SHARED */
 	switch(c) {
 		case 0:
-			err = request_irq(pdev->irq + c, intr_handler_dma_0, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
-			fflink_notice("Interrupt Line %d assigned with return value %d\n", pdev->irq + c, err);
+			err = request_irq(pci_irq_vector(pdev,c), intr_handler_dma, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
+			fflink_notice("Interrupt Line %d assigned with return value %d\n", pci_irq_vector(pdev,c), err);
 			pci_data.irq_assigned++;
 			break;
 		case 1:
-			err = request_irq(pdev->irq + c, intr_handler_dma_1, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
-			fflink_notice("Interrupt Line %d assigned with return value %d\n", pdev->irq + c, err);
+			err = request_irq(pci_irq_vector(pdev,c), intr_handler_dma, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
+			fflink_notice("Interrupt Line %d assigned with return value %d\n", pci_irq_vector(pdev,c), err);
 			pci_data.irq_assigned++;
 			break;
 		case 2:
-			err = request_irq(pdev->irq + c, intr_handler_dma_2, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
-			fflink_notice("Interrupt Line %d assigned with return value %d\n", pdev->irq + c, err);
+			err = request_irq(pci_irq_vector(pdev,c), intr_handler_dma, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
+			fflink_notice("Interrupt Line %d assigned with return value %d\n", pci_irq_vector(pdev,c), err);
 			pci_data.irq_assigned++;
 			break;
 		case 3:
-			err = request_irq(pdev->irq + c, intr_handler_dma_3, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
-			fflink_notice("Interrupt Line %d assigned with return value %d\n", pdev->irq + c, err);
+			err = request_irq(pci_irq_vector(pdev,c), intr_handler_dma, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
+			fflink_notice("Interrupt Line %d assigned with return value %d\n", pci_irq_vector(pdev,c), err);
 			pci_data.irq_assigned++;
 			break;
 		case 4:
-			err = request_irq(pdev->irq + c, intr_handler_user_0, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
-			fflink_notice("Interrupt Line %d assigned with return value %d\n", pdev->irq + c, err);
+			err = request_irq(pci_irq_vector(pdev,c), intr_handler_user_0, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
+			fflink_notice("Interrupt Line %d assigned with return value %d\n", pci_irq_vector(pdev,c), err);
 			pci_data.irq_assigned++;
 			break;
 		case 5:
-			err = request_irq(pdev->irq + c, intr_handler_user_1, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
-			fflink_notice("Interrupt Line %d assigned with return value %d\n", pdev->irq + c, err);
+			err = request_irq(pci_irq_vector(pdev,c), intr_handler_user_1, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
+			fflink_notice("Interrupt Line %d assigned with return value %d\n", pci_irq_vector(pdev,c), err);
 			pci_data.irq_assigned++;
 			break;
 		case 6:
-			err = request_irq(pdev->irq + c, intr_handler_user_2, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
-			fflink_notice("Interrupt Line %d assigned with return value %d\n", pdev->irq + c, err);
+			err = request_irq(pci_irq_vector(pdev,c), intr_handler_user_2, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
+			fflink_notice("Interrupt Line %d assigned with return value %d\n", pci_irq_vector(pdev,c), err);
 			pci_data.irq_assigned++;
 			break;
 		case 7:
-			err = request_irq(pdev->irq + c, intr_handler_user_3, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
-			fflink_notice("Interrupt Line %d assigned with return value %d\n", pdev->irq + c, err);
+			err = request_irq(pci_irq_vector(pdev,c), intr_handler_user_3, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, &pci_data);
+			fflink_notice("Interrupt Line %d assigned with return value %d\n", pci_irq_vector(pdev,c), err);
 			pci_data.irq_assigned++;
 			break;
 		default:
-			fflink_notice("No more interrupt handler for number (%d)\n", pdev->irq + c);
+			fflink_notice("No more interrupt handler for number (%d)\n", pci_irq_vector(pdev,c));
 			break;
 	}
 	return err;
@@ -197,13 +188,13 @@ static int claim_msi(struct pci_dev *pdev)
 	int err = 0, i;
 	
 	/* set up MSI interrupt vector to max size */
-	err = pci_alloc_irq_vectors(pdev, 1, pci_msi_vec_count(pdev), PCI_IRQ_MSI);
+	err = pci_alloc_irq_vectors(pdev, 1, 64, PCI_IRQ_MSI | PCI_IRQ_MSIX);
 	
 	if (err <= 0) {
 		fflink_warn("Cannot set MSI vector (%d)\n", err);
 		goto error_no_msi;
 	} else {
-		fflink_info("Got %d MSI vectors starting at %d\n", err, pdev->irq);
+		fflink_warn("Got %d MSI vectors\n", err);
 	}
 	pci_data.irq_first = pdev->irq;
 	pci_data.irq_length = err;
@@ -221,7 +212,7 @@ static int claim_msi(struct pci_dev *pdev)
 	
 error_pci_req_irq:
 	for(i = i-1; i >= 0; i--)
-		free_irq(pci_data.irq_first + i, &pci_data);
+		free_irq(pci_irq_vector(pci_data.pdev,i), &pci_data);
 	pci_free_irq_vectors(pci_data.pdev);
 error_no_msi:
 	return -ENOSPC;
@@ -298,7 +289,16 @@ void * get_virt_bar0_addr(void)
  * */
 void pcie_writel(unsigned long data, void * addr)
 {
+	if(pci_data.phy_len_bar0 <=  (long unsigned)addr) {
+		fflink_warn("Illegal write request to address 0x%lx\n", (long unsigned)addr);
+		return;
+	}
 	writel(data, pci_data.kvirt_addr_bar0 + (unsigned long long) addr);
+}
+
+void pcie_writel_bar2(unsigned long data, void * addr)
+{
+	writel(data, pci_data.kvirt_addr_bar2 + (unsigned long long) addr);
 }
 
 /**
@@ -309,7 +309,16 @@ void pcie_writel(unsigned long data, void * addr)
  * */
 unsigned long pcie_readl(void * addr)
 {
+	if(pci_data.phy_len_bar0 <= (long unsigned)addr) {
+		fflink_warn("Illegal read request to address 0x%lx\n", (long unsigned)addr);
+		return 0;
+	}
 	return readl(pci_data.kvirt_addr_bar0 + (unsigned long long) addr);
+}
+
+unsigned long pcie_readl_bar2(void * addr)
+{
+	return readl(pci_data.kvirt_addr_bar2 + (unsigned long long) addr);
 }
 
 /******************************************************************************/
@@ -358,8 +367,7 @@ static void fflink_pci_remove(struct pci_dev *pdev)
 	fflink_info("Unload pci-device\n");
 	
 	for(i = 0; i < pci_data.irq_assigned; i++)
-		free_irq(pci_data.irq_first + i, &pci_data);
-	
+	    free_irq(pci_irq_vector(pci_data.pdev,i), &pci_data);
 	pci_free_irq_vectors(pci_data.pdev);
 	
 	iounmap(pci_data.kvirt_addr_bar0);

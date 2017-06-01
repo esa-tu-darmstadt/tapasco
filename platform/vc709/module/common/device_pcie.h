@@ -43,6 +43,9 @@ struct pci_dev* get_pcie_dev(void);
 void pcie_writel(unsigned long data, void * addr);
 unsigned long pcie_readl(void * addr);
 
+void pcie_writel_bar2(unsigned long data, void * addr);
+unsigned long pcie_readl_bar2(void * addr);
+
 /******************************************************************************/
 
 #endif // __DEVICE_PCIE_H

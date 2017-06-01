@@ -45,6 +45,12 @@ static int __init fflink_init(void)
 	
 	fflink_notice("Init char-dev(s), dev-entries and register pci-device\n");
 	
+	err = pcie_register();
+	if(err) {
+		fflink_info("Could not register pcie device\n");
+		goto error_pcie_register;
+	}
+	
 	err = char_dma_register();
 	if(err) {
 		fflink_info("Could not register dma char device(s)\n");
@@ -56,13 +62,7 @@ static int __init fflink_init(void)
 		fflink_info("Could not register user char device(s)\n");
 		goto error_user_register;
 	}
-	
-	err = pcie_register();
-	if(err) {
-		fflink_info("Could not register pcie device\n");
-		goto error_pcie_register;
-	}
-	
+
 	fflink_warn("Successfully registered driver\n");
 	
 	return 0;

@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2014 David de la Chevallerie, TU Darmstadt
+// Copyright (C) 2017 Jaco A. Hofmann, TU Darmstadt
 //
 // This file is part of Tapasco (TPC).
 //
@@ -30,17 +30,13 @@
 /******************************************************************************/
 
 /* Register Map and commands */
-#define REG_HOST_ADDR_LOW 	0x00 	/* slv_reg0 = PCIe addr (under) */
-#define REG_HOST_ADDR_HIGH 	0x04	/* slv_reg1 = PCIe addr (upper) */
-#define REG_FPGA_ADDR_LOW 	0x08	/* slv_reg2 = FPGA addr */
-#define REG_BTT 			0x10	/* slv_reg4 = bytes to transfer */
-#define REG_ID 				0x14	/* slv_reg5 = ID */
-#define REG_CMD 			0x18	/* slv_reg6 = CMD */
-#define REG_STATUS 			0x20	/* slv_reg8 = return status */
+#define REG_HOST_ADDR 	0x00 	/* slv_reg0 = PCIe addr */
+#define REG_FPGA_ADDR 	0x08	/* slv_reg1 = FPGA addr */
+#define REG_BTT 		0x10	/* slv_reg2 = bytes to transfer */
+#define REG_CMD 		0x20	/* slv_reg3 = CMD */
 
-#define CMD_READ	0x10001000 		/* from m32 fpga memory to m64 host memory */
-#define CMD_WRITE	0x10000001 		/* from m64 host memory to m32 fpga memory */
-#define CMD_ACK		0x10011001 		/* acknowledge data transfer to toggle interrupt */
+#define CMD_READ	0x10001000 		/* from m64 fpga memory to m64 host memory */
+#define CMD_WRITE	0x10000001 		/* from m64 host memory to m64 fpga memory */
 
 /* mutex to sequentialize access to dma registers */
 //static DEFINE_MUTEX(dma_regs_mutex);
@@ -54,9 +50,8 @@
  * @param dev_id magic number for interrupt sharing (not needed)
  * @return Tells OS, that irq is handled properly
  * */
-irqreturn_t dual_dma_intr_handler_dma(int irq, void * dev_id)
+irqreturn_t blue_dma_intr_handler(int irq, void * dev_id)
 {
-	pcie_writel(CMD_ACK, get_dev_addr(0) + REG_CMD);
 	return IRQ_HANDLED;
 }
 
@@ -70,16 +65,16 @@ irqreturn_t dual_dma_intr_handler_dma(int irq, void * dev_id)
  * @param device_base_addr Address of dma engine registers
  * @return none
  * */
-void dual_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr)
+void blue_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr)
 {
 	fflink_info("dev_buf %lX dma_handle %lX \nsize %d dev_base %lX\n", (unsigned long) device_buffer, (unsigned long) host_handle, btt, (unsigned long) device_base_addr);
 	//if(mutex_lock_interruptible(&dma_regs_mutex))
 	//	fflink_warn("got killed while aquiring the mutex\n");
 		
 	/* SA */
-	pcie_writel((unsigned long) device_buffer, device_base_addr + REG_FPGA_ADDR_LOW);
+	pcie_writel((unsigned long)device_buffer, device_base_addr + REG_FPGA_ADDR);
 	/* DA */
-	pcie_writel(host_handle, device_base_addr + REG_HOST_ADDR_LOW);
+	pcie_writel(host_handle, device_base_addr + REG_HOST_ADDR);
 	/* btt */
 	pcie_writel(btt, device_base_addr + REG_BTT);
 	/* presvious data have to be written first */
@@ -98,23 +93,23 @@ void dual_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle,
  * @param device_base_addr Address of dma engine registers
  * @return none
  * */
-void dual_dma_transmit_to_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr)
+void blue_dma_transmit_to_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr)
 {
 	fflink_info("dev_buf %lX dma_handle %lX \nsize %d dev_base %lX\n", (unsigned long) device_buffer, (unsigned long) host_handle, btt, (unsigned long) device_base_addr);
 	//if(mutex_lock_interruptible(&dma_regs_mutex))
 	//	fflink_warn("got killed while aquiring the mutex\n");
 	
 	/* SA */
-	pcie_writel(host_handle, device_base_addr + REG_HOST_ADDR_LOW);
+	pcie_writel(host_handle, device_base_addr + REG_HOST_ADDR);
 	/* DA */
-	pcie_writel((unsigned long) device_buffer, device_base_addr + REG_FPGA_ADDR_LOW);
+	pcie_writel((unsigned long)device_buffer, device_base_addr + REG_FPGA_ADDR);
 	/* btt */
 	pcie_writel(btt, device_base_addr + REG_BTT);
 	/* presvious data have to be written first */
 	wmb();
 	/* start cmd */
 	pcie_writel(CMD_WRITE, device_base_addr + REG_CMD);
-
+	
 	//mutex_unlock(&dma_regs_mutex);
 }
 

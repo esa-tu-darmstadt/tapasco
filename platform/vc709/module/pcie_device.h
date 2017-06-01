@@ -99,10 +99,14 @@ struct pci_data_struct{
 	unsigned long long phy_addr_bar0;
 	unsigned long long phy_len_bar0;
 	unsigned long long phy_flags_bar0;
+	unsigned long long phy_addr_bar2;
+	unsigned long long phy_len_bar2;
+	unsigned long long phy_flags_bar2;
 	unsigned int irq_first;	
 	unsigned int irq_length;
 	unsigned int irq_assigned;
 	void * kvirt_addr_bar0;
+	void * kvirt_addr_bar2;
 };
 
 /******************************************************************************/
