@@ -25,6 +25,7 @@
 
 # init paths
 DRIVER=ffLink
+DRIVERPATH="$TAPASCO_HOME/platform/vc709/module"
 BITLOAD_SCRIPT="$TAPASCO_HOME/platform/vc709/module/program_vc709.tcl"
 LOG_ID=$DRIVER"|""pci"
 
@@ -108,7 +109,7 @@ then
 
 	# reload driver?
 	if [ $RELOADD -gt 0 ]; then
-		sudo insmod $driver_path$driver_name".ko"
+		sudo insmod $DRIVERPATH/${DRIVER}.ko
 		sudo chown $USER /dev/FFLINK*
 	fi
 

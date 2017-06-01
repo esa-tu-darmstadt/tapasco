@@ -197,8 +197,7 @@ static int claim_msi(struct pci_dev *pdev)
 	int err = 0, i;
 	
 	/* set up MSI interrupt vector to max size */
-	fflink_info("Have %d MSI vectors\n", pci_msi_vec_count(pdev));
-	err = pci_enable_msi_range(pdev, 1, pci_msi_vec_count(pdev));
+	err = pci_alloc_irq_vectors(pdev, 1, pci_msi_vec_count(pdev), PCI_IRQ_MSI);
 	
 	if (err <= 0) {
 		fflink_warn("Cannot set MSI vector (%d)\n", err);
@@ -223,7 +222,7 @@ static int claim_msi(struct pci_dev *pdev)
 error_pci_req_irq:
 	for(i = i-1; i >= 0; i--)
 		free_irq(pci_data.irq_first + i, &pci_data);
-	pci_disable_msi(pci_data.pdev);
+	pci_free_irq_vectors(pci_data.pdev);
 error_no_msi:
 	return -ENOSPC;
 }
@@ -361,7 +360,7 @@ static void fflink_pci_remove(struct pci_dev *pdev)
 	for(i = 0; i < pci_data.irq_assigned; i++)
 		free_irq(pci_data.irq_first + i, &pci_data);
 	
-	pci_disable_msi(pci_data.pdev);
+	pci_free_irq_vectors(pci_data.pdev);
 	
 	iounmap(pci_data.kvirt_addr_bar0);
 	
