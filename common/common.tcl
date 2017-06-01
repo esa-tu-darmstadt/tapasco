@@ -798,7 +798,8 @@ namespace eval tapasco {
   # @param freqs list of name frequency (MHz) pairs, e.g., [list design 100 memory 250]
   # @param name Name of the subsystem group
   # @return Subsystem group
-  proc create_subsystem_clocks_and_resets {{freqs [get_frequencies]} {name ClockResets}} {
+  proc create_subsystem_clocks_and_resets {{freqs {}} {name ClockResets}} {
+    if {$freqs == {}} { set freqs [get_frequencies] }
     puts "Creating clock and reset subsystem ..."
     puts "  frequencies: $freqs"
     set instance [current_bd_instance .]

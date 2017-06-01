@@ -331,15 +331,7 @@ namespace eval platform {
       set ss_host [create_subsystem_host]
 
       # create clocks and resets
-      set mem_freq 200
-      if {[tapasco::get_speed_grade] > -2} {
-        puts "  speed grade: [tapasco::get_speed_grade], reducing mem speed to 158 MHz"
-        set mem_freq 158
-      }
-      set ss_cnr [tapasco::create_subsystem_clocks_and_resets [list \
-          "host" [tapasco::get_design_frequency] \
-          "design" [tapasco::get_design_frequency] \
-          "memory" $mem_freq]]
+      set ss_cnr [tapasco::create_subsystem_clocks_and_resets]
       connect_bd_net [get_bd_pins -filter {TYPE == rst && DIR == O} -of_objects $ss_host] \
           [get_bd_pins -filter {TYPE == rst && DIR == I} -of_objects $ss_cnr]
 
