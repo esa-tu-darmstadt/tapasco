@@ -29,3 +29,8 @@ set_property IOSTANDARD LVCMOS33 [get_ports oled_oled_res]
 set_property IOSTANDARD LVCMOS33 [get_ports oled_oled_dc]
 set_property IOSTANDARD LVCMOS33 [get_ports oled_oled_sclk]
 set_property IOSTANDARD LVCMOS33 [get_ports oled_oled_sdin]
+
+set_property PACKAGE_PIN T22 [get_ports heartbeat]
+set_property PACKAGE_PIN T21 [get_ports initialized]
+set_property IOSTANDARD LVCMOS33 [get_ports initialized]
+set_property IOSTANDARD LVCMOS33 [get_ports heartbeat]

@@ -38,6 +38,8 @@ namespace eval oled {
     # create ports
     set clk [create_bd_pin -type "clk" -dir I "aclk"]
     set rst [create_bd_pin -type "rst" -dir I "peripheral_aresetn"]
+    set initialized [create_bd_port -dir O "initialized"]
+    set heartbeat [create_bd_port -dir O "heartbeat"]
     set op_cc [tapasco::createConcat "op_cc" $no_intcs]
     connect_bd_net [get_bd_pins -of_objects $op_cc -filter { DIR == "O" }] [get_bd_pins $oled_ctrl/intr]
     for {set i 0} {$i < $no_intcs} {incr i} {
@@ -53,12 +55,14 @@ namespace eval oled {
     # create external port 'oled'
     set op [create_bd_intf_port -mode "master" -vlnv "esa.cs.tu-darmstadt.de:user:oled_rtl:1.0" "oled"]
     connect_bd_intf_net [get_bd_intf_pins -of_objects $oled_ctrl] $op
+    connect_bd_net [get_bd_pins $oled_ctrl/initialized] $initialized
+    connect_bd_net [get_bd_pins $oled_ctrl/heartbeat] $heartbeat
 
     current_bd_instance $instance
     return $group
   }
 
-  proc oled_feature {} {
+  proc oled_feature {{args {}}} {
     if {[tapasco::is_platform_feature_enabled "OLED"]} {
       set oled [create_subsystem_oled "OLED" [arch::get_irqs]]
       set ps [get_bd_cell -hierarchical -filter {VLNV =~ "xilinx.com:ip:processing_system*"}]
@@ -71,9 +75,8 @@ namespace eval oled {
 
       connect_bd_net $clk [get_bd_pins "$oled/aclk"]
       connect_bd_net $rst [get_bd_pins "$oled/peripheral_aresetn"]
-
-      return $oled
     }
+    return {}
   }
 }
 
