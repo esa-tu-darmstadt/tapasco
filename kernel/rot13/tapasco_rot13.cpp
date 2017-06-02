@@ -59,14 +59,14 @@ static char *read_file(char const *fn, size_t& file_sz)
 int main(int argc, char *argv[])
 {
   size_t sz;
-  assert(argc > 1); 					// need filename
-  Tapasco tapasco;				// init TPC
-  char *filedata = read_file(argv[1], sz);		// read data
+  assert(argc > 1); 						// need filename
+  Tapasco tapasco;						// init Tapasco
+  char *filedata = read_file(argv[1], sz);			// read data
   atomic<long> nr_jobs { static_cast<long>
-      (sz / MAX_LEN + (sz % MAX_LEN ? 1 : 0)) };	// number of jobs
-  size_t const nr_threads = tapasco.func_instance_count(13);// number PEs
-  vector<future<void> > fs;				// futures
-  char *text_out = new char[sz];			// out buffer
+      (sz / MAX_LEN + (sz % MAX_LEN ? 1 : 0)) };		// number of jobs
+  size_t const nr_threads = tapasco.func_instance_count(13);	// number PEs
+  vector<future<void> > fs;					// futures
+  char *text_out = new char[sz];				// out buffer
 
   for (size_t i = 0; i < nr_threads; ++i) {
     fs.push_back(async(launch::async, [&]() {
@@ -92,7 +92,6 @@ int main(int argc, char *argv[])
 
   for (auto& f : fs)
     f.get();					// wait for threads to finish
-
 
   cout << text_out << endl;
   delete[] text_out;

@@ -30,7 +30,7 @@ using namespace std;
 
 static constexpr size_t MAX_LEN = 4096;
 
-static inline char testrot13(const char c)
+static inline char char_rot13(const char c)
 {
   if (c < 'A' || c > 'Z') return c;
   return c >= 'N' ? c - 13 : c + 13;
@@ -42,7 +42,7 @@ void rot13(uint32_t const len, char const text_in[MAX_LEN],
   char buf_in[MAX_LEN], buf_out[MAX_LEN];
   memcpy(buf_in, text_in, len);
   for (size_t i = 0; i < len; ++i)
-    buf_out[i] = testrot13(buf_in[i]);
+    buf_out[i] = char_rot13(buf_in[i]);
   memcpy(text_out, buf_out, len);
 }
 
