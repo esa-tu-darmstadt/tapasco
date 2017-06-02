@@ -126,8 +126,8 @@ class ComposeTask(composition: Composition,
   val memory = debugMode map { _ => 0 } getOrElse (target.pd.name match {
     case "vc709"    => 16 * 1024 * 1024
     case "zc706"    => 12 * 1024 * 1024
-    case "zedboard" =>  6 * 1024 * 1024
-    case "pynq"     =>  6 * 1024 * 1024
+    case "zedboard" => 10 * 1024 * 1024
+    case "pynq"     => 10 * 1024 * 1024
     case _          => 16 * 1024 * 1024
   })
 
