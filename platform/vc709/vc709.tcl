@@ -172,8 +172,7 @@ namespace eval platform {
       puts "Platform configured w/L2 Cache, implementing ..."
       set cache [tapasco::createSystemCache "cache_l2" 1 \
           [dict get [tapasco::get_platform_feature "Cache"] "size"] \
-          [dict get [tapasco::get_platform_feature "Cache"] "associativity"] \
-	]
+          [dict get [tapasco::get_platform_feature "Cache"] "associativity"]]
 
       # connect mig_ic master to cache_l2
       connect_bd_intf_net [get_bd_intf_pins mig_ic/M00_AXI] [get_bd_intf_pins $cache/S0_AXI_GEN]
@@ -410,10 +409,6 @@ namespace eval platform {
       CONFIG.pf0_interrupt_pin {NONE} \
       CONFIG.c_s_axi_supports_narrow_burst {false} \
     ]
-
-    if {[tapasco::is_platform_feature_enabled "BlueDMA"]} {
-      lappend pcie_properties CONFIG.pciebar2axibar_0 {0x0005000000000000}
-    }
 
     # enable ATS/PRI (if platform feature is set)
     if {[tapasco::is_platform_feature_enabled "ATS-PRI"]} {
