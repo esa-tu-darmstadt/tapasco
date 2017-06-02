@@ -22,7 +22,7 @@
 # @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
 namespace eval apu_frequency {
-  proc set_max_apu_frequency {} {
+  proc set_max_apu_frequency {{args {}}} {
     puts "Increasing ZC706 APU frequency to 800 MHz ..."
     set ps [get_bd_cell -hierarchical -filter {VLNV =~ "xilinx.com:ip:processing_system*"}]
     set_property -dict [list CONFIG.PCW_APU_PERIPHERAL_FREQMHZ {800}] $ps

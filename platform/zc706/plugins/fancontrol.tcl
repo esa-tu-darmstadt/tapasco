@@ -22,7 +22,7 @@
 # @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
 namespace eval fancontrol {
-  proc fancontrol_feature {} {
+  proc fancontrol_feature {{args {}}} {
     if {![dict exists [tapasco::get_architecture_features] "FanControl"] || [tapasco::is_platform_feature_enabled "FanControl"]} {
       put "Building primitive PWM module to subdue the noisy ZC706 fan ..."
       set ps [get_bd_cell -hierarchical -filter {VLNV =~ "xilinx.com:ip:processing_system*"}]
@@ -37,10 +37,11 @@ namespace eval fancontrol {
     return {}
   }
 
-  proc fancontrol_falsepath {} {
+  proc fancontrol_falsepath {{args {}}} {
     set port [get_ports -filter {NAME =~ *pwm*}]
     puts "Setting false path on $port, timing does not matter."
     set_false_path -to $port
+    return {}
   }
 }
 
