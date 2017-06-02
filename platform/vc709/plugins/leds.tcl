@@ -90,6 +90,7 @@ namespace eval leds {
       connect_bd_net -net pcie_aclk_net $pcie_aclk [get_bd_pins $gp_led/aclk]
       connect_bd_net -net pcie_aresetn_net [get_bd_pins "/PCIe/pcie_aresetn"] [get_bd_pins $gp_led/aresetn]
     }
+    return {}
   }
 }
 

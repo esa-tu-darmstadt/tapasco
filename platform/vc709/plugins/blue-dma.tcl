@@ -13,7 +13,7 @@ namespace eval blue_dma {
   }
 
   proc set_constraints {{args {}}} {
-    if {[tpc::is_platform_feature_enabled "BlueDMA"]} {
+    if {[tapasco::is_platform_feature_enabled "BlueDMA"]} {
       puts "Adding false path constraints for BlueDMA"
       set constraints_fn "[get_property DIRECTORY [current_project]]/bluedma.xdc"
       set constraints_file [open $constraints_fn w+]
@@ -26,6 +26,7 @@ namespace eval blue_dma {
       close $constraints_file
       read_xdc -cells {system_i/Memory/dual_dma} $constraints_fn
     } 
+    return {}
   }
 }
 

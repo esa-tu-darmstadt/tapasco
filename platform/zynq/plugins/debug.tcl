@@ -53,14 +53,14 @@ namespace eval debug {
       foreach s $defsignals {
         set net [get_nets -hier "*$name$s"]
         puts "  adding net $net for signal $s ..."
-	if {[llength $net] > 1} { lappend ret $net } { lappend ret [list $net] }
+        if {[llength $net] > 1} { lappend ret $net } { lappend ret [list $net] }
       }
     }
     foreach m {"system_i/Host_M_AXI_GP0"} {
       foreach s $defsignals {
         set net [get_nets "$m$s"]
         puts "  adding net $net for signal $s ..."
-	if {[llength $net] > 1} { lappend ret $net} { lappend ret [list $net] }
+        if {[llength $net] > 1} { lappend ret $net} { lappend ret [list $net] }
       }
     }
     puts "  signal list: $ret"
@@ -86,15 +86,16 @@ namespace eval debug {
       if {$use_defaults} { foreach n [get_debug_nets] { lappend dnl $n }}
       if {[llength $nets] > 0} {
         foreach n $nets {
-	  set nnets [get_nets -hier $n]
-	  puts "  for '$n' found [llength $nnets] nets: $nnets"
-	  foreach nn $nnets { lappend dnl [list $nn] }
-	}
+          set nnets [get_nets -hier $n]
+          puts "  for '$n' found [llength $nnets] nets: $nnets"
+          foreach nn $nnets { lappend dnl [list $nn] }
+        }
       }
       # create ILA core
       tapasco::create_debug_core [get_nets system_i/Host_fclk0_aclk] $dnl $depth $stages
       reset_run synth
     }
+    return {}
   }
 
   proc write_ltx {} {
@@ -103,6 +104,7 @@ namespace eval debug {
       puts "Writing debug probes into file ${bitstreamname}.ltx ..."
       write_debug_probes -force -verbose "${bitstreamname}.ltx"
     }
+    return {}
   }
 }
 
