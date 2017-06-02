@@ -23,6 +23,7 @@
  **/
 package de.tu_darmstadt.cs.esa.tapasco.jobs.executors
 import  de.tu_darmstadt.cs.esa.tapasco.base._
+import  de.tu_darmstadt.cs.esa.tapasco.filemgmt._
 import  de.tu_darmstadt.cs.esa.tapasco.task._
 import  de.tu_darmstadt.cs.esa.tapasco.jobs._
 import  de.tu_darmstadt.cs.esa.tapasco.jobs.json._
@@ -42,13 +43,28 @@ private object DesignSpaceExploration extends Executor[DesignSpaceExplorationJob
 
     logger.debug("kernels found in composition: {}", kernels)
 
-    // run HLS job first to build all kernels (will skip existing ones)
-    val hls_ok = HighLevelSynthesisJob(
-      "VivadoHLS", // FIXME
-      if (job.architectures.size > 0) Some(job.architectures.toSeq map (_.name) sorted) else None,
-      if (job.platforms.size > 0) Some(job.platforms.toSeq map (_.name) sorted) else None,
-      Some(kernels.toSeq.sorted)
-    ).execute
+    val missing = for {
+      k <- kernels
+      t <- job.targets
+      if FileAssetManager.entities.core(k, t).isEmpty
+    } yield (k, t)
+
+    if (missing.nonEmpty) {
+      logger.info("need to synthesize the following cores first: {}",
+        missing map { case (k, t) => "%s @ %s".format(k, t) } mkString ", ")
+    }
+
+    val hls_results = missing map { case (k, t) =>
+      // run HLS job for this kernel and target
+      HighLevelSynthesisJob(
+        "VivadoHLS", // FIXME
+        Some(Seq(t.ad.name)),
+        Some(Seq(t.pd.name)),
+        Some(Seq(k))
+      ).execute
+    }
+
+    val hls_ok = (hls_results fold true) (_ && _)
 
     if (hls_ok) {
       val tasks = for {
