@@ -30,6 +30,9 @@ if {![info exists ::env(TAPASCO_HOME)]} {
 # source base lib
 source -notrace "$::env(TAPASCO_HOME)/common/common.tcl"
 
+# event: pre-header
+tapasco::call_plugins "pre-header"
+
 # source common procs
 @@HEADER@@
 
@@ -39,6 +42,9 @@ source -notrace @@ARCHITECTURE_TCL@@
 # source platform-specific Tcl scripts
 source -notrace "$env(TAPASCO_HOME)/platform/common/platform.tcl"
 source -notrace @@PLATFORM_TCL@@
+
+# event: post-init
+tapasco::call_plugins "post-init"
 
 # name of the bitstream description file
 set bitstreamname @@BITSTREAM_NAME@@
@@ -66,11 +72,20 @@ set_msg_config -suppress -id {[xilinx.com:ip:axi_intc:4.1-7]}
 # create design
 create_bd_design -quiet "system"
 
+# event: post-init
+tapasco::call_plugins "pre-arch"
+
 # instantiate architecture
 arch::create
 
+# event: pre-platform
+tapasco::call_plugins "pre-platform"
+
 # instantiate and connect platform
 platform::create
+
+# event: post-platform
+tapasco::call_plugins "pre-wrapper"
 
 # create wrapper
 make_wrapper -files [get_files [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/system.bd] -top
