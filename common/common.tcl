@@ -510,13 +510,8 @@ namespace eval tapasco {
     if {[info exists tapasco_mem_freq]} {
       return $tapasco_mem_freq
     } else {
-      set mem_freq 200
-      if {[tapasco::get_speed_grade] > -2} {
-        puts "  speed grade: [tapasco::get_speed_grade], reducing mem speed to 158 MHz"
-        set mem_freq 158
-      }
-      puts "WARNING: tapasco_mem_freq is not set! Using fallback: $mem_freq MHz"
-      return $mem_freq
+      puts "WARNING: tapasco_mem_freq is not set, using design frequency of [tapasco::get_design_frequency] MHz"
+      return [tapasco::get_design_frequency]
     }
   }
 
