@@ -42,6 +42,7 @@ private case class ConfigurationImpl (
       private val _compositionDir: Path               = TapascoCommon.homeDir.resolve("bd"),
       private val _logFile: Option[Path]              = None,
       slurm: Boolean                                  = false,
+      parallel: Boolean                               = false,
       jobs: Seq[Job]                                  = Seq()
     ) extends Description(descPath: Path) with Configuration {
   def descPath(p: Path): Configuration = this.copy(descPath = p)
@@ -58,6 +59,7 @@ private case class ConfigurationImpl (
   val logFile: Option[Path] = _logFile map (resolve _)
   def logFile(op: Option[Path]): Configuration = this.copy(_logFile = op)
   def slurm(enabled: Boolean): Configuration = this.copy(slurm = enabled)
+  def parallel(enabled: Boolean): Configuration = this.copy(parallel = enabled)
   def jobs(js: Seq[Job]): Configuration = this.copy(jobs = js)
 
   // these directories must exist

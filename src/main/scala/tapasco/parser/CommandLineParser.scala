@@ -43,6 +43,10 @@ object CommandLineParser extends JavaTokenParsers {
     p => ("Slurm", p._2 getOrElse true)
   }
 
+  private[parser] def parallel: Parser[(String, Boolean)] = param("parallel", false) ~ opt(boolLiteral) ^^ {
+    p => ("Parallel", p._2 getOrElse true)
+  }
+
   private[parser] def configFile: Parser[String] = param("configfile", false) ~> path
 
   private[parser] def jobsFile: Parser[String] = param("jobsfile", false) ~> path

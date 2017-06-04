@@ -80,6 +80,7 @@ private object PrettyPrinter {
       "ArchDir = " + c.archDir,
       "PlatformDir = " + c.platformDir,
       "Slurm = " + c.slurm,
+      "Parallel = " + c.parallel,
       "Jobs = " + c.jobs
     ) mkString NL
 

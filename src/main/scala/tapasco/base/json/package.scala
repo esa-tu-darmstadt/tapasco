@@ -345,6 +345,7 @@ package object json {
     (JsPath \ "CompositionDir").readNullable[Path].map (_ getOrElse Paths.get("bd")) ~
     (JsPath \ "LogFile").readNullable[Path] ~
     (JsPath \ "Slurm").readNullable[Boolean].map (_ getOrElse false) ~
+    (JsPath \ "Parallel").readNullable[Boolean].map (_ getOrElse false) ~
     (JsPath \ "Jobs").read[Seq[Job]]
   ) (ConfigurationImpl.apply _)
   implicit private val configurationWrites: Writes[ConfigurationImpl] = (
@@ -356,6 +357,7 @@ package object json {
     (JsPath \ "CompositionDir").write[Path] ~
     (JsPath \ "LogFile").writeNullable[Path] ~
     (JsPath \ "Slurm").write[Boolean] ~
+    (JsPath \ "Parallel").write[Boolean] ~
     (JsPath \ "Jobs").write[Seq[Job]]
   ) (unlift(ConfigurationImpl.unapply _))
   implicit object ConfigurationWrites extends Writes[Configuration] {

@@ -25,6 +25,8 @@ import  itapasco.controller._
 import  parser._
 import  slurm._
 import  java.nio.file.Path
+import  scala.concurrent._
+import  scala.concurrent.ExecutionContext.Implicits.global
 
 object Tapasco {
   import org.slf4j.LoggerFactory
@@ -74,7 +76,11 @@ object Tapasco {
         FileAssetManager.start()
         cfg.logFile map { logfile: Path => setupLogFileAppender(logfile.toString) }
         logger.info(cfg.toString)
-        runGui(args) || (cfg.jobs map { execute(_) } fold true) (_ && _)
+        def get(f: Future[Boolean]): Boolean = { Await.ready(f, duration.Duration.Inf); f.value map (_ getOrElse false) getOrElse false }
+        if (cfg.parallel)
+          runGui(args) || (cfg.jobs map { j => Future { jobs.executors.execute(j) } } map (get _) fold true) (_ && _)
+        else
+          runGui(args) || (cfg.jobs map { jobs.executors.execute(_) } fold true) (_ && _)
       } else {
         logger.error("invalid arguments: {}", c.left.get.toString)
         logger.error(Usage())

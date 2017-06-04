@@ -46,6 +46,8 @@ trait Configuration {
   def logFile(p: Option[Path]): Configuration
   def slurm: Boolean
   def slurm(enabled: Boolean): Configuration
+  def parallel: Boolean
+  def parallel(enabled: Boolean): Configuration
 
   /** Returns the default output directory for the given kernel and target. */
   def outputDir(kernel: Kernel, target: Target): Path =
