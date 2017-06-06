@@ -96,8 +96,8 @@ class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) ext
 
   /** @inheritdoc */
   def clean(bd: Composition, target: Target, f: Double = 0)(implicit cfg: Configuration): Unit = {
-    Common.getFiles(cfg.outputDir(bd, target, f).resolve("bit").toFile).filter(_.isFile).map(_.delete)
-    Common.getFiles(cfg.outputDir(bd, target, f).resolve("bit").toFile).filter(_.isDirectory).map(_.deleteOnExit)
+    Common.getFiles(cfg.outputDir(bd, target, f).resolve("microarch").toFile).filter(_.isFile).map(_.delete)
+    Common.getFiles(cfg.outputDir(bd, target, f).resolve("microarch").toFile).filter(_.isDirectory).map(_.deleteOnExit)
     Common.getFiles(cfg.outputDir(bd, target, f).resolve("user_ip").toFile).filter(_.isFile).map(_.delete)
     Common.getFiles(cfg.outputDir(bd, target, f).resolve("user_ip").toFile).filter(_.isDirectory).map(_.deleteOnExit)
   }
