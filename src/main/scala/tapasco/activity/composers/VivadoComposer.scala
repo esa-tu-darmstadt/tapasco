@@ -37,7 +37,7 @@ import  ComposeResult._
 import  LogFormatter._
 
 /** Implementation of [[Composer]] for Vivado Design Suite. */
-class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) extends Composer {
+class VivadoComposer()(implicit cfg: Configuration) extends Composer {
   import VivadoComposer._
   private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
 
@@ -46,8 +46,8 @@ class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) ext
 
   /** @inheritdoc */
   def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, archFeatures: Seq[Feature] = Seq(),
-      platformFeatures: Seq[Feature] = Seq()) (implicit cfg: Configuration, maxThreads: Option[Int]): Composer.Result = {
-    logger.debug("VivadoComposer uses at most {} threads", maxThreads getOrElse "unlimited")
+      platformFeatures: Seq[Feature] = Seq()) (implicit cfg: Configuration): Composer.Result = {
+    logger.debug("VivadoComposer uses at most {} threads", cfg.maxThreads getOrElse "unlimited")
     // create output struct
     val files = VivadoComposer.Files(bd, target, f, archFeatures ++ platformFeatures)
     // create output directory
@@ -189,8 +189,8 @@ class VivadoComposer()(implicit cfg: Configuration, maxThreads: Option[Int]) ext
     (target.pd.hostFrequency map (f => "set tapasco_host_freq %3.0f%s".format(f, NL)) getOrElse "") +
     (target.pd.memFrequency map (f => "set tapasco_mem_freq %3.0f%s".format(f, NL)) getOrElse "") +
     (target.pd.boardPreset map (bp => "set tapasco_board_preset %s%s".format(bp, NL)) getOrElse "") +
-    (maxThreads map (mt => "set tapasco_jobs %d%s".format(mt, NL)) getOrElse "") +
-    (maxThreads map (mt => "set_param general.maxThreads %d%s".format(mt, NL)) getOrElse "") +
+    (cfg.maxThreads map (mt => "set tapasco_jobs %d%s".format(mt, NL)) getOrElse "") +
+    (cfg.maxThreads map (mt => "set_param general.maxThreads %d%s".format(mt, NL)) getOrElse "") +
     (platformFeatures.map { f => new FeatureTclPrinter("platform").toTcl(f) } mkString NL) +
     (archFeatures.map { f => new FeatureTclPrinter("architecture").toTcl(f) } mkString NL) + NL
 }

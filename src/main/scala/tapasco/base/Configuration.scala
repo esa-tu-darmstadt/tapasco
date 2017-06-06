@@ -48,6 +48,8 @@ trait Configuration {
   def slurm(enabled: Boolean): Configuration
   def parallel: Boolean
   def parallel(enabled: Boolean): Configuration
+  def maxThreads: Option[Int]
+  def maxThreads(mt: Option[Int]): Configuration
 
   /** Returns the default output directory for the given kernel and target. */
   def outputDir(kernel: Kernel, target: Target): Path =

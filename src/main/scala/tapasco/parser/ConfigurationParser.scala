@@ -25,6 +25,7 @@ private object ConfigurationParser {
     entityDir  ^^ { p => (p._1.toString, p._2) } |
     slurm      ^^ { p => (p._1, p._2.toString) } |
     parallel   ^^ { p => (p._1, p._2.toString) } |
+    maxThreads ^^ { p => (p._1, p._2.toString) } |
     jobsFile   ^^ { p => ("JobsFile", p) }
   )
 
@@ -50,12 +51,15 @@ private object ConfigurationParser {
     m.get("Platforms")     foreach { d => c = c.platformDir(Paths.get(d)) }
     m.get("Slurm")         foreach { d => c = c.slurm(d.toBoolean) }
     m.get("Parallel")      foreach { d => c = c.parallel(d.toBoolean) }
+    m.get("MaxThreads")    foreach { d => c = c.maxThreads(Some(d.toInt)) }
     m.get("LogFile")       foreach { d => c = c.logFile(Some(Paths.get(d))) }
-    if (jobs.nonEmpty || m.get("JobsFile").nonEmpty) {
+    val ret = if (jobs.nonEmpty || m.get("JobsFile").nonEmpty) {
       c.jobs(m.get("JobsFile") map (p => readJobsFile(p)) getOrElse jobs)
     } else {
       c
     }
+    logger.debug("configuration: {}", ret)
+    ret
   }
   /* Configuration @} */
 }

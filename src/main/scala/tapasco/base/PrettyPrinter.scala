@@ -81,6 +81,7 @@ private object PrettyPrinter {
       "PlatformDir = " + c.platformDir,
       "Slurm = " + c.slurm,
       "Parallel = " + c.parallel,
+      "MaxThreads = " + (c.maxThreads getOrElse "unlimited"),
       "Jobs = " + c.jobs
     ) mkString NL
 

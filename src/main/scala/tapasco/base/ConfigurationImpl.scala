@@ -43,6 +43,7 @@ private case class ConfigurationImpl (
       private val _logFile: Option[Path]              = None,
       slurm: Boolean                                  = false,
       parallel: Boolean                               = false,
+      maxThreads: Option[Int]                         = None,
       jobs: Seq[Job]                                  = Seq()
     ) extends Description(descPath: Path) with Configuration {
   def descPath(p: Path): Configuration = this.copy(descPath = p)
@@ -60,6 +61,7 @@ private case class ConfigurationImpl (
   def logFile(op: Option[Path]): Configuration = this.copy(_logFile = op)
   def slurm(enabled: Boolean): Configuration = this.copy(slurm = enabled)
   def parallel(enabled: Boolean): Configuration = this.copy(parallel = enabled)
+  def maxThreads(mt: Option[Int]): Configuration = this.copy(maxThreads = mt)
   def jobs(js: Seq[Job]): Configuration = this.copy(jobs = js)
 
   // these directories must exist

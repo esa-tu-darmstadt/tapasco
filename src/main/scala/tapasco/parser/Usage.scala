@@ -17,6 +17,8 @@ object Usage {
       --jobsFile [FILE]         Path to Json file with Jobs array
       --slurm                   Activate SLURM cluster execution (requires sbatch)
       --parallel                Execute all jobs in parallel (careful!)
+      --maxThreads [NUM]        Limit internal parallelism of activities (e.g., Vivado)
+                                to the given number of threads.
 
     Bulk Import Job: bulkimport [options*]
       --csv [FILE]              [FILE] should be in comma-separated values (CSV) format

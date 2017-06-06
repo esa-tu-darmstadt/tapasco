@@ -42,11 +42,10 @@ trait Composer {
    *  @param archFeatures ArchitectureFeatures (optional).
    *  @param platformFeatures Platform features (optional).
    *  @param cfg implicit Configuration instance
-   *  @param maxThreads maximum number of parallel threads to use (default: unlimited)
    *  @return Composer.Result with error code / additional data
    **/
   def compose(bd: Composition, target: Target, f: Double = 0, archFeatures: Seq[Feature] = Seq(),
-      platformFeatures: Seq[Feature] = Seq())(implicit cfg: Configuration, maxThreads: Option[Int] = None): Result
+      platformFeatures: Seq[Feature] = Seq())(implicit cfg: Configuration): Result
 
   /** Removes all intermediate files for the run, leaving results.
    *  @param bd Composition to synthesize
@@ -75,8 +74,8 @@ object Composer {
     }
   }
 
-  def apply(i: Implementation)(implicit cfg: Configuration, maxThreads: Option[Int]): Composer = i match {
-    case Implementation.Vivado => new VivadoComposer()(cfg, maxThreads)
+  def apply(i: Implementation)(implicit cfg: Configuration): Composer = i match {
+    case Implementation.Vivado => new VivadoComposer()(cfg)
   }
 
   /** Make a name for the Composer project. */
