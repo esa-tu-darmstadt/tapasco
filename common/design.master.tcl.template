@@ -92,6 +92,12 @@ make_wrapper -files [get_files [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sour
 add_files -norecurse [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/hdl/system_wrapper.v
 update_compile_order -fileset sources_1
 
+# activate retiming in synthesis
+set_property STEPS.SYNTH_DESIGN.ARGS.RETIMING true [get_runs synth_1]
+if {[version -short] >= "2016.4"} {
+  set_property synth_checkpoint_mode None [get_files system.bd]
+}
+
 # generate according to the mode
 platform::generate
 
