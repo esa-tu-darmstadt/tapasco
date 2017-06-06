@@ -1,4 +1,5 @@
 package de.tu_darmstadt.cs.esa.tapasco.task
+import  de.tu_darmstadt.cs.esa.tapasco.slurm._
 import  de.tu_darmstadt.cs.esa.tapasco.util.{MemInfo, FlexLicenceManagerStatus}
 
 /**
@@ -39,7 +40,7 @@ private class DefaultResourceMonitor extends ResourceMonitor {
 
   def doStart(t: ResourceConsumer): Unit     = if (canStart(t)) _cons += t
   def didFinish(t: ResourceConsumer): Unit   = _cons -= t
-  def canStart(t: ResourceConsumer): Boolean = t.canStart && check(_cons + t)
+  def canStart(t: ResourceConsumer): Boolean = Slurm.enabled || (t.canStart && check(_cons + t))
   def status: String = "%d active consumers, %d/%d CPUs, %1.1f/%1.1f GiB RAM, %d total licences in use".format(
     _cons.size, current.cpus, _cpus,
     current.memory / 1024.0 / 1024.0,
