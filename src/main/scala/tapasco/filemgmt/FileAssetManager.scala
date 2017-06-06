@@ -35,7 +35,7 @@ final object FileAssetManager extends Publisher {
   /* @{ default directories */
   /** Base directory of TPC, set by TAPASCO_HOME environmment variable. **/
   lazy val TAPASCO_HOME = try   { Paths.get(sys.env("TAPASCO_HOME")).toAbsolutePath().normalize }
-                      catch { case e: NoSuchElementException =>
+                          catch { case e: NoSuchElementException =>
                               _logger.error("FATAL: TAPASCO_HOME environment variable is not set")
                               throw e }
   /* @} */

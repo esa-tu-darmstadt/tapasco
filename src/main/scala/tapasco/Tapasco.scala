@@ -18,7 +18,6 @@
 //
 package de.tu_darmstadt.cs.esa.tapasco
 import  base._
-import  jobs.executors._
 import  filemgmt._
 import  task._
 import  itapasco.controller._
@@ -26,7 +25,7 @@ import  parser._
 import  slurm._
 import  java.nio.file.Path
 import  scala.concurrent._
-import  scala.concurrent.ExecutionContext.Implicits.global
+//import  scala.concurrent.ExecutionContext.Implicits.global
 
 object Tapasco {
   import org.slf4j.LoggerFactory
@@ -68,14 +67,19 @@ object Tapasco {
         case Left(ex) => CommandLineParser(args.tail mkString " ")
         case r => r
       }
+      logger.debug("parsed config: {}", c)
       if (c.isRight) {
         // get parsed Configuration
         implicit val cfg = c.right.get
+        logger.trace("configuring FileAssetManager...")
         FileAssetManager(cfg)
+        logger.trace("SLURM: {}", cfg.slurm)
         if (cfg.slurm) Slurm.enabled = cfg.slurm
         FileAssetManager.start()
+        logger.trace("parallel: {}", cfg.parallel)
         cfg.logFile map { logfile: Path => setupLogFileAppender(logfile.toString) }
-        logger.info(cfg.toString)
+        logger.info("Running with configuration: {}", cfg.toString)
+        implicit val exe = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(250))
         def get(f: Future[Boolean]): Boolean = { Await.ready(f, duration.Duration.Inf); f.value map (_ getOrElse false) getOrElse false }
         if (cfg.parallel)
           runGui(args) || (cfg.jobs map { j => Future { jobs.executors.execute(j) } } map (get _) fold true) (_ && _)
