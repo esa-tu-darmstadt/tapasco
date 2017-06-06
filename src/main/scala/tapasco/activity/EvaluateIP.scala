@@ -27,7 +27,7 @@ import  de.tu_darmstadt.cs.esa.tapasco.reports._
 import  de.tu_darmstadt.cs.esa.tapasco.util._
 import  de.tu_darmstadt.cs.esa.tapasco.util.ZipUtils._
 import  Logging._
-import  java.nio.file.{Files, Path}
+import  java.nio.file.{Files, Path, Paths}
 import  scala.sys.process._
 import  scala.xml.XML
 
@@ -97,6 +97,9 @@ object EvaluateIP {
           java.nio.file.Paths.get((f \ "name").text).getFileName
       }
     }
+    lazy val netlist   = catchAllDefault[Path](Paths.get("netlist.edn"), "could not parse component.xml: ") {
+      reportFile.resolveSibling("%s.edn".format((XML.loadFile(ipxact.get.toString) \\ "component" \\ "name").head.text))
+    }
   }
 
   /** Perform the evaluation.
@@ -165,7 +168,8 @@ object EvaluateIP {
       "REPORT_UTILIZATION" -> files.rpt_util.toString,
       "REPORT_POWER"       -> files.rpt_power.toString,
       "SYNTH_CHECKPOINT"   -> files.s_dcp.toString,
-      "IMPL_CHECKPOINT"    -> files.i_dcp.toString
+      "IMPL_CHECKPOINT"    -> files.i_dcp.toString,
+      "NETLIST"            -> files.netlist.toString
     )
 
     // write Tcl script

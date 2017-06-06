@@ -61,4 +61,10 @@ private[tapasco] final case class InterruptibleProcess(p: ProcessBuilder, waitMi
 
 object InterruptibleProcess {
   final val TIMEOUT_RETCODE = 124 // matches 'timeout' command
+  // custom ProcessIO: ignore everything
+  val io = new ProcessIO(
+    stdin => {stdin.close()},
+    stdout => {stdout.close()},
+    stderr => {stderr.close()}
+  )
 }

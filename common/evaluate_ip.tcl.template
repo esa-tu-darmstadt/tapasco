@@ -34,8 +34,12 @@ add_files @@SRC_FILES@@
 # add_files -fileset constrs_1 @@XDC_FILES@@
 foreach script [list @@TCL_FILES@@] { source $script }
 
+# find top
+set top [lindex [find_top] 0]
+
 # synthesize and optimize netlist
-synth_design -part @@PART@@ -top [lindex [find_top] 0] -no_iobuf -mode out_of_context
+#synth_design -part @@PART@@ -top $top -no_iobuf -mode out_of_context -retiming
+synth_design -part @@PART@@ -top $top -mode out_of_context -retiming
 
 # read switching activity files (if any)
 foreach saif [glob -nocomplain *.saif] {
@@ -73,6 +77,10 @@ if {$wns < 0} {
 
 # report power
 report_power -quiet -file @@REPORT_POWER@@
+
+# write netlist file
+set netlist "@@NETLIST@@"
+write_edif $netlist
 
 # done!
 exit

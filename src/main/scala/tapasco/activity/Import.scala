@@ -30,6 +30,7 @@ import  de.tu_darmstadt.cs.esa.tapasco.base._
 import  de.tu_darmstadt.cs.esa.tapasco.base.json._
 import  de.tu_darmstadt.cs.esa.tapasco.util._
 import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
+import  scala.sys.process._
 import  java.nio.file._
 
 /**
@@ -83,26 +84,7 @@ object Import {
     Files.createDirectories(p.getParent)
     logger.trace("created output directories: {}", p.getParent.toString)
 
-    // add link to original .zip in the 'ipcore' subdir
-    val linkp = cfg.outputDir(c, t).resolve("ipcore").resolve(c.zipPath.getFileName.toString)
-    if (! linkp.toFile.equals(c.zipPath.toAbsolutePath.toFile)) {
-      Files.createDirectories(linkp.getParent)
-      logger.trace("created directories: {}", linkp.getParent.toString)
-      if (linkp.toFile.exists) {
-        logger.debug("file {} already exists, skipping copy/link step")
-      } else {
-        logger.trace("creating symbolic link {} -> {}", linkp: Any, c.zipPath.toAbsolutePath)
-        try   { java.nio.file.Files.createSymbolicLink(linkp, c.zipPath.toAbsolutePath) }
-        catch { case ex: java.nio.file.FileSystemException => {
-          logger.warn("cannot create link {} -> {}, copying data", linkp: Any, c.zipPath)
-          java.nio.file.Files.copy(c.zipPath, linkp, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
-        }}
-      }
-    } else {
-      logger.debug("{} is the same as {}, no copy/link required", linkp: Any, c.zipPath.toAbsolutePath)
-    }
-
-    // finally, evaluate the ip core and store the report with the link
+    // evaluate the ip core and store the report with the link
     val res = evaluateCore(c, t)
 
     // write core.json
@@ -113,7 +95,7 @@ object Import {
 
   /**
    * Searches for an existing synthesis report, otherwise performs out-of-context synthesis and
-   * place-and-route to produce area and Fmax estimates
+   * place-and-route to produce area and Fmax estimates and the netlist.
    * @param c Core description.
    * @param t Target Architecture + Platform combination.
    * @param cfg Implicit [[Configuration]].
@@ -131,6 +113,34 @@ object Import {
     } getOrElse {
       logger.info("SynthesisReport for {} not found, starting evaluation ...", c.name)
       EvaluateIP(c.zipPath, period, t.pd.part, report)
+    } && repack(c, t)
+  }
+
+  private def repack(c: Core, t: Target)(implicit cfg: Configuration): Boolean = {
+    logger.debug("repacking {} for {} ...", c: Any, t)
+    val out = cfg.outputDir(c, t).resolve("ipcore")
+    val vivadoCmd: Seq[String] = Seq("vivado",
+        "-mode", "batch",
+        "-source", FileAssetManager.TAPASCO_HOME.resolve("common").resolve("repack-edn.tcl").toString,
+        c.name,
+        c.version,
+        "-nolog", "-notrace", "-nojournal")
+    // execute Vivado (max runtime: 1h)
+    val r = InterruptibleProcess(Process(vivadoCmd, out.toFile),
+        waitMillis = Some(60 * 60 * 1000)).!(InterruptibleProcess.io)
+    r match {
+      case InterruptibleProcess.TIMEOUT_RETCODE =>
+        logger.error("repack-edn.tcl: Vivado timeout error")
+      case 0 =>
+        logger.info("repack-edn.tcl: Vivado finished successfully")
+        val zip = cfg.outputDir(c, t).resolve("ipcore").resolve("%s.zip".format(c.name))
+        val edn = zip.resolveSibling("%s.edn".format(c.name))
+        val xml = zip.resolveSibling("component.xml")
+        xml.toFile.deleteOnExit()
+        ZipUtils.zipFile(zip, Seq(xml, edn))
+      case _ =>
+        logger.error("repack-edn.tcl: Vivado exited with non-zero exit-code ({})", r)
     }
+    r == 0
   }
 }
