@@ -27,12 +27,11 @@ import  scala.util.matching._
 import  java.nio.file._
 
 object ZipUtils {
-  /**
-   *  Unpacks all files matching the given regular expressions into a temporary directory.
+  /** Unpacks all files matching the given regular expressions into a temporary directory.
    *  @param zipFile Path to .zip file.
    *  @param regexes List of regexes; all matching files will be extracted.
    *  @return tuple (temporary directory, list of extracted files).
-   **/
+   */
   def unzipFile(zipFile: Path, regexes: Seq[Regex], exclude: Seq[Regex] = Seq())
                (implicit logger: Logger): (Path, Seq[Path]) = {
     import java.util.zip._
@@ -68,5 +67,24 @@ object ZipUtils {
       zis.close()
     }
     (tempdir, extracted)
+  }
+
+  /** Packs all given files into a zipFile.
+   *  Throws IOException if something fails.
+   *  @param zipFile Path to output zip file.
+   *  @param files Sequence of files to pack.
+   */
+  def zipFile(zipFile: Path, files: Seq[Path]) = {
+    import java.util.zip._
+    import java.io.{BufferedOutputStream, FileOutputStream}
+    val zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile.toFile)))
+    files foreach { f =>
+      val ze = new ZipEntry(f.toFile.getName)
+      zos.putNextEntry(ze)
+      var amountRead: Int = 0
+      zos.write(Files.readAllBytes(f))
+    }
+    zos.flush()
+    zos.close()
   }
 }
