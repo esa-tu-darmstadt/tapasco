@@ -69,6 +69,7 @@ class ComposeTask(composition: Composition,
         _composerResult flatMap (_.power map (_.file)) getOrElse ""))
 
     LogFileTracker.stopLogFileAppender(appender)
+    composer.clean(composition, target, designFrequency)
     (_composerResult map (_.result) getOrElse false) == ComposeResult.Success
   }
 
