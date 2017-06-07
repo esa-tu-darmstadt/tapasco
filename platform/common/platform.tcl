@@ -78,6 +78,11 @@ namespace eval platform {
     report_utilization -file utilization.txt
     report_utilization -file utilization_userlogic.txt -cells [get_cells -hierarchical -filter {NAME =~ *target_ip_*}]
     report_power -file power.txt
-    write_bitstream -force "${bitstreamname}.bit"
+    set wns [tapasco::get_wns_from_timing_report "timing.txt"]
+    if {$wns >= -0.3} {
+      write_bitstream -force "${bitstreamname}.bit"
+    } else {
+      error "timing failure, WNS: $wns"
+    }
   }
 }
