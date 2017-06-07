@@ -126,11 +126,11 @@ class ComposeTask(composition: Composition,
   val cpus = debugMode map { _ => 0 } getOrElse 1
 
   val memory = debugMode map { _ => 0 } getOrElse (target.pd.name match {
-    case "vc709"    => 16 * 1024 * 1024
-    case "zc706"    => 12 * 1024 * 1024
-    case "zedboard" => 10 * 1024 * 1024
-    case "pynq"     => 10 * 1024 * 1024
-    case _          => 16 * 1024 * 1024
+    case "vc709"    => 32 * 1024 * 1024
+    case "zc706"    => 28 * 1024 * 1024
+    case "zedboard" => 20 * 1024 * 1024
+    case "pynq"     => 20 * 1024 * 1024
+    case _          => 32 * 1024 * 1024
   })
 
   val licences = debugMode map { _ => Map[String, Int]() } getOrElse Map(
