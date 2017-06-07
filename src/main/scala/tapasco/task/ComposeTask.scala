@@ -89,7 +89,8 @@ class ComposeTask(composition: Composition,
       errorLog = _errorLogFile.toString,
       consumer = this,
       maxHours = ComposeTask.MAX_COMPOSE_HOURS,
-      commands = Seq("tapasco --configFile %s".format(cfgFile.toString))
+      commands = Seq("tapasco --configFile %s".format(cfgFile.toString)),
+      comment  = Some("%s".format(composition.composition map (ce => "%s % d".format(ce.kernel, ce.count)) mkString ", "))
     )
     // generate non-SLURM config with single job
     val newCfg = cfg

@@ -29,7 +29,9 @@ final object Slurm extends Publisher {
     /** Time limit (in hours). */
     maxHours: Int,
     /** Sequence of commands to execute (bash). */
-    commands: Seq[String]
+    commands: Seq[String],
+    /** Optional comment. */
+    comment: Option[String] = None
   )
 
   /** Exception class for negative SLURM responses. */
@@ -91,6 +93,7 @@ final object Slurm extends Publisher {
     jobScript("TIMELIMIT") = "%02d:00:00".format(job.maxHours)
     jobScript("TAPASCO_HOME") = FileAssetManager.TAPASCO_HOME.toString
     jobScript("COMMANDS") = job.commands mkString "\n"
+    jobScript("COMMENT") = job.comment getOrElse ""
     // create parent directory
     Files.createDirectories(file.getParent())
     // write file
