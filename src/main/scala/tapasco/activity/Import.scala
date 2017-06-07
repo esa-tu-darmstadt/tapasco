@@ -69,7 +69,7 @@ object Import {
 
     // write core.json to output directory (as per config)
     val p = cfg.outputDir(c, t).resolve("ipcore").resolve("core.json")
-    importCore(c, t, p)
+    importCore(c, t, p, vlnv)
   }
 
   /**
@@ -80,7 +80,7 @@ object Import {
    * @param p Output path for core description file.
    * @param cfg Implicit [[Configuration]].
    **/
-  private def importCore(c: Core, t: Target, p: Path)(implicit cfg: Configuration): Boolean = {
+  private def importCore(c: Core, t: Target, p: Path, vlnv: VLNV)(implicit cfg: Configuration): Boolean = {
     Files.createDirectories(p.getParent)
     logger.trace("created output directories: {}", p.getParent.toString)
 
@@ -89,7 +89,7 @@ object Import {
 
     // write core.json
     logger.debug("writing core description: {}", p.toString)
-    Core.to(c, p)
+    Core.to(c.copy(descPath = p,_zipPath = Paths.get("%s.zip".format(vlnv.name))), p)
     res
   }
 
