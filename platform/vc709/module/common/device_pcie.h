@@ -17,9 +17,9 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file device_pcie.h 
+ * @file device_pcie.h
  * @brief Composition of everything needed to handle pcie device
-	Responsible for (un/)load pcie device, allows acces to pci-specific information 
+	Responsible for (un/)load pcie device, allows acces to pci-specific information
 	and supports wrapper for safe access to pcie-bar0 space
  * */
 
@@ -45,6 +45,8 @@ unsigned long pcie_readl(void * addr);
 
 void pcie_writel_bar2(unsigned long data, void * addr);
 unsigned long pcie_readl_bar2(void * addr);
+
+int pcie_translate_irq_number(int irq);
 
 /******************************************************************************/
 

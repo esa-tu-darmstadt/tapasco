@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file dual_dma_ctrl.c 
+ * @file dual_dma_ctrl.c
  * @brief Implementation of custom dma engine specific code
 	Strips the layout of the dma-registers and setup stuff to start a dma transfer
 	in addition calls to acknowledge the interrupt in hw is given
@@ -84,10 +84,10 @@ void dma_ctrl_init(void * device_base_addr)
 irqreturn_t intr_handler_dma(int irq, void * dev_id)
 {
 	fflink_info("Interrupt called with irq %d\n", irq);
-	
+
 	fflink_dma[dma_used].intr(irq, dev_id);
 	wake_up_queue(0);
-	
+
 	return IRQ_HANDLED;
 }
 

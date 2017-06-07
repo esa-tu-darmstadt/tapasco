@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file pcie_device.h 
+ * @file pcie_device.h
  * @brief Composition of everything needed to handle pcie device
  * */
 
@@ -67,6 +67,8 @@
 
 #define FFLINK_PCI_NAME "FFLINK_PCI_DRIVER"
 
+#define REQUIRED_INTERRUPTS 132
+
 // pci id to find device on the bus
 #define XILINX_VENDOR_ID   0x10EE
 #define XILINX_DEVICE_ID   0x7038
@@ -95,16 +97,14 @@ static struct pci_driver fflink_pci_driver = {
 
 /* struct to hold data related to the pcie device */
 struct pci_data_struct{
-	struct pci_dev* pdev;
+	struct pci_dev *pdev;
 	unsigned long long phy_addr_bar0;
 	unsigned long long phy_len_bar0;
 	unsigned long long phy_flags_bar0;
 	unsigned long long phy_addr_bar2;
 	unsigned long long phy_len_bar2;
 	unsigned long long phy_flags_bar2;
-	unsigned int irq_first;	
-	unsigned int irq_length;
-	unsigned int irq_assigned;
+	int irq_mapping[REQUIRED_INTERRUPTS];
 	void * kvirt_addr_bar0;
 	void * kvirt_addr_bar2;
 };
@@ -116,6 +116,7 @@ static int register_intr_handler(struct pci_dev *pdev, int c);
 static int claim_device(struct pci_dev *pdev);
 static int configure_device(struct pci_dev *pdev);
 static int claim_msi(struct pci_dev *pdev);
+static int free_irqs(struct pci_dev *pdev);
 static void report_link_status(struct pci_dev *pdev);
 
 /******************************************************************************/

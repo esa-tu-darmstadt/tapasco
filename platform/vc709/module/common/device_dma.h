@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file device_dma.h 
+ * @file device_dma.h
  * @brief Composition of everything needed to (un/)load the char_device respondsible for dma calls
 	additionally helper functions defined to ease access throughout different minor nodes
  * */

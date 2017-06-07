@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file debug_print.h 
+ * @file debug_print.h
  * @brief Composition of everything needed for debug output
  * currently three different levels of outputs defined
  * */
@@ -53,7 +53,7 @@
 
 #define fflink_warn(msg, ...)	printk(KERN_WARNING "ffLink (%s): " msg, \
 		__func__, ##__VA_ARGS__)
-		
+
 /******************************************************************************/
 
 #endif // __DEBUG_PRINT_H

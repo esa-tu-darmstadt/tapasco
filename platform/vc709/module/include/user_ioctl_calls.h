@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file user_ioctl_calls.c 
+ * @file user_ioctl_calls.c
  * @brief Define all ioctl commands with corresponding structs for user calls
 	this allows simplified setup of kernel functions in the bitstream composition
 	Two mechanisms are implemented: make use of read/write system calls to access registers,

@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file dma_ctrl.h 
+ * @file dma_ctrl.h
  * @brief Composition of everything needed to handle dma engine(s)
 	interrupt handlers will be registered as msi irqs, when the pcie_device is loaded
 	common header used for differrent hw-implementations of the dma engine (Xilinx, custom)

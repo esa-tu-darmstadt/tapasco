@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file ffLink_driver.c 
+ * @file ffLink_driver.c
  * @brief Implementation of linux kernel driver module
 	this is the global entry point for the operating system to (un-)load the driver
 	afterwards the register routines of all submodules are called
@@ -39,24 +39,24 @@
  * @param none
  * @return Zero, if initialization was successfull
  * */
-static int __init fflink_init(void) 
+static int __init fflink_init(void)
 {
 	int err = 0;
-	
+
 	fflink_notice("Init char-dev(s), dev-entries and register pci-device\n");
-	
+
 	err = pcie_register();
 	if(err) {
 		fflink_info("Could not register pcie device\n");
 		goto error_pcie_register;
 	}
-	
+
 	err = char_dma_register();
 	if(err) {
 		fflink_info("Could not register dma char device(s)\n");
 		goto error_dma_register;
 	}
-	
+
 	err = char_user_register();
 	if(err) {
 		fflink_info("Could not register user char device(s)\n");
@@ -64,9 +64,9 @@ static int __init fflink_init(void)
 	}
 
 	fflink_warn("Successfully registered driver\n");
-	
+
 	return 0;
-	
+
 error_dma_register:
 	return -EACCES;
 error_user_register:
@@ -85,13 +85,13 @@ error_pcie_register:
 static void __exit fflink_exit(void)
 {
 	fflink_notice("Deallocate char-dev(s)/pci-device\n");
-	
+
 	char_dma_unregister();
-	
+
 	char_user_unregister();
-	
+
 	pcie_unregister();
-	
+
 	fflink_warn("Successfully unregistered driver\n");
 }
 

@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file char_device_user.c 
+ * @file char_device_user.c
  * @brief Implementation of char-device calls for user-specific calls
 	the char-device allows access to the user-registers over pcie
 	besides it handles blocking execution of hw-function
@@ -40,44 +40,22 @@ static struct file_operations user_fops = {
 	.unlocked_ioctl = user_ioctl,
 	.read           = user_read,
 	.write          = user_write,
-	.mmap			= user_mmap
+	.mmap		= user_mmap
 };
 
 /* struct array to hold data over multiple fops-calls */
-static struct priv_data_struct priv_data[FFLINK_USER_NODES];
+static struct priv_data_struct priv_data;
 
 /* char device structure basically for dev_t and fops */
-static struct cdev char_user_cdev;	
+static struct cdev char_user_cdev;
 /* char device number for f3_char_driver major and minor number */
 static dev_t char_user_dev_t;
 /* device class entry for sysfs */
 struct class *char_user_class;
 
-/******************************************************************************/
+static int device_opened = 0;
 
-/**
- * @brief Adds atomically all 32 bits of mask to condition
- * @param condition Pointer to value that should be changed
- * @param mask Contains all bits that should be added to condition
- * @return None
- * */
-static inline void user_set_mask(unsigned long *condition, uint32_t mask) 
-{
-	/*
-	int i;
-	for(i = 0; i < 32; i++) {
-		if(BIT_MASK(i) & mask)
-			set_bit(i, &p->user_condition_0);
-	}
-	fflink_warn("Atomic value is %lX vs mask %X", p->user_condition_0, mask);
-	*/
-	unsigned long old, status;
-	do{
-		old = *condition;
-		status = cmpxchg(condition, old, old | mask);
-	}while(status != old);
-	fflink_info("Old value: %lX new value: %lX", old, *condition | mask);
-}
+static DEFINE_SPINLOCK(device_open_close_mutex);
 
 /******************************************************************************/
 /* functions for user-space interaction */
@@ -92,71 +70,14 @@ static inline void user_set_mask(unsigned long *condition, uint32_t mask)
  * */
 static int user_open(struct inode *inode, struct file *filp)
 {
-	int irq_state = 0, hw_id = 0;
+	spin_lock(&device_open_close_mutex);
 
-	fflink_notice("Called for device (<%d,%d>)\n", imajor(inode), iminor(inode));
+	fflink_notice("Already %d files in use.\n", device_opened);
 
-	/* check if ID core is readable */
-	hw_id = pcie_readl((void*) HW_ID_ADDR);
-	if(hw_id != HW_ID_MAGIC) {
-		fflink_warn("ID Core not found (was %X - should: %X)\n", hw_id, HW_ID_MAGIC);
-		return -ENOTEMPTY;
-	}
-
-	/* currently maximal four engines are supported - see switch case in dma_init */
-	if(iminor(inode) < FFLINK_USER_NODES && iminor(inode) >= 0 && iminor(inode) < 4)
-		/* set filp for further sys calls to this minor number */
-		filp->private_data = &priv_data[iminor(inode)];
-	else
-		return -ENODEV;
-
-	priv_data[iminor(inode)].minor = iminor(inode);
-
-	/* init control structures for synchron sys-calls */
-	mutex_init(&priv_data[iminor(inode)].rw_mutex);
-	init_waitqueue_head(&priv_data[iminor(inode)].user_wait_queue);
-	priv_data[iminor(inode)].user_condition = 0;
-
-	fflink_info("Activate interrupt controller %d\n", iminor(inode));
-	switch(iminor(inode)) {
-		case 0:
-			/* check of pending irqs interrupts */
-			if(pcie_readl((void*) IRQ_BASE_ADDR_0 + IRQ_REG_ISR)) {
-				fflink_warn("Interrupt controller already has irqs %X\n", irq_state);
-				return -ENOTEMPTY;
-			}
-			pcie_writel(CMD_IER_EN, (void*) IRQ_BASE_ADDR_0 + IRQ_REG_IER);
-			pcie_writel(CMD_MER_EN, (void*) IRQ_BASE_ADDR_0 + IRQ_REG_MER);
-			break;
-		case 1:
-			if(pcie_readl((void*) IRQ_BASE_ADDR_1 + IRQ_REG_ISR)) {
-				fflink_warn("Interrupt controller already has irqs\n");
-				return -ENOTEMPTY;
-			}
-			pcie_writel(CMD_IER_EN, (void*) IRQ_BASE_ADDR_1 + IRQ_REG_IER);
-			pcie_writel(CMD_MER_EN, (void*) IRQ_BASE_ADDR_1 + IRQ_REG_MER);
-			break;
-		case 2:
-			if(pcie_readl((void*) IRQ_BASE_ADDR_2 + IRQ_REG_ISR)) {
-				fflink_warn("Interrupt controller already has irqs\n");
-				return -ENOTEMPTY;
-			}
-			pcie_writel(CMD_IER_EN, (void*) IRQ_BASE_ADDR_2 + IRQ_REG_IER);
-			pcie_writel(CMD_MER_EN, (void*) IRQ_BASE_ADDR_2 + IRQ_REG_MER);
-			break;
-		case 3:
-			if(pcie_readl((void*) IRQ_BASE_ADDR_3 + IRQ_REG_ISR)) {
-				fflink_warn("Interrupt controller already has irqs\n");
-				return -ENOTEMPTY;
-			}
-			pcie_writel(CMD_IER_EN, (void*) IRQ_BASE_ADDR_3 + IRQ_REG_IER);
-			pcie_writel(CMD_MER_EN, (void*) IRQ_BASE_ADDR_3 + IRQ_REG_MER);
-			break;
-		default: 
-			fflink_warn("wrong minor node opened %d\n", iminor(inode));
-			break;
-	}
-
+	++device_opened;
+	/* set filp for further sys calls to this minor number */
+	filp->private_data = &priv_data;
+	spin_unlock(&device_open_close_mutex);
 	return 0;
 }
 
@@ -168,8 +89,10 @@ static int user_open(struct inode *inode, struct file *filp)
  * */
 static int user_close(struct inode *inode, struct file *filp)
 {
-	fflink_notice("Called for device (<%d,%d>)\n", imajor(inode), iminor(inode));
-
+	spin_lock(&device_open_close_mutex);
+	--device_opened;
+	fflink_notice("Still %d files in use.\n", device_opened);
+	spin_unlock(&device_open_close_mutex);
 	return 0;
 }
 
@@ -304,6 +227,7 @@ USER_WRITE_CLEANUP:
  * */
 static long user_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long ioctl_param)
 {
+	int irq_counter;
 	struct priv_data_struct * p = (struct priv_data_struct *) filp->private_data;
 	struct user_ioctl_params params;
 	fflink_notice("Called for device minor %d\n", p->minor);
@@ -322,14 +246,14 @@ static long user_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long 
 			fflink_info("IOCTL_CMD_USER_WAIT_EVENT with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
 			fflink_info("Want to write %X to address %llX with event %d\n", params.data, params.fpga_addr, params.event);
 
+			irq_counter = priv_data.user_condition[params.event];
+
 			pcie_writel(params.data, (void*) params.fpga_addr);
 
-			if(wait_event_interruptible(p->user_wait_queue, test_bit(params.event, &p->user_condition))) {
+			if(wait_event_interruptible(p->user_wait_queue[params.event], (irq_counter != p->user_condition[params.event]))) {
 				fflink_warn("got killed while hanging in waiting queue\n");
 				break;
 			}
-			clear_bit(params.event, &p->user_condition);
-			fflink_info("Bitmask %ld new Condition %ld\n", BIT_MASK(params.event), p->user_condition);
 
 			break;
 		default:
@@ -348,11 +272,11 @@ static long user_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long 
 	but not recommended, cause address space will not be filled completely rather than sparse
 	performing a transaction on the 'wholes' will cause deadlocks immediatly
  * @param filp Needed to identify device node and get access to corresponding buffers
- * @param vma Struct of virtual memory representation, will be modified to allow user-space access 
+ * @param vma Struct of virtual memory representation, will be modified to allow user-space access
  * @return Zero, if memory could be mapped, error code otherwise
  * */
 static int user_mmap(struct file *filp, struct vm_area_struct *vma)
-{	
+{
 	fflink_notice("Called for device minor %d\n", ((struct priv_data_struct *) filp->private_data)->minor);
 
 	return 0;
@@ -362,110 +286,23 @@ static int user_mmap(struct file *filp, struct vm_area_struct *vma)
 /* functions for irq-handling */
 
 /**
- * @brief Interrupt handler for Xilinx IRQ core 0
+ * @brief Interrupt handler for thread pools
 	wakes up corresponding process, which waits for the function to finish
 	only work, when function was activated over ioctl
  * @param irq Interrupt number of calling line
  * @param dev_id magic number for interrupt sharing (not needed)
  * @return Tells OS, that irq is handled properly
  * */
-irqreturn_t intr_handler_user_0(int irq, void * dev_id)
+irqreturn_t intr_handler_user(int irq, void * dev_id)
 {
-	uint32_t status, i = 0;
-	fflink_info("Interrupt 0 called with irq %d\n", irq);
-
-	while((status = pcie_readl((void*) IRQ_BASE_ADDR_0 + IRQ_REG_ISR)) && i <= 32) {
-		user_set_mask(&priv_data[0].user_condition, status);
-		pcie_writel(status, (void*) IRQ_BASE_ADDR_0 + IRQ_REG_IAR);
-		i++;
-
-		fflink_info("Iteration %d to handle all irqs\n", i);
+	int irq_translated = pcie_translate_irq_number(irq) - 4;
+	if(irq_translated != -1) {
+		fflink_info("User interrupt for IRQ %d called with irq %d\n", irq_translated, irq);
+		priv_data.user_condition[irq_translated] += 1;
+		wake_up_interruptible_sync(&priv_data.user_wait_queue[irq_translated]);
+	} else {
+		fflink_info("Illegal interrupt %d\n", irq);
 	}
-
-	if(i)
-		wake_up_interruptible_sync(&priv_data[0].user_wait_queue);
-
-	return IRQ_HANDLED;
-}
-
-/**
- * @brief Interrupt handler for Xilinx IRQ core 1
-	wakes up corresponding process, which waits for the function to finish
-	only work, when function was activated over ioctl
- * @param irq Interrupt number of calling line
- * @param dev_id magic number for interrupt sharing (not needed)
- * @return Tells OS, that irq is handled properly
- * */
-irqreturn_t intr_handler_user_1(int irq, void * dev_id)
-{
-	uint32_t status, i = 0;
-	fflink_info("Interrupt 1 called with irq %d\n", irq);
-
-	while((status = pcie_readl((void*) IRQ_BASE_ADDR_1 + IRQ_REG_ISR)) && i <= 32) {
-		user_set_mask(&priv_data[1].user_condition, status);
-		pcie_writel(status, (void*) IRQ_BASE_ADDR_1 + IRQ_REG_IAR);
-		i++;
-
-		fflink_info("Iteration %d to handle all irqs\n", i);
-	}
-
-	if(i)
-		wake_up_interruptible_sync(&priv_data[1].user_wait_queue);
-
-	return IRQ_HANDLED;
-}
-
-/**
- * @brief Interrupt handler for Xilinx IRQ core 1
-	wakes up corresponding process, which waits for the function to finish
-	only work, when function was activated over ioctl
- * @param irq Interrupt number of calling line
- * @param dev_id magic number for interrupt sharing (not needed)
- * @return Tells OS, that irq is handled properly
- * */
-irqreturn_t intr_handler_user_2(int irq, void * dev_id)
-{
-	uint32_t status, i = 0;
-	fflink_info("Interrupt 2 called with irq %d\n", irq);
-
-	while((status = pcie_readl((void*) IRQ_BASE_ADDR_2 + IRQ_REG_ISR)) && i <= 32) {
-		user_set_mask(&priv_data[2].user_condition, status);
-		pcie_writel(status, (void*) IRQ_BASE_ADDR_2 + IRQ_REG_IAR);
-		i++;
-
-		fflink_info("Iteration %d to handle all irqs\n", i);
-	}
-
-	if(i)
-		wake_up_interruptible_sync(&priv_data[2].user_wait_queue);
-
-	return IRQ_HANDLED;
-}
-
-/**
- * @brief Interrupt handler for Xilinx IRQ core 1
-	wakes up corresponding process, which waits for the function to finish
-	only work, when function was activated over ioctl
- * @param irq Interrupt number of calling line
- * @param dev_id magic number for interrupt sharing (not needed)
- * @return Tells OS, that irq is handled properly
- * */
-irqreturn_t intr_handler_user_3(int irq, void * dev_id)
-{
-	uint32_t status, i = 0;
-	fflink_info("Interrupt 3 called with irq %d\n", irq);
-
-	while((status = pcie_readl((void*) IRQ_BASE_ADDR_3 + IRQ_REG_ISR)) && i <= 32) {
-		user_set_mask(&priv_data[3].user_condition, status);
-		pcie_writel(status, (void*) IRQ_BASE_ADDR_3 + IRQ_REG_IAR);
-		i++;
-
-		fflink_info("Iteration %d to handle all irqs\n", i);
-	}
-
-	if(i)
-		wake_up_interruptible_sync(&priv_data[3].user_wait_queue);
-
 	return IRQ_HANDLED;
 }
 
@@ -479,7 +316,7 @@ irqreturn_t intr_handler_user_3(int irq, void * dev_id)
  * */
 int char_user_register(void)
 {
-	int err = 0, i;
+	int err = 0, hw_id = 0, i;
 	struct device *device = NULL;
 
 	fflink_info("Try to add char_device to /dev\n");
@@ -516,6 +353,21 @@ int char_user_register(void)
 			fflink_warn("failed while device create %d\n", MINOR(char_user_dev_t));
 			goto error_device_create;
 		}
+	}
+
+	fflink_notice("Called for device (<%d,%d>)\n", imajor(inode), iminor(inode));
+
+	/* check if ID core is readable */
+	hw_id = pcie_readl((void*) HW_ID_ADDR);
+	if(hw_id != HW_ID_MAGIC) {
+		fflink_warn("ID Core not found (was %X - should: %X)\n", hw_id, HW_ID_MAGIC);
+		return -ENOTEMPTY;
+	}
+
+	/* init control structures for synchron sys-calls */
+	for(i = 0; i < PE_IRQS; ++i) {
+		init_waitqueue_head(&priv_data.user_wait_queue[i]);
+		priv_data.user_condition[i] = 0;
 	}
 
 	return 0;

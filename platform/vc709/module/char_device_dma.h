@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file char_device_dma.h 
+ * @file char_device_dma.h
  * @brief Composition of everything needed to handle char-device calls for dma transfers
 	here all definitions of functions and structs are given, which are used by the char-device
 	the user can adapt the method used for transfers (bounce-/double-buffering)
@@ -98,17 +98,17 @@ struct priv_data_struct {
 
 	dma_addr_t dma_handle_h2l;
 	dma_addr_t dma_handle_l2h;
-	
+
 	void * mem_addr_l2h;
 	void * mem_addr_h2l;
-	
+
 	void * device_base_addr;
 	void * ctrl_base_addr;
-	
+
 	wait_queue_head_t rw_wait_queue;
 	bool condition_rw;
 	struct mutex rw_mutex;
-	
+
 	unsigned int cache_lsize;
 	unsigned int cache_mask;
 };

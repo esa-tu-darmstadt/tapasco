@@ -71,12 +71,22 @@ namespace eval platform {
     set msix_int [create_bd_pin -dir "O" "msix_int"]
     set m_axi [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_AXI"]
 
-    set irq_concat [tapasco::createConcat "interrupt_concat" 8]
+    set num_irqs 132
+    set num_irqs_threadpools 128
+
+    set irq_concat_ss [tapasco::createConcat "interrupt_concat" 8]
 
     # create MSIX interrupt controller
     set msix_intr_ctrl [tapasco::createMSIXIntrCtrl "msix_intr_ctrl"]
-    connect_bd_net [get_bd_pin -of_objects $irq_concat -filter {NAME == "dout"}] [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "interrupt"}]
+    connect_bd_net [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "dout"}] [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "interrupt"}]
 
+
+    set curr_pcie_line 4
+    # connect interrupts to interrupt controller
+    foreach irq $irqs {
+      connect_bd_net -boundary_type upper $irq [get_bd_pins -of $irq_concat_ss -filter "NAME == [format "In%d" $curr_pcie_line]"]
+      incr curr_pcie_line 1
+    }
 
     connect_bd_intf_net [get_bd_intf_pins -of_objects $msix_intr_ctrl -filter {NAME == "M_AXI"}] $m_axi
     connect_bd_net [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_address"}] $msix_addr
@@ -87,29 +97,7 @@ namespace eval platform {
     connect_bd_net $msix_enable [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_enable"}]
     connect_bd_net $msix_mask [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_mask"}]
 
-    connect_bd_net $dma_irq [get_bd_pin -of_objects $irq_concat -filter {NAME == "In0"}]
-
-    set curr_pcie_line 4
-    # create interrupt controllers and connect them to GP1
-    set intcs [list]
-    foreach irq $irqs {
-      set intc [tapasco::createIntCtrl [format "axi_intc_%02d" [llength $intcs]]]
-      lappend intcs $intc
-      connect_bd_net -boundary_type upper $irq [get_bd_pins -of $intc -filter {NAME=="intr"}]
-      connect_bd_net -boundary_type upper [get_bd_pins -of $intc -filter {NAME=="irq"}] [get_bd_pins -of $irq_concat -filter "NAME == [format "In%d" $curr_pcie_line]"]
-      incr curr_pcie_line 1
-    }
-
-    set intcic [tapasco::createInterconnect "axi_intc_ic" 1 [expr {1 + [llength $intcs]}]]
-    connect_bd_intf_net -boundary_type upper [get_bd_intf_pins -of $intcic -filter "NAME == M00_AXI"] [get_bd_intf_pins -of $msix_intr_ctrl -filter { MODE == "Slave" }]
-    set i 0
-    foreach intc $intcs {
-      set slave [get_bd_intf_pins -of $intc -filter { MODE == "Slave" }]
-      set master [get_bd_intf_pins -of $intcic -filter "NAME == [format "M%02d_AXI" [expr {$i + 1}]]"]
-      puts "Connecting $master to $slave ..."
-      connect_bd_intf_net -boundary_type upper $master $slave
-      incr i
-    }
+    connect_bd_net $dma_irq [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
 
     # connect internal clocks
     connect_bd_net -net intc_clock_net $aclk [get_bd_pins -of_objects [get_bd_cells] -filter {TYPE == "clk" && DIR == "I"}]
@@ -121,7 +109,7 @@ namespace eval platform {
     connect_bd_net -net intc_p_reset_net $p_aresetn $p_resets
 
     # connect S_AXI
-    connect_bd_intf_net $s_axi [get_bd_intf_pins -of_objects $intcic -filter {NAME == "S00_AXI"}]
+    connect_bd_intf_net $s_axi [get_bd_intf_pins -of_objects $msix_intr_ctrl -filter {NAME == "S_AXI"}]
 
     current_bd_instance $instance
     return $group
@@ -402,9 +390,9 @@ namespace eval platform {
       CONFIG.axi_addr_width {64} \
       CONFIG.pf0_msi_enabled {false} \
       CONFIG.pf0_msix_enabled {true} \
-      CONFIG.pf0_msix_cap_table_size {007} \
+      CONFIG.pf0_msix_cap_table_size {83} \
       CONFIG.pf0_msix_cap_table_offset {500000} \
-      CONFIG.pf0_msix_cap_pba_offset {502000} \
+      CONFIG.pf0_msix_cap_pba_offset {508000} \
       CONFIG.comp_timeout {50ms} \
       CONFIG.pf0_interrupt_pin {NONE} \
       CONFIG.c_s_axi_supports_narrow_burst {false} \

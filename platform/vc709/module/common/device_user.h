@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file device_user.h 
+ * @file device_user.h
  * @brief Composition of everything needed for the char-device(s) for user-calls
 	Functions to (un/)load this device and interrupt handlers
 	these handlers will be registered as msi irqs, when the pcie_device is loaded
@@ -35,10 +35,7 @@ void char_user_unregister(void);
 /******************************************************************************/
 /* interrupt handler used by user cores registered in pcie_device.c */
 
-irqreturn_t intr_handler_user_0(int irq, void * dev_id);
-irqreturn_t intr_handler_user_1(int irq, void * dev_id);
-irqreturn_t intr_handler_user_2(int irq, void * dev_id);
-irqreturn_t intr_handler_user_3(int irq, void * dev_id);
+irqreturn_t intr_handler_user(int irq, void * dev_id);
 
 /******************************************************************************/
 

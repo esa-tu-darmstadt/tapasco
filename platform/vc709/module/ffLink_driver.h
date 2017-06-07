@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file ffLink_driver.h 
+ * @file ffLink_driver.h
  * @brief Composition of everything needed for kernel module
 	mainly consists of the init-/exit-functions
 	handles versioning, licensing and small description can be found in the implementation

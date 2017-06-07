@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file char_device_user.h 
+ * @file char_device_user.h
  * @brief Composition of everything needed to handle char-device calls for user-functions
 	here all definitions of functions and structs are given, which are used by the char-device
 	user can choose, how much minor devices will be allocated
@@ -71,8 +71,10 @@
 
 /******************************************************************************/
 
-/* number of device, which will be created for dma engines  */
-#define FFLINK_USER_NODES 4
+/* number of device, which will be created for PEs  */
+#define FFLINK_USER_NODES 1
+
+#define PE_IRQS 128
 
 /* device name to register fops with
  * fops will append a number to name for multiple minor nodes */
@@ -114,12 +116,8 @@
 
 /* struct array to hold data over multiple fops-calls */
 struct priv_data_struct {
-	unsigned int minor;
-	
-	wait_queue_head_t user_wait_queue;
-	unsigned long user_condition;
-	
-	struct mutex rw_mutex;
+	wait_queue_head_t user_wait_queue[PE_IRQS];
+	int user_condition[PE_IRQS];
 };
 
 /******************************************************************************/
@@ -131,11 +129,6 @@ static long user_ioctl(struct file *, unsigned int, unsigned long);
 static ssize_t user_read(struct file *, char __user *, size_t count, loff_t *);
 static ssize_t user_write(struct file *, const char __user *, size_t count, loff_t *);
 static int user_mmap(struct file *filp, struct vm_area_struct *vma);
-
-/******************************************************************************/
-/* helper function */
-
-static inline void user_set_mask(unsigned long *condition, uint32_t mask);
 
 /******************************************************************************/
 

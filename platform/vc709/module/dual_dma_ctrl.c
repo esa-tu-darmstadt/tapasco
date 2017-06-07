@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file dual_dma_ctrl.c 
+ * @file dual_dma_ctrl.c
  * @brief Implementation of custom dma engine specific code
 	Strips the layout of the dma-registers and setup stuff to start a dma transfer
 	in addition calls to acknowledge the interrupt in hw is given
@@ -75,7 +75,7 @@ void dual_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle,
 	fflink_info("dev_buf %lX dma_handle %lX \nsize %d dev_base %lX\n", (unsigned long) device_buffer, (unsigned long) host_handle, btt, (unsigned long) device_base_addr);
 	//if(mutex_lock_interruptible(&dma_regs_mutex))
 	//	fflink_warn("got killed while aquiring the mutex\n");
-		
+
 	/* SA */
 	pcie_writel((unsigned long) device_buffer, device_base_addr + REG_FPGA_ADDR_LOW);
 	/* DA */
@@ -86,7 +86,7 @@ void dual_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle,
 	wmb();
 	/* start cmd */
 	pcie_writel(CMD_READ, device_base_addr + REG_CMD);
-	
+
 	//mutex_unlock(&dma_regs_mutex);
 }
 
@@ -103,7 +103,7 @@ void dual_dma_transmit_to_device(void * device_buffer, dma_addr_t host_handle, i
 	fflink_info("dev_buf %lX dma_handle %lX \nsize %d dev_base %lX\n", (unsigned long) device_buffer, (unsigned long) host_handle, btt, (unsigned long) device_base_addr);
 	//if(mutex_lock_interruptible(&dma_regs_mutex))
 	//	fflink_warn("got killed while aquiring the mutex\n");
-	
+
 	/* SA */
 	pcie_writel(host_handle, device_base_addr + REG_HOST_ADDR_LOW);
 	/* DA */

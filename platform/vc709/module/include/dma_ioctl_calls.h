@@ -17,11 +17,11 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file dma_ioctl_calls.c 
+ * @file dma_ioctl_calls.c
  * @brief Define all ioctl commands with corresponding structs for the dma char device
 	these calls will be used by the platform_api to start a dma transfer on the pci-bus
 	Two different modes can be used here: either choose mmaped memory for zero copy access
-	or let the system call handle copying the data by itself 
+	or let the system call handle copying the data by itself
  * */
 
 #ifndef __DMA_IOCTL_CALLS_H
