@@ -15,6 +15,7 @@
 #include <sys/utsname.h>
 #include <tapasco.hpp>
 #include <platform.h>
+#include <unistd.h>
 #include "CumulativeAverage.hpp"
 #include "TransferSpeed.hpp"
 #include "InterruptLatency.hpp"
@@ -143,13 +144,14 @@ int main(int argc, const char *argv[]) {
       size_t i = 1;
       double prev = -1;
       js.jobs_per_sec = -1;
+      const size_t min_threads = sysconf(_SC_NPROCESSORS_ONLN) * 2;
       do {
         prev = js.jobs_per_sec;
         js.num_threads = i;
         js.jobs_per_sec = jt(i);
         ++i;
         jobs.push_back(js.to_json());
-      } while (i <= 128 && (i <= 8 || js.jobs_per_sec > prev));
+      } while (i <= 128 && (i <= min_threads || js.jobs_per_sec > prev));
     }
 
     // record current time
@@ -190,6 +192,7 @@ int main(int argc, const char *argv[]) {
   } catch (const char *msg) {
     endwin();
     cerr << "ERROR: " << msg << endl;
+    exit(1);
   } catch (...) {
     endwin();
     throw;

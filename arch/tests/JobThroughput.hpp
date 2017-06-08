@@ -24,8 +24,8 @@ class JobThroughput {
 public:
   static tapasco_func_id_t const COUNTER_ID = 14;
   JobThroughput(Tapasco& tapasco): tapasco(tapasco), jobs(0) {
-    if (tapasco.func_instance_count(COUNTER_ID) < 16)
-      throw "need at least 16 instances of 'Counter' (14) in bitstream";
+    if (tapasco.func_instance_count(COUNTER_ID) < 1)
+      throw "need at least one instance of 'Counter' (14) in bitstream";
   }
   virtual ~JobThroughput() {}
 
