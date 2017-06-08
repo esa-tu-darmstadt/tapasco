@@ -41,6 +41,7 @@ platform_ctl_addr_t platform_address_get_special_base(
 	case PLATFORM_SPECIAL_CTL_INTC1 : return 0x81810000;
 	case PLATFORM_SPECIAL_CTL_INTC2 : return 0x81820000;
 	case PLATFORM_SPECIAL_CTL_INTC3 : return 0x81830000;
+	case PLATFORM_SPECIAL_CTL_ATSPRI: return 0xFFFFFFFF;
 	}
 	return 0;
 }
