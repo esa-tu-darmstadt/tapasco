@@ -69,8 +69,10 @@ class ComposeTask(composition: Composition,
         _composerResult flatMap (_.power map (_.file)) getOrElse ""))
 
     LogFileTracker.stopLogFileAppender(appender)
-    composer.clean(composition, target, designFrequency)
-    (_composerResult map (_.result) getOrElse false) == ComposeResult.Success
+    val result = (_composerResult map (_.result) getOrElse false) == ComposeResult.Success
+    if (result)
+      composer.clean(composition, target, designFrequency)
+    result
   }
 
   private def slurmExecution: Boolean = {
