@@ -23,6 +23,7 @@
  **/
 package de.tu_darmstadt.cs.esa.tapasco.jobs.executors
 import  de.tu_darmstadt.cs.esa.tapasco.base._
+import  de.tu_darmstadt.cs.esa.tapasco.dse._
 import  de.tu_darmstadt.cs.esa.tapasco.filemgmt._
 import  de.tu_darmstadt.cs.esa.tapasco.task._
 import  de.tu_darmstadt.cs.esa.tapasco.jobs._
@@ -42,12 +43,18 @@ private object DesignSpaceExploration extends Executor[DesignSpaceExplorationJob
     val kernels = job.initialComposition.composition map (_.kernel) toSet
 
     logger.debug("kernels found in composition: {}", kernels)
+    logger.debug("alternative kernels: {}", kernels map (Alternatives.alternatives _))
 
-    val missing = for {
+    val missing = (for {
       k <- kernels
       t <- job.targets
       if FileAssetManager.entities.core(k, t).isEmpty
-    } yield (k, t)
+    } yield (k, t)) ++ (for {
+      k <- kernels
+      t <- job.targets
+      a <- Alternatives.alternatives(k)
+      if job.dimensions.alternatives && FileAssetManager.entities.core(a.name, t).isEmpty
+    } yield (a.name, t))
 
     if (missing.nonEmpty) {
       logger.info("need to synthesize the following cores first: {}",

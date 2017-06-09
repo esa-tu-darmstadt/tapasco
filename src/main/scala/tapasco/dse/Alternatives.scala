@@ -58,8 +58,19 @@ object Alternatives {
     * @param target Target Architecture and Platform
     * @return Set of alternative names for kernel on Target **/
   def alternatives(kernel: String, target: Target)(implicit cfg: Configuration): Set[String] =
-    //idForName(kernel) map (namesForId(_, target)) getOrElse(Set())
     idForName(kernel) map (namesForId(_)) getOrElse(Set())
+ 
+  /** Returns alternative kernels for given kernel.
+   *  @param kernel Kernel to find alternatives to.
+   *  @return Set of alternative Kernels. **/
+  def alternatives(kernel: Kernel)(implicit cfg: Configuration): Set[Kernel] =
+    FileAssetManager.entities.kernels.filter(_.id equals kernel.id)
+
+  /** Returns alternative kernels for given kernel name.
+   *  @param name Name of Kernel; this may be used to find alternatives to an Verilog/VHDL core.
+   *  @return Set of alternative Kernels. **/
+  def alternatives(name: String)(implicit cfg: Configuration): Set[Kernel] =
+    FileAssetManager.entities.kernels.filter(k => idForName(name) map (_ equals k.id) getOrElse false)
 
  /** Returns alternative compositions on given Target.
    * @param bd Original Composition
