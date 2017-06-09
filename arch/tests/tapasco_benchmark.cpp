@@ -185,8 +185,8 @@ int main(int argc, const char *argv[]) {
     // dump it
     stringstream ss;
     ss << platform << ".benchmark";
-    cout << "Dumping benchmark Json to " << (argc >= 2 ? argv[1] : ss.str()) << endl;
-    ofstream f(argc >= 2 ? argv[1] : ss.str());
+    cout << "Dumping benchmark Json to " << (argc >= 3 ? argv[2] : ss.str()) << endl;
+    ofstream f(argc >= 3 ? argv[2] : ss.str());
     f << benchmark.dump();
     f.close();
   } catch (const char *msg) {
