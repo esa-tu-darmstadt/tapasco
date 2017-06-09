@@ -6,5 +6,7 @@
 	"BoardPart" : "xilinx.com:vc709:part0:1.5",
 	"BoardPreset" : "VC709",
 	"TargetUtilization" : 90,
-	"Benchmark" : "vc709.benchmark"
+	"Benchmark" : "vc709.benchmark",
+	"HostFrequency": 250.0,
+	"MemFrequency": 200.0
 }

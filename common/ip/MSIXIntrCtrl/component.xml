@@ -407,7 +407,7 @@
       <spirit:addressBlock>
         <spirit:name>reg0</spirit:name>
         <spirit:baseAddress spirit:format="bitString" spirit:resolve="user" spirit:bitStringLength="32">0</spirit:baseAddress>
-        <spirit:range spirit:format="long" spirit:resolve="user" spirit:minimum="4096" spirit:rangeType="long">4096</spirit:range>
+        <spirit:range spirit:resolve="user" spirit:minimum="4096" spirit:rangeType="long">64k</spirit:range>
         <spirit:width spirit:format="long" spirit:resolve="user">32</spirit:width>
         <spirit:usage>register</spirit:usage>
       </spirit:addressBlock>
@@ -427,7 +427,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>01578a37</spirit:value>
+            <spirit:value>93bc1b6f</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -443,7 +443,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>01578a37</spirit:value>
+            <spirit:value>93bc1b6f</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -523,7 +523,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">31</spirit:left>
+            <spirit:left spirit:format="long">15</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -655,7 +655,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">31</spirit:left>
+            <spirit:left spirit:format="long">15</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -810,7 +810,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">255</spirit:left>
+            <spirit:left spirit:format="long">131</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -1267,7 +1267,7 @@
       <spirit:file>
         <spirit:name>src/mkMSIXIntrCtrl.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_ca68e109</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_3366b868</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -1323,7 +1323,7 @@
       <xilinx:displayName>MSIXIntrCtrl</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2017-06-02T07:28:21Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2017-06-09T13:47:07Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
@@ -1332,9 +1332,9 @@
       <xilinx:xilinxVersion>2016.4</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="a9103989"/>
       <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="39f94240"/>
-      <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="f3632d96"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="a71d4d09"/>
-      <xilinx:checksum xilinx:scope="ports" xilinx:value="25002ad1"/>
+      <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="2b2da2c0"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="5c9a1c13"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="19368f77"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="4b2b81b7"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>
