@@ -1,4 +1,4 @@
-if [[ "-bash" == $0 ]]; then
+if [[ "-bash" == $0 || "bash" == `basename $0` ]]; then
 	export TAPASCO_HOME=`dirname ${BASH_SOURCE[0]} | xargs realpath`
 else
 	echo "WARNING: non-bash shell; need source setup.sh from the TaPaSCo root dir!"
