@@ -17,5 +17,5 @@
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
 set_directive_data_pack @@TOP@@ @@ARG@@
-set_directive_interface -mode m_axi -offset slave @@TOP@@ @@ARG@@
+set_directive_interface -mode m_axi -bundle maxi_@@ARG@@ -offset slave @@TOP@@ @@ARG@@
 set_directive_interface -mode s_axilite -offset @@OFFSET@@ @@TOP@@ @@ARG@@
