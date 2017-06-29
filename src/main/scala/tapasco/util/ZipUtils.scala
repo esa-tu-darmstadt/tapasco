@@ -30,9 +30,11 @@ object ZipUtils {
   /** Unpacks all files matching the given regular expressions into a temporary directory.
    *  @param zipFile Path to .zip file.
    *  @param regexes List of regexes; all matching files will be extracted.
+   *  @param exclude List of regexes; all matching files will be excluded.
+   *  @param flatten If true, will extract all files in same directory.
    *  @return tuple (temporary directory, list of extracted files).
    */
-  def unzipFile(zipFile: Path, regexes: Seq[Regex], exclude: Seq[Regex] = Seq())
+  def unzipFile(zipFile: Path, regexes: Seq[Regex], exclude: Seq[Regex] = Seq(), flatten: Boolean = true)
                (implicit logger: Logger): (Path, Seq[Path]) = {
     import java.util.zip._
     import java.io.{BufferedInputStream, BufferedOutputStream, FileInputStream, FileOutputStream}
@@ -46,20 +48,28 @@ object ZipUtils {
       var zipEntry = zis.getNextEntry()
       while (Option(zipEntry).nonEmpty) {
         logger.trace(zipFile + ": zipentry: " + zipEntry)
-        if ((regexes map (r => ! r.findFirstIn(zipEntry.toString()).isEmpty) reduce(_||_)) &&
-            (exclude map (r => r.findFirstIn(zipEntry.toString()).isEmpty) reduce (_&&_))) {
-          logger.trace(zipFile + ": extracting " + zipEntry)
-          val buffer = new Array[Byte](bufsz)
-          val outname = tempdir.resolve(Paths.get(zipEntry.getName()).getFileName()).toString()
-          val dest = new BufferedOutputStream(new FileOutputStream(outname), bufsz)
-          extracted = Paths.get(outname) :: extracted
-          var count = 0
-          while ({count = zis.read(buffer, 0, bufsz); count != -1})
-            dest.write(buffer, 0, count);
-          dest.flush()
-          dest.close()
-        } else {
-          logger.trace(zipFile + ": skipping " + zipEntry)
+        if (! zipEntry.isDirectory()) {
+          if (((regexes map (r => ! r.findFirstIn(zipEntry.toString()).isEmpty) fold false) (_||_)) &&
+              ((exclude map (r =>   r.findFirstIn(zipEntry.toString()).isEmpty) fold true)  (_&&_))) {
+            logger.trace(zipFile + ": extracting " + zipEntry)
+            val buffer = new Array[Byte](bufsz)
+            val outname = tempdir.resolve(if (flatten)
+              Paths.get(zipEntry.getName()).getFileName()
+            else
+              Paths.get(zipEntry.getName())
+            )
+            logger.trace("outname = {}}", outname)
+            Option(outname.getParent) foreach { p => if (!p.toFile.exists()) Files.createDirectories(p) }
+            val dest = new BufferedOutputStream(new FileOutputStream(outname.toString), bufsz)
+            extracted = outname :: extracted
+            var count = 0
+            while ({count = zis.read(buffer, 0, bufsz); count != -1})
+              dest.write(buffer, 0, count);
+            dest.flush()
+            dest.close()
+          } else {
+            logger.trace(zipFile + ": skipping " + zipEntry)
+          }
         }
         zipEntry = zis.getNextEntry()
       }
