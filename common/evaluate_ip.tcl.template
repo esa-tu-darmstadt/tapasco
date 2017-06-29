@@ -38,8 +38,18 @@ foreach script [list @@TCL_FILES@@] { source $script }
 set top [lindex [find_top] 0]
 
 # synthesize and optimize netlist
-#synth_design -part @@PART@@ -top $top -no_iobuf -mode out_of_context -retiming
-synth_design -part @@PART@@ -top $top -mode out_of_context -retiming
+synth_design \
+  -part @@PART@@ \
+  -top $top \
+  -mode out_of_context \
+  -directive AlternateRoutability \
+  -retiming \
+  -fanout_limit 400 \
+  -fsm_extraction one_hot \
+  -keep_equivalent_registers \
+  -resource_sharing off \
+  -no_lc \
+  -shreg_min_size 5
 
 # read switching activity files (if any)
 foreach saif [glob -nocomplain *.saif] {

@@ -50,7 +50,11 @@ namespace eval platform {
 
     generate_target all [get_files system.bd]
     set synth_run [get_runs synth_1]
-    #set_property FLOW {Vivado Synthesis 2015} $synth_run
+    set_property -dict [list \
+      strategy Flow_PerfOptimized_high \
+      STEPS.SYNTH_DESIGN.ARGS.DIRECTIVE AlternateRoutability \
+      STEPS.SYNTH_DESIGN.ARGS.RETIMING true \
+    ] $synth_run
     current_run $synth_run
     launch_runs -jobs $jobs $synth_run
     wait_on_run $synth_run
@@ -61,7 +65,10 @@ namespace eval platform {
     tapasco::call_plugins "post-synth"
 
     set impl_run [get_runs impl_1]
-    #set_property FLOW {Vivado Implementation 2015} $impl_run
+    set_property -dict [list \
+      STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE Explore \
+      STEPS.PHYS_OPT_DESIGN.IS_ENABLED true \
+    ] $impl_run
     current_run $impl_run
     launch_runs -jobs $jobs -to_step route_design $impl_run
     wait_on_run $impl_run
