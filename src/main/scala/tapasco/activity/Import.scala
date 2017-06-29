@@ -84,6 +84,25 @@ object Import {
     Files.createDirectories(p.getParent)
     logger.trace("created output directories: {}", p.getParent.toString)
 
+    // link original .zip file, if possible; otherwise copy
+    val linkp = cfg.outputDir(c, t).resolve("ipcore").resolve("%s.zip".format(vlnv.name))
+    if (! linkp.toFile.equals(c.zipPath.toAbsolutePath.toFile)) {
+      Files.createDirectories(linkp.getParent)
+      logger.trace("created directories: {}", linkp.getParent.toString)
+      if (linkp.toFile.exists) {
+        logger.debug("file {} already exists, skipping copy/link step")
+      } else {
+        logger.trace("creating symbolic link {} -> {}", linkp: Any, c.zipPath.toAbsolutePath)
+        try   { java.nio.file.Files.createSymbolicLink(linkp, c.zipPath.toAbsolutePath) }
+        catch { case ex: java.nio.file.FileSystemException => {
+          logger.warn("cannot create link {} -> {}, copying data", linkp: Any, c.zipPath)
+          java.nio.file.Files.copy(c.zipPath, linkp, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        }}
+      }
+    } else {
+      logger.debug("{} is the same as {}, no copy/link required", linkp: Any, c.zipPath.toAbsolutePath)
+    }
+
     // evaluate the ip core and store the report with the link
     val res = evaluateCore(c, t)
 
@@ -102,7 +121,7 @@ object Import {
    **/
   private def evaluateCore(c: Core, t: Target)(implicit cfg: Configuration): Boolean = {
     logger.trace("looking for SynthesisReport ...")
-    val period = 1000.0 / t.pd.supportedFrequencies.sortWith(_>_).head
+    val period = 0.5
     val report = cfg.outputDir(c, t).resolve("ipcore").resolve("%s_export.xml".format(c.name))
     FileAssetManager.reports.synthReport(c.name, t) map { hls_report =>
       logger.trace("found existing synthesis report: " + hls_report)
@@ -113,34 +132,6 @@ object Import {
     } getOrElse {
       logger.info("SynthesisReport for {} not found, starting evaluation ...", c.name)
       EvaluateIP(c.zipPath, period, t.pd.part, report)
-    } && repack(c, t)
-  }
-
-  private def repack(c: Core, t: Target)(implicit cfg: Configuration): Boolean = {
-    logger.debug("repacking {} for {} ...", c: Any, t)
-    val out = cfg.outputDir(c, t).resolve("ipcore")
-    val vivadoCmd: Seq[String] = Seq("vivado",
-        "-mode", "batch",
-        "-source", FileAssetManager.TAPASCO_HOME.resolve("common").resolve("repack-edn.tcl").toString,
-        c.name,
-        c.version,
-        "-nolog", "-notrace", "-nojournal")
-    // execute Vivado (max runtime: 1h)
-    val r = InterruptibleProcess(Process(vivadoCmd, out.toFile),
-        waitMillis = Some(60 * 60 * 1000)).!(InterruptibleProcess.io)
-    r match {
-      case InterruptibleProcess.TIMEOUT_RETCODE =>
-        logger.error("repack-edn.tcl: Vivado timeout error")
-      case 0 =>
-        logger.info("repack-edn.tcl: Vivado finished successfully")
-        val zip = cfg.outputDir(c, t).resolve("ipcore").resolve("%s.zip".format(c.name))
-        val edn = zip.resolveSibling("%s.edn".format(c.name))
-        val xml = zip.resolveSibling("component.xml")
-        xml.toFile.deleteOnExit()
-        ZipUtils.zipFile(zip, Seq(xml, edn))
-      case _ =>
-        logger.error("repack-edn.tcl: Vivado exited with non-zero exit-code ({})", r)
     }
-    r == 0
   }
 }
