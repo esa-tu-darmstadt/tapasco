@@ -17,7 +17,7 @@
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
 # @file		zynq.tcl
-# @brief	Zynq-7000 platform implementation: For simulation, there is an extra AXI 
+# @brief	Zynq-7000 platform implementation: For simulation, there is an extra AXI
 #               master connected to HP3 (to simulate loading of data). Up to 16 instances
 #               of AXI Interrupt Controllers are instantiated, depending on the number
 #               interrupt sources returned by the architecture.
@@ -27,7 +27,7 @@ namespace eval platform {
   namespace eval zynq {
     namespace export create
     namespace export max_masters
-  
+
     # check if TAPASCO_HOME env var is set
     if {![info exists ::env(TAPASCO_HOME)]} {
       puts "Could not find TPC root directory, please set environment variable 'TAPASCO_HOME'."
@@ -37,25 +37,25 @@ namespace eval platform {
     foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/zynq/plugins" "*.tcl"] {
       source -notrace $f
     }
-  
+
     proc max_masters {} {
       return [list 64 64]
     }
-  
+
     # Setup the clock network.
     proc platform_connect_clock {ps} {
       puts "Connecting clocks ..."
-  
+
       set clk_inputs [get_bd_pins -of_objects [get_bd_cells] -filter { TYPE == "clk" && DIR == "I" }]
       puts "  connecting to FCLK_CLK0 port of PS7"
       set clk_inputs [get_bd_pins -of_objects [get_bd_cells] -filter { TYPE == "clk" && DIR == "I" }]
       connect_bd_net [get_bd_pins -of_objects $ps -filter { NAME == "FCLK_CLK0" }] $clk_inputs
     }
-  
+
     # Setup the reset network.
     proc platform_connect_reset {ps rst_gen} {
       puts "Connecting resets ..."
-  
+
       set ics [get_bd_cells -filter "VLNV =~ *axi_interconnect*"]
       set ic_resets [get_bd_pins -of_objects $ics -filter { TYPE == "rst" && NAME == "ARESETN" }]
       lappend ic_resets [get_bd_pins uArch/interconnect_aresetn]
@@ -65,17 +65,17 @@ namespace eval platform {
       lappend periph_resets [get_bd_pins "tapasco_status/s00_axi_aresetn"]
       puts "ic_resets = $ic_resets"
       puts "periph_resets = $periph_resets"
-  
+
       puts "  connecting to FCLK_RESET0_N on PS7"
       connect_bd_net [get_bd_pins -of_objects $ps -filter { NAME == "FCLK_RESET0_N" }] [get_bd_pins -of_objects $rst_gen -filter { NAME == "ext_reset_in" }]
       connect_bd_net [get_bd_pins -of_objects $rst_gen -filter { NAME == "interconnect_aresetn" }] $ic_resets
       connect_bd_net [get_bd_pins -of_objects $rst_gen -filter { NAME == "peripheral_aresetn" }] $periph_resets
     }
-  
+
     # Setup interrupts.
     proc platform_connect_interrupts {irqs ps} {
       puts "Connecting [llength $irqs] interrupts .."
-  
+
       # create interrupt controllers and connect them to GP1
       set intcs [list]
       set cc [tapasco::createConcat "intc_concat" [llength $irqs]]
@@ -87,7 +87,7 @@ namespace eval platform {
         connect_bd_net -boundary_type upper [get_bd_pins -of $intc -filter {NAME=="irq"}] [get_bd_pins -of $cc -filter "NAME == [format "In%d" $i]"]
         incr i
       }
-  
+
       set intcic [tapasco::createInterconnect "axi_intc_ic" 1 [llength $intcs]]
       set i 0
       foreach intc $intcs {
@@ -97,14 +97,14 @@ namespace eval platform {
         connect_bd_intf_net -boundary_type upper $master $slave
         incr i
       }
-  
+
       # connect concat to the host
       connect_bd_net [get_bd_pins -of $cc -filter { DIR == "O" }] [get_bd_pins -of $ps -filter { NAME == "IRQ_F2P" }]
       # connect interconnect to the host at GP1
       connect_bd_intf_net [get_bd_intf_pins -of $ps -filter {NAME=="M_AXI_GP1"}] [get_bd_intf_pins -of $intcic -filter {MODE=="Slave"}]
       return $intcs
     }
-  
+
     # Create TPC status information core.
     # @param TPC composition dict.
     proc createTapascoStatus {composition} {
@@ -119,7 +119,7 @@ namespace eval platform {
       set tapasco_status [tapasco::createTapascoStatus "tapasco_status" $c]
       return $tapasco_status
     }
-  
+
     # Create interrupt controller subsystem:
     # Consists of AXI_INTC IP cores (as many as required), which are connected by an internal
     # AXI Interconnect (S_AXI port) and to the Zynq interrupt lines.
@@ -128,19 +128,19 @@ namespace eval platform {
     proc create_subsystem_interrupts {irqs ps_irq_in} {
       puts "Connecting [llength $irqs] interrupts .."
       puts "  irqs = $irqs"
-  
+
       # create hierarchical group
       set group [create_bd_cell -type hier "InterruptControl"]
       set instance [current_bd_instance]
       current_bd_instance $group
-  
+
       # create hierarchical ports
       set s_axi [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_AXI"]
       set aclk [create_bd_pin -type "clk" -dir I "aclk"]
       set ic_aresetn [create_bd_pin -type "rst" -dir I "interconnect_aresetn"]
       set p_aresetn [create_bd_pin -type "rst" -dir I "peripheral_aresetn"]
       set irq_out [create_bd_pin -type "intr" -dir O -to [expr "[llength $irqs] - 1"] "irq_out"]
-  
+
       # create interrupt controllers and connect them to GP1
       set intcs [list]
       foreach irq $irqs {
@@ -148,7 +148,7 @@ namespace eval platform {
         connect_bd_net $irq [get_bd_pins -of $intc -filter {NAME=="intr"}]
         lappend intcs $intc
       }
-  
+
       # concatenate interrupts and connect them to port
       set int_cc [tapasco::createConcat "int_cc" [llength $irqs]]
       for {set i 0} {$i < [llength $irqs]} {incr i} {
@@ -156,7 +156,7 @@ namespace eval platform {
       }
       connect_bd_net [get_bd_pins "$int_cc/dout"] $irq_out
       connect_bd_net $irq_out $ps_irq_in
-  
+
       set intcic [tapasco::createInterconnect "axi_intc_ic" 1 [llength $intcs]]
       set i 0
       foreach intc $intcs {
@@ -166,7 +166,7 @@ namespace eval platform {
         connect_bd_intf_net -boundary_type upper $master $slave
         incr i
       }
-  
+
       # connect internal clocks
       connect_bd_net -net intc_clock_net $aclk [get_bd_pins -of_objects [get_bd_cells] -filter {TYPE == "clk" && DIR == "I"}]
       # connect internal interconnect resets
@@ -175,10 +175,10 @@ namespace eval platform {
       # connect internal peripheral resets
       set p_resets [get_bd_pins -of_objects [get_bd_cells] -filter {TYPE == rst && DIR == I && NAME != "ARESETN"}]
       connect_bd_net -net intc_p_reset_net $p_aresetn $p_resets
-  
+
       # connect S_AXI
       connect_bd_intf_net $s_axi [get_bd_intf_pins -of_objects $intcic -filter {NAME == "S00_AXI"}]
-  
+
       current_bd_instance $instance
       return $group
     }
@@ -186,12 +186,12 @@ namespace eval platform {
     # Creates the host subsystem containing the PS7.
     proc create_subsystem_host {} {
       puts "Creating Host/PS7 subsystem ..."
-  
+
       # create hierarchical group
       set group [create_bd_cell -type hier "Host"]
       set instance [current_bd_instance .]
       current_bd_instance $group
-  
+
       # create hierarchical ports
       set s_acp [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_AXI_ACP"]
       set s_hp0 [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_AXI_HP0"]
@@ -206,7 +206,7 @@ namespace eval platform {
       set host_ic_arstn [create_bd_pin -type "rst" -dir "I" "host_interconnect_aresetn"]
       set fclk0_aclk [create_bd_pin -type "clk" -dir "O" "ps_aclk"]
       set fclk0_aresetn [create_bd_pin -type "rst" -dir "O" "ps_resetn"]
-  
+
       # generate PS7 instance
       set ps [tapasco::createZynqPS "ps7" [tapasco::get_board_preset] [tapasco::get_design_frequency]]
       if {[tapasco::get_board_preset] != {}} {
@@ -232,11 +232,11 @@ namespace eval platform {
         CONFIG.PCW_IRQ_F2P_INTR 			{1} \
         CONFIG.PCW_TTC0_PERIPHERAL_ENABLE 		{0} \
         CONFIG.PCW_EN_CLK1_PORT 			{1} ] $ps
-  
+
       # connect masters
       connect_bd_intf_net [get_bd_intf_pins "$ps/M_AXI_GP0"] $m_gp0
       connect_bd_intf_net [get_bd_intf_pins "$ps/M_AXI_GP1"] $m_gp1
-  
+
       # connect slaves
       connect_bd_intf_net $s_acp [get_bd_intf_pins "$ps/S_AXI_ACP"]
       connect_bd_intf_net $s_hp0 [get_bd_intf_pins "$ps/S_AXI_HP0"]
@@ -249,84 +249,102 @@ namespace eval platform {
       # connect memory slaves to memory clock and reset
       connect_bd_net $mem_aclk [get_bd_pins -of_objects $ps -filter {NAME =~ "S*ACLK"}]
       connect_bd_net $host_aclk [get_bd_pins -of_objects $ps -filter {NAME =~ "M*ACLK"}]
-  
+
       current_bd_instance $instance
       return $group
     }
-  
+
     # Creates the reset subsystem consisting of reset generators for the clocks.
     # @param clocks list of clock signals for which to generate AXI reset signals
     # @param ext_reset asynchronous reset signal to use as input
     proc create_subsystem_reset {clocks ext_reset} {
       puts "Creating Reset subsystem for $clocks and reset $ext_reset..."
-  
+
       # create hierarchical group
       set group [create_bd_cell -type hier "Resets"]
       set instance [current_bd_instance]
       current_bd_instance $group
-  
+
       # create reset generators and ports
       set ext_reset_ins [list]
       for {set i 0} {$i < [llength $clocks]} {incr i} {
         set clock [lindex $clocks $i]
         set rst_gen [tapasco::createResetGen "rst_gen_$i"]
         set cn [get_property "NAME" [get_bd_pins $clock]]
-        connect_bd_net $clock [get_bd_pins "$rst_gen/slowest_sync_clk"] 
+        connect_bd_net $clock [get_bd_pins "$rst_gen/slowest_sync_clk"]
         lappend ext_reset_ins [get_bd_pins "$rst_gen/ext_reset_in"]
         set pp_port [create_bd_pin -type "rst" -dir "O" "${cn}_peripheral_aresetn"]
         set ic_port [create_bd_pin -type "rst" -dir "O" "${cn}_interconnect_aresetn"]
         connect_bd_net [get_bd_pins "$rst_gen/peripheral_aresetn"] $pp_port
         connect_bd_net [get_bd_pins "$rst_gen/interconnect_aresetn"] $ic_port
       }
-  
+
       # connect external reset source
       connect_bd_net $ext_reset $ext_reset_ins
       current_bd_instance $instance
       return $group
     }
-  
+
     proc platform_address_map {} {
+      puts "Generating host address map ..."
       set host_addr_space [get_bd_addr_space "/Host/ps7/Data"]
       # connect interrupt controllers
       set intcs [lsort [get_bd_addr_segs -of_objects [get_bd_cells /InterruptControl/axi_intc_0*]]]
       set offset 0x81800000
       for {set i 0} {$i < [llength $intcs]} {incr i; incr offset 0x10000} {
+        puts [format "  INTC at 0x%08x" $offset]
         create_bd_addr_seg -range 64K -offset $offset $host_addr_space [lindex $intcs $i] "INTC_SEG$i"
       }
-  
+
       # connect TPC status core
       set status_segs [get_bd_addr_segs -of_objects [get_bd_cells "tapasco_status"]]
       set offset 0x77770000
       set i 0
       foreach s $status_segs {
+        puts [format "  status at 0x%08x" $offset]
         create_bd_addr_seg -range 4K -offset $offset $host_addr_space $s "STATUS_SEG$i"
         incr i
         incr offset 0x1000
       }
-  
+
       # connect user IP: slaves
-      set usrs [lsort [get_bd_addr_segs "/uArch/*"]]
-      set offset 0x43C00000
-      for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
-        create_bd_addr_seg -range 64K -offset $offset $host_addr_space [lindex $usrs $i] "USR_SEG$i"
-      }
-  
-      # connect user IP: masters
       set pes [lsort [arch::get_processing_elements]]
+      set offset 0x43C00000
+      set pen 0
       foreach pe $pes {
+        set usrs [lsort [get_bd_addr_segs $pe/*]]
+        for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
+          puts [format "  PE $pe ([get_property VLNV $pe]) at 0x%08x of $host_addr_space" $offset]
+          create_bd_addr_seg -range 64K -offset $offset $host_addr_space [lindex $usrs $i] "USR_${pen}_SEG$i"
+        }
+        incr pen
+      }
+
+      # connect user IP: masters
+      foreach pe $pes {
+        puts "  processing PE $pe ([get_property VLNV $pe]) ..."
         set masters [tapasco::get_aximm_interfaces $pe]
+        puts "    number of masters: [llength $masters] ($masters)"
         foreach m $masters {
+          set spaces [get_bd_addr_spaces -of_objects $m]
+          puts "    master $m spaces: $spaces"
           set slaves [find_bd_objs -relation addressable_slave $m]
-          foreach s $slaves {
-            create_bd_addr_seg -range [get_property RANGE [get_bd_addr_spaces $m]] -offset 0 \
-              [get_bd_addr_spaces $m] \
-              [get_bd_addr_segs $s/*] \
-              "SEG_${m}_${s}"
+          puts "    master $m slaves: $slaves"
+          set sn 0
+          foreach space $spaces {
+            foreach s $slaves {
+              puts "    mapping $s in $m:$space"
+              create_bd_addr_seg -range [get_property RANGE $space] -offset 0 \
+                $spaces \
+                [get_bd_addr_segs $s/*] \
+                "SEG_${m}_${s}_${sn}"
+           }
+           incr sn
           }
         }
       }
     }
-  
+
     # Platform API: Entry point for Platform instantiation.
     proc create {} {
       # create Zynq host subsystem
@@ -342,14 +360,14 @@ namespace eval platform {
           connect_bd_net [get_bd_pins "$ss_cnr/${clk}_${p}"] [get_bd_pins "uArch/${clk}_${p}"]
         }
       }
-  
+
       # create interrupt subsystem
       set ss_int [create_subsystem_interrupts [arch::get_irqs] [get_bd_pins "$ss_host/ps7/IRQ_F2P"]]
       connect_bd_intf_net [get_bd_intf_pins "$ss_host/M_AXI_GP1"] [get_bd_intf_pins "$ss_int/S_AXI"]
       connect_bd_net [get_bd_pins "$ss_cnr/host_aclk"] [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $ss_int]
       connect_bd_net [get_bd_pins "$ss_cnr/host_interconnect_aresetn"] [get_bd_pins "$ss_int/interconnect_aresetn"]
       connect_bd_net [get_bd_pins "$ss_cnr/host_peripheral_aresetn"] [get_bd_pins "$ss_int/peripheral_aresetn"]
-  
+
       # create status core
       set tapasco_status [createTapascoStatus [tapasco::get_composition]]
       set gp0_out [tapasco::create_interconnect_tree "gp0_out" 2 false]
@@ -384,21 +402,24 @@ namespace eval platform {
         puts "Connecting master $m to memory interface S_AXI_$intf ..."
         connect_bd_intf_net $m [get_bd_intf_pins "$ss_host/S_AXI_$intf"]
       }
-  
+
       # call plugins
       tapasco::call_plugins "post-bd"
 
+      puts "Generating address map ..."
       platform_address_map
+      puts "Validating design ..."
       validate_bd_design
+      puts "Done! Saving ..."
       save_bd_design
     }
-   
+
     proc get_debug_nets {} {
       set host_prefix "system_i/Host"
       set ps_prefix "system_i/Host/ps7"
       set int_prefix "system_i/InterruptControl_"
       set tp_prefix "system_i/uArch_"
-  
+
       set ret [list \
           "$host_prefix/irq_out*" \
   \
@@ -428,7 +449,7 @@ namespace eval platform {
   	"${host_prefix}_M_AXI_GP1_RVALID" \
   	"${host_prefix}_M_AXI_GP1_RREADY" \
         ]
-  
+
       if {[llength [get_nets "${ps_prefix}/S_AXI_HP0_RDATA*"]] > 0} {
         lappend ret [list \
   	"${ps_prefix}/S_AXI_HP0_RDATA*" \
@@ -452,7 +473,7 @@ namespace eval platform {
   	"${ps_prefix}/S_AXI_HP0_RLAST" \
        ]
      }
-  
+
       if {[llength [get_nets "${ps_prefix}/S_AXI_HP2_RDATA*"]] > 0} {
         lappend ret [list \
   	"${ps_prefix}/S_AXI_HP2_RDATA*" \
@@ -476,7 +497,7 @@ namespace eval platform {
   	"${ps_prefix}/S_AXI_HP2_RLAST" \
         ]
       }
-  
+
       if {[llength [get_nets "${ps_prefix}/S_AXI_ACP_RDATA*"]] > 0} {
         lappend ret [list \
   	"${ps_prefix}/S_AXI_ACP_RDATA*" \
