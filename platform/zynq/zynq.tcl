@@ -317,9 +317,11 @@ namespace eval platform {
         set masters [tapasco::get_aximm_interfaces $pe]
         foreach m $masters {
           set slaves [find_bd_objs -relation addressable_slave $m]
-          set spaces [get_bd_addr_spaces $pe/* -filter { NAME =~ "*m_axi*" || NAME =~ "*M_AXI*" }]
-          foreach u $spaces {
-            create_bd_addr_seg -range [get_property RANGE $u] -offset 0 $u [get_bd_addr_segs $slaves/*] "SEG_$u"
+          foreach s $slaves {
+            create_bd_addr_seg -range [get_property RANGE [get_bd_addr_spaces $m]] -offset 0 \
+              [get_bd_addr_spaces $m] \
+              [get_bd_addr_segs $s/*] \
+              "SEG_${m}_${s}"
           }
         }
       }
