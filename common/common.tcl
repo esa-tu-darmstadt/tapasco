@@ -722,7 +722,7 @@ namespace eval tapasco {
       set curr_ics [list]
       #puts "n = $n"
       for {set i 0} {$i < $n} {incr i} {
-        set rest_ports [expr "$nports - $i * 16"] 
+        set rest_ports [expr "$nports - $i * 16"]
         set rest_ports [expr "min($rest_ports, 16)"]
         set nic [createInterconnect [format "ic_%03d" $ic_n] [expr "$masters ? $rest_ports : 1"] [expr "$masters ? 1 : $rest_ports"]]
         incr ic_n
@@ -747,7 +747,7 @@ namespace eval tapasco {
       set ss [lsort [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Slave"} -of_objects $curr_ics]]
       set idx 0
       foreach m $ms {
-        if {$masters} { 
+        if {$masters} {
           connect_bd_intf_net $m [lindex $ss $idx]
         } {
           connect_bd_intf_net [lindex $ss $idx] $m
@@ -914,11 +914,18 @@ namespace eval tapasco {
 
   proc call_plugins {when args} {
     variable plugins
+    puts "Calling $when plugins ..."
     if {[dict exists $plugins $when]} {
-      foreach cb [dict get $plugins $when] {
-        set args [eval $cb $args]
+      set calls [dict get $plugins $when]
+      if {[llength $calls] > 0} {
+        puts "  found [llength $calls] plugin calls at $when"
+        foreach cb $calls {
+          puts "  calling $cb $args ..."
+          set args [eval $cb $args]
+        }
       }
     }
+    puts "Event $when finished."
     return $args
   }
 
