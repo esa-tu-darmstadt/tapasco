@@ -1,1 +1,1 @@
-set_false_path -to [get_cells system_i/InterruptControl/msix_intr_ctrl/inst/interrupts_*]
+set_false_path -through [get_pins system_i/InterruptControl/msix_intr_ctrl/interrupt*]

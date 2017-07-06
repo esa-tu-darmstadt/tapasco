@@ -79,7 +79,8 @@ void dual_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle,
 	/* SA */
 	pcie_writel((unsigned long) device_buffer, device_base_addr + REG_FPGA_ADDR_LOW);
 	/* DA */
-	pcie_writel(host_handle, device_base_addr + REG_HOST_ADDR_LOW);
+	pcie_writel((uint32_t)host_handle, device_base_addr + REG_HOST_ADDR_LOW);
+	pcie_writel((uint32_t) (host_handle >> 32), device_base_addr + REG_HOST_ADDR_HIGH);
 	/* btt */
 	pcie_writel(btt, device_base_addr + REG_BTT);
 	/* presvious data have to be written first */
@@ -105,7 +106,8 @@ void dual_dma_transmit_to_device(void * device_buffer, dma_addr_t host_handle, i
 	//	fflink_warn("got killed while aquiring the mutex\n");
 
 	/* SA */
-	pcie_writel(host_handle, device_base_addr + REG_HOST_ADDR_LOW);
+	pcie_writel((uint32_t)host_handle, device_base_addr + REG_HOST_ADDR_LOW);
+	pcie_writel((uint32_t) (host_handle >> 32), device_base_addr + REG_HOST_ADDR_HIGH);
 	/* DA */
 	pcie_writel((unsigned long) device_buffer, device_base_addr + REG_FPGA_ADDR_LOW);
 	/* btt */

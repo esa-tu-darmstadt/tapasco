@@ -46,19 +46,19 @@ static int __init fflink_init(void)
 	fflink_notice("Init char-dev(s), dev-entries and register pci-device\n");
 
 	err = pcie_register();
-	if(err) {
+	if (err) {
 		fflink_info("Could not register pcie device\n");
 		goto error_pcie_register;
 	}
 
 	err = char_dma_register();
-	if(err) {
+	if (err) {
 		fflink_info("Could not register dma char device(s)\n");
 		goto error_dma_register;
 	}
 
 	err = char_user_register();
-	if(err) {
+	if (err) {
 		fflink_info("Could not register user char device(s)\n");
 		goto error_user_register;
 	}
@@ -67,13 +67,11 @@ static int __init fflink_init(void)
 
 	return 0;
 
-error_dma_register:
-	return -EACCES;
 error_user_register:
 	char_dma_unregister();
-	return -EACCES;
+error_dma_register:
+	pcie_unregister();
 error_pcie_register:
-	char_user_unregister();
 	return -EACCES;
 }
 

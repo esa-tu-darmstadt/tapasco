@@ -111,26 +111,27 @@ static int user_close(struct inode *inode, struct file *filp)
 static ssize_t user_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
 	struct user_rw_params params;
-	uint32_t i, err = 0, static_buffer[STATIC_BUFFER_SIZE], *copy_buffer;
+	uint32_t i, err = 0;
+	uint32_t static_buffer[STATIC_BUFFER_SIZE], *copy_buffer;
 	bool use_dynamic = false;
 	fflink_notice("Called for device minor %d\n", ((struct priv_data_struct *) filp->private_data)->minor);
 
 	copy_buffer = static_buffer;
 
-	if(count != sizeof(struct user_rw_params)) {
+	if (count != sizeof(struct user_rw_params)) {
 		fflink_warn("Wrong size to parse parameters accordingly %ld vs %ld\n", count, sizeof(struct user_rw_params));
 		return -EACCES;
 	}
-	if(copy_from_user(&params, buf, count)) {
+	if (copy_from_user(&params, buf, count)) {
 		fflink_warn("Couldn't copy all bytes from user-space to parse parameters\n");
 		return -EACCES;
 	}
 
-	if(params.btt > STATIC_BUFFER_SIZE*REGISTER_BYTE_SIZE) {
-		fflink_info("Allocating %d bytes dynamically - only %d available statically\n", params.btt, STATIC_BUFFER_SIZE*REGISTER_BYTE_SIZE);
+	if (params.btt > STATIC_BUFFER_SIZE * REGISTER_BYTE_SIZE) {
+		fflink_info("Allocating %d bytes dynamically - only %d available statically\n", params.btt, STATIC_BUFFER_SIZE * REGISTER_BYTE_SIZE);
 
 		copy_buffer = kmalloc(params.btt, GFP_KERNEL);
-		if(!copy_buffer) {
+		if (!copy_buffer) {
 			fflink_warn("Couldn't allocate dynamic buffer for transfer\n");
 			return -EACCES;
 		}
@@ -139,15 +140,23 @@ static ssize_t user_read(struct file *filp, char __user *buf, size_t count, loff
 	}
 
 	fflink_info("Copy %d bytes from address %llX to address %llX\n", params.btt, params.fpga_addr, params.host_addr);
-	for(i = 0; i < params.btt/4; i++)
-		copy_buffer[i] = pcie_readl((void*) (params.fpga_addr + i*4));
 
-	if(copy_to_user((void *)params.host_addr, copy_buffer, params.btt)) {
+	if (params.btt == 4) {
+		copy_buffer[0] = pcie_readl((void*) params.fpga_addr);
+	}
+	else if (params.btt == 8) {
+		((uint64_t*)copy_buffer)[0] = pcie_readq((void*) params.fpga_addr);
+	} else {
+		for (i = 0; i < params.btt / 4; i++)
+			copy_buffer[i] = pcie_readl((void*) (params.fpga_addr + i * 4));
+	}
+
+	if (copy_to_user((void *)params.host_addr, copy_buffer, params.btt)) {
 		fflink_warn("Couldn't copy all bytes to user-space\n");
 		err = -EACCES;
 	}
 
-	if(unlikely(use_dynamic)) {
+	if (unlikely(use_dynamic)) {
 		fflink_info("Freeing dynamic buffer\n");
 		kfree(copy_buffer);
 	}
@@ -173,20 +182,20 @@ static ssize_t user_write(struct file *filp, const char __user *buf, size_t coun
 
 	copy_buffer = static_buffer;
 
-	if(count != sizeof(struct user_rw_params)) {
+	if (count != sizeof(struct user_rw_params)) {
 		fflink_warn("Wrong size to parse parameters accordingly %ld vs %ld\n", count, sizeof(struct user_rw_params));
 		return -EACCES;
 	}
-	if(copy_from_user(&params, buf, count)) {
+	if (copy_from_user(&params, buf, count)) {
 		fflink_warn("Couldn't copy all bytes from user-space to parse parameters\n");
 		return -EACCES;
 	}
 
-	if(params.btt > STATIC_BUFFER_SIZE*REGISTER_BYTE_SIZE) {
-		fflink_info("Allocating %d bytes dynamically - only %d available statically\n", params.btt, STATIC_BUFFER_SIZE*REGISTER_BYTE_SIZE);
+	if (params.btt > STATIC_BUFFER_SIZE * REGISTER_BYTE_SIZE) {
+		fflink_info("Allocating %d bytes dynamically - only %d available statically\n", params.btt, STATIC_BUFFER_SIZE * REGISTER_BYTE_SIZE);
 
 		copy_buffer = kmalloc(params.btt, GFP_KERNEL);
-		if(!copy_buffer) {
+		if (!copy_buffer) {
 			fflink_warn("Couldn't allocate dynamic buffer for transfer\n");
 			return -EACCES;
 		}
@@ -194,18 +203,25 @@ static ssize_t user_write(struct file *filp, const char __user *buf, size_t coun
 		use_dynamic = true;
 	}
 
-	if(copy_from_user(copy_buffer, (void*)params.host_addr, params.btt)) {
+	if (copy_from_user(copy_buffer, (void*)params.host_addr, params.btt)) {
 		fflink_warn("Couldn't copy all bytes from user-space\n");
 		err = -EACCES;
 		goto USER_WRITE_CLEANUP;
 	}
 
 	fflink_info("Copy %d bytes to address %llX from address %llX\n", params.btt, params.fpga_addr, params.host_addr);
-	for(i = 0; i < params.btt/4; i++)
-		pcie_writel(copy_buffer[i], (void*) (params.fpga_addr + i*4));
+	if (params.btt == 4) {
+		pcie_writel(copy_buffer[0], (void*) params.fpga_addr);
+	}
+	else if (params.btt == 8) {
+		pcie_writeq(((uint64_t*)copy_buffer)[0], (void*) params.fpga_addr);
+	} else {
+		for (i = 0; i < params.btt / 4; i++)
+			pcie_writel(copy_buffer[i], (void*) (params.fpga_addr + i * 4));
+	}
 
 USER_WRITE_CLEANUP:
-	if(unlikely(use_dynamic)) {
+	if (unlikely(use_dynamic)) {
 		fflink_info("Freeing dynamic buffer\n");
 		kfree(copy_buffer);
 	}
@@ -232,33 +248,33 @@ static long user_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long 
 	struct user_ioctl_params params;
 	fflink_notice("Called for device minor %d\n", p->minor);
 
-	if(_IOC_SIZE(ioctl_num) != sizeof(struct user_ioctl_params)) {
+	if (_IOC_SIZE(ioctl_num) != sizeof(struct user_ioctl_params)) {
 		fflink_warn("Wrong size to read out registers %d vs %ld\n", _IOC_SIZE(ioctl_num), sizeof(struct user_ioctl_params));
 		return -EACCES;
 	}
-	if(copy_from_user(&params, (void *)ioctl_param, _IOC_SIZE(ioctl_num))) {
+	if (copy_from_user(&params, (void *)ioctl_param, _IOC_SIZE(ioctl_num))) {
 		fflink_warn("Couldn't copy all bytes\n");
 		return -EACCES;
 	}
 
-	switch(ioctl_num) {
-		case IOCTL_CMD_USER_WAIT_EVENT:
-			fflink_info("IOCTL_CMD_USER_WAIT_EVENT with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
-			fflink_info("Want to write %X to address %llX with event %d\n", params.data, params.fpga_addr, params.event);
+	switch (ioctl_num) {
+	case IOCTL_CMD_USER_WAIT_EVENT:
+		fflink_info("IOCTL_CMD_USER_WAIT_EVENT with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
+		fflink_info("Want to write %X to address %llX with event %d\n", params.data, params.fpga_addr, params.event);
 
-			irq_counter = priv_data.user_condition[params.event];
+		irq_counter = priv_data.user_condition[params.event];
 
-			pcie_writel(params.data, (void*) params.fpga_addr);
+		pcie_writel(params.data, (void*) params.fpga_addr);
 
-			if(wait_event_interruptible(p->user_wait_queue[params.event], (irq_counter != p->user_condition[params.event]))) {
-				fflink_warn("got killed while hanging in waiting queue\n");
-				break;
-			}
-
+		if (wait_event_interruptible(p->user_wait_queue[params.event], (irq_counter != p->user_condition[params.event]))) {
+			fflink_warn("got killed while hanging in waiting queue\n");
 			break;
-		default:
-			fflink_warn("default case - nothing to do here\n");
-			break;
+		}
+
+		break;
+	default:
+		fflink_warn("default case - nothing to do here\n");
+		break;
 	}
 
 	return 0;
@@ -296,7 +312,7 @@ static int user_mmap(struct file *filp, struct vm_area_struct *vma)
 irqreturn_t intr_handler_user(int irq, void * dev_id)
 {
 	int irq_translated = pcie_translate_irq_number(irq) - 4;
-	if(irq_translated != -1) {
+	if (irq_translated != -1) {
 		fflink_info("User interrupt for IRQ %d called with irq %d\n", irq_translated, irq);
 		priv_data.user_condition[irq_translated] += 1;
 		wake_up_interruptible_sync(&priv_data.user_wait_queue[irq_translated]);
@@ -345,9 +361,9 @@ int char_user_register(void)
 		goto error_add_to_system;
 	}
 
-	for(i = 0; i < FFLINK_USER_NODES; i++) {
+	for (i = 0; i < FFLINK_USER_NODES; i++) {
 		/* create device file via udev */
-		device = device_create(char_user_class, NULL, MKDEV(MAJOR(char_user_dev_t), MINOR(char_user_dev_t)+i), NULL, FFLINK_USER_NAME "_%d", MINOR(char_user_dev_t)+i);
+		device = device_create(char_user_class, NULL, MKDEV(MAJOR(char_user_dev_t), MINOR(char_user_dev_t) + i), NULL, FFLINK_USER_NAME "_%d", MINOR(char_user_dev_t) + i);
 		if (IS_ERR(device)) {
 			err = PTR_ERR(device);
 			fflink_warn("failed while device create %d\n", MINOR(char_user_dev_t));
@@ -359,13 +375,13 @@ int char_user_register(void)
 
 	/* check if ID core is readable */
 	hw_id = pcie_readl((void*) HW_ID_ADDR);
-	if(hw_id != HW_ID_MAGIC) {
+	if (hw_id != HW_ID_MAGIC) {
 		fflink_warn("ID Core not found (was %X - should: %X)\n", hw_id, HW_ID_MAGIC);
-		return -ENOTEMPTY;
+		goto error_device_create;
 	}
 
 	/* init control structures for synchron sys-calls */
-	for(i = 0; i < PE_IRQS; ++i) {
+	for (i = 0; i < PE_IRQS; ++i) {
 		init_waitqueue_head(&priv_data.user_wait_queue[i]);
 		priv_data.user_condition[i] = 0;
 	}
@@ -374,8 +390,8 @@ int char_user_register(void)
 
 	/* tidy up for everything successfully allocated */
 error_device_create:
-	for(i = i - 1; i >= 0; i--) {
-		device_destroy(char_user_class, MKDEV(MAJOR(char_user_dev_t), MINOR(char_user_dev_t)+i));
+	for (i = i - 1; i >= 0; i--) {
+		device_destroy(char_user_class, MKDEV(MAJOR(char_user_dev_t), MINOR(char_user_dev_t) + i));
 	}
 	cdev_del(&char_user_cdev);
 error_add_to_system:
@@ -397,8 +413,8 @@ void char_user_unregister(void)
 
 	fflink_info("Tidy up\n");
 
-	for(i = 0; i < FFLINK_USER_NODES; i++) {
-		device_destroy(char_user_class, MKDEV(MAJOR(char_user_dev_t), MINOR(char_user_dev_t)+i));
+	for (i = 0; i < FFLINK_USER_NODES; i++) {
+		device_destroy(char_user_class, MKDEV(MAJOR(char_user_dev_t), MINOR(char_user_dev_t) + i));
 	}
 
 	cdev_del(&char_user_cdev);

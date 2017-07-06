@@ -31,7 +31,7 @@ set(FF_ROOT "$ENV{FF_ROOT}")
 endif (${REQUIRES_FASTFLOW})
 
 # link_directories(${TAPASCO_HOME}/arch/lib/${ARCH} ${TAPASCO_HOME}/arch/lib/${ARCH}/static ${TAPASCO_HOME}/platform/lib/${ARCH} ${TAPASCO_HOME}/platform/lib/${ARCH}/static)
-link_directories(${TAPASCO_HOME}/arch/lib/${ARCH}/static  ${TAPASCO_HOME}/platform/lib/${ARCH}/static)
+link_directories(${TAPASCO_HOME}/arch/lib/${ARCH}  ${TAPASCO_HOME}/platform/lib/${ARCH})
 
 include_directories(${TAPASCO_HOME}/arch/common/include ${TAPASCO_HOME}/platform/common/include ${FF_ROOT})
 

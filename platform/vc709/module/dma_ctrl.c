@@ -66,9 +66,14 @@ static const fflink_dma_t fflink_dma[] = {
 
 void dma_ctrl_init(void * device_base_addr)
 {
-	if(pcie_readl(device_base_addr + REG_ID) == 0xE5A0023) {
+
+	uint64_t id = pcie_readq(device_base_addr + REG_ID);
+	if ((id & 0xFFFFFFFF) == 0xE5A0023) {
 		dma_used = DMA_USED_BLUE;
 		fflink_warn("Detected BlueDMA\n");
+		fflink_warn("PCIE Beats per Burst: %u\n", (uint8_t)(id >> 32));
+		fflink_warn("FPGA Beats per Burst: %u\n", (uint8_t)(id >> 40));
+		fflink_warn("Smallest alignment: %u\n", (uint8_t)(id >> 48));
 	} else {
 		dma_used = DMA_USED_DUAL;
 		fflink_warn("Detected DualDMA\n");

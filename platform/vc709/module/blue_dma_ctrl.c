@@ -72,15 +72,15 @@ void blue_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle,
 	//	fflink_warn("got killed while aquiring the mutex\n");
 
 	/* SA */
-	pcie_writel((unsigned long)device_buffer, device_base_addr + REG_FPGA_ADDR);
+	pcie_writeq((unsigned long)device_buffer, device_base_addr + REG_FPGA_ADDR);
 	/* DA */
-	pcie_writel(host_handle, device_base_addr + REG_HOST_ADDR);
+	pcie_writeq(host_handle, device_base_addr + REG_HOST_ADDR);
 	/* btt */
-	pcie_writel(btt, device_base_addr + REG_BTT);
+	pcie_writeq(btt, device_base_addr + REG_BTT);
 	/* presvious data have to be written first */
 	wmb();
 	/* start cmd */
-	pcie_writel(CMD_READ, device_base_addr + REG_CMD);
+	pcie_writeq(CMD_READ, device_base_addr + REG_CMD);
 
 	//mutex_unlock(&dma_regs_mutex);
 }
@@ -100,15 +100,15 @@ void blue_dma_transmit_to_device(void * device_buffer, dma_addr_t host_handle, i
 	//	fflink_warn("got killed while aquiring the mutex\n");
 
 	/* SA */
-	pcie_writel(host_handle, device_base_addr + REG_HOST_ADDR);
+	pcie_writeq(host_handle, device_base_addr + REG_HOST_ADDR);
 	/* DA */
-	pcie_writel((unsigned long)device_buffer, device_base_addr + REG_FPGA_ADDR);
+	pcie_writeq((unsigned long)device_buffer, device_base_addr + REG_FPGA_ADDR);
 	/* btt */
-	pcie_writel(btt, device_base_addr + REG_BTT);
+	pcie_writeq(btt, device_base_addr + REG_BTT);
 	/* presvious data have to be written first */
 	wmb();
 	/* start cmd */
-	pcie_writel(CMD_WRITE, device_base_addr + REG_CMD);
+	pcie_writeq(CMD_WRITE, device_base_addr + REG_CMD);
 
 	//mutex_unlock(&dma_regs_mutex);
 }

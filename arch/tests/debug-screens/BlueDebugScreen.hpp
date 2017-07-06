@@ -72,12 +72,12 @@ protected:
       platform::platform_read_ctl(base_addr, sizeof(intr.interrupts[i].vector_control), &intr.interrupts[i].vector_control, platform::PLATFORM_CTL_FLAGS_RAW);
       base_addr += 4;
     }
-    base_addr = 0x502000;
+    base_addr = 0x508000;
     for(int i = 0; i < 1 + (total_interrupts / 64) + ((total_interrupts % 64) != 0); ++i) {
       platform::platform_read_ctl(base_addr, sizeof(intr.pba[i]), &intr.pba[i], platform::PLATFORM_CTL_FLAGS_RAW);
       base_addr += 8;
     }
-    base_addr = 0x504000;
+    base_addr = 0x508100;
     platform::platform_read_ctl(base_addr, sizeof(intr.core_id), &intr.core_id, platform::PLATFORM_CTL_FLAGS_RAW);
     base_addr += 4;
     platform::platform_read_ctl(base_addr, sizeof(intr.enableAndMask), &intr.enableAndMask, platform::PLATFORM_CTL_FLAGS_RAW);

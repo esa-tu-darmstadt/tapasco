@@ -41,7 +41,9 @@ struct pci_dev* get_pcie_dev(void);
 
 /* wrapper to read/write from pcie-bar0 */
 void pcie_writel(unsigned long data, void * addr);
+void pcie_writeq(unsigned long long data, void * addr);
 unsigned long pcie_readl(void * addr);
+unsigned long long pcie_readq(void * addr);
 
 void pcie_writel_bar2(unsigned long data, void * addr);
 unsigned long pcie_readl_bar2(void * addr);
