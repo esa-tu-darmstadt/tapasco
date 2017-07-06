@@ -19,7 +19,7 @@
 # @file		evaluate_ip.tcl.template
 # @brief	Tcl template to get area and timing estimates for IPXACT cores.
 # @authors	J. Korinth (jk@esa.cs.tu-darmstadt.de
-# 
+#
 
 # source base lib
 source -notrace "$::env(TAPASCO_HOME)/common/common.tcl"
@@ -31,6 +31,8 @@ set_param general.maxThreads 1
 
 # add files
 add_files @@SRC_FILES@@
+# Read ngc/edif files, e.g. for primitives
+foreach ngc_file [list @@NGC_FILES@@] { read_edif $ngc_file }
 # add_files -fileset constrs_1 @@XDC_FILES@@
 foreach script [list @@TCL_FILES@@] { source $script }
 

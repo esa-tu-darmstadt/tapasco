@@ -70,6 +70,7 @@ object EvaluateIP {
         """\.vh$""".r,
         """\.xci$""".r,
         """\.saif$""".r,
+        """\.ngc$""".r,
         """subcore.*""".r,
         """component.xml$""".r),
         Seq("""hdl/ip/""".r)
@@ -84,6 +85,9 @@ object EvaluateIP {
       case f if """\.vhd$""".r.findFirstIn(f.toString).nonEmpty &&
                 !(v_files map (_.toString) contains (f.toString.dropRight(suflen) + ".v")) &&
                 !includes.contains(f.getFileName) => f
+    }
+    lazy val ngc_files  = files collect {
+      case f if """\.ngc$""".r.findFirstIn(f.toString).nonEmpty && !includes.contains(f.getFileName) => f
     }
     lazy val hdl_files  = v_files ++ vhd_files
     lazy val logFile    = baseDir.resolve("evaluate.log")
@@ -162,6 +166,7 @@ object EvaluateIP {
     val needles: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map(
       "SRC_FILES"          -> (files.hdl_files map (_.toString) mkString " "),
       "TCL_FILES"          -> (files.tcl_files mkString " "),
+      "NGC_FILES"          -> (files.ngc_files mkString " "),
       "PART"               -> targetPart,
       "PERIOD"             -> targetPeriod.toString,
       "REPORT_TIMING"      -> files.rpt_timing.toString,
