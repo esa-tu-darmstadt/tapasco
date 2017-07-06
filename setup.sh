@@ -3,7 +3,7 @@ if [ -n "$BASH_VERSION" ]; then
 elif [ -n "$ZSH_VERSION" ]; then
 	export TAPASCO_HOME=`dirname ${(%):-%x} | xargs realpath`
 else
-	echo "WARNING: non-bash shell; need source setup.sh from the TaPaSCo root dir!"
+	echo "WARNING: unknown shell; need source setup.sh from the TaPaSCo root dir!"
 	export TAPASCO_HOME=$PWD
 fi
 echo "TAPASCO_HOME=$TAPASCO_HOME"
