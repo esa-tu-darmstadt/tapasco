@@ -76,7 +76,7 @@ namespace eval platform {
 
     set irq_concat_ss [tapasco::createConcat "interrupt_concat" 8]
 
-    set irq_unused [tpc::createConstant "irq_unused" 1 0]
+    set irq_unused [tapasco::createConstant "irq_unused" 1 0]
 
     # create MSIX interrupt controller
     set msix_intr_ctrl [tapasco::createMSIXIntrCtrl "msix_intr_ctrl"]
