@@ -41,7 +41,8 @@ Basic Setup
     You need to do this every time you use TPC (or put it into your `~/.bashrc`).
 2.  Build TPC: `sbt compile` (this may take a while, `sbt` needs to fetch all
     dependencies etc. once).
-3.  Run TPC unit tests: `sbt test`
+2.  Create the necessary jar files with 'sbt assembly'.
+4.  Run TPC unit tests: `sbt test`
 
 When the tests complete successfully, TPC is ready to use.
 Read on in [Getting Started](GETTINGSTARTED.md).
