@@ -82,7 +82,8 @@ static int runTest(int const s)
 	assert(rarr != NULL);
 
 	// get tapasco handle
-	tapasco_handle_t h = tapasco_device_alloc(dev, arr_szs[s] * sizeof(int), 0);
+	tapasco_handle_t h;
+	tapasco_device_alloc(dev, &h, arr_szs[s] * sizeof(int), 0);
 	std::cout << s << ": handle = 0x" << std::hex << std::setfill('0')
 			<< std::setw(8) << static_cast<uint32_t>(h)
 			<< ", size = " << arr_szs[s] * sizeof(int) << " bytes"
@@ -112,7 +113,7 @@ static int runTest(int const s)
 		merr += 1;
 	}
 	__sync_add_and_fetch(&errs, merr);
-	tapasco_device_free(dev, h);
+	tapasco_device_free(dev, h, 0);
 
 	if (! merr)
 		std::cout << s << ": Array size " << arr_szs[s] << " ("
@@ -167,7 +168,7 @@ int main(int argc, char **argv)
 	std::vector<ff_node *> f;
 	for (int i = 0; i < sysconf(_SC_NPROCESSORS_CONF); ++i)
 		f.push_back(new Worker);
-	
+
 	Emitter e;
 	Collector c;
 	ff_farm<> farm(f, &e, &c);
@@ -176,7 +177,7 @@ int main(int argc, char **argv)
 	farm.cleanup_workers();
 	farm.run_and_wait_end();
 
-	if (! errs) 
+	if (! errs)
 		std::cout << "SUCCESS!" << std::endl;
 	else
 		std::cerr << "FAILURE" << std::endl;

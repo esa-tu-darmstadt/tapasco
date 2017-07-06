@@ -75,7 +75,7 @@ static void *test_thread(void *p)
 	long int s;
 	while ((s = __atomic_sub_fetch(&runs, 1, __ATOMIC_SEQ_CST)) > 0) {
 		s = s % sc;
-		//printf("%ld: Checking array size %zd (%zd byte) ...\n", 
+		//printf("%ld: Checking array size %zd (%zd byte) ...\n",
 		//		s, arr_szs[s], arr_szs[s] * sizeof(int));
 		// allocate and fill array
 		int *arr = (int *)malloc(arr_szs[s] * sizeof(int));
@@ -86,7 +86,8 @@ static void *test_thread(void *p)
 		assert(rarr != NULL);
 
 		// get tapasco handle
-		tapasco_handle_t h = tapasco_device_alloc(dev, arr_szs[s] * sizeof(int), 0);
+		tapasco_handle_t h;
+		tapasco_device_alloc(dev, &h, arr_szs[s] * sizeof(int), 0);
 		// printf("%ld: handle = 0x%08lx, size = %zd bytes\n", s,
 		//		(unsigned long)h, arr_szs[s] * sizeof(int));
 		assert((unsigned long)h > 0);
@@ -113,7 +114,7 @@ static void *test_thread(void *p)
 			merr += 1;
 		}
 		__atomic_add_fetch(&errs, merr, __ATOMIC_SEQ_CST);
-		tapasco_device_free(dev, h);
+		tapasco_device_free(dev, h, 0);
 
 		if (! merr)
 			/*printf("%ld: Array size %zd (%zd byte) ok!\n",
@@ -157,7 +158,7 @@ int main(int argc, char **argv) {
 		pthread_join(thrds[s], NULL);
 	}
 
-	if (! errs) 
+	if (! errs)
 		printf("\nSUCCESS\n");
 	else
 		fprintf(stderr, "\nFAILURE\n");

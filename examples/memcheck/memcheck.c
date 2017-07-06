@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
 	check_fpga(tapasco_create_device(ctx, 0, &dev, 0));
 
 	for (int s = 0; s < sizeof(arr_szs) / sizeof(*arr_szs) && errs == 0; ++s) {
-		printf("Checking array size %zd (%zd byte) ...\n", 
+		printf("Checking array size %zd (%zd byte) ...\n",
 				arr_szs[s], arr_szs[s] * sizeof(int));
 		// allocate and fill array
 		int *arr = (int *)malloc(arr_szs[s] * sizeof(int));
@@ -83,7 +83,8 @@ int main(int argc, char **argv) {
 		int *rarr = (int *)malloc(arr_szs[s] * sizeof(int));
 
 		// get fpga handle
-		tapasco_handle_t h = tapasco_device_alloc(dev, arr_szs[s] * sizeof(int), 0);
+		tapasco_handle_t h;
+		tapasco_device_alloc(dev, &h, arr_szs[s] * sizeof(int), 0);
 		printf("handle = 0x%08lx\n", (unsigned long)h);
 		check((unsigned long)h);
 
@@ -92,7 +93,7 @@ int main(int argc, char **argv) {
 		check_fpga(tapasco_device_copy_to(dev, arr, h, arr_szs[s] * sizeof(int), 0));
 		check_fpga(tapasco_device_copy_from(dev, h, rarr, arr_szs[s] * sizeof(int), 0));
 
-		tapasco_device_free(dev, h);
+		tapasco_device_free(dev, h, 0);
 
 		int merr = compare_arrays(arr, rarr, arr_szs[s]);
 		errs =+ merr;
@@ -108,7 +109,7 @@ int main(int argc, char **argv) {
 		free(rarr);
 	}
 
-	if (! errs) 
+	if (! errs)
 		printf("\nSUCCESS\n");
 	else
 		fprintf(stderr, "\nFAILURE\n");
