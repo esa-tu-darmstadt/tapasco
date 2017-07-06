@@ -21,7 +21,6 @@ trait ResourceConsumer {
   /** Returns true, if this consumer uses more resources than other. */
   def usesMoreThan(other: ResourceConsumer): Boolean = if (! Slurm.enabled) {
     cpus > other.cpus ||
-    memory > other.memory ||
     (licences.keys map { k => licences(k) > other.licences.getOrElse(k, Integer.MAX_VALUE) } fold false) (_ || _)
   } else {
     (licences.keys map { k => licences(k) > other.licences.getOrElse(k, Integer.MAX_VALUE) } fold false) (_ || _)
