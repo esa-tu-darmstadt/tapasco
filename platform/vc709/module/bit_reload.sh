@@ -82,8 +82,8 @@ if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit ]]
 then
 	echo "bitstream = $BITSTREAM"
 
-	# unload driver, if second arg is "drv_reload"
-	if [ -n "$2" ] && [[ "$2" == drv_reload ]]; then
+	# unload driver, if reload_driver was set
+	if [ $RELOADD -gt 0 ]; then
 		sudo rmmod $DRIVER
 	fi
 
