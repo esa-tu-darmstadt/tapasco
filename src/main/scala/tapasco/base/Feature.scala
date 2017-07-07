@@ -43,7 +43,7 @@ object Feature {
       ok
     }
 
-    override def shortName: String = "Cache(%d,%d)".format(size, associativity)
+    override def shortName: String = "Cache_%d,%d".format(size, associativity)
 
     require (cacheSizeSupported(size), "cache size %d is not supported".format(size))
   }
