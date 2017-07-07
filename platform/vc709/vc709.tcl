@@ -493,7 +493,7 @@ namespace eval platform {
     create_bd_addr_seg -range 16E -offset 0 $int_ms $ts "SEG_intr"
 
     # connect user IP
-    set usrs [lsort [get_bd_addr_spaces /Threadpool/* -filter { NAME =~ "*m_axi*" || NAME =~ "*M_AXI*" }]]
+    set usrs [lsort [get_bd_addr_spaces /uArch/* -filter { NAME =~ "*m_axi*" || NAME =~ "*M_AXI*" }]]
     set ts [get_bd_addr_segs /Memory/mig/*]
     foreach u $usrs {
       create_bd_addr_seg -range [get_property RANGE $u] -offset 0 $u $ts "SEG_$u"
