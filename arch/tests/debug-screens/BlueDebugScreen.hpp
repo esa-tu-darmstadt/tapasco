@@ -23,6 +23,8 @@ public:
     for(int i = 0; i < pba_vecs; ++i) {
       intr.pba.push_back(0);
     }
+    uint64_t accumulated_delay = 199;
+    platform::platform_write_ctl(0x300000 + 96, sizeof(accumulated_delay), &accumulated_delay, platform::PLATFORM_CTL_FLAGS_RAW);
   }
   virtual ~BlueDebugScreen() {}
 
@@ -54,13 +56,10 @@ protected:
     platform::platform_read_ctl(0x300000 + 40, sizeof(dma.status), &dma.status, platform::PLATFORM_CTL_FLAGS_RAW);
     platform::platform_read_ctl(0x300000 + 48, sizeof(dma.read_requests), &dma.read_requests, platform::PLATFORM_CTL_FLAGS_RAW);
     platform::platform_read_ctl(0x300000 + 56, sizeof(dma.write_requests), &dma.write_requests, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 64, sizeof(dma.ack_count), &dma.ack_count, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 120, sizeof(dma.reads_faulty), &dma.reads_faulty, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 128, sizeof(dma.writes_faulty), &dma.writes_faulty, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 136, sizeof(dma.get_delay), &dma.get_delay, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 144, sizeof(dma.put_delay), &dma.put_delay, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 152, sizeof(dma.last_written), &dma.last_written, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 160, sizeof(dma.last_read), &dma.last_read, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform::platform_read_ctl(0x300000 + 64, sizeof(dma.last_request), &dma.last_request, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform::platform_read_ctl(0x300000 + 72, sizeof(dma.cycles_between), &dma.cycles_between, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform::platform_read_ctl(0x300000 + 96, sizeof(dma.cycles_between_set), &dma.cycles_between_set, platform::PLATFORM_CTL_FLAGS_RAW);
+    ++dma.cycles_between_set; // Register contains num requests - 1
 
     // Update Interrupt data
     uint32_t base_addr = 0x500000;
@@ -97,13 +96,9 @@ private:
     uint64_t status;
     uint64_t read_requests;
     uint64_t write_requests;
-    uint64_t ack_count;
-    uint64_t reads_faulty;
-    uint64_t writes_faulty;
-    uint64_t get_delay;
-    uint64_t put_delay;
-    uint64_t last_written;
-    uint64_t last_read;
+    uint64_t last_request;
+    uint64_t cycles_between;
+    uint64_t cycles_between_set;
   };
 
   struct interrupt_data {
@@ -124,37 +119,33 @@ private:
   dma_regs dma;
   intr_regs intr;
 
-  const int32_t total_interrupts = 64;
+  const int32_t total_interrupts = 131;
 
   void render_dma(int start_row, int start_col) {
-    mvprintw(start_row++, start_col, "Host Address: %016lx, FPGA Address: %016lx", dma.host_addr, dma.fpga_addr);
-    mvprintw(start_row++, start_col, "Bytes to Transfer: %ld", dma.transfer_length);
-    mvprintw(start_row++, start_col, "Read requests: %ld, Reads faulty: %ld", dma.read_requests, dma.reads_faulty);
-    mvprintw(start_row++, start_col, "Write requests: %ld, Writes faulty: %ld", dma.write_requests, dma.writes_faulty);
-    mvprintw(start_row++, start_col, "ACKs: %ld", dma.ack_count);
-    mvprintw(start_row++, start_col, "Last written: %lx, Last read: %lx", dma.last_written, dma.last_read);
-    uint32_t total_gets = (dma.get_delay & 0xFFFFFFFF);
-    uint32_t total_puts = (dma.put_delay & 0xFFFFFFFF);
-    uint32_t get_delay = (dma.get_delay >> 32);
-    uint32_t put_delay = (dma.put_delay >> 32);
+    mvprintw(start_row++, start_col, "Host Address: %lx, FPGA Address: %lx", dma.host_addr, dma.fpga_addr);
 
-    double get_latency = (double) get_delay / (double) total_gets;
-    double put_latency = (double) put_delay / (double) total_puts;
+    mvprintw(start_row++, start_col, "Transfer length: %ld, CMD: %lx", dma.transfer_length, dma.cmd);
 
-    mvprintw(start_row++, start_col, "Put Delay: %f, Total Puts: %d %d", put_latency, total_puts, put_delay);
-    mvprintw(start_row++, start_col, "Get Delay: %f, Total Gets: %d %d", get_latency, total_gets, get_delay);
+    mvprintw(start_row++, start_col, "Read Requests: %ld, Write Requests: %ld", dma.read_requests, dma.write_requests);
+    float frequency = 250000000.0f;
+    float transfer_ms = (dma.last_request/frequency) * 1000;
+    float transfer_mib = ((1000.0f / transfer_ms) * dma.transfer_length) / (1024.0f * 1024.0f);
+    mvprintw(start_row++, start_col, "ms for last request: %f / %f MiB", transfer_ms, transfer_mib);
+    transfer_ms = ((dma.cycles_between/dma.cycles_between_set)/frequency) * 1000;
+    transfer_mib = ((1000.0f / transfer_ms) * dma.transfer_length) / (1024.0f * 1024.0f);
+    mvprintw(start_row++, start_col, "ms averaged over last %ld request(s): %f / %f MiB", dma.cycles_between_set, transfer_ms, transfer_mib);
   }
 
   void render_msix(int start_row, int start_col) {
     mvprintw(start_row++, start_col, "Core ID: %x", intr.core_id);
-    for(int i = 0; i < total_interrupts; ++i) {
+    for(int i = 0; i < 8; ++i) {
       if(!intr.interrupts[i].vector_control) {
         mvprintw(start_row++, start_col, "Interrupt %d Address: %016lx Data: %08x Vector: %08x", i, intr.interrupts[i].addr, intr.interrupts[i].data, intr.interrupts[i].vector_control);
       }
     }
     int pba_vecs = (total_interrupts / 64) + ((total_interrupts % 64) != 0);
     for(int i = 0; i < pba_vecs; ++i) {
-      mvprintw(start_row++, start_col, "PBA %d - %d: %16lx", i * 64, i * 64 + 63, intr.pba[i]);
+      mvprintw(start_row++, start_col, "PBA %3d - %3d: %16lx", i * 64, i * 64 + 63, intr.pba[i]);
     }
     mvprintw(start_row++, start_col, "Enable: %x Mask: %x", (intr.enableAndMask >> 16) & 0x1, intr.enableAndMask & 0x1);
     mvprintw(start_row++, start_col, "Sent Interrupts: %d", intr.sentInterrupts);
