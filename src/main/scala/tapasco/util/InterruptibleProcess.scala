@@ -38,7 +38,7 @@ private[tapasco] final case class InterruptibleProcess(p: ProcessBuilder, waitMi
   })
 
   def !(plogger: ProcessLogger = plog): Int = {
-    val t = mkThread(plog)
+    val t = mkThread(plogger)
     t.start()
     if (waitMillis.isEmpty) t.join() else t.join(waitMillis.get)
     if (t.isAlive()) t.interrupt()

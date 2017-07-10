@@ -31,7 +31,7 @@ import  de.tu_darmstadt.cs.esa.tapasco.reports._
 import  de.tu_darmstadt.cs.esa.tapasco.dse.Heuristics
 import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
 import  java.nio.file._
-import  scala.sys.process.{Process, ProcessIO}
+import  scala.sys.process.{Process, ProcessLogger}
 import  scala.util.Properties.{lineSeparator => NL}
 import  ComposeResult._
 import  LogFormatter._
@@ -72,7 +72,10 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
 
     // execute Vivado (max runtime: 1 day)
     val r = InterruptibleProcess(Process(vivadoCmd, files.outdir.toFile),
-        waitMillis = Some(24 * 60 * 60 * 1000)).!(io)
+        waitMillis = Some(24 * 60 * 60 * 1000)).!(ProcessLogger(
+          stdoutString => logger.trace("Vivado: {}", stdoutString),
+          stderrString => logger.trace("Vivado ERR: {}", stderrString)
+        ))
 
     // check retcode
     if (r == InterruptibleProcess.TIMEOUT_RETCODE) {
@@ -218,11 +221,4 @@ object VivadoComposer {
     lazy val tim             = TimingReport(timFile)
     lazy val util            = UtilizationReport(utilFile)
   }
-
-  /** custom ProcessIO: ignore everything. */
-  private final val io = new ProcessIO(
-    stdin => {stdin.close()},
-    stdout => {stdout.close()},
-    stderr => {stderr.close()}
-  )
 }
