@@ -130,9 +130,15 @@ final case class DesignSpaceExplorationJob(
   def architectures: Set[Architecture] =
     FileAssetManager.entities.architectures filter (a => _architectures map (_.contains(a.name)) getOrElse true)
 
+  /** Returns the name filter for [[base.Architecture]] instances. */
+  def architectureNames = _architectures
+
   /** Returns the list of [[base.Platform]] instances selected in this job. */
   def platforms: Set[Platform] =
     FileAssetManager.entities.platforms filter (p => _platforms map (_.contains(p.name)) getOrElse true)
+
+  /** Returns the name filter for [[base.Platform]] instances. */
+  def platformNames = _platforms
 
   /** Returns the first target (alphabetically Arch - Platform). */
   def target: Target = targets.head

@@ -71,10 +71,10 @@ class CorePanelController extends {
     _logger.trace("starting HLS execution in background ...")
     Future {
       HighLevelSynthesisJob(
-        _implementation = "VivadoHLS",          // Vivado HLS by default
-        _architectures = None,                  // all Architectures
-        _platforms = None,                      // all Platforms
-        _kernels = Some(Seq(k.name))            // only Kernel k
+        _implementation = "VivadoHLS",              // Vivado HLS by default
+        _architectures = Job.job.architectureNames, // all selected Architectures
+        _platforms = Job.job.platformNames,         // all selected Platforms
+        _kernels = Some(Seq(k.name))                // only Kernel k
       ).execute
     }
     _logger.trace("HLS running for {}", k)
