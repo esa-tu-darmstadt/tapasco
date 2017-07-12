@@ -29,10 +29,19 @@ set_msg_config -severity INFO -suppress
 set_msg_config -severity WARNING -suppress
 set_param general.maxThreads 1
 
+create_project -in_memory -part @@PART@@
+
 # add files
 add_files @@SRC_FILES@@
 # Read ngc/edif files, e.g. for primitives
 foreach ngc_file [list @@NGC_FILES@@] { read_edif $ngc_file }
+# Read xci files, e.g. for primitives
+set xci_files [list @@XCI_FILES@@]
+if {[llength $xci_files] > 0} {
+  import_ip $xci_files
+  generate_target all [get_ips]
+  synth_ip [get_ips]
+}
 # add_files -fileset constrs_1 @@XDC_FILES@@
 foreach script [list @@TCL_FILES@@] { source $script }
 
@@ -92,7 +101,7 @@ report_power -quiet -file @@REPORT_POWER@@
 
 # write netlist file
 set netlist "@@NETLIST@@"
-write_edif $netlist
+write_edif -force $netlist
 
 # done!
 exit
