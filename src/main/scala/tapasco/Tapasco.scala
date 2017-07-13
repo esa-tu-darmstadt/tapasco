@@ -25,7 +25,6 @@ import  parser._
 import  slurm._
 import  java.nio.file.Path
 import  scala.concurrent._
-//import  scala.concurrent.ExecutionContext.Implicits.global
 
 object Tapasco {
   import org.slf4j.LoggerFactory
@@ -58,19 +57,25 @@ object Tapasco {
     (firstArg.toLowerCase equals "itapasco") && { new AppController(Some(cfg)).show; true }
   } getOrElse false
 
+  private def dryRun(p: Path)(implicit cfg: Configuration) {
+    import base.json._
+    logger.info("dry run, dumping configuration to {}", p)
+    Configuration.to(if (cfg.jobs.isEmpty) cfg.jobs(jobs.JobExamples.jobs) else cfg, p)
+    System.exit(0)
+  }
+
   def main(args: Array[String]) {
     implicit val tasks = new Tasks
     val ok = try {
       // try to parse all arguments
-      val c = CommandLineParser(args mkString " ") match {
-        // if that fails, check if special command was given as first parameter
-        case Left(ex) => CommandLineParser(args.tail mkString " ")
-        case r => r
-      }
+      val c = CommandLineParser(args mkString " ")
       logger.debug("parsed config: {}", c)
       if (c.isRight) {
         // get parsed Configuration
         implicit val cfg = c.right.get
+        // dump config and exit, if dryRun is selected
+        cfg.dryRun foreach (dryRun _)
+        // else continue ...
         logger.trace("configuring FileAssetManager...")
         FileAssetManager(cfg)
         logger.trace("SLURM: {}", cfg.slurm)
@@ -79,7 +84,7 @@ object Tapasco {
         logger.trace("parallel: {}", cfg.parallel)
         cfg.logFile map { logfile: Path => setupLogFileAppender(logfile.toString) }
         logger.info("Running with configuration: {}", cfg.toString)
-        implicit val exe = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(250))
+        implicit val exe = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(500))
         def get(f: Future[Boolean]): Boolean = { Await.ready(f, duration.Duration.Inf); f.value map (_ getOrElse false) getOrElse false }
         if (cfg.parallel)
           runGui(args) || (cfg.jobs map { j => Future { jobs.executors.execute(j) } } map (get _) fold true) (_ && _)
@@ -87,7 +92,7 @@ object Tapasco {
           runGui(args) || (cfg.jobs map { jobs.executors.execute(_) } fold true) (_ && _)
       } else {
         logger.error("invalid arguments: {}", c.left.get.toString)
-        logger.error(Usage())
+        logger.error("run `tapasco -h` or `tapasco --help` to get more info")
         false
       }
     } catch { case ex: Exception =>

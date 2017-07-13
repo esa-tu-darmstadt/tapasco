@@ -8,7 +8,7 @@
 			"Composition" : {
 				"Composition":[{"Kernel": "Kern1", "Count": 1}]
 			},
-			"Features" : [ { "Feature": "Debug", "Enabled" : false } ]
+			"Features" : [ { "Feature": "Debug", "Properties": { "Enabled" : "false" } } ]
 		}
 	]
 }

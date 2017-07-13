@@ -41,8 +41,12 @@ Basic Setup
     You need to do this every time you use TPC (or put it into your `~/.bashrc`).
 2.  Build TPC: `sbt compile` (this may take a while, `sbt` needs to fetch all
     dependencies etc. once).
-2.  Create the necessary jar files with 'sbt assembly'.
+2.  Create the necessary jar files with `sbt assembly`.
 4.  Run TPC unit tests: `sbt test`
+5.  _Optional_: Generate sample configuration file: `tapasco -n config.json`
+    TaPaSCo should exit immediately and `config.json` will include a full
+    configuration that can be read with `--configFile`, including one example
+    for each kind of job.
 
-When the tests complete successfully, TPC is ready to use.
+When everything completed successfully, TaPaSCo is ready to use!
 Read on in [Getting Started](GETTINGSTARTED.md).

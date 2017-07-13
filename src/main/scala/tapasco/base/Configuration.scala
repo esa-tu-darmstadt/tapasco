@@ -50,6 +50,8 @@ trait Configuration {
   def parallel(enabled: Boolean): Configuration
   def maxThreads: Option[Int]
   def maxThreads(mt: Option[Int]): Configuration
+  def dryRun(cfg: Option[Path]): Configuration
+  def dryRun: Option[Path]
 
   /** Returns the default output directory for the given kernel and target. */
   def outputDir(kernel: Kernel, target: Target): Path =
@@ -64,7 +66,7 @@ trait Configuration {
     .resolve(target.pd.name)
     .resolve(composition.composition map (_.kernel.replaceAll(" ", "_")) mkString "__")
     .resolve(composition.composition map (ce => "%03d".format(ce.count)) mkString "_")
-    .resolve("%05.1f%s".format(freq, (features filter (_.enabled) map ("+" + _.shortName)).sorted mkString ""))
+    .resolve("%05.1f%s".format(freq, (features map ("+" + _.name)).sorted mkString ""))
 
   /** Returns the default output directory for the given core and target. */
   def outputDir(core: Core, target: Target): Path =

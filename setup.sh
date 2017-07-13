@@ -1,5 +1,9 @@
 if [ -n "$BASH_VERSION" ]; then
-	export TAPASCO_HOME=`dirname ${BASH_SOURCE[0]} | xargs realpath`
+	if [ "`uname`" = "Darwin" ]; then
+		export TAPASCO_HOME=`dirname ${BASH_SOURCE[0]} | xargs cd | pwd`
+	else
+		export TAPASCO_HOME=`dirname ${BASH_SOURCE[0]} | xargs realpath`
+	fi
 elif [ -n "$ZSH_VERSION" ]; then
 	export TAPASCO_HOME=`dirname ${(%):-%x} | xargs realpath`
 else

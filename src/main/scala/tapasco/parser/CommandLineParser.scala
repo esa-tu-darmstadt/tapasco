@@ -1,92 +1,45 @@
 package de.tu_darmstadt.cs.esa.tapasco.parser
 import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.{Entity, Entities}
-import  scala.util.parsing.combinator._
-import  scala.util.matching.Regex
+import  scala.util.Properties.{lineSeparator => NL}
+import  fastparse.all._
 
-object CommandLineParser extends JavaTokenParsers {
-  private[parser] implicit final val logger =
-    de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+object CommandLineParser {
+  import BasicParsers._
+  import GlobalOptions._
+  import JobParsers._
 
-  /**
-   * Parse the given command line argument string into a configuration.
-   * @param text Command line arguments as single string.
-   * @return Either [[base.Configuration]] or an exception.
-   **/
-  def apply(text: String): Either[Exception, Configuration] = try {
-    parseAll(OnceParser(ConfigurationParser()), text) match {
-      case Success(r, _) => Right(r)
-      case NoSuccess(msg, _) => Left(new Exception(msg))
-    }
-  } catch { case e: Exception => Left(e) }
+  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
 
-  /* @{ Helper parsers */
-  private[parser] final val LIST_SEP: Regex = """[,:]""".r
+  private[parser] def args: Parser[Configuration] =
+    globalOptions ~ ws ~/ jobs ~ ws ~ End map { case (c, js) => c.jobs(c.jobs ++ js) }
 
-  private[parser] final val LIST_MK = " "
+  def apply(arguments: String): Either[ParserException, Configuration] =
+    check(args.parse(arguments))
 
-  private[parser] def param(p: String, useShort: Boolean = true): Regex = if (useShort) {
-    """^(?i)(?:-%s)|(?:(?:--)?%s)""".format(p.toLowerCase.slice(0,1), p.toLowerCase).r
-  } else {
-    """^(?i)(?:(?:--)?%s)""".format(p.toLowerCase).r
+  case class ParserException(expected: String, index: Int, input: String, marker: String) extends Throwable {
+    override def toString(): String = Seq(
+      "expected %s at %d".format(expected, index),
+      "",
+      "\t" + input,
+      "\t" + marker
+    ) mkString NL
   }
 
-  private[parser] def path: Parser[String] = stringLiteral ^^ { _.stripPrefix("\"").stripSuffix("\"") }  | """\S+""".r
+  object ParserException {
+    private final val SLICE_WINDOW = (-100, 40)
 
-  private[parser] def job(name: String): Regex = """^(?i)%s""".format(name).r
-
-  private[parser] def boolLiteral: Parser[Boolean] =
-    """^(?i)(?:y(?:es)?)|(?:t(?:rue)?)""".r ^^ { p => true } |
-    """^(?i)(?:n(?:o)?)|(?:f(?:alse)?)""".r ^^ { p => false }
-
-  private[parser] def slurm: Parser[(String, Boolean)] = param("slurm", false) ~ opt(boolLiteral) ^^ {
-    p => ("Slurm", p._2 getOrElse true)
+    def apply(f: Parsed.Failure): ParserException =
+      ParserException(f.lastParser.toString,
+                      f.index,
+                      f.extra.input.slice(f.index + SLICE_WINDOW._1, f.index + SLICE_WINDOW._2)
+                                   .replace ("\t", " ")
+                                   .replace ("\n", " "),
+                      ("~" * f.index + "^").slice(f.index + SLICE_WINDOW._1,
+                                                  f.index + SLICE_WINDOW._2))
   }
 
-  private[parser] def parallel: Parser[(String, Boolean)] = param("parallel", false) ~ opt(boolLiteral) ^^ {
-    p => ("Parallel", p._2 getOrElse true)
+  def check[A](x: Parsed[A]) = x match {
+    case f: Parsed.Failure      => Left(ParserException(f))
+    case Parsed.Success(cfg, _) => Right(cfg)
   }
-
-  private[parser] def maxThreads: Parser[(String, Int)] = param("maxthreads", false) ~ wholeNumber ^^ {
-    p => ("MaxThreads", p._2.toInt)
-  }
-
-  private[parser] def configFile: Parser[String] = param("configfile", false) ~> path
-
-  private[parser] def jobsFile: Parser[String] = param("jobsfile", false) ~> path
-
-  private[parser] def logFile: Parser[String] = param("logfile", false) ~> path
-
-  private[parser] def entities: Parser[Entity] = (
-    param("core(?:s)?")               ^^ { _ => Entities.Cores } |
-    param("arch(?:itecture(?:s)?)?")  ^^ { _ => Entities.Architectures } |
-    param("platform(?:s)?")           ^^ { _ => Entities.Platforms } |
-    param("kernel(?:s)?")             ^^ { _ => Entities.Kernels } |
-    param("composition(?:s)?", false) ^^ { _ => Entities.Compositions }
-  )
-
-  private[parser] def entityDirs: Parser[Entity] = (
-    param("core(?:s)?Dir", false)              ^^ { _ => Entities.Cores } |
-    param("arch(?:itecture(?:s)?)?Dir", false) ^^ { _ => Entities.Architectures } |
-    param("platform(?:s)?Dir", false)          ^^ { _ => Entities.Platforms } |
-    param("kernel(?:s)?Dir", false)            ^^ { _ => Entities.Kernels } |
-    param("composition(?:s)?Dir", false)       ^^ { _ => Entities.Compositions }
-  )
-
-  private[parser] def entityFilter: Parser[(Entity, List[String])] =
-    entities ~ rep1sep(ident, LIST_SEP) ^^ { p =>  (p._1, p._2) }
-
-  private[parser] def entityDir: Parser[(Entity, String)] =
-    entityDirs ~ path ^^ { p => (p._1, p._2) }
-
-  private[parser] def architecturesFilter: Parser[(String, String)] =
-    param("arch(?:itecture(?:s)?)?") ~> rep1sep(ident, LIST_SEP) ^^ { p => ("architectures", p mkString LIST_MK) }
-
-  private[parser] def platformsFilter: Parser[(String, String)] =
-    param("platform(?:s)?") ~> rep1sep(ident, LIST_SEP) ^^ { p => ("platforms", p mkString LIST_MK) }
-
-  private[parser] def kernelsFilter: Parser[(String, String)] =
-    param("kernel(?:s)?") ~> rep1sep(ident, LIST_SEP) ^^ { p => ("kernels", p mkString LIST_MK) }
-  /* Helper parsers @} */
 }
-// vim: foldmarker=@{,@} foldmethod=marker foldlevel=0

@@ -29,12 +29,19 @@ sealed case class MemEntry(name: String, amount: Int, unit: String)
 
 /** MemInfo class: Reads /proc/meminfo, provides dictionary access. **/
 object MemInfo {
-  val meminfo = for (l <- Source.fromFile("/proc/meminfo").getLines.toSeq;
-                     m <- """^(\S*)\s*:\s+(\d+)\s*(\S+)*""".r.findFirstMatchIn(l);
-                     e <- try { Some(MemEntry(m.group(1), m.group(2).toInt, if (Option(m.group(3)).nonEmpty) m.group(3) else "")) }
-                          catch { case e: Exception => None }) yield e
+  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private lazy val warnOnceMaxValue = {
+    logger.warn("could not read /proc/meminfo, assuming infinite memory")
+    Int.MaxValue
+  }
+  val meminfo = try {
+    for (l <- Source.fromFile("/proc/meminfo").getLines.toSeq;
+         m <- """^(\S*)\s*:\s+(\d+)\s*(\S+)*""".r.findFirstMatchIn(l);
+         e <- try { Some(MemEntry(m.group(1), m.group(2).toInt, if (Option(m.group(3)).nonEmpty) m.group(3) else "")) }
+              catch { case e: Exception => None }) yield e
+  } catch { case _: Exception => Seq() }
 
   def apply(regex: String): Seq[MemEntry] = meminfo filter (me => ! regex.r.findFirstIn(me.name).isEmpty)
-  def totalMemory: Int = apply("MemTotal").head.amount
-  def freeMemory: Int = apply("MemFree").head.amount
+  def totalMemory: Int = apply("MemTotal").headOption map (_.amount) getOrElse warnOnceMaxValue
+  def freeMemory: Int = apply("MemFree").headOption map (_.amount) getOrElse warnOnceMaxValue
 }

@@ -23,7 +23,8 @@ libraryDependencies ++= Seq(
   "com.google.guava" % "guava" % "19.0",
   "com.google.code.findbugs" % "jsr305" % "3.0.1",
   "org.scalatest" %% "scalatest" % "3.0.3" % "test",
-  "org.scalacheck" %% "scalacheck" % "1.13.5" % "test"
+  "org.scalacheck" %% "scalacheck" % "1.13.5" % "test",
+  "com.lihaoyi" %% "fastparse" % "0.4.3"
 )
 
 scalacOptions ++= Seq(

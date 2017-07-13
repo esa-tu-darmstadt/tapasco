@@ -11,7 +11,7 @@
 			"Features" : [
 				{
 					"Feature": "OLED",
-					"Enabled": true
+					"Properties": { "Enabled": "true" }
 				}
 			]
 		}

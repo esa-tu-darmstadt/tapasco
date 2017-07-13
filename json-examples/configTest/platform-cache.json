@@ -11,9 +11,11 @@
 			"Features" : [
 				{
 					"Feature": "Cache",
-					"Enabled" : true,
-					"Size" : 32768,
-					"Associativity": 2
+					"Properties": {
+						"Enabled" : "true",
+						"Size" : "32768",
+						"Associativity": "2"
+					}
 				}
 			]
 		}

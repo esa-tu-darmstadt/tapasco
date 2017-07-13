@@ -46,8 +46,8 @@ final case class ComposeJob(
     composition: Composition,
     designFrequency: Heuristics.Frequency,
     private val _implementation: String,
-    private val _architectures: Option[Seq[String]],
-    private val _platforms: Option[Seq[String]],
+    private val _architectures: Option[Seq[String]] = None,
+    private val _platforms: Option[Seq[String]] = None,
     features: Option[Seq[Feature]] = None,
     debugMode: Option[String] = None) extends Job("compose") {
   /** Returns the selected composer tool implementation. */
@@ -77,9 +77,9 @@ final case class ComposeJob(
  * @param _platforms Name list of [[base.Platform]] instances.
  **/
 final case class CoreStatisticsJob(
-    prefix: Option[String],
-    private val _architectures: Option[Seq[String]],
-    private val _platforms: Option[Seq[String]]) extends Job("corestats") {
+    prefix: Option[String] = None,
+    private val _architectures: Option[Seq[String]] = None,
+    private val _platforms: Option[Seq[String]] = None) extends Job("corestats") {
   /** Returns the list of [[base.Architecture]] instances selected in this job. */
   def architectures: Set[Architecture] =
     FileAssetManager.entities.architectures filter (a => _architectures map (_.contains(a.name)) getOrElse true)
@@ -121,10 +121,10 @@ final case class DesignSpaceExplorationJob(
     dimensions: DesignSpace.Dimensions,
     heuristic: Heuristics.Heuristic,
     batchSize: Int,
-    basePath: Option[Path],
-    private val _architectures: Option[Seq[String]],
-    private val _platforms: Option[Seq[String]],
-    features: Option[Seq[Feature]],
+    basePath: Option[Path] = None,
+    private val _architectures: Option[Seq[String]] = None,
+    private val _platforms: Option[Seq[String]] = None,
+    features: Option[Seq[Feature]] = None,
     debugMode: Option[String] = None) extends Job("dse") {
   /** Returns the list of [[base.Architecture]] instances selected in this job. */
   def architectures: Set[Architecture] =
@@ -163,9 +163,9 @@ final case class DesignSpaceExplorationJob(
  **/
 final case class HighLevelSynthesisJob(
     private val _implementation: String,
-    private val _architectures: Option[Seq[String]],
-    private val _platforms: Option[Seq[String]],
-    private val _kernels: Option[Seq[String]]) extends Job("hls") {
+    private val _architectures: Option[Seq[String]] = None,
+    private val _platforms: Option[Seq[String]] = None,
+    private val _kernels: Option[Seq[String]] = None) extends Job("hls") {
   /** Returns the selected HLS tool implementation. */
   lazy val implementation: HighLevelSynthesizer.Implementation = HighLevelSynthesizer.Implementation(_implementation)
 
@@ -205,10 +205,10 @@ final case class HighLevelSynthesisJob(
 final case class ImportJob(
     zipFile: Path,
     id: Kernel.Id,
-    description: Option[String],
-    averageClockCycles: Option[Int],
-    private val _architectures: Option[Seq[String]],
-    private val _platforms: Option[Seq[String]]) extends Job("import") {
+    description: Option[String] = None,
+    averageClockCycles: Option[Int] = None,
+    private val _architectures: Option[Seq[String]] = None,
+    private val _platforms: Option[Seq[String]] = None) extends Job("import") {
   /** Returns the list of [[base.Architecture]] instances selected in this job. */
   def architectures: Set[Architecture] =
     FileAssetManager.entities.architectures filter (a => _architectures map (_.contains(a.name)) getOrElse true)

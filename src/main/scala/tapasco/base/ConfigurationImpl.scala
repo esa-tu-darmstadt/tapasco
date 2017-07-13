@@ -44,6 +44,7 @@ private case class ConfigurationImpl (
       slurm: Boolean                                  = false,
       parallel: Boolean                               = false,
       maxThreads: Option[Int]                         = None,
+      dryRun: Option[Path]                            = None,
       jobs: Seq[Job]                                  = Seq()
     ) extends Description(descPath: Path) with Configuration {
   def descPath(p: Path): Configuration = this.copy(descPath = p)
@@ -62,6 +63,7 @@ private case class ConfigurationImpl (
   def slurm(enabled: Boolean): Configuration = this.copy(slurm = enabled)
   def parallel(enabled: Boolean): Configuration = this.copy(parallel = enabled)
   def maxThreads(mt: Option[Int]): Configuration = this.copy(maxThreads = mt)
+  def dryRun(cfg: Option[Path]): Configuration = this.copy(dryRun = cfg)
   def jobs(js: Seq[Job]): Configuration = this.copy(jobs = js)
 
   // these directories must exist

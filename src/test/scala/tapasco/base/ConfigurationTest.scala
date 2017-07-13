@@ -24,7 +24,7 @@
 package de.tu_darmstadt.cs.esa.tapasco.base
 import  de.tu_darmstadt.cs.esa.tapasco.jobs._
 import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  de.tu_darmstadt.cs.esa.tapasco.parser._
+import  de.tu_darmstadt.cs.esa.tapasco.parser.CommandLineParser
 import  org.scalatest._
 import  java.nio.file._
 import  json._
@@ -49,9 +49,9 @@ class ConfigurationSpec extends FlatSpec with Matchers {
     assert(oc.isRight)
     FileAssetManager(c)
     Thread.sleep(50)
-    logger.info("architectures: {}", FileAssetManager.entities.architectures map (_.name))
-    logger.info("platforms: {}", FileAssetManager.entities.platforms map (_.name))
-    logger.info("kernels: {}", FileAssetManager.entities.kernels map (_.name))
+    logger.trace("architectures: {}", FileAssetManager.entities.architectures map (_.name))
+    logger.trace("platforms: {}", FileAssetManager.entities.platforms map (_.name))
+    logger.trace("kernels: {}", FileAssetManager.entities.kernels map (_.name))
     assert(c.jobs.length == 3)
     val j1 = c.jobs(0)
     val j2 = c.jobs(1)
@@ -87,7 +87,7 @@ class ConfigurationSpec extends FlatSpec with Matchers {
   "A Configuration file" should "be overriden by direct args" in {
     val oc = CommandLineParser(Seq(
       "--configFile", jsonPath.resolve("configTest/config.json").toString,
-      "--architectureDir", "kernel",
+      "--archDir", "kernel",
       "--platformDir", "arch",
       "--kernelDir", "platform") mkString " ")
     lazy val c = oc.right.get
@@ -98,18 +98,18 @@ class ConfigurationSpec extends FlatSpec with Matchers {
     c.kernelDir should be (jsonPath.resolve("configTest/platform"))
   }
 
-  "Jobs in Configuration file" should "be overidden by direct args" in {
+  "Jobs in Configuration file" should "be appended by direct args" in {
     val oc = CommandLineParser(Seq(
       "--configFile", jsonPath.resolve("configTest/config.json").toString,
       "corestats", "-a", "Arch1") mkString " ")
     lazy val c = oc.right.get
     oc.swap foreach { throw _ }
     assert(oc.isRight)
-    c.jobs.size should be (1)
-    c.jobs.head match {
+    c.jobs.size should be (4)
+    c.jobs(3) match {
       case j: CoreStatisticsJob =>
         j.architectures map (_.name) should contain only ("Arch1")
-      case _ => assert(false, "expected CoreStatisticsJob at in index 0 in jobs array")
+      case j => { println(j); assert(false, "expected CoreStatisticsJob at in index 1 in jobs array") }
     }
   }
 
@@ -118,7 +118,7 @@ class ConfigurationSpec extends FlatSpec with Matchers {
       "--configFile", jsonPath.resolve("configTest/config.json").toString,
       "--jobsFile", jsonPath.resolve("configTest").resolve("jobs.json")) mkString " ")
     lazy val c = oc.right.get
-    oc.swap foreach { throw _ }
+    oc.swap foreach { e => println(e); throw e }
     assert(oc.isRight)
     c.jobs.size should be (6)
   }

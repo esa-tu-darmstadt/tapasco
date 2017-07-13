@@ -11,11 +11,13 @@
 			"Features" : [
 				{
 					"Feature": "Debug",
-					"Enabled" : true,
-					"Depth" : 4096,
-					"Stages" : 1,
-					"Use Defaults" : false,
-					"Nets" : ["*interrupt", "*HP0*", "*GP*"]
+					"Properties": {
+						"Enabled" : "true",
+						"Depth" : "4096",
+						"Stages" : "1",
+						"Use Defaults" : "false",
+						"Nets" : "[list *interrupt *HP0* *GP]"
+					}
 				}
 			]
 		}

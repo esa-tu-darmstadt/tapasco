@@ -23,36 +23,19 @@
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base.tcl
 import  de.tu_darmstadt.cs.esa.tapasco.base.Feature
-import  de.tu_darmstadt.cs.esa.tapasco.base.Feature._
 import  scala.util.Properties.{lineSeparator => NL}
 
 class FeatureTclPrinter(prefix: String) {
-  private val pre = "dict set " + prefix + "features "
+  private val pre = s"dict set ${prefix}features"
 
   /** GenerateTcl commands to add feature to a Tcl dict.
     * @param f Feature to add.
     * @return String containing Tcls commands to write f into
     *         a dict called <prefix>features.
    **/
-  def toTcl(f: Feature): String = f match {
-    case LED(enabled) => pre + "LED enabled " + enabled
-    case OLED(enabled) => pre + "OLED enabled " + enabled
-    case Cache(enabled, size, associativity) => Seq(
-      pre + "Cache enabled " + enabled,
-      pre + "Cache size " + size,
-      pre + "Cache associativity " + associativity).mkString(NL)
-    case Debug(enabled, depth, stages, useDefaults, nets) => Seq(
-      pre + "Debug enabled " + enabled,
-      if (depth.isEmpty) "" else pre + "Debug depth " + depth.get,
-      if (stages.isEmpty) "" else pre + "Debug stages " + stages.get,
-      if (useDefaults.isEmpty) "" else pre + "Debug use_defaults " + useDefaults.get,
-      if (nets.isEmpty) "" else pre + "Debug nets [list " + nets.get.map(n => "{" + n + "}").mkString(" ") + "] "
-      ).mkString(NL)
-    case BlueDma(enabled) => pre + "BlueDMA enabled " + enabled
-    case AtsPri(enabled)  => pre + "ATS-PRI enabled " + enabled
-
-    case _ => "unknown feature"
-  }
+  def toTcl(f: Feature): String = f.props map {
+    case (name, value) => s"$pre ${f.name} $name $value"
+  } mkString NL
 
   def toTcl(fs: Seq[Feature]): String = fs.map(toTcl).mkString(NL)
 }

@@ -31,6 +31,11 @@ object Heuristics {
   type Value     = Double
   abstract class Heuristic extends Function3[Composition, Frequency, Target, Configuration => Value]
 
+  def apply(name: String): Heuristic = name.toLowerCase match {
+    case "throughput" | "job throughput" => ThroughputHeuristic
+    case o => throw new Exception(s"unknown heuristic: '$o'")
+  }
+
   object ThroughputHeuristic extends Heuristic {
     private def findAverageClockCycles(kernel: String, target: Target)
                 (implicit cfg: Configuration): Int = {

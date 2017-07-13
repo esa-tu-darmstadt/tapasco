@@ -40,7 +40,7 @@ class FeatureSpec extends FlatSpec with Matchers {
     c.jobs.head match {
       case job: ComposeJob =>
         job.features.get.length shouldBe (1)
-        job.features.get.head shouldEqual (Feature.LED(true))
+        job.features.get.head shouldEqual (Feature("LED", Map("Enabled" -> "true")))
       case _ => assert(false, "expected ComposeJob")
     }
   }
@@ -53,7 +53,7 @@ class FeatureSpec extends FlatSpec with Matchers {
     c.jobs.head match {
       case job: ComposeJob =>
         job.features.get.length shouldBe (1)
-        job.features.get.head shouldEqual (Feature.OLED(true))
+        job.features.get.head shouldEqual (Feature("OLED", Map("Enabled" -> "true")))
       case _ => assert(false, "expected ComposeJob")
     }
   }
@@ -66,7 +66,11 @@ class FeatureSpec extends FlatSpec with Matchers {
     c.jobs.head match {
       case job: ComposeJob =>
         job.features.get.length shouldBe (1)
-        job.features.get.head shouldEqual (Feature.Cache(true, 32768, 2))
+        job.features.get.head shouldEqual (Feature("Cache", Map(
+          "Enabled" -> "true",
+          "Associativity" -> "2",
+          "Size" -> "32768"
+        )))
       case _ => assert(false, "expected ComposeJob")
     }
   }
@@ -79,8 +83,12 @@ class FeatureSpec extends FlatSpec with Matchers {
     c.jobs.head match {
       case job: ComposeJob =>
         job.features.get.length shouldBe (1)
-        job.features.get.head shouldEqual (Feature.Debug(true, Some(4096), Some(1), Some(false),
-          Some(List("*interrupt", "*HP0*", "*GP*"))))
+        job.features.get.head shouldEqual (Feature("Debug", Map(
+          "Enabled" -> "true",
+          "Depth" -> "4096",
+          "Stages" -> "1",
+          "Use Defaults" -> "false",
+          "Nets" -> "[list *interrupt *HP0* *GP]")))
       case _ => assert(false, "expected ComposeJob")
     }
 
@@ -91,22 +99,8 @@ class FeatureSpec extends FlatSpec with Matchers {
     c2.jobs.head match {
       case job: ComposeJob =>
         job.features.get.length shouldBe (1)
-        job.features.get.head shouldEqual (Feature.Debug(false, None, None, None, None))
+        job.features.get.head shouldEqual (Feature("Debug", Map("Enabled" -> "false")))
       case _ => assert(false, "expected ComposeJob")
     }
-  }
-
-  "Invalid cache configurations" should "result in error" in {
-    lazy val oc1 = Configuration.from(jsonPath.resolve("platform-invalid-cache1.json"))
-    lazy val oc2 = Configuration.from(jsonPath.resolve("platform-invalid-cache2.json"))
-    assert(oc1.isLeft)
-    assert(oc2.isLeft)
-  }
-
-  "Invalid debug configurations" should "result in error" in {
-    lazy val oc1 = Configuration.from(jsonPath.resolve("platform-invalid-debug1.json"))
-    lazy val oc2 = Configuration.from(jsonPath.resolve("platform-invalid-debug2.json"))
-    assert(oc1.isLeft)
-    assert(oc2.isLeft)
   }
 }

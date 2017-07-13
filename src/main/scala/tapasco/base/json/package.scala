@@ -1,5 +1,4 @@
 package de.tu_darmstadt.cs.esa.tapasco.base
-import  de.tu_darmstadt.cs.esa.tapasco.Implicits._
 import  de.tu_darmstadt.cs.esa.tapasco.json._
 import  de.tu_darmstadt.cs.esa.tapasco.jobs._
 import  de.tu_darmstadt.cs.esa.tapasco.jobs.json._
@@ -169,86 +168,15 @@ package object json {
   /* Core @} */
 
   /* @{ Features */
-  private val readsLEDFeature: Reads[Feature] = (
-    (JsPath \ "Feature").read[String] (verifying[String](_ equals "LED")) ~>
-    (JsPath \ "Enabled").readNullable[Boolean].map (_ getOrElse true)
-  ) .fmap(Feature.LED.apply _)
-  private val writesLEDFeature: Writes[Feature.LED] = (
+  implicit val readsFeature: Reads[Feature] = (
+    (JsPath \ "Feature").read[String] ~
+    (JsPath \ "Properties").read[Map[String, String]]
+  ) (Feature.apply _)
+
+  implicit val writesFeature: Writes[Feature] = (
     (JsPath \ "Feature").write[String] ~
-    (JsPath \ "Enabled").write[Boolean]
-  ) (unlift(Feature.LED.unapply _ andThen (_ map (("LED", _)))))
-
-  private val readsOLEDFeature: Reads[Feature] = (
-    (JsPath \ "Feature").read[String] (verifying[String](_ equals "OLED")) ~>
-    (JsPath \ "Enabled").readNullable[Boolean].map (_ getOrElse true)
-  ) .fmap(Feature.OLED.apply _)
-  private val writesOLEDFeature: Writes[Feature.OLED] = (
-    (JsPath \ "Feature").write[String] ~
-    (JsPath \ "Enabled").write[Boolean]
-  ) (unlift(Feature.OLED.unapply _ andThen (_ map (("OLED", _)))))
-
-  private val readsCacheFeature: Reads[Feature] = (
-    (JsPath \ "Feature").read[String] (verifying[String](_ equals "Cache")) ~>
-    (JsPath \ "Enabled").readNullable[Boolean].map (_ getOrElse true) ~
-    (JsPath \ "Size").read[Int] ~
-    (JsPath \ "Associativity").read[Int] (verifying[Int](n => n == 2 || n == 4))
-  ) (Feature.Cache.apply _)
-  private implicit val writesCacheFeature: Writes[Feature.Cache] = (
-    (JsPath \ "Feature").write[String] ~
-    (JsPath \ "Enabled").write[Boolean] ~
-    (JsPath \ "Size").write[Int] ~
-    (JsPath \ "Associativity").write[Int]
-  ) (unlift(Feature.Cache.unapply _ andThen (_ map ("Cache" +: _))))
-
-  private val readsDebugFeature: Reads[Feature] = (
-    (JsPath \ "Feature").read[String] (verifying[String](_ equals "Debug")) ~>
-    (JsPath \ "Enabled").readNullable[Boolean].map (_ getOrElse true) ~
-    (JsPath \ "Depth").readNullable[Int] ~
-    (JsPath \ "Stages").readNullable[Int] ~
-    (JsPath \ "Use Defaults").readNullable[Boolean] ~
-    (JsPath \ "Nets").readNullable[Seq[String]]
-  ) (Feature.Debug.apply _)
-  private implicit val writesDebugFeature: Writes[Feature.Debug] = (
-    (JsPath \ "Feature").write[String] ~
-    (JsPath \ "Enabled").write[Boolean] ~
-    (JsPath \ "Depth").writeNullable[Int] ~
-    (JsPath \ "Stages").writeNullable[Int] ~
-    (JsPath \ "Use Defaults").writeNullable[Boolean] ~
-    (JsPath \ "Nets").writeNullable[Seq[String]]
-  ) (unlift(Feature.Debug.unapply _ andThen (_ map ("Debug" +: _))))
-
-  private val readsBlueDmaFeature: Reads[Feature] = (
-    (JsPath \ "Feature").read[String] (verifying[String](_ equals "BlueDMA")) ~>
-    (JsPath \ "Enabled").readNullable[Boolean].map (_ getOrElse true)
-  ) .fmap(Feature.BlueDma.apply _)
-  private val writesBlueDmaFeature: Writes[Feature.BlueDma] = (
-    (JsPath \ "Feature").write[String] ~
-    (JsPath \ "Enabled").write[Boolean]
-  ) (unlift(Feature.BlueDma.unapply _ andThen (_ map (("BlueDMA", _)))))
-
-  private val readsAtsPriFeature: Reads[Feature] = (
-    (JsPath \ "Feature").read[String] (verifying[String](_ equals "ATS+PRI")) ~>
-    (JsPath \ "Enabled").readNullable[Boolean].map (_ getOrElse true)
-  ) .fmap(Feature.AtsPri.apply _)
-  private val writesAtsPriFeature: Writes[Feature.AtsPri] = (
-    (JsPath \ "Feature").write[String] ~
-    (JsPath \ "Enabled").write[Boolean]
-  ) (unlift(Feature.AtsPri.unapply _ andThen (_ map (("ATS+PRI", _)))))
-
-  implicit val readsFeature: Reads[Feature] =
-    readsLEDFeature | readsOLEDFeature | readsCacheFeature | readsDebugFeature |
-    readsBlueDmaFeature | readsAtsPriFeature
-
-  implicit object writesFeature extends Writes[Feature] {
-    def writes(f: Feature): JsValue = f match {
-      case f: Feature.LED     => writesLEDFeature.writes(f)
-      case f: Feature.OLED    => writesOLEDFeature.writes(f)
-      case f: Feature.Cache   => writesCacheFeature.writes(f)
-      case f: Feature.Debug   => writesDebugFeature.writes(f)
-      case f: Feature.BlueDma => writesBlueDmaFeature.writes(f)
-      case f: Feature.AtsPri  => writesAtsPriFeature.writes(f)
-    }
-  }
+    (JsPath \ "Properties").write[Map[String, String]]
+  ) (unlift(Feature.unapply _))
   /* Features @} */
 
   /* @{ Kernel.Argument */
@@ -347,6 +275,7 @@ package object json {
     (JsPath \ "Slurm").readNullable[Boolean].map (_ getOrElse false) ~
     (JsPath \ "Parallel").readNullable[Boolean].map (_ getOrElse false) ~
     (JsPath \ "MaxThreads").readNullable[Int] ~
+    (JsPath \ "DryRun").readNullable[Path] ~
     (JsPath \ "Jobs").read[Seq[Job]]
   ) (ConfigurationImpl.apply _)
   implicit private val configurationWrites: Writes[ConfigurationImpl] = (
@@ -360,6 +289,7 @@ package object json {
     (JsPath \ "Slurm").write[Boolean] ~
     (JsPath \ "Parallel").write[Boolean] ~
     (JsPath \ "MaxThreads").writeNullable[Int] ~
+    (JsPath \ "DryRun").writeNullable[Path].transform((js: JsObject) => js - "DryRun") ~
     (JsPath \ "Jobs").write[Seq[Job]]
   ) (unlift(ConfigurationImpl.unapply _))
   implicit object ConfigurationWrites extends Writes[Configuration] {

@@ -30,7 +30,6 @@ import  de.tu_darmstadt.cs.esa.tapasco.base._
 import  de.tu_darmstadt.cs.esa.tapasco.base.json._
 import  de.tu_darmstadt.cs.esa.tapasco.util._
 import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  scala.sys.process._
 import  java.nio.file._
 
 /**
