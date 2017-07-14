@@ -45,7 +45,7 @@ private object BasicParsers {
   val quotedString: Parser[String] =
     (quote ~/ CharPred(!quoteChars.contains(_)).rep.! ~ quote)
       .opaque("quoted string")
-    
+
   val qstring: Parser[String] =
     (string | quotedString)
       .opaque("quoted or unquoted string")
@@ -68,7 +68,7 @@ private object BasicParsers {
 
   val double: Parser[Double] = dblstr.map(_.toDouble)
       .opaque("floating point number")
-  
+
   val frequency: Parser[Frequency] = double.opaque("frequency in MHz")
 
   implicit def toPath(s: String): Path = Paths.get(s)

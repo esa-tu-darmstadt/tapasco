@@ -17,7 +17,7 @@ private object ImportParser {
   private def zip: Parser[Path] = path.opaque("path to .zip file containing IP-XACT core")
 
   private val jobid = identity[ImportJob] _
-  
+
   private def options: Parser[ImportJob => ImportJob] =
     (description | avgClockCycles | architectures | platforms).rep map (opts =>
       (opts map (applyOption _) fold jobid) (_ andThen _))

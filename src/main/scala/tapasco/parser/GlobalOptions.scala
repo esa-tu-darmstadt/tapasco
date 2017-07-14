@@ -30,7 +30,7 @@ private object GlobalOptions {
 
   def help: Parser[(String, String)] =
     (longShortOption("h", "help") | IgnoreCase("help") | IgnoreCase("usage")) ~
-    (ws1 ~ string).? map { case (h, topic) => { Usage(topic); ("Help", Usage()) } }
+    (ws1 ~ string).? map { case (h, topic) => { Usage.topic(topic); ("Help", Usage()) } }
 
   def verbose: Parser[(String, String)] =
     (longShortOption("v", "verbose", Some("Verbose")) ~/ (ws1 ~ quotedString.opaque("verbose mode as quoted string")).? ~ ws)
@@ -77,7 +77,7 @@ private object GlobalOptions {
 
   def globalOptionsSeq: Parser[Seq[(String, _)]] =
     ws ~ (help | verbose | dirs | inputFiles | slurm | parallel | dryRun | maxThreads).rep
-  
+
   def globalOptions: Parser[Configuration] =
     globalOptionsSeq map (as => mkConfig(as))
 
