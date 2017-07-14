@@ -59,7 +59,7 @@ static inline double clock_period(void)
 			hz = strtoul(getenv("TAPASCO_FREQ"), NULL, 0) * 1000000;
 		} else {
 			rc = read(fd, buf, 1023);
-			assert(rc);
+			assert(rc); (void) rc;
 			fprintf(stderr, "fclk/set_rate = %s", buf);
 			close(fd);
 			hz = strtoul(buf, NULL, 0);
@@ -81,8 +81,8 @@ static inline void tapasco_run(long cc)
 {
 	tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev, 14, 0);
 	tapasco_device_job_set_arg(dev, j_id, 0, sizeof(cc), &cc);
-	if (tapasco_device_job_launch(dev, j_id, TAPASCO_JOB_LAUNCH_BLOCKING) !=
-			TAPASCO_SUCCESS)
+	if (tapasco_device_job_launch(dev, j_id,
+			TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING) != TAPASCO_SUCCESS)
 		__atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
 	tapasco_device_release_job_id(dev, j_id);
 }

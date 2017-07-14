@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 # Copyright (C) 2014 Jens Korinth, TU Darmstadt
 #
@@ -17,8 +16,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-FILENAME=$1
-CSV=$FILENAME.csv
-PDF=$FILENAME.pdf
+cmake_minimum_required(VERSION 2.6)
+project(examples)
+set (CMAKE_INSTALL_PREFIX "bin")
+include (examples.cmake)
 
-cat job-speed.gnuplot | sed "s/<CSV>/$CSV/g" | sed "s/<PDF>/$PDF/g" | gnuplot
+add_subdirectory(arrayinit)
+add_subdirectory(arraysum)
+add_subdirectory(arrayupdate)
+add_subdirectory(basic_test)
+add_subdirectory(benchmark-alloc-free)
+add_subdirectory(benchmark-cd)
+add_subdirectory(benchmark-latency)
+add_subdirectory(benchmark-mem)
+add_subdirectory(memcheck)

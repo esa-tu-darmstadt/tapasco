@@ -97,11 +97,13 @@ static void *test_thread(void *p)
 		//printf("%ld: sizeof(arr) %zd, sizeof(rarr) %zd\n", s, sizeof(arr),
 		//		sizeof(rarr));
 		tapasco_res_t res = tapasco_device_copy_to(dev, arr, h,
-				arr_szs[s] * sizeof(int), TAPASCO_COPY_BLOCKING);
+				arr_szs[s] * sizeof(int),
+				TAPASCO_DEVICE_COPY_BLOCKING);
 		if (res == TAPASCO_SUCCESS) {
 			// printf("%ld: copy to successful, copying from ...\n", s);
 			res = tapasco_device_copy_from(dev, h, rarr,
-					arr_szs[s] * sizeof(int), TAPASCO_COPY_BLOCKING);
+					arr_szs[s] * sizeof(int),
+					TAPASCO_DEVICE_COPY_BLOCKING);
 			// printf("%ld: copy from finished\n", s);
 			if (res == TAPASCO_SUCCESS) {
 				merr += compare_arrays(s, arr, rarr, arr_szs[s], (unsigned int)h);

@@ -60,11 +60,12 @@ static inline void alloc_dealloc(size_t const sz)
 
 static inline void tapasco_alloc_dealloc(size_t const sz)
 {
-	tapasco_handle_t h = tapasco_device_alloc(dev, sz, 0);
+	tapasco_handle_t h;
+	tapasco_device_alloc(dev, &h, sz, 0);
 	if (h <= 0)
 		__sync_fetch_and_add(&errors, 1);
 	else
-		tapasco_device_free(dev, h);
+		tapasco_device_free(dev, h, 0);
 }
 
 static void *run(void *p)

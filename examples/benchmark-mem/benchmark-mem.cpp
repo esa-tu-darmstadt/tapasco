@@ -47,7 +47,6 @@ constexpr unsigned long UPPER_BND {25};
 constexpr unsigned long LOWER_BND {12};
 
 using namespace std;
-using namespace rpr::tapasco;
 
 typedef unsigned long int ul;
 typedef long int l;
@@ -58,10 +57,11 @@ static atomic<l>   transfers;
 static atomic<ul>  errors;
 static l           mode;
 
-static TPC<0> tapasco;
+static tapasco::Tapasco Tapasco { false };
 
-inline tapasco_device_copy_flag_t operator|(tapasco_device_copy_flag_t a, tapasco_device_copy_flag_t b) {
-	return static_cast<tapasco_device_copy_flag_t>(static_cast<int>(a) | static_cast<int>(b));
+inline tapasco::tapasco_device_copy_flag_t operator|(tapasco::tapasco_device_copy_flag_t a,
+		tapasco::tapasco_device_copy_flag_t b) {
+	return static_cast<tapasco::tapasco_device_copy_flag_t>(static_cast<int>(a) | static_cast<int>(b));
 }
 
 static void fill_with_random(char *d, size_t const sz)
@@ -102,33 +102,33 @@ static inline void baseline_transfer(void *d)
 
 static inline void tapasco_transfer(void *d)
 {
-  tapasco_handle_t h = 0;
+  tapasco::tapasco_handle_t h = 0;
   if (! d) {
     errors++;
     return;
   }
-  if (tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE) != TAPASCO_SUCCESS) {
+  if (Tapasco.alloc(h, chunk_sz, tapasco::TAPASCO_DEVICE_ALLOC_FLAGS_NONE) != tapasco::TAPASCO_SUCCESS) {
     errors++;
     return;
   }
 
   switch (mode - 3) {
   case 0:  /* read-only */
-    if (tapasco.copy_from(h, d, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS)
+    if (Tapasco.copy_from(h, d, chunk_sz, tapasco::TAPASCO_DEVICE_COPY_BLOCKING) != tapasco::TAPASCO_SUCCESS)
       errors++;
     break;
   case 1: /* write-only */
-    if (tapasco.copy_to(d, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS)
+    if (Tapasco.copy_to(d, h, chunk_sz, tapasco::TAPASCO_DEVICE_COPY_BLOCKING) != tapasco::TAPASCO_SUCCESS)
       errors++;
     break;
   case 2: /* read-write */
-    if (tapasco.copy_to(d, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) == TAPASCO_SUCCESS) {
-      if (tapasco.copy_from(h, d, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS)
+    if (Tapasco.copy_to(d, h, chunk_sz, tapasco::TAPASCO_DEVICE_COPY_BLOCKING) == tapasco::TAPASCO_SUCCESS) {
+      if (Tapasco.copy_from(h, d, chunk_sz, tapasco::TAPASCO_DEVICE_COPY_BLOCKING) != tapasco::TAPASCO_SUCCESS)
         errors++;
     } else errors++;
     break;
   }
-  if (h) tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+  if (h) Tapasco.free(h, tapasco::TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
 }
 
 static void transfer()
@@ -161,14 +161,6 @@ static void print_line(ul const *times)
        << endl;
 }
 
-static void check_tapasco(tapasco_res_t const result)
-{
-  if (result != TAPASCO_SUCCESS) {
-    cerr << "tapasco fatal error: " << tapasco_strerror(result) << endl;
-    exit(result);
-  }
-}
-
 int main(int argc, char **argv)
 {
   int i;
@@ -179,7 +171,7 @@ int main(int argc, char **argv)
   fill_with_random((char *)rnddata, RNDDATA_SZ);
 
   // initialize threadpool
-  check_tapasco(tapasco.init());
+  Tapasco.init(0);
 
   print_header();
   auto total_start = chrono::steady_clock::now();

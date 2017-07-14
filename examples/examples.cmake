@@ -23,15 +23,7 @@ if ("$ENV{TAPASCO_HOME}" STREQUAL "")
 endif ("$ENV{TAPASCO_HOME}" STREQUAL "")
 set(TAPASCO_HOME "$ENV{TAPASCO_HOME}")
 
-if (${REQUIRES_FASTFLOW})
-if ("$ENV{FF_ROOT}" STREQUAL "")
-  message(FATAL_ERROR "Please set env var FF_ROOT to root directory of FastFlow.")
-endif ("$ENV{FF_ROOT}" STREQUAL "")
-set(FF_ROOT "$ENV{FF_ROOT}")
-endif (${REQUIRES_FASTFLOW})
-
-# link_directories(${TAPASCO_HOME}/arch/lib/${ARCH} ${TAPASCO_HOME}/arch/lib/${ARCH}/static ${TAPASCO_HOME}/platform/lib/${ARCH} ${TAPASCO_HOME}/platform/lib/${ARCH}/static)
+# link_directories(${TAPASCO_HOME}/arch/lib/${ARCH}/static ${TAPASCO_HOME}/platform/lib/${ARCH}/static)
 link_directories(${TAPASCO_HOME}/arch/lib/${ARCH}  ${TAPASCO_HOME}/platform/lib/${ARCH})
 
-include_directories(${TAPASCO_HOME}/arch/common/include ${TAPASCO_HOME}/platform/common/include ${FF_ROOT})
-
+include_directories(${TAPASCO_HOME}/arch/common/include ${TAPASCO_HOME}/platform/common/include)

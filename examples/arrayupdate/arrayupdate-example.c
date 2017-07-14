@@ -16,9 +16,9 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-//! @file	warraw-example.c
+//! @file	arrayupdate-example.c
 //! @brief	TPC API based example program exercising a hardware threadpool
-//!             containing instances of the warraw kernel.
+//!             containing instances of the arrayupdate kernel.
 //!             Single-threaded variant.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
@@ -28,7 +28,7 @@
 #include <unistd.h>
 #include <tapasco.h>
 #include <assert.h>
-#include "warraw.h"
+#include "arrayupdate.h"
 
 #define SZ							256
 #define RUNS							25
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
 	// initialize threadpool
 	check_tapasco(tapasco_init(&ctx));
 	check_tapasco(tapasco_create_device(ctx, 0, &dev, 0));
-	// check warraw instance count
+	// check arrayupdate instance count
 	printf("instance count: %d\n", tapasco_device_func_instance_count(dev, 12));
 	assert(tapasco_device_func_instance_count(dev, 12));
 
@@ -91,8 +91,7 @@ int main(int argc, char **argv) {
 
 	for (int run = 0; run < RUNS; ++run) {
 		// golden run
-		int golden = warraw(&golden_arr[SZ * run]);
-		printf("Golden output for run %d: %d\n", run, golden);
+		arrayupdate(&golden_arr[SZ * run]);
 
 		// allocate mem on device and copy array part
 		tapasco_handle_t h;
@@ -120,8 +119,7 @@ int main(int argc, char **argv) {
 		printf("TPC output for run %d: %d\n", run, r);
 		unsigned int errs = check_arrays(&arr[SZ * run],
 				&golden_arr[SZ * run], SZ);
-		printf("\nRUN %d %s\n", run, r == golden && errs == 0 ?
-				"OK" : "NOT OK");
+		printf("\nRUN %d %s\n", run, errs == 0 ?  "OK" : "NOT OK");
 		tapasco_device_free(dev, h, 0);
 		tapasco_device_release_job_id(dev, j_id);
 	}

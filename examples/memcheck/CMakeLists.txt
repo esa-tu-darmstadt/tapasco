@@ -8,12 +8,8 @@ target_link_libraries(memcheck tapasco pthread platform)
 
 add_executable(memcheck-mt memcheck-mt.c)
 set_target_properties(memcheck-mt PROPERTIES COMPILE_FLAGS "-g -Wall -Werror -std=gnu99")
-target_link_libraries(memcheck-mt pthread tapasco platform-client pthread)
+target_link_libraries(memcheck-mt pthread tapasco platform pthread)
 
-add_executable(memcheck-mt-ff memcheck-mt-ff.cc)
-set_target_properties(memcheck-mt-ff PROPERTIES COMPILE_FLAGS "-g -Wall -Werror -std=c++11")
-target_link_libraries(memcheck-mt-ff tapasco platform-client pthread)
-
-install(TARGETS memcheck memcheck-mt memcheck-mt-ff
+install(TARGETS memcheck memcheck-mt
         RUNTIME DESTINATION bin/${CMAKE_SYSTEM_PROCESSOR})
 
