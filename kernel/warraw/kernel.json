@@ -1,0 +1,11 @@
+{
+	"Description" : "Trivial kernel: array computation with intra-loop dependencies.",
+	"Name" : "warraw",
+	"Version" : "1.0",
+	"Id" : 12,
+	"TopFunction" : "warraw",
+	"Files" : ["warraw.c"],
+	"TestbenchFiles" : ["warraw-tb.c"],
+	"Arguments" : [{"Name" : "arr", "Passing" : "by reference"}],
+	"_OtherDirectives" : "warraw.dir"
+}

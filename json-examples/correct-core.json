@@ -1,0 +1,12 @@
+{
+	"ZipFile" : "core.zip",
+	"Name" : "TestCore",
+	"Version" : "0.1",
+	"Id" : 42,
+	"Target": {
+		"Architecture": "axi4mm",
+		"Platform": "zedboard"
+	},
+	"Description" : "A correct core description.",
+	"AverageClockCycles" : 1234567890
+}

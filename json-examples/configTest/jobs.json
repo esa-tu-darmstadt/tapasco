@@ -1,0 +1,44 @@
+[
+	{
+		"Job": "BulkImport",
+		"CSV": "import.csv"
+	},
+	{
+		"Job": "Compose",
+		"Composition": {
+			"Description": "Test composition",
+			"Composition": [{"Kernel": "Kern1", "Count": 1}]
+		},
+		"Design Frequency": 350
+	},
+	{
+		"Job": "CoreStatistics",
+		"File Prefix": "stats-"
+	},
+	{
+		"Job": "DesignSpaceExploration",
+		"Initial Composition": {
+			"Composition": [{"Kernel": "Kern2", "Count": 2}]
+		},
+		"Dimensions": {
+			"Frequency": true,
+			"Utilization": true,
+			"Alternatives": false
+		},
+		"Architectures": ["Arch2", "Arch3"],
+		"Platforms": ["Plat1"],
+		"Heuristic": "Job Throughput",
+		"Batch Size": 32,
+		"Output Path": "dse"
+	},
+	{
+		"Job": "HighLevelSynthesis"
+	},
+	{
+		"Job": "Import",
+		"Zip": "test.zip",
+		"Description": "Import IP-XACT",
+		"Average Clock Cycles": 123456,
+		"Id": 42
+	}
+]

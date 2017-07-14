@@ -1,0 +1,10 @@
+{
+	"Description" : "Trivial kernel: Initialize an array with consecutive numbers.",
+	"Name" : "arrayinit",
+	"Id" : 11,
+	"Version" : "1.0",
+	"TopFunction" : "arrayinit",
+	"Files" : ["arrayinit.c"],
+	"TestbenchFiles" : ["arrayinit-tb.c"],
+	"Arguments" : [{"Name":"arr","Passing":"by reference"}]
+}

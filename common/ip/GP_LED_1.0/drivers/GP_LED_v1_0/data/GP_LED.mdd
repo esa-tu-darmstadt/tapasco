@@ -1,0 +1,10 @@
+
+
+OPTION psf_version = 2.1;
+
+BEGIN DRIVER GP_LED
+	OPTION supported_peripherals = (GP_LED);
+	OPTION copyfiles = all;
+	OPTION VERSION = 1.0;
+	OPTION NAME = GP_LED;
+END DRIVER

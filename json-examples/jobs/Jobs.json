@@ -1,0 +1,64 @@
+[ {
+  "Job" : "BulkImport",
+  "CSV" : "some.csv"
+}, {
+  "Job" : "Compose",
+  "Composition" : {
+    "Description" : "An optional description.",
+    "Composition" : [ {
+      "Kernel" : "counter",
+      "Count" : 42
+    }, {
+      "Kernel" : "k2",
+      "Count" : 42
+    } ]
+  },
+  "Design Frequency" : 123,
+  "Implementation" : "Vivado",
+  "Architectures" : [ "axi4mm" ],
+  "Platforms" : [ "pynq", "zedboard" ],
+  "DebugMode" : "r"
+}, {
+  "Job" : "CoreStatistics",
+  "File Prefix" : "somePrefix_",
+  "Architectures" : [ "axi4mm" ],
+  "Platforms" : [ "vc709", "zc706" ]
+}, {
+  "Job" : "DesignSpaceExploration",
+  "Initial Composition" : {
+    "Description" : "An optional description.",
+    "Composition" : [ {
+      "Kernel" : "counter",
+      "Count" : 42
+    }, {
+      "Kernel" : "k2",
+      "Count" : 42
+    } ]
+  },
+  "Initial Frequency" : 123,
+  "Dimensions" : {
+    "Frequency" : true,
+    "Utilization" : true,
+    "Alternatives" : false
+  },
+  "Heuristic" : "Job Throughput",
+  "Batch Size" : 16,
+  "Output Path" : "nonstandard/base/path",
+  "Architectures" : [ "axi4mm" ],
+  "Platforms" : [ "pynq", "vc709" ],
+  "DebugMode" : "r"
+}, {
+  "Job" : "HighLevelSynthesis",
+  "Implementation" : "VivadoHLS",
+  "Architectures" : [ "axi4mm" ],
+  "Platforms" : [ "zedboard", "zc706" ],
+  "Kernels" : [ "counter", "arraysum" ]
+}, {
+  "Job" : "Import",
+  "Zip" : "path/to/ipxact-archive.zip",
+  "Id" : 42,
+  "Description" : "Optional description of the core.",
+  "Average Clock Cycles" : 13124425,
+  "Architectures" : [ "axi4mm" ],
+  "Platforms" : [ "zedboard", "zc706" ]
+} ]

@@ -1,0 +1,6 @@
+{
+  "Job" : "CoreStatistics",
+  "File Prefix" : "somePrefix_",
+  "Architectures" : [ "axi4mm" ],
+  "Platforms" : [ "vc709", "zc706" ]
+}

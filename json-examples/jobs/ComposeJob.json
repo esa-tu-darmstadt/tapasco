@@ -1,0 +1,18 @@
+{
+  "Job" : "Compose",
+  "Composition" : {
+    "Description" : "An optional description.",
+    "Composition" : [ {
+      "Kernel" : "counter",
+      "Count" : 42
+    }, {
+      "Kernel" : "k2",
+      "Count" : 42
+    } ]
+  },
+  "Design Frequency" : 123,
+  "Implementation" : "Vivado",
+  "Architectures" : [ "axi4mm" ],
+  "Platforms" : [ "pynq", "zedboard" ],
+  "DebugMode" : "r"
+}

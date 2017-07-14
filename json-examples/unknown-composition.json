@@ -1,0 +1,9 @@
+{
+	"UnknownKey" : "must not be parsed",
+	"Description": "Test",
+	"Composition" : [
+		{ "Kernel" : "sudoku", "Count" : 1 },
+		{ "Kernel" : "warraw", "Count" : 2 }
+	],
+	"UnknownKey2" : "SomeValue"
+}

@@ -1,0 +1,17 @@
+.TH libtapasco 1 "May 11, 2017" "version 2017.1"  "USER COMMANDS"
+.SH NAME
+libtapasco \- User space library for TaPaSCO, the Task Parallel System Composer.
+.SH DESCRIPTION
+TaPaSCo microarchitectures consist of two parts: The
+.I Architecture
+and the
+.I Platform.
+Architecture is resonsible for the organization and wiring of the processing
+elements, as well as their control interface. Platform is responsible for the
+rest of the design, e.g., the communication to the host, access to memory,
+peripherals.
+.PP
+libtapasco contains the Architecture's implementation of the Tapasco API (see
+tapasco-api.h(3)).
+.SH SEE ALSO
+tapasco(1), tapasco-api.h(3)

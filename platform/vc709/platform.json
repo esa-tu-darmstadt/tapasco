@@ -1,0 +1,12 @@
+{
+	"Name" : "vc709",
+	"Description" : "VC709 PCIe Gen3 Platform",
+	"TclLibrary" : "vc709.tcl",
+	"Part" : "xc7vx690tffg1761-2",
+	"BoardPart" : "xilinx.com:vc709:part0:1.5",
+	"BoardPreset" : "VC709",
+	"TargetUtilization" : 90,
+	"Benchmark" : "vc709.benchmark",
+	"HostFrequency": 250.0,
+	"MemFrequency": 200.0
+}

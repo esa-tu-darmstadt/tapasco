@@ -1,0 +1,17 @@
+{
+	"ZipFile" : "core.zip",
+	"Name" : "TestCore",
+	"SomeUnknownKey" : "strange value",
+	"Version" : "0.1",
+	"Id" : 42,
+	"Target": {
+		"Architecture": "axi4mm",
+		"Platform": "vc709"
+	},
+	"Description" : "A correct core description.",
+	"AnotherKey" : 123,
+	"Target": {
+		"Architecture": "axi4mm",
+		"Platform": "vc709"
+	}
+}

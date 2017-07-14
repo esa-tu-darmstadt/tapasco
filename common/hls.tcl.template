@@ -1,0 +1,104 @@
+#
+# Copyright (C) 2014 Jens Korinth, TU Darmstadt
+#
+# This file is part of Tapasco (TPC).
+#
+# Tapasco is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Tapasco is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+#
+# @file		hls.tcl.template
+# @brief	Tcl template to generate Vivado HLS script.
+# @authors	J. Korinth (jk@esa.cs.tu-darmstadt.de
+# 
+# load common code etc.
+@@HEADER@@
+
+# if set, co-simulation will be performed
+set do_cosim @@COSIMULATION_FLAG@@
+
+# create project
+open_project @@PROJECT@@
+
+open_solution -reset @@SOLUTION@@
+set_part {@@PART@@}
+create_clock -period @@PERIOD@@
+
+add_files -cflags "@@SRCSCFLAGS@@" "@@SOURCES@@"
+if {$do_cosim > 0} {
+  add_files -cflags "@@TBCFLAGS@@" -tb "@@TBSRCS@@"
+}
+
+set_top @@TOP@@
+#set_directive_top -name "@@NAME@@" @@TOP@@
+set_top @@TOP@@
+
+#config_schedule -effort high
+config_schedule -effort low
+
+set_directive_interface -mode s_axilite @@TOP@@
+
+@@DIRECTIVES@@
+
+# synthesize the core
+csynth_design
+# execute co-simulation (if set)
+if {$do_cosim > 0} {
+  cosim_design -rtl verilog -O -trace_level all
+  set script [list {set cs [current_scope .]} \
+                   {current_scope AESL_inst_@@TOP@@} \
+		   {open_saif @@TOP@@.saif} \
+		   {log_saif [get_objects -r]} \
+		   {current_scope $cs} \
+		   {run all} \
+		   {close_saif} \
+		   {quit}]
+  set f [open "@@PROJECT@@/@@SOLUTION@@/sim/verilog/@@TOP@@.tcl" w]
+  foreach l $script { puts $f $l }
+  close $f
+  # run simulation manually
+  set oldpwd [pwd]
+  cd "@@PROJECT@@/@@SOLUTION@@/sim/verilog"
+  puts "Creating SAIF ..."
+  exec -ignorestderr "./sim.sh"
+  puts "SAIF dumping done."
+  cd $oldpwd
+  set saif [glob -nocomplain -directory @@PROJECT@@/@@SOLUTION@@/sim/verilog/ *.saif]
+  puts "found SAIFs: $saif"
+  if {[llength $saif] == 0} {
+    error "ERROR: could not generate SAIF!"
+  }
+  file copy -force $saif "@@PROJECT@@/@@TOP@@.saif"
+}
+# export to IP-XACT (skip evaluation, will be done manually)
+export_design -format ipxact -display_name {@@NAME@@} -vendor {@@VENDOR@@} -version {@@VERSION@@}
+# remove .zip
+file delete [glob "@@PROJECT@@/@@SOLUTION@@/impl/ip/*.zip"]
+# replace logo
+file copy -force "$::env(TAPASCO_HOME)/common/logo.png" "@@PROJECT@@/@@SOLUTION@@/impl/ip/misc/logo.png"
+if {$do_cosim > 0} {
+  # add SAIF
+  file copy -force "@@PROJECT@@/@@TOP@@.saif" "@@PROJECT@@/@@SOLUTION@@/impl/ip/misc/"
+}
+# re-package
+set oldpwd [pwd]
+cd "@@PROJECT@@/@@SOLUTION@@/impl/ip"
+exec -ignorestderr "$::env(TAPASCO_HOME)/common/hls_patch_supported_families.sh"
+# also add subcore Tcl scripts to zip
+exec -ignorestderr "$::env(TAPASCO_HOME)/common/hls_patch_subcores.sh"
+if {$do_cosim > 0} {
+  exec -ignorestderr "$::env(TAPASCO_HOME)/common/hls_patch_saif.sh"
+}
+exec -ignorestderr "[pwd]/pack.sh"
+# we're done
+cd $oldpwd
+exit

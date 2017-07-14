@@ -1,0 +1,5 @@
+set_directive_dependence -variable arr -dependent true -direction RAW warraw
+set_directive_dependence -variable arr -dependent true -direction RAW warraw -type intra
+set_directive_dependence -variable arr -dependent true -direction WAR warraw -type intra
+# set_directive_unroll -skip_exit_check warraw/L1
+

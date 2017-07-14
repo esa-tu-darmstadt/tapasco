@@ -1,0 +1,107 @@
+#
+# Copyright (C) 2014 Jens Korinth, TU Darmstadt
+#
+# This file is part of Tapasco (TPC).
+#
+# Tapasco is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Tapasco is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+#
+# @file		evaluate_ip.tcl.template
+# @brief	Tcl template to get area and timing estimates for IPXACT cores.
+# @authors	J. Korinth (jk@esa.cs.tu-darmstadt.de
+#
+
+# source base lib
+source -notrace "$::env(TAPASCO_HOME)/common/common.tcl"
+
+# suppress most messages except errors
+set_msg_config -severity INFO -suppress
+set_msg_config -severity WARNING -suppress
+set_param general.maxThreads 1
+
+create_project -in_memory -part @@PART@@
+
+# add files
+add_files @@SRC_FILES@@
+# Read ngc/edif files, e.g. for primitives
+foreach ngc_file [list @@NGC_FILES@@] { read_edif $ngc_file }
+# Read xci files, e.g. for primitives
+set xci_files [list @@XCI_FILES@@]
+if {[llength $xci_files] > 0} {
+  import_ip $xci_files
+  generate_target all [get_ips]
+  synth_ip [get_ips]
+}
+# add_files -fileset constrs_1 @@XDC_FILES@@
+foreach script [list @@TCL_FILES@@] { source $script }
+
+# find top
+set top [lindex [find_top] 0]
+
+# synthesize and optimize netlist
+synth_design \
+  -part @@PART@@ \
+  -top $top \
+  -mode out_of_context \
+  -directive AlternateRoutability \
+  -retiming \
+  -fanout_limit 400 \
+  -fsm_extraction one_hot \
+  -keep_equivalent_registers \
+  -resource_sharing off \
+  -no_lc \
+  -shreg_min_size 5
+
+# read switching activity files (if any)
+foreach saif [glob -nocomplain *.saif] {
+  read_saif $saif
+}
+
+# write design checkpoint
+write_checkpoint -force @@SYNTH_CHECKPOINT@@
+
+# set clock
+set clock_ports [get_ports -filter {DIRECTION == IN && (NAME =~ *clk* || NAME =~ *CLK*)}]
+puts "clock_ports = $clock_ports"
+create_clock -name clk -period @@PERIOD@@ $clock_ports
+set_property HD.CLK_SRC BUFGCTRL_X0Y0 $clock_ports
+
+# place and route
+opt_design
+place_design
+phys_opt_design
+route_design
+
+# write design checkpoint
+write_checkpoint -force @@IMPL_CHECKPOINT@@
+
+# report timing
+report_timing_summary -quiet -datasheet -file @@REPORT_TIMING@@
+# report utilization
+report_utilization -quiet -file @@REPORT_UTILIZATION@@
+
+# recalculate achieved frequency and set new period (for realistic power values)
+set wns [tapasco::get_wns_from_timing_report @@REPORT_TIMING@@]
+if {$wns < 0} {
+  create_clock -name clk -period [expr "@@PERIOD@@ - $wns"] $clock_ports
+}
+
+# report power
+report_power -quiet -file @@REPORT_POWER@@
+
+# write netlist file
+set netlist "@@NETLIST@@"
+write_edif -force $netlist
+
+# done!
+exit

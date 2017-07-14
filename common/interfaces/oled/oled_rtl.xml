@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<spirit:abstractionDefinition xmlns:xilinx="http://www.xilinx.com" xmlns:spirit="http://www.spiritconsortium.org/XMLSchema/SPIRIT/1685-2009" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <spirit:vendor>esa.cs.tu-darmstadt.de</spirit:vendor>
+  <spirit:library>user</spirit:library>
+  <spirit:name>oled_rtl</spirit:name>
+  <spirit:version>1.0</spirit:version>
+  <spirit:busType spirit:vendor="esa.cs.tu-darmstadt.de" spirit:library="user" spirit:name="oled" spirit:version="1.0"/>
+  <spirit:ports>
+    <spirit:port>
+      <spirit:logicalName>oled_sclk</spirit:logicalName>
+      <spirit:wire/>
+    </spirit:port>
+    <spirit:port>
+      <spirit:logicalName>oled_sdin</spirit:logicalName>
+      <spirit:wire/>
+    </spirit:port>
+    <spirit:port>
+      <spirit:logicalName>oled_dc</spirit:logicalName>
+      <spirit:wire/>
+    </spirit:port>
+    <spirit:port>
+      <spirit:logicalName>oled_res</spirit:logicalName>
+      <spirit:wire/>
+    </spirit:port>
+    <spirit:port>
+      <spirit:logicalName>oled_vdd</spirit:logicalName>
+      <spirit:wire/>
+    </spirit:port>
+    <spirit:port>
+      <spirit:logicalName>oled_vbat</spirit:logicalName>
+      <spirit:wire/>
+    </spirit:port>
+  </spirit:ports>
+</spirit:abstractionDefinition>

@@ -1,0 +1,34 @@
+.TH tapasco-load-bitstream 1 "May 11, 2017" "version 2017.1"  "USER COMMANDS"
+.SH NAME
+tapasco-load-bitstream \- Program FPGA with given bitstream.
+.SH SYNOPSIS
+.B tapasco-load-bitstream
+ [-h] [--reload-driver] [--verbose] BITSTREAM
+.SH DESCRIPTION
+Loads the given BITSTREAM file in .bit format and programs the currently
+selected device (see tpc-build-libs(1)). May require Vivado Design Suite,
+depending on the Platform.
+.SH OPTIONS
+.TP
+\-h|\-\-help
+.RS
+print help message and exit
+.RE
+.TP
+\-\-verbose
+.RS
+verbose output (default: false)
+.RE
+.TP
+\-\-reload\-driver
+.RS
+reload driver, if loaded (default: false)
+.RE
+.SH ENVIRONMENT
+.TP
+.B TAPASCO_HOME
+.RS
+Path to TaPaSCo root installation folder (where setup.sh is located).
+.RE
+.SH SEE ALSO
+tapasco(1), tapasco-build-libs(1)

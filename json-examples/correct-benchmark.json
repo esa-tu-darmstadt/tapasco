@@ -1,0 +1,71 @@
+{
+  "Timestamp" : "2017-05-30 13:08:55",
+  "Host" : {
+    "Machine" : "armv7l",
+    "Node" : "pynq",
+    "Operating System" : "Linux",
+    "Release" : "4.6.0-tapasco",
+    "Version" : "#1 SMP PREEMPT Fri May 26 16:26:16 CEST 2017"
+  },
+  "Library Versions" : {
+    "Platform API" : "1.2.1",
+    "Tapasco API" : "1.2"
+  },
+  "Transfer Speed" : [ {
+    "Chunk Size" : 1024,
+    "Read" : 20.078207396701792,
+    "Write" : 21.68177044056579,
+    "ReadWrite" : 37.784625316971535
+  }, {
+    "Chunk Size" : 2048,
+    "Read" : 36.913918454834466,
+    "Write" : 42.449135015215866,
+    "ReadWrite" : 69.51085992539018
+  }, {
+    "Chunk Size" : 67108864,
+    "Read" : 101.10065452266623,
+    "Write" : 178.37930005081756,
+    "ReadWrite" : 175.57383237856067
+  } ],
+  "Interrupt Latency" : [ {
+    "Cycle Count" : 1,
+    "Avg Latency" : 10.01592947927347,
+    "Min Latency" : 9,
+    "Max Latency" : 156
+  }, {
+    "Cycle Count" : 2,
+    "Avg Latency" : 164.85714285714286,
+    "Min Latency" : 162,
+    "Max Latency" : 171
+  }, {
+    "Cycle Count" : 2147483648,
+    "Avg Latency" : 276.69565217391295,
+    "Min Latency" : 269,
+    "Max Latency" : 282
+  } ],
+  "Job Throughput" : [ {
+    "Number of threads" : 1,
+    "Jobs per second" : 119074.73866666667
+  }, {
+    "Number of threads" : 2,
+    "Jobs per second" : 246078.71600000001
+  }, {
+    "Number of threads" : 3,
+    "Jobs per second" : 237654.358
+  }, {
+    "Number of threads" : 4,
+    "Jobs per second" : 231967.13166666668
+  }, {
+    "Number of threads" : 5,
+    "Jobs per second" : 226561.87117590103
+  }, {
+    "Number of threads" : 6,
+    "Jobs per second" : 222900.86777777775
+  }, {
+    "Number of threads" : 7,
+    "Jobs per second" : 218548.3080264527
+  }, {
+    "Number of threads" : 8,
+    "Jobs per second" : 215949.0373333333
+  } ]
+}

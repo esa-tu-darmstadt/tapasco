@@ -1,0 +1,4 @@
+#set udev rules for ffLink driver to be able to access it w/o being root
+#MODE="0666"
+KERNEL=="FFLINK_DMA_DEVICE_*", GROUP="tapasco", OWNER="tapasco"
+KERNEL=="FFLINK_USER_DEVICE_*", GROUP="tapasco", OWNER="tapasco"

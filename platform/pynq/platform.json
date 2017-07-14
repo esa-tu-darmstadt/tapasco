@@ -1,0 +1,8 @@
+{
+	"Name" : "pynq",
+	"Description" : "PyNQ-Z1 Python Productivity for Zynq",
+	"TclLibrary" : "pynq.tcl",
+	"Part" : "xc7z020clg400-1",
+	"TargetUtilization" : 99,
+	"Benchmark": "pynq.benchmark"
+}

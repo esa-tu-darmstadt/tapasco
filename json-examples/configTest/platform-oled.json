@@ -1,0 +1,19 @@
+{
+	"Jobs": [
+		{
+			"Job": "Compose",
+			"Design Frequency": 100,
+			"Platforms" : ["Plat1", "Plat2"],
+			"Architectures" : ["Arch1", "Arch3"],
+			"Composition" : {
+				"Composition":[{"Kernel": "Kern1", "Count": 1}]
+			},
+			"Features" : [
+				{
+					"Feature": "OLED",
+					"Properties": { "Enabled": "true" }
+				}
+			]
+		}
+	]
+}

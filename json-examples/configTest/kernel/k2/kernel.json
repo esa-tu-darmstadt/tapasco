@@ -1,0 +1,8 @@
+{
+	"Name" : "Kern2",
+	"Version" : "1.0",
+	"TopFunction" : "sudoku_solve",
+	"Files" : ["../kern.cpp"],
+	"Id" : 8,
+	"Arguments" : [{"Name":"grid","Passing":"by reference"}]
+}

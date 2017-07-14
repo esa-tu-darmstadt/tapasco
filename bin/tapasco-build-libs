@@ -1,0 +1,55 @@
+#!/usr/bin/python
+import argparse
+import sys
+import subprocess
+from   socket import gethostname
+import os
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--mode', help='build mode (default: %(default)s)', default='release', choices=['clean', 'release', 'debug', 'driver_debug'])
+parser.add_argument('--rebuild', help='force rebuild libs (default: %(default)s)', action='store_true')
+args = parser.parse_args()
+
+clean        = args.mode == 'clean'
+debug        = args.mode == 'debug' or args.mode == 'driver_debug'
+driver_debug = args.mode == 'driver_debug'
+
+print 'Build mode: ' + args.mode
+
+if not 'TAPASCO_PLATFORM' in os.environ:
+	print('Environment variable TAPASCO_PLATFORM is not set, guessing Platform ...')
+	if gethostname() in ['zed', 'zedboard', 'zc706', 'zynq', 'pynq']:
+		os.environ['TAPASCO_PLATFORM'] = 'zynq'
+	else:
+		os.environ['TAPASCO_PLATFORM'] = 'vc709'
+
+print('Platform: ' + os.environ['TAPASCO_PLATFORM'])
+
+moddir = os.environ['TAPASCO_HOME'] + '/platform/' + os.environ['TAPASCO_PLATFORM'] + '/module'
+pdir   = os.environ['TAPASCO_HOME'] + '/platform/' + os.environ['TAPASCO_PLATFORM'] + '/build'
+adir   = os.environ['TAPASCO_HOME'] + '/arch/axi4mm/build'
+tdir   = os.environ['TAPASCO_HOME'] + '/arch/tests/build'
+
+if clean or args.rebuild:
+	subprocess.call(['rm -rf ' + pdir], shell=True)
+	subprocess.call(['rm -rf ' + adir], shell=True)
+	subprocess.call(['rm -rf ' + tdir], shell=True)
+	subprocess.call(['rm -rf $TAPASCO/home/arch/lib $TAPASCO_HOME/platform/lib'], shell=True)
+	subprocess.call(['cd ' + moddir + ' && make clean'], shell=True)
+
+if not clean:
+	if debug:
+		print('Building debug mode libraries...')
+	else:
+		print('Building release mode libraries, pass "debug" as first argument to build debug libs...')
+	
+	if 'LINUX_HOME' in os.environ:
+		subprocess.call(['make -C ' + os.environ['LINUX_HOME'] + ' scripts'], shell=True)
+	if os.environ['TAPASCO_PLATFORM'] is 'vc709':
+		print 'cd ' + moddir + ' && make ' + ('DEBUG_VERBOSE=y ' if driver_debug else ' ')
+		subprocess.call(['cd ' + moddir + ' && make ' + ('DEBUG_VERBOSE=y ' if driver_debug else ' ')], shell=True)
+	else:
+		subprocess.call(['cd ' + moddir + ' && make ' + ('' if driver_debug else 'release ')], shell=True)
+	subprocess.call(['mkdir -p ' + pdir + ' && cd ' + pdir + ' && cmake ' + ('' if debug else '-DCMAKE_BUILD_TYPE=Release') + ' .. && make && make install'], shell=True)
+	subprocess.call(['mkdir -p ' + adir + ' && cd ' + adir + ' && cmake ' + ('' if debug else '-DCMAKE_BUILD_TYPE=Release') + ' .. && make && make install'], shell=True)
+	subprocess.call(['mkdir -p ' + tdir + ' && cd ' + tdir + ' && cmake ' + ('' if debug else '-DCMAKE_BUILD_TYPE=Release') + ' .. && make && make install'], shell=True)

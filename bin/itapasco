@@ -1,0 +1,2 @@
+#!/bin/bash
+java -Xms512M -Xmx1536M -Xss1M -XX:+CMSClassUnloadingEnabled -splash:$TAPASCO_HOME/icon/tapasco_icon.png -jar $TAPASCO_HOME/target/scala-2.12/Tapasco-2017.1-SNAPSHOT.jar itapasco $*

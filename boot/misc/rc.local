@@ -1,0 +1,29 @@
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+
+# Adding Jupyter scripts to bring up network and start Jupyter server
+/root/0_resizefs.sh
+chown -R xilinx:xilinx /linux-xlnx >/dev/null 2>&1
+#/root/1_network.sh >/dev/null 2>&1 &
+#/root/2_jupyter_server.sh
+#/root/3_pl_server.sh
+#/root/4_boot_leds.sh
+
+dhclient eth0
+ifconfig eth0:0 down
+# Force ntp update
+systemctl stop ntp
+ntpdate 0.ubuntu.pool.ntp.org 1.ubuntu.pool.ntp.org\
+        2.ubuntu.pool.ntp.org 3.ubuntu.pool.ntp.org
+systemctl start ntp
+exit 0

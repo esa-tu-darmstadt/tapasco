@@ -1,0 +1,105 @@
+#
+# Copyright (C) 2014 Jens Korinth, TU Darmstadt
+#
+# This file is part of Tapasco (TPC).
+#
+# Tapasco is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Tapasco is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+#
+# @file		design.master.tcl.template
+# @brief 	Master template used to instantiate the Vivado Tcl script to create a design.
+# @author	J. Korinth (TU Darmstadt), jk@esa.cs.tu-darmstadt.de
+#
+#
+# check TAPASCO_HOME env var
+if {![info exists ::env(TAPASCO_HOME)]} {
+  puts "Missing environment variable 'TAPASCO_HOME' - point to TPC root directory."
+  exit 1
+}
+
+# source base lib
+source -notrace "$::env(TAPASCO_HOME)/common/common.tcl"
+
+# event: pre-header
+tapasco::call_plugins "pre-header"
+
+# source common procs
+@@HEADER@@
+
+# source architecture-specific Tcl scripts
+source -notrace @@ARCHITECTURE_TCL@@
+
+# source platform-specific Tcl scripts
+source -notrace "$env(TAPASCO_HOME)/platform/common/platform.tcl"
+source -notrace @@PLATFORM_TCL@@
+
+# event: post-init
+tapasco::call_plugins "post-init"
+
+# name of the bitstream description file
+set bitstreamname @@BITSTREAM_NAME@@
+
+# setup the project
+create_project @@PROJECT_NAME@@ [pwd]/@@PROJECT_NAME@@ -part {@@PART@@} -force
+if {"@@BOARD_PART@@" != ""} {
+  set_property board_part {@@BOARD_PART@@} [current_project]
+}
+
+# configure message limits:
+# suppress messages about no matching pins/ports
+set_msg_config -suppress -id {[BD 5-230]}
+set_msg_config -suppress -id {[BD 5-232]}
+set_msg_config -suppress -id {[BD 5-235]}
+# reduce chatter
+set_msg_config -suppress -severity INFO
+#set_msg_config -suppress -severity STATUS
+# ignore AXI Interrupt controller warning about manual edge trigger setting
+set_msg_config -suppress -id {[xilinx.com:ip:axi_intc:4.1-7]}
+
+# loadout-specific configuration
+@@COMPOSITION@@
+
+# create design
+create_bd_design -quiet "system"
+
+# event: post-init
+tapasco::call_plugins "pre-arch"
+
+# instantiate architecture
+arch::create
+
+# event: pre-platform
+tapasco::call_plugins "pre-platform"
+
+# instantiate and connect platform
+platform::create
+
+# event: post-platform
+tapasco::call_plugins "pre-wrapper"
+
+# create wrapper
+make_wrapper -files [get_files [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/system.bd] -top
+add_files -norecurse [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/hdl/system_wrapper.v
+update_compile_order -fileset sources_1
+
+# activate retiming in synthesis
+set_property STEPS.SYNTH_DESIGN.ARGS.RETIMING true [get_runs synth_1]
+if {[version -short] >= "2016.4"} {
+  set_property synth_checkpoint_mode None [get_files system.bd]
+}
+
+# generate according to the mode
+platform::generate
+
+# exit successfully
+exit

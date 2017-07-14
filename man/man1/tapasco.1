@@ -1,0 +1,622 @@
+.TH tapasco 1 2017.1 MAN(1)
+.SH SYNOPSIS
+    tapasco [global option]* [job]*
+or: tapasco \-h | \-\-help [TOPIC]
+
+.SH GLOBAL OPTIONS
+.RS
+\-v | \-\-verbose [MODE]
+.RS
+Verbose mode, log outputs of subprocesses; optional MODE is a quoted string selecting the output mode
+(default: 'verbose')
+.RE
+.RE
+.RS
+\-n | \-\-dryRun FILE
+.RS
+Dry run, do not execute, only dump Json into FILE.
+.RE
+.RE
+.RS
+\-\-archDir PATH
+.RS
+Base directory for architecture descriptions
+.RE
+.RE
+.RS
+\-\-compositionDir PATH
+.RS
+Output base directory for Compose jobs
+.RE
+.RE
+.RS
+\-\-coreDir PATH
+.RS
+Output base directory for HLS jobs, synthesized cores
+.RE
+.RE
+.RS
+\-\-kernelDir PATH
+.RS
+Base directory for kernel descriptions (HLS)
+.RE
+.RE
+.RS
+\-\-platformDir PATH
+.RS
+Base directory for platform descriptions
+.RE
+.RE
+.RS
+\-\-logFile FILE
+.RS
+Path to output log file
+.RE
+.RE
+.RS
+\-\-configFile FILE
+.RS
+Path to Json file with Configuration
+.RE
+.RE
+.RS
+\-\-jobsFile FILE
+.RS
+Path to Json file with Jobs array
+.RE
+.RE
+.RS
+\-\-slurm
+.RS
+Activate SLURM cluster execution (requires sbatch)
+.RE
+.RE
+.RS
+\-\-parallel
+.RS
+Execute all jobs in parallel (careful!)
+.RE
+.RE
+.RS
+\-\-maxThreads NUM
+.RS
+Limit internal parallelism of activities (e.g., Vivado) to the given number of threads.
+.RE
+.RE
+.SH BULK IMPORT JOB
+Bulk import jobs can import multiple IP\-XACT core .zip files in row. The 
+required import parameters are given a CSV file instead of manually via the 
+command line.
+
+.RS
+Syntax
+.RS
+bulkimport <CSV>
+.RE
+.RE
+.RS
+where
+.RS
+CSV
+.RS
+Path to file in comma\-separated values (CSV) format, must contain the following header line and columns:
+.RE
+.RE
+
+Zip, ID, Description, Architecture, Platform, Avg Runtime (clock cycles)
+.RE
+.SH COMPOSE JOB
+Generate a full\-system bitstream from spec. Compose jobs are the core of 
+TaPaSCo and comprise the construction of the system design, synthesis and 
+place\-and\-route, as well as high\-level synthesis of cores (if necessary).
+
+To generate a design, one needs to specify
+
+.RS
+1) the Composition (see below)
+2) the Architecture (i.e., organization of PEs in the design)
+3) the Platform (i.e., target hardware)
+4) the target design frequency (operating frequency of the PEs)
+.RE
+
+If Architecture or Platform selection is ommitted, TaPaSCo will build bitstreams
+forr all available Architectures and Platforms in parallel. Resource 
+restrictions apply normally (e.g., won't launch more runs than CPUs available, 
+etc.). The resulting projects and bitstreams can be found in the directory 
+hierarchy below the currently configured Composition directory (see `tapasco \-h
+globals`)..
+
+.RS
+Syntax
+.RS
+compose <COMPOSITION> @ <NUM> MHz [option]*
+.RE
+.RE
+.RS
+where
+.RS
+COMPOSITION
+.RS
+Composition spec, see `tapasco \-h composition`
+.RE
+.RE
+.RS
+NUM
+.RS
+target operating frequency for PEs in MHz
+.RE
+.RE
+.RE
+
+followed optionally by:
+.RS
+.RS
+\-a | \-\-architectures A+
+.RS
+list of Architectures to compose for, e.g., \-a axi4mm, myarch
+.RE
+.RE
+.RS
+\-p | \-\-platforms P+
+.RS
+list of Platforms to compose for, e.g., \-p vc709, pynq
+.RE
+.RE
+.RS
+\-\-implementation NAME
+.RS
+selects a tool for synthesis, place\-and\-route
+default: "Vivado"
+.RE
+.RE
+.RS
+\-\-features FEATURES
+.RS
+configures Features, see `tapasco \-h features`
+syntax: FEATURE [, FEATURE]*
+.RE
+.RE
+.RS
+\-\-debugMode NAME
+.RS
+dry run, no composition is executed; modes:
+.RE
+.RE
+.RS
+.RS
+  r
+.RS
+generate random result values
+.RE
+.RE
+.RS
+  f
+.RS
+generate only timing failures
+.RE
+.RE
+.RS
+  p
+.RS
+generate only placer errors
+.RE
+.RE
+.RS
+  o
+.RS
+generate only other errors
+.RE
+.RE
+.RE
+.RE
+
+NOTE: Currently the  total number of PEs must be <= 128.
+.SH COMPOSITION SYNTAX
+A Composition specifies the number and kind of processing elements (PEs) that 
+are present in the design. The basic command line syntax is as follows:
+
+.RS
+COMPOSITION
+.RS
+'[' <KERNEL> x <COUNT> [, <KERNEL> x <COUNT>]* ']'
+.RE
+.RE
+.RS
+.RS
+KERNEL
+.RS
+name of kernel/core, a quoted/unquoted string
+.RE
+.RE
+.RS
+COUNT
+.RS
+number of instances (0 < x <= 128)
+.RE
+.RE
+.RE
+
+.RS
+Examples:
+.RS
+[ precision_counter x 128 ]
+[arrayupdate x 4, arraysum x 8]
+.RE
+.RE
+.SH CONFIG FILES
+A config file is a Json (http://json.org) file consisting of a singleconfiguration object. A configuration object can contain all parametersavailable on the command line, including the jobs, which are representedby an array of Job elements (same format as \-\-jobsFile, see \-\-help jobsFilefor more info).    
+
+You can generate an empty configuration via `tapasco \-n config.json`.
+.SH CORE STATISTICS JOB
+Evaluation helper job that automatically gathres the out\-of\-context results 
+for all Cores, Architectures and Platforms in one .csv file per Architecture and
+Platformm combination. Useful for quick overviews over the available PEs.
+
+.RS
+Syntax
+.RS
+corestats [option]*
+.RE
+.RE
+
+followed optionally by:
+.RS
+.RS
+\-a | \-\-architectures A+
+.RS
+list of Architectures , e.g., \-a axi4mm, myarch
+.RE
+.RE
+.RS
+\-p | \-\-platforms P+
+.RS
+list of Platforms , e.g., \-p vc709, pynq
+.RE
+.RE
+.RS
+\-\-prefix STRING
+.RS
+file names of generated .csv files will be of the format STRING<ARCH>@<PLATFORM>.csv
+.RE
+.RE
+.RE
+.SH DESIGN SPACE EXPLORATION JOB
+Even simple hardware designs often require a surprisingly high number of design 
+choices. It is difficult to estimate the impact of each choice on the total 
+result. TaPaSCo supports the designer by offering an automated Design Space 
+Exploration (DSE): TaPaSCo designs can primarily be varied in three dimensions:
+
+.RS
+.RS
+1) Area / Utilization
+.RS
+primarily determined by the number of PEs.
+.RE
+.RE
+.RS
+2) Target Frequency
+.RS
+chosen operating frequency
+.RE
+.RE
+.RS
+3) Alternatives
+.RS
+a choice of alternative hardware implementations for a kernel (identified by their ID, see `tapasco \-h import`)
+.RE
+.RE
+.RE
+
+TaPaSCo's DSE mode can automatically explore this design space using a 
+user\-selectable performance heuristic. The default heuristic approximates the 
+maximal job throughput of the system: Current operating frequency and the 
+average clock cycles per job execution of each PE in the design are extrapolated
+withh the instance numbers to yield an upper bound on the total job throughput 
+of the system. This number is used as a relative "fitness" indicator for the 
+comparison of different Compositions. The design space can be linearized by 
+descending value for each element.
+
+TaPaSCo explores the design space by batches: Each batch consists of a 
+configurable number of design space elements (i.e., Composition + frequency 
+pairs); all elements are run in parallel via 'compose'. The successful element 
+with the highest heuristic value is returned.
+
+In case of errors, three cases must be distinguished:
+
+.RS
+.I Placer errors
+ affect all design space elements with the same or a higher 
+number of PEs; none of them will be placeable and they will therefore be pruned 
+from the design space.
+
+.I Timing failures
+ affect only the given element, but generate a feedback 
+element: A new design space element is generated for the same Composition, but 
+with a lower target frequency. The frequency is computed from the 'worst 
+negative slack' reported by the composer tools. I.e., a failed Composition with 
+100 MHz target frequency and 0.9ns WNS would give a new element with 97.74 MHz 
+(T=10.9ns) frequency.
+
+.I Other errors:
+ This encompasses all other errors, e.g., missing licenses, 
+system crashes, out\-of\-memory problems, etc.
+.RE
+
+TaPaSCo can run explorations in any combination of the three dimensions. To get 
+a better idea of each dimension, you can use `itapasco` to configure DSE and get
+aa preview of each active dimension.
+
+.RS
+Syntax
+.RS
+explore <COMPOSITION> [<FREQ>] in <DIMS> [option]*
+.RE
+.RE
+.RS
+.RS
+COMPOSITION
+.RS
+Composition spec, see `tapasco \-h composition`
+.RE
+.RE
+.RS
+FREQ
+.RS
+'@' <NUM> [MHz]
+initial design frequency in MHz, optional
+.RE
+.RE
+.RS
+DIMS
+.RS
+list of active dimensions, e.g., area, frequency, alternatives
+.RE
+.RE
+.RE
+
+followed optionally by:
+.RS
+.RS
+\-a | \-\-architectures A+
+.RS
+list of Architectures , e.g., \-a axi4mm, myarch
+.RE
+.RE
+.RS
+\-p | \-\-platforms P+
+.RS
+list of Platforms , e.g., \-p vc709, pynq
+.RE
+.RE
+.RS
+\-\-basePath PATH
+.RS
+output base path for DSE results, including config files, projects and bitstreams
+default: DSE_<CURRENT DATE>
+.RE
+.RE
+.RS
+\-\-batchSize NUM
+.RS
+number of elements in each batch
+default: number of CPUs
+.RE
+.RE
+.RS
+\-\-debugMode NAME
+.RS
+dry run, no compositions are executed, see `tapasco \-h compose`
+.RE
+.RE
+.RS
+\-\-features FEATURES
+.RS
+configures Features, see `tapasco \-h features`
+syntax: FEATURE [, FEATURE]*
+.RE
+.RE
+.RS
+\-\-heuristic NAME
+.RS
+select heuristic function
+default: 'job throughput'
+.RE
+.RE
+.RS
+\-\-implementation NAME
+.RS
+selects a tool for synthesis, place\-and\-route
+default: "Vivado"
+.RE
+.RE
+.RE
+
+.SH NOTE
+All HLS kernels are located in the directories below the currently 
+configured Kernel directory (see `tapasco \-h globals`). Each kernel 
+requires a description in a simple Json format, examples can be found in 
+$TAPASCO_HOME/kernel.
+.SH FEATURES SYNTAX
+The hardware designs generated by TaPaSCo offer a great amount of flexibility 
+using a dynamic plug\-in interface; a plug\-in can extend or modify the 
+resulting design. By default, most plug\-ins are disabled and must be activated 
+by the user. This is done via a Feature specification: A Feature contains the 
+configuration parameters for a plug\-in. The basic command line syntax is as 
+follows:
+
+.RS
+FEATURE
+.RS
+<NAME> <BEGIN> [<KEYVALUE> [, <KEYVALUE>]*] <END>
+.RE
+.RE
+.RS
+.RS
+NAME
+.RS
+any quoted or unquoted string
+.RE
+.RE
+.RS
+.RS
+BEGIN
+.RS
+one of '[', '{' or '('
+.RE
+.RE
+.RS
+END
+.RS
+one of ']', '}, or ')'
+.RE
+.RE
+.RE
+.RS
+KEYVALUE
+.RS
+<KEY> <ASSIGN> <VALUE>
+.RE
+.RE
+.RS
+.RS
+KEY
+.RS
+any quoted or unquoted string
+.RE
+.RE
+.RS
+ASSIGN
+.RS
+either '\->', '=', ':=' or ':'
+.RE
+.RE
+.RS
+VALUE
+.RS
+any quoted or unquoted string
+.RE
+.RE
+.RE
+.RE
+
+.RS
+Examples:
+.RS
+'OLED' [enabled \-> true]
+'LEDS' { enabled: true, inputs: "/system/LED_*" }
+'BlueDMA' (enabled = true)
+.RE
+.RE
+.SH HIGH-LEVEL SYNTHESIS JOB
+TaPaSCo facilitates rapid prototyping for FPGA accelerators by directly 
+supporting hardware written in C/C++ via HLS. The hls job is used to trigger the
+HLSS tool and synthesize hardware for a given Architecture and Platform.
+
+If Architecture or Platform selection is ommitted, TaPaSCo will build cores for 
+all available Architectures and Platforms in parallel. Resource restrictions 
+apply normally (e.g., won't launch more runs than CPUs available, etc.). The 
+resulting cores can be found in the directory hierarchy below the currently 
+configured Core directory (see `tapasco \-h globals`).
+
+.RS
+Syntax
+.RS
+hls <KERNELS> [option]*
+.RE
+.RE
+.RS
+where
+.RS
+KERNELS
+.RS
+all | <KERNEL> [, <KERNEL]*
+where KERNEL is a kernel name as quoted or unquoted string; special target 'all' builds all available kernels.
+.RE
+.RE
+.RE
+
+followed optionally by:
+.RS
+.RS
+\-a | \-\-architectures A+
+.RS
+list of Architectures , e.g., \-a axi4mm, myarch
+.RE
+.RE
+.RS
+\-p | \-\-platforms P+
+.RS
+list of Platforms , e.g., \-p vc709, pynq
+.RE
+.RE
+.RS
+\-\-implementation NAME
+.RS
+selects a HLS tool by name
+default: "VivadoHLS"
+.RE
+.RE
+.RE
+
+.SH NOTE
+All HLS kernels are located in the directories below the currently 
+configured Kernel directory (see `tapasco \-h globals`). Each kernel 
+requires a description in a simple Json format, examples can be found in 
+$TAPASCO_HOME/kernel.
+.SH IMPORT JOB
+TaPaSCo supports the use of High\-Level Synthesis (HLS) tools (such as Xilinx 
+Vivado HLS) for the synthesis of processing element hardware modules from C/C++ 
+automatically (see `tapasco \-h hls`). To make existing IP available as PEs in 
+TaPaSCo, you can use the import command:
+
+.RS
+Syntax
+.RS
+import <ZIP> as <ID> [option]*
+.RE
+.RE
+.RS
+where
+.RS
+ZIP
+.RS
+path to .zip file containing an IP\-XACT description (e.g., component.xml and Verilog/VHDL sources); can be generated, e.g., via Xilinx Vivado, menu Tools \-> Create and package IP.
+.RE
+.RE
+.RS
+ID
+.RS
+any integer > 0; this ID is used to identify the PEs in the hardware and software layers of TaPaSCo Core with the same ID are considered to be alternative implementations of the same interface and should be exchangeable (see `tapasco \-h explore`).
+.RE
+.RE
+.RE
+
+followed optionally by:
+.RS
+.RS
+\-a | \-\-architectures A+
+.RS
+list of Architectures , e.g., \-a axi4mm, myarch
+.RE
+.RE
+.RS
+\-p | \-\-platforms P+
+.RS
+list of Platforms , e.g., \-p vc709, pynq
+.RE
+.RE
+.RS
+\-\-description TEXT
+.RS
+any quoted or unquoted string containing additional information about the core
+.RE
+.RE
+.RS
+\-\-averageClockCycles N
+.RS
+any integer > 0; number of clock cycles in an "average" execution of the PE; used to estimate the maximal throughput
+.RE
+.RE
+.RE
+.SH JOBS FILES
+Jobs files are Json (http://json.org) files consisting of an array of Jobdefinitions. See $TAPASCO_HOME/json\-examples/jobs/Jobs.json for an examplecontaining one instance of each job. Alternatively, generate an emptyconfiguration via `tapasco \-n config.json`.  

@@ -1,0 +1,10 @@
+{
+	"Name" : "Plat3",
+	"TclLibrary" : "../plat.tcl",
+	"Part" : "xc7z045ffg900-2",
+	"BoardPart" : "xilinx.com:zc706:part0:1.1",
+	"BoardPreset" : "ZC706",
+	"TargetUtilization": 55,
+	"SlotCount": 64,
+	"SupportedFrequencies" : [250, 200, 150, 100, 42]
+}

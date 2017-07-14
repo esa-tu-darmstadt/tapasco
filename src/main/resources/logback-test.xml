@@ -1,0 +1,30 @@
+<configuration debug="false">
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <withJansi>true</withJansi>
+    <encoder>
+      <pattern>[%green(%d{HH:mm:ss} &lt;%thread: %c{0}&gt;) %highlight(%level)] %msg%n</pattern>
+    </encoder>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>info</level>
+    </filter>
+  </appender>
+
+  <root level="info">
+    <appender-ref ref="STDOUT" />
+  </root>
+  
+  <!--<appender name="STDOUT-DETAIL" class="ch.qos.logback.core.ConsoleAppender">
+    <withJansi>true</withJansi>
+    <encoder>
+      <pattern>[%blue(%d{HH:mm:ss} &lt;%thread: %c{0}&gt;) %highlight(%level)] %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="de.tu_darmstadt.cs.esa.tapasco.activity.composers" level="trace">
+    <appender-ref ref="STDOUT-DETAIL" />
+  </logger>-->
+
+  <!--<logger name="de.tu_darmstadt.cs.esa.tapasco.itapasco.view.detail.LogTrackingPanel" level="trace">
+    <appender-ref ref="STDOUT-DETAIL" />
+  </logger>-->
+</configuration>

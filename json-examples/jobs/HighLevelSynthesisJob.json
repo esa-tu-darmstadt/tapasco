@@ -1,0 +1,7 @@
+{
+  "Job" : "HighLevelSynthesis",
+  "Implementation" : "VivadoHLS",
+  "Architectures" : [ "axi4mm" ],
+  "Platforms" : [ "zedboard", "zc706" ],
+  "Kernels" : [ "counter", "arraysum" ]
+}

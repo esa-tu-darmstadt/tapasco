@@ -1,0 +1,10 @@
+{
+	"ZipFile" : "core.zip",
+	"Version" : "0.1",
+	"Id" : 42,
+	"Description" : "A correct core description.",
+	"Target": {
+		"Architecture": "axi4mm",
+		"Platform": "zc706"
+	}
+}

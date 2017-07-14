@@ -1,0 +1,2011 @@
+Copyright 1986-2015 Xilinx, Inc. All Rights Reserved.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2015.2 (lin64) Build 1266856 Fri Jun 26 16:35:25 MDT 2015
+| Date         : Tue Apr 12 22:15:31 2016
+| Host         : celebdil.esa.informatik.tu-darmstadt.de running 64-bit Scientific Linux release 6.7 (Carbon)
+| Command      : report_timing_summary -quiet -datasheet -file /scratch/jk/sgbm/LargeBuffer1080p/core/StereoBM_D128_1920x1080_P13_D8_e762b8c/baseline/vc709/ipcore/timing.rpt
+| Design       : mkStereoBMAxiVivado
+| Device       : 7vx690t-ffg1761
+| Speed File   : -2  PRODUCTION 1.11 2014-09-11
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Timing Summary Report
+
+------------------------------------------------------------------------------------------------
+| Timer Settings
+| --------------
+------------------------------------------------------------------------------------------------
+
+  Enable Multi Corner Analysis               :  Yes
+  Enable Pessimism Removal                   :  Yes
+  Pessimism Removal Resolution               :  Nearest Common Node
+  Enable Input Delay Default Clock           :  No
+  Enable Preset / Clear Arcs                 :  No
+  Disable Flight Delays                      :  No
+
+  Corner  Analyze    Analyze    
+  Name    Max Paths  Min Paths  
+  ------  ---------  ---------  
+  Slow    Yes        Yes        
+  Fast    Yes        Yes        
+
+
+
+check_timing report
+
+Table of Contents
+-----------------
+1. checking no_clock
+2. checking constant_clock
+3. checking pulse_width_clock
+4. checking unconstrained_internal_endpoints
+5. checking no_input_delay
+6. checking no_output_delay
+7. checking multiple_clock
+8. checking generated_clocks
+9. checking loops
+10. checking partial_input_delay
+11. checking partial_output_delay
+12. checking latch_loops
+
+1. checking no_clock
+--------------------
+ There are 0 register/latch pins with no clock.
+
+
+2. checking constant_clock
+--------------------------
+ There are 0 register/latch pins with constant_clock.
+
+
+3. checking pulse_width_clock
+-----------------------------
+ There are 0 register/latch pins which need pulse_width check
+
+
+4. checking unconstrained_internal_endpoints
+--------------------------------------------
+ There are 0 pins that are not constrained for maximum delay.
+
+ There are 0 pins that are not constrained for maximum delay due to constant clock.
+
+
+5. checking no_input_delay
+--------------------------
+ There are 232 input ports with no input delay specified. (HIGH)
+
+ There are 0 input ports with no input delay but user has a false path constraint.
+
+
+6. checking no_output_delay
+---------------------------
+ There are 292 ports with no output delay specified. (HIGH)
+
+ There are 0 ports with no output delay but user has a false path constraint
+
+ There are 0 ports with no output delay but with a timing clock defined on it or propagating through it
+
+
+7. checking multiple_clock
+--------------------------
+ There are 0 register/latch pins with multiple clocks.
+
+
+8. checking generated_clocks
+----------------------------
+ There are 0 generated clocks that are not connected to a clock source.
+
+
+9. checking loops
+-----------------
+ There are 0 combinational loops in the design.
+
+
+10. checking partial_input_delay
+--------------------------------
+ There are 0 input ports with partial input delay specified.
+
+
+11. checking partial_output_delay
+---------------------------------
+ There are 0 ports with partial output delay specified.
+
+
+12. checking latch_loops
+------------------------
+ There are 0 combinational latch loops in the design through latch input
+
+
+
+------------------------------------------------------------------------------------------------
+| Design Timing Summary
+| ---------------------
+------------------------------------------------------------------------------------------------
+
+    WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
+    -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
+     -5.703  -879452.562                 388664               549923        0.026        0.000                      0               549923        0.343        0.000                       0                289429  
+
+
+Timing constraints are not met.
+
+
+------------------------------------------------------------------------------------------------
+| Clock Summary
+| -------------
+------------------------------------------------------------------------------------------------
+
+Clock  Waveform(ns)         Period(ns)      Frequency(MHz)
+-----  ------------         ----------      --------------
+clk    {0.000 1.111}        2.222           450.045         
+
+
+------------------------------------------------------------------------------------------------
+| Intra Clock Table
+| -----------------
+------------------------------------------------------------------------------------------------
+
+Clock             WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints     WPWS(ns)     TPWS(ns)  TPWS Failing Endpoints  TPWS Total Endpoints  
+-----             -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------     --------     --------  ----------------------  --------------------  
+clk                -5.703  -879452.562                 388664               549923        0.026        0.000                      0               549923        0.343        0.000                       0                289429  
+
+
+------------------------------------------------------------------------------------------------
+| Inter Clock Table
+| -----------------
+------------------------------------------------------------------------------------------------
+
+From Clock    To Clock          WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints  
+----------    --------          -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------  
+
+
+------------------------------------------------------------------------------------------------
+| Other Path Groups Table
+| -----------------------
+------------------------------------------------------------------------------------------------
+
+Path Group    From Clock    To Clock          WNS(ns)      TNS(ns)  TNS Failing Endpoints  TNS Total Endpoints      WHS(ns)      THS(ns)  THS Failing Endpoints  THS Total Endpoints  
+----------    ----------    --------          -------      -------  ---------------------  -------------------      -------      -------  ---------------------  -------------------  
+
+
+------------------------------------------------------------------------------------------------
+| Timing Details
+| --------------
+------------------------------------------------------------------------------------------------
+
+
+---------------------------------------------------------------------------------------------------
+From Clock:  clk
+  To Clock:  clk
+
+Setup :       388664  Failing Endpoints,  Worst Slack       -5.703ns,  Total Violation  -879452.564ns
+Hold  :            0  Failing Endpoints,  Worst Slack        0.026ns,  Total Violation        0.000ns
+PW    :            0  Failing Endpoints,  Worst Slack        0.343ns,  Total Violation        0.000ns
+---------------------------------------------------------------------------------------------------
+
+
+Max Delay Paths
+--------------------------------------------------------------------------------------
+Slack (VIOLATED) :        -5.703ns  (required time - arrival time)
+  Source:                 stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_4_lValOut/empty_reg_reg/C
+                            (rising edge-triggered cell FDRE clocked by clk  {rise@0.000ns fall@1.111ns period=2.222ns})
+  Destination:            stereoCore_stereo_disparityRows_7_dispCalc/minLValsFinder_comps_0_finders_0_1_out/data1_reg_reg[5]/D
+                            (rising edge-triggered cell FDRE clocked by clk  {rise@0.000ns fall@1.111ns period=2.222ns})
+  Path Group:             clk
+  Path Type:              Setup (Max at Slow Process Corner)
+  Requirement:            2.222ns  (clk rise@2.222ns - clk rise@0.000ns)
+  Data Path Delay:        7.604ns  (logic 1.460ns (19.199%)  route 6.144ns (80.801%))
+  Logic Levels:           12  (CARRY4=3 LUT3=2 LUT4=3 LUT5=1 LUT6=3)
+  Clock Path Skew:        -0.350ns (DCD - SCD + CPR)
+    Destination Clock Delay (DCD):    1.311ns = ( 3.533 - 2.222 ) 
+    Source Clock Delay      (SCD):    1.704ns
+    Clock Pessimism Removal (CPR):    0.043ns
+  Clock Uncertainty:      0.035ns  ((TSJ^2 + TIJ^2)^1/2 + DJ) / 2 + PE
+    Total System Jitter     (TSJ):    0.071ns
+    Total Input Jitter      (TIJ):    0.000ns
+    Discrete Jitter          (DJ):    0.000ns
+    Phase Error              (PE):    0.000ns
+
+    Location             Delay type                Incr(ns)  Path(ns)    Netlist Resource(s)
+  -------------------------------------------------------------------    -------------------
+                         (clock clk rise edge)        0.000     0.000 r  
+                                                      0.000     0.000 r  CLK (IN)
+                         net (fo=289428, unset)       1.704     1.704    stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_4_lValOut/CLK
+    SLICE_X47Y354        FDRE                                         r  stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_4_lValOut/empty_reg_reg/C
+  -------------------------------------------------------------------    -------------------
+    SLICE_X47Y354        FDRE (Prop_fdre_C_Q)         0.223     1.927 r  stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_4_lValOut/empty_reg_reg/Q
+                         net (fo=6, routed)           0.710     2.637    stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/deg0Calc_4_lValOut$EMPTY_N
+    SLICE_X50Y353        LUT4 (Prop_lut4_I3_O)        0.047     2.684 f  stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/dCurOut[6]_i_3__9/O
+                         net (fo=1, routed)           0.430     3.115    stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/dCurOut[6]_i_3__9_n_256395
+    SLICE_X51Y352        LUT5 (Prop_lut5_I0_O)        0.134     3.249 r  stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/dCurOut[6]_i_1__9/O
+                         net (fo=1623, routed)        0.619     3.867    stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/CAN_FIRE_RL_drainTheCalcs
+    SLICE_X51Y344        LUT6 (Prop_lut6_I0_O)        0.043     3.910 r  stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/minLValsFinder_comps_2_incoming_rv[94]_i_2__9/O
+                         net (fo=778, routed)         0.535     4.445    stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/CAN_FIRE_RL_minLValsFinder_forwardInput
+    SLICE_X50Y348        LUT4 (Prop_lut4_I0_O)        0.043     4.488 r  stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/minLValsFinder_comps_0_finders_0_1_in_rv[46]_i_2__9/O
+                         net (fo=267, routed)         1.110     5.598    stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/CAN_FIRE_RL_minLValsFinder_comps_0_connectStages
+    SLICE_X52Y342        LUT3 (Prop_lut3_I2_O)        0.051     5.649 f  stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/data1_reg[11]_i_65__69/O
+                         net (fo=1, routed)           0.244     5.893    stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/data1_reg[11]_i_65__69_n_256395
+    SLICE_X52Y342        LUT6 (Prop_lut6_I5_O)        0.134     6.027 r  stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/data1_reg[11]_i_31__82/O
+                         net (fo=1, routed)           0.362     6.389    stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/data1_reg[11]_i_31__82_n_256395
+    SLICE_X53Y343        CARRY4 (Prop_carry4_DI[3]_CO[3])
+                                                      0.190     6.579 r  stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/data1_reg_reg[11]_i_13__82/CO[3]
+                         net (fo=1, routed)           0.000     6.579    stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/data1_reg_reg[11]_i_13__82_n_256395
+    SLICE_X53Y344        CARRY4 (Prop_carry4_CI_CO[1])
+                                                      0.077     6.656 r  stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/data1_reg_reg[11]_i_6__82/CO[1]
+                         net (fo=12, routed)          0.636     7.292    stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/IF_minLValsFinder_comps_0_finders_0_1_in_rv_po_ETC___d20541
+    SLICE_X51Y345        LUT6 (Prop_lut6_I5_O)        0.122     7.414 r  stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/data1_reg[8]_i_2__91/O
+                         net (fo=4, routed)           0.702     8.116    stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/IF_minLValsFinder_comps_0_finders_0_1_in_rv_po_ETC___d2054[8]
+    SLICE_X51Y349        LUT4 (Prop_lut4_I1_O)        0.043     8.159 r  stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/data1_reg[11]_i_12__71/O
+                         net (fo=1, routed)           0.000     8.159    stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/data1_reg[11]_i_12__71_n_256395
+    SLICE_X51Y349        CARRY4 (Prop_carry4_S[0]_CO[1])
+                                                      0.231     8.390 r  stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/data1_reg_reg[11]_i_5__71/CO[1]
+                         net (fo=24, routed)          0.797     9.186    stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/data1_reg_reg[11]_1[0]
+    SLICE_X52Y345        LUT3 (Prop_lut3_I2_O)        0.122     9.308 r  stereoCore_stereo_disparityRows_7_dispCalc/deg0Calc_3_lValOut/data1_reg[5]_i_1__146/O
+                         net (fo=1, routed)           0.000     9.308    stereoCore_stereo_disparityRows_7_dispCalc/minLValsFinder_comps_0_finders_0_1_out/D[5]
+    SLICE_X52Y345        FDRE                                         r  stereoCore_stereo_disparityRows_7_dispCalc/minLValsFinder_comps_0_finders_0_1_out/data1_reg_reg[5]/D
+  -------------------------------------------------------------------    -------------------
+
+                         (clock clk rise edge)        2.222     2.222 r  
+                                                      0.000     2.222 r  CLK (IN)
+                         net (fo=289428, unset)       1.311     3.533    stereoCore_stereo_disparityRows_7_dispCalc/minLValsFinder_comps_0_finders_0_1_out/CLK
+    SLICE_X52Y345        FDRE                                         r  stereoCore_stereo_disparityRows_7_dispCalc/minLValsFinder_comps_0_finders_0_1_out/data1_reg_reg[5]/C
+                         clock pessimism              0.043     3.576    
+                         clock uncertainty           -0.035     3.541    
+    SLICE_X52Y345        FDRE (Setup_fdre_C_D)        0.065     3.606    stereoCore_stereo_disparityRows_7_dispCalc/minLValsFinder_comps_0_finders_0_1_out/data1_reg_reg[5]
+  -------------------------------------------------------------------
+                         required time                          3.606    
+                         arrival time                          -9.308    
+  -------------------------------------------------------------------
+                         slack                                 -5.703    
+
+
+
+
+
+
+                         (clock clk rise edge)        0.000     0.000 r  
+                                                      0.000     0.000 r  CLK (IN)
+                         net (fo=289428, unset)       0.769     0.769    stereoCore_stereo_interRow_2/CLK
+    SLICE_X130Y250       FDRE                                         r  stereoCore_stereo_interRow_2/deg45_ifc_lvalHandler_curLine_rv_reg[80]/C
+                         clock pessimism              0.000     0.769    
+    SLICE_X130Y250       FDRE (Hold_fdre_C_D)         0.087     0.856    stereoCore_stereo_interRow_2/deg45_ifc_lvalHandler_curLine_rv_reg[80]
+  -------------------------------------------------------------------
+                         required time                         -0.856    
+                         arrival time                           0.882    
+  -------------------------------------------------------------------
+                         slack                                  0.026    
+
+
+
+
+
+Pulse Width Checks
+--------------------------------------------------------------------------------------
+Clock Name:         clk
+Waveform(ns):       { 0.000 1.111 }
+Period(ns):         2.222
+Sources:            { CLK }
+
+Check Type        Corner  Lib Pin             Reference Pin  Required(ns)  Actual(ns)  Slack(ns)  Location        Pin
+Min Period        n/a     RAMB36E1/CLKARDCLK  n/a            1.839         2.222       0.383      RAMB36_X8Y12    stereoCore_stereo_bigBuffer/lMinBuf_deg90In_memory/RAM_reg/CLKARDCLK
+Low Pulse Width   Slow    RAMD64E/CLK         n/a            0.768         1.111       0.343      SLICE_X192Y268  stereoCore_master0_readMaster_incoming/arr_reg_0_63_42_44/RAMA/CLK
+High Pulse Width  Slow    RAMD64E/CLK         n/a            0.768         1.111       0.343      SLICE_X192Y260  stereoCore_master0_readMaster_incoming/arr_reg_0_63_66_68/RAMA/CLK
+
+
+
+------------------------------------------------------------------------------------------------
+| Data sheet
+| ----------
+------------------------------------------------------------------------------------------------
+
+Input Ports Setup/Hold
+
+----------+-------------------+---------------+---------+---------------+---------+----------+
+Reference | Input             |     Setup(ns) | Process |      Hold(ns) | Process | Internal | 
+Clock     | Port              | to Clk (Edge) | Corner  | to Clk (Edge) | Corner  | Clock    | 
+----------+-------------------+---------------+---------+---------------+---------+----------+
+clk       | M_AXI_0_ARREADY   |     1.588 (r) | SLOW    |     0.489 (r) | SLOW    |          |
+clk       | M_AXI_0_AWREADY   |     0.763 (r) | SLOW    |     0.458 (r) | SLOW    |          |
+clk       | M_AXI_0_BVALID    |    -0.267 (r) | FAST    |     0.851 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[0]  |     0.137 (r) | FAST    |     1.188 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[1]  |     0.371 (r) | FAST    |     1.065 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[2]  |     0.203 (r) | FAST    |     1.093 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[3]  |     0.262 (r) | FAST    |     1.073 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[4]  |     0.178 (r) | FAST    |     1.056 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[5]  |     0.214 (r) | FAST    |     1.068 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[6]  |     0.314 (r) | FAST    |     1.072 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[7]  |     0.260 (r) | FAST    |     1.062 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[8]  |     0.275 (r) | FAST    |     1.086 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[9]  |     0.059 (r) | FAST    |     1.079 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[10] |    -0.030 (r) | FAST    |     1.069 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[11] |    -0.039 (r) | FAST    |     1.087 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[12] |    -0.046 (r) | FAST    |     1.068 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[13] |    -0.059 (r) | FAST    |     1.069 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[14] |    -0.044 (r) | FAST    |     1.149 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[15] |     0.153 (r) | FAST    |     1.154 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[16] |     0.248 (r) | FAST    |     1.156 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[17] |     0.128 (r) | FAST    |     1.078 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[18] |    -0.110 (r) | FAST    |     1.156 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[19] |     0.154 (r) | FAST    |     1.154 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[20] |     0.023 (r) | FAST    |     1.149 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[21] |     0.194 (r) | FAST    |     1.154 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[22] |     0.316 (r) | FAST    |     1.055 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[23] |     0.201 (r) | FAST    |     1.154 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[24] |     0.127 (r) | FAST    |     1.158 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[25] |     0.196 (r) | FAST    |     1.157 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[26] |     0.136 (r) | FAST    |     1.158 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[27] |    -0.000 (r) | FAST    |     1.071 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[28] |    -0.028 (r) | FAST    |     1.064 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[29] |    -0.027 (r) | FAST    |     1.064 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[30] |     0.304 (r) | FAST    |     1.017 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[31] |     0.180 (r) | FAST    |     1.010 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[32] |     0.086 (r) | FAST    |     1.188 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[33] |     0.076 (r) | FAST    |     1.157 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[34] |     0.205 (r) | FAST    |     1.082 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[35] |     0.131 (r) | FAST    |     1.074 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[36] |    -0.046 (r) | FAST    |     1.072 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[37] |     0.138 (r) | FAST    |     1.019 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[38] |    -0.088 (r) | FAST    |     1.078 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[39] |     0.202 (r) | FAST    |     1.157 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[40] |     0.184 (r) | FAST    |     1.069 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[41] |     0.243 (r) | FAST    |     1.072 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[42] |     0.010 (r) | FAST    |     1.078 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[43] |     0.008 (r) | FAST    |     1.067 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[44] |     0.042 (r) | FAST    |     1.097 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[45] |     0.241 (r) | FAST    |     1.070 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[46] |     0.155 (r) | FAST    |     1.079 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[47] |     0.210 (r) | FAST    |     1.157 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[48] |     0.070 (r) | FAST    |     1.115 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[49] |     0.120 (r) | FAST    |     1.063 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[50] |     0.142 (r) | FAST    |     1.081 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[51] |     0.177 (r) | FAST    |     1.065 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[52] |     0.417 (r) | FAST    |     1.065 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[53] |     0.139 (r) | FAST    |     1.059 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[54] |     0.055 (r) | FAST    |     1.081 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[55] |     0.232 (r) | FAST    |     1.071 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[56] |     0.120 (r) | FAST    |     1.082 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[57] |     0.131 (r) | FAST    |     1.088 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[58] |     0.144 (r) | FAST    |     1.116 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[59] |     0.113 (r) | FAST    |     1.061 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[60] |     0.237 (r) | FAST    |     1.070 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[61] |     0.068 (r) | FAST    |     1.065 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[62] |     0.235 (r) | FAST    |     1.068 (r) | SLOW    |          |
+clk       | M_AXI_0_RDATA[63] |     0.120 (r) | FAST    |     1.060 (r) | SLOW    |          |
+clk       | M_AXI_0_RVALID    |     2.066 (r) | SLOW    |     1.116 (r) | SLOW    |          |
+clk       | M_AXI_0_WREADY    |     0.700 (r) | SLOW    |     0.372 (r) | SLOW    |          |
+clk       | M_AXI_1_ARREADY   |     1.756 (r) | SLOW    |     0.438 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[0]  |    -0.093 (r) | FAST    |     1.070 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[1]  |    -0.051 (r) | FAST    |     1.079 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[2]  |     0.036 (r) | FAST    |     1.086 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[3]  |    -0.009 (r) | FAST    |     1.083 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[4]  |    -0.058 (r) | FAST    |     1.086 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[5]  |     0.009 (r) | FAST    |     1.085 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[6]  |    -0.002 (r) | FAST    |     1.085 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[7]  |    -0.050 (r) | FAST    |     1.158 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[8]  |    -0.004 (r) | FAST    |     1.082 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[9]  |    -0.054 (r) | FAST    |     1.087 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[10] |    -0.086 (r) | FAST    |     1.086 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[11] |     0.059 (r) | FAST    |     1.070 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[12] |     0.103 (r) | FAST    |     1.162 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[13] |     0.199 (r) | FAST    |     1.162 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[14] |     0.025 (r) | FAST    |     1.162 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[15] |     0.049 (r) | FAST    |     1.160 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[16] |    -0.109 (r) | FAST    |     1.076 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[17] |     0.149 (r) | FAST    |     1.083 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[18] |    -0.014 (r) | FAST    |     1.158 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[19] |     0.115 (r) | FAST    |     1.077 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[20] |    -0.024 (r) | FAST    |     1.065 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[21] |     0.085 (r) | FAST    |     1.158 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[22] |     0.071 (r) | FAST    |     1.074 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[23] |    -0.090 (r) | FAST    |     1.158 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[24] |    -0.026 (r) | FAST    |     1.077 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[25] |    -0.008 (r) | FAST    |     1.160 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[26] |    -0.048 (r) | FAST    |     1.079 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[27] |     0.091 (r) | FAST    |     1.080 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[28] |    -0.047 (r) | FAST    |     1.069 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[29] |     0.197 (r) | FAST    |     1.162 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[30] |     0.042 (r) | FAST    |     1.157 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[31] |     0.071 (r) | FAST    |     1.074 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[32] |    -0.105 (r) | FAST    |     1.082 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[33] |    -0.109 (r) | FAST    |     1.074 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[34] |    -0.087 (r) | FAST    |     1.160 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[35] |    -0.047 (r) | FAST    |     1.067 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[36] |     0.076 (r) | FAST    |     1.074 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[37] |     0.107 (r) | FAST    |     1.069 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[38] |    -0.095 (r) | FAST    |     1.063 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[39] |    -0.005 (r) | FAST    |     1.163 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[40] |     0.002 (r) | FAST    |     1.070 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[41] |     0.063 (r) | FAST    |     1.160 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[42] |    -0.093 (r) | FAST    |     1.073 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[43] |    -0.097 (r) | FAST    |     1.117 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[44] |    -0.045 (r) | FAST    |     1.068 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[45] |    -0.098 (r) | FAST    |     1.085 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[46] |    -0.113 (r) | FAST    |     1.121 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[47] |     0.031 (r) | FAST    |     1.082 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[48] |    -0.011 (r) | FAST    |     1.071 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[49] |    -0.058 (r) | FAST    |     1.074 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[50] |    -0.095 (r) | FAST    |     1.076 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[51] |     0.108 (r) | FAST    |     1.067 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[52] |    -0.010 (r) | FAST    |     1.076 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[53] |     0.002 (r) | FAST    |     1.079 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[54] |     0.113 (r) | FAST    |     1.074 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[55] |    -0.064 (r) | FAST    |     1.081 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[56] |     0.004 (r) | FAST    |     1.064 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[57] |     0.054 (r) | FAST    |     1.076 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[58] |    -0.104 (r) | FAST    |     1.076 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[59] |    -0.116 (r) | FAST    |     1.071 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[60] |     0.156 (r) | FAST    |     1.194 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[61] |    -0.106 (r) | FAST    |     1.071 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[62] |     0.104 (r) | FAST    |     1.076 (r) | SLOW    |          |
+clk       | M_AXI_1_RDATA[63] |     0.368 (r) | FAST    |     1.081 (r) | SLOW    |          |
+clk       | M_AXI_1_RVALID    |     1.644 (r) | SLOW    |     1.122 (r) | SLOW    |          |
+clk       | RST_N             |    19.405 (r) | SLOW    |     1.818 (r) | SLOW    |          |
+clk       | S_AXI_ARADDR[0]   |     0.063 (r) | FAST    |     0.699 (r) | SLOW    |          |
+clk       | S_AXI_ARADDR[1]   |     0.049 (r) | FAST    |     0.878 (r) | SLOW    |          |
+clk       | S_AXI_ARADDR[2]   |     0.032 (r) | FAST    |     0.692 (r) | SLOW    |          |
+clk       | S_AXI_ARADDR[3]   |     0.011 (r) | FAST    |     0.606 (r) | SLOW    |          |
+clk       | S_AXI_ARADDR[4]   |    -0.018 (r) | FAST    |     0.866 (r) | SLOW    |          |
+clk       | S_AXI_ARADDR[5]   |    -0.016 (r) | FAST    |     0.867 (r) | SLOW    |          |
+clk       | S_AXI_ARADDR[6]   |    -0.066 (r) | FAST    |     0.867 (r) | SLOW    |          |
+clk       | S_AXI_ARADDR[7]   |     0.001 (r) | FAST    |     0.867 (r) | SLOW    |          |
+clk       | S_AXI_ARBURST[0]  |    -0.268 (r) | FAST    |     0.879 (r) | SLOW    |          |
+clk       | S_AXI_ARBURST[1]  |    -0.107 (r) | FAST    |     0.843 (r) | SLOW    |          |
+clk       | S_AXI_ARID[0]     |    -0.262 (r) | FAST    |     0.860 (r) | SLOW    |          |
+clk       | S_AXI_ARID[1]     |    -0.276 (r) | FAST    |     0.877 (r) | SLOW    |          |
+clk       | S_AXI_ARID[2]     |    -0.273 (r) | FAST    |     0.876 (r) | SLOW    |          |
+clk       | S_AXI_ARID[3]     |    -0.267 (r) | FAST    |     0.953 (r) | SLOW    |          |
+clk       | S_AXI_ARID[4]     |    -0.260 (r) | FAST    |     0.867 (r) | SLOW    |          |
+clk       | S_AXI_ARID[5]     |    -0.267 (r) | FAST    |     0.953 (r) | SLOW    |          |
+clk       | S_AXI_ARID[6]     |    -0.268 (r) | FAST    |     0.941 (r) | SLOW    |          |
+clk       | S_AXI_ARID[7]     |    -0.268 (r) | FAST    |     0.843 (r) | SLOW    |          |
+clk       | S_AXI_ARID[8]     |    -0.257 (r) | FAST    |     0.877 (r) | SLOW    |          |
+clk       | S_AXI_ARID[9]     |    -0.277 (r) | FAST    |     0.877 (r) | SLOW    |          |
+clk       | S_AXI_ARID[10]    |    -0.267 (r) | FAST    |     0.878 (r) | SLOW    |          |
+clk       | S_AXI_ARID[11]    |    -0.267 (r) | FAST    |     0.878 (r) | SLOW    |          |
+clk       | S_AXI_ARLEN[0]    |     1.097 (r) | SLOW    |     0.878 (r) | SLOW    |          |
+clk       | S_AXI_ARLEN[1]    |     0.247 (r) | FAST    |     0.844 (r) | SLOW    |          |
+clk       | S_AXI_ARLEN[2]    |    -0.010 (r) | FAST    |     0.879 (r) | SLOW    |          |
+clk       | S_AXI_ARLEN[3]    |     0.051 (r) | FAST    |     0.879 (r) | SLOW    |          |
+clk       | S_AXI_ARSIZE[0]   |    -0.137 (r) | FAST    |     0.844 (r) | SLOW    |          |
+clk       | S_AXI_ARSIZE[1]   |     0.161 (r) | SLOW    |     0.879 (r) | SLOW    |          |
+clk       | S_AXI_ARSIZE[2]   |     0.161 (r) | SLOW    |     0.879 (r) | SLOW    |          |
+clk       | S_AXI_ARVALID     |     1.345 (r) | SLOW    |     0.879 (r) | SLOW    |          |
+clk       | S_AXI_AWADDR[0]   |     0.994 (r) | SLOW    |     0.734 (r) | SLOW    |          |
+clk       | S_AXI_AWADDR[1]   |     0.989 (r) | SLOW    |     0.772 (r) | SLOW    |          |
+clk       | S_AXI_AWADDR[2]   |     1.124 (r) | SLOW    |     0.847 (r) | SLOW    |          |
+clk       | S_AXI_AWADDR[3]   |     0.623 (r) | SLOW    |     0.843 (r) | SLOW    |          |
+clk       | S_AXI_AWADDR[4]   |     0.577 (r) | SLOW    |     0.846 (r) | SLOW    |          |
+clk       | S_AXI_AWADDR[5]   |     0.708 (r) | SLOW    |     0.842 (r) | SLOW    |          |
+clk       | S_AXI_AWADDR[6]   |     0.579 (r) | SLOW    |     0.847 (r) | SLOW    |          |
+clk       | S_AXI_AWADDR[7]   |     0.397 (r) | SLOW    |     0.846 (r) | SLOW    |          |
+clk       | S_AXI_AWBURST[0]  |     1.386 (r) | SLOW    |     0.809 (r) | SLOW    |          |
+clk       | S_AXI_AWBURST[1]  |     1.386 (r) | SLOW    |     0.485 (r) | SLOW    |          |
+clk       | S_AXI_AWLEN[0]    |     1.966 (r) | SLOW    |     0.840 (r) | SLOW    |          |
+clk       | S_AXI_AWLEN[1]    |     1.444 (r) | SLOW    |     0.841 (r) | SLOW    |          |
+clk       | S_AXI_AWLEN[2]    |     1.503 (r) | SLOW    |     0.843 (r) | SLOW    |          |
+clk       | S_AXI_AWLEN[3]    |     1.810 (r) | SLOW    |     0.843 (r) | SLOW    |          |
+clk       | S_AXI_AWSIZE[0]   |     1.684 (r) | SLOW    |     0.509 (r) | SLOW    |          |
+clk       | S_AXI_AWSIZE[1]   |     1.691 (r) | SLOW    |     0.843 (r) | SLOW    |          |
+clk       | S_AXI_AWSIZE[2]   |     1.691 (r) | SLOW    |     0.843 (r) | SLOW    |          |
+clk       | S_AXI_AWVALID     |     2.065 (r) | SLOW    |     0.847 (r) | SLOW    |          |
+clk       | S_AXI_BREADY      |     0.664 (r) | SLOW    |     0.843 (r) | SLOW    |          |
+clk       | S_AXI_RREADY      |     1.112 (r) | SLOW    |     0.447 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[0]    |     0.002 (r) | FAST    |     0.619 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[1]    |     0.132 (r) | FAST    |     0.529 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[2]    |     0.021 (r) | FAST    |     0.593 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[3]    |     0.033 (r) | FAST    |     0.600 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[4]    |    -0.019 (r) | FAST    |     0.611 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[5]    |     0.057 (r) | FAST    |     0.606 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[6]    |     0.069 (r) | FAST    |     0.586 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[7]    |     0.075 (r) | FAST    |     0.627 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[8]    |     0.067 (r) | FAST    |     0.638 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[9]    |     0.183 (r) | FAST    |     0.529 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[10]   |     0.026 (r) | FAST    |     0.817 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[11]   |     0.133 (r) | FAST    |     0.628 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[12]   |     0.083 (r) | FAST    |     0.604 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[13]   |     0.224 (r) | FAST    |     0.626 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[14]   |     0.145 (r) | FAST    |     0.608 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[15]   |     0.028 (r) | FAST    |     0.665 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[16]   |     0.117 (r) | FAST    |     0.633 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[17]   |     0.078 (r) | FAST    |     0.606 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[18]   |     0.178 (r) | FAST    |     0.632 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[19]   |     0.184 (r) | FAST    |     0.544 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[20]   |     0.137 (r) | FAST    |     0.848 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[21]   |     0.071 (r) | FAST    |     0.856 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[22]   |     0.090 (r) | FAST    |     0.588 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[23]   |     0.184 (r) | FAST    |     0.824 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[24]   |     0.034 (r) | FAST    |     0.620 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[25]   |     0.036 (r) | FAST    |     0.600 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[26]   |     0.158 (r) | FAST    |     0.542 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[27]   |     0.045 (r) | FAST    |     0.688 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[28]   |     0.055 (r) | FAST    |     0.856 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[29]   |     0.143 (r) | FAST    |     0.539 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[30]   |     0.237 (r) | FAST    |     0.687 (r) | SLOW    |          |
+clk       | S_AXI_WDATA[31]   |    -0.018 (r) | FAST    |     0.673 (r) | SLOW    |          |
+clk       | S_AXI_WID[0]      |    -0.011 (r) | FAST    |     0.892 (r) | SLOW    |          |
+clk       | S_AXI_WID[1]      |     0.016 (r) | FAST    |     0.818 (r) | SLOW    |          |
+clk       | S_AXI_WID[2]      |     0.014 (r) | FAST    |     0.892 (r) | SLOW    |          |
+clk       | S_AXI_WID[3]      |     0.074 (r) | FAST    |     0.892 (r) | SLOW    |          |
+clk       | S_AXI_WID[4]      |     0.073 (r) | FAST    |     0.818 (r) | SLOW    |          |
+clk       | S_AXI_WID[5]      |     0.025 (r) | FAST    |     0.818 (r) | SLOW    |          |
+clk       | S_AXI_WID[6]      |     0.041 (r) | FAST    |     0.851 (r) | SLOW    |          |
+clk       | S_AXI_WID[7]      |     0.073 (r) | FAST    |     0.853 (r) | SLOW    |          |
+clk       | S_AXI_WID[8]      |     0.056 (r) | FAST    |     0.853 (r) | SLOW    |          |
+clk       | S_AXI_WID[9]      |     0.067 (r) | FAST    |     0.851 (r) | SLOW    |          |
+clk       | S_AXI_WID[10]     |    -0.052 (r) | FAST    |     0.852 (r) | SLOW    |          |
+clk       | S_AXI_WID[11]     |     0.125 (r) | FAST    |     0.853 (r) | SLOW    |          |
+clk       | S_AXI_WLAST       |    -0.014 (r) | FAST    |     0.856 (r) | SLOW    |          |
+clk       | S_AXI_WVALID      |     2.065 (r) | SLOW    |     0.856 (r) | SLOW    |          |
+----------+-------------------+---------------+---------+---------------+---------+----------+
+
+
+Output Ports Clock-to-out
+
+----------+--------------------+----------------+---------+----------------+---------+----------+
+Reference | Output             | Max Clk (Edge) | Process | Min Clk (Edge) | Process | Internal | 
+Clock     | Port               |    to port(ns) | Corner  |    to port(ns) | Corner  | Clock    | 
+----------+--------------------+----------------+---------+----------------+---------+----------+
+clk       | M_AXI_0_ARADDR[0]  |      3.906 (r) | SLOW    |      1.011 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[1]  |      4.096 (r) | SLOW    |      1.165 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[2]  |      4.456 (r) | SLOW    |      1.012 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[3]  |      4.436 (r) | SLOW    |      1.049 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[4]  |      4.201 (r) | SLOW    |      0.984 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[5]  |      4.355 (r) | SLOW    |      1.077 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[6]  |      4.100 (r) | SLOW    |      1.127 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[7]  |      3.869 (r) | SLOW    |      1.077 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[8]  |      3.712 (r) | SLOW    |      1.091 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[9]  |      4.561 (r) | SLOW    |      1.057 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[10] |      4.191 (r) | SLOW    |      1.060 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[11] |      4.477 (r) | SLOW    |      1.105 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[12] |      4.404 (r) | SLOW    |      1.037 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[13] |      4.353 (r) | SLOW    |      1.070 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[14] |      3.993 (r) | SLOW    |      1.049 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[15] |      3.869 (r) | SLOW    |      0.971 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[16] |      3.793 (r) | SLOW    |      1.040 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[17] |      3.934 (r) | SLOW    |      0.971 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[18] |      3.812 (r) | SLOW    |      1.040 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[19] |      4.098 (r) | SLOW    |      1.027 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[20] |      3.867 (r) | SLOW    |      1.026 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[21] |      3.709 (r) | SLOW    |      1.007 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[22] |      4.286 (r) | SLOW    |      1.102 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[23] |      4.103 (r) | SLOW    |      1.055 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[24] |      4.619 (r) | SLOW    |      1.009 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[25] |      3.932 (r) | SLOW    |      0.998 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[26] |      4.243 (r) | SLOW    |      1.071 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[27] |      4.166 (r) | SLOW    |      0.982 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[28] |      4.166 (r) | SLOW    |      1.158 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[29] |      4.436 (r) | SLOW    |      1.064 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[30] |      4.283 (r) | SLOW    |      1.008 (r) | FAST    |          |
+clk       | M_AXI_0_ARADDR[31] |      4.251 (r) | SLOW    |      1.043 (r) | FAST    |          |
+clk       | M_AXI_0_ARBURST[0] |      2.652 (r) | SLOW    |      1.088 (r) | FAST    |          |
+clk       | M_AXI_0_ARCACHE[0] |      2.655 (r) | SLOW    |      1.038 (r) | FAST    |          |
+clk       | M_AXI_0_ARCACHE[2] |      2.623 (r) | SLOW    |      1.073 (r) | FAST    |          |
+clk       | M_AXI_0_ARID[1]    |      2.696 (r) | SLOW    |      1.112 (r) | FAST    |          |
+clk       | M_AXI_0_ARLEN[0]   |      2.776 (r) | SLOW    |      1.088 (r) | FAST    |          |
+clk       | M_AXI_0_ARLEN[1]   |      2.756 (r) | SLOW    |      1.019 (r) | FAST    |          |
+clk       | M_AXI_0_ARLEN[2]   |      2.800 (r) | SLOW    |      1.100 (r) | FAST    |          |
+clk       | M_AXI_0_ARLEN[3]   |      4.573 (r) | SLOW    |      1.075 (r) | FAST    |          |
+clk       | M_AXI_0_ARLOCK[0]  |      2.702 (r) | SLOW    |      1.039 (r) | FAST    |          |
+clk       | M_AXI_0_ARPROT[1]  |      2.705 (r) | SLOW    |      1.027 (r) | FAST    |          |
+clk       | M_AXI_0_ARSIZE[0]  |      5.233 (r) | SLOW    |      1.090 (r) | FAST    |          |
+clk       | M_AXI_0_ARSIZE[1]  |      3.204 (r) | SLOW    |      1.128 (r) | FAST    |          |
+clk       | M_AXI_0_ARSIZE[2]  |      2.891 (r) | SLOW    |      1.042 (r) | FAST    |          |
+clk       | M_AXI_0_ARVALID    |      2.721 (r) | SLOW    |      1.126 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[0]  |      4.567 (r) | SLOW    |      1.032 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[1]  |      4.133 (r) | SLOW    |      1.131 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[2]  |      4.709 (r) | SLOW    |      1.092 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[3]  |      4.574 (r) | SLOW    |      1.062 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[4]  |      4.126 (r) | SLOW    |      0.982 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[5]  |      4.109 (r) | SLOW    |      1.067 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[6]  |      3.715 (r) | SLOW    |      1.045 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[7]  |      4.740 (r) | SLOW    |      1.096 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[8]  |      4.260 (r) | SLOW    |      1.030 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[9]  |      4.332 (r) | SLOW    |      0.982 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[10] |      5.434 (r) | SLOW    |      1.100 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[11] |      5.181 (r) | SLOW    |      0.985 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[12] |      4.785 (r) | SLOW    |      1.111 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[13] |      4.855 (r) | SLOW    |      1.042 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[14] |      5.548 (r) | SLOW    |      1.018 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[15] |      5.195 (r) | SLOW    |      1.057 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[16] |      5.395 (r) | SLOW    |      1.042 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[17] |      4.983 (r) | SLOW    |      1.014 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[18] |      5.128 (r) | SLOW    |      1.001 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[19] |      5.826 (r) | SLOW    |      0.979 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[20] |      5.444 (r) | SLOW    |      0.963 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[21] |      5.126 (r) | SLOW    |      1.040 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[22] |      4.986 (r) | SLOW    |      1.113 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[23] |      4.871 (r) | SLOW    |      1.035 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[24] |      4.128 (r) | SLOW    |      1.080 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[25] |      4.646 (r) | SLOW    |      1.091 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[26] |      4.854 (r) | SLOW    |      1.081 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[27] |      5.260 (r) | SLOW    |      1.086 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[28] |      4.737 (r) | SLOW    |      1.053 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[29] |      4.783 (r) | SLOW    |      1.082 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[30] |      4.853 (r) | SLOW    |      0.988 (r) | FAST    |          |
+clk       | M_AXI_0_AWADDR[31] |      5.377 (r) | SLOW    |      1.092 (r) | FAST    |          |
+clk       | M_AXI_0_AWBURST[0] |      4.720 (r) | SLOW    |      1.041 (r) | FAST    |          |
+clk       | M_AXI_0_AWBURST[1] |      4.342 (r) | SLOW    |      1.075 (r) | FAST    |          |
+clk       | M_AXI_0_AWCACHE[0] |      4.223 (r) | SLOW    |      1.015 (r) | FAST    |          |
+clk       | M_AXI_0_AWCACHE[1] |      4.816 (r) | SLOW    |      1.040 (r) | FAST    |          |
+clk       | M_AXI_0_AWCACHE[2] |      4.074 (r) | SLOW    |      0.988 (r) | FAST    |          |
+clk       | M_AXI_0_AWCACHE[3] |      4.225 (r) | SLOW    |      1.125 (r) | FAST    |          |
+clk       | M_AXI_0_AWID[0]    |      4.245 (r) | SLOW    |      1.025 (r) | FAST    |          |
+clk       | M_AXI_0_AWID[1]    |      4.604 (r) | SLOW    |      1.102 (r) | FAST    |          |
+clk       | M_AXI_0_AWID[2]    |      4.095 (r) | SLOW    |      1.031 (r) | FAST    |          |
+clk       | M_AXI_0_AWLEN[0]   |      4.818 (r) | SLOW    |      1.027 (r) | FAST    |          |
+clk       | M_AXI_0_AWLEN[1]   |      4.230 (r) | SLOW    |      1.165 (r) | FAST    |          |
+clk       | M_AXI_0_AWLEN[2]   |      4.814 (r) | SLOW    |      1.083 (r) | FAST    |          |
+clk       | M_AXI_0_AWLEN[3]   |      4.599 (r) | SLOW    |      1.047 (r) | FAST    |          |
+clk       | M_AXI_0_AWLOCK[0]  |      4.158 (r) | SLOW    |      1.114 (r) | FAST    |          |
+clk       | M_AXI_0_AWLOCK[1]  |      3.945 (r) | SLOW    |      1.055 (r) | FAST    |          |
+clk       | M_AXI_0_AWPROT[0]  |      3.814 (r) | SLOW    |      1.137 (r) | FAST    |          |
+clk       | M_AXI_0_AWPROT[1]  |      4.252 (r) | SLOW    |      1.071 (r) | FAST    |          |
+clk       | M_AXI_0_AWPROT[2]  |      4.140 (r) | SLOW    |      1.081 (r) | FAST    |          |
+clk       | M_AXI_0_AWSIZE[0]  |      4.862 (r) | SLOW    |      1.055 (r) | FAST    |          |
+clk       | M_AXI_0_AWSIZE[1]  |      4.785 (r) | SLOW    |      1.105 (r) | FAST    |          |
+clk       | M_AXI_0_AWSIZE[2]  |      2.570 (r) | SLOW    |      1.164 (r) | FAST    |          |
+clk       | M_AXI_0_AWVALID    |      4.594 (r) | SLOW    |      1.136 (r) | FAST    |          |
+clk       | M_AXI_0_BREADY     |      2.346 (r) | SLOW    |      1.058 (r) | FAST    |          |
+clk       | M_AXI_0_RREADY     |      3.697 (r) | SLOW    |      1.875 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[0]   |      4.908 (r) | SLOW    |      1.019 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[1]   |      5.009 (r) | SLOW    |      1.160 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[2]   |      5.285 (r) | SLOW    |      1.168 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[3]   |      5.454 (r) | SLOW    |      1.093 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[4]   |      5.644 (r) | SLOW    |      1.122 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[5]   |      5.412 (r) | SLOW    |      1.042 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[6]   |      5.169 (r) | SLOW    |      1.120 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[7]   |      5.332 (r) | SLOW    |      1.180 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[8]   |      4.848 (r) | SLOW    |      1.146 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[9]   |      6.424 (r) | SLOW    |      1.128 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[10]  |      5.072 (r) | SLOW    |      1.089 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[11]  |      6.381 (r) | SLOW    |      1.147 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[12]  |      5.434 (r) | SLOW    |      1.162 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[13]  |      4.818 (r) | SLOW    |      0.989 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[14]  |      6.372 (r) | SLOW    |      1.176 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[15]  |      5.991 (r) | SLOW    |      1.107 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[16]  |      4.403 (r) | SLOW    |      1.187 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[17]  |      4.238 (r) | SLOW    |      1.272 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[18]  |      4.710 (r) | SLOW    |      1.029 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[19]  |      4.642 (r) | SLOW    |      1.115 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[20]  |      4.607 (r) | SLOW    |      1.117 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[21]  |      4.820 (r) | SLOW    |      1.056 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[22]  |      5.049 (r) | SLOW    |      1.035 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[23]  |      4.780 (r) | SLOW    |      1.149 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[24]  |      4.679 (r) | SLOW    |      1.052 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[25]  |      5.390 (r) | SLOW    |      1.025 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[26]  |      5.123 (r) | SLOW    |      1.081 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[27]  |      5.507 (r) | SLOW    |      1.160 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[28]  |      5.170 (r) | SLOW    |      1.185 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[29]  |      4.658 (r) | SLOW    |      1.068 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[30]  |      5.066 (r) | SLOW    |      1.044 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[31]  |      4.821 (r) | SLOW    |      1.075 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[32]  |      4.796 (r) | SLOW    |      1.174 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[33]  |      5.170 (r) | SLOW    |      1.045 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[34]  |      4.874 (r) | SLOW    |      1.172 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[35]  |      5.255 (r) | SLOW    |      1.103 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[36]  |      4.916 (r) | SLOW    |      1.096 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[37]  |      4.713 (r) | SLOW    |      1.136 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[38]  |      4.632 (r) | SLOW    |      1.116 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[39]  |      5.424 (r) | SLOW    |      1.182 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[40]  |      5.316 (r) | SLOW    |      1.101 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[41]  |      5.501 (r) | SLOW    |      1.048 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[42]  |      5.312 (r) | SLOW    |      1.053 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[43]  |      5.604 (r) | SLOW    |      1.129 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[44]  |      5.990 (r) | SLOW    |      1.124 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[45]  |      5.068 (r) | SLOW    |      1.179 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[46]  |      5.196 (r) | SLOW    |      1.132 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[47]  |      5.373 (r) | SLOW    |      1.085 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[48]  |      4.963 (r) | SLOW    |      1.061 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[49]  |      4.111 (r) | SLOW    |      0.993 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[50]  |      4.444 (r) | SLOW    |      1.077 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[51]  |      6.094 (r) | SLOW    |      1.106 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[52]  |      4.454 (r) | SLOW    |      1.148 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[53]  |      4.614 (r) | SLOW    |      1.069 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[54]  |      4.658 (r) | SLOW    |      1.108 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[55]  |      4.438 (r) | SLOW    |      1.059 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[56]  |      4.124 (r) | SLOW    |      0.997 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[57]  |      4.502 (r) | SLOW    |      1.063 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[58]  |      4.387 (r) | SLOW    |      1.004 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[59]  |      4.536 (r) | SLOW    |      1.058 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[60]  |      4.485 (r) | SLOW    |      1.044 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[61]  |      4.729 (r) | SLOW    |      1.067 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[62]  |      5.060 (r) | SLOW    |      1.073 (r) | FAST    |          |
+clk       | M_AXI_0_WDATA[63]  |      4.721 (r) | SLOW    |      1.090 (r) | FAST    |          |
+clk       | M_AXI_0_WID[0]     |      6.126 (r) | SLOW    |      0.979 (r) | FAST    |          |
+clk       | M_AXI_0_WID[1]     |      5.639 (r) | SLOW    |      1.077 (r) | FAST    |          |
+clk       | M_AXI_0_WID[2]     |      6.031 (r) | SLOW    |      1.134 (r) | FAST    |          |
+clk       | M_AXI_0_WLAST      |      6.162 (r) | SLOW    |      1.335 (r) | FAST    |          |
+clk       | M_AXI_0_WSTRB[0]   |      6.633 (r) | SLOW    |      1.052 (r) | FAST    |          |
+clk       | M_AXI_0_WSTRB[1]   |      6.160 (r) | SLOW    |      1.170 (r) | FAST    |          |
+clk       | M_AXI_0_WSTRB[2]   |      5.893 (r) | SLOW    |      1.170 (r) | FAST    |          |
+clk       | M_AXI_0_WSTRB[3]   |      6.475 (r) | SLOW    |      1.130 (r) | FAST    |          |
+clk       | M_AXI_0_WSTRB[4]   |      6.769 (r) | SLOW    |      1.440 (r) | FAST    |          |
+clk       | M_AXI_0_WSTRB[5]   |      5.977 (r) | SLOW    |      1.357 (r) | FAST    |          |
+clk       | M_AXI_0_WSTRB[6]   |      5.997 (r) | SLOW    |      1.097 (r) | FAST    |          |
+clk       | M_AXI_0_WSTRB[7]   |      6.190 (r) | SLOW    |      1.202 (r) | FAST    |          |
+clk       | M_AXI_0_WVALID     |      5.885 (r) | SLOW    |      1.194 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[0]  |      4.815 (r) | SLOW    |      1.031 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[1]  |      4.903 (r) | SLOW    |      1.060 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[2]  |      4.345 (r) | SLOW    |      1.022 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[3]  |      3.972 (r) | SLOW    |      1.137 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[4]  |      4.400 (r) | SLOW    |      0.953 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[5]  |      4.355 (r) | SLOW    |      1.151 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[6]  |      4.331 (r) | SLOW    |      1.094 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[7]  |      4.359 (r) | SLOW    |      1.105 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[8]  |      4.315 (r) | SLOW    |      1.060 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[9]  |      4.608 (r) | SLOW    |      1.043 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[10] |      4.627 (r) | SLOW    |      1.023 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[11] |      4.344 (r) | SLOW    |      1.057 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[12] |      4.626 (r) | SLOW    |      1.074 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[13] |      4.226 (r) | SLOW    |      1.010 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[14] |      4.051 (r) | SLOW    |      1.088 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[15] |      4.297 (r) | SLOW    |      1.131 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[16] |      3.870 (r) | SLOW    |      1.030 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[17] |      4.811 (r) | SLOW    |      1.027 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[18] |      4.166 (r) | SLOW    |      1.053 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[19] |      3.889 (r) | SLOW    |      1.105 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[20] |      4.427 (r) | SLOW    |      1.074 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[21] |      4.097 (r) | SLOW    |      1.061 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[22] |      3.925 (r) | SLOW    |      1.013 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[23] |      4.325 (r) | SLOW    |      1.014 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[24] |      4.330 (r) | SLOW    |      1.015 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[25] |      3.988 (r) | SLOW    |      1.050 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[26] |      3.911 (r) | SLOW    |      1.027 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[27] |      4.528 (r) | SLOW    |      1.003 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[28] |      4.134 (r) | SLOW    |      0.985 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[29] |      4.029 (r) | SLOW    |      1.093 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[30] |      4.391 (r) | SLOW    |      1.094 (r) | FAST    |          |
+clk       | M_AXI_1_ARADDR[31] |      4.399 (r) | SLOW    |      1.024 (r) | FAST    |          |
+clk       | M_AXI_1_ARBURST[0] |      3.182 (r) | SLOW    |      0.993 (r) | FAST    |          |
+clk       | M_AXI_1_ARCACHE[0] |      3.009 (r) | SLOW    |      1.025 (r) | FAST    |          |
+clk       | M_AXI_1_ARCACHE[2] |      2.784 (r) | SLOW    |      1.129 (r) | FAST    |          |
+clk       | M_AXI_1_ARID[1]    |      3.498 (r) | SLOW    |      1.033 (r) | FAST    |          |
+clk       | M_AXI_1_ARLEN[0]   |      2.999 (r) | SLOW    |      1.040 (r) | FAST    |          |
+clk       | M_AXI_1_ARLEN[1]   |      2.885 (r) | SLOW    |      1.034 (r) | FAST    |          |
+clk       | M_AXI_1_ARLEN[2]   |      3.937 (r) | SLOW    |      1.075 (r) | FAST    |          |
+clk       | M_AXI_1_ARLEN[3]   |      5.069 (r) | SLOW    |      1.098 (r) | FAST    |          |
+clk       | M_AXI_1_ARLOCK[0]  |      3.062 (r) | SLOW    |      1.049 (r) | FAST    |          |
+clk       | M_AXI_1_ARPROT[1]  |      3.045 (r) | SLOW    |      1.016 (r) | FAST    |          |
+clk       | M_AXI_1_ARSIZE[0]  |      4.809 (r) | SLOW    |      1.284 (r) | FAST    |          |
+clk       | M_AXI_1_ARSIZE[1]  |      3.587 (r) | SLOW    |      1.026 (r) | FAST    |          |
+clk       | M_AXI_1_ARSIZE[2]  |      2.597 (r) | SLOW    |      1.095 (r) | FAST    |          |
+clk       | M_AXI_1_ARVALID    |      2.975 (r) | SLOW    |      1.034 (r) | FAST    |          |
+clk       | M_AXI_1_RREADY     |      3.170 (r) | SLOW    |      1.561 (r) | FAST    |          |
+clk       | S_AXI_ARREADY      |      2.748 (r) | SLOW    |      1.306 (r) | FAST    |          |
+clk       | S_AXI_AWREADY      |      2.900 (r) | SLOW    |      1.370 (r) | FAST    |          |
+clk       | S_AXI_BID[0]       |      1.990 (r) | SLOW    |      0.854 (r) | FAST    |          |
+clk       | S_AXI_BID[1]       |      2.023 (r) | SLOW    |      0.874 (r) | FAST    |          |
+clk       | S_AXI_BID[2]       |      2.021 (r) | SLOW    |      0.873 (r) | FAST    |          |
+clk       | S_AXI_BID[3]       |      1.985 (r) | SLOW    |      0.855 (r) | FAST    |          |
+clk       | S_AXI_BID[4]       |      2.021 (r) | SLOW    |      0.873 (r) | FAST    |          |
+clk       | S_AXI_BID[5]       |      2.023 (r) | SLOW    |      0.874 (r) | FAST    |          |
+clk       | S_AXI_BID[6]       |      1.990 (r) | SLOW    |      0.854 (r) | FAST    |          |
+clk       | S_AXI_BID[7]       |      2.018 (r) | SLOW    |      0.871 (r) | FAST    |          |
+clk       | S_AXI_BID[8]       |      1.990 (r) | SLOW    |      0.854 (r) | FAST    |          |
+clk       | S_AXI_BID[9]       |      2.018 (r) | SLOW    |      0.871 (r) | FAST    |          |
+clk       | S_AXI_BID[10]      |      1.990 (r) | SLOW    |      0.854 (r) | FAST    |          |
+clk       | S_AXI_BID[11]      |      2.021 (r) | SLOW    |      0.873 (r) | FAST    |          |
+clk       | S_AXI_BRESP[1]     |      1.985 (r) | SLOW    |      0.855 (r) | FAST    |          |
+clk       | S_AXI_BVALID       |      2.638 (r) | SLOW    |      1.130 (r) | FAST    |          |
+clk       | S_AXI_RDATA[0]     |      5.277 (r) | SLOW    |      1.072 (r) | FAST    |          |
+clk       | S_AXI_RDATA[1]     |      4.997 (r) | SLOW    |      1.043 (r) | FAST    |          |
+clk       | S_AXI_RDATA[2]     |      4.454 (r) | SLOW    |      1.064 (r) | FAST    |          |
+clk       | S_AXI_RDATA[3]     |      4.975 (r) | SLOW    |      1.056 (r) | FAST    |          |
+clk       | S_AXI_RDATA[4]     |      4.951 (r) | SLOW    |      1.009 (r) | FAST    |          |
+clk       | S_AXI_RDATA[5]     |      4.374 (r) | SLOW    |      1.057 (r) | FAST    |          |
+clk       | S_AXI_RDATA[6]     |      5.324 (r) | SLOW    |      1.095 (r) | FAST    |          |
+clk       | S_AXI_RDATA[7]     |      5.352 (r) | SLOW    |      1.022 (r) | FAST    |          |
+clk       | S_AXI_RDATA[8]     |      5.441 (r) | SLOW    |      0.992 (r) | FAST    |          |
+clk       | S_AXI_RDATA[9]     |      4.835 (r) | SLOW    |      1.030 (r) | FAST    |          |
+clk       | S_AXI_RDATA[10]    |      5.239 (r) | SLOW    |      1.052 (r) | FAST    |          |
+clk       | S_AXI_RDATA[11]    |      4.709 (r) | SLOW    |      0.989 (r) | FAST    |          |
+clk       | S_AXI_RDATA[12]    |      4.941 (r) | SLOW    |      1.033 (r) | FAST    |          |
+clk       | S_AXI_RDATA[13]    |      5.100 (r) | SLOW    |      1.033 (r) | FAST    |          |
+clk       | S_AXI_RDATA[14]    |      4.941 (r) | SLOW    |      1.020 (r) | FAST    |          |
+clk       | S_AXI_RDATA[15]    |      5.323 (r) | SLOW    |      1.068 (r) | FAST    |          |
+clk       | S_AXI_RDATA[16]    |      5.276 (r) | SLOW    |      1.028 (r) | FAST    |          |
+clk       | S_AXI_RDATA[17]    |      4.142 (r) | SLOW    |      1.125 (r) | FAST    |          |
+clk       | S_AXI_RDATA[18]    |      4.852 (r) | SLOW    |      0.992 (r) | FAST    |          |
+clk       | S_AXI_RDATA[19]    |      4.851 (r) | SLOW    |      1.121 (r) | FAST    |          |
+clk       | S_AXI_RDATA[20]    |      4.450 (r) | SLOW    |      1.005 (r) | FAST    |          |
+clk       | S_AXI_RDATA[21]    |      4.946 (r) | SLOW    |      1.011 (r) | FAST    |          |
+clk       | S_AXI_RDATA[22]    |      4.407 (r) | SLOW    |      1.037 (r) | FAST    |          |
+clk       | S_AXI_RDATA[23]    |      5.100 (r) | SLOW    |      1.113 (r) | FAST    |          |
+clk       | S_AXI_RDATA[24]    |      5.402 (r) | SLOW    |      1.029 (r) | FAST    |          |
+clk       | S_AXI_RDATA[25]    |      5.313 (r) | SLOW    |      1.027 (r) | FAST    |          |
+clk       | S_AXI_RDATA[26]    |      4.349 (r) | SLOW    |      1.080 (r) | FAST    |          |
+clk       | S_AXI_RDATA[27]    |      5.394 (r) | SLOW    |      0.976 (r) | FAST    |          |
+clk       | S_AXI_RDATA[28]    |      5.032 (r) | SLOW    |      0.969 (r) | FAST    |          |
+clk       | S_AXI_RDATA[29]    |      4.475 (r) | SLOW    |      1.027 (r) | FAST    |          |
+clk       | S_AXI_RDATA[30]    |      5.408 (r) | SLOW    |      1.060 (r) | FAST    |          |
+clk       | S_AXI_RDATA[31]    |      5.023 (r) | SLOW    |      1.100 (r) | FAST    |          |
+clk       | S_AXI_RID[0]       |      4.042 (r) | SLOW    |      1.059 (r) | FAST    |          |
+clk       | S_AXI_RID[1]       |      4.331 (r) | SLOW    |      1.030 (r) | FAST    |          |
+clk       | S_AXI_RID[2]       |      4.539 (r) | SLOW    |      0.978 (r) | FAST    |          |
+clk       | S_AXI_RID[3]       |      4.833 (r) | SLOW    |      1.016 (r) | FAST    |          |
+clk       | S_AXI_RID[4]       |      4.640 (r) | SLOW    |      0.980 (r) | FAST    |          |
+clk       | S_AXI_RID[5]       |      4.572 (r) | SLOW    |      1.055 (r) | FAST    |          |
+clk       | S_AXI_RID[6]       |      4.018 (r) | SLOW    |      1.039 (r) | FAST    |          |
+clk       | S_AXI_RID[7]       |      3.972 (r) | SLOW    |      1.069 (r) | FAST    |          |
+clk       | S_AXI_RID[8]       |      3.882 (r) | SLOW    |      1.068 (r) | FAST    |          |
+clk       | S_AXI_RID[9]       |      4.856 (r) | SLOW    |      1.007 (r) | FAST    |          |
+clk       | S_AXI_RID[10]      |      4.326 (r) | SLOW    |      0.990 (r) | FAST    |          |
+clk       | S_AXI_RID[11]      |      4.050 (r) | SLOW    |      1.059 (r) | FAST    |          |
+clk       | S_AXI_RLAST        |      3.368 (r) | SLOW    |      1.085 (r) | FAST    |          |
+clk       | S_AXI_RRESP[0]     |      2.558 (r) | SLOW    |      1.147 (r) | FAST    |          |
+clk       | S_AXI_RRESP[1]     |      2.581 (r) | SLOW    |      1.073 (r) | FAST    |          |
+clk       | S_AXI_RVALID       |      3.259 (r) | SLOW    |      1.087 (r) | FAST    |          |
+clk       | S_AXI_WREADY       |      2.950 (r) | SLOW    |      1.402 (r) | FAST    |          |
+clk       | interrupt          |      2.029 (r) | SLOW    |      0.879 (r) | FAST    |          |
+----------+--------------------+----------------+---------+----------------+---------+----------+
+
+
+Setup between Clocks
+
+-------+-------------+---------------+---------+---------------+---------+---------------+---------+---------------+---------+
+Source | Destination |  Src:Rise     | Process |  Src:Rise     | Process |  Src:Fall     | Process |  Src:Fall     | Process | 
+Clock  | Clock       | Dest:Rise(ns) | Corner  | Dest:Fall(ns) | Corner  | Dest:Rise(ns) | Corner  | Dest:Fall(ns) | Corner  | 
+-------+-------------+---------------+---------+---------------+---------+---------------+---------+---------------+---------+
+clk    | clk         |         7.925 | SLOW    |               |         |               |         |               |         | 
+-------+-------------+---------------+---------+---------------+---------+---------------+---------+---------------+---------+
+
+
+Setup / Hold times for input bus
+Clocked by: clk
+Worst Case Data Window: 1.605 ns
+Ideal Clock Offset to Actual Clock: 0.385 ns
+-------------------+------------+---------+-------------+---------+-----------+-----------+---------------+
+                   |            | Process |             | Process | Setup     |  Hold     | Source Offset | 
+Source             |  Setup(ns) | Corner  |    Hold(ns) | Corner  | Slack(ns) | Slack(ns) | to Center(ns) | 
+-------------------+------------+---------+-------------+---------+-----------+-----------+---------------+
+M_AXI_0_RDATA[0]   |  0.137 (r) | FAST    |   1.188 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[1]   |  0.371 (r) | FAST    |   1.065 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[2]   |  0.203 (r) | FAST    |   1.093 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[3]   |  0.262 (r) | FAST    |   1.073 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[4]   |  0.178 (r) | FAST    |   1.056 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[5]   |  0.214 (r) | FAST    |   1.068 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[6]   |  0.314 (r) | FAST    |   1.072 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[7]   |  0.260 (r) | FAST    |   1.062 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[8]   |  0.275 (r) | FAST    |   1.086 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[9]   |  0.059 (r) | FAST    |   1.079 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[10]  | -0.030 (r) | FAST    |   1.069 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[11]  | -0.039 (r) | FAST    |   1.087 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[12]  | -0.046 (r) | FAST    |   1.068 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[13]  | -0.059 (r) | FAST    |   1.069 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[14]  | -0.044 (r) | FAST    |   1.149 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[15]  |  0.153 (r) | FAST    |   1.154 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[16]  |  0.248 (r) | FAST    |   1.156 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[17]  |  0.128 (r) | FAST    |   1.078 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[18]  | -0.110 (r) | FAST    |   1.156 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[19]  |  0.154 (r) | FAST    |   1.154 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[20]  |  0.023 (r) | FAST    |   1.149 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[21]  |  0.194 (r) | FAST    |   1.154 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[22]  |  0.316 (r) | FAST    |   1.055 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[23]  |  0.201 (r) | FAST    |   1.154 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[24]  |  0.127 (r) | FAST    |   1.158 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[25]  |  0.196 (r) | FAST    |   1.157 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[26]  |  0.136 (r) | FAST    |   1.158 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[27]  | -0.000 (r) | FAST    |   1.071 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[28]  | -0.028 (r) | FAST    |   1.064 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[29]  | -0.027 (r) | FAST    |   1.064 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[30]  |  0.304 (r) | FAST    |   1.017 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[31]  |  0.180 (r) | FAST    |   1.010 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[32]  |  0.086 (r) | FAST    |   1.188 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[33]  |  0.076 (r) | FAST    |   1.157 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[34]  |  0.205 (r) | FAST    |   1.082 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[35]  |  0.131 (r) | FAST    |   1.074 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[36]  | -0.046 (r) | FAST    |   1.072 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[37]  |  0.138 (r) | FAST    |   1.019 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[38]  | -0.088 (r) | FAST    |   1.078 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[39]  |  0.202 (r) | FAST    |   1.157 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[40]  |  0.184 (r) | FAST    |   1.069 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[41]  |  0.243 (r) | FAST    |   1.072 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[42]  |  0.010 (r) | FAST    |   1.078 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[43]  |  0.008 (r) | FAST    |   1.067 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[44]  |  0.042 (r) | FAST    |   1.097 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[45]  |  0.241 (r) | FAST    |   1.070 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[46]  |  0.155 (r) | FAST    |   1.079 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[47]  |  0.210 (r) | FAST    |   1.157 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[48]  |  0.070 (r) | FAST    |   1.115 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[49]  |  0.120 (r) | FAST    |   1.063 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[50]  |  0.142 (r) | FAST    |   1.081 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[51]  |  0.177 (r) | FAST    |   1.065 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[52]  |  0.417 (r) | FAST    |   1.065 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[53]  |  0.139 (r) | FAST    |   1.059 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[54]  |  0.055 (r) | FAST    |   1.081 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[55]  |  0.232 (r) | FAST    |   1.071 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[56]  |  0.120 (r) | FAST    |   1.082 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[57]  |  0.131 (r) | FAST    |   1.088 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[58]  |  0.144 (r) | FAST    |   1.116 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[59]  |  0.113 (r) | FAST    |   1.061 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[60]  |  0.237 (r) | FAST    |   1.070 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[61]  |  0.068 (r) | FAST    |   1.065 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[62]  |  0.235 (r) | FAST    |   1.068 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_0_RDATA[63]  |  0.120 (r) | FAST    |   1.060 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+-------------+---------+-----------+-----------+---------------+
+Worst Case Summary |  0.417 (r) | FAST    |   1.188 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+-------------+---------+-----------+-----------+---------------+
+
+
+
+Setup / Hold times for input bus
+Clocked by: clk
+Worst Case Data Window: 1.562 ns
+Ideal Clock Offset to Actual Clock: 0.413 ns
+-------------------+------------+---------+-------------+---------+-----------+-----------+---------------+
+                   |            | Process |             | Process | Setup     |  Hold     | Source Offset | 
+Source             |  Setup(ns) | Corner  |    Hold(ns) | Corner  | Slack(ns) | Slack(ns) | to Center(ns) | 
+-------------------+------------+---------+-------------+---------+-----------+-----------+---------------+
+M_AXI_1_RDATA[0]   | -0.093 (r) | FAST    |   1.070 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[1]   | -0.051 (r) | FAST    |   1.079 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[2]   |  0.036 (r) | FAST    |   1.086 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[3]   | -0.009 (r) | FAST    |   1.083 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[4]   | -0.058 (r) | FAST    |   1.086 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[5]   |  0.009 (r) | FAST    |   1.085 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[6]   | -0.002 (r) | FAST    |   1.085 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[7]   | -0.050 (r) | FAST    |   1.158 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[8]   | -0.004 (r) | FAST    |   1.082 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[9]   | -0.054 (r) | FAST    |   1.087 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[10]  | -0.086 (r) | FAST    |   1.086 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[11]  |  0.059 (r) | FAST    |   1.070 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[12]  |  0.103 (r) | FAST    |   1.162 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[13]  |  0.199 (r) | FAST    |   1.162 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[14]  |  0.025 (r) | FAST    |   1.162 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[15]  |  0.049 (r) | FAST    |   1.160 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[16]  | -0.109 (r) | FAST    |   1.076 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[17]  |  0.149 (r) | FAST    |   1.083 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[18]  | -0.014 (r) | FAST    |   1.158 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[19]  |  0.115 (r) | FAST    |   1.077 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[20]  | -0.024 (r) | FAST    |   1.065 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[21]  |  0.085 (r) | FAST    |   1.158 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[22]  |  0.071 (r) | FAST    |   1.074 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[23]  | -0.090 (r) | FAST    |   1.158 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[24]  | -0.026 (r) | FAST    |   1.077 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[25]  | -0.008 (r) | FAST    |   1.160 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[26]  | -0.048 (r) | FAST    |   1.079 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[27]  |  0.091 (r) | FAST    |   1.080 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[28]  | -0.047 (r) | FAST    |   1.069 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[29]  |  0.197 (r) | FAST    |   1.162 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[30]  |  0.042 (r) | FAST    |   1.157 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[31]  |  0.071 (r) | FAST    |   1.074 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[32]  | -0.105 (r) | FAST    |   1.082 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[33]  | -0.109 (r) | FAST    |   1.074 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[34]  | -0.087 (r) | FAST    |   1.160 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[35]  | -0.047 (r) | FAST    |   1.067 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[36]  |  0.076 (r) | FAST    |   1.074 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[37]  |  0.107 (r) | FAST    |   1.069 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[38]  | -0.095 (r) | FAST    |   1.063 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[39]  | -0.005 (r) | FAST    |   1.163 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[40]  |  0.002 (r) | FAST    |   1.070 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[41]  |  0.063 (r) | FAST    |   1.160 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[42]  | -0.093 (r) | FAST    |   1.073 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[43]  | -0.097 (r) | FAST    |   1.117 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[44]  | -0.045 (r) | FAST    |   1.068 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[45]  | -0.098 (r) | FAST    |   1.085 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[46]  | -0.113 (r) | FAST    |   1.121 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[47]  |  0.031 (r) | FAST    |   1.082 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[48]  | -0.011 (r) | FAST    |   1.071 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[49]  | -0.058 (r) | FAST    |   1.074 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[50]  | -0.095 (r) | FAST    |   1.076 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[51]  |  0.108 (r) | FAST    |   1.067 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[52]  | -0.010 (r) | FAST    |   1.076 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[53]  |  0.002 (r) | FAST    |   1.079 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[54]  |  0.113 (r) | FAST    |   1.074 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[55]  | -0.064 (r) | FAST    |   1.081 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[56]  |  0.004 (r) | FAST    |   1.064 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[57]  |  0.054 (r) | FAST    |   1.076 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[58]  | -0.104 (r) | FAST    |   1.076 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[59]  | -0.116 (r) | FAST    |   1.071 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[60]  |  0.156 (r) | FAST    |   1.194 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[61]  | -0.106 (r) | FAST    |   1.071 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[62]  |  0.104 (r) | FAST    |   1.076 (r) | SLOW    |       inf |       inf |             - |
+M_AXI_1_RDATA[63]  |  0.368 (r) | FAST    |   1.081 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+-------------+---------+-----------+-----------+---------------+
+Worst Case Summary |  0.368 (r) | FAST    |   1.194 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+-------------+---------+-----------+-----------+---------------+
+
+
+
+Setup / Hold times for input bus
+Clocked by: clk
+Worst Case Data Window: 0.941 ns
+Ideal Clock Offset to Actual Clock: 0.408 ns
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+                   |            | Process |            | Process | Setup     |  Hold     | Source Offset | 
+Source             |  Setup(ns) | Corner  |   Hold(ns) | Corner  | Slack(ns) | Slack(ns) | to Center(ns) | 
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+S_AXI_ARADDR[0]    |  0.063 (r) | FAST    |  0.699 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARADDR[1]    |  0.049 (r) | FAST    |  0.878 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARADDR[2]    |  0.032 (r) | FAST    |  0.692 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARADDR[3]    |  0.011 (r) | FAST    |  0.606 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARADDR[4]    | -0.018 (r) | FAST    |  0.866 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARADDR[5]    | -0.016 (r) | FAST    |  0.867 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARADDR[6]    | -0.066 (r) | FAST    |  0.867 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARADDR[7]    |  0.001 (r) | FAST    |  0.867 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARADDR[8]    |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[9]    |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[10]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[11]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[12]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[13]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[14]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[15]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[16]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[17]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[18]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[19]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[20]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[21]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[22]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[23]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[24]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[25]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[26]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[27]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[28]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[29]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[30]   |          - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_ARADDR[31]   |          - | -       |          - | -       |       inf |       inf |             - |
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+Worst Case Summary |  0.063 (r) | FAST    |  0.878 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+
+
+
+Setup / Hold times for input bus
+Clocked by: clk
+Worst Case Data Window: 0.772 ns
+Ideal Clock Offset to Actual Clock: 0.493 ns
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+                   |            | Process |            | Process | Setup     |  Hold     | Source Offset | 
+Source             |  Setup(ns) | Corner  |   Hold(ns) | Corner  | Slack(ns) | Slack(ns) | to Center(ns) | 
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+S_AXI_ARBURST[0]   | -0.268 (r) | FAST    |  0.879 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARBURST[1]   | -0.107 (r) | FAST    |  0.843 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+Worst Case Summary | -0.107 (r) | FAST    |  0.879 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+
+
+
+Setup / Hold times for input bus
+Clocked by: clk
+Worst Case Data Window: 0.696 ns
+Ideal Clock Offset to Actual Clock: 0.605 ns
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+                   |            | Process |            | Process | Setup     |  Hold     | Source Offset | 
+Source             |  Setup(ns) | Corner  |   Hold(ns) | Corner  | Slack(ns) | Slack(ns) | to Center(ns) | 
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+S_AXI_ARID[0]      | -0.262 (r) | FAST    |  0.860 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARID[1]      | -0.276 (r) | FAST    |  0.877 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARID[2]      | -0.273 (r) | FAST    |  0.876 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARID[3]      | -0.267 (r) | FAST    |  0.953 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARID[4]      | -0.260 (r) | FAST    |  0.867 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARID[5]      | -0.267 (r) | FAST    |  0.953 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARID[6]      | -0.268 (r) | FAST    |  0.941 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARID[7]      | -0.268 (r) | FAST    |  0.843 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARID[8]      | -0.257 (r) | FAST    |  0.877 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARID[9]      | -0.277 (r) | FAST    |  0.877 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARID[10]     | -0.267 (r) | FAST    |  0.878 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARID[11]     | -0.267 (r) | FAST    |  0.878 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+Worst Case Summary | -0.257 (r) | FAST    |  0.953 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+
+
+
+Setup / Hold times for input bus
+Clocked by: clk
+Worst Case Data Window: 1.976 ns
+Ideal Clock Offset to Actual Clock: -0.109 ns
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+                   |             | Process |            | Process | Setup     |  Hold     | Source Offset | 
+Source             |   Setup(ns) | Corner  |   Hold(ns) | Corner  | Slack(ns) | Slack(ns) | to Center(ns) | 
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+S_AXI_ARLEN[0]     |   1.097 (r) | SLOW    |  0.878 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARLEN[1]     |   0.247 (r) | FAST    |  0.844 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARLEN[2]     |  -0.010 (r) | FAST    |  0.879 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARLEN[3]     |   0.051 (r) | FAST    |  0.879 (r) | SLOW    |       inf |       inf |             - |
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+Worst Case Summary |   1.097 (r) | SLOW    |  0.879 (r) | SLOW    |       inf |       inf |             - |
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+
+
+
+Setup / Hold times for input bus
+Clocked by: clk
+Worst Case Data Window: 1.039 ns
+Ideal Clock Offset to Actual Clock: 0.359 ns
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+                   |            | Process |            | Process | Setup     |  Hold     | Source Offset | 
+Source             |  Setup(ns) | Corner  |   Hold(ns) | Corner  | Slack(ns) | Slack(ns) | to Center(ns) | 
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+S_AXI_ARSIZE[0]    | -0.137 (r) | FAST    |  0.844 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARSIZE[1]    |  0.161 (r) | SLOW    |  0.879 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_ARSIZE[2]    |  0.161 (r) | SLOW    |  0.879 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+Worst Case Summary |  0.161 (r) | SLOW    |  0.879 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+
+
+
+Setup / Hold times for input bus
+Clocked by: clk
+Worst Case Data Window: 1.971 ns
+Ideal Clock Offset to Actual Clock: -0.139 ns
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+                   |             | Process |            | Process | Setup     |  Hold     | Source Offset | 
+Source             |   Setup(ns) | Corner  |   Hold(ns) | Corner  | Slack(ns) | Slack(ns) | to Center(ns) | 
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+S_AXI_AWADDR[0]    |   0.994 (r) | SLOW    |  0.734 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_AWADDR[1]    |   0.989 (r) | SLOW    |  0.772 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_AWADDR[2]    |   1.124 (r) | SLOW    |  0.847 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_AWADDR[3]    |   0.623 (r) | SLOW    |  0.843 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_AWADDR[4]    |   0.577 (r) | SLOW    |  0.846 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_AWADDR[5]    |   0.708 (r) | SLOW    |  0.842 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_AWADDR[6]    |   0.579 (r) | SLOW    |  0.847 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_AWADDR[7]    |   0.397 (r) | SLOW    |  0.846 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_AWADDR[8]    |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[9]    |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[10]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[11]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[12]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[13]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[14]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[15]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[16]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[17]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[18]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[19]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[20]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[21]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[22]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[23]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[24]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[25]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[26]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[27]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[28]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[29]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[30]   |           - | -       |          - | -       |       inf |       inf |             - |
+S_AXI_AWADDR[31]   |           - | -       |          - | -       |       inf |       inf |             - |
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+Worst Case Summary |   1.124 (r) | SLOW    |  0.847 (r) | SLOW    |       inf |       inf |             - |
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+
+
+
+Setup / Hold times for input bus
+Clocked by: clk
+Worst Case Data Window: 2.195 ns
+Ideal Clock Offset to Actual Clock: -0.289 ns
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+                   |             | Process |            | Process | Setup     |  Hold     | Source Offset | 
+Source             |   Setup(ns) | Corner  |   Hold(ns) | Corner  | Slack(ns) | Slack(ns) | to Center(ns) | 
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+S_AXI_AWBURST[0]   |   1.386 (r) | SLOW    |  0.809 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_AWBURST[1]   |   1.386 (r) | SLOW    |  0.485 (r) | SLOW    |       inf |       inf |             - |
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+Worst Case Summary |   1.386 (r) | SLOW    |  0.809 (r) | SLOW    |       inf |       inf |             - |
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+
+
+
+Setup / Hold times for input bus
+Clocked by: clk
+Worst Case Data Window: 2.808 ns
+Ideal Clock Offset to Actual Clock: -0.561 ns
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+                   |             | Process |            | Process | Setup     |  Hold     | Source Offset | 
+Source             |   Setup(ns) | Corner  |   Hold(ns) | Corner  | Slack(ns) | Slack(ns) | to Center(ns) | 
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+S_AXI_AWLEN[0]     |   1.966 (r) | SLOW    |  0.840 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_AWLEN[1]     |   1.444 (r) | SLOW    |  0.841 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_AWLEN[2]     |   1.503 (r) | SLOW    |  0.843 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_AWLEN[3]     |   1.810 (r) | SLOW    |  0.843 (r) | SLOW    |       inf |       inf |             - |
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+Worst Case Summary |   1.966 (r) | SLOW    |  0.843 (r) | SLOW    |       inf |       inf |             - |
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+
+
+
+Setup / Hold times for input bus
+Clocked by: clk
+Worst Case Data Window: 2.533 ns
+Ideal Clock Offset to Actual Clock: -0.424 ns
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+                   |             | Process |            | Process | Setup     |  Hold     | Source Offset | 
+Source             |   Setup(ns) | Corner  |   Hold(ns) | Corner  | Slack(ns) | Slack(ns) | to Center(ns) | 
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+S_AXI_AWSIZE[0]    |   1.684 (r) | SLOW    |  0.509 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_AWSIZE[1]    |   1.691 (r) | SLOW    |  0.843 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_AWSIZE[2]    |   1.691 (r) | SLOW    |  0.843 (r) | SLOW    |       inf |       inf |             - |
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+Worst Case Summary |   1.691 (r) | SLOW    |  0.843 (r) | SLOW    |       inf |       inf |             - |
+-------------------+-------------+---------+------------+---------+-----------+-----------+---------------+
+
+
+
+Setup / Hold times for input bus
+Clocked by: clk
+Worst Case Data Window: 1.093 ns
+Ideal Clock Offset to Actual Clock: 0.309 ns
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+                   |            | Process |            | Process | Setup     |  Hold     | Source Offset | 
+Source             |  Setup(ns) | Corner  |   Hold(ns) | Corner  | Slack(ns) | Slack(ns) | to Center(ns) | 
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+S_AXI_WDATA[0]     |  0.002 (r) | FAST    |  0.619 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[1]     |  0.132 (r) | FAST    |  0.529 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[2]     |  0.021 (r) | FAST    |  0.593 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[3]     |  0.033 (r) | FAST    |  0.600 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[4]     | -0.019 (r) | FAST    |  0.611 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[5]     |  0.057 (r) | FAST    |  0.606 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[6]     |  0.069 (r) | FAST    |  0.586 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[7]     |  0.075 (r) | FAST    |  0.627 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[8]     |  0.067 (r) | FAST    |  0.638 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[9]     |  0.183 (r) | FAST    |  0.529 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[10]    |  0.026 (r) | FAST    |  0.817 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[11]    |  0.133 (r) | FAST    |  0.628 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[12]    |  0.083 (r) | FAST    |  0.604 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[13]    |  0.224 (r) | FAST    |  0.626 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[14]    |  0.145 (r) | FAST    |  0.608 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[15]    |  0.028 (r) | FAST    |  0.665 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[16]    |  0.117 (r) | FAST    |  0.633 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[17]    |  0.078 (r) | FAST    |  0.606 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[18]    |  0.178 (r) | FAST    |  0.632 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[19]    |  0.184 (r) | FAST    |  0.544 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[20]    |  0.137 (r) | FAST    |  0.848 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[21]    |  0.071 (r) | FAST    |  0.856 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[22]    |  0.090 (r) | FAST    |  0.588 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[23]    |  0.184 (r) | FAST    |  0.824 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[24]    |  0.034 (r) | FAST    |  0.620 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[25]    |  0.036 (r) | FAST    |  0.600 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[26]    |  0.158 (r) | FAST    |  0.542 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[27]    |  0.045 (r) | FAST    |  0.688 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[28]    |  0.055 (r) | FAST    |  0.856 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[29]    |  0.143 (r) | FAST    |  0.539 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[30]    |  0.237 (r) | FAST    |  0.687 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WDATA[31]    | -0.018 (r) | FAST    |  0.673 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+Worst Case Summary |  0.237 (r) | FAST    |  0.856 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+
+
+
+Setup / Hold times for input bus
+Clocked by: clk
+Worst Case Data Window: 1.016 ns
+Ideal Clock Offset to Actual Clock: 0.384 ns
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+                   |            | Process |            | Process | Setup     |  Hold     | Source Offset | 
+Source             |  Setup(ns) | Corner  |   Hold(ns) | Corner  | Slack(ns) | Slack(ns) | to Center(ns) | 
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+S_AXI_WID[0]       | -0.011 (r) | FAST    |  0.892 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WID[1]       |  0.016 (r) | FAST    |  0.818 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WID[2]       |  0.014 (r) | FAST    |  0.892 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WID[3]       |  0.074 (r) | FAST    |  0.892 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WID[4]       |  0.073 (r) | FAST    |  0.818 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WID[5]       |  0.025 (r) | FAST    |  0.818 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WID[6]       |  0.041 (r) | FAST    |  0.851 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WID[7]       |  0.073 (r) | FAST    |  0.853 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WID[8]       |  0.056 (r) | FAST    |  0.853 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WID[9]       |  0.067 (r) | FAST    |  0.851 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WID[10]      | -0.052 (r) | FAST    |  0.852 (r) | SLOW    |       inf |       inf |             - |
+S_AXI_WID[11]      |  0.125 (r) | FAST    |  0.853 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+Worst Case Summary |  0.125 (r) | FAST    |  0.892 (r) | SLOW    |       inf |       inf |             - |
+-------------------+------------+---------+------------+---------+-----------+-----------+---------------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.910 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_ARADDR[0]  |   3.906 (r) | SLOW    |   1.011 (r) | FAST    |    0.197 |
+M_AXI_0_ARADDR[1]  |   4.096 (r) | SLOW    |   1.165 (r) | FAST    |    0.387 |
+M_AXI_0_ARADDR[2]  |   4.456 (r) | SLOW    |   1.012 (r) | FAST    |    0.747 |
+M_AXI_0_ARADDR[3]  |   4.436 (r) | SLOW    |   1.049 (r) | FAST    |    0.727 |
+M_AXI_0_ARADDR[4]  |   4.201 (r) | SLOW    |   0.984 (r) | FAST    |    0.492 |
+M_AXI_0_ARADDR[5]  |   4.355 (r) | SLOW    |   1.077 (r) | FAST    |    0.645 |
+M_AXI_0_ARADDR[6]  |   4.100 (r) | SLOW    |   1.127 (r) | FAST    |    0.391 |
+M_AXI_0_ARADDR[7]  |   3.869 (r) | SLOW    |   1.077 (r) | FAST    |    0.160 |
+M_AXI_0_ARADDR[8]  |   3.712 (r) | SLOW    |   1.091 (r) | FAST    |    0.120 |
+M_AXI_0_ARADDR[9]  |   4.561 (r) | SLOW    |   1.057 (r) | FAST    |    0.852 |
+M_AXI_0_ARADDR[10] |   4.191 (r) | SLOW    |   1.060 (r) | FAST    |    0.482 |
+M_AXI_0_ARADDR[11] |   4.477 (r) | SLOW    |   1.105 (r) | FAST    |    0.768 |
+M_AXI_0_ARADDR[12] |   4.404 (r) | SLOW    |   1.037 (r) | FAST    |    0.695 |
+M_AXI_0_ARADDR[13] |   4.353 (r) | SLOW    |   1.070 (r) | FAST    |    0.643 |
+M_AXI_0_ARADDR[14] |   3.993 (r) | SLOW    |   1.049 (r) | FAST    |    0.284 |
+M_AXI_0_ARADDR[15] |   3.869 (r) | SLOW    |   0.971 (r) | FAST    |    0.160 |
+M_AXI_0_ARADDR[16] |   3.793 (r) | SLOW    |   1.040 (r) | FAST    |    0.084 |
+M_AXI_0_ARADDR[17] |   3.934 (r) | SLOW    |   0.971 (r) | FAST    |    0.225 |
+M_AXI_0_ARADDR[18] |   3.812 (r) | SLOW    |   1.040 (r) | FAST    |    0.103 |
+M_AXI_0_ARADDR[19] |   4.098 (r) | SLOW    |   1.027 (r) | FAST    |    0.389 |
+M_AXI_0_ARADDR[20] |   3.867 (r) | SLOW    |   1.026 (r) | FAST    |    0.158 |
+M_AXI_0_ARADDR[21] |   3.709 (r) | SLOW    |   1.007 (r) | FAST    |    0.036 |
+M_AXI_0_ARADDR[22] |   4.286 (r) | SLOW    |   1.102 (r) | FAST    |    0.577 |
+M_AXI_0_ARADDR[23] |   4.103 (r) | SLOW    |   1.055 (r) | FAST    |    0.394 |
+M_AXI_0_ARADDR[24] |   4.619 (r) | SLOW    |   1.009 (r) | FAST    |    0.910 |
+M_AXI_0_ARADDR[25] |   3.932 (r) | SLOW    |   0.998 (r) | FAST    |    0.223 |
+M_AXI_0_ARADDR[26] |   4.243 (r) | SLOW    |   1.071 (r) | FAST    |    0.534 |
+M_AXI_0_ARADDR[27] |   4.166 (r) | SLOW    |   0.982 (r) | FAST    |    0.457 |
+M_AXI_0_ARADDR[28] |   4.166 (r) | SLOW    |   1.158 (r) | FAST    |    0.457 |
+M_AXI_0_ARADDR[29] |   4.436 (r) | SLOW    |   1.064 (r) | FAST    |    0.727 |
+M_AXI_0_ARADDR[30] |   4.283 (r) | SLOW    |   1.008 (r) | FAST    |    0.574 |
+M_AXI_0_ARADDR[31] |   4.251 (r) | SLOW    |   1.043 (r) | FAST    |    0.542 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   4.619 (r) | SLOW    |   0.971 (r) | FAST    |    0.910 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.000 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_ARBURST[0] |   2.652 (r) | SLOW    |   1.088 (r) | FAST    |    0.000 |
+M_AXI_0_ARBURST[1] |           - | -       |           - | -       |        - |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   2.652 (r) | SLOW    |   1.088 (r) | FAST    |    0.000 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.036 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_ARCACHE[0] |   2.655 (r) | SLOW    |   1.038 (r) | FAST    |    0.032 |
+M_AXI_0_ARCACHE[1] |           - | -       |           - | -       |        - |
+M_AXI_0_ARCACHE[2] |   2.623 (r) | SLOW    |   1.073 (r) | FAST    |    0.036 |
+M_AXI_0_ARCACHE[3] |           - | -       |           - | -       |        - |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   2.655 (r) | SLOW    |   1.038 (r) | FAST    |    0.036 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.000 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_ARID[0]    |           - | -       |           - | -       |        - |
+M_AXI_0_ARID[1]    |   2.696 (r) | SLOW    |   1.112 (r) | FAST    |    0.000 |
+M_AXI_0_ARID[2]    |           - | -       |           - | -       |        - |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   2.696 (r) | SLOW    |   1.112 (r) | FAST    |    0.000 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 1.817 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_ARLEN[0]   |   2.776 (r) | SLOW    |   1.088 (r) | FAST    |    0.069 |
+M_AXI_0_ARLEN[1]   |   2.756 (r) | SLOW    |   1.019 (r) | FAST    |    0.000 |
+M_AXI_0_ARLEN[2]   |   2.800 (r) | SLOW    |   1.100 (r) | FAST    |    0.082 |
+M_AXI_0_ARLEN[3]   |   4.573 (r) | SLOW    |   1.075 (r) | FAST    |    1.817 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   4.573 (r) | SLOW    |   1.019 (r) | FAST    |    1.817 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.000 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_ARLOCK[0]  |   2.702 (r) | SLOW    |   1.039 (r) | FAST    |    0.000 |
+M_AXI_0_ARLOCK[1]  |           - | -       |           - | -       |        - |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   2.702 (r) | SLOW    |   1.039 (r) | FAST    |    0.000 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.000 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_ARPROT[0]  |           - | -       |           - | -       |        - |
+M_AXI_0_ARPROT[1]  |   2.705 (r) | SLOW    |   1.027 (r) | FAST    |    0.000 |
+M_AXI_0_ARPROT[2]  |           - | -       |           - | -       |        - |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   2.705 (r) | SLOW    |   1.027 (r) | FAST    |    0.000 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 2.342 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_ARSIZE[0]  |   5.233 (r) | SLOW    |   1.090 (r) | FAST    |    2.342 |
+M_AXI_0_ARSIZE[1]  |   3.204 (r) | SLOW    |   1.128 (r) | FAST    |    0.314 |
+M_AXI_0_ARSIZE[2]  |   2.891 (r) | SLOW    |   1.042 (r) | FAST    |    0.000 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   5.233 (r) | SLOW    |   1.042 (r) | FAST    |    2.342 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 2.111 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_AWADDR[0]  |   4.567 (r) | SLOW    |   1.032 (r) | FAST    |    0.852 |
+M_AXI_0_AWADDR[1]  |   4.133 (r) | SLOW    |   1.131 (r) | FAST    |    0.418 |
+M_AXI_0_AWADDR[2]  |   4.709 (r) | SLOW    |   1.092 (r) | FAST    |    0.994 |
+M_AXI_0_AWADDR[3]  |   4.574 (r) | SLOW    |   1.062 (r) | FAST    |    0.859 |
+M_AXI_0_AWADDR[4]  |   4.126 (r) | SLOW    |   0.982 (r) | FAST    |    0.411 |
+M_AXI_0_AWADDR[5]  |   4.109 (r) | SLOW    |   1.067 (r) | FAST    |    0.394 |
+M_AXI_0_AWADDR[6]  |   3.715 (r) | SLOW    |   1.045 (r) | FAST    |    0.082 |
+M_AXI_0_AWADDR[7]  |   4.740 (r) | SLOW    |   1.096 (r) | FAST    |    1.025 |
+M_AXI_0_AWADDR[8]  |   4.260 (r) | SLOW    |   1.030 (r) | FAST    |    0.545 |
+M_AXI_0_AWADDR[9]  |   4.332 (r) | SLOW    |   0.982 (r) | FAST    |    0.617 |
+M_AXI_0_AWADDR[10] |   5.434 (r) | SLOW    |   1.100 (r) | FAST    |    1.719 |
+M_AXI_0_AWADDR[11] |   5.181 (r) | SLOW    |   0.985 (r) | FAST    |    1.466 |
+M_AXI_0_AWADDR[12] |   4.785 (r) | SLOW    |   1.111 (r) | FAST    |    1.070 |
+M_AXI_0_AWADDR[13] |   4.855 (r) | SLOW    |   1.042 (r) | FAST    |    1.140 |
+M_AXI_0_AWADDR[14] |   5.548 (r) | SLOW    |   1.018 (r) | FAST    |    1.833 |
+M_AXI_0_AWADDR[15] |   5.195 (r) | SLOW    |   1.057 (r) | FAST    |    1.480 |
+M_AXI_0_AWADDR[16] |   5.395 (r) | SLOW    |   1.042 (r) | FAST    |    1.680 |
+M_AXI_0_AWADDR[17] |   4.983 (r) | SLOW    |   1.014 (r) | FAST    |    1.268 |
+M_AXI_0_AWADDR[18] |   5.128 (r) | SLOW    |   1.001 (r) | FAST    |    1.413 |
+M_AXI_0_AWADDR[19] |   5.826 (r) | SLOW    |   0.979 (r) | FAST    |    2.111 |
+M_AXI_0_AWADDR[20] |   5.444 (r) | SLOW    |   0.963 (r) | FAST    |    1.729 |
+M_AXI_0_AWADDR[21] |   5.126 (r) | SLOW    |   1.040 (r) | FAST    |    1.411 |
+M_AXI_0_AWADDR[22] |   4.986 (r) | SLOW    |   1.113 (r) | FAST    |    1.271 |
+M_AXI_0_AWADDR[23] |   4.871 (r) | SLOW    |   1.035 (r) | FAST    |    1.156 |
+M_AXI_0_AWADDR[24] |   4.128 (r) | SLOW    |   1.080 (r) | FAST    |    0.413 |
+M_AXI_0_AWADDR[25] |   4.646 (r) | SLOW    |   1.091 (r) | FAST    |    0.930 |
+M_AXI_0_AWADDR[26] |   4.854 (r) | SLOW    |   1.081 (r) | FAST    |    1.139 |
+M_AXI_0_AWADDR[27] |   5.260 (r) | SLOW    |   1.086 (r) | FAST    |    1.545 |
+M_AXI_0_AWADDR[28] |   4.737 (r) | SLOW    |   1.053 (r) | FAST    |    1.022 |
+M_AXI_0_AWADDR[29] |   4.783 (r) | SLOW    |   1.082 (r) | FAST    |    1.068 |
+M_AXI_0_AWADDR[30] |   4.853 (r) | SLOW    |   0.988 (r) | FAST    |    1.138 |
+M_AXI_0_AWADDR[31] |   5.377 (r) | SLOW    |   1.092 (r) | FAST    |    1.662 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   5.826 (r) | SLOW    |   0.963 (r) | FAST    |    2.111 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.378 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_AWBURST[0] |   4.720 (r) | SLOW    |   1.041 (r) | FAST    |    0.378 |
+M_AXI_0_AWBURST[1] |   4.342 (r) | SLOW    |   1.075 (r) | FAST    |    0.034 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   4.720 (r) | SLOW    |   1.041 (r) | FAST    |    0.378 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.742 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_AWCACHE[0] |   4.223 (r) | SLOW    |   1.015 (r) | FAST    |    0.149 |
+M_AXI_0_AWCACHE[1] |   4.816 (r) | SLOW    |   1.040 (r) | FAST    |    0.742 |
+M_AXI_0_AWCACHE[2] |   4.074 (r) | SLOW    |   0.988 (r) | FAST    |    0.000 |
+M_AXI_0_AWCACHE[3] |   4.225 (r) | SLOW    |   1.125 (r) | FAST    |    0.151 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   4.816 (r) | SLOW    |   0.988 (r) | FAST    |    0.742 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.509 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_AWID[0]    |   4.245 (r) | SLOW    |   1.025 (r) | FAST    |    0.151 |
+M_AXI_0_AWID[1]    |   4.604 (r) | SLOW    |   1.102 (r) | FAST    |    0.509 |
+M_AXI_0_AWID[2]    |   4.095 (r) | SLOW    |   1.031 (r) | FAST    |    0.006 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   4.604 (r) | SLOW    |   1.025 (r) | FAST    |    0.509 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.589 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_AWLEN[0]   |   4.818 (r) | SLOW    |   1.027 (r) | FAST    |    0.589 |
+M_AXI_0_AWLEN[1]   |   4.230 (r) | SLOW    |   1.165 (r) | FAST    |    0.138 |
+M_AXI_0_AWLEN[2]   |   4.814 (r) | SLOW    |   1.083 (r) | FAST    |    0.584 |
+M_AXI_0_AWLEN[3]   |   4.599 (r) | SLOW    |   1.047 (r) | FAST    |    0.370 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   4.818 (r) | SLOW    |   1.027 (r) | FAST    |    0.589 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.213 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_AWLOCK[0]  |   4.158 (r) | SLOW    |   1.114 (r) | FAST    |    0.213 |
+M_AXI_0_AWLOCK[1]  |   3.945 (r) | SLOW    |   1.055 (r) | FAST    |    0.000 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   4.158 (r) | SLOW    |   1.055 (r) | FAST    |    0.213 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.438 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_AWPROT[0]  |   3.814 (r) | SLOW    |   1.137 (r) | FAST    |    0.066 |
+M_AXI_0_AWPROT[1]  |   4.252 (r) | SLOW    |   1.071 (r) | FAST    |    0.438 |
+M_AXI_0_AWPROT[2]  |   4.140 (r) | SLOW    |   1.081 (r) | FAST    |    0.326 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   4.252 (r) | SLOW    |   1.071 (r) | FAST    |    0.438 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 2.291 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_AWSIZE[0]  |   4.862 (r) | SLOW    |   1.055 (r) | FAST    |    2.291 |
+M_AXI_0_AWSIZE[1]  |   4.785 (r) | SLOW    |   1.105 (r) | FAST    |    2.214 |
+M_AXI_0_AWSIZE[2]  |   2.570 (r) | SLOW    |   1.164 (r) | FAST    |    0.109 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   4.862 (r) | SLOW    |   1.055 (r) | FAST    |    2.291 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 2.313 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_WDATA[0]   |   4.908 (r) | SLOW    |   1.019 (r) | FAST    |    0.797 |
+M_AXI_0_WDATA[1]   |   5.009 (r) | SLOW    |   1.160 (r) | FAST    |    0.898 |
+M_AXI_0_WDATA[2]   |   5.285 (r) | SLOW    |   1.168 (r) | FAST    |    1.174 |
+M_AXI_0_WDATA[3]   |   5.454 (r) | SLOW    |   1.093 (r) | FAST    |    1.343 |
+M_AXI_0_WDATA[4]   |   5.644 (r) | SLOW    |   1.122 (r) | FAST    |    1.533 |
+M_AXI_0_WDATA[5]   |   5.412 (r) | SLOW    |   1.042 (r) | FAST    |    1.301 |
+M_AXI_0_WDATA[6]   |   5.169 (r) | SLOW    |   1.120 (r) | FAST    |    1.058 |
+M_AXI_0_WDATA[7]   |   5.332 (r) | SLOW    |   1.180 (r) | FAST    |    1.221 |
+M_AXI_0_WDATA[8]   |   4.848 (r) | SLOW    |   1.146 (r) | FAST    |    0.737 |
+M_AXI_0_WDATA[9]   |   6.424 (r) | SLOW    |   1.128 (r) | FAST    |    2.313 |
+M_AXI_0_WDATA[10]  |   5.072 (r) | SLOW    |   1.089 (r) | FAST    |    0.961 |
+M_AXI_0_WDATA[11]  |   6.381 (r) | SLOW    |   1.147 (r) | FAST    |    2.270 |
+M_AXI_0_WDATA[12]  |   5.434 (r) | SLOW    |   1.162 (r) | FAST    |    1.323 |
+M_AXI_0_WDATA[13]  |   4.818 (r) | SLOW    |   0.989 (r) | FAST    |    0.707 |
+M_AXI_0_WDATA[14]  |   6.372 (r) | SLOW    |   1.176 (r) | FAST    |    2.261 |
+M_AXI_0_WDATA[15]  |   5.991 (r) | SLOW    |   1.107 (r) | FAST    |    1.880 |
+M_AXI_0_WDATA[16]  |   4.403 (r) | SLOW    |   1.187 (r) | FAST    |    0.292 |
+M_AXI_0_WDATA[17]  |   4.238 (r) | SLOW    |   1.272 (r) | FAST    |    0.283 |
+M_AXI_0_WDATA[18]  |   4.710 (r) | SLOW    |   1.029 (r) | FAST    |    0.599 |
+M_AXI_0_WDATA[19]  |   4.642 (r) | SLOW    |   1.115 (r) | FAST    |    0.531 |
+M_AXI_0_WDATA[20]  |   4.607 (r) | SLOW    |   1.117 (r) | FAST    |    0.496 |
+M_AXI_0_WDATA[21]  |   4.820 (r) | SLOW    |   1.056 (r) | FAST    |    0.709 |
+M_AXI_0_WDATA[22]  |   5.049 (r) | SLOW    |   1.035 (r) | FAST    |    0.938 |
+M_AXI_0_WDATA[23]  |   4.780 (r) | SLOW    |   1.149 (r) | FAST    |    0.669 |
+M_AXI_0_WDATA[24]  |   4.679 (r) | SLOW    |   1.052 (r) | FAST    |    0.568 |
+M_AXI_0_WDATA[25]  |   5.390 (r) | SLOW    |   1.025 (r) | FAST    |    1.279 |
+M_AXI_0_WDATA[26]  |   5.123 (r) | SLOW    |   1.081 (r) | FAST    |    1.012 |
+M_AXI_0_WDATA[27]  |   5.507 (r) | SLOW    |   1.160 (r) | FAST    |    1.396 |
+M_AXI_0_WDATA[28]  |   5.170 (r) | SLOW    |   1.185 (r) | FAST    |    1.059 |
+M_AXI_0_WDATA[29]  |   4.658 (r) | SLOW    |   1.068 (r) | FAST    |    0.547 |
+M_AXI_0_WDATA[30]  |   5.066 (r) | SLOW    |   1.044 (r) | FAST    |    0.955 |
+M_AXI_0_WDATA[31]  |   4.821 (r) | SLOW    |   1.075 (r) | FAST    |    0.710 |
+M_AXI_0_WDATA[32]  |   4.796 (r) | SLOW    |   1.174 (r) | FAST    |    0.685 |
+M_AXI_0_WDATA[33]  |   5.170 (r) | SLOW    |   1.045 (r) | FAST    |    1.059 |
+M_AXI_0_WDATA[34]  |   4.874 (r) | SLOW    |   1.172 (r) | FAST    |    0.763 |
+M_AXI_0_WDATA[35]  |   5.255 (r) | SLOW    |   1.103 (r) | FAST    |    1.144 |
+M_AXI_0_WDATA[36]  |   4.916 (r) | SLOW    |   1.096 (r) | FAST    |    0.805 |
+M_AXI_0_WDATA[37]  |   4.713 (r) | SLOW    |   1.136 (r) | FAST    |    0.602 |
+M_AXI_0_WDATA[38]  |   4.632 (r) | SLOW    |   1.116 (r) | FAST    |    0.521 |
+M_AXI_0_WDATA[39]  |   5.424 (r) | SLOW    |   1.182 (r) | FAST    |    1.313 |
+M_AXI_0_WDATA[40]  |   5.316 (r) | SLOW    |   1.101 (r) | FAST    |    1.205 |
+M_AXI_0_WDATA[41]  |   5.501 (r) | SLOW    |   1.048 (r) | FAST    |    1.390 |
+M_AXI_0_WDATA[42]  |   5.312 (r) | SLOW    |   1.053 (r) | FAST    |    1.201 |
+M_AXI_0_WDATA[43]  |   5.604 (r) | SLOW    |   1.129 (r) | FAST    |    1.493 |
+M_AXI_0_WDATA[44]  |   5.990 (r) | SLOW    |   1.124 (r) | FAST    |    1.879 |
+M_AXI_0_WDATA[45]  |   5.068 (r) | SLOW    |   1.179 (r) | FAST    |    0.957 |
+M_AXI_0_WDATA[46]  |   5.196 (r) | SLOW    |   1.132 (r) | FAST    |    1.085 |
+M_AXI_0_WDATA[47]  |   5.373 (r) | SLOW    |   1.085 (r) | FAST    |    1.262 |
+M_AXI_0_WDATA[48]  |   4.963 (r) | SLOW    |   1.061 (r) | FAST    |    0.852 |
+M_AXI_0_WDATA[49]  |   4.111 (r) | SLOW    |   0.993 (r) | FAST    |    0.005 |
+M_AXI_0_WDATA[50]  |   4.444 (r) | SLOW    |   1.077 (r) | FAST    |    0.333 |
+M_AXI_0_WDATA[51]  |   6.094 (r) | SLOW    |   1.106 (r) | FAST    |    1.983 |
+M_AXI_0_WDATA[52]  |   4.454 (r) | SLOW    |   1.148 (r) | FAST    |    0.343 |
+M_AXI_0_WDATA[53]  |   4.614 (r) | SLOW    |   1.069 (r) | FAST    |    0.503 |
+M_AXI_0_WDATA[54]  |   4.658 (r) | SLOW    |   1.108 (r) | FAST    |    0.547 |
+M_AXI_0_WDATA[55]  |   4.438 (r) | SLOW    |   1.059 (r) | FAST    |    0.327 |
+M_AXI_0_WDATA[56]  |   4.124 (r) | SLOW    |   0.997 (r) | FAST    |    0.013 |
+M_AXI_0_WDATA[57]  |   4.502 (r) | SLOW    |   1.063 (r) | FAST    |    0.391 |
+M_AXI_0_WDATA[58]  |   4.387 (r) | SLOW    |   1.004 (r) | FAST    |    0.276 |
+M_AXI_0_WDATA[59]  |   4.536 (r) | SLOW    |   1.058 (r) | FAST    |    0.425 |
+M_AXI_0_WDATA[60]  |   4.485 (r) | SLOW    |   1.044 (r) | FAST    |    0.374 |
+M_AXI_0_WDATA[61]  |   4.729 (r) | SLOW    |   1.067 (r) | FAST    |    0.618 |
+M_AXI_0_WDATA[62]  |   5.060 (r) | SLOW    |   1.073 (r) | FAST    |    0.949 |
+M_AXI_0_WDATA[63]  |   4.721 (r) | SLOW    |   1.090 (r) | FAST    |    0.610 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   6.424 (r) | SLOW    |   0.989 (r) | FAST    |    2.313 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.487 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_WID[0]     |   6.126 (r) | SLOW    |   0.979 (r) | FAST    |    0.487 |
+M_AXI_0_WID[1]     |   5.639 (r) | SLOW    |   1.077 (r) | FAST    |    0.097 |
+M_AXI_0_WID[2]     |   6.031 (r) | SLOW    |   1.134 (r) | FAST    |    0.392 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   6.126 (r) | SLOW    |   0.979 (r) | FAST    |    0.487 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.876 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_0_WSTRB[0]   |   6.633 (r) | SLOW    |   1.052 (r) | FAST    |    0.740 |
+M_AXI_0_WSTRB[1]   |   6.160 (r) | SLOW    |   1.170 (r) | FAST    |    0.267 |
+M_AXI_0_WSTRB[2]   |   5.893 (r) | SLOW    |   1.170 (r) | FAST    |    0.118 |
+M_AXI_0_WSTRB[3]   |   6.475 (r) | SLOW    |   1.130 (r) | FAST    |    0.582 |
+M_AXI_0_WSTRB[4]   |   6.769 (r) | SLOW    |   1.440 (r) | FAST    |    0.876 |
+M_AXI_0_WSTRB[5]   |   5.977 (r) | SLOW    |   1.357 (r) | FAST    |    0.305 |
+M_AXI_0_WSTRB[6]   |   5.997 (r) | SLOW    |   1.097 (r) | FAST    |    0.104 |
+M_AXI_0_WSTRB[7]   |   6.190 (r) | SLOW    |   1.202 (r) | FAST    |    0.296 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   6.769 (r) | SLOW    |   1.052 (r) | FAST    |    0.876 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 1.033 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_1_ARADDR[0]  |   4.815 (r) | SLOW    |   1.031 (r) | FAST    |    0.945 |
+M_AXI_1_ARADDR[1]  |   4.903 (r) | SLOW    |   1.060 (r) | FAST    |    1.033 |
+M_AXI_1_ARADDR[2]  |   4.345 (r) | SLOW    |   1.022 (r) | FAST    |    0.474 |
+M_AXI_1_ARADDR[3]  |   3.972 (r) | SLOW    |   1.137 (r) | FAST    |    0.183 |
+M_AXI_1_ARADDR[4]  |   4.400 (r) | SLOW    |   0.953 (r) | FAST    |    0.530 |
+M_AXI_1_ARADDR[5]  |   4.355 (r) | SLOW    |   1.151 (r) | FAST    |    0.484 |
+M_AXI_1_ARADDR[6]  |   4.331 (r) | SLOW    |   1.094 (r) | FAST    |    0.461 |
+M_AXI_1_ARADDR[7]  |   4.359 (r) | SLOW    |   1.105 (r) | FAST    |    0.488 |
+M_AXI_1_ARADDR[8]  |   4.315 (r) | SLOW    |   1.060 (r) | FAST    |    0.445 |
+M_AXI_1_ARADDR[9]  |   4.608 (r) | SLOW    |   1.043 (r) | FAST    |    0.737 |
+M_AXI_1_ARADDR[10] |   4.627 (r) | SLOW    |   1.023 (r) | FAST    |    0.756 |
+M_AXI_1_ARADDR[11] |   4.344 (r) | SLOW    |   1.057 (r) | FAST    |    0.473 |
+M_AXI_1_ARADDR[12] |   4.626 (r) | SLOW    |   1.074 (r) | FAST    |    0.755 |
+M_AXI_1_ARADDR[13] |   4.226 (r) | SLOW    |   1.010 (r) | FAST    |    0.355 |
+M_AXI_1_ARADDR[14] |   4.051 (r) | SLOW    |   1.088 (r) | FAST    |    0.180 |
+M_AXI_1_ARADDR[15] |   4.297 (r) | SLOW    |   1.131 (r) | FAST    |    0.427 |
+M_AXI_1_ARADDR[16] |   3.870 (r) | SLOW    |   1.030 (r) | FAST    |    0.076 |
+M_AXI_1_ARADDR[17] |   4.811 (r) | SLOW    |   1.027 (r) | FAST    |    0.940 |
+M_AXI_1_ARADDR[18] |   4.166 (r) | SLOW    |   1.053 (r) | FAST    |    0.296 |
+M_AXI_1_ARADDR[19] |   3.889 (r) | SLOW    |   1.105 (r) | FAST    |    0.152 |
+M_AXI_1_ARADDR[20] |   4.427 (r) | SLOW    |   1.074 (r) | FAST    |    0.557 |
+M_AXI_1_ARADDR[21] |   4.097 (r) | SLOW    |   1.061 (r) | FAST    |    0.227 |
+M_AXI_1_ARADDR[22] |   3.925 (r) | SLOW    |   1.013 (r) | FAST    |    0.060 |
+M_AXI_1_ARADDR[23] |   4.325 (r) | SLOW    |   1.014 (r) | FAST    |    0.455 |
+M_AXI_1_ARADDR[24] |   4.330 (r) | SLOW    |   1.015 (r) | FAST    |    0.460 |
+M_AXI_1_ARADDR[25] |   3.988 (r) | SLOW    |   1.050 (r) | FAST    |    0.118 |
+M_AXI_1_ARADDR[26] |   3.911 (r) | SLOW    |   1.027 (r) | FAST    |    0.074 |
+M_AXI_1_ARADDR[27] |   4.528 (r) | SLOW    |   1.003 (r) | FAST    |    0.658 |
+M_AXI_1_ARADDR[28] |   4.134 (r) | SLOW    |   0.985 (r) | FAST    |    0.264 |
+M_AXI_1_ARADDR[29] |   4.029 (r) | SLOW    |   1.093 (r) | FAST    |    0.158 |
+M_AXI_1_ARADDR[30] |   4.391 (r) | SLOW    |   1.094 (r) | FAST    |    0.521 |
+M_AXI_1_ARADDR[31] |   4.399 (r) | SLOW    |   1.024 (r) | FAST    |    0.529 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   4.903 (r) | SLOW    |   0.953 (r) | FAST    |    1.033 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.000 ns
+-------------------+-------------+---------+------------+---------+----------+
+                   |     Max     | Process |    Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |  Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+------------+---------+----------+
+M_AXI_1_ARBURST[0] |   3.182 (r) | SLOW    |  0.993 (r) | FAST    |    0.000 |
+M_AXI_1_ARBURST[1] |           - | -       |          - | -       |        - |
+-------------------+-------------+---------+------------+---------+----------+
+Worst Case Summary |   3.182 (r) | SLOW    |  0.993 (r) | FAST    |    0.000 |
+-------------------+-------------+---------+------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.225 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_1_ARCACHE[0] |   3.009 (r) | SLOW    |   1.025 (r) | FAST    |    0.225 |
+M_AXI_1_ARCACHE[1] |           - | -       |           - | -       |        - |
+M_AXI_1_ARCACHE[2] |   2.784 (r) | SLOW    |   1.129 (r) | FAST    |    0.105 |
+M_AXI_1_ARCACHE[3] |           - | -       |           - | -       |        - |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   3.009 (r) | SLOW    |   1.025 (r) | FAST    |    0.225 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.000 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_1_ARID[0]    |           - | -       |           - | -       |        - |
+M_AXI_1_ARID[1]    |   3.498 (r) | SLOW    |   1.033 (r) | FAST    |    0.000 |
+M_AXI_1_ARID[2]    |           - | -       |           - | -       |        - |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   3.498 (r) | SLOW    |   1.033 (r) | FAST    |    0.000 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 2.184 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_1_ARLEN[0]   |   2.999 (r) | SLOW    |   1.040 (r) | FAST    |    0.114 |
+M_AXI_1_ARLEN[1]   |   2.885 (r) | SLOW    |   1.034 (r) | FAST    |    0.000 |
+M_AXI_1_ARLEN[2]   |   3.937 (r) | SLOW    |   1.075 (r) | FAST    |    1.052 |
+M_AXI_1_ARLEN[3]   |   5.069 (r) | SLOW    |   1.098 (r) | FAST    |    2.184 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   5.069 (r) | SLOW    |   1.034 (r) | FAST    |    2.184 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.000 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_1_ARLOCK[0]  |   3.062 (r) | SLOW    |   1.049 (r) | FAST    |    0.000 |
+M_AXI_1_ARLOCK[1]  |           - | -       |           - | -       |        - |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   3.062 (r) | SLOW    |   1.049 (r) | FAST    |    0.000 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.000 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_1_ARPROT[0]  |           - | -       |           - | -       |        - |
+M_AXI_1_ARPROT[1]  |   3.045 (r) | SLOW    |   1.016 (r) | FAST    |    0.000 |
+M_AXI_1_ARPROT[2]  |           - | -       |           - | -       |        - |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   3.045 (r) | SLOW    |   1.016 (r) | FAST    |    0.000 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 2.213 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+M_AXI_1_ARSIZE[0]  |   4.809 (r) | SLOW    |   1.284 (r) | FAST    |    2.213 |
+M_AXI_1_ARSIZE[1]  |   3.587 (r) | SLOW    |   1.026 (r) | FAST    |    0.991 |
+M_AXI_1_ARSIZE[2]  |   2.597 (r) | SLOW    |   1.095 (r) | FAST    |    0.069 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   4.809 (r) | SLOW    |   1.026 (r) | FAST    |    2.213 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.038 ns
+-------------------+-------------+---------+------------+---------+----------+
+                   |     Max     | Process |    Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |  Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+------------+---------+----------+
+S_AXI_BID[0]       |   1.990 (r) | SLOW    |  0.854 (r) | FAST    |    0.005 |
+S_AXI_BID[1]       |   2.023 (r) | SLOW    |  0.874 (r) | FAST    |    0.038 |
+S_AXI_BID[2]       |   2.021 (r) | SLOW    |  0.873 (r) | FAST    |    0.036 |
+S_AXI_BID[3]       |   1.985 (r) | SLOW    |  0.855 (r) | FAST    |    0.001 |
+S_AXI_BID[4]       |   2.021 (r) | SLOW    |  0.873 (r) | FAST    |    0.036 |
+S_AXI_BID[5]       |   2.023 (r) | SLOW    |  0.874 (r) | FAST    |    0.038 |
+S_AXI_BID[6]       |   1.990 (r) | SLOW    |  0.854 (r) | FAST    |    0.005 |
+S_AXI_BID[7]       |   2.018 (r) | SLOW    |  0.871 (r) | FAST    |    0.033 |
+S_AXI_BID[8]       |   1.990 (r) | SLOW    |  0.854 (r) | FAST    |    0.005 |
+S_AXI_BID[9]       |   2.018 (r) | SLOW    |  0.871 (r) | FAST    |    0.033 |
+S_AXI_BID[10]      |   1.990 (r) | SLOW    |  0.854 (r) | FAST    |    0.005 |
+S_AXI_BID[11]      |   2.021 (r) | SLOW    |  0.873 (r) | FAST    |    0.036 |
+-------------------+-------------+---------+------------+---------+----------+
+Worst Case Summary |   2.023 (r) | SLOW    |  0.854 (r) | FAST    |    0.038 |
+-------------------+-------------+---------+------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.000 ns
+-------------------+-------------+---------+------------+---------+----------+
+                   |     Max     | Process |    Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |  Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+------------+---------+----------+
+S_AXI_BRESP[0]     |           - | -       |          - | -       |        - |
+S_AXI_BRESP[1]     |   1.985 (r) | SLOW    |  0.855 (r) | FAST    |    0.000 |
+-------------------+-------------+---------+------------+---------+----------+
+Worst Case Summary |   1.985 (r) | SLOW    |  0.855 (r) | FAST    |    0.000 |
+-------------------+-------------+---------+------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 1.299 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+S_AXI_RDATA[0]     |   5.277 (r) | SLOW    |   1.072 (r) | FAST    |    1.135 |
+S_AXI_RDATA[1]     |   4.997 (r) | SLOW    |   1.043 (r) | FAST    |    0.855 |
+S_AXI_RDATA[2]     |   4.454 (r) | SLOW    |   1.064 (r) | FAST    |    0.312 |
+S_AXI_RDATA[3]     |   4.975 (r) | SLOW    |   1.056 (r) | FAST    |    0.833 |
+S_AXI_RDATA[4]     |   4.951 (r) | SLOW    |   1.009 (r) | FAST    |    0.809 |
+S_AXI_RDATA[5]     |   4.374 (r) | SLOW    |   1.057 (r) | FAST    |    0.232 |
+S_AXI_RDATA[6]     |   5.324 (r) | SLOW    |   1.095 (r) | FAST    |    1.182 |
+S_AXI_RDATA[7]     |   5.352 (r) | SLOW    |   1.022 (r) | FAST    |    1.210 |
+S_AXI_RDATA[8]     |   5.441 (r) | SLOW    |   0.992 (r) | FAST    |    1.299 |
+S_AXI_RDATA[9]     |   4.835 (r) | SLOW    |   1.030 (r) | FAST    |    0.693 |
+S_AXI_RDATA[10]    |   5.239 (r) | SLOW    |   1.052 (r) | FAST    |    1.097 |
+S_AXI_RDATA[11]    |   4.709 (r) | SLOW    |   0.989 (r) | FAST    |    0.567 |
+S_AXI_RDATA[12]    |   4.941 (r) | SLOW    |   1.033 (r) | FAST    |    0.800 |
+S_AXI_RDATA[13]    |   5.100 (r) | SLOW    |   1.033 (r) | FAST    |    0.958 |
+S_AXI_RDATA[14]    |   4.941 (r) | SLOW    |   1.020 (r) | FAST    |    0.800 |
+S_AXI_RDATA[15]    |   5.323 (r) | SLOW    |   1.068 (r) | FAST    |    1.182 |
+S_AXI_RDATA[16]    |   5.276 (r) | SLOW    |   1.028 (r) | FAST    |    1.134 |
+S_AXI_RDATA[17]    |   4.142 (r) | SLOW    |   1.125 (r) | FAST    |    0.156 |
+S_AXI_RDATA[18]    |   4.852 (r) | SLOW    |   0.992 (r) | FAST    |    0.711 |
+S_AXI_RDATA[19]    |   4.851 (r) | SLOW    |   1.121 (r) | FAST    |    0.710 |
+S_AXI_RDATA[20]    |   4.450 (r) | SLOW    |   1.005 (r) | FAST    |    0.308 |
+S_AXI_RDATA[21]    |   4.946 (r) | SLOW    |   1.011 (r) | FAST    |    0.805 |
+S_AXI_RDATA[22]    |   4.407 (r) | SLOW    |   1.037 (r) | FAST    |    0.265 |
+S_AXI_RDATA[23]    |   5.100 (r) | SLOW    |   1.113 (r) | FAST    |    0.958 |
+S_AXI_RDATA[24]    |   5.402 (r) | SLOW    |   1.029 (r) | FAST    |    1.260 |
+S_AXI_RDATA[25]    |   5.313 (r) | SLOW    |   1.027 (r) | FAST    |    1.171 |
+S_AXI_RDATA[26]    |   4.349 (r) | SLOW    |   1.080 (r) | FAST    |    0.208 |
+S_AXI_RDATA[27]    |   5.394 (r) | SLOW    |   0.976 (r) | FAST    |    1.252 |
+S_AXI_RDATA[28]    |   5.032 (r) | SLOW    |   0.969 (r) | FAST    |    0.890 |
+S_AXI_RDATA[29]    |   4.475 (r) | SLOW    |   1.027 (r) | FAST    |    0.333 |
+S_AXI_RDATA[30]    |   5.408 (r) | SLOW    |   1.060 (r) | FAST    |    1.266 |
+S_AXI_RDATA[31]    |   5.023 (r) | SLOW    |   1.100 (r) | FAST    |    0.881 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   5.441 (r) | SLOW    |   0.969 (r) | FAST    |    1.299 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.974 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+S_AXI_RID[0]       |   4.042 (r) | SLOW    |   1.059 (r) | FAST    |    0.160 |
+S_AXI_RID[1]       |   4.331 (r) | SLOW    |   1.030 (r) | FAST    |    0.449 |
+S_AXI_RID[2]       |   4.539 (r) | SLOW    |   0.978 (r) | FAST    |    0.657 |
+S_AXI_RID[3]       |   4.833 (r) | SLOW    |   1.016 (r) | FAST    |    0.951 |
+S_AXI_RID[4]       |   4.640 (r) | SLOW    |   0.980 (r) | FAST    |    0.759 |
+S_AXI_RID[5]       |   4.572 (r) | SLOW    |   1.055 (r) | FAST    |    0.690 |
+S_AXI_RID[6]       |   4.018 (r) | SLOW    |   1.039 (r) | FAST    |    0.136 |
+S_AXI_RID[7]       |   3.972 (r) | SLOW    |   1.069 (r) | FAST    |    0.091 |
+S_AXI_RID[8]       |   3.882 (r) | SLOW    |   1.068 (r) | FAST    |    0.089 |
+S_AXI_RID[9]       |   4.856 (r) | SLOW    |   1.007 (r) | FAST    |    0.974 |
+S_AXI_RID[10]      |   4.326 (r) | SLOW    |   0.990 (r) | FAST    |    0.444 |
+S_AXI_RID[11]      |   4.050 (r) | SLOW    |   1.059 (r) | FAST    |    0.169 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   4.856 (r) | SLOW    |   0.978 (r) | FAST    |    0.974 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+Max / Min delays for output bus
+Clocked by: clk
+Bus Skew: 0.074 ns
+-------------------+-------------+---------+-------------+---------+----------+
+                   |     Max     | Process |     Min     | Process | Edge     | 
+Pad                |   Delay(ns) | Corner  |   Delay(ns) | Corner  | Skew(ns) | 
+-------------------+-------------+---------+-------------+---------+----------+
+S_AXI_RRESP[0]     |   2.558 (r) | SLOW    |   1.147 (r) | FAST    |    0.074 |
+S_AXI_RRESP[1]     |   2.581 (r) | SLOW    |   1.073 (r) | FAST    |    0.024 |
+-------------------+-------------+---------+-------------+---------+----------+
+Worst Case Summary |   2.581 (r) | SLOW    |   1.073 (r) | FAST    |    0.074 |
+-------------------+-------------+---------+-------------+---------+----------+
+
+
+
+

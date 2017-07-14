@@ -1,0 +1,30 @@
+{
+	"PlatformDir" : "platform",
+	"ArchDir" : "arch",
+	"KernelDir": "kernel",
+        "Jobs": [
+          {
+            "Job": "HighLevelSynthesis",
+	    "Platforms" : ["Plat1", "Plat2"],
+	    "Architectures" : ["Arch1", "Arch3"],
+	    "Kernels" : ["Kern2", "Kern3"]
+          },
+          {
+            "Job": "Compose",
+	    "Platforms" : ["Plat1", "Plat2"],
+	    "Architectures" : ["Arch1", "Arch3"],
+	    "Composition" : { "Composition": [{"Kernel":"Kern1", "Count":42}] },
+            "Design Frequency": 110
+          },
+          {
+            "Job": "Compose",
+	    "Platforms" : ["Plat2"],
+	    "Architectures" : ["Arch3"],
+	    "Composition" : {
+              "Description": "Inline Composition",
+              "Composition": [{"Kernel": "Kern1", "Count": 42}, {"Kernel": "Kern3", "Count": 1}]
+            },
+            "Design Frequency": 100
+          }
+        ]
+}

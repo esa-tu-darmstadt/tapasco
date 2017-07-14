@@ -1,0 +1,9 @@
+{
+	"Name" : "axi4mm",
+	"Description" : "Baseline Architecture with SW-based thread pool control.",
+	"TestAPI" : "test-api.svh",
+	"TestHarness" : "test-harness.svh",
+	"VerilogIncludeAPI" : "test-api.svh",
+	"VerilogIncludeHarness" : "test-harness.svh",
+	"TclLibrary" : "missing.tcl"
+}

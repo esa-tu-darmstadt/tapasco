@@ -1,0 +1,71 @@
+.TH tapasco-build-libs 1 "May 11, 2017" "version 2017.1"  "USER COMMANDS"
+.SH NAME
+tapasco-build-libs \- Build all libraries and kernel modules for tapasco(1).
+.SH SYNOPSIS
+.B tapasco-build-libs
+[options]*
+.SH DESCRIPTION
+The TaPaSCo runtime consists of three parts:
+.PP
+1.
+.B libtapasco (.so/.a)
+.PP
+2.
+.B libplatform (.so/.a)
+.PP
+3.
+.B loadable kernel module (LKM)
+.PP
+.B
+tapasco-build-libs can be used on the host system to build all three components
+from source (see below for build requirements). The user space libraries
+libtapasco(3) and libplatform(3) will reside below in $TAPASCO_HOME/arch/lib and
+$TAPASCO_HOME/platform/lib, respectively. The loadable kernel module can be
+found in $TAPASCO_HOME/platform/[PLATFORM]/module.
+.SH OPTIONS
+.TP
+\-h|\-\-help
+.RS
+print help message and exit
+.RE
+.TP
+\-\-mode (clean | release | debug | driver_debug)
+.RS
+build mode (default: release):
+.RS
+.I clean
+removes all binaries and intermediate outputs
+.PP
+.I release
+builds libraries and kernel module with minimal logging
+.PP
+.I debug
+builds libraries with configurable logging enabled, kernel module w/minimal logging
+.PP
+.I driver_debug
+like debug, but activates kernel message output, see dmesg(1)
+.RS
+.B NOTE: THIS COMES WITH A SEVERE PERFORMANCE PENALTY, NEVER USE FOR MEASUREMENTS!
+.RE
+.RE
+.RE
+.TP
+\-\-rebuild
+.RS
+force rebuild of libraries / LKM
+.RE
+.SH REQUIREMENTS
+.SS libtapasco and libplatform
+Reqyire cmake and working C and C++ compilers; in some cases, libatomic may be
+also required.
+.SS loadable kernel module
+Requires linux kernel headers for the currently running kernel. Can be supplied
+by setting the $LINUX_HOME environment variable.
+.SH ENVIRONMENT
+.TP
+.B TAPASCO_HOME
+.RS
+Path to TaPaSCo root installation folder (where setup.sh is located).
+.RE
+.SH SEE ALSO
+tapasco(1)

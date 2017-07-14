@@ -1,0 +1,33 @@
+#!/usr/bin/python
+import argparse
+import os
+import sys
+import subprocess
+from   socket import gethostname
+
+parser = argparse.ArgumentParser()
+parser.add_argument('bitstream', help='.bit file to load')
+parser.add_argument('--reload-driver', help='reload driver, if loaded (default: %(default)s)', action='store_true')
+parser.add_argument('--verbose', help='verbose output (default: %(default)s)', action='store_true')
+args = parser.parse_args()
+
+if not os.path.exists(args.bitstream):
+	sys.exit('ERROR: {0} does could not be opened'.format(args.bitstream))
+
+if not 'TAPASCO_PLATFORM' in os.environ:
+	print('Environment variable TAPASCO_PLATFORM is not set, guessing Platform ...')
+	if gethostname() in ['zed', 'zedboard', 'zc706', 'zynq', 'pynq']:
+		os.environ['TAPASCO_PLATFORM'] = 'zynq'
+	else:
+		os.environ['TAPASCO_PLATFORM'] = 'vc709'
+
+if args.verbose:
+	print 'Bitstream: {0}'.format(args.bitstream)
+	print 'Reload Driver: {0}'.format(str(args.reload_driver))
+	print 'Platform: {0}'.format(os.environ['TAPASCO_PLATFORM'])
+
+path = 'module/'
+reld = '-d' if args.reload_driver else ''
+verb = '-v' if args.verbose else ''
+cmd = '$TAPASCO_HOME/platform/$TAPASCO_PLATFORM/{0}bit_reload.sh {1} {2} {3}'.format(path, verb, reld, args.bitstream)
+subprocess.call([cmd], shell=True)

@@ -1,0 +1,10 @@
+{
+	"Name" : "zedboard",
+	"Description" : "zedboard Platform",
+	"TclLibrary" : "zedboard.tcl",
+	"Part" : "xc7z020clg484-1",
+	"BoardPart" : "em.avnet.com:zed:part0:1.2",
+	"BoardPreset" : "zedboard",
+	"TargetUtilization" : 97,
+	"Benchmark" : "zedboard.benchmark"
+}

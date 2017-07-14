@@ -1,0 +1,19 @@
+.TH tapasco-logviewer 1 "May 11, 2017" "version 2017.1"  "USER COMMANDS"
+.SH NAME
+tapasco-logviewer \- Graphical viewer tool for design space exploration logs.
+.SH SYNOPSIS
+.B tapasco-logviewer [LOGFILE]
+.SH DESCRIPTION
+A Swing-based log viewing tool for TaPaSCo. Design space exploration runs write
+a file called
+.I dse.json
+in their base directory. This file is in human-readable Json format and can be
+parsed by this tool to show an interactive graph representation.
+.SH ENVIRONMENT
+.TP
+.B TAPASCO_HOME
+.RS
+Path to TaPaSCo root installation folder (where setup.sh is located).
+.RE
+.SH SEE ALSO
+tapasco(1), itapasco(1)
