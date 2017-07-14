@@ -20,11 +20,11 @@
     </encoder>
   </appender>
 
-  <logger name="de.tu_darmstadt.cs.esa.tapasco.jobs.executors" level="trace">
+  <logger name="de.tu_darmstadt.cs.esa.tapasco.activity.composers" level="trace">
     <appender-ref ref="STDOUT-DETAIL" />
-  </logger>
+  </logger>-->
 
-  <logger name="de.tu_darmstadt.cs.esa.tapasco.itapasco.view.detail.LogTrackingPanel" level="trace">
+  <!--<logger name="de.tu_darmstadt.cs.esa.tapasco.itapasco.view.detail.LogTrackingPanel" level="trace">
     <appender-ref ref="STDOUT-DETAIL" />
   </logger>-->
 </configuration>
