@@ -75,6 +75,7 @@ private object PrettyPrinter {
 
   def printConfiguration(c: Configuration): String = List(
       "[Configuration @" + c.descPath + "]",
+      "Verbose = " + c.verbose,
       "KernelDir = " + c.kernelDir,
       "CoreDir = " + c.coreDir,
       "ArchDir = " + c.archDir,

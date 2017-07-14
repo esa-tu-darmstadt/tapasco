@@ -1,5 +1,6 @@
 package de.tu_darmstadt.cs.esa.tapasco.activity.hls
 import  de.tu_darmstadt.cs.esa.tapasco.base._
+import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.LogTrackingFileWatcher
 import  de.tu_darmstadt.cs.esa.tapasco.util._
 import  de.tu_darmstadt.cs.esa.tapasco.Common
 import  de.tu_darmstadt.cs.esa.tapasco.Logging._
@@ -26,6 +27,8 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
   }
 
   def synthesize(k: Kernel, t: Target)(implicit cfg: Configuration): Result = try {
+    // create log tracker
+    val lt = new LogTrackingFileWatcher(Some(logger))
     val outzip = outputZipFile(k, t)
     val script = cfg.outputDir(k, t).resolve("hls").resolve("%s.tcl".format(t.ad.name))
     val logfile = logFile(k, t)
@@ -34,6 +37,10 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
       new FileWriter(script.toString).append(makeScript(k, t)).close()  // write Tcl file
       val runName = "'%s' for %s".format(k.name, t.toString)
       logger.info("starting run {}: output in {}", runName: Any, logfile)
+      cfg.verbose foreach { mode =>
+        logger.info("verbose mode {} is active, starting to watch {}", mode: Any, logfile)
+        lt += logfile
+      }
 
       // execute Vivado HLS (max. runtime: 1 day)
       val vivadoRet = InterruptibleProcess(Process(Seq("vivado_hls",

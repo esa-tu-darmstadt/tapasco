@@ -26,6 +26,7 @@ import  de.tu_darmstadt.cs.esa.tapasco.Common
 import  de.tu_darmstadt.cs.esa.tapasco.base._
 import  de.tu_darmstadt.cs.esa.tapasco.base.json._
 import  de.tu_darmstadt.cs.esa.tapasco.base.tcl._
+import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.LogTrackingFileWatcher
 import  de.tu_darmstadt.cs.esa.tapasco.util._
 import  de.tu_darmstadt.cs.esa.tapasco.reports._
 import  de.tu_darmstadt.cs.esa.tapasco.dse.Heuristics
@@ -50,6 +51,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     logger.debug("VivadoComposer uses at most {} threads", cfg.maxThreads getOrElse "unlimited")
     // create output struct
     val files = VivadoComposer.Files(bd, target, f, archFeatures ++ platformFeatures)
+    // create log tracker
+    val lt = new LogTrackingFileWatcher(Some(logger))
     // create output directory
     java.nio.file.Files.createDirectories(files.outdir)
     // dump configuration
@@ -63,7 +66,10 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
                 composition  = composition(bd, target))
 
     logger.info("Vivado starting run {}: output in {}", files.runName: Any, files.logFile)
-
+    cfg.verbose foreach { mode =>
+      logger.info("verbose mode {} is active, starting to watch {}", mode: Any, files.logFile)
+      lt += files.logFile
+    }
 
     // Vivado shell command
     val vivadoCmd = Seq("vivado", "-mode", "batch", "-source", files.tclFile.toString,

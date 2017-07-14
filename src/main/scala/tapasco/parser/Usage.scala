@@ -50,6 +50,9 @@ object Usage {
 
   private def globals()    = """
   Global Options:
+    -v | --verbose [MODE]     Verbose mode, log outputs of subprocesses;
+                              Optional MODE is a quoted string selecting the
+                              output mode (default: 'verbose')
     -n | --dryRun FILE        Dry run, do not execute, only dump Json into FILE.
     --archDir PATH            Base directory for architecture descriptions
     --compositionDir PATH     Output base directory for Compose jobs

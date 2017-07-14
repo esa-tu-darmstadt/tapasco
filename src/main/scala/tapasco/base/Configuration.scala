@@ -52,6 +52,8 @@ trait Configuration {
   def maxThreads(mt: Option[Int]): Configuration
   def dryRun(cfg: Option[Path]): Configuration
   def dryRun: Option[Path]
+  def verbose(mode: Option[String]): Configuration
+  def verbose: Option[String]
 
   /** Returns the default output directory for the given kernel and target. */
   def outputDir(kernel: Kernel, target: Target): Path =

@@ -21,25 +21,29 @@ class MultiFileWatcher(pollInterval: Int = MultiFileWatcher.POLL_INTERVAL) exten
    * Add a file to the monitoring.
    * @param p Path to file to be monitored.
    */
-  def +=(p: Path): Unit = open(p)
+  def +=(p: Path) { open(p) }
+  @inline def addPath(p: Path) { this += p }
 
   /**
    * Add a collection of files to the monitoring.
    * @param ps Collection of Paths to files to be monitored.
    */
-  def ++=(ps: Traversable[Path]): Unit = ps foreach (open _)
+  def ++=(ps: Traversable[Path]) { ps foreach (open _) }
+  @inline def addPaths(ps: Traversable[Path]) { this ++= ps }
 
   /**
    * Remove a file from the monitoring.
    * @param p Path to file to be removed.
    */
-  def -=(p: Path): Unit = close(p)
+  def -=(p: Path) { close(p) }
+  @inline def remPath(p: Path) { this -= p }
 
   /**
    * Remove a collection of files from the monitoring.
    * @param ps Collection of Paths to files to be removed.
    */
   def --=(ps: Traversable[Path]): Unit = ps foreach (close _)
+  @inline def remPaths(ps: Traversable[Path]) { this --= ps }
 
   /** Remove and close all files. */
   def closeAll(): Unit = {

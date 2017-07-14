@@ -13,6 +13,8 @@ private object GlobalOptions {
 
   def validOption: Parser[String] = (
     longShortOption("h", "help")    |
+    longShortOption("v", "verbose") |
+    longShortOption("n", "dryRun")  |
     longOption("archDir")           |
     longOption("platformDir")       |
     longOption("coreDir")           |
@@ -23,13 +25,16 @@ private object GlobalOptions {
     longOption("logFile")           |
     longOption("parallel")          |
     longOption("slurm")             |
-    longShortOption("-n", "DryRUn") |
     longOption("maxThreads") 
   ).opaque("a global option")
 
   def help: Parser[(String, String)] =
     (longShortOption("h", "help") | IgnoreCase("help") | IgnoreCase("usage")) ~
     (ws1 ~ string).? map { case (h, topic) => { Usage(topic); ("Help", Usage()) } }
+
+  def verbose: Parser[(String, String)] =
+    (longShortOption("v", "verbose", Some("Verbose")) ~/ (ws1 ~ quotedString.opaque("verbose mode as quoted string")).? ~ ws)
+      .map { case (k, mode) => (k, mode getOrElse "verbose") }
 
   def archDir: Parser[(String, Path)] =
     longOption("archDir", "Architecture") ~/ ws1 ~ path.opaque("root dir of Architectures") ~ ws
@@ -71,7 +76,7 @@ private object GlobalOptions {
     longOption("maxThreads", "MaxThreads") ~/ ws ~ posint ~ ws
 
   def globalOptionsSeq: Parser[Seq[(String, _)]] =
-    ws ~ (help | dirs | inputFiles | slurm | parallel | dryRun | maxThreads).rep
+    ws ~ (help | verbose | dirs | inputFiles | slurm | parallel | dryRun | maxThreads).rep
   
   def globalOptions: Parser[Configuration] =
     globalOptionsSeq map (as => mkConfig(as))
@@ -86,13 +91,13 @@ private object GlobalOptions {
         case ("Platform", p: Path)     => mkConfig(as, Some(c getOrElse Configuration() platformDir p))
         case ("Slurm", e: Boolean)     => mkConfig(as, Some(c getOrElse Configuration() slurm e))
         case ("Parallel", e: Boolean)  => mkConfig(as, Some(c getOrElse Configuration() parallel e))
-        //case ("Features", fs)          => TODO
         case ("JobsFile", p: Path)     => mkConfig(as, Some(c getOrElse Configuration() jobs readJobsFile(p)))
         case ("LogFile", p: Path)      => mkConfig(as, Some(c getOrElse Configuration() logFile Some(p)))
         case ("ConfigFile", p: Path)   => mkConfig(as, Some(loadConfigFromFile(p)))
         case ("DryRun", p: Path)       => mkConfig(as, Some(c getOrElse Configuration() dryRun Some(p)))
         case ("MaxThreads", i: Int)    => mkConfig(as, Some(c getOrElse Configuration() maxThreads Some(i)))
-        case _ => c getOrElse Configuration()
+        case ("Verbose", m: String)    => mkConfig(as, Some(c getOrElse Configuration() verbose Some(m)))
+        case _                         => c getOrElse Configuration()
       }
       case x => c getOrElse Configuration()
     }

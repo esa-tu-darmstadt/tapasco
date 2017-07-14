@@ -45,26 +45,28 @@ private case class ConfigurationImpl (
       parallel: Boolean                               = false,
       maxThreads: Option[Int]                         = None,
       dryRun: Option[Path]                            = None,
+      verbose: Option[String]                         = None,
       jobs: Seq[Job]                                  = Seq()
     ) extends Description(descPath: Path) with Configuration {
-  def descPath(p: Path): Configuration = this.copy(descPath = p)
-  val archDir: Path = resolve(_archDir)
-  def archDir(p: Path): Configuration = this.copy(_archDir = p)
-  val compositionDir: Path = resolve(_compositionDir)
-  def compositionDir(p: Path): Configuration = this.copy(_compositionDir = p)
-  val coreDir: Path = resolve(_coreDir)
-  def coreDir(p: Path): Configuration = this.copy(_coreDir = p)
-  val kernelDir: Path = resolve(_kernelDir)
-  def kernelDir(p: Path): Configuration = this.copy(_kernelDir = p)
-  val platformDir: Path = resolve(_platformDir)
-  def platformDir(p: Path): Configuration = this.copy(_platformDir = p)
-  val logFile: Option[Path] = _logFile map (resolve _)
-  def logFile(op: Option[Path]): Configuration = this.copy(_logFile = op)
-  def slurm(enabled: Boolean): Configuration = this.copy(slurm = enabled)
-  def parallel(enabled: Boolean): Configuration = this.copy(parallel = enabled)
-  def maxThreads(mt: Option[Int]): Configuration = this.copy(maxThreads = mt)
-  def dryRun(cfg: Option[Path]): Configuration = this.copy(dryRun = cfg)
-  def jobs(js: Seq[Job]): Configuration = this.copy(jobs = js)
+  def descPath(p: Path): Configuration                = this.copy(descPath = p)
+  val archDir: Path                                   = resolve(_archDir)
+  def archDir(p: Path): Configuration                 = this.copy(_archDir = p)
+  val compositionDir: Path                            = resolve(_compositionDir)
+  def compositionDir(p: Path): Configuration          = this.copy(_compositionDir = p)
+  val coreDir: Path                                   = resolve(_coreDir)
+  def coreDir(p: Path): Configuration                 = this.copy(_coreDir = p)
+  val kernelDir: Path                                 = resolve(_kernelDir)
+  def kernelDir(p: Path): Configuration               = this.copy(_kernelDir = p)
+  val platformDir: Path                               = resolve(_platformDir)
+  def platformDir(p: Path): Configuration             = this.copy(_platformDir = p)
+  val logFile: Option[Path]                           = _logFile map (resolve _)
+  def logFile(op: Option[Path]): Configuration        = this.copy(_logFile = op)
+  def slurm(enabled: Boolean): Configuration          = this.copy(slurm = enabled)
+  def parallel(enabled: Boolean): Configuration       = this.copy(parallel = enabled)
+  def maxThreads(mt: Option[Int]): Configuration      = this.copy(maxThreads = mt)
+  def dryRun(cfg: Option[Path]): Configuration        = this.copy(dryRun = cfg)
+  def verbose(mode: Option[String]): Configuration    = this.copy(verbose = mode)
+  def jobs(js: Seq[Job]): Configuration               = this.copy(jobs = js)
 
   // these directories must exist
   for ((d, n) <- Seq((archDir, "architectures"),
