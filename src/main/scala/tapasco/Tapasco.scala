@@ -67,8 +67,9 @@ object Tapasco {
   def main(args: Array[String]) {
     implicit val tasks = new Tasks
     val ok = try {
+      val cfgargs = if (args.length > 0 && args(0).toLowerCase.equals("itapasco")) args.drop(1) else args
       // try to parse all arguments
-      val c = CommandLineParser(args mkString " ")
+      val c = CommandLineParser(cfgargs mkString " ")
       logger.debug("parsed config: {}", c)
       if (c.isRight) {
         // get parsed Configuration
