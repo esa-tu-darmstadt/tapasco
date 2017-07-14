@@ -323,12 +323,12 @@ configuration via `tapasco -n config.json`.
              "or: tapasco -h | --help [TOPIC]" &
              "")
 
-  private def usage() = Seq(
+  private def usage()(implicit fmt: Formatter[String] = StringFormatter) = Seq(
     overview(),
     globals,
     shortJobs,
     shortTopics
-  ) mkString
+  ) map (fmt.apply _) mkString
 
   private def manpage() = {
     implicit val fmt = ManPageFormatter
