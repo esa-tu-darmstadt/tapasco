@@ -193,7 +193,7 @@ struct Tapasco {
     tapasco_device_release_job_id(dev_ctx, j_id);
     return res;
   }
-  
+
   /**
    * Launches a job on the device and returns a future to the result.
    * @param f_id Kernel ID.
@@ -206,7 +206,7 @@ struct Tapasco {
   {
     return async(std::launch::async, [=, &ret]{ return launch(f_id, ret, args...); });
   }
-  
+
   /**
    * Launches a job on the device without return value.
    * @param f_id Kernel ID.
@@ -428,7 +428,7 @@ private:
     tapasco_device_free(dev_ctx, h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
     return TAPASCO_SUCCESS;
   }
-  
+
   /** Gets a single const pointer argument (dealloc only). **/
   template<typename T>
   tapasco_res_t get_args(tapasco_job_id_t const j_id, uint32_t const arg_idx, T const* t) const noexcept
@@ -474,7 +474,7 @@ private:
     return get_args(j_id, arg_idx + 1, args...);
   }
 #endif
-  
+
   bool _ok { false };
   tapasco_ctx_t* ctx { nullptr };
   tapasco_dev_ctx_t* dev_ctx { nullptr };

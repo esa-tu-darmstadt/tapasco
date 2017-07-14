@@ -95,7 +95,7 @@ int main(int argc, char **argv)
 		pthread_create(&threads[t], NULL, stress, (void *)runs);
 	for (t = 0; t < thread_count; ++t)
 		pthread_join(threads[t], NULL);
-	
+
 	while (i >= 0)
 		close(fd[--i]);
 

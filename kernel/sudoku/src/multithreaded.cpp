@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
 	long thrdcnt {sysconf(_SC_NPROCESSORS_CONF)};
 	int c {2};
 	int const mode {argc > 2 && argv[1][0] == 'f'};
-	
+
 	if (argc < 3) {
 		cerr << "Usage: sudoku_mt <cpu|fgpa> [<number of threads>] <filename1> <filename2> ..." << endl;
 		exit(EXIT_FAILURE);

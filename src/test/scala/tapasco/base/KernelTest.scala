@@ -37,7 +37,7 @@ class KernelSpec extends FlatSpec with Matchers {
   "A correct Kernel file" should "be parsed to Right(Kernel)" in {
     assert(Kernel.from(jsonPath.resolve("correct-kernel.json")).isRight)
   }
-  
+
   "A correct Kernel file" should "be parsed correctly" in {
     val oc = Kernel.from(jsonPath.resolve("correct-kernel.json"))
     lazy val c = oc.right.get
@@ -53,7 +53,7 @@ class KernelSpec extends FlatSpec with Matchers {
     c.args(0).passingConvention should equal (ByReference)
     c.otherDirectives should equal (Some(jsonPath.resolve("sudoku.dir")))
   }
-  
+
   "A Kernel file with unknown entries" should "be parsed correctly" in {
     val oc = Kernel.from(jsonPath.resolve("correct-kernel.json"))
     lazy val c = oc.right.get

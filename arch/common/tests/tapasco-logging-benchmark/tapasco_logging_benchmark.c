@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
 	printf("Average throughput: %10.1f logs/s\n", logs / (time_diff / 1000000.0));
 	printf("Thread  throughput: %10.1f logs/s\n",
 			logs / (time_diff / 1000000.0) / (double)thrdcnt);
-	
+
 	free(_rnd_data);
 	printf("Finished the test.\n");
 	tapasco_logging_exit();

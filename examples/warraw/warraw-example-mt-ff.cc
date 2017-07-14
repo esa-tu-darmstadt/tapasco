@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 	arr = (int *)malloc(SZ * RUNS * sizeof(int));
 	check(arr != NULL);
 	init_array(arr, SZ * RUNS);
-	
+
 	golden_arr = (int *)malloc(SZ * RUNS * sizeof(int));
 	check(golden_arr != NULL);
 	init_array(golden_arr, SZ * RUNS);
@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 	std::vector<ff_node *> f;
 	for (int i = 0; i < sysconf(_SC_NPROCESSORS_CONF); ++i)
 		f.push_back(new Worker);
-	
+
 	Emitter e;
 	Collector c;
 	ff_farm<> farm(f, &e, &c);

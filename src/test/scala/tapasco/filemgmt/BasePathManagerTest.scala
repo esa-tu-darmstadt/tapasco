@@ -84,7 +84,7 @@ class BasePathManagerSpec extends FlatSpec with Matchers {
     }
 
     futures foreach { f => scala.concurrent.Await.ready(f, scala.concurrent.duration.Duration.Inf) }
-    
+
     assert(0 until tests map { i => check(i) } reduce (_ && _))
   }
 }

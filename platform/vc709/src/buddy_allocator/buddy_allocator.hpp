@@ -34,24 +34,24 @@ class buddy_allocator
 	public:
 		buddy_allocator(uint32_t, uint_fast32_t, uint_fast32_t, uint_fast32_t);
 		~buddy_allocator();
-		
+
 		uint32_t alloc_Mem(uint_fast32_t);
 		uint_fast32_t dealloc_Mem(uint32_t);
-		
+
 		void print_Tree(void);
 
 	private:
 		buddy_tree *bt;
 		uint_fast32_t min_order;
 		uint_fast32_t max_order;
-		
+
 		uint_fast32_t error;
-		
+
 		uint32_t calc_Address(uint32_t);
 		uint_fast32_t calc_Size(uint_fast32_t, uint32_t);
 		uint_fast32_t build_Tree(node_t *);
 		uint_fast32_t check_Tree(node_t *);
-		
+
 		node_t * find_Free(uint_fast32_t);
 		node_t * find_Node(uint32_t);
 		node_t * find_Sibling(node_t *);

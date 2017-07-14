@@ -42,7 +42,7 @@ class ConfigurationSpec extends FlatSpec with Matchers {
     if (v.isLeft) { logger.error("{}, stacktrace: {}", v.left.get: Any, v.left.get.getStackTrace() mkString "\n") }
     assert(v.isRight) 
   }
-  
+
   "A correct Configuration file" should "be parsed correctly" in {
     val oc = Configuration.from(jsonPath.resolve("configTest/config.json"))
     lazy val c = oc.right.get
@@ -79,7 +79,7 @@ class ConfigurationSpec extends FlatSpec with Matchers {
       case _ => assert(false, "expected ComposeJob at index 2 in jobs array")
     }
   }
-  
+
   "An invalid Configuration file" should "not be parsed" in {
     assert(Configuration.from(jsonPath.resolve("invalid-config.json")).isLeft)
   }

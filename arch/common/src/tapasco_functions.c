@@ -114,7 +114,7 @@ void tapasco_functions_setup_system(tapasco_dev_ctx_t *dev_ctx, tapasco_function
 		++funcs;
 		++slot_id;
 	}
-	
+
 }
 
 inline static int reserve_func(tapasco_func_t *f, tapasco_func_id_t const f_id) {

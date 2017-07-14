@@ -81,23 +81,23 @@ static void *runTest(void *p) {
 		// golden run
 		int golden = warraw(&golden_arr[SZ * run]);
 		printf("Golden output for run %ld: %d\n", run, golden);
-	
+
 		// allocate mem on device and copy array part
 		tapasco_handle_t h = tapasco_device_alloc(dev, SZ * sizeof(int), 0);
 		check(h != 0);
 		check_tapasco(tapasco_device_copy_to(dev, &arr[SZ * run], h,
 				SZ * sizeof(int), TAPASCO_COPY_BLOCKING));
-	
+
 		// get a job id and set argument to handle
 		tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev, 12,
 				TAPASCO_ACQUIRE_JOB_ID_BLOCKING);
 		printf("run %ld: j_id = %d\n", run, j_id);
 		check(j_id > 0);
 		check_tapasco(tapasco_device_job_set_arg(dev, j_id, 0, sizeof(h), &h));
-	
+
 		// shoot me to the moon!
 		check_tapasco(tapasco_device_job_launch(dev, j_id, TAPASCO_JOB_LAUNCH_BLOCKING));
-	
+
 		// get the result
 		int32_t r = 0;
 		check_tapasco(tapasco_device_job_get_return(dev, j_id, sizeof(r), &r));
@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 	arr = (int *)malloc(SZ * RUNS * sizeof(int));
 	check(arr != NULL);
 	init_array(arr, SZ * RUNS);
-	
+
 	golden_arr = (int *)malloc(SZ * RUNS * sizeof(int));
 	check(golden_arr != NULL);
 	init_array(golden_arr, SZ * RUNS);

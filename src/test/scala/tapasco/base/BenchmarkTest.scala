@@ -99,7 +99,7 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
   "A correct Benchmark file" should "be parsed to Some(Benchmark)" in {
     assert(Benchmark.from(jsonPath.resolve("correct-benchmark.json")).isRight)
   }
-  
+
   "A correct Benchmark file" should "be parsed correctly" in {
     val oc = Benchmark.from(jsonPath.resolve("correct-benchmark.json"))
     lazy val c = oc.right.get
@@ -145,7 +145,7 @@ class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
     ce.write should equal (21.68177044056579)
     ce.readWrite should equal (37.784625316971535)
   }
-  
+
   "An invalid Benchmark file" should "not be parsed" in {
     val oc1 = Benchmark.from(jsonPath.resolve("invalid-benchmark.json"))
     assert(oc1.isLeft)

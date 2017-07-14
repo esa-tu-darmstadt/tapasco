@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 		cfg.slot_id = strtoul(argv[1], NULL, 0);
 	else
 		cfg.slot_id = -1;
-	
+
 	if (argc > 2)
 		cfg.delay = strtoul(argv[2], NULL, 0);
 	else
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
 		cfg.iterations = 1;
 
 	cfg.mt = cfg.all_slots && argc > 4;
-	
+
 	printf("Starting: all_slots = %ld, slot_id = %ld, delay = %ld, iterations = %ld\n",
 			cfg.all_slots, cfg.slot_id, cfg.delay, cfg.iterations);
 

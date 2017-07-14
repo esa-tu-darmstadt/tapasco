@@ -36,7 +36,7 @@ class PlatformSpec extends FlatSpec with Matchers {
   "A correct Platform file" should "be parsed to Right(Platform)" in {
     assert(Platform.from(jsonPath.resolve("correct-platform.json")).isRight)
   }
-  
+
   "A correct Platform file" should "be parsed correctly" in {
     val oc = Platform.from(jsonPath.resolve("correct-platform.json"))
     lazy val c = oc.right.get
@@ -49,7 +49,7 @@ class PlatformSpec extends FlatSpec with Matchers {
     c.targetUtilization should equal (55)
     c.supportedFrequencies should contain inOrderOnly (250, 200, 150, 100, 42)
   }
-  
+
   "An Platform file with unknown entries" should "be parsed correctly" in {
     val oc = Platform.from(jsonPath.resolve("unknown-platform.json"))
     lazy val c = oc.right.get

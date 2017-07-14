@@ -144,9 +144,9 @@ int main(int argc, char **argv)
 		pthread_create(&threads[t], NULL, stress, (void *)runs);
 	for (t = 0; t < thread_count; ++t)
 		pthread_join(threads[t], NULL);
-	
+
 	platform_deinit();
-	
+
 	if (! stop)
 		printf("Test successful.\n");
 	else

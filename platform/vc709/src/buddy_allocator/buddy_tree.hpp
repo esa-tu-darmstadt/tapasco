@@ -31,24 +31,24 @@ using namespace std;
 //leafMiddle == node is neither leaf or allocated, must not use
 enum node_usage_e
     {nodeFree, nodeAlloc, nodeMiddle};
-    
+
 enum node_position_e
     {nodeRoot, nodeLeft, nodeRight};
 
 typedef struct node {
-	
+
   uint32_t address;
   uint_fast32_t size;
-  
+
   node_usage_e usage;
-  
+
   struct node *parent;
   struct node *l_child;
   struct node *r_child;
-  
+
   node(uint32_t a, uint_fast32_t s, struct node *p) : address(a), size(s), usage(nodeFree), parent(p), l_child(NULL), r_child(NULL) {}
   node() : address(0), size(0), usage(nodeFree), parent(NULL), l_child(NULL), r_child(NULL) {}
-  
+
 } node_t;
 
 class buddy_tree
@@ -56,16 +56,16 @@ class buddy_tree
 	public:
 		buddy_tree(uint32_t, uint_fast32_t);
 		~buddy_tree();
-		
+
 		uint_fast32_t split_Node(node_t *);
 		uint_fast32_t merge_Node(node_t *);
 		uint_fast32_t alloc_Leaf(node_t *);
 		uint_fast32_t dealloc_Leaf(node_t *);
-		
+
 		void init_Search(void);
 		node_t * search_Node(node_t *);
 		node_t * search_Node(node_t *, uint32_t);
-		
+
 		node_t * get_Root(void);
 		void print_Tree(node_t *);
 		void print_Node(node_t *);
@@ -74,10 +74,10 @@ class buddy_tree
 		node_t *root;
 		uint_fast32_t nodes;
 		uint_fast32_t leaves;
-		
+
 		node_t *search_last;
 		node_position_e search_direction;
-		
+
 		node_position_e node_Position(node_t *);
 		bool is_Root(node_t *);
 		bool is_Leaf(node_t *);

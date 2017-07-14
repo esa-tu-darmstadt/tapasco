@@ -98,7 +98,7 @@ void gq_enqueue(struct gq_t *q, void *v)
 				atomic_compare_exchange_strong(&q->tail, &tail, new);
 			}
 		}
-		
+
 	}
 	TAGGED_PTR(n) = { .ptr = nd, .tag = tail.tag + 1 };
 	atomic_compare_exchange_strong(&q->tail, &tail, n);
@@ -131,7 +131,7 @@ void *gq_dequeue(struct gq_t *q)
 				TAGGED_PTR(new) = { .ptr = next.ptr, head.tag + 1 };
 				if (atomic_compare_exchange_strong(&q->head, &head, new))
 					break;
-				
+
 			}
 		}
 	}

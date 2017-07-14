@@ -192,7 +192,7 @@ static int init_sysfs_files(void)
 
 	return retval;
 
-	
+
 	device_remove_file(zynq_dev.miscdev[2].this_device, &dev_attr_total_ev);
 err_total_ev:
 	device_remove_file(zynq_dev.miscdev[2].this_device, &dev_attr_pending_ev);

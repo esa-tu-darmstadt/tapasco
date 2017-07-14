@@ -56,7 +56,7 @@ START_TEST (tapasco_functions_check_counts)
 		fail_if (unavail >= 0);
 		tapasco_functions_release(funcs, slot_id);
 	}
-	
+
 	tapasco_functions_deinit(funcs);
 }
 END_TEST

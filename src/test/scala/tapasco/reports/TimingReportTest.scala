@@ -39,7 +39,7 @@ class TimingReportSpec extends FlatSpec with Matchers {
   "A correct TimingReport file" should "be parsed to Some(TimingReport)" in {
     TimingReport(reportPath.resolve("correct-timing.rpt")) should not be empty
   }
-  
+
   "A correct TimingReport file" should "be parsed correctly" in {
     val oc = TimingReport(reportPath.resolve("correct-timing.rpt"))
     lazy val c = oc.get
@@ -55,7 +55,7 @@ class TimingReportSpec extends FlatSpec with Matchers {
     c.minDelayPath.destination shouldBe "stereoCore_stereo_interRow_2/deg45_ifc_lvalHandler_curLine_rv_reg[80]/D"
     c.minDelayPath.slack shouldBe 0.026
   }
-  
+
   "An invalid TimingReport file" should "not be parsed" in {
     val oc1 = TimingReport(reportPath.resolve("invalid-timing1.rpt"))
     val oc2 = TimingReport(reportPath.resolve("invalid-timing2.rpt"))

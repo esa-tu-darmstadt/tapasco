@@ -14,7 +14,7 @@ class FeatureParsersSpec extends FlatSpec with Matchers with Checkers {
     check(forAllNoShrink(featureKeyValueGen) { f =>
       checkParsed(P( featureKeyValue ~ End ).parse(f) )
     })
-   
+
 
   "All valid features" should "be parsed by feature" in
     check(forAllNoShrink(featureGen) { f =>

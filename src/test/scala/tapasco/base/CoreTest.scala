@@ -39,7 +39,7 @@ class CoreSpec extends FlatSpec with Matchers {
   "A correct Core file" should "be parsed to Right(Core)" in {
     assert(Core.from(jsonPath.resolve("correct-core.json")).isRight)
   }
-  
+
   "A correct Core file" should "be parsed correctly" in {
     val oc = Core.from(jsonPath.resolve("correct-core.json"))
     lazy val c = oc.right.get
@@ -52,7 +52,7 @@ class CoreSpec extends FlatSpec with Matchers {
     c.zipPath.toFile.exists should be (true)
     c.averageClockCycles should equal (Some(1234567890))
   }
-  
+
   "A Core file with unknown entries" should "be parsed correctly" in {
     val oc = Core.from(jsonPath.resolve("unknown-core.json"))
     lazy val c = oc.right.get

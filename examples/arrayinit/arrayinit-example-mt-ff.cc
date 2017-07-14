@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 	std::vector<ff_node *> f;
 	for (int i = 0; i < sysconf(_SC_NPROCESSORS_CONF); ++i)
 		f.push_back(new Worker);
-	
+
 	Emitter e;
 	Collector c;
 	ff_farm<> farm(f, &e, &c);

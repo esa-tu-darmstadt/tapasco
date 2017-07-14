@@ -59,7 +59,7 @@ object Alternatives {
     * @return Set of alternative names for kernel on Target **/
   def alternatives(kernel: String, target: Target)(implicit cfg: Configuration): Set[String] =
     idForName(kernel) map (namesForId(_)) getOrElse(Set())
- 
+
   /** Returns alternative kernels for given kernel.
    *  @param kernel Kernel to find alternatives to.
    *  @return Set of alternative Kernels. **/

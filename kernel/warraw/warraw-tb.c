@@ -30,7 +30,7 @@ int main(int argc, char **argv)
 	int data[SZ], i, ret = 0, s = 0;
 	for (i = 0; i < SZ; ++i)
 		data[i] = i + 1;
-	
+
 	s = warraw(data);
 
 	for (i = 0; i < SZ; ++i) {

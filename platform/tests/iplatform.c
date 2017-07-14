@@ -221,7 +221,7 @@ static int runtest(long const which)
 
 	for (long t = 0; t < thrdcnt; ++t)
 		pthread_join(threads[t], NULL);
-	
+
 	platform_deinit();
 	return errors + terrors;
 }

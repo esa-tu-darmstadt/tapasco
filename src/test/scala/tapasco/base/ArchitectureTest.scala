@@ -36,7 +36,7 @@ class ArchitectureSpec extends FlatSpec with Matchers {
   "A correct Architecture file" should "be parsed to Right" in {
     assert(Architecture.from(jsonPath.resolve("correct-arch.json")).isRight)
   }
-  
+
   "A correct Architecture file" should "be parsed correctly" in {
     val oc = Architecture.from(jsonPath.resolve("correct-arch.json"))
     lazy val c = oc.right.get
@@ -46,7 +46,7 @@ class ArchitectureSpec extends FlatSpec with Matchers {
     c.valueArgTemplate should equal (jsonPath.resolve("valuearg.directives.template"))
     c.referenceArgTemplate should equal (jsonPath.resolve("referencearg.directives.template"))
   }
-  
+
   "An Composition file with unknown entries" should "be parsed correctly" in {
     val oc = Architecture.from(jsonPath.resolve("unknown-arch.json"))
     lazy val c = oc.right.get
