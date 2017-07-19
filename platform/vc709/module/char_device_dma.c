@@ -300,18 +300,6 @@ static int dma_initialize(void) {
 	fflink_notice("Initializing private data");
 
 	dma_init_pdata(&priv_data);
-	dma_set_mask_and_coherent(&get_pcie_dev()->dev, DMA_BIT_MASK(DMA_MAX_BIT));
-
-	/* get buffers for dma, this could possibly go wrong */
-	if(DMA_MAX_BIT == 32) {
-		zone = GFP_DMA32;
-	} else if (DMA_MAX_BIT == 64) {
-		zone = GFP_DMA32;
-	} else {
-		fflink_warn("Wrong bit mask setting - only 32/64 supported, but have %d\n", DMA_MAX_BIT);
-		err_return = -EFAULT;
-		goto open_failed;
-	}
 
 	err_1 = dma_alloc_pbufs(&priv_data.kvirt_h2l, &priv_data.dma_handle_h2l, zone, PCI_DMA_TODEVICE);
 	err_2 = dma_alloc_pbufs(&priv_data.kvirt_l2h, &priv_data.dma_handle_l2h, zone, PCI_DMA_FROMDEVICE);

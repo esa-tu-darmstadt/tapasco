@@ -95,8 +95,23 @@ error_pci_en:
  * */
 static int configure_device(struct pci_dev *pdev)
 {
-	fflink_warn("Settings of MPS: %d and Maximum Read Request %d\n", pcie_get_mps(pdev), pcie_get_readrq(pdev));
+	fflink_info("Settings of MPS: %d and Maximum Read Request %d\n", pcie_get_mps(pdev), pcie_get_readrq(pdev));
+
+	if(!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))) {
+        fflink_info("dma_set_mask: Using 64 bit dma addresses\n");
+        dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
+    } else if(!dma_set_mask(&pdev->dev, DMA_BIT_MASK(32))) {
+        fflink_info("dma_set_mask: Using 32 bit dma addresses\n");
+        dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+    } else {
+            fflink_warn("No suitable dma available\n");
+            goto mask_error;
+    }
+
 	return 0;
+
+mask_error:
+	return -ENODEV;
 }
 /**
  * @brief Register specific function with msi interrupt line
