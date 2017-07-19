@@ -315,7 +315,6 @@ static int dma_initialize(void) {
 open_failed_deinit:
 	dma_free_pbufs(priv_data.kvirt_h2l, priv_data.dma_handle_h2l, PCI_DMA_TODEVICE);
 	dma_free_pbufs(priv_data.kvirt_l2h, priv_data.dma_handle_l2h, PCI_DMA_FROMDEVICE);
-open_failed:
 	return err_return;
 }
 

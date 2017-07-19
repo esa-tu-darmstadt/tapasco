@@ -97,16 +97,16 @@ static int configure_device(struct pci_dev *pdev)
 {
 	fflink_info("Settings of MPS: %d and Maximum Read Request %d\n", pcie_get_mps(pdev), pcie_get_readrq(pdev));
 
-	if(!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))) {
-        fflink_info("dma_set_mask: Using 64 bit dma addresses\n");
-        dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
-    } else if(!dma_set_mask(&pdev->dev, DMA_BIT_MASK(32))) {
-        fflink_info("dma_set_mask: Using 32 bit dma addresses\n");
-        dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
-    } else {
-            fflink_warn("No suitable dma available\n");
-            goto mask_error;
-    }
+	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))) {
+		fflink_info("dma_set_mask: Using 64 bit dma addresses\n");
+		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
+	} else if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(32))) {
+		fflink_info("dma_set_mask: Using 32 bit dma addresses\n");
+		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+	} else {
+		fflink_warn("No suitable dma available\n");
+		goto mask_error;
+	}
 
 	return 0;
 
@@ -131,8 +131,135 @@ static int register_intr_handler(struct pci_dev *pdev, int c)
 
 	if (c == 1 || c == 2 || c == 3) err = -2;
 
-	if (c >= 4) {
-		err = request_irq(pci_irq_vector(pdev, c), intr_handler_user, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev);
+	switch (c) {
+	case 4: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_0, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 5: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_1, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 6: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_2, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 7: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_3, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 8: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_4, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 9: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_5, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 10: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_6, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 11: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_7, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 12: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_8, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 13: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_9, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 14: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_10, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 15: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_11, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 16: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_12, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 17: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_13, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 18: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_14, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 19: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_15, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 20: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_16, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 21: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_17, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 22: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_18, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 23: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_19, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 24: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_20, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 25: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_21, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 26: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_22, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 27: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_23, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 28: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_24, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 29: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_25, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 30: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_26, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 31: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_27, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 32: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_28, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 33: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_29, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 34: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_30, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 35: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_31, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 36: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_32, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 37: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_33, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 38: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_34, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 39: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_35, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 40: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_36, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 41: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_37, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 42: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_38, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 43: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_39, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 44: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_40, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 45: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_41, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 46: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_42, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 47: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_43, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 48: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_44, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 49: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_45, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 50: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_46, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 51: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_47, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 52: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_48, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 53: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_49, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 54: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_50, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 55: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_51, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 56: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_52, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 57: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_53, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 58: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_54, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 59: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_55, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 60: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_56, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 61: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_57, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 62: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_58, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 63: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_59, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 64: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_60, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 65: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_61, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 66: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_62, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 67: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_63, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 68: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_64, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 69: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_65, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 70: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_66, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 71: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_67, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 72: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_68, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 73: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_69, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 74: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_70, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 75: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_71, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 76: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_72, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 77: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_73, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 78: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_74, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 79: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_75, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 80: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_76, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 81: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_77, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 82: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_78, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 83: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_79, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 84: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_80, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 85: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_81, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 86: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_82, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 87: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_83, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 88: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_84, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 89: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_85, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 90: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_86, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 91: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_87, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 92: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_88, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 93: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_89, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 94: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_90, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 95: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_91, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 96: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_92, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 97: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_93, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 98: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_94, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 99: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_95, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 100: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_96, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 101: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_97, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 102: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_98, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 103: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_99, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 104: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_100, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 105: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_101, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 106: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_102, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 107: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_103, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 108: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_104, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 109: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_105, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 110: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_106, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 111: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_107, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 112: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_108, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 113: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_109, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 114: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_110, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 115: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_111, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 116: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_112, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 117: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_113, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 118: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_114, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 119: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_115, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 120: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_116, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 121: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_117, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 122: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_118, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 123: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_119, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 124: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_120, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 125: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_121, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 126: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_122, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 127: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_123, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 128: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_124, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 129: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_125, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 130: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_126, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
+	case 131: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_127, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;
 	}
 
 	// Save the c to irq mapping for later use
