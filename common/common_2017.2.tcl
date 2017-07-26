@@ -1,6 +1,8 @@
 # create a dictionary of compatible VLNVs
 dict set stdcomps axi_ic vlnv "xilinx.com:ip:axi_interconnect:2.1"
+dict set stdcomps axi_sc vlnv "xilinx.com:ip:smartconnect:1.0"
 dict set stdcomps ps vlnv "xilinx.com:ip:processing_system7:5.5"
+dict set stdcomps psmpsoc vlnv "xilinx.com:ip:zynq_ultra_ps_e:3.0"
 dict set stdcomps ps_bfm vlnv "xilinx.com:ip:processing_system7_bfm:2.0"
 dict set stdcomps axi_irqc vlnv "xilinx.com:ip:axi_intc:4.1"
 dict set stdcomps axi_cache vlnv "xilinx.com:ip:system_cache:3.0"

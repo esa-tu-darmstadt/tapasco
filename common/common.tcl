@@ -30,6 +30,7 @@ namespace eval tapasco {
   namespace export createRegisterSlice
   namespace export createIntCtrl
   namespace export createInterconnect
+  namespace export createSmartConnect
   namespace export createMIG
   namespace export createOLEDController
   namespace export createPCIeBridge
@@ -69,10 +70,10 @@ namespace eval tapasco {
     return "2017.1"
   }
 
-  # Instantiates an AXI4 Interconnect IP.
+  # Instantiates an AXI Interconnect IP.
   # @param name Name of the instance.
-  # @param no_slaves Number of AXI4 Slave interfaces.
-  # @param no_masters Number of AXI4 Master interfaces.
+  # @param no_slaves Number of AXI Slave interfaces.
+  # @param no_masters Number of AXI Master interfaces.
   # @return bd_cell of the instance.
   proc createInterconnect {name no_slaves no_masters} {
     variable stdcomps
@@ -89,6 +90,23 @@ namespace eval tapasco {
       set ifname [format "CONFIG.M%02d_HAS_REGSLICE" $i]
       lappend props $ifname {4}
     }
+    set_property -dict $props $ic
+    return $ic
+  }
+
+  # Instantiates an AXI4 SmartConnect IP.
+  # @param name Name of the instance.
+  # @param no_slaves Number of AXI4 Slave interfaces.
+  # @param no_masters Number of AXI4 Master interfaces.
+  # @param reset If 1 a dedicated reset port is added to the block.
+  # @return bd_cell of the instance.
+  proc createSmartConnect {name no_slaves no_masters {reset 0}} {
+    variable stdcomps
+    puts "Creating AXI SmartConnect $name with $no_slaves slaves and $no_masters masters..."
+    puts "  VLNV: [dict get $stdcomps axi_ic vlnv]"
+
+    set ic [create_bd_cell -type ip -vlnv [dict get $stdcomps axi_sc vlnv] $name]
+    set props [list CONFIG.NUM_SI $no_slaves CONFIG.NUM_MI $no_masters CONFIG.HAS_ARESETN $reset]
     set_property -dict $props $ic
     return $ic
   }
@@ -112,6 +130,24 @@ namespace eval tapasco {
     } {
       apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_external "FIXED_IO, DDR" apply_board_preset "0" Master "Disable" Slave "Disable" } $ps
     }
+    return $ps
+  }
+
+  # Instantiates a Zynq Ultra Scale MPSoC Processing System IP core.
+  # @param name Name of the instance (default: ps7).
+  # @param preset Name of board preset to apply (default: tapasco::get_board_preset).
+  # @param freq_mhz FCLK_0 frequency in MHz (default: tapasco::get_design_frequency).
+  # @return bd_cell of the instance.
+  proc createMPSoCPS {{name mpsoc} {preset [tapasco::get_board_preset]} {freq_mhz [tapasco::get_design_frequency]}} {
+    variable stdcomps
+    puts "Creating Zynq-Ultra Scale series IP core ..."
+    puts "  VLNV: [dict get $stdcomps psmpsoc vlnv]"
+    puts "  Preset: $preset"
+    puts "  PL0 : $freq_mhz"
+
+    set ps [create_bd_cell -type ip -vlnv [dict get $stdcomps psmpsoc vlnv] $name]
+    apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e -config {apply_board_preset "1" Master "Disable" Slave "Disable" } $ps
+    set_property -dict [list CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ $freq_mhz] $ps
     return $ps
   }
 
@@ -787,7 +823,7 @@ namespace eval tapasco {
   # @param freqs list of name frequency (MHz) pairs, e.g., [list design 100 memory 250]
   # @param name Name of the subsystem group
   # @return Subsystem group
-  proc create_subsystem_clocks_and_resets {{freqs {}} {name ClockResets}} {
+  proc create_subsystem_clocks_and_resets {{freqs {}} {name ClockResets} {sys_clock_name sys_diff_clock}} {
     if {$freqs == {}} { set freqs [get_frequencies] }
     puts "Creating clock and reset subsystem ..."
     puts "  frequencies: $freqs"
@@ -798,10 +834,10 @@ namespace eval tapasco {
     set reset_in [create_bd_pin -dir I -type rst "reset_in"]
     set clk [createClockingWizard "clk_wiz"]
     set_property -dict [list CONFIG.USE_LOCKED {false} CONFIG.USE_RESET {false} CONFIG.NUM_OUT_CLKS [expr "[llength $freqs] / 2"]] $clk
-    set clk_mode "sys_diff_clock"
+    set clk_mode "$sys_clock_name"
 
-    if {[catch {set_property CONFIG.CLK_IN1_BOARD_INTERFACE {sys_diff_clock} $clk}]} {
-      puts "  sys_diff_clock is not supported, trying sys_clock instead"
+    if {[catch {set_property CONFIG.CLK_IN1_BOARD_INTERFACE $sys_clock_name $clk}]} {
+      puts "  $sys_clock_name is not supported, trying sys_clock instead"
       set clk_mode "sys_clock"
     }
     # check if external port already exists, re-use
@@ -812,7 +848,7 @@ namespace eval tapasco {
       set_property -dict [list CONFIG.PRIMITIVE {PLL} CONFIG.USE_MIN_POWER {true}] $clk
     } {
       # apply board automation to create top-level port
-      if {$clk_mode == "sys_diff_clock"} {
+      if {$clk_mode == "$sys_clock_name"} {
         set cport [get_bd_intf_pins -of_objects $clk]
       } {
         set cport [get_bd_pins -filter {DIR == I} -of_objects $clk]

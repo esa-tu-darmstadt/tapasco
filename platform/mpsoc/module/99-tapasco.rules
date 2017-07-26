@@ -1,0 +1,3 @@
+KERNEL=="tapasco_platform*" OWNER="tapasco" GROUP="tapasco"
+KERNEL=="tapasco_platform*" RUN+="/bin/chown tapasco:tapasco /sys/class/misc/tapasco_platform_zynq_tapasco_status/pending_ev" RUN+="/bin/chown tapasco:tapasco /sys/class/misc/tapasco_platform_zynq_tapasco_status/total_ev" RUN+="/bin/chown tapasco:tapasco /sys/class/misc/tapasco_platform_zynq_tapasco_status/wait"
+SUBSYSTEM=="tapasco_memory" OWNER="tapasco" GROUP="tapasco"

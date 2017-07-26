@@ -38,11 +38,11 @@ object UtilizationReport {
   private implicit final val logger =
     de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   private final val LUTS_REGEX   =
-    new Regex("""\| Slice LUTs\s+\|\s+(\d+)\s+\|\s+\d+\s+\|\s+(\d+)""", "used", "available")
+    new Regex("""\| (Slice|CLB) LUTs\s+\|\s+(\d+)\s+\|\s+\d+\s+\|\s+(\d+)""", "type", "used", "available")
   private final val FF_REGEX     =
-    new Regex("""\| Slice Registers\s+\|\s+(\d+)\s+\|\s+\d+\s+\|\s+(\d+)""", "used", "available")
+    new Regex("""\| (Slice|CLB) Registers\s+\|\s+(\d+)\s+\|\s+\d+\s+\|\s+(\d+)""", "type", "used", "available")
   private final val SLICE_REGEX  =
-    new Regex("""\| Slice\s+\|\s+(\d+)\s+\|\s+\d+\s+\|\s+(\d+)""", "used", "available")
+    new Regex("""\| (Slice|CLB)\s+\|\s+(\d+)\s+\|\s+\d+\s+\|\s+(\d+)""", "type", "used", "available")
   private final val DSP_REGEX    =
     new Regex("""\| DSPs\s+\|\s+(\d+)\s+\|\s+\d+\s+\|\s+(\d+)""", "used", "available")
   private final val BRAM_REGEX   =
@@ -55,15 +55,15 @@ object UtilizationReport {
       Seq(classOf[java.io.IOException]), "could not read file %s: ".format(reportFile.toString)) {
     val rpt = Source.fromFile(reportFile.toString) mkString ""
 
-    val slice = SLICE_REGEX.findFirstMatchIn(rpt) map (m => (m.group(1).toInt, m.group(2).toInt))
+    val slice = SLICE_REGEX.findFirstMatchIn(rpt) map (m => (m.group(2).toInt, m.group(3).toInt))
     if (slice.isEmpty) logger.warn(MISSING.format("slices", reportFile.toString))
     val (slice_u, slice_a) = slice.getOrElse (InvalidValue, InvalidValue)
 
-    val luts = LUTS_REGEX.findFirstMatchIn(rpt) map (m => (m.group(1).toInt, m.group(2).toInt))
+    val luts = LUTS_REGEX.findFirstMatchIn(rpt) map (m => (m.group(2).toInt, m.group(3).toInt))
     if (luts.isEmpty) logger.warn(MISSING.format("luts", reportFile.toString))
     val (luts_u, luts_a) = luts.getOrElse (InvalidValue, InvalidValue)
 
-    val ff = FF_REGEX.findFirstMatchIn(rpt) map (m => (m.group(1).toInt, m.group(2).toInt))
+    val ff = FF_REGEX.findFirstMatchIn(rpt) map (m => (m.group(2).toInt, m.group(3).toInt))
     if (ff.isEmpty) logger.warn(MISSING.format("ff", reportFile.toString))
     val (ff_u, ff_a) = ff.getOrElse (InvalidValue, InvalidValue)
 
