@@ -100,6 +100,31 @@ tapasco_res_t tapasco_scheduler_launch(
 	LOG(LALL_SCHEDULER, "job %lu: read result value 0x%08lx",
 			(unsigned long)j_id, (unsigned long)ret);
 
+	// Read back values from all argument registers
+	for (uint32_t a = 0; a < num_args; ++a) {
+		tapasco_handle_t h = tapasco_address_map_func_arg_register(
+				dev_ctx,
+				slot_id,
+				a);
+
+		int const is64 = tapasco_jobs_is_arg_64bit(jobs, j_id, a);
+		if (is64) {
+			uint64_t v = 0;
+			if (platform_read_ctl(h, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
+				return TAPASCO_FAILURE;
+			LOG(LALL_SCHEDULER, "job %lu: reading 64b arg #%u = 0x%08lx from 0x%08x",
+				(unsigned long)j_id, a, (unsigned long)v, (unsigned)h);
+			tapasco_jobs_set_arg(jobs, j_id, a, sizeof(v), &v);
+		} else {
+			uint32_t v = 0;
+			if (platform_read_ctl(h, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
+				return TAPASCO_FAILURE;
+			LOG(LALL_SCHEDULER, "job %lu: reading 32b arg #%u = 0x%08lx from 0x%08x",
+				(unsigned long)j_id, a, (unsigned long)v, (unsigned)h);
+			tapasco_jobs_set_arg(jobs, j_id, a, sizeof(v), &v);
+		}
+	}
+
 	// ack the interrupt
 	if (platform_write_ctl(tapasco_address_map_func_reg(dev_ctx, slot_id,
 			TAPASCO_FUNC_REG_IAR), sizeof(start_cmd), &start_cmd,
