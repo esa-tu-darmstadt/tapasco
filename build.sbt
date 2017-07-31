@@ -6,7 +6,7 @@ version := tapascoVersion
 
 name := "Tapasco"
 
-scalaVersion := "2.12.1"
+scalaVersion := "2.12.3"
 
 libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-compiler" % scalaVersion.value,
@@ -60,37 +60,93 @@ fork in run := true
 
 val tapasco = inputKey[Unit]("Run Tapasco command.")
 
-tapasco := (runMain in Compile).partialInput (" de.tu_darmstadt.cs.esa.tapasco.Tapasco ").evaluated
-
 val itapasco = InputKey[Unit]("itapasco", "Run interactive Tapasco GUI.")
-
-fullRunInputTask(itapasco, Compile, "de.tu_darmstadt.cs.esa.tapasco.Tapasco", "itapasco")
-
-fork in itapasco := true
-
-javaOptions in itapasco += "-splash:icon/tapasco_icon.png"
 
 val logviewer = inputKey[Unit]("Run interactive DSE log viewer.")
 
-fullRunInputTask(logviewer, Compile, "de.tu_darmstadt.cs.esa.tapasco.itapasco.executables.LogViewer")
-
-javaOptions in logviewer += "-splash:icon/tapasco_icon.png"
-
 val reportviewer = inputKey[Unit]("Run interactive report viewer.")
+
+tapasco := (runMain in Compile).partialInput (" de.tu_darmstadt.cs.esa.tapasco.Tapasco ").evaluated
+
+fullRunInputTask(itapasco, Compile, "de.tu_darmstadt.cs.esa.tapasco.Tapasco", "itapasco")
+
+fullRunInputTask(logviewer, Compile, "de.tu_darmstadt.cs.esa.tapasco.itapasco.executables.LogViewer")
 
 fullRunInputTask(reportviewer, Compile, "de.tu_darmstadt.cs.esa.tapasco.itapasco.executables.ReportViewer")
 
-javaOptions in reportviewer += "-splash:icon/tapasco_icon.png"
-
 fork := true
+
+fork in itapasco := true
+
+fork in Test := false
+
+parallelExecution in Test := false
+
+javaOptions in itapasco += "-splash:icon/tapasco_icon.png"
+
+javaOptions in logviewer += "-splash:icon/tapasco_icon.png"
+
+javaOptions in reportviewer += "-splash:icon/tapasco_icon.png"
 
 test in assembly := {}
 
 assemblyJarName := "Tapasco-" + tapascoVersion + ".jar"
 
-parallelExecution in Test := false
-
-fork in Test := false
-
 mainClass in assembly := Some("de.tu_darmstadt.cs.esa.tapasco.Tapasco")
 
+def writeScripts(jar: String, base: String) {
+  val N = scala.util.Properties.lineSeparator
+  val basePath = java.nio.file.Paths.get(base)
+  val binPath  = basePath.resolve("bin")
+  val iconPath = basePath.resolve("icon").resolve("tapasco_icon.png")
+  val tapasco  = binPath.resolve("tapasco")
+  val itapasco = binPath.resolve("itapasco")
+  val logviewer= binPath.resolve("tapasco-logviewer")
+  val rptviewer= binPath.resolve("tapasco-reportviewer")
+
+  var f = new java.io.FileWriter(tapasco.toString)
+  f.append("#!/bin/bash").append(N)
+   .append("java -Xms512M -Xmx1536M -Xss1M -XX:+CMSClassUnloadingEnabled -jar %s $*".format(jar)).append(N)
+  f.close()
+  tapasco.toFile.setExecutable(true)
+
+  f = new java.io.FileWriter(itapasco.toString)
+  f.append("#!/bin/bash").append(N)
+   .append("java -Xms512M -Xmx1536M -Xss1M -XX:+CMSClassUnloadingEnabled ")
+   .append("-splash:%s ".format(iconPath.toString))
+   .append("-jar %s ".format(jar))
+   .append("itapasco $*").append(N)
+  f.close()
+  itapasco.toFile.setExecutable(true)
+
+  f = new java.io.FileWriter(logviewer.toString)
+  f.append("#!/bin/bash").append(N)
+   .append("cd $TAPASCO_HOME && sbt logviewer $*")
+  f.close()
+  logviewer.toFile.setExecutable(true)
+
+  f = new java.io.FileWriter(rptviewer.toString)
+  f.append("#!/bin/bash").append(N)
+   .append("cd $TAPASCO_HOME && sbt reportviewer $*")
+  f.close()
+  rptviewer.toFile.setExecutable(true)
+}
+
+cleanFiles ++= Seq(
+  baseDirectory.value / "bin" / "tapasco",
+  baseDirectory.value / "bin" / "itapasco",
+  baseDirectory.value / "bin" / "tapasco-logviewer",
+  baseDirectory.value / "bin" / "tapasco-reportviewer"
+)
+
+lazy val root = (project in file("."))
+  .settings(
+    assembly := (Def.taskDyn {
+      val a = assembly.value
+      val jar = target(_ / ("scala-" + scalaBinaryVersion.value) /  assemblyJarName.value)
+      Def.task {
+        writeScripts(jar.value.toString, baseDirectory.value.toString)
+        a
+      }
+    }).value
+  )
