@@ -37,6 +37,9 @@ scalacOptions ++= Seq(
 )
 
 scalacOptions in Compile ++= Seq(
+  "-opt:inline",
+  "-opt:l:inline",
+  "-opt-inline-from",
   "-opt:unreachable-code",
   "-opt:simplify-jumps",
   "-opt:compact-locals",
@@ -44,8 +47,7 @@ scalacOptions in Compile ++= Seq(
   "-opt:redundant-casts",
   "-opt:box-unbox",
   "-opt:nullness-tracking",
-  "-opt:closure-invocations",
-  "-opt:l:classpath"/*,
+  "-opt:closure-invocations"/*,
   "-Xelide-below", "3000",
   "-Xdisable-assertions"*/
 )
