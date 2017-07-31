@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.7)
-project(platform-zynq-module-tests)
+project(platform-zynqmp-module-tests)
 include_directories("..")
 
 find_library(NCURSESLIB ncurses)

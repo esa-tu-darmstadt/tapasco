@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- *  @file	zynq_ioctl.c
+ *  @file	zynqmp_ioctl.c
  *  @brief	
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
@@ -25,31 +25,31 @@
 #include <linux/miscdevice.h>
 #include <asm/uaccess.h>
 
-#include "zynq_logging.h"
-#include "zynq_ioctl.h"
-#include "zynq_ioctl_cmds.h"
-#include "zynq_dmamgmt.h"
+#include "zynqmp_logging.h"
+#include "zynqmp_ioctl.h"
+#include "zynqmp_ioctl_cmds.h"
+#include "zynqmp_dmamgmt.h"
 
-static struct zynq_ioctl_state_t {
+static struct zynqmp_ioctl_state_t {
 	dev_t			devno;
 	struct miscdevice	mdev;
-} zynq_ioctl;
+} zynqmp_ioctl;
 
-/** @defgroup zynq_ioctl_cmds Command implementations
+/** @defgroup zynqmp_ioctl_cmds Command implementations
  *  @{ **/
-static inline int zynq_ioctl_cmd_alloc(struct zynq_ioctl_cmd_t *cmd)
+static inline int zynqmp_ioctl_cmd_alloc(struct zynqmp_ioctl_cmd_t *cmd)
 {
 	struct dma_buf_t *dmab;
 	if (cmd->length == 0 || cmd->length > (1 << 27)) {
 		WRN("invalid length: %zu bytes", cmd->length);
 		return -EINVAL;
 	}
-	if (cmd->id >= 0 && (dmab = zynq_dmamgmt_get(NULL, cmd->id))) {
+	if (cmd->id >= 0 && (dmab = zynqmp_dmamgmt_get(NULL, cmd->id))) {
 		WRN("buffer with id %ld is already allocated, aborting", cmd->id);
 		return -EINVAL;
 	}
 
-	cmd->dma_addr = zynq_dmamgmt_alloc(NULL, cmd->length, &cmd->id);
+	cmd->dma_addr = zynqmp_dmamgmt_alloc(NULL, cmd->length, &cmd->id);
 	LOG(ZYNQ_LL_IOCTL, "alloc: len = %zu, dma = 0x%08lx, id = %lu",
 			cmd->length, (unsigned long) cmd->dma_addr, cmd->id);
 	if (! cmd->dma_addr) {
@@ -59,22 +59,22 @@ static inline int zynq_ioctl_cmd_alloc(struct zynq_ioctl_cmd_t *cmd)
 	return 0;
 }
 
-static inline int zynq_ioctl_cmd_free(struct zynq_ioctl_cmd_t *cmd)
+static inline int zynqmp_ioctl_cmd_free(struct zynqmp_ioctl_cmd_t *cmd)
 {
 	LOG(ZYNQ_LL_IOCTL, "free: len = %zu, dma = 0x%08lx, id = %lu",
 			cmd->length, (unsigned long) cmd->dma_addr, cmd->id);
 	// try to find buffer by DMA address
 	if (cmd->id < 0 && cmd->dma_addr)
-		cmd->id = zynq_dmamgmt_get_id(NULL, cmd->dma_addr);
+		cmd->id = zynqmp_dmamgmt_get_id(NULL, cmd->dma_addr);
 	if (cmd->id >= 0) {
-		zynq_dmamgmt_dealloc(NULL, cmd->id);
+		zynqmp_dmamgmt_dealloc(NULL, cmd->id);
 		cmd->dma_addr = 0;
 		cmd->id = -1;
 	}
 	return 0;
 }
 
-static inline int zynq_ioctl_cmd_copyto(struct zynq_ioctl_cmd_t *cmd)
+static inline int zynqmp_ioctl_cmd_copyto(struct zynqmp_ioctl_cmd_t *cmd)
 {
 	struct dma_buf_t *dmab;
 	LOG(ZYNQ_LL_IOCTL, "copyto: len = %zu, dma = 0x%08lx, id = %lu, p = 0x%08lx",
@@ -82,16 +82,16 @@ static inline int zynq_ioctl_cmd_copyto(struct zynq_ioctl_cmd_t *cmd)
 			(unsigned long) cmd->data);
 	// try to find buffer by DMA address
 	if (cmd->id < 0 && cmd->dma_addr)
-		cmd->id = zynq_dmamgmt_get_id(NULL, cmd->dma_addr);
+		cmd->id = zynqmp_dmamgmt_get_id(NULL, cmd->dma_addr);
 	// allocate, if necessary
-	if (cmd->id < 0 || ! (dmab = zynq_dmamgmt_get(NULL, cmd->id))) {
+	if (cmd->id < 0 || ! (dmab = zynqmp_dmamgmt_get(NULL, cmd->id))) {
 		int ret;
 		LOG(ZYNQ_LL_IOCTL, "allocating %zu bytes for transfer", cmd->length);
-		ret = zynq_ioctl_cmd_alloc(cmd);
+		ret = zynqmp_ioctl_cmd_alloc(cmd);
 		if (ret) return ret;
 	}
 	LOG(ZYNQ_LL_IOCTL, "cmd->id = %ld", cmd->id);
-	dmab = zynq_dmamgmt_get(NULL, cmd->id);
+	dmab = zynqmp_dmamgmt_get(NULL, cmd->id);
 	if (! dmab || ! dmab->kvirt_addr) {
 		ERR("something went wrong in the allocation");
 		return -ENOMEM;
@@ -107,7 +107,7 @@ static inline int zynq_ioctl_cmd_copyto(struct zynq_ioctl_cmd_t *cmd)
 	return 0;
 }
 
-static inline int zynq_ioctl_cmd_copyfrom(struct zynq_ioctl_cmd_t *cmd, int const free)
+static inline int zynqmp_ioctl_cmd_copyfrom(struct zynqmp_ioctl_cmd_t *cmd, int const free)
 {
 	struct dma_buf_t *dmab;
 	LOG(ZYNQ_LL_DEVICE, "copyfrom: len = %zu, dma = 0x%08lx, id = %lu, p = 0x%08lx",
@@ -115,8 +115,8 @@ static inline int zynq_ioctl_cmd_copyfrom(struct zynq_ioctl_cmd_t *cmd, int cons
 			(unsigned long) cmd->data);
 	// try to find buffer by DMA address
 	if (cmd->id < 0 && cmd->dma_addr)
-		cmd->id = zynq_dmamgmt_get_id(NULL, cmd->dma_addr);
-	dmab = zynq_dmamgmt_get(NULL, cmd->id);
+		cmd->id = zynqmp_dmamgmt_get_id(NULL, cmd->dma_addr);
+	dmab = zynqmp_dmamgmt_get(NULL, cmd->id);
 	if (! dmab || ! dmab->kvirt_addr) {
 		ERR("could not get dma buffer with id = %lu", cmd->id);
 		return -EINVAL;
@@ -126,19 +126,19 @@ static inline int zynq_ioctl_cmd_copyfrom(struct zynq_ioctl_cmd_t *cmd, int cons
 		return -EACCES;
 	}
 	LOG(ZYNQ_LL_IOCTL, "copyfrom finished successfully");
-	if (free) return zynq_ioctl_cmd_free(cmd);
+	if (free) return zynqmp_ioctl_cmd_free(cmd);
 	return 0;
 }
 /** @} **/
 
 
-/** @defgroup zynq_ioctl_fops File operations implementations
+/** @defgroup zynqmp_ioctl_fops File operations implementations
  *  @{ **/
-static long zynq_ioctl_fops_ioctl(struct file *fp, unsigned int ioctl_num,
+static long zynqmp_ioctl_fops_ioctl(struct file *fp, unsigned int ioctl_num,
 		unsigned long p)
 {
 	long ret = 0;
-	struct zynq_ioctl_cmd_t cmd;
+	struct zynqmp_ioctl_cmd_t cmd;
 
 	if (_IOC_SIZE(ioctl_num) != sizeof(cmd)) {
 		WRN("illegal size of ioctl command: %zu, expected %zu bytes",
@@ -152,11 +152,11 @@ static long zynq_ioctl_fops_ioctl(struct file *fp, unsigned int ioctl_num,
 	}
 
 	switch (ioctl_num) {
-	case ZYNQ_IOCTL_COPYTO:	  ret = zynq_ioctl_cmd_copyto(&cmd);      break;
-	case ZYNQ_IOCTL_COPYFROM: ret = zynq_ioctl_cmd_copyfrom(&cmd, 0); break;
-	case ZYNQ_IOCTL_COPYFREE: ret = zynq_ioctl_cmd_copyfrom(&cmd, 1); break;
-	case ZYNQ_IOCTL_ALLOC:	  ret = zynq_ioctl_cmd_alloc(&cmd);       break;
-	case ZYNQ_IOCTL_FREE:	  ret = zynq_ioctl_cmd_free(&cmd);        break;
+	case ZYNQ_IOCTL_COPYTO:	  ret = zynqmp_ioctl_cmd_copyto(&cmd);      break;
+	case ZYNQ_IOCTL_COPYFROM: ret = zynqmp_ioctl_cmd_copyfrom(&cmd, 0); break;
+	case ZYNQ_IOCTL_COPYFREE: ret = zynqmp_ioctl_cmd_copyfrom(&cmd, 1); break;
+	case ZYNQ_IOCTL_ALLOC:	  ret = zynqmp_ioctl_cmd_alloc(&cmd);       break;
+	case ZYNQ_IOCTL_FREE:	  ret = zynqmp_ioctl_cmd_free(&cmd);        break;
 	default: 		  ERR("unknown ioctl: 0x%08x", ioctl_num);
 				  return -EINVAL;
 	}
@@ -169,40 +169,40 @@ static long zynq_ioctl_fops_ioctl(struct file *fp, unsigned int ioctl_num,
 	return ret;
 }
 
-static int zynq_ioctl_fops_open(struct inode *inode, struct file *fp)
+static int zynqmp_ioctl_fops_open(struct inode *inode, struct file *fp)
 {
 	return 0;
 }
 
-static int zynq_ioctl_fops_release(struct inode *inode, struct file *fp)
+static int zynqmp_ioctl_fops_release(struct inode *inode, struct file *fp)
 {
 	return 0;
 }
 /** @} **/
 
 
-/** @defgroup zynq_ioctl_fops_struct File operations struct
+/** @defgroup zynqmp_ioctl_fops_struct File operations struct
  *  @{ **/
-static struct file_operations zynq_ioctl_fops = {
+static struct file_operations zynqmp_ioctl_fops = {
 	.owner		= THIS_MODULE,
-	.open		= zynq_ioctl_fops_open,
-	.release	= zynq_ioctl_fops_release,
-	.unlocked_ioctl = zynq_ioctl_fops_ioctl
+	.open		= zynqmp_ioctl_fops_open,
+	.release	= zynqmp_ioctl_fops_release,
+	.unlocked_ioctl = zynqmp_ioctl_fops_ioctl
 };
 /** @} **/
 
 
-/** @defgroup zynq_ioctl_init Initialization functions
+/** @defgroup zynqmp_ioctl_init Initialization functions
  *  @{
  */
-int zynq_ioctl_init(void)
+int zynqmp_ioctl_init(void)
 {
 	int retval;
 	LOG(ZYNQ_LL_IOCTL, "creating ioctl device");
-	zynq_ioctl.mdev.minor 		= MISC_DYNAMIC_MINOR;
-	zynq_ioctl.mdev.name		= ZYNQ_IOCTL_FN;
-	zynq_ioctl.mdev.fops		= &zynq_ioctl_fops;
-	retval = misc_register(&zynq_ioctl.mdev);
+	zynqmp_ioctl.mdev.minor 		= MISC_DYNAMIC_MINOR;
+	zynqmp_ioctl.mdev.name		= ZYNQ_IOCTL_FN;
+	zynqmp_ioctl.mdev.fops		= &zynqmp_ioctl_fops;
+	retval = misc_register(&zynqmp_ioctl.mdev);
 	if (retval < 0) {
 		ERR("could not initialize ioctl device: %d", retval);
 		return retval;
@@ -211,10 +211,10 @@ int zynq_ioctl_init(void)
 	return 0;
 }
 
-void zynq_ioctl_exit(void)
+void zynqmp_ioctl_exit(void)
 {
 	LOG(ZYNQ_LL_IOCTL, "releasing ioctl device");
-	misc_deregister(&zynq_ioctl.mdev);
+	misc_deregister(&zynqmp_ioctl.mdev);
 	LOG(ZYNQ_LL_IOCTL, "ioctl exited successfully");
 }
 /** @} **/

@@ -1,10 +1,10 @@
 LINUX_HOME ?= /lib/modules/$(shell uname -r)/build
-ifeq ($(ARCH), arm)
-CROSS_COMPILE ?= arm-unknown-linux-gnueabihf-
+ifeq ($(ARCH), arm64)
+CROSS_COMPILE ?= aarch64-linux-gnu-
 endif
 
-obj-m += tapasco-platform-zynq.o
-tapasco-platform-zynq-objs := zynq_module.o zynq_device.o zynq_dmamgmt.o zynq_irq.o zynq_ioctl.o
+obj-m += tapasco-platform-zynqmp.o
+tapasco-platform-zynqmp-objs := zynqmp_module.o zynqmp_device.o zynqmp_dmamgmt.o zynqmp_irq.o zynqmp_ioctl.o
 
 .PHONY:	all clean
 

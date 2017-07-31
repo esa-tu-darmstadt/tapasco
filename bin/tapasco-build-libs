@@ -20,6 +20,8 @@ if not 'TAPASCO_PLATFORM' in os.environ:
 	print('Environment variable TAPASCO_PLATFORM is not set, guessing Platform ...')
 	if gethostname() in ['zed', 'zedboard', 'zc706', 'zynq', 'pynq']:
 		os.environ['TAPASCO_PLATFORM'] = 'zynq'
+	elif gethostname() in ['zynqmp']:
+		os.environ['TAPASCO_PLATFORM'] = 'zynqmp'
 	else:
 		os.environ['TAPASCO_PLATFORM'] = 'vc709'
 

@@ -138,6 +138,8 @@ namespace eval platform {
 
       # Use non-coherent AXI slaves and enable IRQs
       set_property -dict [list CONFIG.PSU__TRACE__PERIPHERAL__ENABLE {0} \
+      CONFIG.PSU__USE__M_AXI_GP0 {1} \
+      CONFIG.PSU__USE__M_AXI_GP1 {1} \
       CONFIG.PSU__USE__S_AXI_GP2 {1} \
       CONFIG.PSU__USE__S_AXI_GP4 {1} \
       CONFIG.PSU__USE__IRQ0 {1} \
@@ -165,7 +167,7 @@ namespace eval platform {
 
     proc platform_address_map {} {
       puts "Generating host address map ..."
-      set host_addr_space [get_bd_addr_space "/Host/mpsoc/Data"]
+      set host_addr_space [get_bd_addr_space "/Host/zynqmp/Data"]
       # connect interrupt controllers
       set intcs [lsort [get_bd_addr_segs -of_objects [get_bd_cells /InterruptControl/axi_intc_0*]]]
       set offset 0x00B0000000

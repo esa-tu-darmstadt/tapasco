@@ -18,10 +18,7 @@
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# Helper script to load zynq TPC Platform device driver.
+# Helper script to load zynqmp TPC Platform device driver.
 # Must be run as superuser.
 
-# insmod tapasco-platform-zynq.ko logging_level=132
-# insmod tapasco-platform-zynq.ko logging_level=0x7fffffff
-insmod tapasco-platform-zynq.ko
-
+rmmod tapasco-platform-zynqmp.ko

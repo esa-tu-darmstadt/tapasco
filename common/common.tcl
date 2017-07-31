@@ -61,6 +61,7 @@ namespace eval tapasco {
     } {
       source $cip
     }
+    enable_beta_device *
   } {
     puts "Skipping IP catalog."
   }

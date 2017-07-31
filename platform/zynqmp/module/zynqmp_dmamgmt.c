@@ -21,8 +21,8 @@
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.esa.tu-darmstadt.de)
 //!
 #include <linux/dma-mapping.h>
-#include "zynq_dmamgmt.h"
-#include "zynq_logging.h"
+#include "zynqmp_dmamgmt.h"
+#include "zynqmp_logging.h"
 #include "gen_fixed_size_pool.h"
 
 static inline void init_dma_buf_t(struct dma_buf_t *buf, fsp_idx_t const idx)
@@ -48,7 +48,7 @@ static inline ssize_t find_dma_addr(dma_addr_t const addr)
 	return id < ZYNQ_DMAMGMT_POOLSZ ? id : -1;//INVALID_IDX;
 }
 
-int zynq_dmamgmt_init(void)
+int zynqmp_dmamgmt_init(void)
 {
 	dmabuf_fsp_init(&_dmabuf);
 	LOG(ZYNQ_LL_DMAMGMT, "DMA buffer management initialized: size = %u",
@@ -56,19 +56,19 @@ int zynq_dmamgmt_init(void)
 	return 0;
 }
 
-void zynq_dmamgmt_exit()
+void zynqmp_dmamgmt_exit()
 {
 	int i;
 	for (i = 0; i < ZYNQ_DMAMGMT_POOLSZ; ++i) {
 		if (_dmabuf.elems[i].kvirt_addr) {
 			WRN("buffer %d in use, releasing memory!", i);
-			zynq_dmamgmt_dealloc(NULL, i);
+			zynqmp_dmamgmt_dealloc(NULL, i);
 		}
 	}
 	LOG(ZYNQ_LL_DMAMGMT, "DMA buffer management exited");
 }
 
-dma_addr_t zynq_dmamgmt_alloc(struct device *dev, size_t const len,
+dma_addr_t zynqmp_dmamgmt_alloc(struct device *dev, size_t const len,
 		unsigned long *hid)
 {
 	fsp_idx_t id;
@@ -96,7 +96,7 @@ dma_addr_t zynq_dmamgmt_alloc(struct device *dev, size_t const len,
 	return _dmabuf.elems[id].dma_addr;
 }
 
-int zynq_dmamgmt_dealloc(struct device *dev, u32 const id)
+int zynqmp_dmamgmt_dealloc(struct device *dev, u32 const id)
 {
 	LOG(ZYNQ_LL_DMAMGMT, "id = %u", id);
 	if (id < ZYNQ_DMAMGMT_POOLSZ && _dmabuf.elems[id].kvirt_addr) {
@@ -118,20 +118,20 @@ int zynq_dmamgmt_dealloc(struct device *dev, u32 const id)
 	return 0;
 }
 
-int zynq_dmamgmt_dealloc_dma(struct device *dev, dma_addr_t const addr)
+int zynqmp_dmamgmt_dealloc_dma(struct device *dev, dma_addr_t const addr)
 {
-	return zynq_dmamgmt_dealloc(dev, find_dma_addr(addr));
+	return zynqmp_dmamgmt_dealloc(dev, find_dma_addr(addr));
 }
 
 inline
-struct dma_buf_t *zynq_dmamgmt_get(struct device *dev, u32 const id)
+struct dma_buf_t *zynqmp_dmamgmt_get(struct device *dev, u32 const id)
 {
 	return (id >= ZYNQ_DMAMGMT_POOLSZ || ! _dmabuf.locked[id]) ?
 			NULL : &_dmabuf.elems[id];
 }
 
 inline
-ssize_t zynq_dmamgmt_get_id(struct device *dev, dma_addr_t const addr)
+ssize_t zynqmp_dmamgmt_get_id(struct device *dev, dma_addr_t const addr)
 {
 	return find_dma_addr(addr);
 }

@@ -44,18 +44,18 @@ extern int logging_level;
 #define tapasco_platform_log(level, fmt, ...) do { \
 		switch ((int)level) { \
 		case 0: \
-			printk(KERN_ERR "tapasco-platform-zynq: [%s] " \
+			printk(KERN_ERR "tapasco-platform-zynqmp: [%s] " \
 					fmt "\n", __func__, \
 					##__VA_ARGS__); \
 			break; \
 		case 1: \
-			printk(KERN_WARNING "tapasco-platform-zynq: [%s] " \
+			printk(KERN_WARNING "tapasco-platform-zynqmp: [%s] " \
 					fmt "\n", __func__, \
 					##__VA_ARGS__); \
 			break; \
 		default: \
 			if (logging_level & level) \
-				printk(KERN_NOTICE "tapasco_platform_zynq: [%s] " \
+				printk(KERN_NOTICE "tapasco_platform_zynqmp: [%s] " \
 						fmt "\n", __func__, \
 						##__VA_ARGS__); \
 			break; \
@@ -63,11 +63,11 @@ extern int logging_level;
 	} while(0)
 #else
 /* only errors and warnings, no other messages */
-#define ERR(fmt, ...)		printk(KERN_ERR "tapasco-platform-zynq: [%s] " \
+#define ERR(fmt, ...)		printk(KERN_ERR "tapasco-platform-zynqmp: [%s] " \
 					fmt "\n", __func__, \
 					##__VA_ARGS__)
 
-#define WRN(fmt, ...)		printk(KERN_WARNING "tapasco-platform-zynq: [%s] " \
+#define WRN(fmt, ...)		printk(KERN_WARNING "tapasco-platform-zynqmp: [%s] " \
 					fmt "\n", __func__, \
 					##__VA_ARGS__)
 

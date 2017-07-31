@@ -23,19 +23,19 @@
 #include <linux/module.h>
 #include <linux/io.h>
 #include <linux/sched.h>
-#include "zynq_irq.h"
-#include "zynq_logging.h"
-#include "zynq_device.h"
+#include "zynqmp_irq.h"
+#include "zynqmp_logging.h"
+#include "zynqmp_device.h"
 
 #define ZYNQ_IRQ_BASE_IRQ					(45)
 
-extern struct zynq_device zynq_dev;
+extern struct zynqmp_device zynqmp_dev;
 
-static irqreturn_t zynq_irq_handler(int irq, void *dev_id)
+static irqreturn_t zynqmp_irq_handler(int irq, void *dev_id)
 {
 	u32 status;
-	struct zynq_device *zynq_dev = (struct zynq_device *)dev_id;
-	s32 *intc = (s32 *)zynq_dev->gp_map[1];
+	struct zynqmp_device *zynqmp_dev = (struct zynqmp_device *)dev_id;
+	s32 *intc = (s32 *)zynqmp_dev->gp_map[1];
 	long intcn = irq - ZYNQ_IRQ_BASE_IRQ, irq_no = 0;
 
 	intc += (intcn * ZYNQ_DEVICE_INTC_OFFS) >> 2;
@@ -45,10 +45,10 @@ static irqreturn_t zynq_irq_handler(int irq, void *dev_id)
 	LOG(ZYNQ_LL_IRQ, "irq = %d, status = 0x%08x, intcn = %ld", irq, status, intcn);
 	while (status > 0) {
 		if (status & 1) {
-			__atomic_fetch_add(&zynq_dev->pending_ev[intcn + irq_no], 1, __ATOMIC_SEQ_CST);
-			__atomic_fetch_add(&zynq_dev->total_ev, 1, __ATOMIC_SEQ_CST);
+			__atomic_fetch_add(&zynqmp_dev->pending_ev[intcn + irq_no], 1, __ATOMIC_SEQ_CST);
+			__atomic_fetch_add(&zynqmp_dev->total_ev, 1, __ATOMIC_SEQ_CST);
 			// wake up sleepers
-			wake_up_interruptible(&zynq_dev->ev_q[intcn + irq_no]);
+			wake_up_interruptible(&zynqmp_dev->ev_q[intcn + irq_no]);
 		}
 		status >>= 1;
 		++irq_no;
@@ -56,21 +56,21 @@ static irqreturn_t zynq_irq_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-int zynq_irq_init(void)
+int zynqmp_irq_init(void)
 {
 	int retval = 0, irqn = ZYNQ_DEVICE_INTC_NUM, i;
-	s32 *intc = (s32 *)zynq_dev.gp_map[1];
+	s32 *intc = (s32 *)zynqmp_dev.gp_map[1];
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
 	for (i = 0; i < ZYNQ_DEVICE_THREADS_NUM; ++i)
-		zynq_dev.pending_ev[i] = 0; // clear pending events
+		zynqmp_dev.pending_ev[i] = 0; // clear pending events
 
 	while (! retval && irqn) {
 		--irqn;
 		LOG(ZYNQ_LL_IRQ, "registering IRQ #%d", ZYNQ_IRQ_BASE_IRQ + irqn);
-		retval = request_irq(ZYNQ_IRQ_BASE_IRQ + irqn, zynq_irq_handler,
+		retval = request_irq(ZYNQ_IRQ_BASE_IRQ + irqn, zynqmp_irq_handler,
 				IRQF_TRIGGER_NONE | IRQF_ONESHOT,
 				ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME,
-				&zynq_dev);
+				&zynqmp_dev);
 		// enable all irqs
 		iowrite32(0xffffffffUL, intc + ((irqn * ZYNQ_DEVICE_INTC_OFFS + 0x08) >> 2));
 		iowrite32(0xffffffffUL, intc + ((irqn * ZYNQ_DEVICE_INTC_OFFS + 0x1c) >> 2));
@@ -89,16 +89,16 @@ int zynq_irq_init(void)
 err:
 	while (++irqn < ZYNQ_DEVICE_INTC_NUM) {
 		disable_irq(ZYNQ_IRQ_BASE_IRQ + irqn);
-		free_irq(ZYNQ_IRQ_BASE_IRQ + irqn, &zynq_dev);
+		free_irq(ZYNQ_IRQ_BASE_IRQ + irqn, &zynqmp_dev);
 	}
 	LOG(ZYNQ_LL_ENTEREXIT, "exit with error");
 	return retval;
 }
 
-void zynq_irq_exit(void)
+void zynqmp_irq_exit(void)
 {
 	int irqn = ZYNQ_DEVICE_INTC_NUM;
-	u32 *intc = (u32 *)zynq_dev.gp_map[1];
+	u32 *intc = (u32 *)zynqmp_dev.gp_map[1];
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
 	while (irqn) {
 		--irqn;
@@ -109,7 +109,7 @@ void zynq_irq_exit(void)
 		iowrite32(0, intc + ((irqn * ZYNQ_DEVICE_INTC_OFFS + 0x08) >> 2));
 		iowrite32(0, intc + ((irqn * ZYNQ_DEVICE_INTC_OFFS + 0x1C) >> 2));
 		disable_irq(ZYNQ_IRQ_BASE_IRQ + irqn);
-		free_irq(ZYNQ_IRQ_BASE_IRQ + irqn, &zynq_dev);
+		free_irq(ZYNQ_IRQ_BASE_IRQ + irqn, &zynqmp_dev);
 	}
 	LOG(ZYNQ_LL_ENTEREXIT, "exit");
 }

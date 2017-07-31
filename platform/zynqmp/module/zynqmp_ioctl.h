@@ -16,14 +16,16 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-//! @file	zynq_irq.c
-//! @brief	IRQ handlers for zynq TPC Platform support module.
-//! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
-//!
-#ifndef __ZYNQ_IRQ_H__
-#define __ZYNQ_IRQ_H__
+/**
+ *  @file	zynqmp_ioctl.h
+ *  @brief	
+ *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+ **/
+#ifndef __ZYNQ_IOCTL_H__
+#define __ZYNQ_IOCTL_H__
 
-int zynq_irq_init(void);
-void zynq_irq_exit(void);
+int zynqmp_ioctl_init(void);
+void zynqmp_ioctl_exit(void);
 
-#endif /* __ZYNQ_IRQ_H__ */
+#endif /* __ZYNQ_IOCTL_H__ */
+/* vim: set foldmarker=@{,}@ foldlevel=0 foldmethod=marker : */

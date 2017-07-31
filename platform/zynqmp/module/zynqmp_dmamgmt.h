@@ -24,7 +24,7 @@
 #define ___ZYNQ_DMAMGMT_H__
 
 #include <linux/device.h>
-#include "zynq_platform.h"
+#include "zynqmp_platform.h"
 
 #define ZYNQ_DMAMGMT_POOLSZ		 ZYNQ_PLATFORM_MAXMEMHANDLES
 
@@ -35,13 +35,13 @@ struct dma_buf_t {
 	void * kvirt_addr;
 };
 
-int zynq_dmamgmt_init(void);
-void zynq_dmamgmt_exit(void);
-dma_addr_t zynq_dmamgmt_alloc(struct device *dev, size_t const len,
+int zynqmp_dmamgmt_init(void);
+void zynqmp_dmamgmt_exit(void);
+dma_addr_t zynqmp_dmamgmt_alloc(struct device *dev, size_t const len,
 		unsigned long *hid);
-int zynq_dmamgmt_dealloc(struct device *dev, u32 const id);
-int zynq_dmamgmt_dealloc_dma(struct device *dev, dma_addr_t const id);
-struct dma_buf_t *zynq_dmamgmt_get(struct device *dev, u32 const id);
-ssize_t zynq_dmamgmt_get_id(struct device *dev, dma_addr_t const addr);
+int zynqmp_dmamgmt_dealloc(struct device *dev, u32 const id);
+int zynqmp_dmamgmt_dealloc_dma(struct device *dev, dma_addr_t const id);
+struct dma_buf_t *zynqmp_dmamgmt_get(struct device *dev, u32 const id);
+ssize_t zynqmp_dmamgmt_get_id(struct device *dev, dma_addr_t const addr);
 
 #endif /* ___ZYNQ_DMAMGMT_H__ */

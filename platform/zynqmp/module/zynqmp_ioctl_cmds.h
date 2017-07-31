@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- *  @file	zynq_ioctl_cmds.h
+ *  @file	zynqmp_ioctl_cmds.h
  *  @brief	
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
@@ -26,20 +26,20 @@
 
 #include <linux/ioctl.h>
 
-struct zynq_ioctl_cmd_t {
+struct zynqmp_ioctl_cmd_t {
 	void 			*data;
 	size_t 			 length;
 	long		 	 id;
 	unsigned long		 dma_addr;
 };
 
-#define ZYNQ_IOCTL_FN			"tapasco_platform_zynq_control"
+#define ZYNQ_IOCTL_FN			"tapasco_platform_zynqmp_control"
 
-#define	ZYNQ_IOCTL_COPYTO		_IOWR('z', 1, struct zynq_ioctl_cmd_t)
-#define	ZYNQ_IOCTL_COPYFROM		_IOWR('z', 2, struct zynq_ioctl_cmd_t)
-#define	ZYNQ_IOCTL_ALLOC		_IOWR('z', 3, struct zynq_ioctl_cmd_t)
-#define	ZYNQ_IOCTL_FREE			_IOWR('z', 4, struct zynq_ioctl_cmd_t)
-#define	ZYNQ_IOCTL_COPYFREE		_IOWR('z', 5, struct zynq_ioctl_cmd_t)
+#define	ZYNQ_IOCTL_COPYTO		_IOWR('z', 1, struct zynqmp_ioctl_cmd_t)
+#define	ZYNQ_IOCTL_COPYFROM		_IOWR('z', 2, struct zynqmp_ioctl_cmd_t)
+#define	ZYNQ_IOCTL_ALLOC		_IOWR('z', 3, struct zynqmp_ioctl_cmd_t)
+#define	ZYNQ_IOCTL_FREE			_IOWR('z', 4, struct zynqmp_ioctl_cmd_t)
+#define	ZYNQ_IOCTL_COPYFREE		_IOWR('z', 5, struct zynqmp_ioctl_cmd_t)
 
 #endif /* __ZYNQ_IOCTL_CMDS_H__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

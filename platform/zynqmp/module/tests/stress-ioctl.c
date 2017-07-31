@@ -34,7 +34,7 @@
 #include <ncurses.h>
 #include <sys/ioctl.h>
 #include <sched.h>
-#include <zynq_ioctl_cmds.h>
+#include <zynqmp_ioctl_cmds.h>
 
 static int fd_ioctl = -1;
 static long thrdcnt = 0;
@@ -56,7 +56,7 @@ static inline void random_fill(void *p, size_t const len)
 	fclose(fd);
 }
 
-static inline void print_cmd(volatile struct zynq_ioctl_cmd_t *c)
+static inline void print_cmd(volatile struct zynqmp_ioctl_cmd_t *c)
 {
 	printf("data = 0x%08x, length = %zu, id = %ld, dma = 0x%08x\n",
 			(unsigned long) c->data, c->length, c->id, c->dma_addr);
@@ -64,7 +64,7 @@ static inline void print_cmd(volatile struct zynq_ioctl_cmd_t *c)
 
 static inline void copy_check(size_t const *lp)
 {
-	volatile struct zynq_ioctl_cmd_t cmd;
+	volatile struct zynqmp_ioctl_cmd_t cmd;
 	size_t const sz = lp ? *lp : rand() % (1 << 20) & ~0x3;
 	unsigned char *data1 = malloc(sz);
 	unsigned char *data2 = malloc(sz);
@@ -96,7 +96,7 @@ static inline void copy_check(size_t const *lp)
 
 static inline void alloc_free(size_t const *lp)
 {
-	volatile struct zynq_ioctl_cmd_t cmd;
+	volatile struct zynqmp_ioctl_cmd_t cmd;
 	size_t sz = lp ? *lp : rand() % (1 << 20) & ~0x3;
 	memset((void *)&cmd, 0, sizeof(cmd));
 	cmd.id = -1;

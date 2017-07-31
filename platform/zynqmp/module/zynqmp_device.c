@@ -16,22 +16,22 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-//! @file	zynq_chardev.c
+//! @file	zynqmp_chardev.c
 //! @brief	Character device controlling Tapasco threadpools for
-//!		the zynq TPC Platform.
+//!		the zynqmp TPC Platform.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
 #include <linux/fs.h>
 #include <linux/dma-mapping.h>
 #include <linux/sched.h>
 #include <linux/time.h>
-#include "zynq_device.h"
-#include "zynq_logging.h"
-#include "zynq_dmamgmt.h"
+#include "zynqmp_device.h"
+#include "zynqmp_logging.h"
+#include "zynqmp_dmamgmt.h"
 
-struct zynq_device zynq_dev;
+struct zynqmp_device zynqmp_dev;
 
-static int zynq_device_mmap(struct file *filp, struct vm_area_struct *vma)
+static int zynqmp_device_mmap(struct file *filp, struct vm_area_struct *vma)
 {
 	size_t size;
 	unsigned int minor;
@@ -39,9 +39,9 @@ static int zynq_device_mmap(struct file *filp, struct vm_area_struct *vma)
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
 	size = vma->vm_end - vma->vm_start;
 	minor = iminor(filp->f_path.dentry->d_inode);
-	if (minor == zynq_dev.miscdev[0].minor) {
+	if (minor == zynqmp_dev.miscdev[0].minor) {
 		start_addr = ZYNQ_DEVICE_THREADS_BASE;
-	} else if (minor == zynq_dev.miscdev[1].minor) {
+	} else if (minor == zynqmp_dev.miscdev[1].minor) {
 		start_addr = ZYNQ_DEVICE_INTC_BASE;
 	} else {
 		start_addr = ZYNQ_DEVICE_TAPASCO_STATUS_BASE;
@@ -63,13 +63,13 @@ static int zynq_device_mmap(struct file *filp, struct vm_area_struct *vma)
 	return 0;
 }
 
-static struct file_operations zynq_device_fops = {
+static struct file_operations zynqmp_device_fops = {
 	.owner = THIS_MODULE,
-	.mmap  = zynq_device_mmap
+	.mmap  = zynqmp_device_mmap
 };
 
 /******************************************************************************/
-static ssize_t zynq_device_wait(struct device *dev,
+static ssize_t zynqmp_device_wait(struct device *dev,
 		struct device_attribute *attr, char const *buf, size_t count)
 {
 	u32 id, cd = 0;
@@ -78,11 +78,11 @@ static ssize_t zynq_device_wait(struct device *dev,
 	id = *(u32 *)buf;
 	LOG(ZYNQ_LL_DEVICE, "checking for %u", id);
 
-	while ((got_ev = zynq_dev.pending_ev[id]) <= 0) {
+	while ((got_ev = zynqmp_dev.pending_ev[id]) <= 0) {
 		++cd;
 		LOG(ZYNQ_LL_DEVICE, "sleeping on %u", id);
-		wait_ret = wait_event_interruptible_timeout(zynq_dev.ev_q[id],
-				zynq_dev.pending_ev[id] != 0,
+		wait_ret = wait_event_interruptible_timeout(zynqmp_dev.ev_q[id],
+				zynqmp_dev.pending_ev[id] != 0,
 				10 * HZ);
 		if (wait_ret < 0) {
 			WRN("wait for %u interrupted by signal %ld!", id, wait_ret);
@@ -95,96 +95,96 @@ static ssize_t zynq_device_wait(struct device *dev,
 		return -ETIMEDOUT;
 	}
 
-	__atomic_fetch_sub(&zynq_dev.pending_ev[id], 1, __ATOMIC_SEQ_CST);
+	__atomic_fetch_sub(&zynqmp_dev.pending_ev[id], 1, __ATOMIC_SEQ_CST);
 
 	LOG(ZYNQ_LL_ENTEREXIT, "exit");
 	return 0;
 }
 
-static ssize_t zynq_device_pending_ev(struct device *dev,
+static ssize_t zynqmp_device_pending_ev(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	int i;
 	ssize_t r = 0;
 	for (i = 0; i < ZYNQ_DEVICE_THREADS_NUM; ++i)
-		r += sprintf(&buf[i * 16], "%03d: %10ld\n", i, zynq_dev.pending_ev[i]);
+		r += sprintf(&buf[i * 16], "%03d: %10ld\n", i, zynqmp_dev.pending_ev[i]);
 	return r;
 }
 
-static ssize_t zynq_device_total_ev(struct device *dev,
+static ssize_t zynqmp_device_total_ev(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%lu\n", zynq_dev.total_ev);
+	return sprintf(buf, "%lu\n", zynqmp_dev.total_ev);
 }
 
 static int init_misc_devs(void)
 {
 	int retval;
-	zynq_dev.miscdev[0].minor = MISC_DYNAMIC_MINOR;
-	zynq_dev.miscdev[0].name  = ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME "_gp0";
-	zynq_dev.miscdev[0].fops  = &zynq_device_fops;
+	zynqmp_dev.miscdev[0].minor = MISC_DYNAMIC_MINOR;
+	zynqmp_dev.miscdev[0].name  = ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME "_gp0";
+	zynqmp_dev.miscdev[0].fops  = &zynqmp_device_fops;
 
-	retval = misc_register(&zynq_dev.miscdev[0]);
+	retval = misc_register(&zynqmp_dev.miscdev[0]);
 	if (retval < 0) {
-		ERR("could not create misc device '%s'", zynq_dev.miscdev[0].name);
+		ERR("could not create misc device '%s'", zynqmp_dev.miscdev[0].name);
 		goto err;
 	}
 
-	zynq_dev.miscdev[1].minor = MISC_DYNAMIC_MINOR;
-	zynq_dev.miscdev[1].name  = ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME "_gp1";
-	zynq_dev.miscdev[1].fops  = &zynq_device_fops;
+	zynqmp_dev.miscdev[1].minor = MISC_DYNAMIC_MINOR;
+	zynqmp_dev.miscdev[1].name  = ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME "_gp1";
+	zynqmp_dev.miscdev[1].fops  = &zynqmp_device_fops;
 
-	retval = misc_register(&zynq_dev.miscdev[1]);
+	retval = misc_register(&zynqmp_dev.miscdev[1]);
 	if (retval < 0) {
-		ERR("could not create misc device '%s'", zynq_dev.miscdev[1].name);
+		ERR("could not create misc device '%s'", zynqmp_dev.miscdev[1].name);
 		goto err_gp1;
 	}
 
-	zynq_dev.miscdev[2].minor = MISC_DYNAMIC_MINOR;
-	zynq_dev.miscdev[2].name  = ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME "_tapasco_status";
-	zynq_dev.miscdev[2].fops  = &zynq_device_fops;
+	zynqmp_dev.miscdev[2].minor = MISC_DYNAMIC_MINOR;
+	zynqmp_dev.miscdev[2].name  = ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME "_tapasco_status";
+	zynqmp_dev.miscdev[2].fops  = &zynqmp_device_fops;
 
-	retval = misc_register(&zynq_dev.miscdev[2]);
+	retval = misc_register(&zynqmp_dev.miscdev[2]);
 	if (retval < 0) {
-		ERR("could not create misc device '%s'", zynq_dev.miscdev[2].name);
+		ERR("could not create misc device '%s'", zynqmp_dev.miscdev[2].name);
 		goto err_tapasco_status;
 	}
 	return retval;
 
 err_tapasco_status:
-	misc_deregister(&zynq_dev.miscdev[1]);
+	misc_deregister(&zynqmp_dev.miscdev[1]);
 err_gp1:
-	misc_deregister(&zynq_dev.miscdev[0]);
+	misc_deregister(&zynqmp_dev.miscdev[0]);
 err:
 	return retval;
 }
 
 static void exit_misc_devs(void)
 {
-	misc_deregister(&zynq_dev.miscdev[2]);
-	misc_deregister(&zynq_dev.miscdev[1]);
-	misc_deregister(&zynq_dev.miscdev[0]);
+	misc_deregister(&zynqmp_dev.miscdev[2]);
+	misc_deregister(&zynqmp_dev.miscdev[1]);
+	misc_deregister(&zynqmp_dev.miscdev[0]);
 }
 
-static DEVICE_ATTR(wait, S_IWUSR | S_IWGRP, NULL, zynq_device_wait);
-static DEVICE_ATTR(pending_ev, S_IRUSR | S_IRGRP, zynq_device_pending_ev, NULL);
-static DEVICE_ATTR(total_ev, S_IRUSR | S_IRGRP, zynq_device_total_ev, NULL);
+static DEVICE_ATTR(wait, S_IWUSR | S_IWGRP, NULL, zynqmp_device_wait);
+static DEVICE_ATTR(pending_ev, S_IRUSR | S_IRGRP, zynqmp_device_pending_ev, NULL);
+static DEVICE_ATTR(total_ev, S_IRUSR | S_IRGRP, zynqmp_device_total_ev, NULL);
 
 static int init_sysfs_files(void)
 {
 	int retval;
 
-	retval = device_create_file(zynq_dev.miscdev[2].this_device, &dev_attr_wait);
+	retval = device_create_file(zynqmp_dev.miscdev[2].this_device, &dev_attr_wait);
 	if (retval < 0) {
 		ERR("failed to create 'wait' device file");
 		goto err_wait;
 	}
-	retval = device_create_file(zynq_dev.miscdev[2].this_device, &dev_attr_pending_ev);
+	retval = device_create_file(zynqmp_dev.miscdev[2].this_device, &dev_attr_pending_ev);
 	if (retval < 0) {
 		ERR("failed to create 'pending_ev' device file");
 		goto err_pending_ev;
 	}
-	retval = device_create_file(zynq_dev.miscdev[2].this_device, &dev_attr_total_ev);
+	retval = device_create_file(zynqmp_dev.miscdev[2].this_device, &dev_attr_total_ev);
 	if (retval < 0) {
 		ERR("failed to create 'total_ev' device file");
 		goto err_total_ev;
@@ -193,87 +193,87 @@ static int init_sysfs_files(void)
 	return retval;
 
 
-	device_remove_file(zynq_dev.miscdev[2].this_device, &dev_attr_total_ev);
+	device_remove_file(zynqmp_dev.miscdev[2].this_device, &dev_attr_total_ev);
 err_total_ev:
-	device_remove_file(zynq_dev.miscdev[2].this_device, &dev_attr_pending_ev);
+	device_remove_file(zynqmp_dev.miscdev[2].this_device, &dev_attr_pending_ev);
 err_pending_ev:
-	device_remove_file(zynq_dev.miscdev[2].this_device, &dev_attr_wait);
+	device_remove_file(zynqmp_dev.miscdev[2].this_device, &dev_attr_wait);
 err_wait:
 	return retval;
 }
 
 static void exit_sysfs_files(void)
 {
-	device_remove_file(zynq_dev.miscdev[2].this_device, &dev_attr_total_ev);
-	device_remove_file(zynq_dev.miscdev[2].this_device, &dev_attr_pending_ev);
-	device_remove_file(zynq_dev.miscdev[2].this_device, &dev_attr_wait);
+	device_remove_file(zynqmp_dev.miscdev[2].this_device, &dev_attr_total_ev);
+	device_remove_file(zynqmp_dev.miscdev[2].this_device, &dev_attr_pending_ev);
+	device_remove_file(zynqmp_dev.miscdev[2].this_device, &dev_attr_wait);
 }
 
 static int init_iomapping(void)
 {
 	int retval = 0;
-	zynq_dev.gp_map[0] = ioremap_nocache(ZYNQ_DEVICE_THREADS_BASE,
+	zynqmp_dev.gp_map[0] = ioremap_nocache(ZYNQ_DEVICE_THREADS_BASE,
 			ZYNQ_DEVICE_THREADS_OFFS * ZYNQ_DEVICE_THREADS_NUM);
-	if (IS_ERR(zynq_dev.gp_map[0])) {
+	if (IS_ERR(zynqmp_dev.gp_map[0])) {
 		ERR("could not ioremap the AXI register space at 0x%08x-0x%08x",
 				ZYNQ_DEVICE_THREADS_BASE,
 				ZYNQ_DEVICE_THREADS_BASE +
 				ZYNQ_DEVICE_THREADS_NUM *
 				ZYNQ_DEVICE_THREADS_OFFS);
-		retval = PTR_ERR(zynq_dev.gp_map[0]);
+		retval = PTR_ERR(zynqmp_dev.gp_map[0]);
 		goto err_gp0;
 	}
 
-	zynq_dev.gp_map[1] = ioremap_nocache(ZYNQ_DEVICE_INTC_BASE,
+	zynqmp_dev.gp_map[1] = ioremap_nocache(ZYNQ_DEVICE_INTC_BASE,
 			ZYNQ_DEVICE_INTC_NUM * ZYNQ_DEVICE_INTC_OFFS);
-	if (IS_ERR(zynq_dev.gp_map[1])) {
+	if (IS_ERR(zynqmp_dev.gp_map[1])) {
 		ERR("could not ioremap the AXI register space at 0x%08x-0x%08x",
 				ZYNQ_DEVICE_INTC_BASE,
 				ZYNQ_DEVICE_INTC_BASE +
 				ZYNQ_DEVICE_INTC_NUM *
 				ZYNQ_DEVICE_INTC_OFFS);
-		retval = PTR_ERR(zynq_dev.gp_map[0]);
+		retval = PTR_ERR(zynqmp_dev.gp_map[0]);
 		goto err_gp1;
 	}
 
-	zynq_dev.tapasco_status = ioremap_nocache(ZYNQ_DEVICE_TAPASCO_STATUS_BASE,
+	zynqmp_dev.tapasco_status = ioremap_nocache(ZYNQ_DEVICE_TAPASCO_STATUS_BASE,
 			ZYNQ_DEVICE_TAPASCO_STATUS_SIZE);
-	if (IS_ERR(zynq_dev.tapasco_status)) {
+	if (IS_ERR(zynqmp_dev.tapasco_status)) {
 		ERR("could not ioremap the AXI register space at 0x%08x-0x%08x",
 				ZYNQ_DEVICE_TAPASCO_STATUS_BASE,
 				ZYNQ_DEVICE_TAPASCO_STATUS_BASE +
 				ZYNQ_DEVICE_TAPASCO_STATUS_SIZE);
-		retval = PTR_ERR(zynq_dev.tapasco_status);
+		retval = PTR_ERR(zynqmp_dev.tapasco_status);
 		goto err_tapasco_status;
 	}
 	return retval;
 
 err_tapasco_status:
-	iounmap(zynq_dev.gp_map[1]);
+	iounmap(zynqmp_dev.gp_map[1]);
 err_gp1:
-	iounmap(zynq_dev.gp_map[0]);
+	iounmap(zynqmp_dev.gp_map[0]);
 err_gp0:
 	return retval;
 }
 
 static void exit_iomapping(void)
 {
-	iounmap(zynq_dev.tapasco_status);
-	iounmap(zynq_dev.gp_map[1]);
-	iounmap(zynq_dev.gp_map[0]);
+	iounmap(zynqmp_dev.tapasco_status);
+	iounmap(zynqmp_dev.gp_map[1]);
+	iounmap(zynqmp_dev.gp_map[0]);
 }
 
 /******************************************************************************/
-int zynq_device_init(void)
+int zynqmp_device_init(void)
 {
 	int retval;
 	LOG(ZYNQ_LL_ENTEREXIT, "enter" );
 
 	for (retval = 0; retval < ZYNQ_DEVICE_THREADS_NUM; ++retval) {
-		zynq_dev.pending_ev[retval] = 0;
-		init_waitqueue_head(&zynq_dev.ev_q[retval]);
+		zynqmp_dev.pending_ev[retval] = 0;
+		init_waitqueue_head(&zynqmp_dev.ev_q[retval]);
 	}
-	zynq_dev.total_ev = 0;
+	zynqmp_dev.total_ev = 0;
 
 	retval = init_misc_devs();
 	if (retval < 0) {
@@ -306,7 +306,7 @@ err_miscdev:
 	return retval;
 }
 
-void zynq_device_exit(void)
+void zynqmp_device_exit(void)
 {
 	LOG(ZYNQ_LL_ENTEREXIT, "enter" );
 	LOG(ZYNQ_LL_DEVICE, "unmapping I/O areas");

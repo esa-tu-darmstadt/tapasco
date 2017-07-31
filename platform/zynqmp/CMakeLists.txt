@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
-project(platform-zynq)
+project(platform-zynqmp)
 set(CMAKE_INSTALL_PREFIX "..")
 set(CMAKE_SKIP_RPATH true)
 
@@ -18,7 +18,7 @@ set(CMNSRCS "${CMNDIR}/src/platform_logging.c"
             "${SRCDIR}/platform_address_map.c"
             "${CMNDIR}/src/platform_version.c"
             "${GCMNDIR}/src/gen_queue.c")
-set(SRCS "${SRCDIR}/platform_zynq.c")
+set(SRCS "${SRCDIR}/platform_zynqmp.c")
 set(PLATFORM_LIBS_DIR "${TAPASCO_HOME}/platform/lib")
 
 include_directories("." "include" "${CMNDIR}/include" "${GCMNDIR}/include")

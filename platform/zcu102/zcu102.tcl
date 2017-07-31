@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-source -notrace $::env(TAPASCO_HOME)/platform/mpsoc/mpsoc.tcl
+source -notrace $::env(TAPASCO_HOME)/platform/zynqmp/zynqmp.tcl
 
 namespace eval platform {
   namespace export create

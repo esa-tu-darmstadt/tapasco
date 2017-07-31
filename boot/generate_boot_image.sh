@@ -34,7 +34,7 @@ Usage: ${0##*/} BOARD VERSION [DEVICE] [DISK SIZE]
 Build a boot image for the given BOARD and VERSION (git tag). If DEVICE is
 given, repartition the device as a bootable SD card (WARNING: all data will
 be lost).
-	BOARD		one of zc706, zedboard
+	BOARD		one of zc706, zedboard, pyng or zcu102
 	VERSION		Vivado Design Suite version, e.g., 2016.4
 	DISK SIZE	Size of the image in MiB (optional, default: 8192)
 	DEVICE		SD card device, e.g., /dev/sdb (optional)
@@ -61,6 +61,8 @@ check_board () {
 		"zc706")
 			;;
 		"pynq")
+			;;
+		"zcu102")
 			;;
 		*)
 			echo "unknown board: $BOARD"
@@ -342,7 +344,7 @@ build_devtree () {
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
 			cat $PWD/misc/zynq-7000.dtsi.patch | patch $DIR/zynq-7000.dtsi &&
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
-			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zed.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts 
+			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zed.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
 			echo >> $DIR/devicetree.dts
 			echo "/include/ \"$PWD/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
 			;;
@@ -350,7 +352,7 @@ build_devtree () {
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
 			cat $PWD/misc/zynq-7000.dtsi.patch | patch $DIR/zynq-7000.dtsi &&
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
-			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zed.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts 
+			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zed.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
 			echo >> $DIR/devicetree.dts
 			echo "/include/ \"$PWD/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
 			;;
@@ -394,7 +396,7 @@ EOF
 		LD1=${LD}p1
 		LD2=${LD}p2
 		echo "Making BOOT partition in /dev/mapper/$LD1 ..."
-		dusudo mkfs.vfat -F 32 -n BOOT /dev/mapper/$LD1 
+		dusudo mkfs.vfat -F 32 -n BOOT /dev/mapper/$LD1
 		if [[ $? -ne 0 ]]; then
 			dusudo kpartx -d $OUTPUT_IMAGE
 			return $(error_ret "$LINENO: could not make BOOT partition")

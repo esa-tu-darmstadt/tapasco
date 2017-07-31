@@ -29,9 +29,9 @@
 #define UPPER_BND					(25)
 
 static char const *const fn[] = {
-	"/sys/class/misc/tapasco_platform_zynq_gp0/alloc",
-	"/sys/class/misc/tapasco_platform_zynq_gp0/dealloc",
-	"/sys/class/misc/tapasco_platform_zynq_gp0/bufferid",
+	"/sys/class/misc/tapasco_platform_zynqmp_gp0/alloc",
+	"/sys/class/misc/tapasco_platform_zynqmp_gp0/dealloc",
+	"/sys/class/misc/tapasco_platform_zynqmp_gp0/bufferid",
 };
 static int fd[sizeof(fn) / sizeof(*fn)] = { -1 };
 static int stop = 0;

@@ -16,28 +16,28 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-//! @file	zynq_device.h
-//! @brief	Device struct for zynq TPC Platform device.
+//! @file	zynqmp_device.h
+//! @brief	Device struct for zynqmp TPC Platform device.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
 #ifndef __ZYNQ_DEVICE_H__
 #define __ZYNQ_DEVICE_H__
 
 #include <linux/miscdevice.h>
-#include "zynq_platform.h"
+#include "zynqmp_platform.h"
 
 #define ZYNQ_DEVICE_CLSNAME					"tapasco_platform"
-#define ZYNQ_DEVICE_DEVNAME					"zynq"
-#define ZYNQ_DEVICE_THREADS_BASE				(0x43c00000)
-#define ZYNQ_DEVICE_THREADS_OFFS				(0x00010000)
+#define ZYNQ_DEVICE_DEVNAME					"zynqmp"
+#define ZYNQ_DEVICE_THREADS_BASE				(0x00A1000000)
+#define ZYNQ_DEVICE_THREADS_OFFS				(0x0000010000)
 #define ZYNQ_DEVICE_THREADS_NUM					(128)
 #define ZYNQ_DEVICE_INTC_BASE					ZYNQ_PLATFORM_INTC_BASE
 #define ZYNQ_DEVICE_INTC_OFFS					ZYNQ_PLATFORM_INTC_OFFS
 #define ZYNQ_DEVICE_INTC_NUM					ZYNQ_PLATFORM_INTC_NUM
-#define ZYNQ_DEVICE_TAPASCO_STATUS_BASE				(0x77770000)
-#define ZYNQ_DEVICE_TAPASCO_STATUS_SIZE				(0x00001000)
+#define ZYNQ_DEVICE_TAPASCO_STATUS_BASE				(0x00A0000000)
+#define ZYNQ_DEVICE_TAPASCO_STATUS_SIZE				(0x0000001000)
 
-struct zynq_device {
+struct zynqmp_device {
 	int			devnum;
 	struct miscdevice	miscdev[3];
 	void __iomem 		*gp_map[2];
@@ -47,7 +47,7 @@ struct zynq_device {
 	wait_queue_head_t	ev_q[ZYNQ_DEVICE_THREADS_NUM];
 };
 
-int zynq_device_init(void);
-void zynq_device_exit(void);
+int zynqmp_device_init(void);
+void zynqmp_device_exit(void);
 
 #endif /* __ZYNQ_DEVICE_H__ */

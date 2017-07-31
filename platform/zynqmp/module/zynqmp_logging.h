@@ -16,16 +16,29 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-/**
- *  @file	zynq_ioctl.h
- *  @brief	
- *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-#ifndef __ZYNQ_IOCTL_H__
-#define __ZYNQ_IOCTL_H__
+//! @file	zynqmp_logging.h
+//! @brief	Kernel logging for zynqmp TPC Platform. Defines logbits for
+//!		subsystem debug.
+//! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+//!
+#ifndef __ZYNQ_LOGGING_H__
+#define __ZYNQ_LOGGING_H__
 
-int zynq_ioctl_init(void);
-void zynq_ioctl_exit(void);
+#include "logging.h"
 
-#endif /* __ZYNQ_IOCTL_H__ */
-/* vim: set foldmarker=@{,}@ foldlevel=0 foldmethod=marker : */
+#define ZYNQ_LOGLEVELS \
+	_ZLL(MODULE    , (1 << 1)) \
+	_ZLL(DEVICE    , (1 << 2)) \
+	_ZLL(IOCTL     , (1 << 3)) \
+	_ZLL(DMAMGMT   , (1 << 4)) \
+	_ZLL(FOPS      , (1 << 5)) \
+	_ZLL(IRQ       , (1 << 6)) \
+	_ZLL(ENTEREXIT , (1 << 31))
+
+typedef enum {
+#define _ZLL(name, level) ZYNQ_LL_##name = level,
+ZYNQ_LOGLEVELS
+#undef _ZLL
+} zynqmp_ll_t;
+
+#endif /* __ZYNQ_LOGGING_H__ */
