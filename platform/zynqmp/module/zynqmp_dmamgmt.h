@@ -36,7 +36,7 @@ struct dma_buf_t {
 };
 
 int zynqmp_dmamgmt_init(void);
-void zynqmp_dmamgmt_exit(void);
+void zynqmp_dmamgmt_exit(struct device *dev);
 dma_addr_t zynqmp_dmamgmt_alloc(struct device *dev, size_t const len,
 		unsigned long *hid);
 int zynqmp_dmamgmt_dealloc(struct device *dev, u32 const id);

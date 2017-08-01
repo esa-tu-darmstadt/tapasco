@@ -51,7 +51,7 @@ static inline int zynqmp_ioctl_cmd_alloc(struct zynqmp_ioctl_cmd_t *cmd)
 
 	cmd->dma_addr = zynqmp_dmamgmt_alloc(zynqmp_ioctl.mdev.this_device, cmd->length, &cmd->id);
 	LOG(ZYNQ_LL_IOCTL, "alloc: len = %zu, dma = 0x%08lx, id = %lu",
-			cmd->length, (unsigned long) cmd->dma_addr, cmd->id);
+	    cmd->length, (unsigned long) cmd->dma_addr, cmd->id);
 	if (! cmd->dma_addr) {
 		WRN("allocation failed");
 		return -ENOMEM;
@@ -62,7 +62,7 @@ static inline int zynqmp_ioctl_cmd_alloc(struct zynqmp_ioctl_cmd_t *cmd)
 static inline int zynqmp_ioctl_cmd_free(struct zynqmp_ioctl_cmd_t *cmd)
 {
 	LOG(ZYNQ_LL_IOCTL, "free: len = %zu, dma = 0x%08lx, id = %lu",
-			cmd->length, (unsigned long) cmd->dma_addr, cmd->id);
+	    cmd->length, (unsigned long) cmd->dma_addr, cmd->id);
 	// try to find buffer by DMA address
 	if (cmd->id < 0 && cmd->dma_addr)
 		cmd->id = zynqmp_dmamgmt_get_id(zynqmp_ioctl.mdev.this_device, cmd->dma_addr);
@@ -78,8 +78,8 @@ static inline int zynqmp_ioctl_cmd_copyto(struct zynqmp_ioctl_cmd_t *cmd)
 {
 	struct dma_buf_t *dmab;
 	LOG(ZYNQ_LL_IOCTL, "copyto: len = %zu, dma = 0x%08lx, id = %lu, p = 0x%08lx",
-			cmd->length, (unsigned long) cmd->dma_addr, cmd->id,
-			(unsigned long) cmd->data);
+	    cmd->length, (unsigned long) cmd->dma_addr, cmd->id,
+	    (unsigned long) cmd->data);
 	// try to find buffer by DMA address
 	if (cmd->id < 0 && cmd->dma_addr)
 		cmd->id = zynqmp_dmamgmt_get_id(zynqmp_ioctl.mdev.this_device, cmd->dma_addr);
@@ -97,8 +97,8 @@ static inline int zynqmp_ioctl_cmd_copyto(struct zynqmp_ioctl_cmd_t *cmd)
 		return -ENOMEM;
 	}
 	LOG(ZYNQ_LL_IOCTL, "dmab->kvirt_addr = 0x%08lx, dmab->dma_addr = 0x%08lx",
-			(unsigned long)dmab->kvirt_addr,
-			(unsigned long)dmab->dma_addr);
+	    (unsigned long)dmab->kvirt_addr,
+	    (unsigned long)dmab->dma_addr);
 	if (copy_from_user(dmab->kvirt_addr, (void __user *) cmd->data, cmd->length)) {
 		WRN("could not copy all bytes from user space");
 		return -EACCES;
@@ -111,8 +111,8 @@ static inline int zynqmp_ioctl_cmd_copyfrom(struct zynqmp_ioctl_cmd_t *cmd, int 
 {
 	struct dma_buf_t *dmab;
 	LOG(ZYNQ_LL_DEVICE, "copyfrom: len = %zu, dma = 0x%08lx, id = %lu, p = 0x%08lx",
-			cmd->length, (unsigned long) cmd->dma_addr, cmd->id,
-			(unsigned long) cmd->data);
+	    cmd->length, (unsigned long) cmd->dma_addr, cmd->id,
+	    (unsigned long) cmd->data);
 	// try to find buffer by DMA address
 	if (cmd->id < 0 && cmd->dma_addr)
 		cmd->id = zynqmp_dmamgmt_get_id(zynqmp_ioctl.mdev.this_device, cmd->dma_addr);
@@ -135,14 +135,14 @@ static inline int zynqmp_ioctl_cmd_copyfrom(struct zynqmp_ioctl_cmd_t *cmd, int 
 /** @defgroup zynqmp_ioctl_fops File operations implementations
  *  @{ **/
 static long zynqmp_ioctl_fops_ioctl(struct file *fp, unsigned int ioctl_num,
-		unsigned long p)
+                                    unsigned long p)
 {
 	long ret = 0;
 	struct zynqmp_ioctl_cmd_t cmd;
 
 	if (_IOC_SIZE(ioctl_num) != sizeof(cmd)) {
 		WRN("illegal size of ioctl command: %zu, expected %zu bytes",
-				(size_t)_IOC_SIZE(ioctl_num), sizeof(cmd));
+		    (size_t)_IOC_SIZE(ioctl_num), sizeof(cmd));
 		return -EINVAL;
 	}
 
@@ -158,7 +158,7 @@ static long zynqmp_ioctl_fops_ioctl(struct file *fp, unsigned int ioctl_num,
 	case ZYNQ_IOCTL_ALLOC:	  ret = zynqmp_ioctl_cmd_alloc(&cmd);       break;
 	case ZYNQ_IOCTL_FREE:	  ret = zynqmp_ioctl_cmd_free(&cmd);        break;
 	default: 		  ERR("unknown ioctl: 0x%08x", ioctl_num);
-				  return -EINVAL;
+		return -EINVAL;
 	}
 
 	if (! ret && copy_to_user((void __user *) p, &cmd, sizeof(cmd))) {
@@ -180,6 +180,9 @@ static int zynqmp_ioctl_fops_release(struct inode *inode, struct file *fp)
 }
 /** @} **/
 
+struct device *zynqmp_ioctl_get_device(void) {
+	return zynqmp_ioctl.mdev.this_device;
+}
 
 /** @defgroup zynqmp_ioctl_fops_struct File operations struct
  *  @{ **/
@@ -190,7 +193,6 @@ static struct file_operations zynqmp_ioctl_fops = {
 	.unlocked_ioctl = zynqmp_ioctl_fops_ioctl
 };
 /** @} **/
-
 
 /** @defgroup zynqmp_ioctl_init Initialization functions
  *  @{

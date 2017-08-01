@@ -38,10 +38,17 @@ static int __init zynqmp_module_init(void)
 	int retval = 0;
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
 	LOG(ZYNQ_LL_MODULE, "module loaded");
+
+	retval = zynqmp_ioctl_init();
+	if (retval < 0) {
+		ERR("ioctl init failed!");
+		goto exit;
+	}
+
 	retval = zynqmp_dmamgmt_init();
 	if (retval < 0) {
 		ERR("DMA management init failed!");
-		goto exit;
+		goto err_dmamgmt;
 	}
 
 	retval = zynqmp_device_init();
@@ -56,22 +63,16 @@ static int __init zynqmp_module_init(void)
 	//	goto err_irq;
 	//}
 
-	retval = zynqmp_ioctl_init();
-	if (retval < 0) {
-		ERR("ioctl init failed!");
-		goto err_ioctl;
-	}
-
 	LOG(ZYNQ_LL_ENTEREXIT, "exit");
 	return retval;
 
-	zynqmp_ioctl_exit();
-err_ioctl:
 	//zynqmp_irq_exit();
 //err_irq:
 	zynqmp_device_exit();
 err_chardev:
-	zynqmp_dmamgmt_exit();
+	zynqmp_dmamgmt_exit(zynqmp_ioctl_get_device());
+err_dmamgmt:
+	zynqmp_ioctl_exit();
 exit:
 	LOG(ZYNQ_LL_ENTEREXIT, "exit with error");
 	return retval;
@@ -80,10 +81,10 @@ exit:
 static void __exit zynqmp_module_exit(void)
 {
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
-	zynqmp_ioctl_exit();
 	//zynqmp_irq_exit();
 	zynqmp_device_exit();
-	zynqmp_dmamgmt_exit();
+	zynqmp_dmamgmt_exit(zynqmp_ioctl_get_device());
+	zynqmp_ioctl_exit();
 	LOG(ZYNQ_LL_MODULE, "unloading module");
 	LOG(ZYNQ_LL_ENTEREXIT, "exit");
 }

@@ -18,7 +18,7 @@
 //
 /**
  *  @file	zynqmp_ioctl.h
- *  @brief	
+ *  @brief
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #ifndef __ZYNQ_IOCTL_H__
@@ -26,6 +26,7 @@
 
 int zynqmp_ioctl_init(void);
 void zynqmp_ioctl_exit(void);
+struct device *zynqmp_ioctl_get_device(void);
 
 #endif /* __ZYNQ_IOCTL_H__ */
 /* vim: set foldmarker=@{,}@ foldlevel=0 foldmethod=marker : */

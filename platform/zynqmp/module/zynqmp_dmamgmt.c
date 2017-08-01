@@ -56,13 +56,13 @@ int zynqmp_dmamgmt_init(void)
 	return 0;
 }
 
-void zynqmp_dmamgmt_exit()
+void zynqmp_dmamgmt_exit(struct device *dev)
 {
 	int i;
 	for (i = 0; i < ZYNQ_DMAMGMT_POOLSZ; ++i) {
 		if (_dmabuf.elems[i].kvirt_addr) {
 			WRN("buffer %d in use, releasing memory!", i);
-			zynqmp_dmamgmt_dealloc(NULL, i);
+			zynqmp_dmamgmt_dealloc(dev, i);
 		}
 	}
 	LOG(ZYNQ_LL_DMAMGMT, "DMA buffer management exited");
