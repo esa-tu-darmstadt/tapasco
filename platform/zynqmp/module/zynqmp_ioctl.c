@@ -18,7 +18,7 @@
 //
 /**
  *  @file	zynqmp_ioctl.c
- *  @brief	
+ *  @brief
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #include <linux/fs.h>
@@ -44,12 +44,12 @@ static inline int zynqmp_ioctl_cmd_alloc(struct zynqmp_ioctl_cmd_t *cmd)
 		WRN("invalid length: %zu bytes", cmd->length);
 		return -EINVAL;
 	}
-	if (cmd->id >= 0 && (dmab = zynqmp_dmamgmt_get(NULL, cmd->id))) {
+	if (cmd->id >= 0 && (dmab = zynqmp_dmamgmt_get(zynqmp_ioctl.mdev.this_device, cmd->id))) {
 		WRN("buffer with id %ld is already allocated, aborting", cmd->id);
 		return -EINVAL;
 	}
 
-	cmd->dma_addr = zynqmp_dmamgmt_alloc(NULL, cmd->length, &cmd->id);
+	cmd->dma_addr = zynqmp_dmamgmt_alloc(zynqmp_ioctl.mdev.this_device, cmd->length, &cmd->id);
 	LOG(ZYNQ_LL_IOCTL, "alloc: len = %zu, dma = 0x%08lx, id = %lu",
 			cmd->length, (unsigned long) cmd->dma_addr, cmd->id);
 	if (! cmd->dma_addr) {
@@ -65,9 +65,9 @@ static inline int zynqmp_ioctl_cmd_free(struct zynqmp_ioctl_cmd_t *cmd)
 			cmd->length, (unsigned long) cmd->dma_addr, cmd->id);
 	// try to find buffer by DMA address
 	if (cmd->id < 0 && cmd->dma_addr)
-		cmd->id = zynqmp_dmamgmt_get_id(NULL, cmd->dma_addr);
+		cmd->id = zynqmp_dmamgmt_get_id(zynqmp_ioctl.mdev.this_device, cmd->dma_addr);
 	if (cmd->id >= 0) {
-		zynqmp_dmamgmt_dealloc(NULL, cmd->id);
+		zynqmp_dmamgmt_dealloc(zynqmp_ioctl.mdev.this_device, cmd->id);
 		cmd->dma_addr = 0;
 		cmd->id = -1;
 	}
@@ -82,16 +82,16 @@ static inline int zynqmp_ioctl_cmd_copyto(struct zynqmp_ioctl_cmd_t *cmd)
 			(unsigned long) cmd->data);
 	// try to find buffer by DMA address
 	if (cmd->id < 0 && cmd->dma_addr)
-		cmd->id = zynqmp_dmamgmt_get_id(NULL, cmd->dma_addr);
+		cmd->id = zynqmp_dmamgmt_get_id(zynqmp_ioctl.mdev.this_device, cmd->dma_addr);
 	// allocate, if necessary
-	if (cmd->id < 0 || ! (dmab = zynqmp_dmamgmt_get(NULL, cmd->id))) {
+	if (cmd->id < 0 || ! (dmab = zynqmp_dmamgmt_get(zynqmp_ioctl.mdev.this_device, cmd->id))) {
 		int ret;
 		LOG(ZYNQ_LL_IOCTL, "allocating %zu bytes for transfer", cmd->length);
 		ret = zynqmp_ioctl_cmd_alloc(cmd);
 		if (ret) return ret;
 	}
 	LOG(ZYNQ_LL_IOCTL, "cmd->id = %ld", cmd->id);
-	dmab = zynqmp_dmamgmt_get(NULL, cmd->id);
+	dmab = zynqmp_dmamgmt_get(zynqmp_ioctl.mdev.this_device, cmd->id);
 	if (! dmab || ! dmab->kvirt_addr) {
 		ERR("something went wrong in the allocation");
 		return -ENOMEM;
@@ -115,8 +115,8 @@ static inline int zynqmp_ioctl_cmd_copyfrom(struct zynqmp_ioctl_cmd_t *cmd, int 
 			(unsigned long) cmd->data);
 	// try to find buffer by DMA address
 	if (cmd->id < 0 && cmd->dma_addr)
-		cmd->id = zynqmp_dmamgmt_get_id(NULL, cmd->dma_addr);
-	dmab = zynqmp_dmamgmt_get(NULL, cmd->id);
+		cmd->id = zynqmp_dmamgmt_get_id(zynqmp_ioctl.mdev.this_device, cmd->dma_addr);
+	dmab = zynqmp_dmamgmt_get(zynqmp_ioctl.mdev.this_device, cmd->id);
 	if (! dmab || ! dmab->kvirt_addr) {
 		ERR("could not get dma buffer with id = %lu", cmd->id);
 		return -EINVAL;
@@ -142,7 +142,7 @@ static long zynqmp_ioctl_fops_ioctl(struct file *fp, unsigned int ioctl_num,
 
 	if (_IOC_SIZE(ioctl_num) != sizeof(cmd)) {
 		WRN("illegal size of ioctl command: %zu, expected %zu bytes",
-				_IOC_SIZE(ioctl_num), sizeof(cmd));
+				(size_t)_IOC_SIZE(ioctl_num), sizeof(cmd));
 		return -EINVAL;
 	}
 
