@@ -16,13 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-# @file		mpsoc.tcl
+# @file		zynqmp.tcl
 # @brief	MPSoC platform implementation: Up to 16 instances of AXI Interrupt Controllers
 #         are instantiated, depending on the number interrupt sources returned by the architecture.
 # @author	Jaco A. Hofmann, TU Darmstadt (hofmann@esa.tu-darmstadt.de)
 #
 namespace eval platform {
-  namespace eval mpsoc {
+  namespace eval zynqmp {
     namespace export create
     namespace export max_masters
 
@@ -32,7 +32,7 @@ namespace eval platform {
       exit 1
     }
     # scan plugin directory
-    foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/mpsoc/plugins" "*.tcl"] {
+    foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/zynqmp/plugins" "*.tcl"] {
       source -notrace $f
     }
 
@@ -110,6 +110,12 @@ namespace eval platform {
       # connect S_AXI
       connect_bd_intf_net $s_axi [get_bd_intf_pins -of_objects $intcic -filter {NAME == "S00_AXI"}]
 
+      create_bd_cell -type ip -vlnv xilinx.com:ip:system_ila:1.0 system_ila_0
+      set_property -dict [list CONFIG.C_MON_TYPE {NATIVE}] [get_bd_cells system_ila_0]
+      connect_bd_net [get_bd_pins system_ila_0/probe0] [get_bd_pins axi_intc_00/irq]
+      connect_bd_net [get_bd_pins system_ila_0/clk] [get_bd_pins axi_intc_00/s_axi_aclk]
+      set_property -dict [list CONFIG.C_DATA_DEPTH {131072} CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_INPUT_PIPE_STAGES {1} CONFIG.C_BRAM_CNT {7.5} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_bd_cells system_ila_0]
+
       current_bd_instance $instance
       return $group
     }
@@ -134,7 +140,7 @@ namespace eval platform {
       set pl_resetn0 [create_bd_pin -type "rst" -dir "O" "ps_resetn"]
 
       # generate PS MPSoC instance. Default values are fine
-      set ps [tapasco::createMPSoCPS "mpsoc" [tapasco::get_board_preset] [tapasco::get_design_frequency]]
+      set ps [tapasco::createMPSoCPS "zynqmp" [tapasco::get_board_preset] [tapasco::get_design_frequency]]
 
       # Use non-coherent AXI slaves and enable IRQs
       set_property -dict [list CONFIG.PSU__TRACE__PERIPHERAL__ENABLE {0} \
@@ -242,7 +248,7 @@ namespace eval platform {
       }
 
       # create interrupt subsystem
-      set ss_int [create_subsystem_interrupts [arch::get_irqs] [get_bd_pins "$ss_host/mpsoc/pl_ps_irq0"]]
+      set ss_int [create_subsystem_interrupts [arch::get_irqs] [get_bd_pins "$ss_host/zynqmp/pl_ps_irq0"]]
       connect_bd_intf_net [get_bd_intf_pins "$ss_host/M_AXI_GP1"] [get_bd_intf_pins "$ss_int/S_AXI"]
       connect_bd_net [get_bd_pins "$ss_cnr/host_aclk"] [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $ss_int]
       connect_bd_net [get_bd_pins "$ss_cnr/host_peripheral_aresetn"] [get_bd_pins -filter {TYPE == rst && DIR == I} -of_objects $ss_int]

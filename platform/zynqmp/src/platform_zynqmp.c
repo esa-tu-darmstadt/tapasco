@@ -250,7 +250,7 @@ static platform_res_t release_platform(struct zynqmp_platform_t *p)
 /******************************************************************************/
 
 /** Enables the interrupt controllers. */
-/*static platform_res_t enable_interrupts(void)
+static platform_res_t enable_interrupts(void)
 {
 	int32_t const on = -1, off = 0;
 	int32_t outstanding = 0;
@@ -274,7 +274,7 @@ static platform_res_t release_platform(struct zynqmp_platform_t *p)
 		platform_read_ctl(intc, sizeof(outstanding), &outstanding, PLATFORM_CTL_FLAGS_NONE);
 	}
 	return PLATFORM_SUCCESS;
-}*/
+}
 
 platform_res_t _platform_init(const char *const version)
 {
@@ -292,7 +292,7 @@ platform_res_t _platform_init(const char *const version)
 		platform_logging_exit();
 	} else
 		ERR("SUCCESS!");
-	//enable_interrupts();
+	enable_interrupts();
 	return r;
 }
 

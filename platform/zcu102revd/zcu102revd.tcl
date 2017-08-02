@@ -27,10 +27,10 @@ namespace eval platform {
   }
 
   proc max_masters {} {
-    return [mpsoc::max_masters]
+    return [zynqmp::max_masters]
   }
 
   proc create {} {
-    return [mpsoc::create]
+    return [zynqmp::create]
   }
 }

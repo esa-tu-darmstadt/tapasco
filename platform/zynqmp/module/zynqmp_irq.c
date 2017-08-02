@@ -27,7 +27,7 @@
 #include "zynqmp_logging.h"
 #include "zynqmp_device.h"
 
-#define ZYNQ_IRQ_BASE_IRQ					(45)
+#define ZYNQ_IRQ_BASE_IRQ					211
 
 extern struct zynqmp_device zynqmp_dev;
 
@@ -59,7 +59,6 @@ static irqreturn_t zynqmp_irq_handler(int irq, void *dev_id)
 int zynqmp_irq_init(void)
 {
 	int retval = 0, irqn = ZYNQ_DEVICE_INTC_NUM, i;
-	s32 *intc = (s32 *)zynqmp_dev.gp_map[1];
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
 	for (i = 0; i < ZYNQ_DEVICE_THREADS_NUM; ++i)
 		zynqmp_dev.pending_ev[i] = 0; // clear pending events
@@ -71,11 +70,6 @@ int zynqmp_irq_init(void)
 				IRQF_TRIGGER_NONE | IRQF_ONESHOT,
 				ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME,
 				&zynqmp_dev);
-		// enable all irqs
-		iowrite32(0xffffffffUL, intc + ((irqn * ZYNQ_DEVICE_INTC_OFFS + 0x08) >> 2));
-		iowrite32(0xffffffffUL, intc + ((irqn * ZYNQ_DEVICE_INTC_OFFS + 0x1c) >> 2));
-		ioread32(intc); // read ISR
-		intc += ZYNQ_DEVICE_INTC_OFFS >> 2; // next INTC
 	}
 
 	if (retval) {
@@ -98,16 +92,12 @@ err:
 void zynqmp_irq_exit(void)
 {
 	int irqn = ZYNQ_DEVICE_INTC_NUM;
-	u32 *intc = (u32 *)zynqmp_dev.gp_map[1];
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
 	while (irqn) {
 		--irqn;
 		LOG(ZYNQ_LL_IRQ, "releasing IRQ #%d", ZYNQ_IRQ_BASE_IRQ + irqn);
-		// ack all ints
-		iowrite32(0xffffffffUL, intc + ((irqn * ZYNQ_DEVICE_INTC_OFFS) >> 2));
-		// mask all ints
-		iowrite32(0, intc + ((irqn * ZYNQ_DEVICE_INTC_OFFS + 0x08) >> 2));
-		iowrite32(0, intc + ((irqn * ZYNQ_DEVICE_INTC_OFFS + 0x1C) >> 2));
+		// TODO: Disable all interrupts
+		// Needs to check if interrupt controller exists
 		disable_irq(ZYNQ_IRQ_BASE_IRQ + irqn);
 		free_irq(ZYNQ_IRQ_BASE_IRQ + irqn, &zynqmp_dev);
 	}

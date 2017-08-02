@@ -57,17 +57,16 @@ static int __init zynqmp_module_init(void)
 		goto err_chardev;
 	}
 
-	//retval = zynqmp_irq_init();
-	//if (retval < 0) {
-	//	ERR("irq init failed!");
-	//	goto err_irq;
-	//}
+	retval = zynqmp_irq_init();
+	if (retval < 0) {
+		ERR("irq init failed!");
+		goto err_irq;
+	}
 
 	LOG(ZYNQ_LL_ENTEREXIT, "exit");
 	return retval;
 
-	//zynqmp_irq_exit();
-//err_irq:
+err_irq:
 	zynqmp_device_exit();
 err_chardev:
 	zynqmp_dmamgmt_exit(zynqmp_ioctl_get_device());
@@ -81,7 +80,7 @@ exit:
 static void __exit zynqmp_module_exit(void)
 {
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
-	//zynqmp_irq_exit();
+	zynqmp_irq_exit();
 	zynqmp_device_exit();
 	zynqmp_dmamgmt_exit(zynqmp_ioctl_get_device());
 	zynqmp_ioctl_exit();

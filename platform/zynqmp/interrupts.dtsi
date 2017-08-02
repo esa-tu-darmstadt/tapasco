@@ -1,0 +1,7 @@
+&amba {
+    f2p_irq@0 {
+        compatible = "none";
+        interrupt-parent = <&gic>;
+        interrupts = <0 89 4>, <0 90 4>, <0 91 4>, <0 92 4>;
+    };
+};
