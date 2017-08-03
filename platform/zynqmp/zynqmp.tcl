@@ -110,12 +110,6 @@ namespace eval platform {
       # connect S_AXI
       connect_bd_intf_net $s_axi [get_bd_intf_pins -of_objects $intcic -filter {NAME == "S00_AXI"}]
 
-      create_bd_cell -type ip -vlnv xilinx.com:ip:system_ila:1.0 system_ila_0
-      set_property -dict [list CONFIG.C_MON_TYPE {NATIVE}] [get_bd_cells system_ila_0]
-      connect_bd_net [get_bd_pins system_ila_0/probe0] [get_bd_pins axi_intc_00/irq]
-      connect_bd_net [get_bd_pins system_ila_0/clk] [get_bd_pins axi_intc_00/s_axi_aclk]
-      set_property -dict [list CONFIG.C_DATA_DEPTH {131072} CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_INPUT_PIPE_STAGES {1} CONFIG.C_BRAM_CNT {7.5} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_bd_cells system_ila_0]
-
       current_bd_instance $instance
       return $group
     }
@@ -166,6 +160,10 @@ namespace eval platform {
       # connect memory slaves to memory clock and reset
       connect_bd_net $mem_aclk [get_bd_pins -of_objects $ps -filter {NAME =~ "s*aclk"}]
       connect_bd_net $host_aclk [get_bd_pins -of_objects $ps -filter {NAME =~ "m*aclk"}]
+
+      # Add dummy XLConcat to fix errors with Vivados bus width propagation
+      set dummyConcat [tapasco::createConcat "dummyConcat" 1]
+      connect_bd_net [get_bd_pins dummyConcat/dout] [get_bd_pins zynqmp/pl_ps_irq0]
 
       current_bd_instance $instance
       return $group
@@ -248,7 +246,7 @@ namespace eval platform {
       }
 
       # create interrupt subsystem
-      set ss_int [create_subsystem_interrupts [arch::get_irqs] [get_bd_pins "$ss_host/zynqmp/pl_ps_irq0"]]
+      set ss_int [create_subsystem_interrupts [arch::get_irqs] [get_bd_pins "$ss_host/dummyConcat/In0"]]
       connect_bd_intf_net [get_bd_intf_pins "$ss_host/M_AXI_GP1"] [get_bd_intf_pins "$ss_int/S_AXI"]
       connect_bd_net [get_bd_pins "$ss_cnr/host_aclk"] [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $ss_int]
       connect_bd_net [get_bd_pins "$ss_cnr/host_peripheral_aresetn"] [get_bd_pins -filter {TYPE == rst && DIR == I} -of_objects $ss_int]
