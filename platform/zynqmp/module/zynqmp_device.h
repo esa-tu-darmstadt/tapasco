@@ -42,8 +42,8 @@ struct zynqmp_device {
 	struct miscdevice	miscdev[3];
 	void __iomem 		*gp_map[2];
 	void __iomem		*tapasco_status;
-	volatile long		pending_ev[ZYNQ_DEVICE_THREADS_NUM];
-	volatile unsigned long	total_ev;
+	long		pending_ev[ZYNQ_DEVICE_THREADS_NUM];
+	unsigned long	total_ev;
 	wait_queue_head_t	ev_q[ZYNQ_DEVICE_THREADS_NUM];
 };
 

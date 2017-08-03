@@ -72,27 +72,16 @@ static struct file_operations zynqmp_device_fops = {
 static ssize_t zynqmp_device_wait(struct device *dev,
 		struct device_attribute *attr, char const *buf, size_t count)
 {
-	u32 id, cd = 0;
-	long got_ev, wait_ret;
+	u32 id;
+	long wait_ret;
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
 	id = *(u32 *)buf;
 	LOG(ZYNQ_LL_DEVICE, "checking for %u", id);
 
-	while ((got_ev = zynqmp_dev.pending_ev[id]) <= 0) {
-		++cd;
-		LOG(ZYNQ_LL_DEVICE, "sleeping on %u", id);
-		wait_ret = wait_event_interruptible_timeout(zynqmp_dev.ev_q[id],
-				zynqmp_dev.pending_ev[id] != 0,
-				10 * HZ);
-		if (wait_ret < 0) {
-			WRN("wait for %u interrupted by signal %ld!", id, wait_ret);
-			return wait_ret;
-		}
-	}
-
-	if (! got_ev) {
-		WRN("TIMEOUT: did not get event %u", id);
-		return -ETIMEDOUT;
+	LOG(ZYNQ_LL_DEVICE, "sleeping on %u", id);
+	if ((wait_ret = wait_event_interruptible(zynqmp_dev.ev_q[id], zynqmp_dev.pending_ev[id] != 0))) {
+		WRN("wait for %u interrupted by signal %ld!", id, wait_ret);
+		return wait_ret;
 	}
 
 	__atomic_fetch_sub(&zynqmp_dev.pending_ev[id], 1, __ATOMIC_SEQ_CST);

@@ -67,7 +67,7 @@ int zynqmp_irq_init(void)
 		--irqn;
 		LOG(ZYNQ_LL_IRQ, "registering IRQ #%d", ZYNQ_IRQ_BASE_IRQ + irqn);
 		retval = request_irq(ZYNQ_IRQ_BASE_IRQ + irqn, zynqmp_irq_handler,
-				IRQF_TRIGGER_NONE | IRQF_ONESHOT,
+				IRQF_ONESHOT,
 				ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME,
 				&zynqmp_dev);
 	}
