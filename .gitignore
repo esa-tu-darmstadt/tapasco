@@ -39,3 +39,4 @@ boot/zedboard
 boot/rootfs.img
 boot/uenv/uEnv-pynq.txt
 project/build.properties
+/.project

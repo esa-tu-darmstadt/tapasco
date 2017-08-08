@@ -38,6 +38,7 @@ namespace eval tapasco {
   namespace export createProtocolConverter
   namespace export createSlice
   namespace export createSystemCache
+  namespace export createReparaCache
   namespace export createZynqBFM
   namespace export createZynqPS
   namespace export get_board_preset
@@ -347,6 +348,17 @@ namespace eval tapasco {
     ] $inst
     return $inst
   }
+
+  proc createReparaCache {name} {
+    variable stdcomps
+    puts "Creating REPARA AXI Cache ..."
+    puts "  VLNV: [dict get $stdcomps repara_cache vlnv]"
+    set inst [create_bd_cell -type ip -vlnv [dict get $stdcomps repara_cache vlnv] $name]
+    set_property -dict [list CONFIG.C_MF_AXI_DATA_WIDTH {512} CONFIG.C_CACHELINE_DATA_WIDTH {512} CONFIG.C_AXI_ID_WIDTH {8} CONFIG.C_CACHELINE_DEPTH {512}] $inst
+    return $inst
+  }
+
+
 
   # Instantiates a TPC status core.
   # @param name Name of the instance.

@@ -1,0 +1,3 @@
+# This file is automatically written.  Do not modify.
+proc gen_USERPARAMETER_C_SL_AXI_ADDR_WIDTH_VALUE {C_SF_AXI_ADDR_WIDTH } {expr $C_SF_AXI_ADDR_WIDTH}
+proc gen_USERPARAMETER_C_MF_AXI_ADDR_WIDTH_VALUE {C_SF_AXI_ADDR_WIDTH } {expr $C_SF_AXI_ADDR_WIDTH}
