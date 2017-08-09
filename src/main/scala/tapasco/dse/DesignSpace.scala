@@ -51,6 +51,7 @@ class DesignSpace(
     val designFrequency: Heuristics.Frequency
   )(implicit cfg: Configuration) {
   import scala.util.Properties.{lineSeparator => NL}
+  private[this] final val DEFAULT_CLOCK_PERIOD_NS = 4           // default: 250 MHz
   private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
   logger.trace(Seq("DesignSpace(", dim, ")") mkString)
 
@@ -60,7 +61,7 @@ class DesignSpace(
     val cores = bd.composition flatMap (ce => FileAssetManager.entities.core(ce.kernel, target))
     val srs   = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
     val cps   = srs flatMap (_.timing) map (_.clockPeriod)
-    val fmax  = 1000.0 / (if (cps.nonEmpty) cps.max else 4)   // default: 250 MHz
+    val fmax  = 1000.0 / (if (cps.nonEmpty) cps.max else DEFAULT_CLOCK_PERIOD_NS)
     target.pd.supportedFrequencies map (_.toDouble) filter (_ <= fmax) sortWith (_>_)
   } else {
     Seq(designFrequency)

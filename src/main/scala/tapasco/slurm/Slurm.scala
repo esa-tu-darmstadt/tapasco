@@ -54,6 +54,8 @@ final object Slurm extends Publisher {
   final val slurmDelay = 15000 // 15 secs
   /** Set of POSIX permissions for SLURM job scripts. */
   final val slurmScriptPermissions = Set(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE, GROUP_READ, OTHERS_READ).asJava
+  /** Wait interval between retries. */
+  final val slurmRetryDelay = 10000 // 10 secs
 
   /** Returns true if SLURM is available on host running iTPC. */
   lazy val available: Boolean = "which sbatch".! == 0
@@ -116,11 +118,11 @@ final object Slurm extends Publisher {
     logger.debug("running slurm batch job: '%s'".format(cmd))
     val res = cmd.!!
     val id = slurmSubmissionAck.findFirstMatchIn(res) map (_ group (1) toInt)
-    if (id.isEmpty ) {
+    if (id.isEmpty) {
       if (retries > 0) {
-        Thread.sleep(10000) // wait 10 secs
+        Thread.sleep(slurmRetryDelay) // wait 10 secs
         apply(script, retries - 1)
-      } else throw new SlurmException(script.toString, res)
+      } else { throw new SlurmException(script.toString, res) }
     } else {
       logger.debug("received SLURM id: {}", id)
       id

@@ -12,7 +12,7 @@ import  scala.swing.event._
  *  [[common.DividerSync]] to present a table-like structure, consisting of first
  *  row: Design space dimension (frequency, utilization, alternatives); second
  *  row: batch size, a warning panel (for misconfigurations) and SLURM.
- *  Last row contains a button for the user to start the exploration, which 
+ *  Last row contains a button for the user to start the exploration, which
  *  raises a corresponding [[ConfigPanel.Event]] (nothing is done directly, MVC
  *  approach better here).
  *

@@ -12,6 +12,7 @@ import  java.nio.file._
  *  via the [[dump]] method.
  */
 object JobExamples {
+  // scalastyle:off magic.number
   val bulkImportJob = BulkImportJob(Paths.get("some.csv"))
   val composition = Composition(Paths.get("N/A"),
                                 Some("An optional description."),
@@ -63,4 +64,5 @@ object JobExamples {
       fw.close()
     }
   }
+  // scalastyle:on magic.number
 }

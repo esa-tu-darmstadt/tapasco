@@ -48,7 +48,7 @@ trait Publisher {
   /** Type alias for listeners. */
   type EventListener = Listener[Event]
 
-  /** Internal array of listeners. */ 
+  /** Internal array of listeners. */
   protected val _listeners: ArrayBuffer[EventListener] = new ArrayBuffer()
 
   /** Adds an [[EventListener]].

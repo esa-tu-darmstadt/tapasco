@@ -2,7 +2,7 @@ package de.tu_darmstadt.cs.esa.tapasco.itapasco.view.dse.graph
 import  edu.uci.ics.jung.visualization._
 
 /** JUNG2 VisualizationViewer Paintable which renders the grid for [[globals.Graph.satViewer]].
- *  The axes are drawn in bold + white, the rest of the grid is 10-step in dotted gray. 
+ *  The axes are drawn in bold + white, the rest of the grid is 10-step in dotted gray.
  */
 class SatelliteViewerGrid(vv: VisualizationViewer[_, _]) extends VisualizationServer.Paintable {
   import java.awt._

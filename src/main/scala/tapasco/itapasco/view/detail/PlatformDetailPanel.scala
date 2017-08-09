@@ -11,7 +11,7 @@ import  PlatformsPanel.Events._
  *  On top there is a [[common.DescriptionPropertiesTable]] instance showing
  *  details of the description itself. Below there is a chart of the average
  *  transfer speeds achieved by the platform across different chunk sizes.
- *  
+ *
  *  @see [[chart.PlatformBenchmarkChart]]
  */
 class PlatformDetailPanel extends GridBagPanel with Listener[PlatformsPanel.Event] {
