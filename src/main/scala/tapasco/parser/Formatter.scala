@@ -24,6 +24,7 @@ trait Formatter[A] extends Function[FormatObject, A] {
   def format(p: Join): A
   def format(p: Break): A
 
+  // scalastyle:off cyclomatic.complexity
   def apply(fo: FormatObject): A = fo match {
     case x: Header  => format(x)
     case x: Section => format(x)
@@ -46,6 +47,7 @@ trait Formatter[A] extends Function[FormatObject, A] {
     case x: Join    => format(x)
     case x: Break   => format(x)
   }
+  // scalastyle:on cyclomatic.complexity
 }
 
 /** Formatter producing strings; used for CLI output. */
@@ -104,7 +106,7 @@ class StringFormatter extends Formatter[String] {
 
 /** Formatter producing man page format. */
 class ManPageFormatter extends StringFormatter {
-  override def format(header: Header) =
+  override def format(header: Header): String =
     s".TH ${header.title} ${header.section: Int} ${header.source} ${header.section.manual}"
 
   override def format(section: Section): String =

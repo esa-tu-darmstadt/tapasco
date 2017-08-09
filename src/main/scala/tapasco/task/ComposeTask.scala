@@ -45,7 +45,7 @@ class ComposeTask(composition: Composition,
     _logger.debug("launching compose run for {}@{} [current thread: {}], logfile {}",
       target.ad.name: Object, target.pd.name: Object, Thread.currentThread.getName(): Object, _logFile: Object)
     if (debugMode.isEmpty) {
-      _composerResult = Some(try   { composer.compose(composition, target, designFrequency, Seq(), features getOrElse Seq()) }
+      _composerResult = Some(try   { composer.compose(composition, target, designFrequency, features getOrElse Seq()) }
                              catch { case e: Exception =>
                                        _logger.error(e.toString)
                                        _logger.debug("stacktrace: {}", e.getStackTrace() mkString NL)

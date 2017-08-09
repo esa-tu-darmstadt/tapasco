@@ -546,55 +546,26 @@ namespace eval tapasco {
     return $kernels
   }
 
-  # Returns a list of configured features for the Platform.
-  proc get_platform_features {} {
-    global platformfeatures
-    if {[info exists platformfeatures]} { return [dict keys $platformfeatures] } { return [dict] }
+  # Returns a list of configured features.
+  proc get_features {} {
+    global features
+    if {[info exists features]} { return [dict keys $features] } { return [dict create] }
   }
 
-  # Returns a dictionary with the configuration of given Platform feature.
-  proc get_platform_feature {feature} {
-    global platformfeatures
-    if {[info exists platformfeatures] && [dict exists $platformfeatures $feature]} {
-      return [dict get $platformfeatures $feature]
-    } else {
-      return [dict create]
-    }
+  # Returns a dictionary with the configuration of given feature (if it exists).
+  proc get_feature {feature} {
+    global features
+    if {[info exists features]} { return [dict get $features $feature] } { return [dict] }
   }
 
   # Returns true, if given feature is configured and enabled.
-  proc is_platform_feature_enabled {feature} {
-    global platformfeatures
-    if {[info exists platformfeatures]} {
-      if {[dict exists $platformfeatures $feature]} {
-        if {[dict get $platformfeatures $feature "enabled"] == "true"} {
+  proc is_feature_enabled {feature} {
+    global features
+    if {[info exists features]} {
+      if {[dict exists $features $feature]} {
+        if {[dict get $features $feature "enabled"] == "true"} {
           return true
         }
-      }
-    }
-    return false
-  }
-
-  # Returns a list of configured features for the Architecture.
-  proc get_architecture_features {} {
-    global architecturefeatures
-    if {[info exists architecturefeatures]} { return [dict keys $architectureFeatures] } { return [dict create] }
-  }
-
-  # Returns a dictionary with the configuration of given Architecture feature.
-  proc get_architecture_feature {feature} {
-    global architecturefeatures
-    if {[info exists architecturefeatures]} { return [dict get $architecturefeatures $feature] } { return [dict] }
-  }
-
-  # Returns true, if given feature is configured and enabled.
-  proc is_architecture_feature_enabled {feature} {
-    global architecturefeatures
-    if {[info exists architecturefeatures]} {
-      if {[dict exists $architecturefeatures $feature]} {
-        if {[dict get $architecturefeatures $feature "enabled"] == "true"} {
-    return true
-  }
       }
     }
     return false

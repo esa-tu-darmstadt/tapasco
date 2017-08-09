@@ -4,6 +4,7 @@ import  scala.util.Properties.{lineSeparator => NL}
 
 object Usage {
   private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val BINDENT = 74
 
   def apply()(implicit fmt: Formatter[String] = StringFormatter): String = fmt(usage)
 
@@ -226,8 +227,9 @@ configuration via `tapasco -n config.json`.
             Block("All HLS kernels are located in the directories below the currently" ~
                   "configured Kernel directory (see `tapasco -h globals`). Each kernel" ~
                   "requires a description in a simple Json format, examples can be found" ~
-                  "in $TAPASCO_HOME/kernel.", 74)))
+                  "in $TAPASCO_HOME/kernel.", BINDENT)))
 
+  // scalastyle:off method.length
   private def explore()    = Section("Design Space Exploration Job",
     Block("Even simple hardware designs often require a surprisingly high number of" ~
           "design choices. It is difficult to estimate the impact of each choice on" ~
@@ -304,7 +306,8 @@ configuration via `tapasco -n config.json`.
             Block("All HLS kernels are located in the directories below the currently" ~
                   "configured Kernel directory (see `tapasco -h globals`). Each kernel" ~
                   "requires a description in a simple Json format, examples can be found" ~
-                  "in $TAPASCO_HOME/kernel.", 74)))
+                  "in $TAPASCO_HOME/kernel.", BINDENT)))
+  // scalastyle:on method.length
 
   private def shortJobs() = Section("Jobs",
     Arg("", "(see `tapasco -h <job>` for details)")  &

@@ -25,7 +25,7 @@ private object GlobalOptions {
     longOption("logFile")           |
     longOption("parallel")          |
     longOption("slurm")             |
-    longOption("maxThreads") 
+    longOption("maxThreads")
   ).opaque("a global option")
 
   def help: Parser[(String, String)] =
@@ -81,6 +81,7 @@ private object GlobalOptions {
   def globalOptions: Parser[Configuration] =
     globalOptionsSeq map (as => mkConfig(as))
 
+  // scalastyle:off cyclomatic.complexity
   private def mkConfig[A <: Seq[Tuple2[String, _]]](pa: A, c: Option[Configuration] = None): Configuration =
     pa match {
       case a +: as => a match {
@@ -101,6 +102,7 @@ private object GlobalOptions {
       }
       case x => c getOrElse Configuration()
     }
+  // scalastyle:on cyclomatic.complexity
 
   private def readJobsFile(p: Path): Seq[Job] =
     Json.fromJson[Seq[Job]](Json.parse(Source.fromFile(p.toString).getLines mkString "")) match {

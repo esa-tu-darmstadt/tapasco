@@ -23,19 +23,18 @@
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
 
-sealed class Feature(val name: String, val props: Map[String, String]) {
+sealed case class Feature(val name: String, val props: Map[String, String]) {
   def unapply: Option[(String, Map[String, String])] = Some((name, props))
-  override def equals(o: Any): Boolean = o match {
-    case Feature(n, p) => name.equals(n) && props.equals(p)
-    case _             => false
-  }
 }
 
 object Feature {
-  def apply(name: String, props: Map[String, String]): Feature = new Feature(
-    name,
-    if (props.get("Enabled").nonEmpty) props else props + ("Enabled" -> "true")
-  )
+  def apply(name: String, props: Map[String, String]): Feature = {
+    val lp = props map { case (k, v) => k.toLowerCase -> v }
+    new Feature(
+      name,
+      if (lp.get("enabled").nonEmpty) lp else lp + ("enabled" -> "true")
+    )
+  }
 
   def unapply(f: Feature): Option[(String, Map[String, String])] = f.unapply
 }

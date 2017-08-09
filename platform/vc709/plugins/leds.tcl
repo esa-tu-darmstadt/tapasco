@@ -78,11 +78,11 @@ namespace eval leds {
 
   proc create_leds {{name "gp_leds"}} {
     variable vlnv
-    if {[tapasco::is_platform_feature_enabled "LED"]} {
+    if {[tapasco::is_feature_enabled "LED"]} {
       puts "Implementing Platform feature LED ..."
       # create and connect LED core
       set const_one [tapasco::createConstant "const_one" 1 1]
-      set gp_led [create_led_core "gp_led" [dict get [tapasco::get_platform_feature "LED"] "inputs"]]
+      set gp_led [create_led_core "gp_led" [dict get [tapasco::get_feature "LED"] "inputs"]]
       set pcie_aclk [get_bd_pins "/PCIe/pcie_aclk"]
       set pcie_aresetn [get_bd_pins "/PCIe/pcie_aresetn"]
       set pcie_aclk_net [get_bd_net -of_objects $pcie_aclk]

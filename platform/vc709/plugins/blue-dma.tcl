@@ -6,14 +6,14 @@ namespace eval blue_dma {
 
   proc blue_dma {{args {}}} {
     variable vlnv
-    if {[tapasco::is_platform_feature_enabled "BlueDMA"]} {
+    if {[tapasco::is_feature_enabled "BlueDMA"]} {
       # blue_dma is drop-in replacement for dual_dma: replace original VLNV
       dict set tapasco::stdcomps dualdma vlnv $vlnv
     }
   }
 
   proc set_constraints {{args {}}} {
-    if {[tapasco::is_platform_feature_enabled "BlueDMA"]} {
+    if {[tapasco::is_feature_enabled "BlueDMA"]} {
       puts "Adding false path constraints for BlueDMA"
       set constraints_fn "[get_property DIRECTORY [current_project]]/bluedma.xdc"
       set constraints_file [open $constraints_fn w+]

@@ -63,7 +63,7 @@ namespace eval oled {
   }
 
   proc oled_feature {{args {}}} {
-    if {[tapasco::is_platform_feature_enabled "OLED"]} {
+    if {[tapasco::is_feature_enabled "OLED"]} {
       set oled [create_subsystem_oled "OLED" [arch::get_irqs]]
       set ps [get_bd_cell -hierarchical -filter {VLNV =~ "xilinx.com:ip:processing_system*"}]
       set ps_rst [get_bd_pin "/Host/ps_resetn"]
