@@ -113,14 +113,15 @@ final object Slurm extends Publisher {
    * @param script Job script file to schedule via `sbatch`.
    * @return Either a positive integer (SLURM id), or an Exception.
    **/
-  def apply(script: Path, retries: Int = 3): Option[Int] = catchAllDefault[Option[Int]](None, "Slurm scheduling failed: ") {
+  def apply(script: Path, retries: Int = 10): Option[Int] = catchAllDefault[Option[Int]](None, "Slurm scheduling failed: ") {
     val cmd = "sbatch %s".format(script.toAbsolutePath().normalize().toString)
     logger.debug("running slurm batch job: '%s'".format(cmd))
     val res = cmd.!!
     val id = slurmSubmissionAck.findFirstMatchIn(res) map (_ group (1) toInt)
     if (id.isEmpty) {
       if (retries > 0) {
-        Thread.sleep(slurmRetryDelay) // wait 10 secs
+        // wait for 10 secs + random up to 5 secs to avoid congestion
+        Thread.sleep(slurmRetryDelay + scala.util.Random.nextInt() % (slurmRetryDelay / 2))
         apply(script, retries - 1)
       } else { throw new SlurmException(script.toString, res) }
     } else {

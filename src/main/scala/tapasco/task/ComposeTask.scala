@@ -28,7 +28,7 @@ class ComposeTask(composition: Composition,
   private[this] implicit val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   private[this] val _slurm = Slurm.enabled
   private[this] var _composerResult: Option[Composer.Result] = None
-  private[this] val _outDir = cfg.outputDir(composition, target, designFrequency)
+  private[this] val _outDir = cfg.outputDir(composition, target, designFrequency, features getOrElse Seq())
   private[this] val _logFile = logFile getOrElse "%s/%s.log".format(_outDir, "tapasco")
   private[this] val _errorLogFile = Paths.get(_logFile).resolveSibling("slurm-compose.errors.log")
 
@@ -85,13 +85,13 @@ class ComposeTask(composition: Composition,
     )
     // define SLURM job
     val job = Slurm.Job(
-      name     = "compose-%s-%s-%s-%1.2f".format(composition.id, target.ad.name, target.pd.name, designFrequency),
+      name     = elementdesc,
       slurmLog = slgFile.toString,
       errorLog = _errorLogFile.toString,
       consumer = this,
       maxHours = ComposeTask.MAX_COMPOSE_HOURS,
       commands = Seq("tapasco --configFile %s".format(cfgFile.toString)),
-      comment  = Some("%s".format(composition.composition map (ce => "%s % d".format(ce.kernel, ce.count)) mkString ", "))
+      comment  = Some(_outDir.toString)
     )
     // generate non-SLURM config with single job
     val newCfg = cfg
@@ -144,7 +144,7 @@ class ComposeTask(composition: Composition,
 object ComposeTask {
   import scala.io._
   import de.tu_darmstadt.cs.esa.tapasco.reports._
-  private final val MAX_COMPOSE_HOURS = 48
+  private final val MAX_COMPOSE_HOURS = 23
   private final val RE_RESULT = """compose run .*result: ([^,]+)""".r.unanchored
   private final val RE_LOG    = """compose run .*result: \S+.*logfile: '([^']+)'""".r.unanchored
   private final val RE_TIMING = """compose run .*result: \S+.*timing report: '([^']+)'""".r.unanchored

@@ -6,13 +6,9 @@
 #SBATCH --mem-per-cpu=@@MEM_PER_CPU@@
 #SBATCH -n @@CPUS@@
 #SBATCH -t @@TIMELIMIT@@
-#SBATCh --comment="@@COMMENT@@"
+#SBATCH --comment="@@COMMENT@@"
 
-export TAPASCO_HOME=@@TAPASCO_HOME@@
-source ~/vivado.sh
-pushd $TAPASCO_HOME
-source ./setup.sh
-popd
+source @@TAPASCO_HOME@@/setup.sh
 
 # user commands begin here
 echo "SLURM job #$SLURM_JOB_ID started at $(date)"
