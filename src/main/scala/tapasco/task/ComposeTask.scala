@@ -85,7 +85,7 @@ class ComposeTask(composition: Composition,
     )
     // define SLURM job
     val job = Slurm.Job(
-      name     = elementdesc,
+      name     = l.getParent.getParent.getFileName.resolve(l.getParent.getFileName).toString,
       slurmLog = slgFile.toString,
       errorLog = _errorLogFile.toString,
       consumer = this,
