@@ -90,6 +90,7 @@ namespace eval tapasco {
       set ifname [format "CONFIG.M%02d_HAS_REGSLICE" $i]
       lappend props $ifname {4}
     }
+    lappend props CONFIG.STRATEGY {2}
     set_property -dict $props $ic
     return $ic
   }
