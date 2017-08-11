@@ -160,23 +160,8 @@ namespace eval platform {
       CONFIG.S01_HAS_DATA_FIFO {2}
     ] $mig_ic
 
-    set cf [tapasco::get_platform_feature "Cache"]
-    set cache_en [tapasco::is_platform_feature_enabled "Cache"]
-    if {$cache_en} {
-      puts "Platform configured w/L2 Cache, implementing ..."
-      set cache [tapasco::createSystemCache "cache_l2" 1 \
-          [dict get [tapasco::get_platform_feature "Cache"] "size"] \
-          [dict get [tapasco::get_platform_feature "Cache"] "associativity"]]
-
-      # connect mig_ic master to cache_l2
-      connect_bd_intf_net [get_bd_intf_pins mig_ic/M00_AXI] [get_bd_intf_pins $cache/S0_AXI_GEN]
-      # connect cache_l2 to MIG
-      connect_bd_intf_net [get_bd_intf_pins $cache/M_AXI] [get_bd_intf_pins mig/S_AXI]
-    } {
-      puts "Platform configured w/o L2 Cache"
-      # no cache - connect directly to MIG
-      connect_bd_intf_net [get_bd_intf_pins mig_ic/M00_AXI] [get_bd_intf_pins mig/S_AXI]
-    }
+    # Cache is now part of the architecture - connect directly to MIG
+    connect_bd_intf_net [get_bd_intf_pins mig_ic/M00_AXI] [get_bd_intf_pins mig/S_AXI]
 
     # AXI connections:
     # connect dual dma 32bit to mig_ic
@@ -220,12 +205,6 @@ namespace eval platform {
       set ext_design_clk [get_bd_pins mig/ui_addn_clk_0]
     }
     connect_bd_net $ext_design_clk $design_clk
-
-    # connect cache clk/rst if configured
-    if {$cache_en} {
-      connect_bd_net -net ddr_clk_net $ddr_clk [get_bd_pins $cache/ACLK]
-      connect_bd_net -net ddr_p_rst_net $ddr_p_aresetn [get_bd_pins $cache/ARESETN]
-    }
 
     # connect IRQ
     connect_bd_net [get_bd_pins dual_dma/IRQ] $irq
@@ -470,7 +449,7 @@ namespace eval platform {
     }
 
     # connect user IP
-    set usrs [lsort [get_bd_addr_segs "/uArch/*"]]
+    set usrs [lsort [get_bd_addr_segs "/uArch/*" -filter { NAME !~ "*axi_lite_slave*" && NAME !~ "*axi_full_slave*"}]]
     set offset [expr "$tapasco_base + 0x02000000"]
     for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
       create_bd_addr_seg -range 64K -offset $offset $master_addr_space [lindex $usrs $i] "USR_SEG$i"
@@ -493,10 +472,21 @@ namespace eval platform {
     create_bd_addr_seg -range 16E -offset 0 $int_ms $ts "SEG_intr"
 
     # connect user IP
+    set cache_en [tapasco::is_platform_feature_enabled "Cache"]
+    set i 0
     set usrs [lsort [get_bd_addr_spaces /uArch/* -filter { NAME =~ "*m_axi*" || NAME =~ "*M_AXI*" }]]
-    set ts [get_bd_addr_segs /Memory/mig/*]
     foreach u $usrs {
+      if {$cache_en} {
+        # Map memory address block into cache master address space
+        create_bd_addr_seg -range 4G -offset 0 [get_bd_addr_spaces /uArch/cache_$i/axi_full_master] [get_bd_addr_segs /Memory/mig/*] "SEG_cache_mem_$i"
+        # Map cache slave address block into ip master address space
+        set ts [get_bd_addr_segs /uArch/cache_$i/axi_full_slave/*]
+      } else {
+        # Directly map memory address block into ip master address space
+        set ts [get_bd_addr_segs /Memory/mig/*]
+      }
       create_bd_addr_seg -range [get_property RANGE $u] -offset 0 $u $ts "SEG_$u"
+      incr i
     }
   }
 

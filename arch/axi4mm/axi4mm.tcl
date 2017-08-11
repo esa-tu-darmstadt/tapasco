@@ -161,7 +161,7 @@ namespace eval arch {
       lappend mdist 0
     }
 
-    # distribute masters round-robin on all output ports: mdist holds 
+    # distribute masters round-robin on all output ports: mdist holds
     # number of masters for each port
     set j 0
     for {set i 0} {$i < $no_masters} {incr i} {
@@ -283,9 +283,35 @@ namespace eval arch {
       error "  ERROR: Mismatch between #slaves and #masters - probably a BUG"
     }
 
-    # simply connect masters to output slaves
-    for {set i 0} {$i < [llength $masters]} {incr i} {
-      connect_bd_intf_net [lindex $masters $i] [lindex $slaves $i]
+    set cache_en [tapasco::is_platform_feature_enabled "Cache"]
+    if {$cache_en} {
+      # If the cache feature was requested, insert a cache between each master
+      # and memory
+      for {set i 0} {$i < [llength $masters]} {incr i} {
+        # Create L1$ for each master
+        set cache [tapasco::createReparaCache "cache_$i"]
+
+        # Insert a protocol converter/interconnect TODO if the kernel's master
+        # interface is an AXI4 Lite interface.
+        if { [get_property CONFIG.PROTOCOL [lindex $masters $i]] == "AXI4LITE" } {
+          # Create protocol converter to convert from AXI4 Lite to AXI4
+          set converter [tapasco::createInterconnect "axi_protocol_converter_$i" 1 1]
+          # Connect master to protocol converter
+          connect_bd_intf_net [get_bd_intf_pins axi_protocol_converter_$i/S00_AXI] [lindex $masters $i]
+          # Connect protocol converter to cache
+          connect_bd_intf_net [get_bd_intf_pins axi_protocol_converter_$i/M00_AXI] [get_bd_intf_pins cache_$i/axi_full_slave]
+        } else {
+          # Directly connect master and cache
+          connect_bd_intf_net [lindex $masters $i] [get_bd_intf_pins cache_$i/axi_full_slave]
+        }
+        # Connect cache to to output slave
+        connect_bd_intf_net [get_bd_intf_pins cache_$i/axi_full_master] [lindex $slaves $i]
+      }
+    } else {
+      # Simply connect masters to output slaves
+      for {set i 0} {$i < [llength $masters]} {incr i} {
+        connect_bd_intf_net [lindex $masters $i] [lindex $slaves $i]
+      }
     }
   }
 
@@ -331,6 +357,12 @@ namespace eval arch {
     set design_aclk [create_bd_pin -type clk -dir I "design_aclk"]
     connect_bd_net $design_aclk [get_bd_pins -filter { NAME == "m_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
     connect_bd_net $design_aclk [get_bd_pins -filter { TYPE == clk && DIR == I } -of_objects [get_bd_cells -filter {NAME =~ "target_ip_*"}]]
+    if {[llength [get_bd_cells -filter {NAME =~ "cache_*"}]] > 0} {
+      connect_bd_net $design_aclk [get_bd_pins -filter { TYPE == clk && DIR == I} -of_objects [get_bd_cells -filter {NAME =~ "cache_*"}]]
+    }
+    if {[llength [get_bd_cells -filter {NAME =~ "axi_protocol_converter_*"}]] > 0} {
+      connect_bd_net $design_aclk [get_bd_pins -filter { TYPE == clk && DIR == I} -of_objects [get_bd_cells -filter {NAME =~ "axi_protocol_converter_*"}]]
+    }
     puts "  creating clock lines ..."
     set memory_aclk [create_bd_pin -type clk -dir I "memory_aclk"]
     if {[llength [get_bd_cells -filter {NAME =~ "out*"}]] > 0} {
@@ -353,7 +385,12 @@ namespace eval arch {
    connect_bd_net $design_ic_arstn [get_bd_pins -filter { NAME == "m_interconnect_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
    connect_bd_net $design_p_arstn [get_bd_pins -filter { NAME == "m_peripheral_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
    connect_bd_net $design_p_arstn [get_bd_pins -filter { TYPE == rst && DIR == I } -of_objects [get_bd_cells -filter {NAME =~ "target_ip*"}]]
-
+   if {[llength [get_bd_cells -filter {NAME =~ "cache_*"}]] > 0} {
+     connect_bd_net $design_p_arstn [get_bd_pins -filter { TYPE == rst && DIR == I} -of_objects [get_bd_cells -filter {NAME =~ "cache_*"}]]
+   }
+   if {[llength [get_bd_cells -filter {NAME =~ "axi_protocol_converter_*"}]] > 0} {
+     connect_bd_net $design_p_arstn [get_bd_pins -filter { TYPE == rst && DIR == I} -of_objects [get_bd_cells -filter {NAME =~ "axi_protocol_converter_*"}]]
+   }
    # create hierarchical ports for memory interconnect and peripheral resets
    set memory_ic_arstn [create_bd_pin -type rst -dir I "memory_interconnect_aresetn"]
    set memory_p_arstn  [create_bd_pin -type rst -dir I "memory_peripheral_aresetn"]
