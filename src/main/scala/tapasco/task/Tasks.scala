@@ -3,7 +3,6 @@ import  de.tu_darmstadt.cs.esa.tapasco.util.Publisher
 import  scala.collection.JavaConverters._
 import  scala.concurrent.Future
 import  scala.util.{Failure, Success}
-import  scala.concurrent.ExecutionContext.Implicits.global
 import  java.util.concurrent.LinkedBlockingQueue
 import  java.time.LocalDateTime
 
@@ -87,6 +86,9 @@ class Tasks extends Publisher {
   type Event = Tasks.Event
   import Tasks.Events._
   private[this] final val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private[this] final implicit val _exectx = scala.concurrent.ExecutionContext.fromExecutorService(
+    java.util.concurrent.Executors.newCachedThreadPool()
+  )
 
   override def +=(el: EventListener): Unit = {
     super.+=(el)

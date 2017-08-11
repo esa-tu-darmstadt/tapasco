@@ -26,19 +26,20 @@ object CommandLineParser {
   }
 
   object ParserException {
-    private final val SLICE_WINDOW = (-100, 40)
+    private final val SLICE_LEFT   = -100
+    private final val SLICE_RIGHT  = 40
 
     def apply(f: Parsed.Failure): ParserException =
       ParserException(f.lastParser.toString,
                       f.index,
-                      f.extra.input.slice(f.index + SLICE_WINDOW._1, f.index + SLICE_WINDOW._2)
+                      f.extra.input.slice(f.index + SLICE_LEFT, f.index + SLICE_RIGHT)
                                    .replace ("\t", " ")
                                    .replace ("\n", " "),
-                      ("~" * f.index + "^").slice(f.index + SLICE_WINDOW._1,
-                                                  f.index + SLICE_WINDOW._2))
+                      ("~" * f.index + "^").slice(f.index + SLICE_LEFT,
+                                                  f.index + SLICE_RIGHT))
   }
 
-  def check[A](x: Parsed[A]) = x match {
+  def check[A](x: Parsed[A]): Either[ParserException, A] = x match {
     case f: Parsed.Failure      => Left(ParserException(f))
     case Parsed.Success(cfg, _) => Right(cfg)
   }

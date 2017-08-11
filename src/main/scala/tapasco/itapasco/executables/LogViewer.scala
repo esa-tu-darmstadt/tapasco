@@ -9,7 +9,7 @@ import  scala.swing.{BorderPanel, Frame, MainFrame, SimpleSwingApplication, Swin
 /** Reads a DSE Json logfile and shows an [[controller.ExplorationGraphController]]
  *  for it.
  *  Each DSE run produces a logfile in Json format, which can be "replayed" into
- *  an [[model.DesignSpaceGraph]], which in turn can be displayed by the 
+ *  an [[model.DesignSpaceGraph]], which in turn can be displayed by the
  *  [[controller ExplorationGraphController]]. This applications shows a window
  *  containing only the graph view of the DSE page in iTPC and allows to browse
  *  through past DSE runs conveniently

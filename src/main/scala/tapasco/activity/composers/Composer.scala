@@ -39,13 +39,12 @@ trait Composer {
    *  @param bd Composition to synthesize
    *  @param target Platform and Architecture combination to synthesize for
    *  @param f target design frequency (PE speed)
-   *  @param archFeatures ArchitectureFeatures (optional).
-   *  @param platformFeatures Platform features (optional).
+   *  @param features Features (optional)
    *  @param cfg implicit Configuration instance
    *  @return Composer.Result with error code / additional data
    **/
-  def compose(bd: Composition, target: Target, f: Double = 0, archFeatures: Seq[Feature] = Seq(),
-      platformFeatures: Seq[Feature] = Seq())(implicit cfg: Configuration): Result
+  def compose(bd: Composition, target: Target, f: Double = 0, features: Seq[Feature] = Seq())
+             (implicit cfg: Configuration): Result
 
   /** Removes all intermediate files for the run, leaving results.
    *  @param bd Composition to synthesize

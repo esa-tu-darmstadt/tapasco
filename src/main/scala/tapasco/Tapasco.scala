@@ -34,6 +34,7 @@ object Tapasco {
   import ch.qos.logback.classic.spi.ILoggingEvent
   private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
   private[this] val logFileAppender: FileAppender[ILoggingEvent] = new FileAppender()
+  private[this] final val UNLIMITED_THREADS = 1000
 
   private def setupLogFileAppender(file: String, quiet: Boolean = false) = {
     val ctx = LoggerFactory.getILoggerFactory().asInstanceOf[LoggerContext]
@@ -64,6 +65,8 @@ object Tapasco {
     System.exit(0)
   }
 
+  // scalastyle:off cyclomatic.complexity
+  // scalastyle:off method.length
   def main(args: Array[String]) {
     implicit val tasks = new Tasks
     val ok = try {
@@ -85,12 +88,13 @@ object Tapasco {
         logger.trace("parallel: {}", cfg.parallel)
         cfg.logFile map { logfile: Path => setupLogFileAppender(logfile.toString) }
         logger.info("Running with configuration: {}", cfg.toString)
-        implicit val exe = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(500))
+        implicit val exe = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(UNLIMITED_THREADS))
         def get(f: Future[Boolean]): Boolean = { Await.ready(f, duration.Duration.Inf); f.value map (_ getOrElse false) getOrElse false }
-        if (cfg.parallel)
+        if (cfg.parallel) {
           runGui(args) || (cfg.jobs map { j => Future { jobs.executors.execute(j) } } map (get _) fold true) (_ && _)
-        else
+        } else {
           runGui(args) || (cfg.jobs map { jobs.executors.execute(_) } fold true) (_ && _)
+        }
       } else {
         logger.error("invalid arguments: {}", c.left.get.toString)
         logger.error("run `tapasco -h` or `tapasco --help` to get more info")
@@ -117,4 +121,6 @@ object Tapasco {
       logger.info("TPC finished successfully")
     }
   }
+  // scalastyle:on method.length
+  // scalastyle:on cyclomatic.complexity
 }

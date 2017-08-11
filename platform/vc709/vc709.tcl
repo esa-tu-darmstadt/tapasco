@@ -384,7 +384,7 @@ namespace eval platform {
     ]
 
     # enable ATS/PRI (if platform feature is set)
-    if {[tapasco::is_platform_feature_enabled "ATS-PRI"]} {
+    if {[tapasco::is_feature_enabled "ATS-PRI"]} {
       puts "  ATS/PRI support is enabled"
       lappend pcie_properties \
         CONFIG.c_ats_enable {true} \

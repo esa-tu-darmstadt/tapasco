@@ -68,10 +68,10 @@ namespace eval debug {
   }
 
   proc debug_feature {} {
-    if {[tapasco::is_platform_feature_enabled "Debug"]} {
+    if {[tapasco::is_feature_enabled "Debug"]} {
       puts "Creating ILA debug core, will require re-run of synthesis."
       # get config
-      set debug [tapasco::get_platform_feature "Debug"]
+      set debug [tapasco::get_feature "Debug"]
       puts "  Debug = $debug"
       # default values
       set depth        4096
@@ -100,7 +100,7 @@ namespace eval debug {
 
   proc write_ltx {} {
     global bitstreamname
-    if {[tapasco::is_platform_feature_enabled "Debug"]} {
+    if {[tapasco::is_feature_enabled "Debug"]} {
       puts "Writing debug probes into file ${bitstreamname}.ltx ..."
       write_debug_probes -force -verbose "${bitstreamname}.ltx"
     }

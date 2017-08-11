@@ -27,8 +27,8 @@ private object CommonArgParsers {
     (BasicParsers.seqOne(compositionEntry) ~ ws)
       .opaque("list of composition entries of form <KERNEL NAME> 'x' <COUNT>")
 
-  def compositionBegin = "[" ~ ws opaque("start of composition: '['")
-  def compositionEnd   = "]" ~ ws opaque("end of composition: ']'")
+  def compositionBegin: Parser[Unit] = "[" ~ ws opaque("start of composition: '['")
+  def compositionEnd: Parser[Unit]   = "]" ~ ws opaque("end of composition: ']'")
 
   def compositionFile: Parser[Composition] =
     path.opaque("path to composition Json file") map loadCompositionFromFile _

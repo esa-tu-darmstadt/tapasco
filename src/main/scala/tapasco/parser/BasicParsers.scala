@@ -6,10 +6,10 @@ import  scala.language.implicitConversions
 
 private object BasicParsers {
   def longOption(name: String): Parser[String] = longOption(name, name)
-  def longOption(name: String, retVal: String, alternatives: String*) =
+  def longOption(name: String, retVal: String, alternatives: String*): Parser[String] =
     (name +: alternatives) map (n => IgnoreCase("--%s".format(n)).!.map(_ => retVal)) reduce (_|_)
 
-  def longShortOption(shortName: String, longName: String, retVal: Option[String] = None) =
+  def longShortOption(shortName: String, longName: String, retVal: Option[String] = None): Parser[String] =
     IgnoreCase("-%s".format(shortName)).! | IgnoreCase("--%s".format(longName)).! map (retVal getOrElse _)
 
   val argChars = "-"

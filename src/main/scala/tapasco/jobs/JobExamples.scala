@@ -12,6 +12,7 @@ import  java.nio.file._
  *  via the [[dump]] method.
  */
 object JobExamples {
+  // scalastyle:off magic.number
   val bulkImportJob = BulkImportJob(Paths.get("some.csv"))
   val composition = Composition(Paths.get("N/A"),
                                 Some("An optional description."),
@@ -21,7 +22,7 @@ object JobExamples {
                               "Vivado",
                               Some(Seq("axi4mm")),
                               Some(Seq("pynq", "zedboard")),
-                              None, // FIXME Features missing
+                              Some(Seq(Feature("LED", Map("enabled" -> "true")))),
                               Some("r"))
   val coreStatisticsJob = CoreStatisticsJob(Some("somePrefix_"),
                                             Some(Seq("axi4mm")),
@@ -34,7 +35,7 @@ object JobExamples {
                                          Some(Paths.get("nonstandard/base/path")),
                                          Some(Seq("axi4mm")),
                                          Some(Seq("pynq", "vc709")),
-                                         None, // FIXME Features missing
+                                         Some(Seq(Feature("LED", Map("enabled" -> "true")))),
                                          Some("r"))
   val hlsJob = HighLevelSynthesisJob("VivadoHLS",
                                      Some(Seq("axi4mm")),
@@ -63,4 +64,5 @@ object JobExamples {
       fw.close()
     }
   }
+  // scalastyle:on magic.number
 }

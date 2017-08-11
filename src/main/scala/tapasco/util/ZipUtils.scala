@@ -53,11 +53,11 @@ object ZipUtils {
               ((exclude map (r =>   r.findFirstIn(zipEntry.toString()).isEmpty) fold true)  (_&&_))) {
             logger.trace(zipFile + ": extracting " + zipEntry)
             val buffer = new Array[Byte](bufsz)
-            val outname = tempdir.resolve(if (flatten)
+            val outname = tempdir.resolve(if (flatten) {
               Paths.get(zipEntry.getName()).getFileName()
-            else
+            } else {
               Paths.get(zipEntry.getName())
-            )
+            })
             logger.trace("outname = {}}", outname)
             Option(outname.getParent) foreach { p => if (!p.toFile.exists()) Files.createDirectories(p) }
             val dest = new BufferedOutputStream(new FileOutputStream(outname.toString), bufsz)
@@ -84,7 +84,7 @@ object ZipUtils {
    *  @param zipFile Path to output zip file.
    *  @param files Sequence of files to pack.
    */
-  def zipFile(zipFile: Path, files: Seq[Path]) = {
+  def zipFile(zipFile: Path, files: Seq[Path]) {
     import java.util.zip._
     import java.io.{BufferedOutputStream, FileOutputStream}
     val zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile.toFile)))

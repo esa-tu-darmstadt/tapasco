@@ -19,9 +19,11 @@ private object FeatureParsers {
   val featureMarks      = (featureBeginChars ++ featureEndChars) map (_.toString)
   val featureAssigns    = Seq("->", "=", ":=", ":")
 
-  def featureBegin = CharIn(featureBeginChars).opaque(s"begin of feature mark, one of '$featureBeginChars'")
-  def featureEnd   = CharIn(featureEndChars).opaque(s"end of feature mark, one of '$featureEndChars'")
-  def featureAssign = "->" | "=" | ":=" | ":"
+  def featureBegin: Parser[Unit] =
+    CharIn(featureBeginChars).opaque(s"begin of feature mark, one of '$featureBeginChars'")
+  def featureEnd: Parser[Unit] =
+    CharIn(featureEndChars).opaque(s"end of feature mark, one of '$featureEndChars'")
+  def featureAssign: Parser[Unit] = "->" | "=" | ":=" | ":"
 
   def featureKey: Parser[String] =
     (quotedString | string(featureAssigns ++ featureMarks))

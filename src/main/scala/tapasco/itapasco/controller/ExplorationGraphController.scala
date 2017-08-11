@@ -40,7 +40,7 @@ import  scala.collection.JavaConverters._
  *      current element
  *    - '''pgup'''/'''pgdown''' jumps to elements pruned by / pruning reasons of
  *      the current element (alternative keys: '''up'''/'''down''')
- *  
+ *
  *  ==DSE Log Table==
  *  Table with all DSE events ordered by timestamp; shows a short textual
  *  representation of the event (e.g., Run XY started). This log is later written

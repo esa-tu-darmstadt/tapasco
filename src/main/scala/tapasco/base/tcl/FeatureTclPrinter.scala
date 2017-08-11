@@ -25,7 +25,7 @@ package de.tu_darmstadt.cs.esa.tapasco.base.tcl
 import  de.tu_darmstadt.cs.esa.tapasco.base.Feature
 import  scala.util.Properties.{lineSeparator => NL}
 
-class FeatureTclPrinter(prefix: String) {
+class FeatureTclPrinter(prefix: String = "") {
   private val pre = s"dict set ${prefix}features"
 
   /** GenerateTcl commands to add feature to a Tcl dict.

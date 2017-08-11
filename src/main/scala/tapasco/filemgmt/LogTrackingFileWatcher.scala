@@ -15,7 +15,7 @@ class LogTrackingFileWatcher(_logger: Option[Logger] = None, pollInterval: Int =
     extends MultiFileWatcher(POLL_INTERVAL) {
   private[this] final val logger = _logger getOrElse de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
 
-  private object listener extends Listener[Event]{
+  private lazy val listener = new Listener[Event] {
     def update(e: MultiFileWatcher.Event): Unit = e match {
       case LinesAdded(src, ls) => ls map { l =>
         logger.info(l)

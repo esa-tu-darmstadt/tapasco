@@ -46,11 +46,11 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
   def maxMemoryUsagePerProcess: Int = VIVADO_PROCESS_PEAK_MEM
 
   /** @inheritdoc */
-  def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, archFeatures: Seq[Feature] = Seq(),
-      platformFeatures: Seq[Feature] = Seq()) (implicit cfg: Configuration): Composer.Result = {
+  def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, features: Seq[Feature] = Seq())
+             (implicit cfg: Configuration): Composer.Result = {
     logger.debug("VivadoComposer uses at most {} threads", cfg.maxThreads getOrElse "unlimited")
     // create output struct
-    val files = VivadoComposer.Files(bd, target, f, archFeatures ++ platformFeatures)
+    val files = VivadoComposer.Files(bd, target, f, features)
     // create log tracker
     val lt = new LogTrackingFileWatcher(Some(logger))
     // create output directory
@@ -61,7 +61,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     mkTclScript(fromTemplate = Common.commonDir.resolve("design.master.tcl.template"),
                 to           = files.tclFile,
                 projectName  = Composer.mkProjectName(bd, target, f),
-                header       = makeHeader(bd, target, f, archFeatures, platformFeatures),
+                header       = makeHeader(bd, target, f, features),
                 target       = target,
                 composition  = composition(bd, target))
 
@@ -192,16 +192,14 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
   }
 
   /** Produces the header section of the main Tcl file, containing several global vars. **/
-  private def makeHeader(bd: Composition, target: Target, f: Heuristics.Frequency, archFeatures: Seq[Feature],
-      platformFeatures: Seq[Feature]): String =
+  private def makeHeader(bd: Composition, target: Target, f: Heuristics.Frequency, features: Seq[Feature]): String =
     "set tapasco_freq %3.0f%s".format(f, NL) +
     (target.pd.hostFrequency map (f => "set tapasco_host_freq %3.0f%s".format(f, NL)) getOrElse "") +
     (target.pd.memFrequency map (f => "set tapasco_mem_freq %3.0f%s".format(f, NL)) getOrElse "") +
     (target.pd.boardPreset map (bp => "set tapasco_board_preset %s%s".format(bp, NL)) getOrElse "") +
     (cfg.maxThreads map (mt => "set tapasco_jobs %d%s".format(mt, NL)) getOrElse "") +
     (cfg.maxThreads map (mt => "set_param general.maxThreads %d%s".format(mt, NL)) getOrElse "") +
-    (platformFeatures.map { f => new FeatureTclPrinter("platform").toTcl(f) } mkString NL) +
-    (archFeatures.map { f => new FeatureTclPrinter("architecture").toTcl(f) } mkString NL) + NL
+    (features.map { f => new FeatureTclPrinter().toTcl(f) } mkString NL)
 }
 
 /** Companion object of [[VivadoComposer]]. */

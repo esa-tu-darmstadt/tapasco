@@ -30,10 +30,6 @@ private object ComposeParser {
       case ("Architectures", as: Seq[String @unchecked]) => _.copy(_architectures = Some(as))
       case ("Platforms", ps: Seq[String @unchecked]) => _.copy(_platforms = Some(ps))
       case ("Features", fs: Seq[Feature @unchecked]) => _.copy(features = Some(fs))
-      case ("Features", fs: Map[_, _]) => { job =>
-        logger.warn("new features not implemented yet!")
-        job
-      }
       case ("DebugMode", m: String) => _.copy(debugMode = Some(m))
       case o => throw new Exception(s"parsed illegal option: $o")
     }
