@@ -555,7 +555,7 @@ namespace eval tapasco {
   # Returns a dictionary with the configuration of given feature (if it exists).
   proc get_feature {feature} {
     global features
-    if {[info exists features]} { return [dict get $features $feature] } { return [dict] }
+    if {[info exists features]} { return [dict get $features $feature] } { return [dict create] }
   }
 
   # Returns true, if given feature is configured and enabled.
