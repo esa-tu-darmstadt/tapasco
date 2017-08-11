@@ -283,7 +283,7 @@ namespace eval arch {
       error "  ERROR: Mismatch between #slaves and #masters - probably a BUG"
     }
 
-    set cache_en [tapasco::is_platform_feature_enabled "Cache"]
+    set cache_en [tapasco::is_feature_enabled "Cache"]
     if {$cache_en} {
       # If the cache feature was requested, insert a cache between each master
       # and memory

@@ -472,7 +472,7 @@ namespace eval platform {
     create_bd_addr_seg -range 16E -offset 0 $int_ms $ts "SEG_intr"
 
     # connect user IP
-    set cache_en [tapasco::is_platform_feature_enabled "Cache"]
+    set cache_en [tapasco::is_feature_enabled "Cache"]
     set i 0
     set usrs [lsort [get_bd_addr_spaces /uArch/* -filter { NAME =~ "*m_axi*" || NAME =~ "*M_AXI*" }]]
     foreach u $usrs {
