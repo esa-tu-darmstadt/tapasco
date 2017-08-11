@@ -106,13 +106,11 @@ package object json {
   /* ComposeJob @} */
 
   /* @{ DesignSpaceExplorationJob */
-  private def atLeastOneVariation(d: DesignSpace.Dimensions): Boolean =
-    d.frequency || d.utilization || d.alternatives
   private val dseJobReads: Reads[Job] = (
     (JsPath \ "Job").read[String] (verifying[String](_.toLowerCase equals "designspaceexploration")) ~>
     (JsPath \ "Initial Composition").read[Composition] ~
     (JsPath \ "Initial Frequency").readNullable[Heuristics.Frequency].map (_ getOrElse 100.0) ~
-    (JsPath \ "Dimensions").read[DesignSpace.Dimensions] (verifying[DesignSpace.Dimensions](atLeastOneVariation _)) ~
+    (JsPath \ "Dimensions").read[DesignSpace.Dimensions] ~
     (JsPath \ "Heuristic").read[Heuristics.Heuristic] ~
     (JsPath \ "Batch Size").read[Int] (verifying[Int](_ > 0)) ~
     (JsPath \ "Output Path").readNullable[Path] ~
