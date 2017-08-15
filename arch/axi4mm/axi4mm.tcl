@@ -295,11 +295,12 @@ namespace eval arch {
         # interface is an AXI4 Lite interface.
         if { [get_property CONFIG.PROTOCOL [lindex $masters $i]] == "AXI4LITE" } {
           # Create protocol converter to convert from AXI4 Lite to AXI4
-          set converter [tapasco::createInterconnect "axi_protocol_converter_$i" 1 1]
+          set converter [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_converter:2.1 "axi_protocol_converter_$i"]
+          set_property -dict [list CONFIG.SI_PROTOCOL {AXI4LITE} CONFIG.MI_PROTOCOL {AXI4} CONFIG.TRANSLATION_MODE {2}] $converter
           # Connect master to protocol converter
-          connect_bd_intf_net [get_bd_intf_pins axi_protocol_converter_$i/S00_AXI] [lindex $masters $i]
+          connect_bd_intf_net [get_bd_intf_pins axi_protocol_converter_$i/S_AXI] [lindex $masters $i]
           # Connect protocol converter to cache
-          connect_bd_intf_net [get_bd_intf_pins axi_protocol_converter_$i/M00_AXI] [get_bd_intf_pins cache_$i/axi_full_slave]
+          connect_bd_intf_net [get_bd_intf_pins axi_protocol_converter_$i/M_AXI] [get_bd_intf_pins cache_$i/axi_full_slave]
         } else {
           # Directly connect master and cache
           connect_bd_intf_net [lindex $masters $i] [get_bd_intf_pins cache_$i/axi_full_slave]
