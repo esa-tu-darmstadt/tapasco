@@ -26,7 +26,8 @@ class QueuePanel(
     t.description,
     t.queued map (_dateFormat.format(_)) getOrElse "",
     t.started map (_dateFormat.format(_)) getOrElse "",
-    t.completed map (_dateFormat.format(_)) getOrElse ""
+    t.completed map (_dateFormat.format(_)) getOrElse "",
+    t.result
   )
 
   private def tasksToTable(tasks: Seq[Task]): Array[Array[Any]] =
@@ -34,7 +35,7 @@ class QueuePanel(
 
   private def mkTable(tasks: Seq[Task]): Table = new Table(
     tasksToTable(tasks),
-    Seq("Task", "Queued at", "Started at", "Completed at")
+    Seq("Task", "Queued at", "Started at", "Completed at", "Successful")
   ) {
     selection.elementMode = scala.swing.Table.ElementMode.Row
     val m = model
@@ -45,6 +46,24 @@ class QueuePanel(
       override def isCellEditable(row: Int, col: Int): Boolean = false
       override def getColumnName(col: Int): String = m.getColumnName(col)
     }
+
+    // highlight unsuccessful rows
+    import javax.swing.table._, javax.swing._
+    private final val cr = new DefaultTableCellRenderer {
+      override def getTableCellRendererComponent(table: JTable, value: Any, isSelected: Boolean, hasFocus: Boolean,
+                                                 row: Int, col: Int): JComponent = {
+        val r = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col)
+        if (tasks(row).completed.nonEmpty) {
+          if (!tasks(row).result) {
+            setBackground(DefaultColors.toSeq(3))
+          } else {
+            setBackground(DefaultColors.toSeq(2))
+          }
+        }
+        this
+      }
+    }
+    peer.setDefaultRenderer(classOf[Object], cr)
 
     // auto-resize columns
     val cols = 0 until peer.getColumnCount() map { i => (i, peer.getColumnModel().getColumn(i)) }
