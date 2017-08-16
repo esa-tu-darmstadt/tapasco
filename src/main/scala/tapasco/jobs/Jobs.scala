@@ -126,6 +126,14 @@ final case class DesignSpaceExplorationJob(
     private val _platforms: Option[Seq[String]] = None,
     features: Option[Seq[Feature]] = None,
     debugMode: Option[String] = None) extends Job("dse") {
+  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  // warn if dimensions are completely empty
+  dimensions match {
+    case DesignSpace.Dimensions(false, false, false) =>
+      logger.warn("no dimensions enabled in exploration job - consider using a compose job instead")
+    case _ => ()
+  }
+
   /** Returns the list of [[base.Architecture]] instances selected in this job. */
   def architectures: Set[Architecture] =
     FileAssetManager.entities.architectures filter (a => _architectures map (_.contains(a.name)) getOrElse true)
