@@ -61,11 +61,11 @@
 /******************************************************************************/
 
 #define ZYNQMP_ADDR_STATUS (0xA0000000)
-#define ZYNQMP_SIZE_STATUS (0x1000)
-#define ZYNQMP_ADDR_SLOTS (0xA1000000)
-#define ZYNQMP_SIZE_SLOTS (0x800000)
-#define ZYNQMP_ADDR_INTC (0xB0000000)
-#define ZYNQMP_SIZE_INTC (0x40000)
+#define ZYNQMP_SIZE_STATUS (0x01000000)
+#define ZYNQMP_ADDR_SLOTS  (0xA1000000)
+#define ZYNQMP_SIZE_SLOTS  (0x00800000)
+#define ZYNQMP_ADDR_INTC   (0xB0000000)
+#define ZYNQMP_SIZE_INTC   (0x00040000)
 
 #define ZYNQMP_ADDR_IN_RANGE(type, addr) (ZYNQMP_ADDR_ ## type <= (addr) && (addr) < (ZYNQMP_ADDR_ ## type + ZYNQMP_SIZE_ ## type))
 
@@ -138,7 +138,7 @@ static platform_res_t init_platform(struct zynqmp_platform_t *p)
 	if (p->fd_gp0_map != -1) {
 		p->gp0_map = mmap(
 		                 NULL,
-		                 129 * 0x10000UL,
+		                 ZYNQMP_SIZE_SLOTS,
 		                 PROT_READ | PROT_WRITE | PROT_EXEC,
 		                 MAP_SHARED,
 		                 p->fd_gp0_map,
@@ -158,7 +158,7 @@ static platform_res_t init_platform(struct zynqmp_platform_t *p)
 	if (p->fd_gp1_map != -1) {
 		p->gp1_map = mmap(
 		                 NULL,
-		                 0x100000UL,
+		                 ZYNQMP_SIZE_INTC,
 		                 PROT_READ | PROT_WRITE | PROT_EXEC,
 		                 MAP_SHARED,
 		                 p->fd_gp1_map,
@@ -174,12 +174,12 @@ static platform_res_t init_platform(struct zynqmp_platform_t *p)
 		result = PERR_OPEN_DEV;
 	}
 
-	p->fd_status_map = open("/dev/" ZYNQ_PLATFORM_DEVFILENAME "_tapasco_status", O_RDONLY);
+	p->fd_status_map = open("/dev/" ZYNQ_PLATFORM_DEVFILENAME "_tapasco_status", O_RDWR);
 	if (p->fd_status_map != -1) {
 		p->status_map = mmap(
 		                    NULL,
-		                    0x1000,
-		                    PROT_READ,
+		                    ZYNQMP_SIZE_STATUS,
+		                    PROT_READ | PROT_WRITE | PROT_EXEC,
 		                    MAP_SHARED,
 		                    p->fd_status_map,
 		                    0);
@@ -213,7 +213,7 @@ static platform_res_t release_platform(struct zynqmp_platform_t *p)
 	}
 	if (p->fd_status_map != -1) {
 		if (p->status_map != NULL && p->status_map != MAP_FAILED) {
-			munmap((void *)p->status_map, 0x1000);
+			munmap((void *)p->status_map, ZYNQMP_SIZE_STATUS);
 			p->status_map = NULL;
 		}
 		close(p->fd_status_map);
@@ -222,7 +222,7 @@ static platform_res_t release_platform(struct zynqmp_platform_t *p)
 	}
 	if (p->fd_gp1_map != -1) {
 		if (p->gp1_map != NULL && p->gp1_map != MAP_FAILED) {
-			munmap((void *)p->gp1_map, 0x100000UL);
+			munmap((void *)p->gp1_map, ZYNQMP_SIZE_INTC);
 			p->gp1_map = NULL;
 		}
 		close(p->fd_gp1_map);
@@ -231,7 +231,7 @@ static platform_res_t release_platform(struct zynqmp_platform_t *p)
 	}
 	if (p->fd_gp0_map != -1) {
 		if (p->gp0_map != NULL && p->gp0_map != MAP_FAILED) {
-			munmap((void *)p->gp0_map, 48 * 0x10000UL);
+			munmap((void *)p->gp0_map, ZYNQMP_SIZE_SLOTS);
 			p->gp0_map = NULL;
 		}
 		close(p->fd_gp0_map);
@@ -443,9 +443,12 @@ platform_res_t platform_write_ctl(
 	if (start_addr >= 0xB0000000)
 		r = (volatile uint32_t *)zynqmp_platform.gp1_map +
 		    ((start_addr - 0xB0000000) >> 2);
-	else
+	else if (start_addr >= 0xA1000000)
 		r = (volatile uint32_t *)zynqmp_platform.gp0_map +
 		    ((start_addr - 0xA1000000) >> 2);
+	else
+		r = (volatile uint32_t *)zynqmp_platform.status_map +
+		    ((start_addr - 0xA0000000) >> 2);
 	for (i = 0; i < (no_of_bytes >> 2); ++i, ++p, ++r)
 		*r = *p;
 

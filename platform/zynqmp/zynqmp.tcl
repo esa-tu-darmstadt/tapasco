@@ -227,6 +227,9 @@ namespace eval platform {
           }
         }
       }
+
+      # call plugins
+      tapasco::call_plugins "post-address-map"
     }
 
     # Platform API: Entry point for Platform instantiation.
@@ -234,8 +237,9 @@ namespace eval platform {
       # create Zynq host subsystem
       set ss_host [create_subsystem_host]
 
-      # create clocks and resets
+      # create clocks and resets user_si570_sysclk
       set ss_cnr [tapasco::create_subsystem_clocks_and_resets {} ClockResets user_si570_sysclk]
+
       connect_bd_net [get_bd_pins -filter {TYPE == rst && DIR == O} -of_objects $ss_host] \
           [get_bd_pins -filter {TYPE == rst && DIR == I} -of_objects $ss_cnr]
 
