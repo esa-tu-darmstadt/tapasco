@@ -115,10 +115,10 @@ object Tapasco {
       m.values foreach { strace => logger.debug(strace mkString scala.util.Properties.lineSeparator) }
     }
     if (! ok) {
-      logger.error("TPC finished with errors")
+      logger.error("TaPaSCo finished with errors")
       sys.exit(1)
     } else {
-      logger.info("TPC finished successfully")
+      logger.info("TaPaSCo finished successfully")
     }
   }
   // scalastyle:on method.length
