@@ -290,8 +290,14 @@ namespace eval arch {
       for {set i 0} {$i < [llength $masters]} {incr i} {
         # Create L1$ for each master
         set cache [tapasco::createReparaCache "cache_$i"]
-
-        # Insert a protocol converter/interconnect TODO if the kernel's master
+        set parent_cell [get_bd_cells -of [lindex $masters $i]]
+        set interrupt_pin [get_bd_pins -of_objects $parent_cell -filter {TYPE == "intr" && DIR == "O"}]
+        set invalidate_pin [get_bd_pins -of_objects $cache -filter {NAME == "invalidate_all"}]
+        # Connect the interrupt signal of the PE to the cache's invalidate
+        # signal, so the cache is invalidated every time the PE
+        # finishes its computation.
+        connect_bd_net $invalidate_pin $interrupt_pin
+        # Insert a protocol converter if the kernel's master
         # interface is an AXI4 Lite interface.
         if { [get_property CONFIG.PROTOCOL [lindex $masters $i]] == "AXI4LITE" } {
           # Create protocol converter to convert from AXI4 Lite to AXI4
