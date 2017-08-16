@@ -24,7 +24,7 @@ class Tapasco(mainController: ViewController) extends SimpleSwingApplication {
     menuBar = mainMenu
     preferredSize = PREFERRED_SZ
     pack()
-    peer.setDefaultCloseOperation(javax.swing.JFrame.EXIT_ON_CLOSE)
+    peer.setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE)
   }
 
   override def main(args: Array[String]): Unit = {
