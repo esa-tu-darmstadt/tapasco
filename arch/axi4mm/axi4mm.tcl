@@ -161,7 +161,7 @@ namespace eval arch {
       lappend mdist 0
     }
 
-    # distribute masters round-robin on all output ports: mdist holds 
+    # distribute masters round-robin on all output ports: mdist holds
     # number of masters for each port
     set j 0
     for {set i 0} {$i < $no_masters} {incr i} {
@@ -188,7 +188,7 @@ namespace eval arch {
   }
 
   # Instantiates the host interconnect hierarchy.
-  proc arch_create_host_interconnects {composition {no_slaves 1}} {
+  proc arch_create_host_interconnects {composition {no_slaves 1} {smart_connect 0}} {
     set no_kinds [llength [dict keys $composition]]
     set ic_s 0
 
@@ -198,7 +198,12 @@ namespace eval arch {
       set slaves  [get_bd_intf_pins -of $example -filter { MODE == "Slave" && VLNV == "xilinx.com:interface:aximm_rtl:1.0" }]
       set ic_s [expr "$ic_s + [llength $slaves] * $no_inst"]
     }
-    set in1 [tapasco::create_interconnect_tree "in1" $ic_s false]
+
+    if {$smart_connect} {
+      set in1 [tapasco::create_smartconnect_tree "in1" $ic_s false]
+    } else {
+      set in1 [tapasco::create_interconnect_tree "in1" $ic_s false]
+    }
 
     puts "Creating interconnects toward peripherals ..."
     puts "  $ic_s slaves to connect to host"
@@ -385,7 +390,9 @@ namespace eval arch {
     set insts [arch_create_instances $kernels]
     arch_check_instance_count $kernels
     set arch_mem_ics [arch_create_mem_interconnects $kernels $mgroups]
-    set arch_host_ics [arch_create_host_interconnects $kernels]
+
+    set smart_connect [tapasco::is_platform_feature_enabled "SMART_CONNECT"]
+    set arch_host_ics [arch_create_host_interconnects $kernels 1 $smart_connect]
 
     # connect AXI infrastructure
     arch_connect_host $arch_host_ics $insts
