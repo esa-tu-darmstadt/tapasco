@@ -130,6 +130,7 @@ namespace eval platform {
       set m_gp1 [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_AXI_GP1"]
       set mem_aclk [create_bd_pin -type "clk" -dir "I" "memory_aclk"]
       set host_aclk [create_bd_pin -type "clk" -dir "I" "host_aclk"]
+      set design_aclk [create_bd_pin -type "clk" -dir "I" "design_aclk"]
       set pl_clk0 [create_bd_pin -type "clk" -dir "O" "ps_aclk"]
       set pl_resetn0 [create_bd_pin -type "rst" -dir "O" "ps_resetn"]
 
@@ -159,7 +160,8 @@ namespace eval platform {
 
       # connect memory slaves to memory clock and reset
       connect_bd_net $mem_aclk [get_bd_pins -of_objects $ps -filter {NAME =~ "s*aclk"}]
-      connect_bd_net $host_aclk [get_bd_pins -of_objects $ps -filter {NAME =~ "m*aclk"}]
+      connect_bd_net $host_aclk [get_bd_pins -of_objects $ps -filter {NAME =~ "maxihpm0_*_aclk"}]
+      connect_bd_net $design_aclk [get_bd_pins -of_objects $ps -filter {NAME =~ "maxihpm1_fpd_aclk"}]
 
       # Add dummy XLConcat to fix errors with Vivados bus width propagation
       set dummyConcat [tapasco::createConcat "dummyConcat" 1]
@@ -252,8 +254,8 @@ namespace eval platform {
       # create interrupt subsystem
       set ss_int [create_subsystem_interrupts [arch::get_irqs] [get_bd_pins "$ss_host/dummyConcat/In0"]]
       connect_bd_intf_net [get_bd_intf_pins "$ss_host/M_AXI_GP1"] [get_bd_intf_pins "$ss_int/S_AXI"]
-      connect_bd_net [get_bd_pins "$ss_cnr/host_aclk"] [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $ss_int]
-      connect_bd_net [get_bd_pins "$ss_cnr/host_peripheral_aresetn"] [get_bd_pins -filter {TYPE == rst && DIR == I} -of_objects $ss_int]
+      connect_bd_net [get_bd_pins "$ss_cnr/design_aclk"] [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $ss_int]
+      connect_bd_net [get_bd_pins "$ss_cnr/design_peripheral_aresetn"] [get_bd_pins -filter {TYPE == rst && DIR == I} -of_objects $ss_int]
 
       # create status core
       set tapasco_status [createTapascoStatus [tapasco::get_composition]]
@@ -266,7 +268,7 @@ namespace eval platform {
           [get_bd_pins -filter {TYPE == clk && DIR == I} -of_objects $gp0_out]
       connect_bd_net [get_bd_pins "$ss_cnr/host_peripheral_aresetn"] [get_bd_pins -filter {TYPE == rst && DIR == I} -of_objects $tapasco_status]
 
-      foreach clk [list "host" "memory"] {
+      foreach clk [list "host" "memory" "design"] {
         connect_bd_net [get_bd_pins "$ss_cnr/${clk}_aclk"] [get_bd_pins "Host/${clk}_aclk"]
       }
 
