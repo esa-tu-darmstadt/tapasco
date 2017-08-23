@@ -291,6 +291,8 @@ namespace eval platform {
 
       puts "Generating address map ..."
       platform_address_map
+      puts "Saving before validation ..."
+      save_bd_design
       puts "Validating design ..."
       validate_bd_design
       puts "Done! Saving ..."

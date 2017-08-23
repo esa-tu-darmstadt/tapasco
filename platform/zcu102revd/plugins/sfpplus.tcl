@@ -7,7 +7,7 @@ namespace eval sfpplus {
   proc generate_sfp_cores {{args {}}} {
     variable vlnv_2016_4
     variable vlnv_2017_2
-    if {[tapasco::is_platform_feature_enabled "SFPPLUS"]} {
+    if {[tapasco::is_feature_enabled "SFPPLUS"]} {
       set locations {"X0Y12" "X0Y13" "X0Y14" "X0Y15"}
       set disable_pins {"A12" "A13" "B13" "C13"}
       set rx_pins_p {"D2" "C4" "B2" "A4"}
@@ -65,21 +65,16 @@ namespace eval sfpplus {
       set_property -dict [list CONFIG.CLKOUT${num_clocks}_USED {true} CONFIG.CLKOUT${num_clocks}_REQUESTED_OUT_FREQ 100] [get_bd_cells $instance/ClockResets/clk_wiz]
       set slow_clk [get_bd_pins $instance/ClockResets/clk_wiz/clk_out${num_clocks}]
 
-      set rst_gen [tapasco::createResetGen "sfprstgen"]
-      connect_bd_net $slow_clk [get_bd_pins $rst_gen/slowest_sync_clk]
-      connect_bd_net [get_bd_pins $instance/Host/ps_resetn] [get_bd_pins $rst_gen/ext_reset_in]
-
       set num_mi_old [get_property CONFIG.NUM_MI [get_bd_cells $instance/gp0_out]]
       set num_mi [expr "$num_mi_old + 1"]
       set_property -dict [list CONFIG.NUM_MI $num_mi] [get_bd_cells $instance/gp0_out]
 
-      set networkConnect [tapasco::createSmartConnect "networkConnect" 1 [llength $networkIPs] 1 [expr "[llength $networkIPs] + 1"]]
+      set networkConnect [tapasco::createSmartConnect "networkConnect" 1 [llength $networkIPs] 0 [expr "[llength $networkIPs] + 1"]]
       connect_bd_intf_net [get_bd_intf_pins $networkConnect/S00_AXI] [get_bd_intf_pins $instance/gp0_out/[format "M%02d_AXI" $num_mi_old]]
       connect_bd_net [get_bd_pins $networkConnect/aclk] [get_bd_pins $instance/gp0_out/aclk]
 
-      create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 reset_inverter
-      set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not}] [get_bd_cells reset_inverter]
-      connect_bd_net [get_bd_pins $instance/Host/ps_resetn] [get_bd_pins reset_inverter/Op1]
+      set reset_inverter [tapasco::createLogicInverter "reset_inverter"]
+      connect_bd_net [get_bd_pins $instance/Host/ps_resetn] [get_bd_pins $reset_inverter/Op1]
 
       create_bd_cell -type ip -vlnv ${vlnv} sfpmac
       set_property -dict [list CONFIG.NUM_OF_CORES [llength $networkIPs] CONFIG.GT_GROUP_SELECT {Quad_X1Y3} CONFIG.CORE $mactype CONFIG.BASE_R_KR {BASE-R} CONFIG.DATA_PATH_INTERFACE {AXI Stream} CONFIG.INCLUDE_USER_FIFO {0}] [get_bd_cells sfpmac]
@@ -93,7 +88,7 @@ namespace eval sfpplus {
       puts $constraints_file_late {set_max_delay -from [get_clocks -of_object [get_nets system_i/Network/sfpmac/dclk]] -to [get_clocks -of_objects [get_pins -hierarchical -filter {NAME =~ */channel_inst/*_CHANNEL_PRIM_INST/RXOUTCLK}]] -datapath_only 10.000}
 
       connect_bd_net [get_bd_pins sfpmac/dclk] $slow_clk
-      connect_bd_net [get_bd_pins sfpmac/sys_reset] [get_bd_pins $rst_gen/peripheral_reset]
+      connect_bd_net [get_bd_pins sfpmac/sys_reset] [get_bd_pins $reset_inverter/Res]
 
       connect_bd_intf_net [get_bd_intf_ports /gt_refclk] [get_bd_intf_pins sfpmac/gt_ref_clk]
       connect_bd_intf_net [get_bd_intf_ports /gt_serial_port] [get_bd_intf_pins sfpmac/gt_serial_port]
@@ -113,22 +108,16 @@ namespace eval sfpplus {
         connect_bd_net [get_bd_pins sfpmac/tx_clk_out_${i}] [get_bd_pins $ip/tx_clk_in]
         connect_bd_net [get_bd_pins sfpmac/rx_clk_out_${i}] [get_bd_pins $ip/rx_clk_in]
 
-        set rst_gen_rx [tapasco::createResetGen [format "rst_rx_%d" $i]]
-        connect_bd_net [get_bd_pins sfpmac/rx_clk_out_${i}] [get_bd_pins $rst_gen_rx/slowest_sync_clk]
-        connect_bd_net [get_bd_pins sfpmac/user_rx_reset_${i}] [get_bd_pins $rst_gen_rx/ext_reset_in]
-
-        set rst_gen_tx [tapasco::createResetGen [format "rst_tx_%d" $i]]
-        connect_bd_net [get_bd_pins sfpmac/tx_clk_out_${i}] [get_bd_pins $rst_gen_tx/slowest_sync_clk]
-        connect_bd_net [get_bd_pins sfpmac/user_tx_reset_${i}] [get_bd_pins $rst_gen_tx/ext_reset_in]
-
-        set rst_gen_paths [tapasco::createResetGen [format "data_rst_gen_%d" $i]]
-        connect_bd_net [get_bd_pins sfpmac/rx_clk_out_${i}] [get_bd_pins $rst_gen_paths/slowest_sync_clk]
-        connect_bd_net [get_bd_pins $instance/Host/ps_resetn] [get_bd_pins $rst_gen_paths/ext_reset_in]
-
-        disconnect_bd_net /uArch/design_peripheral_aresetn_1 [get_bd_pins $ip/tx_rst_n_in]
+        set rx_inv [tapasco::createLogicInverter [format "rst_rx_inverter_%d" $i]]
+        connect_bd_net [get_bd_pins sfpmac/user_rx_reset_${i}] [get_bd_pins $rx_inv/Op1]
         disconnect_bd_net /uArch/design_peripheral_aresetn_1 [get_bd_pins $ip/rx_rst_n_in]
-        connect_bd_net [get_bd_pins $rst_gen_tx/peripheral_aresetn] [get_bd_pins $ip/tx_rst_n_in]
-        connect_bd_net [get_bd_pins $rst_gen_rx/peripheral_aresetn] [get_bd_pins $ip/rx_rst_n_in]
+        connect_bd_net [get_bd_pins $rx_inv/Res] [get_bd_pins $ip/rx_rst_n_in]
+
+        set tx_inv [tapasco::createLogicInverter [format "rst_tx_inverter_%d" $i]]
+        connect_bd_net [get_bd_pins sfpmac/user_tx_reset_${i}] [get_bd_pins $tx_inv/Op1]
+        connect_bd_net [get_bd_pins $tx_inv/Res] [get_bd_pins sfpmac/s_axi_aresetn_${i}]
+        disconnect_bd_net /uArch/design_peripheral_aresetn_1 [get_bd_pins $ip/tx_rst_n_in]
+        connect_bd_net [get_bd_pins $tx_inv/Res] [get_bd_pins $ip/tx_rst_n_in]
 
         puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $disable_pins $i] sfp_tx_dis_$i]
         puts $constraints_file [format {set_property IOSTANDARD LVCMOS33 [get_ports %s]} sfp_tx_dis_$i]
@@ -145,12 +134,11 @@ namespace eval sfpplus {
 
         connect_bd_intf_net [get_bd_intf_pins $networkConnect/[format "M%02d_AXI" $i]] [get_bd_intf_pins sfpmac/s_axi_${i}]
 
-        connect_bd_net [get_bd_pins sfpmac/s_axi_aresetn_${i}] [get_bd_pins $rst_gen_tx/peripheral_aresetn]
-        connect_bd_net [get_bd_pins sfpmac/rx_reset_${i}] [get_bd_pins $rst_gen_paths/peripheral_reset]
-        connect_bd_net [get_bd_pins sfpmac/tx_reset_${i}] [get_bd_pins $rst_gen_paths/peripheral_reset]
+        connect_bd_net [get_bd_pins sfpmac/rx_reset_${i}] [get_bd_pins $reset_inverter/Res]
+        connect_bd_net [get_bd_pins sfpmac/tx_reset_${i}] [get_bd_pins $reset_inverter/Res]
 
-        connect_bd_net [get_bd_pins sfpmac/gtwiz_reset_tx_datapath_${i}] [get_bd_pins reset_inverter/Res]
-        connect_bd_net [get_bd_pins sfpmac/gtwiz_reset_rx_datapath_${i}] [get_bd_pins reset_inverter/Res]
+        connect_bd_net [get_bd_pins sfpmac/gtwiz_reset_tx_datapath_${i}] [get_bd_pins $reset_inverter/Res]
+        connect_bd_net [get_bd_pins sfpmac/gtwiz_reset_rx_datapath_${i}] [get_bd_pins $reset_inverter/Res]
       }
 
       close $constraints_file
@@ -167,7 +155,7 @@ namespace eval sfpplus {
   }
 
   proc addressmap {{args {}}} {
-    if {[tapasco::is_platform_feature_enabled "SFPPLUS"]} {
+    if {[tapasco::is_feature_enabled "SFPPLUS"]} {
 
       set networkIPs [get_bd_cells -of [get_bd_intf_pins -filter {NAME =~ "*sfp_axis_rx*"} uArch/target_ip_*/*]]
 

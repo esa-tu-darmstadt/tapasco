@@ -41,6 +41,7 @@ namespace eval tapasco {
   namespace export createSystemCache
   namespace export createZynqBFM
   namespace export createZynqPS
+  namespace export createLogicInverter
   namespace export get_board_preset
   namespace export get_composition
   namespace export get_design_frequency
@@ -111,6 +112,19 @@ namespace eval tapasco {
     set props [list CONFIG.NUM_SI $no_slaves CONFIG.NUM_MI $no_masters CONFIG.HAS_ARESETN $reset CONFIG.NUM_CLKS $clocks]
     set_property -dict $props $ic
     return $ic
+  }
+
+  # Instantiates a util vector logic as a Not Operation.
+  # Used to Invert Logic signals.
+  # @param name Name of the instance.
+  # @return bd_cell of the instance.
+  proc createLogicInverter {name} {
+      variable stdcomps
+      puts "Creating Logic Inverter $name..."
+      puts "  VLNV: [dict get $stdcomps util_vector_logic vlnv]"
+      set ic [create_bd_cell -type ip -vlnv [dict get $stdcomps util_vector_logic vlnv] $name]
+      set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not}] $ic
+      return $ic
   }
 
   # Instantiates a Zynq-7000 Processing System IP core.
