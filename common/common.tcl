@@ -50,6 +50,7 @@ namespace eval tapasco {
   namespace export get_wns_from_timing_report
 
   namespace export create_interconnect_tree
+  namespace export create_smartconnect_tree
 
   # check if we're running inside Vivado
   if {[llength [info commands version]] > 0} {
@@ -101,13 +102,13 @@ namespace eval tapasco {
   # @param no_masters Number of AXI4 Master interfaces.
   # @param reset If 1 a dedicated reset port is added to the block.
   # @return bd_cell of the instance.
-  proc createSmartConnect {name no_slaves no_masters {reset 0}} {
+  proc createSmartConnect {name no_slaves no_masters {reset 0} {clocks 1}} {
     variable stdcomps
     puts "Creating AXI SmartConnect $name with $no_slaves slaves and $no_masters masters..."
     puts "  VLNV: [dict get $stdcomps axi_ic vlnv]"
 
     set ic [create_bd_cell -type ip -vlnv [dict get $stdcomps axi_sc vlnv] $name]
-    set props [list CONFIG.NUM_SI $no_slaves CONFIG.NUM_MI $no_masters CONFIG.HAS_ARESETN $reset]
+    set props [list CONFIG.NUM_SI $no_slaves CONFIG.NUM_MI $no_masters CONFIG.HAS_ARESETN $reset CONFIG.NUM_CLKS $clocks]
     set_property -dict $props $ic
     return $ic
   }
@@ -814,6 +815,157 @@ namespace eval tapasco {
     connect_bd_net $main_ic_arstn [get_bd_pins -filter {TYPE == "rst" && DIR == "I" && NAME == "ARESETN"} -of_objects [get_bd_cells "$group/*"]]
     connect_bd_net $m_p_arstn [get_bd_pins -filter {TYPE == "rst" && DIR == "I" && NAME =~ "M*_ARESETN"} -of_objects $last_stage]
     connect_bd_net $s_p_arstn [get_bd_pins -filter {TYPE == "rst" && DIR == "I" && NAME =~ "S*_ARESETN"} -of_objects $last_stage]
+
+    current_bd_instance $instance
+    return $group
+  }
+
+
+  # Creates a tree of AXI interconnects to accomodate n connections.
+  # @param name Name of the group cell
+  # @param n Number of connnections (outside)
+  # @param masters if true, will create n master connections, otherwise slaves
+  proc create_smartconnect_tree {name n {masters true}} {
+    puts "Creating AXI SmartConnect tree $name for $n [expr $masters ? {"masters"} : {"slaves"}]"
+    puts "  tree depth: [expr int(ceil(log($n) / log(16)))]"
+    puts "  instance : [current_bd_instance .]"
+
+    # create group
+    set instance [current_bd_instance .]
+    set group [create_bd_cell -type hier $name]
+    current_bd_instance $group
+
+    # create hierarchical ports: clocks, resets (interconnect + peripherals)
+    # Resets are not used for SmartConnect
+    set m_aclk [create_bd_pin -type "clk" -dir "I" "m_aclk"]
+    set m_ic_arstn [create_bd_pin -type "rst" -dir "I" "m_interconnect_aresetn"]
+    set m_p_arstn [create_bd_pin -type "rst" -dir "I" "m_peripheral_aresetn"]
+    set s_aclk [create_bd_pin -type "clk" -dir "I" "s_aclk"]
+    set s_ic_arstn [create_bd_pin -type "rst" -dir "I" "s_interconnect_aresetn"]
+    set s_p_arstn [create_bd_pin -type "rst" -dir "I" "s_peripheral_aresetn"]
+
+    set ic_n 0
+    set ics [list]
+    set ns [list]
+    set totalOut $n
+
+    puts "  totalOut = $totalOut"
+    if {$masters} {
+      # all interconnects except the outermost slaves are driven by the master clock
+      set main_aclk $m_aclk
+      # the slave clock is only used for the last stage
+      set scnd_aclk $s_aclk
+    } {
+      # all interconnects except the outermost masters are driven by the slave clock
+      set main_aclk $s_aclk
+      # the master clock is only used for the last stage
+      set scnd_aclk $m_aclk
+    }
+
+    # special case: bypass (not necessary; only for performance, Tcl is slow)
+    if {$totalOut == 1} {
+      puts "  building 1-on-1 bypass"
+      set bic [createSmartConnect "bic" 1 1 0 2]
+      set m [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" "M000_AXI"]
+      set s [create_bd_intf_pin -mode Slave -vlnv "xilinx.com:interface:aximm_rtl:1.0" "S000_AXI"]
+      connect_bd_intf_net $s [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Slave"} -of_objects $bic]
+      connect_bd_intf_net [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Master"} -of_objects $bic] $m
+
+      connect_bd_net $m_aclk [get_bd_pins -filter {NAME =~ "aclk"} -of_objects $bic]
+      connect_bd_net $s_aclk [get_bd_pins -filter {NAME =~ "aclk1"} -of_objects $bic]
+      current_bd_instance $instance
+      return $group
+    }
+
+    # pre-compute ports at each stage
+    while {$n != 1} {
+      lappend ns $n
+      set n [expr "int(ceil($n / 16.0))"]
+    }
+    if {!$masters} { set ns [lreverse $ns] }
+    puts "  ports at each stage: $ns"
+
+    # keep track of the interconnects at each stage
+    set stage [list]
+
+    # loop over nest levels
+    foreach n $ns {
+      puts "  generating stage $n ($ns) ..."
+      set nports $n
+      set n [expr "int(ceil($n / 16.0))"]
+      set curr_ics [list]
+      #puts "n = $n"
+      for {set i 0} {$i < $n} {incr i} {
+        set rest_ports [expr "$nports - $i * 16"]
+        set rest_ports [expr "min($rest_ports, 16)"]
+        set nic [createSmartConnect [format "ic_%03d" $ic_n] [expr "$masters ? $rest_ports : 1"] [expr "$masters ? 1 : $rest_ports"] 0 2]
+        incr ic_n
+        lappend curr_ics $nic
+      }
+
+      # on first level only: connect slaves to outside
+      if {[llength $ics] == 0} {
+        set pidx 0
+        set ss [lsort [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Slave"} -of_objects $curr_ics]]
+        foreach s $ss {
+          lappend ics [create_bd_intf_pin -mode Slave -vlnv "xilinx.com:interface:aximm_rtl:1.0" [format "S%03d_AXI" $pidx]]
+          incr pidx
+        }
+        set ms $ics
+      } {
+        # in between: connect masters from previous level to slaves of current level
+        set ms [lsort [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Master"} -of_objects $ics]]
+      }
+
+      # masters/slaves from previous level
+      set ss [lsort [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Slave"} -of_objects $curr_ics]]
+      set idx 0
+      foreach m $ms {
+        if {$masters} {
+          connect_bd_intf_net $m [lindex $ss $idx]
+        } {
+          connect_bd_intf_net [lindex $ss $idx] $m
+        }
+        incr idx
+      }
+
+      # on last level only: connect master port to outside
+      if {[expr "($masters && $n == 1) || (!$masters &&  $nports == $totalOut)"]} {
+        # connect outputs
+        set ms [lsort [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Master"} -of_objects $curr_ics]]
+        set pidx 0
+        foreach m $ms {
+          set port [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" [format "M%03d_AXI" $pidx]]
+          connect_bd_intf_net $m $port
+          incr pidx
+        }
+      }
+      set ics $curr_ics
+      # record current stage
+      lappend stage $curr_ics
+    }
+
+    # connect stage-0 slave clks to outer slave clock
+    if {$masters} {
+      # last stage is "right-most" stage
+      set main_range [lrange $stage 1 end]
+      set last_stage [lindex $stage 0]
+    } {
+      # last stage is "left-most" stage
+      set main_range [lrange $stage 0 end-1]
+      set last_stage [lrange $stage end end]
+    }
+    # bulk connect clocks and resets of all interconnects except on the last stage to main clock
+    foreach icl $main_range {
+      puts "  current stage list: $icl"
+      # connect all clocks to master clock
+      connect_bd_net $main_aclk [get_bd_pins -filter {TYPE == "clk" && DIR == "I"} -of_objects $icl]
+    }
+    # last stage requires separate connections
+    puts "  last stage: $last_stage"
+    # connect all non-slave clocks to main clock, and only slave clocks to secondary clock
+    connect_bd_net $main_aclk [get_bd_pins -filter {TYPE == "clk" && DIR == "I" && NAME =~ "aclk"} -of_objects $last_stage]
+    connect_bd_net $scnd_aclk [get_bd_pins -filter {TYPE == "clk" && DIR == "I" && NAME =~ "aclk1"} -of_objects $last_stage]
 
     current_bd_instance $instance
     return $group
