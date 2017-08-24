@@ -540,6 +540,8 @@ namespace eval platform {
 
     # always create TPC status core
     set tapasco_status [tapasco::createTapascoStatus "tapasco_status"]
+    puts "Resetting Intc count to 1"
+    set_property -dict [list CONFIG.C_INTC_COUNT 1] $tapasco_status
     connect_bd_intf_net [get_bd_intf_pins $axi_ic_from_host/M03_AXI] [get_bd_intf_pins $tapasco_status/S00_AXI]
 
     # connect PCIe <-> InterruptControl
@@ -563,15 +565,15 @@ namespace eval platform {
       [get_bd_pins $ss_mem/pcie_aclk] \
       [get_bd_pins $ss_reset/pcie_aclk] \
       [get_bd_pins -of_objects $axi_ic_to_host -filter {TYPE == "clk" && DIR == "I"}] \
-      [get_bd_pins -of_objects $axi_ic_from_host -filter {TYPE == "clk" && DIR == "I" && NAME != "M00_ACLK"}] \
+      [get_bd_pins -of_objects $axi_ic_from_host -filter {TYPE == "clk" && DIR == "I"}] \
       [get_bd_pins $ss_int/aclk] \
-      [get_bd_pins $tapasco_status/s00_axi_aclk]
+      [get_bd_pins $tapasco_status/s00_axi_aclk] \
+      [get_bd_pins uArch/host_aclk]
 
     set design_clk_receivers [list \
       [get_bd_pins $ss_mem/design_clk] \
       [get_bd_pins $ss_reset/design_aclk] \
-      [get_bd_pins uArch/*aclk] \
-      [get_bd_pins $axi_ic_from_host/M00_ACLK] \
+      [get_bd_pins uArch/design_aclk] \
     ]
 
     if {[llength [arch::get_masters]] > 0} {
@@ -579,7 +581,7 @@ namespace eval platform {
     }
     connect_bd_net $design_clk $design_clk_receivers
 
-    connect_bd_net $ddr_clk [get_bd_pins $ss_reset/ddr_aclk]
+    connect_bd_net $ddr_clk [get_bd_pins $ss_reset/ddr_aclk] [get_bd_pins uArch/memory_aclk]
 
     # connect PCIe resets
     connect_bd_net -net pcie_aresetn_net [get_bd_pins $ss_pcie/pcie_aresetn] \
@@ -595,28 +597,26 @@ namespace eval platform {
     connect_bd_net $pcie_p_aresetn \
       [get_bd_pins $ss_mem/mem64_aresetn] \
       [get_bd_pins -of_objects $axi_ic_to_host -filter {TYPE == "rst" && DIR == "I" && NAME != "ARESETN"}] \
-      [get_bd_pins -of_objects $axi_ic_from_host -filter {TYPE == "rst" && DIR == "I" && NAME != "M00_ARESETN"}] \
+      [get_bd_pins -of_objects $axi_ic_from_host -filter {TYPE == "rst" && DIR == "I"}] \
       [get_bd_pins $ss_int/peripheral_aresetn] \
-      [get_bd_pins $ss_mem/pcie_peripheral_aresetn]
+      [get_bd_pins $ss_mem/pcie_peripheral_aresetn] \
+      [get_bd_pins uArch/host_peripheral_aresetn]
 
     connect_bd_net $pcie_ic_aresetn \
       [get_bd_pins $axi_ic_to_host/ARESETN] \
-      [get_bd_pins $ss_int/interconnect_aresetn]
+      [get_bd_pins $ss_int/interconnect_aresetn] \
+      [get_bd_pins uArch/host_interconnect_aresetn]
 
     # connect ddr_clk resets
-    set ddr_clk_p_aresetn [get_bd_pins $ss_reset/ddr_clk_peripheral_aresetn]
-    set ddr_clk_ic_aresetn [get_bd_pins $ss_reset/ddr_clk_interconnect_aresetn]
-
-    connect_bd_net [get_bd_pins $ss_reset/ddr_clk_peripheral_aresetn] [get_bd_pins $ss_mem/ddr_peripheral_aresetn]
-    connect_bd_net [get_bd_pins $ss_reset/ddr_clk_interconnect_aresetn] [get_bd_pins $ss_mem/ddr_interconnect_aresetn]
+    connect_bd_net [get_bd_pins $ss_reset/ddr_clk_peripheral_aresetn] [get_bd_pins $ss_mem/ddr_peripheral_aresetn] [get_bd_pins uArch/memory_peripheral_aresetn]
+    connect_bd_net [get_bd_pins $ss_reset/ddr_clk_interconnect_aresetn] [get_bd_pins $ss_mem/ddr_interconnect_aresetn] [get_bd_pins uArch/memory_interconnect_aresetn]
 
     set design_clk_p_aresetn [get_bd_pins $ss_reset/design_clk_peripheral_aresetn]
     set design_clk_ic_aresetn [get_bd_pins $ss_reset/design_clk_interconnect_aresetn]
 
     set design_rst_receivers [list \
       [get_bd_pins $ss_mem/design_peripheral_aresetn] \
-      [get_bd_pins uArch/*peripheral_aresetn] \
-      [get_bd_pins $axi_ic_from_host/M00_ARESETN] \
+      [get_bd_pins uArch/design_peripheral_aresetn] \
     ]
 
     if {[llength [arch::get_masters]] > 0} {
@@ -627,7 +627,7 @@ namespace eval platform {
 
     connect_bd_net $design_clk_ic_aresetn \
       [get_bd_pins $ss_mem/interconnect_aresetn] \
-      [get_bd_pins uArch/*interconnect_aresetn] \
+      [get_bd_pins uArch/design_interconnect_aresetn] \
       [get_bd_pins $axi_ic_to_mem/ARESETN]
 
     # connect AXI from host to system
