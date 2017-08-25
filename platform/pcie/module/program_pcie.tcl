@@ -20,7 +20,7 @@
 
 #set default values
 set wait 1000
-set dev {xc7vx690t_0}
+set dev {xc7vx690t_0|xcvu9p_0}
 set probes_file {}
 set program_file {}
 set devid -1
@@ -55,11 +55,11 @@ init
 foreach t [get_hw_targets] {
   puts "opening target $t ..."
   open_hw_target $t
-  set devid [lsearch [get_hw_devices] $dev]
+  set devid [lsearch -regexp [get_hw_devices] $dev]
   close_hw_target $t
   if {$devid >= 0} {
     set target $t
-    puts "found VX690T @ $target:$devid"
+    puts "found device @ $target:$devid"
     break;
   }
 }
@@ -68,7 +68,6 @@ foreach t [get_hw_targets] {
 if { $devid >= 0 } {
   puts "programming $target:$devid ..."
   current_hw_target $target
-  set_property PARAM.FREQUENCY 30000000 [current_hw_target]
   open_hw_target [current_hw_target]
   current_hw_device $dev
 
@@ -90,6 +89,6 @@ if { $devid >= 0 } {
   close_hw_target
   deinit
 } else {
-  puts "could not find xc7vx690t_0 device, aborting."
+  puts "could not find any supported device, aborting."
   deinit 1
 }

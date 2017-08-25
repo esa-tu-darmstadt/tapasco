@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
-project(platform-vc709)
+project(platform-pcie)
 set(CMAKE_INSTALL_PREFIX "..")
 set(CMAKE_SKIP_RPATH true)
 
@@ -21,7 +21,7 @@ set(CMNSRCS "${CMNDIR}/src/platform_logging.c"
             "${CMNDIR}/src/platform_errors.c"
             "${GCMNDIR}/src/gen_queue.c"
             "${CMNDIR}/src/platform_version.c")
-set(SRCS "${SRCDIR}/platform_vc709.cpp"
+set(SRCS "${SRCDIR}/platform_pcie.cpp"
          "${BUDDYDIR}/buddy_allocator.cpp"
 	 "${BUDDYDIR}/buddy_tree.cpp"
 	 "${BUDDYDIR}/logger.cpp")

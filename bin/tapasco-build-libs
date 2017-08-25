@@ -23,7 +23,7 @@ if not 'TAPASCO_PLATFORM' in os.environ:
 	elif gethostname() in ['zynqmp']:
 		os.environ['TAPASCO_PLATFORM'] = 'zynqmp'
 	else:
-		os.environ['TAPASCO_PLATFORM'] = 'vc709'
+		os.environ['TAPASCO_PLATFORM'] = 'pcie'
 
 print('Platform: ' + os.environ['TAPASCO_PLATFORM'])
 
@@ -44,10 +44,10 @@ if not clean:
 		print('Building debug mode libraries...')
 	else:
 		print('Building release mode libraries, pass "debug" as first argument to build debug libs...')
-	
+
 	if 'LINUX_HOME' in os.environ:
 		subprocess.call(['make -C ' + os.environ['LINUX_HOME'] + ' scripts'], shell=True)
-	if os.environ['TAPASCO_PLATFORM'] is 'vc709':
+	if os.environ['TAPASCO_PLATFORM'] is 'pcie':
 		print 'cd ' + moddir + ' && make ' + ('DEBUG_VERBOSE=y ' if driver_debug else ' ')
 		subprocess.call(['cd ' + moddir + ' && make ' + ('DEBUG_VERBOSE=y ' if driver_debug else ' ')], shell=True)
 	else:

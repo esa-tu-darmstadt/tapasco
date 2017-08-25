@@ -20,19 +20,19 @@
 
 # Script can run without parameters, use verbose as second for output and
 # drv_load/drv_reload driver, when driver should be inserted
-# Script usage e.g. ./bit_reload 'path_to_bitstream' drv_reload verbose  
+# Script usage e.g. ./bit_reload 'path_to_bitstream' drv_reload verbose
 # Pathes '*_path' have to be adapted to specific location
 
 # init paths
 DRIVER=ffLink
-DRIVERPATH="$TAPASCO_HOME/platform/vc709/module"
-BITLOAD_SCRIPT="$TAPASCO_HOME/platform/vc709/module/program_vc709.tcl"
+DRIVERPATH="$TAPASCO_HOME/platform/pcie/module"
+BITLOAD_SCRIPT="$TAPASCO_HOME/platform/pcie/module/program_pcie.tcl"
 LOG_ID=$DRIVER"|""pci"
 
 show_usage() {
 	cat << EOF
 Usage: ${0##*/} [-v|--verbose] [--d|--drv-reload] BITSTREAM
-Program first VC709 found in JTAG chain with BITSTREAM.
+Program first supported PCIe based FPGA found in JTAG chain with BITSTREAM.
 
 	-v	enable verbose output
 	-d	reload device driver
@@ -47,17 +47,28 @@ hotplug() {
 	# remove device, if it exists
 	if [ -n "$PCIEDEVICE" ]; then
 		sudo sh -c "echo 1 >/sys/bus/pci/devices/0000:$PCIEDEVICE/remove"
+
 	fi
 
+	sleep 1
+
 	# Scan for new hotplugable device, like the one may deleted before
-	sudo sh -c "echo 1 >/sys/bus/pci/rescan"
-	echo "hotplugging finished"
+	sudo sh -c "echo 1 > /sys/bus/pci/rescan"
+
+	PCIEDEVICE=`lspci -d $VENDOR:$DEVICE | sed -e "s/ .*//"`
+
+	if [ -n "$PCIEDEVICE" ]; then
+		echo "hotplugging finished"
+	else
+		echo "ERROR: Could not find the device after hotplugging."
+		exit 1
+	fi
 }
 
 # init vars
 BITSTREAM=""
-VERBOSE=0
-RELOADD=1
+VERBOSE=1
+RELOADD=0
 
 OPTIND=1
 while getopts vd opt; do

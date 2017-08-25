@@ -100,7 +100,7 @@ static struct {
 	buddy_allocator 		*ba_small;
 	buddy_allocator		 	*ba_medium;
 	buddy_allocator		 	*ba_large;
-} vc709_platform;
+} pcie_platform;
 
 static pthread_mutex_t ba_small_lock 	= PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP;
 static pthread_mutex_t ba_medium_lock 	= PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP;
@@ -146,13 +146,13 @@ platform_res_t tapasco::platform::_platform_init(const char *const version)
 		return PERR_VERSION_MISMATCH;
 	}
 
-	if(helper_init(&vc709_platform.fd_dma_engine[0], dma_dev_path[0]) != PLATFORM_SUCCESS)
+	if(helper_init(&pcie_platform.fd_dma_engine[0], dma_dev_path[0]) != PLATFORM_SUCCESS)
 		return (platform_res_t) PERR_OPEN_DEV;
-	vc709_platform.opened_dma_devs++;
+	pcie_platform.opened_dma_devs++;
 
-	if(helper_init(&vc709_platform.fd_user[0], user_dev_path) != PLATFORM_SUCCESS)
+	if(helper_init(&pcie_platform.fd_user[0], user_dev_path) != PLATFORM_SUCCESS)
 		return (platform_res_t) PERR_OPEN_DEV;
-	vc709_platform.opened_user_devs++;
+	pcie_platform.opened_user_devs++;
 
 	res = platform_read_ctl((platform_ctl_addr_t) HW_ID_ADDR + HW_ID_MAX_OFFSET, 4, &data, PLATFORM_CTL_FLAGS_NONE);
 	if(res != PLATFORM_SUCCESS || data > NUM_USER_DEV) {
@@ -160,9 +160,9 @@ platform_res_t tapasco::platform::_platform_init(const char *const version)
 		return (platform_res_t) PERR_OPEN_DEV;
 	}
 
-	vc709_platform.ba_small = new buddy_allocator(ALLOC_SMALL_OFFSET, ALLOC_SMALL_TOTAL, ALLOC_START_ORDER, ALLOC_SMALL_ORDER);
-	vc709_platform.ba_medium = new buddy_allocator(ALLOC_MEDIUM_OFFSET, ALLOC_MEDIUM_TOTAL, ALLOC_SMALL_ORDER + 1, ALLOC_MEDIUM_ORDER);
-	vc709_platform.ba_large = new buddy_allocator(ALLOC_LARGE_OFFSET, ALLOC_LARGE_TOTAL, ALLOC_MEDIUM_ORDER + 1, ALLOC_LARGE_ORDER);
+	pcie_platform.ba_small = new buddy_allocator(ALLOC_SMALL_OFFSET, ALLOC_SMALL_TOTAL, ALLOC_START_ORDER, ALLOC_SMALL_ORDER);
+	pcie_platform.ba_medium = new buddy_allocator(ALLOC_MEDIUM_OFFSET, ALLOC_MEDIUM_TOTAL, ALLOC_SMALL_ORDER + 1, ALLOC_MEDIUM_ORDER);
+	pcie_platform.ba_large = new buddy_allocator(ALLOC_LARGE_OFFSET, ALLOC_LARGE_TOTAL, ALLOC_MEDIUM_ORDER + 1, ALLOC_LARGE_ORDER);
 
 	return PLATFORM_SUCCESS;
 }
@@ -171,15 +171,15 @@ void tapasco::platform::platform_deinit(void)
 {
 	LOG(LPLL_INIT, "Close devices");
 
-	for(int i = 0; i < vc709_platform.opened_user_devs; i++)
-		close(vc709_platform.fd_user[i]);
+	for(int i = 0; i < pcie_platform.opened_user_devs; i++)
+		close(pcie_platform.fd_user[i]);
 
-	for(int i = 0; i < vc709_platform.opened_dma_devs; i++)
-		close(vc709_platform.fd_dma_engine[i]);
+	for(int i = 0; i < pcie_platform.opened_dma_devs; i++)
+		close(pcie_platform.fd_dma_engine[i]);
 
-	delete(vc709_platform.ba_small);
-	delete(vc709_platform.ba_medium);
-	delete(vc709_platform.ba_large);
+	delete(pcie_platform.ba_small);
+	delete(pcie_platform.ba_medium);
+	delete(pcie_platform.ba_large);
 
 	platform_logging_exit();
 }
@@ -189,17 +189,17 @@ platform_res_t tapasco::platform::platform_alloc(size_t const len, platform_mem_
 	if(len > 0 && len <= ALLOC_SMALL_MAX) {
 		LOG(LPLL_MEM, "Using small allocator");
 		pthread_mutex_lock(&ba_small_lock);
-		*addr = vc709_platform.ba_small->alloc_Mem(len);
+		*addr = pcie_platform.ba_small->alloc_Mem(len);
 		pthread_mutex_unlock(&ba_small_lock);
 	} else if(len <= ALLOC_MEDIUM_MAX) {
 		LOG(LPLL_MEM, "Using medium allocator");
 		pthread_mutex_lock(&ba_medium_lock);
-		*addr = vc709_platform.ba_medium->alloc_Mem(len);
+		*addr = pcie_platform.ba_medium->alloc_Mem(len);
 		pthread_mutex_unlock(&ba_medium_lock);
 	} else if(len <= ALLOC_LARGE_MAX) {
 		LOG(LPLL_MEM, "Using large allocator");
 		pthread_mutex_lock(&ba_large_lock);
-		*addr = vc709_platform.ba_large->alloc_Mem(len);
+		*addr = pcie_platform.ba_large->alloc_Mem(len);
 		pthread_mutex_unlock(&ba_large_lock);
 	} else {
 		WRN("Invalid size for memory allocation (%lu)", len);
@@ -222,17 +222,17 @@ platform_res_t tapasco::platform::platform_dealloc(platform_mem_addr_t const add
 	if(addr >= ALLOC_SMALL_OFFSET && addr <= ALLOC_SMALL_OFFSET + ALLOC_SMALL_TOTAL) {
 		LOG(LPLL_MEM, "in small allocator");
 		pthread_mutex_lock(&ba_small_lock);
-		vc709_platform.ba_small->dealloc_Mem(addr);
+		pcie_platform.ba_small->dealloc_Mem(addr);
 		pthread_mutex_unlock(&ba_small_lock);
 	} else if(addr >= ALLOC_MEDIUM_OFFSET && addr <= ALLOC_MEDIUM_OFFSET + ALLOC_MEDIUM_TOTAL) {
 		LOG(LPLL_MEM, "in medium allocator");
 		pthread_mutex_lock(&ba_medium_lock);
-		vc709_platform.ba_medium->dealloc_Mem(addr);
+		pcie_platform.ba_medium->dealloc_Mem(addr);
 		pthread_mutex_unlock(&ba_medium_lock);
 	} else if(addr >= ALLOC_LARGE_OFFSET && addr <= ALLOC_LARGE_OFFSET + ALLOC_LARGE_TOTAL) {
 		LOG(LPLL_MEM, "in large allocator");
 		pthread_mutex_lock(&ba_large_lock);
-		vc709_platform.ba_large->dealloc_Mem(addr);
+		pcie_platform.ba_large->dealloc_Mem(addr);
 		pthread_mutex_unlock(&ba_large_lock);
 	} else {
 		WRN("Invalid memory address %X", addr);
@@ -263,7 +263,7 @@ platform_res_t tapasco::platform::platform_read_mem(platform_mem_addr_t const st
 #endif
 
 	LOG(LPLL_DMA, "Fpga addr %lX to host address %lX with length %d", params.fpga_addr, params.host_addr, params.btt);
-	err = ioctl(vc709_platform.fd_dma_engine[0], IOCTL_CMD_DMA_READ_BUF, &params);
+	err = ioctl(pcie_platform.fd_dma_engine[0], IOCTL_CMD_DMA_READ_BUF, &params);
 
 	if(err) {
 		WRN("Ioctl went wrong with error %d", err);
@@ -294,7 +294,7 @@ platform_res_t tapasco::platform::platform_write_mem(platform_mem_addr_t const s
 #endif
 
 	LOG(LPLL_DMA, "Fpga addr %lX to host address %lX with length %d", params.fpga_addr, params.host_addr, params.btt);
-	err = ioctl(vc709_platform.fd_dma_engine[0], IOCTL_CMD_DMA_WRITE_BUF, &params);
+	err = ioctl(pcie_platform.fd_dma_engine[0], IOCTL_CMD_DMA_WRITE_BUF, &params);
 
 	if(err) {
 		WRN("Ioctl went wrong with error %d", err);
@@ -331,7 +331,7 @@ platform_res_t tapasco::platform::platform_read_ctl(platform_ctl_addr_t const st
 	}
 #endif
 
-	err = read(vc709_platform.fd_user[0], &params, sizeof(struct user_rw_params));
+	err = read(pcie_platform.fd_user[0], &params, sizeof(struct user_rw_params));
 
 	if(err) {
 		WRN("Read went wrong with error %d", err);
@@ -371,7 +371,7 @@ platform_res_t tapasco::platform::platform_write_ctl(platform_ctl_addr_t const s
 #endif
 
 	LOG(LPLL_CTL, "Write data %X from address %lX with length %d", *((uint32_t *) data), params.fpga_addr, params.btt);
-	err = write(vc709_platform.fd_user[0], &params, sizeof(struct user_rw_params));
+	err = write(pcie_platform.fd_user[0], &params, sizeof(struct user_rw_params));
 
 	if(err) {
 		WRN("Write went wrong with error %d", err);
@@ -406,7 +406,7 @@ platform_res_t tapasco::platform::platform_write_ctl_and_wait(platform_ctl_addr_
 
 	LOG(LPLL_CTL, "Write data %X to address %lX with length %ld and event %d", params.data, params.fpga_addr, w_no_of_bytes, event);
 
-	err = ioctl(vc709_platform.fd_user[0], IOCTL_CMD_USER_WAIT_EVENT, &params);
+	err = ioctl(pcie_platform.fd_user[0], IOCTL_CMD_USER_WAIT_EVENT, &params);
 
 	if(err) {
 		WRN("Ioctl went wrong with error %d", err);
