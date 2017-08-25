@@ -391,7 +391,7 @@ namespace eval arch {
     arch_check_instance_count $kernels
     set arch_mem_ics [arch_create_mem_interconnects $kernels $mgroups]
 
-    set smart_connect [tapasco::is_platform_feature_enabled "SMART_CONNECT"]
+    set smart_connect [tapasco::is_feature_enabled "SMART_CONNECT"]
     set arch_host_ics [arch_create_host_interconnects $kernels 1 $smart_connect]
 
     # connect AXI infrastructure
