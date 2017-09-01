@@ -49,6 +49,7 @@
 #include <linux/slab.h>
 //#include <linux/clk.h>
 #include <asm/io.h>
+#include <asm/atomic.h>
 #include <linux/aio.h>
 #include <linux/uio.h>
 #include <linux/highmem.h>
@@ -105,9 +106,13 @@ struct priv_data_struct {
 	void * device_base_addr;
 	void * ctrl_base_addr;
 
-	wait_queue_head_t rw_wait_queue;
-	bool condition_rw;
-	struct mutex rw_mutex;
+	wait_queue_head_t read_wait_queue;
+	atomic64_t reads_processed;
+	struct mutex read_mutex;
+
+	wait_queue_head_t write_wait_queue;
+	atomic64_t writes_processed;
+	struct mutex write_mutex;
 
 	unsigned int cache_lsize;
 	unsigned int cache_mask;

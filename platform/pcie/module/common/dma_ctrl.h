@@ -70,7 +70,8 @@
 void dma_ctrl_init(void * device_base_addr);
 
 /* interrupt handler used by dma engines registered in pcie_device.c */
-irqreturn_t intr_handler_dma(int irq, void * dev_id);
+irqreturn_t intr_handler_dma_read(int irq, void * dev_id);
+irqreturn_t intr_handler_dma_write(int irq, void * dev_id);
 
 /* setting registers to start dma transfer specific to used engine (Xilinx, custom) */
 void transmit_from_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr);
@@ -79,7 +80,8 @@ void transmit_to_device(void * device_buffer, dma_addr_t host_handle, int btt, v
 /******************************************************************************/
 
 /* DMA Specific implementations */
-irqreturn_t blue_dma_intr_handler(int irq, void * dev_id);
+irqreturn_t blue_dma_intr_handler_read(int irq, void * dev_id);
+irqreturn_t blue_dma_intr_handler_write(int irq, void * dev_id);
 void blue_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr);
 void blue_dma_transmit_to_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr);
 

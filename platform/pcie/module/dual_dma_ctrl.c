@@ -43,7 +43,9 @@
 #define CMD_ACK		0x10011001 		/* acknowledge data transfer to toggle interrupt */
 
 /* mutex to sequentialize access to dma registers */
-//static DEFINE_MUTEX(dma_regs_mutex);
+static DEFINE_MUTEX(dma_regs_mutex);
+
+static bool active_transfer_write;
 
 /******************************************************************************/
 /* functions for irq-handling */
@@ -57,6 +59,8 @@
 irqreturn_t dual_dma_intr_handler_dma(int irq, void * dev_id)
 {
 	pcie_writel(CMD_ACK, get_dev_addr(0) + REG_CMD);
+	mutex_unlock(&dma_regs_mutex);
+	wake_up_queue(active_transfer_write);
 	return IRQ_HANDLED;
 }
 
@@ -73,8 +77,10 @@ irqreturn_t dual_dma_intr_handler_dma(int irq, void * dev_id)
 void dual_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr)
 {
 	fflink_info("dev_buf %lX dma_handle %lX \nsize %d dev_base %lX\n", (unsigned long) device_buffer, (unsigned long) host_handle, btt, (unsigned long) device_base_addr);
-	//if(mutex_lock_interruptible(&dma_regs_mutex))
-	//	fflink_warn("got killed while aquiring the mutex\n");
+	if(mutex_lock_interruptible(&dma_regs_mutex))
+		fflink_warn("got killed while aquiring the mutex\n");
+
+	active_transfer_write = false;
 
 	/* SA */
 	pcie_writel((unsigned long) device_buffer, device_base_addr + REG_FPGA_ADDR_LOW);
@@ -87,8 +93,6 @@ void dual_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle,
 	wmb();
 	/* start cmd */
 	pcie_writel(CMD_READ, device_base_addr + REG_CMD);
-
-	//mutex_unlock(&dma_regs_mutex);
 }
 
 /**
@@ -102,8 +106,10 @@ void dual_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle,
 void dual_dma_transmit_to_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr)
 {
 	fflink_info("dev_buf %lX dma_handle %lX \nsize %d dev_base %lX\n", (unsigned long) device_buffer, (unsigned long) host_handle, btt, (unsigned long) device_base_addr);
-	//if(mutex_lock_interruptible(&dma_regs_mutex))
-	//	fflink_warn("got killed while aquiring the mutex\n");
+	if(mutex_lock_interruptible(&dma_regs_mutex))
+		fflink_warn("got killed while aquiring the mutex\n");
+
+	active_transfer_write = true;
 
 	/* SA */
 	pcie_writel((uint32_t)host_handle, device_base_addr + REG_HOST_ADDR_LOW);
@@ -116,8 +122,6 @@ void dual_dma_transmit_to_device(void * device_buffer, dma_addr_t host_handle, i
 	wmb();
 	/* start cmd */
 	pcie_writel(CMD_WRITE, device_base_addr + REG_CMD);
-
-	//mutex_unlock(&dma_regs_mutex);
 }
 
 /******************************************************************************/

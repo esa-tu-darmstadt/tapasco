@@ -66,7 +66,7 @@ void char_dma_unregister(void);
 
 /* helper functions for information specific for each minor node */
 void * get_dev_addr(int i);
-void wake_up_queue(int i);
+void wake_up_queue(bool write);
 
 
 /******************************************************************************/

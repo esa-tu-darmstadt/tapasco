@@ -125,11 +125,12 @@ static int register_intr_handler(struct pci_dev *pdev, int c)
 	/* Request interrupt line for unique function
 	 * alternatively function will be called from free_irq as well with flag IRQF_SHARED */
 	if (c == 0) {
-
-		err = request_irq(pci_irq_vector(pdev, c), intr_handler_dma, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev);
+		err = request_irq(pci_irq_vector(pdev, c), intr_handler_dma_read, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev);
+	} else if (c == 1) {
+		err = request_irq(pci_irq_vector(pdev, c), intr_handler_dma_write, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev);
 	}
 
-	if (c == 1 || c == 2 || c == 3) err = -2;
+	if (c == 2 || c == 3) err = -2;
 
 	switch (c) {
 	case 4: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_0, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;

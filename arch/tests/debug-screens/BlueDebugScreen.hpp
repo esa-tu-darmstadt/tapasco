@@ -24,7 +24,8 @@ public:
       intr.pba.push_back(0);
     }
     uint64_t accumulated_delay = 199;
-    platform::platform_write_ctl(0x300000 + 96, sizeof(accumulated_delay), &accumulated_delay, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform::platform_write_ctl(0x300000 + 80, sizeof(accumulated_delay), &accumulated_delay, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform::platform_write_ctl(0x300000 + 104, sizeof(accumulated_delay), &accumulated_delay, platform::PLATFORM_CTL_FLAGS_RAW);
   }
   virtual ~BlueDebugScreen() {}
 
@@ -56,10 +57,14 @@ protected:
     platform::platform_read_ctl(0x300000 + 40, sizeof(dma.status), &dma.status, platform::PLATFORM_CTL_FLAGS_RAW);
     platform::platform_read_ctl(0x300000 + 48, sizeof(dma.read_requests), &dma.read_requests, platform::PLATFORM_CTL_FLAGS_RAW);
     platform::platform_read_ctl(0x300000 + 56, sizeof(dma.write_requests), &dma.write_requests, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 64, sizeof(dma.last_request), &dma.last_request, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 72, sizeof(dma.cycles_between), &dma.cycles_between, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 96, sizeof(dma.cycles_between_set), &dma.cycles_between_set, platform::PLATFORM_CTL_FLAGS_RAW);
-    ++dma.cycles_between_set; // Register contains num requests - 1
+    platform::platform_read_ctl(0x300000 + 64, sizeof(dma.last_request_read), &dma.last_request_read, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform::platform_read_ctl(0x300000 + 72, sizeof(dma.cycles_between_read), &dma.cycles_between_read, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform::platform_read_ctl(0x300000 + 80, sizeof(dma.cycles_between_set_read), &dma.cycles_between_set_read, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform::platform_read_ctl(0x300000 + 88, sizeof(dma.last_request_write), &dma.last_request_write, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform::platform_read_ctl(0x300000 + 96, sizeof(dma.cycles_between_write), &dma.cycles_between_write, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform::platform_read_ctl(0x300000 + 104, sizeof(dma.cycles_between_set_write), &dma.cycles_between_set_write, platform::PLATFORM_CTL_FLAGS_RAW);
+    ++dma.cycles_between_set_read; // Register contains num requests - 1
+    ++dma.cycles_between_set_write; // Register contains num requests - 1
 
     // Update Interrupt data
     uint32_t base_addr = 0x500000;
@@ -96,9 +101,12 @@ private:
     uint64_t status;
     uint64_t read_requests;
     uint64_t write_requests;
-    uint64_t last_request;
-    uint64_t cycles_between;
-    uint64_t cycles_between_set;
+    uint64_t last_request_read;
+    uint64_t cycles_between_read;
+    uint64_t cycles_between_set_read;
+    uint64_t last_request_write;
+    uint64_t cycles_between_write;
+    uint64_t cycles_between_set_write;
   };
 
   struct interrupt_data {
@@ -128,12 +136,19 @@ private:
 
     mvprintw(start_row++, start_col, "Read Requests: %ld, Write Requests: %ld", dma.read_requests, dma.write_requests);
     float frequency = 250000000.0f;
-    float transfer_ms = (dma.last_request/frequency) * 1000;
+    float transfer_ms = (dma.last_request_read/frequency) * 1000;
     float transfer_mib = ((1000.0f / transfer_ms) * dma.transfer_length) / (1024.0f * 1024.0f);
-    mvprintw(start_row++, start_col, "ms for last request: %f / %f MiB", transfer_ms, transfer_mib);
-    transfer_ms = ((dma.cycles_between/dma.cycles_between_set)/frequency) * 1000;
+    mvprintw(start_row++, start_col, "ms for last read request: %f / %f MiB", transfer_ms, transfer_mib);
+    transfer_ms = ((dma.cycles_between_read/dma.cycles_between_set_read)/frequency) * 1000;
     transfer_mib = ((1000.0f / transfer_ms) * dma.transfer_length) / (1024.0f * 1024.0f);
-    mvprintw(start_row++, start_col, "ms averaged over last %ld request(s): %f / %f MiB", dma.cycles_between_set, transfer_ms, transfer_mib);
+    mvprintw(start_row++, start_col, "ms averaged over last %ld read request(s): %f / %f MiB", dma.cycles_between_set_read, transfer_ms, transfer_mib);
+
+    transfer_ms = (dma.last_request_write/frequency) * 1000;
+    transfer_mib = ((1000.0f / transfer_ms) * dma.transfer_length) / (1024.0f * 1024.0f);
+    mvprintw(start_row++, start_col, "ms for last write request: %f / %f MiB", transfer_ms, transfer_mib);
+    transfer_ms = ((dma.cycles_between_write/dma.cycles_between_set_write)/frequency) * 1000;
+    transfer_mib = ((1000.0f / transfer_ms) * dma.transfer_length) / (1024.0f * 1024.0f);
+    mvprintw(start_row++, start_col, "ms averaged over last %ld write request(s): %f / %f MiB", dma.cycles_between_set_write, transfer_ms, transfer_mib);
   }
 
   void render_msix(int start_row, int start_col) {

@@ -44,7 +44,8 @@ typedef void (*dma_from_device)(void *, dma_addr_t, int, void *);
 typedef void (*dma_to_device)(void *, dma_addr_t , int , void *);
 
 typedef struct {
-	dma_intr_handler intr;
+	dma_intr_handler intr_read;
+	dma_intr_handler intr_write;
 	dma_from_device from_dev;
 	dma_to_device to_dev;
 } fflink_dma_t;
@@ -53,12 +54,14 @@ static dma_used_t dma_used;
 
 static const fflink_dma_t fflink_dma[] = {
 	[DMA_USED_DUAL] = {
+		dual_dma_intr_handler_dma, // Dual DMA can not read and write in parallel
 		dual_dma_intr_handler_dma,
 		dual_dma_transmit_from_device,
 		dual_dma_transmit_to_device
 	},
 	[DMA_USED_BLUE] = {
-		blue_dma_intr_handler,
+		blue_dma_intr_handler_read,
+		blue_dma_intr_handler_write,
 		blue_dma_transmit_from_device,
 		blue_dma_transmit_to_device
 	}
@@ -81,19 +84,29 @@ void dma_ctrl_init(void * device_base_addr)
 }
 
 /**
- * @brief Interrupt handler for dma engine 0
+ * @brief Interrupt handler for dma read channel
  * @param irq Interrupt number of calling line
  * @param dev_id magic number for interrupt sharing (not needed)
  * @return Tells OS, that irq is handled properly
  * */
-irqreturn_t intr_handler_dma(int irq, void * dev_id)
+irqreturn_t intr_handler_dma_read(int irq, void * dev_id)
 {
-	fflink_info("Interrupt called with irq %d\n", irq);
+	fflink_info("Read interrupt called with irq %d\n", irq);
 
-	fflink_dma[dma_used].intr(irq, dev_id);
-	wake_up_queue(0);
+	return fflink_dma[dma_used].intr_read(irq, dev_id);
+}
 
-	return IRQ_HANDLED;
+/**
+ * @brief Interrupt handler for dma read channel
+ * @param irq Interrupt number of calling line
+ * @param dev_id magic number for interrupt sharing (not needed)
+ * @return Tells OS, that irq is handled properly
+ * */
+irqreturn_t intr_handler_dma_write(int irq, void * dev_id)
+{
+	fflink_info("Write interrupt called with irq %d\n", irq);
+
+	return fflink_dma[dma_used].intr_write(irq, dev_id);
 }
 
 /******************************************************************************/

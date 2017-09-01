@@ -51,7 +51,8 @@ namespace eval platform {
     set aclk [create_bd_pin -type "clk" -dir I "aclk"]
     set ic_aresetn [create_bd_pin -type "rst" -dir I "interconnect_aresetn"]
     set p_aresetn [create_bd_pin -type "rst" -dir I "peripheral_aresetn"]
-    set dma_irq [create_bd_pin -type "intr" -dir I "dma_irq"]
+    set dma_irq_read [create_bd_pin -type "intr" -dir I "dma_irq_read"]
+    set dma_irq_write [create_bd_pin -type "intr" -dir I "dma_irq_write"]
 
     set msix_fail [create_bd_pin -dir "I" "msix_fail"]
     set msix_sent [create_bd_pin -dir "I" "msix_sent"]
@@ -90,9 +91,9 @@ namespace eval platform {
     connect_bd_net $msix_enable [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_enable"}]
     connect_bd_net $msix_mask [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_mask"}]
 
-    connect_bd_net $dma_irq [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
-    puts "Unused Interrupts: 1, 2, 3 are tied to 0"
-    connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
+    connect_bd_net $dma_irq_read [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
+    connect_bd_net $dma_irq_write [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
+    puts "Unused Interrupts: 2, 3 are tied to zero"
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In2"}]
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In3"}]
 
@@ -141,7 +142,8 @@ namespace eval platform {
     set design_p_aresetn [create_bd_pin -type "rst" -dir "I" "design_peripheral_aresetn"]
 
     set ddr_aresetn [create_bd_pin -type "rst" -dir "O" "ddr_aresetn"]
-    set irq [create_bd_pin -type "intr" -dir "O" "dma_irq"]
+    set irq_read [create_bd_pin -type "intr" -dir "O" "dma_irq_read"]
+    set irq_write [create_bd_pin -type "intr" -dir "O" "dma_irq_write"]
 
     # create instances of cores: MIG core, dual DMA, system cache
     set mig [create_mig_core "mig"]
@@ -199,7 +201,8 @@ namespace eval platform {
     connect_bd_net $ext_design_clk $design_clk
 
     # connect IRQ
-    connect_bd_net [get_bd_pins dual_dma/IRQ] $irq
+    connect_bd_net [get_bd_pins dual_dma/IRQ_read] $irq_read
+    connect_bd_net [get_bd_pins dual_dma/IRQ_write] $irq_write
 
     current_bd_instance $instance
     return $group
@@ -498,7 +501,8 @@ namespace eval platform {
     connect_bd_net [get_bd_pins $ss_int/msix_int] [get_bd_pins $ss_pcie/msix_int]
 
     # connect Memory <-> InterruptControl
-    connect_bd_net [get_bd_pins $ss_mem/dma_irq] [get_bd_pins $ss_int/dma_irq]
+    connect_bd_net [get_bd_pins $ss_mem/dma_irq_read] [get_bd_pins $ss_int/dma_irq_read]
+    connect_bd_net [get_bd_pins $ss_mem/dma_irq_write] [get_bd_pins $ss_int/dma_irq_write]
 
     # connect clocks
     set pcie_aclk [get_bd_pins $ss_pcie/pcie_aclk]

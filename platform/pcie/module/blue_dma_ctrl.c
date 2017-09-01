@@ -39,7 +39,7 @@
 #define CMD_WRITE	0x10000001 		/* from m64 host memory to m64 fpga memory */
 
 /* mutex to sequentialize access to dma registers */
-//static DEFINE_MUTEX(dma_regs_mutex);
+static DEFINE_MUTEX(dma_regs_mutex);
 
 /******************************************************************************/
 /* functions for irq-handling */
@@ -50,8 +50,15 @@
  * @param dev_id magic number for interrupt sharing (not needed)
  * @return Tells OS, that irq is handled properly
  * */
-irqreturn_t blue_dma_intr_handler(int irq, void * dev_id)
+irqreturn_t blue_dma_intr_handler_read(int irq, void * dev_id)
 {
+	wake_up_queue(false);
+	return IRQ_HANDLED;
+}
+
+irqreturn_t blue_dma_intr_handler_write(int irq, void * dev_id)
+{
+	wake_up_queue(true);
 	return IRQ_HANDLED;
 }
 
@@ -68,8 +75,8 @@ irqreturn_t blue_dma_intr_handler(int irq, void * dev_id)
 void blue_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr)
 {
 	fflink_info("dev_buf %lX dma_handle %lX \nsize %d dev_base %lX\n", (unsigned long) device_buffer, (unsigned long) host_handle, btt, (unsigned long) device_base_addr);
-	//if(mutex_lock_interruptible(&dma_regs_mutex))
-	//	fflink_warn("got killed while aquiring the mutex\n");
+	if(mutex_lock_interruptible(&dma_regs_mutex))
+		fflink_warn("got killed while aquiring the mutex\n");
 
 	/* SA */
 	pcie_writeq((unsigned long)device_buffer, device_base_addr + REG_FPGA_ADDR);
@@ -82,7 +89,7 @@ void blue_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle,
 	/* start cmd */
 	pcie_writeq(CMD_READ, device_base_addr + REG_CMD);
 
-	//mutex_unlock(&dma_regs_mutex);
+	mutex_unlock(&dma_regs_mutex);
 }
 
 /**
@@ -96,8 +103,8 @@ void blue_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle,
 void blue_dma_transmit_to_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr)
 {
 	fflink_info("dev_buf %lX dma_handle %lX \nsize %d dev_base %lX\n", (unsigned long) device_buffer, (unsigned long) host_handle, btt, (unsigned long) device_base_addr);
-	//if(mutex_lock_interruptible(&dma_regs_mutex))
-	//	fflink_warn("got killed while aquiring the mutex\n");
+	if(mutex_lock_interruptible(&dma_regs_mutex))
+		fflink_warn("got killed while aquiring the mutex\n");
 
 	/* SA */
 	pcie_writeq(host_handle, device_base_addr + REG_HOST_ADDR);
@@ -110,7 +117,7 @@ void blue_dma_transmit_to_device(void * device_buffer, dma_addr_t host_handle, i
 	/* start cmd */
 	pcie_writeq(CMD_WRITE, device_base_addr + REG_CMD);
 
-	//mutex_unlock(&dma_regs_mutex);
+	mutex_unlock(&dma_regs_mutex);
 }
 
 /******************************************************************************/

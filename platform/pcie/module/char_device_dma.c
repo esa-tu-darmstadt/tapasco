@@ -53,8 +53,7 @@ static dev_t char_dma_dev_t;
 /* device class entry for sysfs */
 struct class *char_dma_class;
 
-static int device_opened = 0;
-static DEFINE_SPINLOCK(device_open_close_mutex);
+static atomic64_t device_opened = ATOMIC_INIT(0);
 
 /******************************************************************************/
 /* helper functions used by sys-calls */
@@ -75,7 +74,7 @@ static void transmit_to_user(void * user_buffer, void * kvirt_buffer, dma_addr_t
 	dma_sync_single_for_cpu(&get_pcie_dev()->dev, dma_handle, dma_cache_fit(btt), PCI_DMA_FROMDEVICE);
 
 	copy_count = copy_to_user(user_buffer, kvirt_buffer, btt);
-	if(copy_count)
+	if (copy_count)
 		fflink_warn("left copy %u bytes - cache flush %u bytes\n", copy_count, dma_cache_fit(btt));
 
 	dma_sync_single_for_device(&get_pcie_dev()->dev, dma_handle, dma_cache_fit(btt), PCI_DMA_FROMDEVICE);
@@ -97,7 +96,7 @@ static void transmit_from_user(void * user_buffer, void * kvirt_buffer, dma_addr
 	dma_sync_single_for_cpu(&get_pcie_dev()->dev, dma_handle, dma_cache_fit(btt), PCI_DMA_TODEVICE);
 	// copy data from user
 	copy_count = copy_from_user(kvirt_buffer, user_buffer, btt);
-	if(copy_count)
+	if (copy_count)
 		fflink_warn("left copy %u bytes - cache flush %u bytes\n", copy_count, dma_cache_fit(btt));
 
 	dma_sync_single_for_device(&get_pcie_dev()->dev, dma_handle, dma_cache_fit(btt), PCI_DMA_TODEVICE);
@@ -111,7 +110,7 @@ static void transmit_from_user(void * user_buffer, void * kvirt_buffer, dma_addr
  * */
 static unsigned int dma_cache_fit(unsigned int btt)
 {
-	if((btt & (priv_data.cache_lsize -1)) > 0)
+	if ((btt & (priv_data.cache_lsize - 1)) > 0)
 		return (btt & priv_data.cache_mask) + priv_data.cache_lsize;
 	else
 		return btt & priv_data.cache_mask;
@@ -130,10 +129,10 @@ static int dma_alloc_pbufs(void** p, dma_addr_t *handle, gfp_t zone, int directi
 {
 	int err = 0;
 	*p = kmalloc(BUFFER_SIZE, zone);
-	if(*p) {
+	if (*p) {
 		memset(*p, 0, BUFFER_SIZE);
 		*handle = dma_map_single(&get_pcie_dev()->dev,  *p, BUFFER_SIZE, direction);
-		if(dma_mapping_error(&get_pcie_dev()->dev, *handle)) {
+		if (dma_mapping_error(&get_pcie_dev()->dev, *handle)) {
 			fflink_warn("DMA Mapping error\n");
 			err = -EFAULT;
 		}
@@ -154,10 +153,10 @@ static int dma_alloc_pbufs(void** p, dma_addr_t *handle, gfp_t zone, int directi
  * */
 static void dma_free_pbufs(void *p, dma_addr_t handle, int direction)
 {
-	if(handle) {
+	if (handle) {
 		dma_unmap_single(&get_pcie_dev()->dev, handle, BUFFER_SIZE, direction);
 	}
-	if(p) {
+	if (p) {
 		kfree(p);
 	}
 }
@@ -172,7 +171,7 @@ static void dma_init_pdata(struct priv_data_struct * p)
 {
 	/* cache size and mask needed for alignemt */
 	p->cache_lsize = cache_line_size();
-	p->cache_mask = ~(cache_line_size() -1);
+	p->cache_mask = ~(cache_line_size() - 1);
 
 	p->dma_handle_h2l = 0;
 	p->dma_handle_l2h = 0;
@@ -183,9 +182,13 @@ static void dma_init_pdata(struct priv_data_struct * p)
 	p->ctrl_base_addr = (void *) AXI_CTRL_BASE_ADDR;
 
 	/* init control structures for synchron sys-calls */
-	mutex_init(&p->rw_mutex);
-	init_waitqueue_head(&p->rw_wait_queue);
-	p->condition_rw = false;
+
+	init_waitqueue_head(&p->read_wait_queue);
+	init_waitqueue_head(&p->write_wait_queue);
+	mutex_init(&p->read_mutex);
+	mutex_init(&p->write_mutex);
+	atomic64_set(&p->reads_processed, 0);
+	atomic64_set(&p->writes_processed, 0);
 
 	p->mem_addr_h2l = (void *) RAM_BASE_ADDR_0;
 	p->mem_addr_l2h = (void *) RAM_BASE_ADDR_0;
@@ -219,21 +222,22 @@ static int read_with_bounce(int count, char __user *buf, void * mem_addr, struct
 {
 	int current_count = count;
 	unsigned int copy_size;
+	uint64_t expected_val;
 	fflink_notice("Using bounce buffering\n");
 
-	while(current_count > 0) {
+	while (current_count > 0) {
 		fflink_info("outstanding %d bytes - \n\t\t user addr %lX - mem addr %lx\n", current_count, (unsigned long) buf, (unsigned long) mem_addr);
-		if(current_count <= BUFFER_SIZE)
+		if (current_count <= BUFFER_SIZE)
 			copy_size = current_count;
 		else
 			copy_size = BUFFER_SIZE;
 
+		expected_val = atomic64_read(&p->reads_processed) + 1;
 		transmit_from_device(mem_addr, p->dma_handle_l2h, copy_size, p->device_base_addr);
-		if(wait_event_interruptible(p->rw_wait_queue, p->condition_rw == true)) {
+		if (wait_event_interruptible(p->read_wait_queue, atomic64_read(&p->reads_processed) >= expected_val)) {
 			fflink_warn("got killed while hanging in waiting queue\n");
 			return -EACCES;
 		}
-		p->condition_rw = false;
 		transmit_to_user(buf, p->kvirt_l2h, p->dma_handle_l2h, copy_size);
 
 		buf += BUFFER_SIZE;
@@ -269,11 +273,13 @@ static inline int write_device(int count, const char __user *buf, void * mem_add
 static int write_with_bounce(int count, const char __user *buf, void * mem_addr, struct priv_data_struct *p)
 {
 	int current_count = count;
+	uint64_t expected_val;
 	fflink_notice("Using bounce buffering\n");
 
-	while(current_count > 0) {
+	while (current_count > 0) {
 		fflink_info("outstanding %d bytes - \n\t\t user addr %lX - mem addr %lx\n", current_count, (unsigned long) buf, (unsigned long) mem_addr);
-		if(current_count <= BUFFER_SIZE) {
+		expected_val = atomic64_read(&p->writes_processed) + 1;
+		if (current_count <= BUFFER_SIZE) {
 			transmit_from_user((void *) buf, p->kvirt_h2l, p->dma_handle_h2l, current_count);
 			transmit_to_device(mem_addr, p->dma_handle_h2l, current_count, p->device_base_addr);
 		} else {
@@ -284,11 +290,10 @@ static int write_with_bounce(int count, const char __user *buf, void * mem_addr,
 		mem_addr += BUFFER_SIZE;
 		current_count -= BUFFER_SIZE;
 
-		if(wait_event_interruptible(p->rw_wait_queue, p->condition_rw == true)) {
+		if (wait_event_interruptible(p->write_wait_queue, atomic64_read(&p->writes_processed) >= expected_val)) {
 			fflink_warn("got killed while hanging in waiting queue\n");
 			return -EACCES;
 		}
-		p->condition_rw = false;
 	}
 	return 0;
 }
@@ -304,7 +309,7 @@ static int dma_initialize(void) {
 	err_1 = dma_alloc_pbufs(&priv_data.kvirt_h2l, &priv_data.dma_handle_h2l, zone, PCI_DMA_TODEVICE);
 	err_2 = dma_alloc_pbufs(&priv_data.kvirt_l2h, &priv_data.dma_handle_l2h, zone, PCI_DMA_FROMDEVICE);
 
-	if(err_1 != 0 || err_2 != 0) {
+	if (err_1 != 0 || err_2 != 0) {
 		fflink_warn("Error during device creation. Error codes: Write direction: %d Read direction: %d\n", err_1, err_2);
 		err_return = -ENOSPC;
 		goto open_failed_deinit;
@@ -337,15 +342,11 @@ static void dma_deinit(void) {
  * */
 static int dma_open(struct inode *inode, struct file *filp)
 {
-
-	spin_lock(&device_open_close_mutex);
-
 	fflink_notice("Already %d files in use.\n", device_opened);
 
-	++device_opened;
+	atomic64_inc(&device_opened);
 	/* set filp for further sys calls to this minor number */
 	filp->private_data = &priv_data;
-	spin_unlock(&device_open_close_mutex);
 	return 0;
 }
 
@@ -357,10 +358,8 @@ static int dma_open(struct inode *inode, struct file *filp)
  * */
 static int dma_close(struct inode *inode, struct file *filp)
 {
-	spin_lock(&device_open_close_mutex);
-	--device_opened;
+	atomic64_dec(&device_opened);
 	fflink_notice("Still %d files in use.\n", device_opened);
-	spin_unlock(&device_open_close_mutex);
 	return 0;
 }
 
@@ -382,13 +381,13 @@ static ssize_t dma_read(struct file *filp, char __user *buf, size_t count, loff_
 	struct priv_data_struct * p = (struct priv_data_struct *) filp->private_data;
 	fflink_notice("Called for device minor %d\n", 0);
 
-	if(mutex_lock_interruptible(&p->rw_mutex)) {
+	if (mutex_lock_interruptible(&p->read_mutex)) {
 		fflink_warn("got killed while aquiring the mutex\n");
 		return -EACCES;
 	}
 
 	err = read_device(count, buf, p->mem_addr_l2h, p);
-	mutex_unlock(&p->rw_mutex);
+	mutex_unlock(&p->read_mutex);
 
 	return err;
 }
@@ -408,13 +407,13 @@ static ssize_t dma_write(struct file *filp, const char __user *buf, size_t count
 	struct priv_data_struct * p = (struct priv_data_struct *) filp->private_data;
 	fflink_notice("Called for device minor %d\n", 0);
 
-	if(mutex_lock_interruptible(&p->rw_mutex)) {
+	if (mutex_lock_interruptible(&p->write_mutex)) {
 		fflink_warn("got killed while aquiring the mutex\n");
 		return -EACCES;
 	}
 
 	err = write_device(count, buf, p->mem_addr_h2l, p);
-	mutex_unlock(&p->rw_mutex);
+	mutex_unlock(&p->write_mutex);
 
 	return err;
 }
@@ -435,78 +434,58 @@ static long dma_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long i
 	struct dma_ioctl_params params;
 	fflink_notice("Called with number %X for minor %u\n", ioctl_num, 0);
 
-	if(_IOC_SIZE(ioctl_num) != sizeof(struct dma_ioctl_params)) {
+	if (_IOC_SIZE(ioctl_num) != sizeof(struct dma_ioctl_params)) {
 		fflink_warn("Wrong size to read out registers %d vs %ld\n", _IOC_SIZE(ioctl_num), sizeof(struct dma_ioctl_params));
 		return -EACCES;
 	}
-	if(copy_from_user(&params, (void *)ioctl_param, _IOC_SIZE(ioctl_num))) {
+	if (copy_from_user(&params, (void *)ioctl_param, _IOC_SIZE(ioctl_num))) {
 		fflink_warn("Couldn't copy all bytes\n");
 		return -EACCES;
 	}
-	if(mutex_lock_interruptible(&p->rw_mutex)) {
-		fflink_warn("got killed while aquiring the mutex\n");
-		return -EACCES;
+
+	switch (ioctl_num) {
+	case IOCTL_CMD_DMA_SET_MEM_H2L:
+		fflink_info("IOCTL_CMD_DMA_SET_MEM_H2L with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
+		fflink_info("Set new H2L addr to %llX:\n", params.fpga_addr);
+
+		p->mem_addr_h2l = (void *) params.fpga_addr;
+		break;
+	case IOCTL_CMD_DMA_SET_MEM_L2H:
+		fflink_info("IOCTL_CMD_DMA_SET_MEM_H2L with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
+		fflink_info("Set new H2L addr to %llX:\n", params.fpga_addr);
+
+		p->mem_addr_l2h = (void *) params.fpga_addr;
+		break;
+	case IOCTL_CMD_DMA_READ_BUF:
+		fflink_info("IOCTL_CMD_DMA_READ_BUF with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
+		fflink_info("Host_addr %llX Fpga_addr %llX btt %u\n", params.host_addr, params.fpga_addr, params.btt);
+
+		if (mutex_lock_interruptible(&p->read_mutex)) {
+			fflink_warn("got killed while aquiring the mutex\n");
+			return -EACCES;
+		}
+
+		read_device(params.btt, (char __user *) params.host_addr, (void *) params.fpga_addr, p);
+
+		mutex_unlock(&p->read_mutex);
+		break;
+	case IOCTL_CMD_DMA_WRITE_BUF:
+		fflink_info("IOCTL_CMD_DMA_WRITE_BUF with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
+		fflink_info("Host_addr %llX Fpga_addr %llX btt %d\n", params.host_addr, params.fpga_addr, params.btt);
+
+		if (mutex_lock_interruptible(&p->write_mutex)) {
+			fflink_warn("got killed while aquiring the mutex\n");
+			return -EACCES;
+		}
+
+		write_device(params.btt, (char __user *) params.host_addr, (void *) params.fpga_addr, p);
+
+		mutex_unlock(&p->write_mutex);
+		break;
+	default:
+		fflink_warn("default case - nothing to do here\n");
+		break;
 	}
-
-	switch(ioctl_num) {
-		case IOCTL_CMD_DMA_READ_MMAP:
-			fflink_info("IOCTL_CMD_DMA_READ_MMAP with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
-			fflink_info("Btt: %d\n", params.btt);
-
-			dma_sync_single_for_device(&get_pcie_dev()->dev, p->dma_handle_l2h, dma_cache_fit(params.btt), PCI_DMA_TODEVICE);
-			transmit_from_device(p->mem_addr_l2h, p->dma_handle_l2h, params.btt, p->device_base_addr);
-			if(wait_event_interruptible(p->rw_wait_queue, p->condition_rw == true)) {
-				fflink_warn("got killed while hanging in waiting queue\n");
-				break;
-			}
-			p->condition_rw = false;
-
-			dma_sync_single_for_cpu(&get_pcie_dev()->dev, p->dma_handle_l2h, dma_cache_fit(params.btt), PCI_DMA_TODEVICE);
-			break;
-		case IOCTL_CMD_DMA_WRITE_MMAP:
-			fflink_info("IOCTL_CMD_DMA_WRITE_MMAP with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
-			fflink_info("Btt: %d\n", params.btt);
-
-			dma_sync_single_for_device(&get_pcie_dev()->dev, p->dma_handle_h2l, dma_cache_fit(params.btt), PCI_DMA_TODEVICE);
-			transmit_to_device(p->mem_addr_h2l, p->dma_handle_h2l, params.btt, p->device_base_addr);
-			if(wait_event_interruptible(p->rw_wait_queue, p->condition_rw == true)) {
-				fflink_warn("got killed while hanging in waiting queue\n");
-				break;
-			}
-			p->condition_rw = false;
-
-			dma_sync_single_for_cpu(&get_pcie_dev()->dev, p->dma_handle_h2l, dma_cache_fit(params.btt), PCI_DMA_TODEVICE);
-			break;
-		case IOCTL_CMD_DMA_READ_BUF:
-			fflink_info("IOCTL_CMD_DMA_READ_BUF with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
-			fflink_info("Host_addr %llX Fpga_addr %llX btt %u\n", params.host_addr, params.fpga_addr, params.btt);
-
-			read_device(params.btt, (char __user *) params.host_addr, (void *) params.fpga_addr, p);
-			break;
-		case IOCTL_CMD_DMA_WRITE_BUF:
-			fflink_info("IOCTL_CMD_DMA_WRITE_BUF with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
-			fflink_info("Host_addr %llX Fpga_addr %llX btt %d\n", params.host_addr, params.fpga_addr, params.btt);
-
-			write_device(params.btt, (char __user *) params.host_addr, (void *) params.fpga_addr, p);
-			break;
-		case IOCTL_CMD_DMA_SET_MEM_H2L:
-			fflink_info("IOCTL_CMD_DMA_SET_MEM_H2L with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
-			fflink_info("Set new H2L addr to %llX:\n", params.fpga_addr);
-
-			p->mem_addr_h2l = (void *) params.fpga_addr;
-			break;
-		case IOCTL_CMD_DMA_SET_MEM_L2H:
-			fflink_info("IOCTL_CMD_DMA_SET_MEM_H2L with Param-Size: %d byte\n", _IOC_SIZE(ioctl_num));
-			fflink_info("Set new H2L addr to %llX:\n", params.fpga_addr);
-
-			p->mem_addr_l2h = (void *) params.fpga_addr;
-			break;
-		default:
-			fflink_warn("default case - nothing to do here\n");
-			break;
-	}
-
-	mutex_unlock(&p->rw_mutex);
 	return 0;
 }
 
@@ -520,20 +499,23 @@ static long dma_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long i
  * */
 void * get_dev_addr(int i)
 {
-	BUG_ON(i < 0 || i >= 1);
 	return priv_data.device_base_addr;
 }
 
 /**
- * @brief Wake up processes for corresponding minor node
+ * @brief Increas corresponding counter and wake up queue
  * @param i The minor number of the device
  * @return none
  * */
-void wake_up_queue(int i)
+void wake_up_queue(bool write)
 {
-	BUG_ON(i < 0 || i >= 1);
-	priv_data.condition_rw = true;
-	wake_up_interruptible_sync(&priv_data.rw_wait_queue);
+	if (write) {
+		atomic64_inc(&priv_data.writes_processed);
+		wake_up_interruptible_sync(&priv_data.write_wait_queue);
+	} else {
+		atomic64_inc(&priv_data.reads_processed);
+		wake_up_interruptible_sync(&priv_data.read_wait_queue);
+	}
 }
 
 /**
