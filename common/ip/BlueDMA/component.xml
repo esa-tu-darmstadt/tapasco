@@ -1102,7 +1102,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>9ebd4115</spirit:value>
+            <spirit:value>1cf7cef1</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -1118,7 +1118,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>3fdd9f69</spirit:value>
+            <spirit:value>c4f4cbe7</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -2993,7 +2993,7 @@
       <spirit:file>
         <spirit:name>src/mkBlueDMAVivado.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_a879b636</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_d06533a1</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -3069,7 +3069,7 @@
       <xilinx:displayName>BlueDMA</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2017-09-01T15:29:05Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2017-09-05T16:12:56Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
@@ -3079,7 +3079,7 @@
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="00a31e8a"/>
       <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="39f16c3a"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="5dd283ff"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="9e494567"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="84bd677b"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="d0fc19af"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="4a3aac11"/>
     </xilinx:packagingInfo>
