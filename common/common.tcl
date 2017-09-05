@@ -509,7 +509,7 @@ namespace eval tapasco {
   # Instantiates a PCIe 3.0 AXI bridge core.
   # @param name Name of the instance.
   # @return block design cell.
-  proc createPCIeBridge {name {ultrascale True}} {
+  proc createPCIeBridge {name {ultrascale False}} {
     variable stdcomps
     puts "Creating PCIe Bridge core $name ..."
     set vlnv [dict get $stdcomps axi_pcie3_0 vlnv]

@@ -279,7 +279,7 @@ namespace eval platform {
   proc create_pcie_core {} {
     puts "Creating AXI PCIe Gen3 bridge ..."
     # create PCIe core
-    set axi_pcie3_0 [tapasco::createPCIeBridge "axi_pcie3_0" true]
+    set axi_pcie3_0 [tapasco::createPCIeBridge "axi_pcie3_0" True]
     set pcie_properties [list \
       CONFIG.functional_mode {AXI_Bridge} \
       CONFIG.mode_selection {Advanced} \
