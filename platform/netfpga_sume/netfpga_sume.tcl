@@ -209,7 +209,14 @@ namespace eval platform {
     # connect external design clk
     set ext_design_clk $sys_clk_external
     if {[tapasco::get_design_frequency] != [tapasco::get_mem_frequency]} {
-      puts "TODO"
+        puts "Setting design clock to [tapasco::get_design_frequency] MHz"
+        set clk_wiz [tapasco::createClockingWizard "design_clk_generator"]
+        save_bd_design
+        set_property -dict [list CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
+                                 CONFIG.PRIM_SOURCE {Single_ended_clock_capable_pin} \
+                                 CONFIG.USE_LOCKED {false} CONFIG.USE_RESET {false}] $clk_wiz
+        connect_bd_net $sys_clk_external [get_bd_pins $clk_wiz/clk_in1]
+        set ext_design_clk [get_bd_pins $clk_wiz/clk_out1]
     }
     connect_bd_net $ext_design_clk $design_clk
 
