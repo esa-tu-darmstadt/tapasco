@@ -591,11 +591,7 @@ namespace eval platform {
 
     # call plugins
     tapasco::call_plugins "post-platform"
-
-    create_bd_cell -type ip -vlnv xilinx.com:ip:system_ila:1.0 PCIe/system_ila_0
-    connect_bd_intf_net [get_bd_intf_pins PCIe/system_ila_0/SLOT_0_AXI] [get_bd_intf_pins PCIe/axi_pcie3_0/S_AXI_B]
-    connect_bd_net [get_bd_pins PCIe/system_ila_0/clk] [get_bd_pins PCIe/axi_pcie3_0/axi_aclk]
-    connect_bd_net [get_bd_pins PCIe/system_ila_0/resetn] [get_bd_pins PCIe/axi_pcie3_0/axi_aresetn]
+    tapasco::call_plugins "post-bd"
 
     # validate the design
     save_bd_design
