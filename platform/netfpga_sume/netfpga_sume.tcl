@@ -214,7 +214,8 @@ namespace eval platform {
         save_bd_design
         set_property -dict [list CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
                                  CONFIG.PRIM_SOURCE {Single_ended_clock_capable_pin} \
-                                 CONFIG.USE_LOCKED {false} CONFIG.USE_RESET {false}] $clk_wiz
+                                 CONFIG.USE_LOCKED {false} CONFIG.USE_RESET {false} \
+                                 CONFIG.PRIM_IN_FREQ {200}] $clk_wiz
         connect_bd_net $sys_clk_external [get_bd_pins $clk_wiz/clk_in1]
         set ext_design_clk [get_bd_pins $clk_wiz/clk_out1]
     }
@@ -503,41 +504,42 @@ namespace eval platform {
     puts $constraints_file "set_property LOC AY35 \[get_ports { pcie_perst }\]"
     puts $constraints_file "set_property IOSTANDARD LVCMOS18    \[get_ports { pcie_perst }\]"
     puts $constraints_file "set_property PULLUP true \[get_ports { pcie_perst }\]"
+    puts $constraints_file "set_false_path -from \[get_ports pcie_perst\]"
 
     puts $constraints_file "create_clock -add -name pcie_clk_pin -period 10.000 -waveform {0 5.000} \[get_ports {IBUF_DS_P}\];"
-    puts $constraints_file "#PCIe Transceivers"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN Y4 } \[get_ports { pcie_7x_mgt_txp[0] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN Y3 } \[get_ports { pcie_7x_mgt_txn[0] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN W2 } \[get_ports { pcie_7x_mgt_rxp[0] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN W1 } \[get_ports { pcie_7x_mgt_rxn[0] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AA6 } \[get_ports { pcie_7x_mgt_txp[1] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AA5 } \[get_ports { pcie_7x_mgt_txn[1] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AA2 } \[get_ports { pcie_7x_mgt_rxp[1] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AA1 } \[get_ports { pcie_7x_mgt_rxn[1] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AB4 } \[get_ports { pcie_7x_mgt_txp[2] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AB3 } \[get_ports { pcie_7x_mgt_txn[2] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AC2 } \[get_ports { pcie_7x_mgt_rxp[2] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AC1 } \[get_ports { pcie_7x_mgt_rxn[2] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AC6 } \[get_ports { pcie_7x_mgt_txp[3] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AC5 } \[get_ports { pcie_7x_mgt_txn[3] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AE2 } \[get_ports { pcie_7x_mgt_rxp[3] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AE1 } \[get_ports { pcie_7x_mgt_rxn[3] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AD4 } \[get_ports { pcie_7x_mgt_txp[4] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AD3 } \[get_ports { pcie_7x_mgt_txn[4] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AG2 } \[get_ports { pcie_7x_mgt_rxp[4] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AG1 } \[get_ports { pcie_7x_mgt_rxn[4] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AE6 } \[get_ports { pcie_7x_mgt_txp[5] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AE5 } \[get_ports { pcie_7x_mgt_txn[5] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AH4 } \[get_ports { pcie_7x_mgt_rxp[5] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AH3 } \[get_ports { pcie_7x_mgt_rxn[5] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AF4 } \[get_ports { pcie_7x_mgt_txp[6] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AF3 } \[get_ports { pcie_7x_mgt_txn[6] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AJ2 } \[get_ports { pcie_7x_mgt_rxp[6] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AJ1 } \[get_ports { pcie_7x_mgt_rxn[6] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AG6 } \[get_ports { pcie_7x_mgt_txp[7] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AG5 } \[get_ports { pcie_7x_mgt_txn[7] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AK4 } \[get_ports { pcie_7x_mgt_rxp[7] }\];"
-    puts $constraints_file "set_property -dict { PACKAGE_PIN AK3 } \[get_ports { pcie_7x_mgt_rxn[7] }\];"
+    #puts $constraints_file "#PCIe Transceivers"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN Y4 } \[get_ports { pcie_7x_mgt_txp[0] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN Y3 } \[get_ports { pcie_7x_mgt_txn[0] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN W2 } \[get_ports { pcie_7x_mgt_rxp[0] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN W1 } \[get_ports { pcie_7x_mgt_rxn[0] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AA6 } \[get_ports { pcie_7x_mgt_txp[1] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AA5 } \[get_ports { pcie_7x_mgt_txn[1] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AA2 } \[get_ports { pcie_7x_mgt_rxp[1] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AA1 } \[get_ports { pcie_7x_mgt_rxn[1] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AB4 } \[get_ports { pcie_7x_mgt_txp[2] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AB3 } \[get_ports { pcie_7x_mgt_txn[2] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AC2 } \[get_ports { pcie_7x_mgt_rxp[2] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AC1 } \[get_ports { pcie_7x_mgt_rxn[2] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AC6 } \[get_ports { pcie_7x_mgt_txp[3] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AC5 } \[get_ports { pcie_7x_mgt_txn[3] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AE2 } \[get_ports { pcie_7x_mgt_rxp[3] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AE1 } \[get_ports { pcie_7x_mgt_rxn[3] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AD4 } \[get_ports { pcie_7x_mgt_txp[4] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AD3 } \[get_ports { pcie_7x_mgt_txn[4] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AG2 } \[get_ports { pcie_7x_mgt_rxp[4] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AG1 } \[get_ports { pcie_7x_mgt_rxn[4] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AE6 } \[get_ports { pcie_7x_mgt_txp[5] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AE5 } \[get_ports { pcie_7x_mgt_txn[5] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AH4 } \[get_ports { pcie_7x_mgt_rxp[5] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AH3 } \[get_ports { pcie_7x_mgt_rxn[5] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AF4 } \[get_ports { pcie_7x_mgt_txp[6] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AF3 } \[get_ports { pcie_7x_mgt_txn[6] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AJ2 } \[get_ports { pcie_7x_mgt_rxp[6] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AJ1 } \[get_ports { pcie_7x_mgt_rxn[6] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AG6 } \[get_ports { pcie_7x_mgt_txp[7] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AG5 } \[get_ports { pcie_7x_mgt_txn[7] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AK4 } \[get_ports { pcie_7x_mgt_rxp[7] }\];"
+    #puts $constraints_file "set_property -dict { PACKAGE_PIN AK3 } \[get_ports { pcie_7x_mgt_rxn[7] }\];"
 
     close $constraints_file
     read_xdc $constraints_fn
@@ -576,6 +578,7 @@ namespace eval platform {
     }
 
     set sys_clk [create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 sys_clk]
+    set_property CONFIG.FREQ_HZ 200000000 [get_bd_intf_ports /sys_clk]
 
     set sys_clk_ibuf [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.1 sys_clk_ibuf ]
 
@@ -693,6 +696,7 @@ namespace eval platform {
 
     # call plugins
     tapasco::call_plugins "post-platform"
+    tapasco::call_plugins "post-bd"
 
     create_constraints
 
