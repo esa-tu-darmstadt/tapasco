@@ -32,7 +32,18 @@ namespace eval sfpplus {
       set instance [current_bd_instance .]
       current_bd_instance $group
 
-      set networkIPs [get_bd_cells -of [get_bd_intf_pins -filter {NAME =~ "*sfp_axis_rx*"} $instance/uArch/target_ip_*/*]]
+      set networkStreams [get_bd_intf_pins -filter {NAME =~ "*sfp_axis_*_rx*"} $instance/uArch/target_ip_*/*]
+
+      set networkIPs [list]
+
+      for {set i 0} {$i < [llength $networkStreams]} {incr i} {
+        set stream [lindex $networkStreams $i]
+        regexp {/uArch/(.+)/sfp_axis(_.+)_rx} $stream matched ip sfp_name
+        puts "Found SFP Port"
+        puts [format "IP: %s" $ip]
+        puts [format "SFP Name: %s" $sfp_name]
+        lappend networkIPs [format "/uArch/%s/sfp_axis%s" $ip $sfp_name]
+      }
 
       if { [llength $networkIPs] > 4 } {
         puts "NetFPGA SUME is limited to four SFP+ ports."
@@ -67,6 +78,9 @@ namespace eval sfpplus {
 
       puts $constraints_file_late {set_false_path -from [get_clocks -filter name=~*sfpmac_*gthe2_i/TXOUTCLK] -to [get_clocks gt_refclk_clk_p]}
       puts $constraints_file_late {set_false_path -from [get_clocks gt_refclk_clk_p] -to [get_clocks -filter name=~*sfpmac_*gthe2_i/TXOUTCLK]}
+
+      puts $constraints_file_late {set_false_path -from [get_clocks -of_objects [get_pins system_i/Network/sfpmac_0/coreclk_out]] -to [get_clocks -of_objects [get_pins system_i/Resets/design_aclk]]}
+      puts $constraints_file_late {set_false_path -from [get_clocks -of_objects [get_pins system_i/Resets/design_aclk]] -to [get_clocks -of_objects [get_pins system_i/Network/sfpmac_0/coreclk_out]]}
 
       puts $constraints_file {# Main I2C Bus - 100KHz - SUME}
       puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports iic_scl_io]}
@@ -113,7 +127,14 @@ namespace eval sfpplus {
 
       for {set i 0} {$i < [llength $networkIPs]} {incr i} {
         set ip [lindex $networkIPs $i]
-        puts "Attaching SFP port $i to IP $ip"
+        puts "Attaching SFP port $i to Stream $ip"
+
+        set ip_rx [format "%s_rx" $ip]
+        set ip_rx_clk [format "%s_rx_clk" $ip]
+        set ip_rx_rst_n [format "%s_rx_rst_n" $ip]
+        set ip_tx [format "%s_tx" $ip]
+        set ip_tx_clk [format "%s_tx_clk" $ip]
+        set ip_tx_rst_n [format "%s_tx_rst_n" $ip]
 
         create_bd_port -dir O txp_${i}
         create_bd_port -dir O txn_${i}
@@ -149,15 +170,15 @@ namespace eval sfpplus {
 
         connect_bd_net [get_bd_pins sfpmac_${i}/dclk] $slow_clk
 
-        disconnect_bd_net /uArch/design_peripheral_aresetn_1 [get_bd_pins $ip/rx_rst_n_in]
-        disconnect_bd_net /uArch/design_peripheral_aresetn_1 [get_bd_pins $ip/tx_rst_n_in]
-        connect_bd_net [get_bd_pins $rst_inv/Res] [get_bd_pins $ip/rx_rst_n_in]
-        connect_bd_net [get_bd_pins $rst_inv/Res] [get_bd_pins $ip/tx_rst_n_in]
+        disconnect_bd_net /uArch/design_peripheral_aresetn_1 [get_bd_pins $ip_rx_rst_n]
+        disconnect_bd_net /uArch/design_peripheral_aresetn_1 [get_bd_pins $ip_tx_rst_n]
+        connect_bd_net [get_bd_pins $rst_inv/Res] [get_bd_pins $ip_rx_rst_n]
+        connect_bd_net [get_bd_pins $rst_inv/Res] [get_bd_pins $ip_tx_rst_n]
 
-        disconnect_bd_net /uArch/design_aclk_1 [get_bd_pins $ip/tx_clk_in]
-        disconnect_bd_net /uArch/design_aclk_1 [get_bd_pins $ip/rx_clk_in]
-        connect_bd_net [get_bd_pins sfpmac_0/coreclk_out] [get_bd_pins $ip/tx_clk_in]
-        connect_bd_net [get_bd_pins sfpmac_0/coreclk_out] [get_bd_pins $ip/rx_clk_in]
+        disconnect_bd_net /uArch/design_aclk_1 [get_bd_pins $ip_tx_clk]
+        disconnect_bd_net /uArch/design_aclk_1 [get_bd_pins $ip_rx_clk]
+        connect_bd_net [get_bd_pins sfpmac_0/coreclk_out] [get_bd_pins $ip_tx_clk]
+        connect_bd_net [get_bd_pins sfpmac_0/coreclk_out] [get_bd_pins $ip_rx_clk]
 
         connect_bd_net [get_bd_pins sfpmac_${i}/s_axi_aclk] $slow_clk
 
@@ -166,8 +187,8 @@ namespace eval sfpplus {
         connect_bd_net [get_bd_ports /rxp_${i}] [get_bd_pins sfpmac_${i}/rxp]
         connect_bd_net [get_bd_ports /rxn_${i}] [get_bd_pins sfpmac_${i}/rxn]
 
-        connect_bd_intf_net [get_bd_intf_pins $ip/sfp_axis_tx] [get_bd_intf_pins sfpmac_${i}/s_axis_tx]
-        connect_bd_intf_net [get_bd_intf_pins $ip/sfp_axis_rx] [get_bd_intf_pins sfpmac_${i}/m_axis_rx]
+        connect_bd_intf_net [get_bd_intf_pins $ip_tx] [get_bd_intf_pins sfpmac_${i}/s_axis_tx]
+        connect_bd_intf_net [get_bd_intf_pins $ip_rx] [get_bd_intf_pins sfpmac_${i}/m_axis_rx]
 
         puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $disable_pins $i] sfp_tx_dis_$i]
         puts $constraints_file [format {set_property IOSTANDARD LVCMOS15 [get_ports %s]} sfp_tx_dis_$i]
@@ -194,6 +215,9 @@ namespace eval sfpplus {
         #connect_bd_intf_net [get_bd_intf_pins $networkConnect/[format "M%02d_AXI" [expr "$i + 1"]]] [get_bd_intf_pins sfpmac_${i}/s_axi]
       }
 
+      puts $constraints_file {set_property PACKAGE_PIN G13 [get_ports clockled]}
+      puts $constraints_file {set_property IOSTANDARD LVCMOS15 [get_ports clockled]}
+
       close $constraints_file
       read_xdc $constraints_fn
       set_property PROCESSING_ORDER EARLY [get_files $constraints_fn]
@@ -215,29 +239,12 @@ namespace eval sfpplus {
       connect_bd_net [get_bd_ports /i2c_reset] [get_bd_pins SI5324Prog_0/gpo]
 
       #Debug
-
-      create_bd_cell -type ip -vlnv xilinx.com:ip:system_ila:1.0 system_ila_1
-      set_property -dict [list CONFIG.C_SLOT {1} CONFIG.C_DATA_DEPTH {16384} CONFIG.C_NUM_OF_PROBES {4} CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_NUM_MONITOR_SLOTS {2} CONFIG.C_SLOT_0_INTF_TYPE {xilinx.com:interface:axis_rtl:1.0} CONFIG.C_SLOT_1_INTF_TYPE {xilinx.com:interface:axis_rtl:1.0} CONFIG.C_MON_TYPE {MIX} CONFIG.C_BRAM_CNT {12.5} CONFIG.C_PROBE4_MU_CNT {2} CONFIG.C_PROBE3_MU_CNT {2} CONFIG.C_PROBE2_MU_CNT {2} CONFIG.C_PROBE1_MU_CNT {2} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_bd_cells system_ila_1]
-      connect_bd_intf_net [get_bd_intf_pins system_ila_1/SLOT_0_AXIS] [get_bd_intf_pins sfpmac_0/s_axis_tx]
-      connect_bd_intf_net [get_bd_intf_pins system_ila_1/SLOT_1_AXIS] [get_bd_intf_pins sfpmac_0/m_axis_rx]
-      connect_bd_net [get_bd_pins system_ila_1/clk] [get_bd_pins sfpmac_0/coreclk_out]
-      connect_bd_net [get_bd_pins system_ila_1/resetn] [get_bd_pins rst_inverter/Res]
-      connect_bd_net [get_bd_pins system_ila_1/probe0] [get_bd_pins sfpmac_0/tx_fault]
-      connect_bd_net [get_bd_pins system_ila_1/probe1] [get_bd_pins sfpmac_0/resetdone_out]
-      connect_bd_net [get_bd_pins system_ila_1/probe2] [get_bd_pins sfpmac_0/signal_detect]
-      connect_bd_net [get_bd_pins system_ila_1/probe3] [get_bd_pins sfpmac_0/tx_disable]
-
-      create_bd_cell -type ip -vlnv xilinx.com:ip:system_ila:1.0 system_ila_0
-      set_property -dict [list CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_SLOT_0_INTF_TYPE {xilinx.com:display_ten_gig_eth_pcs_pma:transceiver_debug_rtl:1.0} CONFIG.C_BRAM_CNT {4} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_bd_cells system_ila_0]
-      connect_bd_intf_net [get_bd_intf_pins system_ila_0/SLOT_0_TRANSCEIVER_DEBUG] [get_bd_intf_pins sfpmac_0/transceiver_debug]
-      connect_bd_net [get_bd_pins dclk] [get_bd_pins system_ila_0/clk]
-
       create_bd_cell -type ip -vlnv esa.informatik.tu-darmstadt.de:user:Counter:1.0 Counter_0
       create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0
       set_property -dict [list CONFIG.CONST_WIDTH {32} CONFIG.CONST_VAL {150000000}] [get_bd_cells xlconstant_0]
       connect_bd_net [get_bd_pins xlconstant_0/dout] [get_bd_pins Counter_0/overrun]
       connect_bd_net [get_bd_pins Counter_0/CLK] [get_bd_pins sfpmac_0/coreclk_out]
-      connect_bd_net [get_bd_pins s_axi_aresetn] [get_bd_pins Counter_0/RST_N]
+      connect_bd_net [get_bd_pins $rst_inv/Res] [get_bd_pins Counter_0/RST_N]
       create_bd_port -dir O clockled
       connect_bd_net [get_bd_ports /clockled] [get_bd_pins Counter_0/led]
 
