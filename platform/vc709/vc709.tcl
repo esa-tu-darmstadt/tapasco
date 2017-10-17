@@ -160,9 +160,9 @@ namespace eval platform {
       CONFIG.S01_HAS_DATA_FIFO {2}
     ] $mig_ic
 
-    set cf [tapasco::get_feature "Cache"]
     set cache_en [tapasco::is_feature_enabled "Cache"]
     if {$cache_en} {
+      set cf [tapasco::get_feature "Cache"]
       puts "Platform configured w/L2 Cache, implementing ..."
       set cache [tapasco::createSystemCache "cache_l2" 1 \
           [dict get [tapasco::get_feature "Cache"] "size"] \
