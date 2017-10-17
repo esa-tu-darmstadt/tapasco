@@ -31,7 +31,7 @@ case class Composition (
       composition: Seq[Composition.Entry]
     ) extends Description (descPath) {
   def id: String =
-    if ("N/A" == descPath.toString) {
+    if ("N/A" == descPath.toString || "" == descPath.toString) {
       "0x" + composition.map(_.toString).mkString("|").hashCode.toHexString
     } else {
       descPath.getFileName.toString
