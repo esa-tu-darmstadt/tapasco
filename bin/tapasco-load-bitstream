@@ -12,7 +12,7 @@ parser.add_argument('--verbose', help='verbose output (default: %(default)s)', a
 args = parser.parse_args()
 
 if not os.path.exists(args.bitstream):
-	sys.exit('ERROR: {0} does could not be opened'.format(args.bitstream))
+	sys.exit('ERROR: {0} could not be opened'.format(args.bitstream))
 
 if not 'TAPASCO_PLATFORM' in os.environ:
 	print('Environment variable TAPASCO_PLATFORM is not set, guessing Platform ...')
