@@ -488,6 +488,31 @@ namespace eval tapasco {
     return [get_bd_intf_pins -of_objects $cell -filter "VLNV =~ xilinx.com:interface:aximm_rtl:* && MODE == $mode"]
   }
 
+  # Returns the given property of a given AXI MM interface.
+  # Will raise an error, if none or conflicting values are found.
+  # @param name of property
+  # @param intf interface pin to get property for
+  # @return value of property
+  proc get_aximm_property {property intf} {
+    set dw [get_property $property $intf]
+    if {$dw == {}} {
+      set nets [get_bd_intf_nets -hierarchical -boundary_type lower -of_objects $intf]
+      set srcs [get_bd_intf_pins -of_objects $nets -filter "$property != {}"]
+      if {[llength $srcs] == 0} {
+        error "could not find a connected interface pin where $property is set"
+      } else {
+        set dws {}
+        foreach s $srcs { lappend dws [get_property $property $s] }
+        if {[llength $dws] > 1} {
+          error "found conflicting values for $property @ $intf: $dws"
+        }
+        return [lindex $dws 0]
+      }
+    } else {
+      return $dw
+    }
+  }
+
   # Returns a key-value list of frequencies in the design.
   proc get_frequencies {} {
     return [list "host" [get_host_frequency] "design" [get_design_frequency] "memory" [get_mem_frequency]]

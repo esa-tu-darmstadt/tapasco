@@ -132,8 +132,22 @@ namespace eval arch {
       set masters [tapasco::get_aximm_interfaces $example]
       set ic_m [expr "$ic_m + [llength $masters] * $no_inst"]
 
-      set masters_32b [get_bd_intf_pins -of_objects $example -filter { MODE == "Master" && VLNV == "xilinx.com:interface:aximm_rtl:1.0" && CONFIG.DATA_WIDTH == 32 }]
-      set masters_64b [get_bd_intf_pins -of_objects $example -filter { MODE == "Master" && VLNV == "xilinx.com:interface:aximm_rtl:1.0" && CONFIG.DATA_WIDTH == 64 }]
+      set masters_32b {}
+      set masters_64b {}
+      set masters_oth {}
+      foreach m $masters {
+        set dw [tapasco::get_aximm_property CONFIG.DATA_WIDTH $m]
+        if {$dw == 64} {
+          lappend masters_64b $m
+        } else {
+          if {$dw == 32} {
+            lappend masters_32b $m
+          } else {
+            lappend masters_oth $m
+          }
+        }
+      }
+
       set m32 [expr "$m32 + [llength $masters_32b] * $no_inst"]
       set m64 [expr "$m64 + [llength $masters_64b] * $no_inst"]
     }
