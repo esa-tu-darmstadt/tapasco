@@ -57,7 +57,7 @@ namespace eval full_axi_wrapper {
     
       # create clock and reset ports
       set clks [get_bd_pins -filter {DIR == I && TYPE == clk} -of_objects [get_bd_cells $group/*]]
-      set rsts [get_bd_pins -filter {DIR == I && TYPE == rst} -of_objects [get_bd_cells $group/*]]
+      set rsts [get_bd_pins -filter {DIR == I && TYPE == rst && CONFIG.POLARITY == ACTIVE_LOW} -of_objects [get_bd_cells $group/*]]
       set clk [create_bd_pin -type clk -dir I "aclk"]
       set rst [create_bd_pin -type rst -dir I "aresetn"]
     
