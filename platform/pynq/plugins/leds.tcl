@@ -23,25 +23,57 @@
 namespace eval leds {
   set default_led_pins [list "/uArch/irq_0"]
 
+  proc get_width {input} {
+    set l [get_property LEFT $input]
+    set r [get_property RIGHT $input]
+    return [expr $l - $r + 1]
+  }
+
+  proc calc_total_width {inputs} {
+    set w 0
+    foreach i $inputs { incr w [get_width $i] }
+    return $w
+  }
+
+  proc split_input {input} {
+    set width [get_width $input]
+    set name [get_property NAME $input]
+    set pins {}
+    set old_inst [current_bd_instance .]
+    set cell [create_bd_cell -type hier "${name}_splitter"]
+    current_bd_instance $cell
+    for {set i 0} {$i < $width} {incr i} {
+      set slice [tapasco::createSlice ${name}_$i $width $i]
+      connect_bd_net $input [get_bd_pins -of_objects $slice -filter { DIR == I }]
+      lappend pins [get_bd_pins -of_objects $slice -filter { DIR == O }]
+    }
+    current_bd_instance $old_inst
+    return $pins
+  }
+
   proc get_led_inputs {inputs} {
-    if {[llength $inputs] > 6} {
-      puts "  WARNING: can only connect up to 6 LEDs, additional inputs will be discarded"
-    }
     set rlist [list]
-    for {set i 0} {$i < 6 && [llength $inputs] > $i} {incr i} {
-      set pin [lindex $inputs $i]
-      puts "  LED $i: $pin"
-      lappend rlist [get_bd_pins $pin]
+    foreach i $inputs {
+      set pin [get_bd_pins $i]
+      set width [get_width $pin]
+      puts "  LED: $pin \[width: $width\]"
+      if {$width > 1} {
+        set split_pins [split_input $pin]
+        foreach p $split_pins { lappend rlist $p }
+      } else {
+        lappend rlist [get_bd_pins $pin]
+      }
     }
-    if {[llength $inputs] < 6} {
+    set total_width [calc_total_width $rlist]
+    if {$total_width < 6} {
       # create tie-off constant one
       set one [tapasco::createConstant one 1 0]
       set onepin [get_bd_pins -of_objects $one -filter {DIR == "O"}]
-      for {} {$i < 6} {incr i} {
-        lappend rlist $onepin
-      }
+      for {set i $total_width} {$i < 6} {incr i} { lappend rlist $onepin }
     }
-    puts "rlist = $rlist"
+    if {$total_width > 6} {
+      puts "  WARNING: can only connect up to 6 LEDs, additional inputs will be discarded"
+    }
     return $rlist
   }
 
@@ -51,6 +83,10 @@ namespace eval leds {
     if {[llength $inputs] == 0} {
       set inputs $default_led_pins
     }
+    set old_inst [current_bd_instance .]
+    set cell [create_bd_cell -type hier "LEDs"]
+    current_bd_instance $cell
+
     set inputs [get_led_inputs $inputs]
     puts "  Inputs: $inputs"
     set led_concat [tapasco::createConcat led_concat 6]
@@ -66,6 +102,8 @@ namespace eval leds {
     connect_bd_net [get_bd_pins -of_objects $led_concat -filter { DIR == O }] $led
 
     read_xdc "$::env(TAPASCO_HOME)/platform/pynq/plugins/leds.xdc"
+
+    current_bd_instance $old_inst
     return $led_concat
   }
 
@@ -84,4 +122,4 @@ namespace eval leds {
   }
 }
 
-tapasco::register_plugin "platform::leds::create_leds" "post-platform"
+tapasco::register_plugin "platform::leds::create_leds" "pre-wrapper"
