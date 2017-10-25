@@ -72,6 +72,11 @@ namespace eval full_axi_wrapper {
     }
     return [list $inst $args]
   }
+
+  proc fix_address_map {} {
+    assign_bd_address
+  }
 }
 
 tapasco::register_plugin "arch::full_axi_wrapper::wrap_full_axi_interfaces" "post-pe-create"
+tapasco::register_plugin "arch::full_axi_wrapper::fix_address_map" "pre-platform"
