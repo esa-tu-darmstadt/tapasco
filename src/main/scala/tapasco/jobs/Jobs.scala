@@ -207,6 +207,7 @@ final case class HighLevelSynthesisJob(
              core (must be > 0).
  * @param description Description of the core (optional).
  * @param averageClockCycles Clock cycles in an average job (optional).
+ * @param skipEvaluation Do not perform evaluation (optional).
  * @param _architectures Name list of [[base.Architecture]] instances.
  * @param _platforms Name list of [[base.Platform]] instances.
  **/
@@ -215,6 +216,7 @@ final case class ImportJob(
     id: Kernel.Id,
     description: Option[String] = None,
     averageClockCycles: Option[Int] = None,
+    skipEvaluation: Option[Boolean] = None,
     private val _architectures: Option[Seq[String]] = None,
     private val _platforms: Option[Seq[String]] = None) extends Job("import") {
   /** Returns the list of [[base.Architecture]] instances selected in this job. */

@@ -36,6 +36,7 @@ package object json {
     (JsPath \ "Id").read[Int] (verifying[Int](_ > 0)) ~
     (JsPath \ "Description").readNullable[String] ~
     (JsPath \ "Average Clock Cycles").readNullable[Int] (verifying[Int](_ > 0)) ~
+    (JsPath \ "Skip Evaluation").readNullable[Boolean] ~
     (JsPath \ "Architectures").readNullable[Seq[String]] ~
     (JsPath \ "Platforms").readNullable[Seq[String]]
   ) (ImportJob.apply _)
@@ -46,6 +47,7 @@ package object json {
     (JsPath \ "Id").write[Int] ~
     (JsPath \ "Description").writeNullable[String] ~
     (JsPath \ "Average Clock Cycles").writeNullable[Int] ~
+    (JsPath \ "Skip Evaluation").writeNullable[Boolean] ~
     (JsPath \ "Architectures").writeNullable[Seq[String]] ~
     (JsPath \ "Platforms").writeNullable[Seq[String]]
   ) (unlift(ImportJob.unapply _ andThen (_ map ("Import" +: _))))

@@ -192,6 +192,8 @@ configuration via `tapasco -n config.json`.
                                       "-p vc709, pynq") &
            Arg("--description TEXT", "any quoted or unquoted string containing" ~
                                      "additional information about the core") &
+           Arg("--skipEvaluation", "do not perform out-of-context synthesis to get" ~
+                                   "resource estimates, only import") &
            Arg("--averageClockCycles N", "any integer > 0; number of clock cycles in an" ~
                                          """"average" execution of the PE; used to estimate""" ~
                                          "the maximal throughput")))
