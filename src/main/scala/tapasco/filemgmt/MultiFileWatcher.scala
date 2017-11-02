@@ -47,7 +47,8 @@ class MultiFileWatcher(pollInterval: Int = MultiFileWatcher.POLL_INTERVAL) exten
 
   /** Remove and close all files. */
   def closeAll(): Unit = {
-    _files.clear
+    _watchThread.set(None)
+    _files.synchronized { _files.clear }
     _waitingFor.synchronized { _waitingFor.clear }
   }
 
