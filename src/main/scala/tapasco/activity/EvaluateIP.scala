@@ -23,6 +23,8 @@
  **/
 package de.tu_darmstadt.cs.esa.tapasco.activity
 import  de.tu_darmstadt.cs.esa.tapasco._
+import  de.tu_darmstadt.cs.esa.tapasco.base._
+import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.LogTrackingFileWatcher
 import  de.tu_darmstadt.cs.esa.tapasco.reports._
 import  de.tu_darmstadt.cs.esa.tapasco.util._
 import  de.tu_darmstadt.cs.esa.tapasco.util.ZipUtils._
@@ -111,7 +113,7 @@ object EvaluateIP {
 
   /** Perform the evaluation.
     * @return true if successful **/
-  def apply(zipFile: Path, targetPeriod: Double, targetPart: String, reportFile: Path): Boolean = {
+  def apply(zipFile: Path, targetPeriod: Double, targetPart: String, reportFile: Path)(implicit cfg: Configuration): Boolean = {
     def deleteOnExit(f: java.io.File) = f.deleteOnExit
     //def deleteOnExit(f: java.io.File) = f        // keep files?
 
@@ -123,6 +125,8 @@ object EvaluateIP {
     val files = new Files(zipFile, reportFile)
     writeTclScript(files, targetPart, targetPeriod)
 
+    val lt = new LogTrackingFileWatcher(Some(logger))
+    cfg.verbose foreach { _ => lt += files.logFile }
     logger.info("starting {}, output in {}", runPrefix: Any, files.logFile)
 
     val vivadoCmd = Seq("vivado",
@@ -132,6 +136,8 @@ object EvaluateIP {
         "-notrace", "-nojournal")
 
     logger.trace("Vivado command: {}", vivadoCmd mkString " ")
+
+    cfg.verbose foreach { _ => lt.closeAll }
 
     // execute Vivado (max runtime: 1d)
     val r = InterruptibleProcess(Process(vivadoCmd, files.baseDir.toFile),
