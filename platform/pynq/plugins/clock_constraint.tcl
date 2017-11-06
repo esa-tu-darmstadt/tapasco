@@ -25,7 +25,7 @@ namespace eval clock_constraint {
   # Constraints the input pins called 'sys_clk'
   proc create_clock_constraint {} {
     puts "clock_constraint: setting sys_clk constraint to 125 MHz, 50% duty cycle"
-    read_xdc "$::env(TAPASCO_HOME)/platform/pynq/plugins/clock.xdc"
+    read_xdc -unmanaged "$::env(TAPASCO_HOME)/platform/pynq/plugins/clock.xdc"
   }
 }
 
