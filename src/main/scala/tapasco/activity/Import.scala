@@ -49,9 +49,11 @@ object Import {
    * @param id Kernel ID.
    * @param t Target Architecture + Platform combination to import for.
    * @param acc Average clock cycle count for a job execution on the PE (optional).
+   * @param skipEval Do not perform out-of-context synthesis for resource estimation (optional).
    * @param cfg Implicit [[base.Configuration]].
    **/
-  def apply(zip: Path, id: Kernel.Id, t: Target, acc: Option[Int])(implicit cfg: Configuration): Boolean = {
+  def apply(zip: Path, id: Kernel.Id, t: Target, acc: Option[Int], skipEval: Option[Boolean])
+           (implicit cfg: Configuration): Boolean = {
     // get VLNV from the file
     val vlnv = VLNV.fromZip(zip)
     logger.trace("found VLNV in zip " + zip + ": " + vlnv)
@@ -68,18 +70,20 @@ object Import {
 
     // write core.json to output directory (as per config)
     val p = cfg.outputDir(c, t).resolve("ipcore").resolve("core.json")
-    importCore(c, t, p, vlnv)
+    importCore(c, t, p, vlnv, skipEval)
   }
 
   /**
    * Imports the IP-XACT .zip to the default path structure (ipcore/) and performs
-   * out-of-context synthesis (if no report from HLS was found).
+   * out-of-context synthesis (if no report from HLS was found and skipEval was not set).
    * @param c Core description.
    * @param t Target platform and architecture.
    * @param p Output path for core description file.
+   * @param skipEval Skip out-of-context synthesis step (optional).
    * @param cfg Implicit [[Configuration]].
    **/
-  private def importCore(c: Core, t: Target, p: Path, vlnv: VLNV)(implicit cfg: Configuration): Boolean = {
+  private def importCore(c: Core, t: Target, p: Path, vlnv: VLNV, skipEval: Option[Boolean])
+                        (implicit cfg: Configuration): Boolean = {
     Files.createDirectories(p.getParent)
     logger.trace("created output directories: {}", p.getParent.toString)
 
@@ -103,7 +107,7 @@ object Import {
     }
 
     // evaluate the ip core and store the report with the link
-    val res = evaluateCore(c, t)
+    val res = skipEval.getOrElse(false) || evaluateCore(c, t)
 
     // write core.json
     logger.debug("writing core description: {}", p.toString)

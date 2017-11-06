@@ -50,7 +50,7 @@ class CorePanelController extends {
       val path = java.nio.file.Paths.get(ImportFileChooser.selectedFile.toString)
       val tasks = for {
         t <- Job.job.targets
-      } yield new ImportTask(path, t, 1, None, b => cores.update())(Config.configuration) // FIXME missing ID, clock cycles
+      } yield new ImportTask(path, t, 1, b => cores.update())(Config.configuration) // FIXME missing ID, clock cycles, skip eval
       tasks foreach (TaskScheduler.apply _)
     }
   }
