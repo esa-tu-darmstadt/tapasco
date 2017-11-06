@@ -21,7 +21,7 @@
 # @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
 namespace eval leds {
-  set default_led_pins [list "/uArch/irq_0"]
+  set default_led_pins [list "/uArch/irq_0" "/InterruptControl/irq_out"]
 
   proc get_width {input} {
     set l [get_property LEFT $input]
@@ -66,10 +66,10 @@ namespace eval leds {
     }
     set total_width [calc_total_width $rlist]
     if {$total_width < 6} {
-      # create tie-off constant one
-      set one [tapasco::createConstant one 1 0]
-      set onepin [get_bd_pins -of_objects $one -filter {DIR == "O"}]
-      for {set i $total_width} {$i < 6} {incr i} { lappend rlist $onepin }
+      # create tie-off constant zero
+      set zero [tapasco::createConstant zero 1 0]
+      set pin [get_bd_pins -of_objects $zero -filter {DIR == "O"}]
+      for {set i $total_width} {$i < 6} {incr i} { lappend rlist $pin }
     }
     if {$total_width > 6} {
       puts "  WARNING: can only connect up to 6 LEDs, additional inputs will be discarded"
@@ -101,7 +101,7 @@ namespace eval leds {
     set led [create_bd_port -from 5 -to 0  -dir O led]
     connect_bd_net [get_bd_pins -of_objects $led_concat -filter { DIR == O }] $led
 
-    read_xdc "$::env(TAPASCO_HOME)/platform/pynq/plugins/leds.xdc"
+    read_xdc -unmanaged "$::env(TAPASCO_HOME)/platform/pynq/plugins/leds.xdc"
 
     current_bd_instance $old_inst
     return $led_concat
