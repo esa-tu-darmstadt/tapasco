@@ -480,6 +480,26 @@ namespace eval tapasco {
     return $inst
   }
 
+  # Instantiates a System ILA core for AXI debugging.
+  # @param name Name of the instance
+  # @param ports Number of ports (optional, default: 1)
+  # @param depth Data depth (optional, default: 1024)
+  # @param stages Input pipeline stages (optional, default: 0)
+  # @return block design cell (or error)
+  proc createSystemILA {name {ports 1} {depth 1024} {stages 0}} {
+    variable stdcomps
+    puts "Creating System ILA $name ..."
+    set vlnv [dict get $stdcomps system_ila vlnv]
+    puts "  VLNV: $vlnv"
+    set inst [create_bd_cell -type ip -vlnv $vlnv $name]
+    set_property -dict [list \
+      CONFIG.C_NUM_MONITOR_SLOTS $ports \
+      CONFIG.C_DATA_DEPTH $depth \
+      CONFIG.C_INPUT_PIPE_STAGES $stages \
+    ] $inst
+    return $inst
+  }
+
   # Returns the interface pin groups for all AXI MM interfaces on cell.
   # @param cell the object whose interfaces shall be returned
   # @parma mode filters interfaces by mode (default: Master)
