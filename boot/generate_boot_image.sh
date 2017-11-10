@@ -470,7 +470,7 @@ copy_files_to_root () {
 	dusudo sh -c "echo $BOARD > $TO/etc/hostname" ||
 		echo >&2 "$LINENO: WARNING: could not set hostname"
 	echo "Updating /etc/hosts ..."
-	dusudo sed -i "s/pynq/$BOARD/g" $TO/etc/hosts ||
+	dusudo sh -c "sed -i "s/pynq/$BOARD/g" $TO/etc/hosts" ||
 		echo >&2 "$LINENO: WARNING: could not update /etc/hosts"
 	echo "Setting env vars ... "
 	dusudo sh -c "echo export LINUX_HOME=/linux-xlnx >> $TO/home/xilinx/.bashrc" ||
