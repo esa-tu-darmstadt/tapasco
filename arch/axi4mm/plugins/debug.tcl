@@ -36,7 +36,7 @@ namespace eval debug {
           set i 0
           foreach ifs $interfaces {
             if {[llength $ifs] == 3} {
-              set s_ila [tapasco::createSystemILA "SILA" $num_ifs $depth $stages]
+              set s_ila [tapasco::createSystemILA "SILA_$i" $num_ifs $depth $stages]
               puts "  ifs = $ifs"
               set intf [get_bd_intf_pins [lindex $ifs 0]]
               set clk [get_bd_pins [lindex $ifs 1]]
