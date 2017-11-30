@@ -16,9 +16,10 @@ before_script:
   - source "/root/.sdkman/bin/sdkman-init.sh"
   - sdk install sbt
   # Log the sbt version
-  - sbt sbt-version
+  - sbt version
 
 test:
   script:
     # Execute your project's tests
+    - source setup.sh
     - sbt clean test
