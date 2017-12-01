@@ -66,7 +66,7 @@ namespace eval tapasco {
 
   # Returns the Tapasco version.
   proc get_tapasco_version {} {
-    return "2017.1"
+    return "2017.2"
   }
 
   # Instantiates an AXI4 Interconnect IP.
