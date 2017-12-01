@@ -117,6 +117,13 @@ namespace eval arch {
     return $insts
   }
 
+  # Retrieve AXI-MM interfaces of given instance of kernel kind and mode.
+  proc get_aximm_interfaces {kind inst {mode "Master"}} {
+    set name [format "target_ip_%02d_%03d" $kind $inst]
+    puts "Retrieving list of slave interfaces for $name ..."
+    return [tapasco::get_aximm_interfaces [get_bd_cell -hier -filter "NAME == $name"] $mode]
+  }
+
   # Instantiates the memory interconnect hierarchy.
   proc arch_create_mem_interconnects {composition outs} {
     variable arch_mem_ports

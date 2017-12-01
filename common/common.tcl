@@ -372,6 +372,16 @@ namespace eval tapasco {
       }
     }
 
+    # make map of IDs -> number of slave interfaces
+    set composition [tapasco::get_composition]
+    set no_kinds [llength [dict keys $composition]]
+    set no_slaves [list]
+    for {set i 0} {$i < $no_kinds} {incr i} {
+      lappend no_slaves [dict get $composition $i id]
+      lappend no_slaves [llength [arch::get_aximm_interfaces $i 0 "Slave"]]
+    }
+    puts "  Slvs: $no_slaves"
+
     # create the IP core
     set inst [create_bd_cell -type ip -vlnv [dict get $stdcomps tapasco_status vlnv] $name]
     # make properties list
@@ -382,7 +392,7 @@ namespace eval tapasco {
       if {$slot < 128} {
         lappend props "[format CONFIG.C_SLOT_KERNEL_ID_%d [expr $slot + 1]]" "$i"
       }
-      incr slot
+      incr slot [dict get $no_slaves $i]
     }
     # get version strings
     set vversion [split [version -short] {.}]
