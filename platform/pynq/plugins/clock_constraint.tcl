@@ -25,10 +25,8 @@ namespace eval clock_constraint {
   # Constraints the input pins called 'sys_clk'
   proc create_clock_constraint {} {
     puts "clock_constraint: setting sys_clk constraint to 125 MHz, 50% duty cycle"
-    set clk [get_ports "sys_clk"]
-    set_property -dict { PACKAGE_PIN H16 IOSTANDARD LVCMOS33 } $clk
-    create_clock -add -name sys_clk_pin -period 8.00 -waveform {0 4} $clk
+    read_xdc -unmanaged "$::env(TAPASCO_HOME)/platform/pynq/plugins/clock.xdc"
   }
 }
 
-tapasco::register_plugin "platform::clock_constraint::create_clock_constraint" "post-synth"
+tapasco::register_plugin "platform::clock_constraint::create_clock_constraint" "pre-wrapper"

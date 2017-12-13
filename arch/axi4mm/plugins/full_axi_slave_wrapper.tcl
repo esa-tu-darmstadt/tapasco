@@ -26,7 +26,7 @@ namespace eval full_axi_wrapper {
     # check interfaces: AXI3/AXI4 slaves will be wrappped
     set inst [get_bd_cells $inst]
     set full_slave_ifs [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave && (CONFIG.PROTOCOL == AXI3 || CONFIG.PROTOCOL == AXI4)}]
-    if {[llength $full_slave_ifs] > 1} { error "full_axi_wrapper plugin: Found [llength $full_slave_ifs] full slave interfaces, this is not supported at the moment" }
+    # if {[llength $full_slave_ifs] > 1} { error "full_axi_wrapper plugin: Found [llength $full_slave_ifs] full slave interfaces, this is not supported at the moment" }
     if {[llength $full_slave_ifs] > 0} {
       puts "  IP has full slaves, will add protocol converter"
       puts "  found full slave interfaces: $full_slave_ifs"
@@ -39,12 +39,27 @@ namespace eval full_axi_wrapper {
       move_bd_cells $group $inst
       set ninst [get_bd_cells $group/internal_$name]
       current_bd_instance $group
-    
-      # create slave ports
-      set saxi_port [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave "S_AXI_LITE"]
-      set conv [tapasco::createProtocolConverter "conv" "AXI4LITE" [get_property CONFIG.PROTOCOL $full_slave_ifs]]
-      connect_bd_intf_net $saxi_port [get_bd_intf_pins -of_objects $conv -filter {MODE == Slave}]
-      connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master} -of_objects $conv] $full_slave_ifs
+
+      # rewire full slaves
+      set si 0
+      foreach fs $full_slave_ifs {
+        # create slave port
+        set saxi_port [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave "S_AXI_LITE_$si"]
+        set conv [tapasco::createProtocolConverter "conv_$si" "AXI4LITE" [get_property CONFIG.PROTOCOL $fs]]
+        connect_bd_intf_net $saxi_port [get_bd_intf_pins -of_objects $conv -filter {MODE == Slave}]
+        connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master} -of_objects $conv] $fs
+        incr si
+      }
+
+      # bypass existing AXI4Lite slaves
+      set lite_ports [list]
+      set lites [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave && CONFIG.PROTOCOL == AXI4LITE}]
+      foreach ls $lites {
+        set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave [get_property NAME $ls]]
+        connect_bd_intf_net $op $ls
+        lappend lite_ports $ls
+      }
+      puts "lite_ports = $lite_ports"
     
       # create master ports
       set maxi_ports [list]
@@ -57,7 +72,7 @@ namespace eval full_axi_wrapper {
     
       # create clock and reset ports
       set clks [get_bd_pins -filter {DIR == I && TYPE == clk} -of_objects [get_bd_cells $group/*]]
-      set rsts [get_bd_pins -filter {DIR == I && TYPE == rst} -of_objects [get_bd_cells $group/*]]
+      set rsts [get_bd_pins -filter {DIR == I && TYPE == rst && CONFIG.POLARITY == ACTIVE_LOW} -of_objects [get_bd_cells $group/*]]
       set clk [create_bd_pin -type clk -dir I "aclk"]
       set rst [create_bd_pin -type rst -dir I "aresetn"]
     
@@ -72,6 +87,11 @@ namespace eval full_axi_wrapper {
     }
     return [list $inst $args]
   }
+
+  proc fix_address_map {} {
+    assign_bd_address
+  }
 }
 
 tapasco::register_plugin "arch::full_axi_wrapper::wrap_full_axi_interfaces" "post-pe-create"
+tapasco::register_plugin "arch::full_axi_wrapper::fix_address_map" "pre-platform"

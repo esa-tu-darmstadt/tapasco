@@ -6,25 +6,24 @@ version := tapascoVersion
 
 name := "Tapasco"
 
-scalaVersion := "2.12.3"
+scalaVersion := "2.12.4"
 
 libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-compiler" % scalaVersion.value,
   "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  "org.scala-lang.modules" % "scala-swing_2.12" % "2.0.0",
-  "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
-  "com.typesafe.play" %% "play-json" % "2.6.0-M3" exclude ("ch.qos.logback", "logback-classic"),
+  "org.scala-lang.modules" % "scala-swing_2.12" % "2.0.1",
+  "com.typesafe.play" %% "play-json" % "2.6.7" exclude ("ch.qos.logback", "logback-classic"),
   "org.jfree" % "jfreechart" % "1.0.19",
-  "org.slf4j" % "slf4j-api" % "1.7.22",
-  "ch.qos.logback" % "logback-classic" % "1.2.1",
+  "org.slf4j" % "slf4j-api" % "1.7.25",
+  "ch.qos.logback" % "logback-classic" % "1.2.3",
   "net.sf.jung" % "jung-api" % "2.1.1",
   "net.sf.jung" % "jung-visualization" % "2.1.1",
   "net.sf.jung" % "jung-graph-impl" % "2.1.1",
   "com.google.guava" % "guava" % "19.0",
   "com.google.code.findbugs" % "jsr305" % "3.0.1",
-  "org.scalatest" %% "scalatest" % "3.0.3" % "test",
+  "org.scalatest" %% "scalatest" % "3.0.4" % "test",
   "org.scalacheck" %% "scalacheck" % "1.13.5" % "test",
-  "com.lihaoyi" %% "fastparse" % "0.4.3"
+  "com.lihaoyi" %% "fastparse" % "1.0.0"
 )
 
 scalacOptions ++= Seq(

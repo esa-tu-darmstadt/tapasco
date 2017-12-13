@@ -70,7 +70,7 @@ namespace eval tapasco {
 
   # Returns the Tapasco version.
   proc get_tapasco_version {} {
-    return "2017.1"
+    return "2017.2"
   }
 
   # Instantiates an AXI Interconnect IP.
@@ -424,6 +424,16 @@ namespace eval tapasco {
       }
     }
 
+    # make map of IDs -> number of slave interfaces
+    set composition [tapasco::get_composition]
+    set no_kinds [llength [dict keys $composition]]
+    set no_slaves [list]
+    for {set i 0} {$i < $no_kinds} {incr i} {
+      lappend no_slaves [dict get $composition $i id]
+      lappend no_slaves [llength [arch::get_aximm_interfaces $i 0 "Slave"]]
+    }
+    puts "  Slvs: $no_slaves"
+
     # create the IP core
     set inst [create_bd_cell -type ip -vlnv [dict get $stdcomps tapasco_status vlnv] $name]
     # make properties list
@@ -434,7 +444,7 @@ namespace eval tapasco {
       if {$slot < 128} {
         lappend props "[format CONFIG.C_SLOT_KERNEL_ID_%d [expr $slot + 1]]" "$i"
       }
-      incr slot
+      incr slot [dict get $no_slaves $i]
     }
     # get version strings
     set vversion [split [version -short] {.}]
@@ -535,12 +545,57 @@ namespace eval tapasco {
     return $inst
   }
 
+  # Instantiates a System ILA core for AXI debugging.
+  # @param name Name of the instance
+  # @param ports Number of ports (optional, default: 1)
+  # @param depth Data depth (optional, default: 1024)
+  # @param stages Input pipeline stages (optional, default: 0)
+  # @return block design cell (or error)
+  proc createSystemILA {name {ports 1} {depth 1024} {stages 0}} {
+    variable stdcomps
+    puts "Creating System ILA $name ..."
+    set vlnv [dict get $stdcomps system_ila vlnv]
+    puts "  VLNV: $vlnv"
+    set inst [create_bd_cell -type ip -vlnv $vlnv $name]
+    set_property -dict [list \
+      CONFIG.C_NUM_MONITOR_SLOTS $ports \
+      CONFIG.C_DATA_DEPTH $depth \
+      CONFIG.C_INPUT_PIPE_STAGES $stages \
+    ] $inst
+    return $inst
+  }
+
   # Returns the interface pin groups for all AXI MM interfaces on cell.
   # @param cell the object whose interfaces shall be returned
   # @parma mode filters interfaces by mode (default: Master)
   # @return list of interface pins
   proc get_aximm_interfaces {cell {mode "Master"}} {
     return [get_bd_intf_pins -of_objects $cell -filter "VLNV =~ xilinx.com:interface:aximm_rtl:* && MODE == $mode"]
+  }
+
+  # Returns the given property of a given AXI MM interface.
+  # Will raise an error, if none or conflicting values are found.
+  # @param name of property
+  # @param intf interface pin to get property for
+  # @return value of property
+  proc get_aximm_property {property intf} {
+    set dw [get_property $property $intf]
+    if {$dw == {}} {
+      set nets [get_bd_intf_nets -hierarchical -boundary_type lower -of_objects $intf]
+      set srcs [get_bd_intf_pins -of_objects $nets -filter "$property != {}"]
+      if {[llength $srcs] == 0} {
+        error "could not find a connected interface pin where $property is set"
+      } else {
+        set dws {}
+        foreach s $srcs { lappend dws [get_property $property $s] }
+        if {[llength $dws] > 1} {
+          error "found conflicting values for $property @ $intf: $dws"
+        }
+        return [lindex $dws 0]
+      }
+    } else {
+      return $dw
+    }
   }
 
   # Returns a key-value list of frequencies in the design.

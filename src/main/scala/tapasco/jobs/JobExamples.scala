@@ -45,6 +45,7 @@ object JobExamples {
                             42,
                             Some("Optional description of the core."),
                             Some(13124425),
+                            Some(true),
                             Some(Seq("axi4mm")),
                             Some(Seq("zedboard", "zc706")))
 

@@ -33,6 +33,15 @@
 
 static struct pci_data_struct pci_data;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
+static struct msix_entry msix_entries[REQUIRED_INTERRUPTS];
+
+u32 pci_irq_vector(struct pci_dev *pdev, int c) {
+	return msix_entries[c].vector;
+}
+
+#endif
+
 /******************************************************************************/
 
 /**
@@ -307,10 +316,17 @@ static int claim_msi(struct pci_dev *pdev)
 
 	for (i = 0; i < REQUIRED_INTERRUPTS; i++) {
 		pci_data.irq_mapping[i] = -1;
+		#if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
+		msix_entries[i].entry = i;
+		#endif
 	}
 
+	#if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
+	err = pci_enable_msix_range(pdev, msix_entries, REQUIRED_INTERRUPTS, REQUIRED_INTERRUPTS);
+	#else
 	/* set up MSI interrupt vector to max size */
 	err = pci_alloc_irq_vectors(pdev, REQUIRED_INTERRUPTS, REQUIRED_INTERRUPTS, PCI_IRQ_MSIX);
+	#endif
 
 	if (err <= 0) {
 		fflink_warn("Cannot set MSI vector (%d)\n", err);
@@ -333,7 +349,11 @@ static int claim_msi(struct pci_dev *pdev)
 
 error_pci_req_irq:
 	free_irqs(pdev);
+	#if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
+	pci_disable_msix(pdev);
+	#else
 	pci_free_irq_vectors(pdev);
+	#endif
 error_no_msi:
 	return -ENOSPC;
 }
@@ -504,7 +524,11 @@ static void fflink_pci_remove(struct pci_dev *pdev)
 	fflink_info("Unload pci-device\n");
 
 	free_irqs(pdev);
+	#if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
+	pci_disable_msix(pdev);
+	#else
 	pci_free_irq_vectors(pdev);
+	#endif
 
 	iounmap(pci_data.kvirt_addr_bar0);
 

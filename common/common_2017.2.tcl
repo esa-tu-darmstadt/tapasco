@@ -25,3 +25,4 @@ dict set stdcomps msix_intr_ctrl vlnv "esa.informatik.tu-darmstadt.de:user:MSIXI
 dict set stdcomps axi_reg_slice vlnv "xilinx.com:ip:axi_register_slice:2.1"
 dict set stdcomps dwidth_conv vlnv "xilinx.com:ip:axi_dwidth_converter:2.1"
 dict set stdcomps util_vector_logic vlnv "xilinx.com:ip:util_vector_logic:2.0"
+dict set stdcomps system_ila vlnv "xilinx.com:ip:system_ila:1.0"

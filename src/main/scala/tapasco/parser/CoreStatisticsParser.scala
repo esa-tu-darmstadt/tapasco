@@ -7,7 +7,7 @@ private object CoreStatisticsParser {
   import CommonArgParsers._
 
   def corestats: Parser[CoreStatisticsJob] =
-    IgnoreCase("corestats") ~/ ws1 ~ options ~ ws map (_.apply(CoreStatisticsJob()))
+    IgnoreCase("corestats") ~/ (ws1 ~ options).? ~ ws map (_.map(_.apply(CoreStatisticsJob())) getOrElse CoreStatisticsJob())
 
   private val jobid = identity[CoreStatisticsJob] _
 

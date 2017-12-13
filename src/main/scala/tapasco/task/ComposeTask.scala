@@ -29,7 +29,7 @@ class ComposeTask(composition: Composition,
   private[this] val _slurm = Slurm.enabled
   private[this] var _composerResult: Option[Composer.Result] = None
   private[this] val _outDir = cfg.outputDir(composition, target, designFrequency, features getOrElse Seq())
-  private[this] val _logFile = logFile getOrElse "%s/%s.log".format(_outDir, "tapasco")
+  private[this] val _logFile = logFile getOrElse _outDir.resolve("tapasco.log").toString
   private[this] val _errorLogFile = Paths.get(_logFile).resolveSibling("slurm-compose.errors.log")
 
   import LogFormatter._

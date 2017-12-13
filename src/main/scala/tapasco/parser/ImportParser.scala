@@ -19,7 +19,7 @@ private object ImportParser {
   private val jobid = identity[ImportJob] _
 
   private def options: Parser[ImportJob => ImportJob] =
-    (description | avgClockCycles | architectures | platforms).rep map (opts =>
+    (description | avgClockCycles | skipEval | architectures | platforms).rep map (opts =>
       (opts map (applyOption _) fold jobid) (_ andThen _))
 
   private def description: Parser[(String, String)] =
@@ -29,9 +29,13 @@ private object ImportParser {
     longOption("averageClockCycles", "AvgCC") ~ ws ~/
     posint.opaque("avg. number of clock cycles, integer > 0") ~ ws
 
+  private def skipEval: Parser[(String, Boolean)] =
+    (longOption("skipEvaluation", "SkipEval") ~ ws) map { case s => (s, true) }
+
   private def applyOption(opt: (String, _)): ImportJob => ImportJob = opt match {
     case ("Description", d: String) => _.copy(description = Some(d))
     case ("AvgCC", cc: Int) => _.copy(averageClockCycles = Some(cc))
+    case ("SkipEval", se: Boolean) => _.copy(skipEvaluation = Some(se))
     case ("Architectures", as: Seq[String @unchecked]) => _.copy(_architectures = Some(as))
     case ("Platforms", ps: Seq[String @unchecked]) => _.copy(_platforms = Some(ps))
     case o => throw new Exception(s"parsed illegal option: $o")

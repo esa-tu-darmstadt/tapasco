@@ -62,7 +62,6 @@
 #include "common/device_user.h"
 #include "common/dma_ctrl.h"
 #include "common/device_pcie.h"
-
 /******************************************************************************/
 
 #define FFLINK_PCI_NAME "FFLINK_PCI_DRIVER"
