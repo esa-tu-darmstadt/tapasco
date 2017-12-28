@@ -215,7 +215,7 @@ object VivadoComposer {
     lazy val outdir: Path    = cfg.outputDir(c, t, f, fs)
     lazy val logFile: Path   = outdir.resolve("%s.log".format(c.id))
     lazy val tclFile: Path   = outdir.resolve("%s.tcl".format(t.pd.name))
-    lazy val bitFile: Path   = outdir.resolve("%s.bit".format(c.id))
+    lazy val bitFile: Path   = logFile.resolveSibling("%s.bit".format(Composer.mkProjectName(c, t, f)))
     lazy val runName: String = "%s with %s[F=%1.3f]".format(logformat(c), t, f)
     lazy val pwrFile: Path   = logFile.resolveSibling("power.txt")
     lazy val timFile: Path   = logFile.resolveSibling("timing.txt")
