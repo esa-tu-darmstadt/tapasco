@@ -114,7 +114,6 @@ static ssize_t user_read(struct file *filp, char __user *buf, size_t count, loff
 	uint32_t i, err = 0;
 	uint32_t static_buffer[STATIC_BUFFER_SIZE], *copy_buffer;
 	bool use_dynamic = false;
-	fflink_notice("Called for device minor %d\n", ((struct priv_data_struct *) filp->private_data)->minor);
 
 	copy_buffer = static_buffer;
 
@@ -178,7 +177,6 @@ static ssize_t user_write(struct file *filp, const char __user *buf, size_t coun
 	struct user_rw_params params;
 	uint32_t i, err = 0, static_buffer[STATIC_BUFFER_SIZE], *copy_buffer;
 	bool use_dynamic = false;
-	fflink_notice("Called for device minor %d\n", ((struct priv_data_struct *) filp->private_data)->minor);
 
 	copy_buffer = static_buffer;
 
@@ -246,7 +244,6 @@ static long user_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long 
 	int irq_counter;
 	struct priv_data_struct * p = (struct priv_data_struct *) filp->private_data;
 	struct user_ioctl_params params;
-	fflink_notice("Called for device minor %d\n", p->minor);
 
 	if (_IOC_SIZE(ioctl_num) != sizeof(struct user_ioctl_params)) {
 		fflink_warn("Wrong size to read out registers %d vs %ld\n", _IOC_SIZE(ioctl_num), sizeof(struct user_ioctl_params));
@@ -293,8 +290,6 @@ static long user_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long 
  * */
 static int user_mmap(struct file *filp, struct vm_area_struct *vma)
 {
-	fflink_notice("Called for device minor %d\n", ((struct priv_data_struct *) filp->private_data)->minor);
-
 	return 0;
 }
 
@@ -494,8 +489,6 @@ int char_user_register(void)
 			goto error_device_create;
 		}
 	}
-
-	fflink_notice("Called for device (<%d,%d>)\n", imajor(inode), iminor(inode));
 
 	/* check if ID core is readable */
 	hw_id = pcie_readl((void*) HW_ID_ADDR);
