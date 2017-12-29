@@ -213,7 +213,7 @@ object VivadoComposer {
   private final case class Files(c: Composition, t: Target, f: Heuristics.Frequency, fs: Seq[Feature])
                                 (implicit cfg: Configuration) {
     lazy val outdir: Path    = cfg.outputDir(c, t, f, fs)
-    lazy val logFile: Path   = outdir.resolve("%s.log".format(c.id))
+    lazy val logFile: Path   = outdir.resolve("%s.log".format(Composer.mkProjectName(c, t, f)))
     lazy val tclFile: Path   = outdir.resolve("%s.tcl".format(t.pd.name))
     lazy val bitFile: Path   = logFile.resolveSibling("%s.bit".format(Composer.mkProjectName(c, t, f)))
     lazy val runName: String = "%s with %s[F=%1.3f]".format(logformat(c), t, f)
