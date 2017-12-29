@@ -293,7 +293,7 @@ namespace eval platform {
       set offset 0x81800000
       for {set i 0} {$i < [llength $intcs]} {incr i; incr offset 0x10000} {
         puts [format "  INTC at 0x%08x" $offset]
-        create_bd_addr_seg -range 64K -offset $offset $host_addr_space [lindex $intcs $i] "INTC_SEG$i"
+        create_bd_addr_seg -range 64K -offset $offset $host_addr_space [lindex $intcs $i] "P_INTC_SEG$i"
       }
 
       # connect TPC status core
@@ -314,8 +314,9 @@ namespace eval platform {
       foreach pe $pes {
         set usrs [lsort [get_bd_addr_segs $pe/*]]
         for {set i 0} {$i < [llength $usrs]} {incr i; incr offset 0x10000} {
-          puts [format "  PE $pe ([get_property VLNV $pe]) at 0x%08x of $host_addr_space" $offset]
-          create_bd_addr_seg -range 64K -offset $offset $host_addr_space [lindex $usrs $i] "USR_${pen}_SEG$i"
+          set range [get_property RANGE [lindex $usrs $i]]
+          puts [format "  PE $pe ([get_property VLNV $pe]) at 0x%08x (range: 0x%08x) of $host_addr_space" $offset $range]
+          create_bd_addr_seg -range $range -offset $offset $host_addr_space [lindex $usrs $i] "USR_${pen}_SEG$i"
         }
         incr pen
       }
@@ -329,12 +330,28 @@ namespace eval platform {
           set spaces [get_bd_addr_spaces -of_objects $m]
           puts "    master $m spaces: $spaces"
           set slaves [find_bd_objs -relation addressable_slave $m]
+          if {$slaves == {}} {
+            puts "      found no matching addressed slaves - checking ps7 ports"
+            set sports [tapasco::get_aximm_interfaces [get_bd_cells /Host/ps7] "Slave"]
+            puts "        $sports"
+            set slaves [list]
+            foreach s $sports {
+              set ams [find_bd_objs -relation addressing_master -thru_hier $s]
+              puts "    addressing masters for $s: $ams"
+              if {[lsearch -glob $ams $pe/*] > -1} {
+                puts "      found ps7 port that is addressed by $m: $s"
+                lappend slaves $s
+              }
+            }
+          }
           puts "    master $m slaves: $slaves"
           set sn 0
           foreach space $spaces {
             foreach s $slaves {
               puts "    mapping $s in $m:$space"
-              create_bd_addr_seg -range [get_property RANGE $space] -offset 0 \
+              set range [get_property RANGE $space]
+              set offset [expr 0x100000000 - $range]
+              create_bd_addr_seg -range [get_property RANGE $space] -offset $offset \
                 $spaces \
                 [get_bd_addr_segs $s/*] \
                 "SEG_${m}_${s}_${sn}"

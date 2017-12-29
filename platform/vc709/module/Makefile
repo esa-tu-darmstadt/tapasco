@@ -1,7 +1,7 @@
 # Makefile to build the ffLink module, which can be loaded with 'sudo insmod ffLink.ko' afterwards
 # make should not be run as root, otherwise generated files cannot be removed correctly
 
-# Name of Kernel module 
+# Name of Kernel module
 obj-m := ffLink.o
 
 # composition of files needed to compile
@@ -35,5 +35,5 @@ ccflags-y := $(COMPILEFLAGS) $(DEBUGFLAGS)
 all:
 	#@ KCFLAGS+="$(COMPILEFLAGS) $(DEBUGFLAGS)" make -C $(LINUX_HOME) M=$(PWD) modules
 	@ make -C $(LINUX_HOME) M=$(PWD) modules
-clean:	
+clean:
 	@ make -C $(LINUX_HOME) M=$(PWD) clean

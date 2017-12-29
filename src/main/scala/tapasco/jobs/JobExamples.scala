@@ -1,3 +1,21 @@
+//
+// Copyright (C) 2017 Jens Korinth, TU Darmstadt
+//
+// This file is part of Tapasco (TPC).
+//
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
 package de.tu_darmstadt.cs.esa.tapasco.jobs
 import  de.tu_darmstadt.cs.esa.tapasco.Common
 import  de.tu_darmstadt.cs.esa.tapasco.base._
@@ -12,6 +30,7 @@ import  java.nio.file._
  *  via the [[dump]] method.
  */
 object JobExamples {
+  // scalastyle:off magic.number
   val bulkImportJob = BulkImportJob(Paths.get("some.csv"))
   val composition = Composition(Paths.get("N/A"),
                                 Some("An optional description."),
@@ -21,7 +40,7 @@ object JobExamples {
                               "Vivado",
                               Some(Seq("axi4mm")),
                               Some(Seq("pynq", "zedboard")),
-                              None, // FIXME Features missing
+                              Some(Seq(Feature("LED", Map("enabled" -> "true")))),
                               Some("r"))
   val coreStatisticsJob = CoreStatisticsJob(Some("somePrefix_"),
                                             Some(Seq("axi4mm")),
@@ -34,7 +53,7 @@ object JobExamples {
                                          Some(Paths.get("nonstandard/base/path")),
                                          Some(Seq("axi4mm")),
                                          Some(Seq("pynq", "vc709")),
-                                         None, // FIXME Features missing
+                                         Some(Seq(Feature("LED", Map("enabled" -> "true")))),
                                          Some("r"))
   val hlsJob = HighLevelSynthesisJob("VivadoHLS",
                                      Some(Seq("axi4mm")),
@@ -44,6 +63,7 @@ object JobExamples {
                             42,
                             Some("Optional description of the core."),
                             Some(13124425),
+                            Some(true),
                             Some(Seq("axi4mm")),
                             Some(Seq("zedboard", "zc706")))
 
@@ -63,4 +83,5 @@ object JobExamples {
       fw.close()
     }
   }
+  // scalastyle:on magic.number
 }

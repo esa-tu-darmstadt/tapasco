@@ -1,3 +1,21 @@
+//
+// Copyright (C) 2017 Jens Korinth, TU Darmstadt
+//
+// This file is part of Tapasco (TPC).
+//
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
 package de.tu_darmstadt.cs.esa.tapasco.itapasco.common
 import  de.tu_darmstadt.cs.esa.tapasco.task._
 import  de.tu_darmstadt.cs.esa.tapasco.util._
@@ -26,7 +44,8 @@ class QueuePanel(
     t.description,
     t.queued map (_dateFormat.format(_)) getOrElse "",
     t.started map (_dateFormat.format(_)) getOrElse "",
-    t.completed map (_dateFormat.format(_)) getOrElse ""
+    t.completed map (_dateFormat.format(_)) getOrElse "",
+    t.result
   )
 
   private def tasksToTable(tasks: Seq[Task]): Array[Array[Any]] =
@@ -34,7 +53,7 @@ class QueuePanel(
 
   private def mkTable(tasks: Seq[Task]): Table = new Table(
     tasksToTable(tasks),
-    Seq("Task", "Queued at", "Started at", "Completed at")
+    Seq("Task", "Queued at", "Started at", "Completed at", "Successful")
   ) {
     selection.elementMode = scala.swing.Table.ElementMode.Row
     val m = model
@@ -45,6 +64,24 @@ class QueuePanel(
       override def isCellEditable(row: Int, col: Int): Boolean = false
       override def getColumnName(col: Int): String = m.getColumnName(col)
     }
+
+    // highlight unsuccessful rows
+    import javax.swing.table._, javax.swing._
+    private final val cr = new DefaultTableCellRenderer {
+      override def getTableCellRendererComponent(table: JTable, value: Any, isSelected: Boolean, hasFocus: Boolean,
+                                                 row: Int, col: Int): JComponent = {
+        val r = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col)
+        if (tasks(row).completed.nonEmpty) {
+          if (!tasks(row).result) {
+            setBackground(DefaultColors.toSeq(3))
+          } else {
+            setBackground(DefaultColors.toSeq(2))
+          }
+        }
+        this
+      }
+    }
+    peer.setDefaultRenderer(classOf[Object], cr)
 
     // auto-resize columns
     val cols = 0 until peer.getColumnCount() map { i => (i, peer.getColumnModel().getColumn(i)) }

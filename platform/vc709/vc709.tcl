@@ -160,13 +160,13 @@ namespace eval platform {
       CONFIG.S01_HAS_DATA_FIFO {2}
     ] $mig_ic
 
-    set cf [tapasco::get_platform_feature "Cache"]
-    set cache_en [tapasco::is_platform_feature_enabled "Cache"]
+    set cache_en [tapasco::is_feature_enabled "Cache"]
     if {$cache_en} {
+      set cf [tapasco::get_feature "Cache"]
       puts "Platform configured w/L2 Cache, implementing ..."
       set cache [tapasco::createSystemCache "cache_l2" 1 \
-          [dict get [tapasco::get_platform_feature "Cache"] "size"] \
-          [dict get [tapasco::get_platform_feature "Cache"] "associativity"]]
+          [dict get [tapasco::get_feature "Cache"] "size"] \
+          [dict get [tapasco::get_feature "Cache"] "associativity"]]
 
       # connect mig_ic master to cache_l2
       connect_bd_intf_net [get_bd_intf_pins mig_ic/M00_AXI] [get_bd_intf_pins $cache/S0_AXI_GEN]
@@ -405,7 +405,7 @@ namespace eval platform {
     ]
 
     # enable ATS/PRI (if platform feature is set)
-    if {[tapasco::is_platform_feature_enabled "ATS-PRI"]} {
+    if {[tapasco::is_feature_enabled "ATS-PRI"]} {
       puts "  ATS/PRI support is enabled"
       lappend pcie_properties \
         CONFIG.c_ats_enable {true} \

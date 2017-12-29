@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 BOARD=${1:-zedboard}
 VERSION=${2:-2016.4}
 IMGSIZE=${3:-8192}
@@ -387,9 +387,11 @@ EOF
 		fi
 		echo "Unmounting image in $LOOPDEV ..."
 		dusudo losetup -d $LOOPDEV
+		dusudo sync
 		echo "Mounting partitions in $OUTPUT_IMAGE ..."
-		dusudo kpartx -a $OUTPUT_IMAGE ||
+		dusudo kpartx -av $OUTPUT_IMAGE ||
 			return $(error_ret "$LINENO: could not kpartx -a $OUTPUT_IMAGE")
+		sleep 3
 		LD=`basename $LOOPDEV`
 		LD1=${LD}p1
 		LD2=${LD}p2
@@ -468,7 +470,7 @@ copy_files_to_root () {
 	dusudo sh -c "echo $BOARD > $TO/etc/hostname" ||
 		echo >&2 "$LINENO: WARNING: could not set hostname"
 	echo "Updating /etc/hosts ..."
-	dusudo sed -i "s/pynq/$BOARD/g" $TO/etc/hosts ||
+	dusudo sh -c "sed -i "s/pynq/$BOARD/g" $TO/etc/hosts" ||
 		echo >&2 "$LINENO: WARNING: could not update /etc/hosts"
 	echo "Setting env vars ... "
 	dusudo sh -c "echo export LINUX_HOME=/linux-xlnx >> $TO/home/xilinx/.bashrc" ||
@@ -513,6 +515,7 @@ check_image_tools
 check_sdcard
 read -p "Enter sudo password: " -s SUDOPW
 [[ -n $SUDOPW ]] || error_exit "dusudo password may not be empty"
+dusudo true || error_exit "sudo password seems to be wrong?"
 mkdir -p $LOGDIR 2> /dev/null
 mkdir -p `dirname $PYNQ_IMAGE` 2> /dev/null
 echo "And so it begins ..."
@@ -587,7 +590,7 @@ extract_pynq_rootfs &> $EXTRACT_RFS_LOG
 echo "Building image in $OUTPUT_IMAGE (output in $BUILD_OUTPUT_IMAGE_LOG) ..."
 build_output_image $IMGSIZE &> $BUILD_OUTPUT_IMAGE_LOG
 if [[ $? -ne 0 ]]; then
-	# rm -f $OUTPUT_IMAGE &> /dev/null
+	rm -f $OUTPUT_IMAGE &> /dev/null
 	error_exit "Building output image failed, check log: $BUILD_OUTPUT_IMAGE_LOG"
 fi
 echo "SD card image ready: $OUTPUT_IMAGE"

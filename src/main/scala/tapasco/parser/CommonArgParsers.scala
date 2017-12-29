@@ -1,3 +1,21 @@
+//
+// Copyright (C) 2017 Jens Korinth, TU Darmstadt
+//
+// This file is part of Tapasco (TPC).
+//
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
 package de.tu_darmstadt.cs.esa.tapasco.parser
 import  de.tu_darmstadt.cs.esa.tapasco.base._
 import  de.tu_darmstadt.cs.esa.tapasco.base.json._
@@ -27,8 +45,8 @@ private object CommonArgParsers {
     (BasicParsers.seqOne(compositionEntry) ~ ws)
       .opaque("list of composition entries of form <KERNEL NAME> 'x' <COUNT>")
 
-  def compositionBegin = "[" ~ ws opaque("start of composition: '['")
-  def compositionEnd   = "]" ~ ws opaque("end of composition: ']'")
+  def compositionBegin: Parser[Unit] = "[" ~ ws opaque("start of composition: '['")
+  def compositionEnd: Parser[Unit]   = "]" ~ ws opaque("end of composition: ']'")
 
   def compositionFile: Parser[Composition] =
     path.opaque("path to composition Json file") map loadCompositionFromFile _

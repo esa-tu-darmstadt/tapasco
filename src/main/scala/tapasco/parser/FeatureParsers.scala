@@ -1,3 +1,21 @@
+//
+// Copyright (C) 2017 Jens Korinth, TU Darmstadt
+//
+// This file is part of Tapasco (TPC).
+//
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
 package de.tu_darmstadt.cs.esa.tapasco.parser
 import  de.tu_darmstadt.cs.esa.tapasco.base.Feature
 import  fastparse.all._
@@ -19,9 +37,11 @@ private object FeatureParsers {
   val featureMarks      = (featureBeginChars ++ featureEndChars) map (_.toString)
   val featureAssigns    = Seq("->", "=", ":=", ":")
 
-  def featureBegin = CharIn(featureBeginChars).opaque(s"begin of feature mark, one of '$featureBeginChars'")
-  def featureEnd   = CharIn(featureEndChars).opaque(s"end of feature mark, one of '$featureEndChars'")
-  def featureAssign = "->" | "=" | ":=" | ":"
+  def featureBegin: Parser[Unit] =
+    CharIn(featureBeginChars).opaque(s"begin of feature mark, one of '$featureBeginChars'")
+  def featureEnd: Parser[Unit] =
+    CharIn(featureEndChars).opaque(s"end of feature mark, one of '$featureEndChars'")
+  def featureAssign: Parser[Unit] = "->" | "=" | ":=" | ":"
 
   def featureKey: Parser[String] =
     (quotedString | string(featureAssigns ++ featureMarks))

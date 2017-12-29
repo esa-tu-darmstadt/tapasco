@@ -1,3 +1,21 @@
+//
+// Copyright (C) 2017 Jens Korinth, TU Darmstadt
+//
+// This file is part of Tapasco (TPC).
+//
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
 package de.tu_darmstadt.cs.esa.tapasco.jobs
 import  de.tu_darmstadt.cs.esa.tapasco.base._
 import  de.tu_darmstadt.cs.esa.tapasco.dse._
@@ -126,19 +144,27 @@ final case class DesignSpaceExplorationJob(
     private val _platforms: Option[Seq[String]] = None,
     features: Option[Seq[Feature]] = None,
     debugMode: Option[String] = None) extends Job("dse") {
+  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  // warn if dimensions are completely empty
+  dimensions match {
+    case DesignSpace.Dimensions(false, false, false) =>
+      logger.warn("no dimensions enabled in exploration job - consider using a compose job instead")
+    case _ => ()
+  }
+
   /** Returns the list of [[base.Architecture]] instances selected in this job. */
   def architectures: Set[Architecture] =
     FileAssetManager.entities.architectures filter (a => _architectures map (_.contains(a.name)) getOrElse true)
 
   /** Returns the name filter for [[base.Architecture]] instances. */
-  def architectureNames = _architectures
+  def architectureNames: Option[Seq[String]] = _architectures
 
   /** Returns the list of [[base.Platform]] instances selected in this job. */
   def platforms: Set[Platform] =
     FileAssetManager.entities.platforms filter (p => _platforms map (_.contains(p.name)) getOrElse true)
 
   /** Returns the name filter for [[base.Platform]] instances. */
-  def platformNames = _platforms
+  def platformNames: Option[Seq[String]] = _platforms
 
   /** Returns the first target (alphabetically Arch - Platform). */
   def target: Target = targets.head
@@ -199,6 +225,7 @@ final case class HighLevelSynthesisJob(
              core (must be > 0).
  * @param description Description of the core (optional).
  * @param averageClockCycles Clock cycles in an average job (optional).
+ * @param skipEvaluation Do not perform evaluation (optional).
  * @param _architectures Name list of [[base.Architecture]] instances.
  * @param _platforms Name list of [[base.Platform]] instances.
  **/
@@ -207,6 +234,7 @@ final case class ImportJob(
     id: Kernel.Id,
     description: Option[String] = None,
     averageClockCycles: Option[Int] = None,
+    skipEvaluation: Option[Boolean] = None,
     private val _architectures: Option[Seq[String]] = None,
     private val _platforms: Option[Seq[String]] = None) extends Job("import") {
   /** Returns the list of [[base.Architecture]] instances selected in this job. */

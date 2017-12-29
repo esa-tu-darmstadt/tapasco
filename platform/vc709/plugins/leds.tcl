@@ -35,24 +35,35 @@ namespace eval leds {
       puts "  WARNING: can only connect up to 6 LEDs, additional inputs will be discarded"
     }
     set rlist [list]
+    # create tie-off constant zero
+    set zero [tapasco::createConstant one 1 0]
+    set zero_pin [get_bd_pins -of_objects $zero -filter {DIR == "O"}]
+
     for {set i 0} {$i < 6 && [llength $inputs] > $i} {incr i} {
       set pin [lindex $inputs $i]
       puts "  LED $i: $pin"
-      lappend rlist [get_bd_pins $pin]
+      set bd_pin [get_bd_pins $pin]
+      if {$bd_pin != {}} {
+        lappend rlist $bd_pin
+      } else {
+        lappend rlist $zero_pin
+      }
     }
     if {[llength $inputs] < 6} {
-      # create tie-off constant one
-      set one [tapasco::createConstant one 1 0]
-      set onepin [get_bd_pins -of_objects $one -filter {DIR == "O"}]
       for {} {$i < 6} {incr i} {
-        lappend rlist $onepin
+        lappend rlist $zero_pin
       }
+    }
+    if {[lsearch rlist $zero_pin] == -1} {
+      # delete the constant
+      delete_bd_objs $zero
     }
     return $rlist
   }
 
   proc create_led_core {{name "gp_led"} {inputs [list]}} {
     variable vlnv
+    variable default_led_pins
     puts "Creating LED core ..."
     puts "  VLNV: $vlnv"
     if {[llength $inputs] == 0} {
@@ -78,11 +89,14 @@ namespace eval leds {
 
   proc create_leds {{name "gp_leds"}} {
     variable vlnv
-    if {[tapasco::is_platform_feature_enabled "LED"]} {
+    if {[tapasco::is_feature_enabled "LED"]} {
       puts "Implementing Platform feature LED ..."
       # create and connect LED core
       set const_one [tapasco::createConstant "const_one" 1 1]
-      set gp_led [create_led_core "gp_led" [dict get [tapasco::get_platform_feature "LED"] "inputs"]]
+      set f [tapasco::get_feature "LED"]
+      set inputs [list]
+      if {[dict exists $f "inputs"]} { set inputs [dict get $f "inputs"] }
+      set gp_led [create_led_core "gp_led" $inputs]
       set pcie_aclk [get_bd_pins "/PCIe/pcie_aclk"]
       set pcie_aresetn [get_bd_pins "/PCIe/pcie_aresetn"]
       set pcie_aclk_net [get_bd_net -of_objects $pcie_aclk]

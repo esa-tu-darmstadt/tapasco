@@ -1,3 +1,21 @@
+//
+// Copyright (C) 2017 Jens Korinth, TU Darmstadt
+//
+// This file is part of Tapasco (TPC).
+//
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
 package de.tu_darmstadt.cs.esa.tapasco.task
 import  de.tu_darmstadt.cs.esa.tapasco.slurm._
 import  de.tu_darmstadt.cs.esa.tapasco.base._
@@ -28,8 +46,8 @@ class ComposeTask(composition: Composition,
   private[this] implicit val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   private[this] val _slurm = Slurm.enabled
   private[this] var _composerResult: Option[Composer.Result] = None
-  private[this] val _outDir = cfg.outputDir(composition, target, designFrequency)
-  private[this] val _logFile = logFile getOrElse "%s/%s.log".format(_outDir, "tapasco")
+  private[this] val _outDir = cfg.outputDir(composition, target, designFrequency, features getOrElse Seq())
+  private[this] val _logFile = logFile getOrElse _outDir.resolve("tapasco.log").toString
   private[this] val _errorLogFile = Paths.get(_logFile).resolveSibling("slurm-compose.errors.log")
 
   import LogFormatter._
@@ -45,7 +63,7 @@ class ComposeTask(composition: Composition,
     _logger.debug("launching compose run for {}@{} [current thread: {}], logfile {}",
       target.ad.name: Object, target.pd.name: Object, Thread.currentThread.getName(): Object, _logFile: Object)
     if (debugMode.isEmpty) {
-      _composerResult = Some(try   { composer.compose(composition, target, designFrequency, Seq(), features getOrElse Seq()) }
+      _composerResult = Some(try   { composer.compose(composition, target, designFrequency, features getOrElse Seq()) }
                              catch { case e: Exception =>
                                        _logger.error(e.toString)
                                        _logger.debug("stacktrace: {}", e.getStackTrace() mkString NL)
@@ -62,7 +80,7 @@ class ComposeTask(composition: Composition,
         designFrequency,
         target,
         _composerResult map (_.result) getOrElse "",
-        _composerResult map (_.bit) getOrElse "",
+        _composerResult flatMap (_.bit) getOrElse "",
         _composerResult flatMap (_.log map (_.file)) getOrElse "",
         _composerResult flatMap (_.util map (_.file)) getOrElse "",
         _composerResult flatMap (_.timing map (_.file)) getOrElse "",
@@ -70,8 +88,7 @@ class ComposeTask(composition: Composition,
 
     LogFileTracker.stopLogFileAppender(appender)
     val result = (_composerResult map (_.result) getOrElse false) == ComposeResult.Success
-    if (result)
-      composer.clean(composition, target, designFrequency)
+    if (result) { composer.clean(composition, target, designFrequency) }
     result
   }
 
@@ -86,13 +103,13 @@ class ComposeTask(composition: Composition,
     )
     // define SLURM job
     val job = Slurm.Job(
-      name     = "compose-%s-%s-%s-%1.2f".format(composition.id, target.ad.name, target.pd.name, designFrequency),
+      name     = l.getParent.getParent.getFileName.resolve(l.getParent.getFileName).toString,
       slurmLog = slgFile.toString,
       errorLog = _errorLogFile.toString,
       consumer = this,
       maxHours = ComposeTask.MAX_COMPOSE_HOURS,
       commands = Seq("tapasco --configFile %s".format(cfgFile.toString)),
-      comment  = Some("%s".format(composition.composition map (ce => "%s % d".format(ce.kernel, ce.count)) mkString ", "))
+      comment  = Some(_outDir.toString)
     )
     // generate non-SLURM config with single job
     val newCfg = cfg
@@ -145,7 +162,7 @@ class ComposeTask(composition: Composition,
 object ComposeTask {
   import scala.io._
   import de.tu_darmstadt.cs.esa.tapasco.reports._
-  private final val MAX_COMPOSE_HOURS = 48
+  private final val MAX_COMPOSE_HOURS = 23
   private final val RE_RESULT = """compose run .*result: ([^,]+)""".r.unanchored
   private final val RE_LOG    = """compose run .*result: \S+.*logfile: '([^']+)'""".r.unanchored
   private final val RE_TIMING = """compose run .*result: \S+.*timing report: '([^']+)'""".r.unanchored

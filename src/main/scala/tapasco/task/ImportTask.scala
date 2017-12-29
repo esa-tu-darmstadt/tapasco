@@ -36,12 +36,18 @@ import  java.nio.file.Path
  * @param zip Path to the .zip file.
  * @param t Target to import core for.
  * @param id Id of the kernel this core implements.
- * @param averageClockCycles Clock cycle count in an average execution of the core (optional).
  * @param onComplete Callback function on completion of the task.
- * @param cfg TPC Configuration (implicit).
+ * @param averageClockCycles Clock cycle count in an average execution of the core (optional).
+ * @param skipEvaluation Do not perform out-of-context synthesis for resource estimates, if true (optional).
+ * @param cfg TaPaSCo [[Configuration]] (implicit).
  **/
-class ImportTask(val zip: Path, val t: Target, val id: Kernel.Id, val averageClockCycles: Option[Int],
-    val onComplete: Boolean => Unit)(implicit val cfg: Configuration) extends Task with LogTracking {
+class ImportTask(val zip: Path,
+                 val t: Target,
+                 val id: Kernel.Id,
+                 val onComplete: Boolean => Unit,
+                 val averageClockCycles: Option[Int] = None,
+                 val skipEvaluation: Option[Boolean] = None)
+                (implicit val cfg: Configuration) extends Task with LogTracking {
   private implicit val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   private val name = try { Some(VLNV.fromZip(zip).name) } catch { case _: Throwable => None }
   private lazy val _logFile = cfg.outputDir(name.get, t).resolve("%s.%s.import.log".format(
@@ -53,9 +59,7 @@ class ImportTask(val zip: Path, val t: Target, val id: Kernel.Id, val averageClo
     val appender = LogFileTracker.setupLogFileAppender(_logFile.toString)
     logger.trace("current thread name: {}", Thread.currentThread.getName())
     logger.info(description)
-    logger.debug("debug: " + description)
-    logger.trace("trace: " + description)
-    val result = activity.Import(zip, id, t, averageClockCycles)
+    val result = activity.Import(zip, id, t, averageClockCycles, skipEvaluation)
     LogFileTracker.stopLogFileAppender(appender)
     result
   }

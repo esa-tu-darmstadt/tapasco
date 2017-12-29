@@ -1,3 +1,21 @@
+//
+// Copyright (C) 2017 Jens Korinth, TU Darmstadt
+//
+// This file is part of Tapasco (TPC).
+//
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
 package de.tu_darmstadt.cs.esa.tapasco.parser
 import  de.tu_darmstadt.cs.esa.tapasco.base._
 import  scala.util.Properties.{lineSeparator => NL}
@@ -26,19 +44,20 @@ object CommandLineParser {
   }
 
   object ParserException {
-    private final val SLICE_WINDOW = (-100, 40)
+    private final val SLICE_LEFT   = -100
+    private final val SLICE_RIGHT  = 40
 
     def apply(f: Parsed.Failure): ParserException =
       ParserException(f.lastParser.toString,
                       f.index,
-                      f.extra.input.slice(f.index + SLICE_WINDOW._1, f.index + SLICE_WINDOW._2)
+                      f.extra.input.slice(f.index + SLICE_LEFT, f.index + SLICE_RIGHT)
                                    .replace ("\t", " ")
                                    .replace ("\n", " "),
-                      ("~" * f.index + "^").slice(f.index + SLICE_WINDOW._1,
-                                                  f.index + SLICE_WINDOW._2))
+                      ("~" * f.index + "^").slice(f.index + SLICE_LEFT,
+                                                  f.index + SLICE_RIGHT))
   }
 
-  def check[A](x: Parsed[A]) = x match {
+  def check[A](x: Parsed[A]): Either[ParserException, A] = x match {
     case f: Parsed.Failure      => Left(ParserException(f))
     case Parsed.Success(cfg, _) => Right(cfg)
   }

@@ -1,3 +1,21 @@
+//
+// Copyright (C) 2017 Jens Korinth, TU Darmstadt
+//
+// This file is part of Tapasco (TPC).
+//
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
 package de.tu_darmstadt.cs.esa.tapasco.parser
 import  de.tu_darmstadt.cs.esa.tapasco.base._
 import  de.tu_darmstadt.cs.esa.tapasco.base.json._
@@ -25,7 +43,7 @@ private object GlobalOptions {
     longOption("logFile")           |
     longOption("parallel")          |
     longOption("slurm")             |
-    longOption("maxThreads") 
+    longOption("maxThreads")
   ).opaque("a global option")
 
   def help: Parser[(String, String)] =
@@ -81,6 +99,7 @@ private object GlobalOptions {
   def globalOptions: Parser[Configuration] =
     globalOptionsSeq map (as => mkConfig(as))
 
+  // scalastyle:off cyclomatic.complexity
   private def mkConfig[A <: Seq[Tuple2[String, _]]](pa: A, c: Option[Configuration] = None): Configuration =
     pa match {
       case a +: as => a match {
@@ -101,6 +120,7 @@ private object GlobalOptions {
       }
       case x => c getOrElse Configuration()
     }
+  // scalastyle:on cyclomatic.complexity
 
   private def readJobsFile(p: Path): Seq[Job] =
     Json.fromJson[Seq[Job]](Json.parse(Source.fromFile(p.toString).getLines mkString "")) match {

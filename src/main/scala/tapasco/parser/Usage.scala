@@ -1,9 +1,28 @@
+//
+// Copyright (C) 2017 Jens Korinth, TU Darmstadt
+//
+// This file is part of Tapasco (TPC).
+//
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
 package de.tu_darmstadt.cs.esa.tapasco.parser
 import  FormatObject._
 import  scala.util.Properties.{lineSeparator => NL}
 
 object Usage {
   private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val BINDENT = 74
 
   def apply()(implicit fmt: Formatter[String] = StringFormatter): String = fmt(usage)
 
@@ -191,6 +210,8 @@ configuration via `tapasco -n config.json`.
                                       "-p vc709, pynq") &
            Arg("--description TEXT", "any quoted or unquoted string containing" ~
                                      "additional information about the core") &
+           Arg("--skipEvaluation", "do not perform out-of-context synthesis to get" ~
+                                   "resource estimates, only import") &
            Arg("--averageClockCycles N", "any integer > 0; number of clock cycles in an" ~
                                          """"average" execution of the PE; used to estimate""" ~
                                          "the maximal throughput")))
@@ -226,8 +247,9 @@ configuration via `tapasco -n config.json`.
             Block("All HLS kernels are located in the directories below the currently" ~
                   "configured Kernel directory (see `tapasco -h globals`). Each kernel" ~
                   "requires a description in a simple Json format, examples can be found" ~
-                  "in $TAPASCO_HOME/kernel.", 74)))
+                  "in $TAPASCO_HOME/kernel.", BINDENT)))
 
+  // scalastyle:off method.length
   private def explore()    = Section("Design Space Exploration Job",
     Block("Even simple hardware designs often require a surprisingly high number of" ~
           "design choices. It is difficult to estimate the impact of each choice on" ~
@@ -304,7 +326,8 @@ configuration via `tapasco -n config.json`.
             Block("All HLS kernels are located in the directories below the currently" ~
                   "configured Kernel directory (see `tapasco -h globals`). Each kernel" ~
                   "requires a description in a simple Json format, examples can be found" ~
-                  "in $TAPASCO_HOME/kernel.", 74)))
+                  "in $TAPASCO_HOME/kernel.", BINDENT)))
+  // scalastyle:on method.length
 
   private def shortJobs() = Section("Jobs",
     Arg("", "(see `tapasco -h <job>` for details)")  &

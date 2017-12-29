@@ -1,3 +1,21 @@
+//
+// Copyright (C) 2017 Jens Korinth, TU Darmstadt
+//
+// This file is part of Tapasco (TPC).
+//
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
 package de.tu_darmstadt.cs.esa.tapasco.parser
 import  scala.util.Properties.{lineSeparator => NL}
 
@@ -24,6 +42,7 @@ trait Formatter[A] extends Function[FormatObject, A] {
   def format(p: Join): A
   def format(p: Break): A
 
+  // scalastyle:off cyclomatic.complexity
   def apply(fo: FormatObject): A = fo match {
     case x: Header  => format(x)
     case x: Section => format(x)
@@ -46,6 +65,7 @@ trait Formatter[A] extends Function[FormatObject, A] {
     case x: Join    => format(x)
     case x: Break   => format(x)
   }
+  // scalastyle:on cyclomatic.complexity
 }
 
 /** Formatter producing strings; used for CLI output. */
@@ -104,7 +124,7 @@ class StringFormatter extends Formatter[String] {
 
 /** Formatter producing man page format. */
 class ManPageFormatter extends StringFormatter {
-  override def format(header: Header) =
+  override def format(header: Header): String =
     s".TH ${header.title} ${header.section: Int} ${header.source} ${header.section.manual}"
 
   override def format(section: Section): String =

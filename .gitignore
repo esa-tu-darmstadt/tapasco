@@ -39,3 +39,7 @@ boot/zedboard
 boot/rootfs.img
 boot/uenv/uEnv-pynq.txt
 project/build.properties
+bin/itapasco
+bin/tapasco
+bin/tapasco-logviewer
+bin/tapasco-reportviewer

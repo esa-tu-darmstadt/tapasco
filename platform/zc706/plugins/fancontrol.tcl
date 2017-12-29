@@ -23,7 +23,7 @@
 #
 namespace eval fancontrol {
   proc fancontrol_feature {{args {}}} {
-    if {![dict exists [tapasco::get_architecture_features] "FanControl"] || [tapasco::is_platform_feature_enabled "FanControl"]} {
+    if {[tapasco::is_feature_enabled "FanControl"]} {
       put "Building primitive PWM module to subdue the noisy ZC706 fan ..."
       set ps [get_bd_cell -hierarchical -filter {VLNV =~ "xilinx.com:ip:processing_system*"}]
       set cnt [tapasco::createBinaryCounter "pwmcounter" 4]

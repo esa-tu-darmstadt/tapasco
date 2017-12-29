@@ -1,3 +1,21 @@
+//
+// Copyright (C) 2017 Jens Korinth, TU Darmstadt
+//
+// This file is part of Tapasco (TPC).
+//
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
 package de.tu_darmstadt.cs.esa.tapasco.parser
 import  de.tu_darmstadt.cs.esa.tapasco.dse.Heuristics.Frequency
 import  fastparse.all._
@@ -6,10 +24,10 @@ import  scala.language.implicitConversions
 
 private object BasicParsers {
   def longOption(name: String): Parser[String] = longOption(name, name)
-  def longOption(name: String, retVal: String, alternatives: String*) =
+  def longOption(name: String, retVal: String, alternatives: String*): Parser[String] =
     (name +: alternatives) map (n => IgnoreCase("--%s".format(n)).!.map(_ => retVal)) reduce (_|_)
 
-  def longShortOption(shortName: String, longName: String, retVal: Option[String] = None) =
+  def longShortOption(shortName: String, longName: String, retVal: Option[String] = None): Parser[String] =
     IgnoreCase("-%s".format(shortName)).! | IgnoreCase("--%s".format(longName)).! map (retVal getOrElse _)
 
   val argChars = "-"

@@ -1,3 +1,21 @@
+//
+// Copyright (C) 2017 Jens Korinth, TU Darmstadt
+//
+// This file is part of Tapasco (TPC).
+//
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
 package de.tu_darmstadt.cs.esa.tapasco.jobs
 import  de.tu_darmstadt.cs.esa.tapasco.Implicits._
 import  de.tu_darmstadt.cs.esa.tapasco.json._
@@ -36,6 +54,7 @@ package object json {
     (JsPath \ "Id").read[Int] (verifying[Int](_ > 0)) ~
     (JsPath \ "Description").readNullable[String] ~
     (JsPath \ "Average Clock Cycles").readNullable[Int] (verifying[Int](_ > 0)) ~
+    (JsPath \ "Skip Evaluation").readNullable[Boolean] ~
     (JsPath \ "Architectures").readNullable[Seq[String]] ~
     (JsPath \ "Platforms").readNullable[Seq[String]]
   ) (ImportJob.apply _)
@@ -46,6 +65,7 @@ package object json {
     (JsPath \ "Id").write[Int] ~
     (JsPath \ "Description").writeNullable[String] ~
     (JsPath \ "Average Clock Cycles").writeNullable[Int] ~
+    (JsPath \ "Skip Evaluation").writeNullable[Boolean] ~
     (JsPath \ "Architectures").writeNullable[Seq[String]] ~
     (JsPath \ "Platforms").writeNullable[Seq[String]]
   ) (unlift(ImportJob.unapply _ andThen (_ map ("Import" +: _))))
@@ -106,13 +126,11 @@ package object json {
   /* ComposeJob @} */
 
   /* @{ DesignSpaceExplorationJob */
-  private def atLeastOneVariation(d: DesignSpace.Dimensions): Boolean =
-    d.frequency || d.utilization || d.alternatives
   private val dseJobReads: Reads[Job] = (
     (JsPath \ "Job").read[String] (verifying[String](_.toLowerCase equals "designspaceexploration")) ~>
     (JsPath \ "Initial Composition").read[Composition] ~
     (JsPath \ "Initial Frequency").readNullable[Heuristics.Frequency].map (_ getOrElse 100.0) ~
-    (JsPath \ "Dimensions").read[DesignSpace.Dimensions] (verifying[DesignSpace.Dimensions](atLeastOneVariation _)) ~
+    (JsPath \ "Dimensions").read[DesignSpace.Dimensions] ~
     (JsPath \ "Heuristic").read[Heuristics.Heuristic] ~
     (JsPath \ "Batch Size").read[Int] (verifying[Int](_ > 0)) ~
     (JsPath \ "Output Path").readNullable[Path] ~
