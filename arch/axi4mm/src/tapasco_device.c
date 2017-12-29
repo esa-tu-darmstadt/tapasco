@@ -108,54 +108,6 @@ tapasco_res_t tapasco_device_load_bitstream(tapasco_dev_ctx_t *dev_ctx, size_t c
 	return TAPASCO_ERR_NOT_IMPLEMENTED;
 }
 
-tapasco_res_t tapasco_device_alloc(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t *h,
-		size_t const len, tapasco_device_alloc_flag_t const flags)
-{
-	platform_mem_addr_t addr;
-	platform_res_t r;
-	if ((r = platform_alloc(len, &addr, PLATFORM_ALLOC_FLAGS_NONE)) == PLATFORM_SUCCESS) {
-		LOG(LALL_MEM, "allocated %zd bytes at 0x%08x", len, addr);
-		*h = addr;
-		return TAPASCO_SUCCESS;
-	}
-	WRN("could not allocate %zd bytes of device memory: %s",
-			len, platform_strerror(r));
-	return TAPASCO_ERR_OUT_OF_MEMORY;
-}
-
-void tapasco_device_free(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t handle,
-		tapasco_device_alloc_flag_t const flags)
-{
-	LOG(LALL_MEM, "freeing handle 0x%08x", (unsigned)handle);
-	platform_dealloc(handle, PLATFORM_ALLOC_FLAGS_NONE);
-}
-
-tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx, void const *src,
-		tapasco_handle_t dst, size_t len,
-		tapasco_device_copy_flag_t const flags)
-{
-	LOG(LALL_MEM, "dst = 0x%08x, len = %zd, flags = %d", (unsigned)dst, len, flags);
-	if (flags & TAPASCO_DEVICE_COPY_NONBLOCKING)
-		return TAPASCO_ERR_NONBLOCKING_MODE_NOT_SUPPORTED;
-	if (flags)
-		return TAPASCO_ERR_NOT_IMPLEMENTED;
-	return platform_write_mem(dst, len, src, PLATFORM_MEM_FLAGS_NONE) == PLATFORM_SUCCESS ?
-			TAPASCO_SUCCESS : TAPASCO_FAILURE;
-}
-
-tapasco_res_t tapasco_device_copy_from(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t src,
-		void *dst, size_t len,
-		tapasco_device_copy_flag_t const flags)
-{
-	LOG(LALL_MEM, "src = 0x%08x, len = %zd, flags = %d", (unsigned)src, len, flags);
-	if (flags & TAPASCO_DEVICE_COPY_NONBLOCKING)
-		return TAPASCO_ERR_NONBLOCKING_MODE_NOT_SUPPORTED;
-	if (flags)
-		return TAPASCO_ERR_NOT_IMPLEMENTED;
-	return platform_read_mem(src, len, dst, PLATFORM_MEM_FLAGS_NONE) == PLATFORM_SUCCESS ?
-			TAPASCO_SUCCESS : TAPASCO_FAILURE;
-}
-
 tapasco_job_id_t tapasco_device_acquire_job_id(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_func_id_t const func_id,
 		tapasco_device_acquire_job_id_flag_t flags)
