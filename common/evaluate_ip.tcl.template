@@ -71,7 +71,7 @@ foreach saif [glob -nocomplain *.saif] {
 write_checkpoint -force @@SYNTH_CHECKPOINT@@
 
 # set clock
-set clock_ports [get_ports -filter {DIRECTION == IN && (NAME =~ *clk* || NAME =~ *CLK*)}]
+set clock_ports [get_ports -filter {DIRECTION == IN && (NAME =~ *clk* || NAME =~ *CLK* || NAME =~ clock)}]
 puts "clock_ports = $clock_ports"
 create_clock -name clk -period @@PERIOD@@ $clock_ports
 set_property HD.CLK_SRC BUFGCTRL_X0Y0 $clock_ports
