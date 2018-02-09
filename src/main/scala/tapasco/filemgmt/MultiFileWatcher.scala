@@ -92,9 +92,10 @@ class MultiFileWatcher(pollInterval: Int = MultiFileWatcher.POLL_INTERVAL) exten
     _waitingFor.synchronized { _waitingFor -= p }
   }
 
+  @scala.annotation.tailrec
   private def readFrom(br: BufferedReader, ls: Seq[String] = Seq()): Seq[String] = {
-    val line = Option(br.readLine())
-    if (line.nonEmpty) readFrom(br, ls :+ line.get) else ls
+    val line = scala.util.Try(Option(br.readLine())).toOption.flatten
+    if (line.isEmpty) ls else readFrom(br, ls :+ line.get)
   }
 
   private def startWatchThread: Unit = {
