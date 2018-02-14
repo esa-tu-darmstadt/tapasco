@@ -108,30 +108,30 @@ void zynq_init_intc(struct zynq_device *zynq_dev, u32 const base)
 
 int zynq_irq_init(struct zynq_device *zynq_dev)
 {
-	int retval = 0, irqn = 0;
+	int retval = 0, irqn = 0, rirq = 0;
 	u32 *status = (u32 *)zynq_dev->tapasco_status;
 	u32 base;
 
 #define	_INTC(N)	\
+	rirq = ZYNQ_IRQ_BASE_IRQ + zynq_dev->parent->cls->npirqs + irqn; \
 	base = ioread32(status + (0x1010 >> 2) + N * 2); \
 	if (base) { \
 		zynq_irq.intc_ ## N.base = (base - ZYNQ_PLATFORM_GP1_BASE) >> 2; \
 		zynq_irq.intc_ ## N.status = 0; \
 		if (zynq_irq.intc_ ## N.base) { \
 			LOG(TLKM_LF_IRQ, "controller for IRQ #%d at 0x%08x", \
-					ZYNQ_IRQ_BASE_IRQ + irqn, \
-					zynq_irq.intc_ ## N.base << 2); \
+					rirq, zynq_irq.intc_ ## N.base << 2); \
 			zynq_init_intc(zynq_dev, zynq_irq.intc_ ## N.base); \
 		} \
-		LOG(TLKM_LF_IRQ, "registering IRQ #%d", ZYNQ_IRQ_BASE_IRQ + irqn); \
-		retval = request_irq(ZYNQ_IRQ_BASE_IRQ + irqn, \
+		LOG(TLKM_LF_IRQ, "registering IRQ #%d", rirq); \
+		retval = request_irq(rirq, \
 				zynq_irq_handler_ ## N, \
 				IRQF_TRIGGER_NONE | IRQF_ONESHOT, \
 				"tapasco_zynq_" STR(N), \
 				zynq_dev); \
 		++irqn; \
 		if (retval) { \
-			ERR("could not register IRQ #%d!", ZYNQ_IRQ_BASE_IRQ + irqn); \
+			ERR("could not register IRQ #%d!", rirq); \
 			goto err; \
 		} \
 	}
@@ -144,19 +144,20 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 
 err:
 	while (--irqn <= 0) {
-		disable_irq(ZYNQ_IRQ_BASE_IRQ + irqn);
-		free_irq(ZYNQ_IRQ_BASE_IRQ + irqn, zynq_dev);
+		disable_irq(rirq);
+		free_irq(rirq, zynq_dev);
 	}
 	return retval;
 }
 
 void zynq_irq_exit(struct zynq_device *zynq_dev)
 {
-	int irqn = ZYNQ_MAX_NUM_INTCS;
+	int irqn = ZYNQ_MAX_NUM_INTCS, rirq = 0;
 	while (irqn) {
 		--irqn;
-		LOG(TLKM_LF_IRQ, "releasing IRQ #%d", ZYNQ_IRQ_BASE_IRQ + irqn);
-		disable_irq(ZYNQ_IRQ_BASE_IRQ + irqn);
-		free_irq(ZYNQ_IRQ_BASE_IRQ + irqn, zynq_dev);
+		rirq = ZYNQ_IRQ_BASE_IRQ + zynq_dev->parent->cls->npirqs + irqn;
+		LOG(TLKM_LF_IRQ, "releasing IRQ #%d", rirq);
+		disable_irq(rirq);
+		free_irq(rirq, zynq_dev);
 	}
 }

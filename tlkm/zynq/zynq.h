@@ -19,7 +19,7 @@ struct tlkm_class zynq_cls = {
 	.ioctl			= zynq_ioctl,
 	.mmap			= zynq_mmap,
 	.status_base		= 0x77770000ULL,
-	.npirqs			= 0,
+	.npirqs			= 8,
 	.private_data		= NULL,
 };
 

@@ -25,12 +25,12 @@ static int init_iomapping(void)
 			(void *)ZYNQ_PLATFORM_GP0_BASE,
 			(void *)(ZYNQ_PLATFORM_GP0_BASE + ZYNQ_PLATFORM_GP0_SIZE - 1));
 	_zynq_dev.gp_map[0] = ioremap_nocache(ZYNQ_PLATFORM_GP0_BASE, ZYNQ_PLATFORM_GP0_SIZE);
-	if (!_zynq_dev.gp_map[0] || IS_ERR(_zynq_dev.gp_map[0])) {
+	if (! _zynq_dev.gp_map[0]) {
 		DEVERR(_zynq_dev.dev_id,
 				"could not ioremap the AXI register space at 0x%px-0x%px",
 				(void *)ZYNQ_PLATFORM_GP0_BASE,
 				(void *)(ZYNQ_PLATFORM_GP0_BASE + ZYNQ_PLATFORM_GP0_SIZE - 1));
-		retval = PTR_ERR(_zynq_dev.gp_map[0]);
+		retval = -ENOMEM;
 		goto err_gp0;
 	}
 
@@ -38,12 +38,12 @@ static int init_iomapping(void)
 			(void *)ZYNQ_PLATFORM_GP1_BASE,
 			(void *)(ZYNQ_PLATFORM_GP1_BASE + ZYNQ_PLATFORM_GP1_SIZE - 1));
 	_zynq_dev.gp_map[1] = ioremap_nocache(ZYNQ_PLATFORM_GP1_BASE, ZYNQ_PLATFORM_GP1_SIZE);
-	if (!_zynq_dev.gp_map[1] || IS_ERR(_zynq_dev.gp_map[1])) {
+	if (! _zynq_dev.gp_map[1]) {
 		DEVERR(_zynq_dev.dev_id,
 				"could not ioremap the AXI register space at 0x%px-0x%px",
 				(void *)ZYNQ_PLATFORM_GP1_BASE,
 				(void *)(ZYNQ_PLATFORM_GP1_BASE + ZYNQ_PLATFORM_GP1_SIZE - 1));
-		retval = PTR_ERR(_zynq_dev.gp_map[1]);
+		retval = -ENOMEM;
 		goto err_gp1;
 	}
 
@@ -51,12 +51,12 @@ static int init_iomapping(void)
 			(void *)ZYNQ_PLATFORM_STATUS_BASE,
 			(void *)(ZYNQ_PLATFORM_STATUS_BASE + ZYNQ_PLATFORM_STATUS_SIZE - 1));
 	_zynq_dev.tapasco_status = ioremap_nocache(ZYNQ_PLATFORM_STATUS_BASE, ZYNQ_PLATFORM_STATUS_SIZE);
-	if (!_zynq_dev.tapasco_status || IS_ERR(_zynq_dev.tapasco_status)) {
+	if (! _zynq_dev.tapasco_status) {
 		DEVERR(_zynq_dev.dev_id,
 				"could not ioremap the AXI register space at 0x%px-0x%px",
 				(void *)ZYNQ_PLATFORM_STATUS_BASE,
 				(void *)(ZYNQ_PLATFORM_STATUS_BASE + ZYNQ_PLATFORM_STATUS_SIZE));
-		retval = PTR_ERR(_zynq_dev.tapasco_status);
+		retval = -ENOMEM;
 		goto err_tapasco_status;
 	}
 	magic_id = ioread32(_zynq_dev.tapasco_status);
@@ -146,7 +146,8 @@ int zynq_device_probe(struct tlkm_class *cls)
 	if (of_find_matching_node(NULL, zynq_ids)) {
 		LOG(TLKM_LF_DEVICE, "found Xilinx Zynq-7000");
 		inst = tlkm_bus_new_device(cls, 0, 0, NULL);
-		BUG_ON(! inst);
+		if (! inst)
+			return -EFAULT;
 	} else {
 		LOG(TLKM_LF_DEVICE, "no Xilinx Zynq-7000 series device found");
 	}
