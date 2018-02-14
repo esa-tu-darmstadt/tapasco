@@ -11,7 +11,7 @@ void stress(platform_ctx_t *ctx, platform_dev_id_t dev_id)
 	for (size_t i = NUM_RUNS; i > 0 && res == PLATFORM_SUCCESS; --i) {
 		res = platform_create_device(ctx, dev_id, PLATFORM_EXCLUSIVE_ACCESS, NULL);
 		if (res == PLATFORM_SUCCESS)
-			platform_destroy_device(ctx, dev_id);
+			platform_destroy_device_by_id(ctx, dev_id);
 	}
 }
 
