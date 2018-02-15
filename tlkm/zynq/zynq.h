@@ -23,9 +23,9 @@ struct tlkm_class zynq_cls = {
 	.mmap			= zynq_mmap,
 	.status_base		= 0x77770000ULL,
 	.npirqs			= 8,
-	.platform		= INIT_PLATFORM(0x77770000, 0x000020000,  /* status */
-	                                        0x43000000, 0x020000000,  /* arch */
-						0x81000000, 0x020000000), /* plat */
+	.platform		= INIT_PLATFORM(0x77770000, 0x00002000,  /* status */
+	                                        0x43000000, 0x02000000,  /* arch */
+						0x81000000, 0x02000000), /* plat */
 	.private_data		= NULL,
 };
 
