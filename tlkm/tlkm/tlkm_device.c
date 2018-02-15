@@ -130,13 +130,13 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 	dma_engines_exit(dev);
 err_dma:
 	tlkm_status_exit(&dev->status, dev);
-err_control:
-	dev->cls->destroy(dev);
 err_status:
+	dev->cls->destroy(dev);
+err_priv:
 	tlkm_platform_mmap_exit(dev, &dev->mmap);
 err_ioremap:
 	tlkm_control_exit(dev->ctrl);
-err_priv:
+err_control:
 	tlkm_perfc_miscdev_exit(dev);
 err_nperfc:
 	return ret;
@@ -168,13 +168,13 @@ int tlkm_device_acquire(struct tlkm_device *pdev, tlkm_access_t access)
 	if (pdev->ref_cnt[TLKM_ACCESS_EXCLUSIVE]) {
 		if (access != TLKM_ACCESS_MONITOR) {
 			DEVERR(pdev->dev_id, "cannot share exclusive instance");
-			ret = -EPERM;
+			ret = -EBUSY;
 		}
 	}
 	if (pdev->ref_cnt[TLKM_ACCESS_SHARED]) {
 		if (access == TLKM_ACCESS_EXCLUSIVE) {
 			DEVERR(pdev->dev_id, "cannot access shared instance exclusively");
-			ret = -EPERM;
+			ret = -EBUSY;
 		}
 	}
 	if (! ret) {
