@@ -113,7 +113,7 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 
 #define	_INTC(N)	\
 	rirq = ZYNQ_IRQ_BASE_IRQ + zynq_dev->parent->cls->npirqs + irqn; \
-	base = ioread32(zynq_dev->parent->mmap.status + (0x1010 >> 2) + N * 2); \
+	base = ioread32(zynq_dev->parent->mmap.status + 0x1010 + (N * 8)); \
 	if (base) { \
 		zynq_irq.intc_ ## N.base = (base - zynq_dev->parent->cls->platform.plat.base) >> 2; \
 		zynq_irq.intc_ ## N.status = 0; \
