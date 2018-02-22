@@ -4,7 +4,7 @@ endif
 
 ifdef NPERFC
 $(info "environment variable NPERFC is set, building with -DNPERFC")
-KCPPFLAGS += -DNPERFC
+CPPFLAGS += -DNPERFC
 endif
 
 LINUX_HOME ?= /lib/modules/$(shell uname -r)/build
@@ -50,9 +50,6 @@ all:
 
 release:
 	make KCPPFLAGS+="$(CPPFLAGS) -DNDEBUG -O3" -C $(LINUX_HOME) M=$(PWD) modules
-
-release-nperfc:
-	make KCPPFLAGS+="$(CPPFLAGS) -DNPERFC -DNDEBUG -O3" -C $(LINUX_HOME) M=$(PWD) modules
 
 clean:
 	make -C $(LINUX_HOME) M=$(PWD) clean
