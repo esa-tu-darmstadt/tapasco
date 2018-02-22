@@ -42,7 +42,8 @@
 	_X(TAPASCO_ERR_PE_LOCAL_MEMORY_NOT_SUPPORTED  , -15 , "PE-local memory not supported") \
 	_X(TAPASCO_ERR_NO_PE_LOCAL_MEMORY_AVAILABLE   , -16 , "PE-local memory was selected, but none available") \
 	_X(TAPASCO_ERR_PTHREAD_ERROR                  , -17 , "pthread error, see previous error message in log") \
-	_X(TAPASCO_ERR_SENTINEL                       , -18 , "--- no error just end of list ---")
+	_X(TAPASCO_ERR_INVALID_SLOT_ID                , -18 , "received invalid slot id") \
+	_X(TAPASCO_ERR_SENTINEL                       , -19 , "--- no error just end of list ---")
 
 #ifdef _X
 	#undef _X

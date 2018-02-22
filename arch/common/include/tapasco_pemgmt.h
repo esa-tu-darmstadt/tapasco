@@ -60,7 +60,7 @@ void tapasco_pemgmt_setup_system(tapasco_devctx_t *dev_ctx,
  * @param k_id function identifier.
  * @return slot_id >= 0 if successful, < 0 otherwise.
  **/
-tapasco_slot_id_t tapasco_pemgmt_acquire(tapasco_pemgmt_t *ctx,
+tapasco_slot_id_t tapasco_pemgmt_acquire_pe(tapasco_pemgmt_t *ctx,
 		tapasco_kernel_id_t const k_id);
 
 /**
@@ -68,7 +68,7 @@ tapasco_slot_id_t tapasco_pemgmt_acquire(tapasco_pemgmt_t *ctx,
  * @param ctx functions context.
  * @param s_id slot identifier.
  */
-void tapasco_pemgmt_release(tapasco_pemgmt_t *ctx,
+void tapasco_pemgmt_release_pe(tapasco_pemgmt_t *ctx,
 		tapasco_slot_id_t const s_id);
 
 /**
@@ -89,7 +89,7 @@ size_t tapasco_pemgmt_count(tapasco_pemgmt_t const *ctx,
  * @param slot_id id of the slot.
  * @return TAPASCO_SUCCESS if successful, an error code otherwise.
  **/
-tapasco_res_t tapasco_pemgmt_prepare_slot(tapasco_devctx_t *dev_ctx,
+tapasco_res_t tapasco_pemgmt_prepare_pe(tapasco_devctx_t *dev_ctx,
 		tapasco_job_id_t const j_id,
 		tapasco_slot_id_t const slot_id);
 
@@ -98,7 +98,7 @@ tapasco_res_t tapasco_pemgmt_prepare_slot(tapasco_devctx_t *dev_ctx,
  * @param slot_id id of the slot to start.
  * @return TAPASCO_SUCCESS if successful, an error code otherwise.
  **/
-tapasco_res_t tapasco_pemgmt_start(tapasco_devctx_t *dev_ctx,
+tapasco_res_t tapasco_pemgmt_start_pe(tapasco_devctx_t *dev_ctx,
 		tapasco_slot_id_t const slot_id);
 
 /**
@@ -109,7 +109,7 @@ tapasco_res_t tapasco_pemgmt_start(tapasco_devctx_t *dev_ctx,
  * @param j_id job id.
  * @return TAPASCO_SUCCESS if successful, an error code otherwise.
  **/
-tapasco_res_t tapasco_pemgmt_finish_job(tapasco_devctx_t *dev_ctx,
+tapasco_res_t tapasco_pemgmt_finish_pe(tapasco_devctx_t *dev_ctx,
 		tapasco_job_id_t const j_id);
 
 #endif /* TAPASCO_PEMGMT_H__ */

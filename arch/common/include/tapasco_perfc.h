@@ -34,15 +34,10 @@
 #define TAPASCO_PERFC_COUNTERS \
 	_PC(job_id_high_watermark) \
 	_PC(pe_high_watermark) \
-	_PC(job_ids_requested) \
-	_PC(job_ids_received) \
 	_PC(jobs_launched) \
 	_PC(jobs_completed) \
 	_PC(pe_acquired) \
 	_PC(pe_released) \
-	_PC(reserve_pe_wrong_kernel) \
-	_PC(reserve_pe_wrong_state) \
-	_PC(wait_for_pe) \
 	_PC(waiting_for_job)
 
 #ifndef NPERFC
