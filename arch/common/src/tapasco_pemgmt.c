@@ -24,6 +24,7 @@
 #include <stdatomic.h>
 #include <string.h>
 #include <assert.h>
+#include <semaphore.h>
 #include <tapasco_pemgmt.h>
 #include <tapasco_device.h>
 #include <tapasco_errors.h>
@@ -34,6 +35,8 @@
 #include <tapasco_delayed_transfers.h>
 #include <tapasco_perfc.h>
 #include <platform.h>
+#include <gen_stack.h>
+#include <khash.h>
 
 /** State of PEs, e.g., busy or idle. */
 typedef enum {
@@ -75,13 +78,42 @@ struct tapasco_pemgmt {
 	tapasco_pe_t 				*pe[TAPASCO_NUM_SLOTS];
 };
 
+KHASH_MAP_INIT_INT(kidmap, uint8_t)
+static khash_t(kidmap) *_kidmap = NULL;
+
+struct tapasco_kernel {
+	tapasco_kernel_id_t k_id;
+	struct gs_t pe_stk;
+	sem_t sem;
+};
+
+static
+struct tapasco_kernel _kernels[PLATFORM_NUM_SLOTS];
+
 static
 void setup_pes_from_status(platform_devctx_t *ctx, tapasco_pemgmt_t *p)
 {
-	assert(ctx->info.magic_id == TAPASCO_MAGIC_ID);
+	size_t kbucket = 0;
+	uint8_t bucket_idx;
+	int ret;
+	_kidmap = kh_init(kidmap);
+	khiter_t k;
 	for (int i = 0; i < TAPASCO_NUM_SLOTS; ++i) {
 		platform_kernel_id_t const k_id = ctx->info.composition.kernel[i];
 		p->pe[i] = k_id ? tapasco_pemgmt_create(k_id, i) : NULL;
+		if (p->pe[i]) {
+			k = kh_get(kidmap, _kidmap, k_id);
+			if (k == kh_end(_kidmap)) {
+				k = kh_put(kidmap, _kidmap, k_id, &ret);
+				kh_val(_kidmap, k) = kbucket;
+				sem_init(&_kernels[kbucket].sem, 0, 0);
+				kbucket++;
+			}
+			bucket_idx = kh_val(_kidmap, k);
+			DEVLOG(ctx->dev_id, LALL_PEMGMT, "k_id %u -> %u", k_id, bucket_idx);
+			gs_push(&_kernels[bucket_idx].pe_stk, p->pe[i]);
+			sem_post(&_kernels[bucket_idx].sem);
+		}
 	}
 }
 
@@ -99,6 +131,11 @@ tapasco_res_t tapasco_pemgmt_init(const tapasco_devctx_t *devctx, tapasco_pemgmt
 
 void tapasco_pemgmt_deinit(tapasco_pemgmt_t *pemgmt)
 {
+	for (khiter_t k = kh_begin(_kidmap); k != kh_end(_kidmap); ++k) {
+		uint8_t bucket_idx = kh_val(_kidmap, k);
+		while (gs_pop(&_kernels[bucket_idx].pe_stk)) ;
+		sem_close(&_kernels[bucket_idx].sem);
+	}
 	for (int i = 0; i < TAPASCO_NUM_SLOTS; ++i)
 		tapasco_pemgmt_destroy(pemgmt->pe[i]);
 	free(pemgmt);
@@ -158,27 +195,25 @@ int reserve_pe(tapasco_dev_id_t const dev_id, tapasco_pe_t *pe, tapasco_kernel_i
 tapasco_slot_id_t tapasco_pemgmt_acquire(tapasco_pemgmt_t *ctx,
 		tapasco_kernel_id_t const k_id)
 {
-	tapasco_slot_id_t slot = (tapasco_slot_id_t)-1;
-	tapasco_pe_t **pemgmt = ctx->pe;
-	int len = TAPASCO_NUM_SLOTS;
-	while (len && *pemgmt && ! reserve_pe(ctx->dev_id, *pemgmt, k_id)) {
-		--len;
-		++pemgmt;
-	}
-	slot = len > 0 && *pemgmt ? (*pemgmt)->slot_id : (tapasco_slot_id_t)-1;
-	LOG(LALL_PEMGMT, "k_id = %d, slotid = %d", k_id, slot);
-	if (slot != (tapasco_slot_id_t)-1) tapasco_perfc_pe_acquired_inc(ctx->dev_id);
-	return slot;
+	uint8_t bucket_idx = kh_val(_kidmap, k_id);
+	while (sem_wait(&_kernels[bucket_idx].sem)) ;
+	tapasco_pe_t *pe = (tapasco_pe_t *)gs_pop(&_kernels[bucket_idx].pe_stk);
+	LOG(LALL_PEMGMT, "k_id = %d, slotid = %d", k_id, pe->slot_id);
+	tapasco_perfc_pe_acquired_inc(ctx->dev_id);
+	return pe->slot_id;
 }
 
 inline
 void tapasco_pemgmt_release(tapasco_pemgmt_t *ctx, tapasco_slot_id_t const s_id)
 {
+	uint8_t bucket_idx = kh_val(_kidmap, ctx->pe[s_id]->slot_id);
 	assert(s_id >= 0 && s_id < TAPASCO_NUM_SLOTS);
 	assert(ctx->pe[s_id]);
 	LOG(LALL_PEMGMT, "slotid = %d", s_id);
 	tapasco_perfc_pe_released_inc(ctx->dev_id);
-	atomic_store(&ctx->pe[s_id]->state, TAPASCO_PE_STATE_IDLE);
+	//atomic_store(&ctx->pe[s_id]->state, TAPASCO_PE_STATE_IDLE);
+	gs_push(&_kernels[bucket_idx].pe_stk, ctx->pe[s_id]);
+	sem_post(&_kernels[bucket_idx].sem);
 }
 
 inline
