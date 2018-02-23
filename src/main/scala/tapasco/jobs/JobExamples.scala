@@ -64,8 +64,10 @@ object JobExamples {
                             Some("Optional description of the core."),
                             Some(13124425),
                             Some(true),
+                            Some("-retiming"),
                             Some(Seq("axi4mm")),
-                            Some(Seq("zedboard", "zc706")))
+                            Some(Seq("zedboard", "zc706")),
+                            Some(3))
 
   val jobs: Seq[Job] = Seq(bulkImportJob, composeJob, coreStatisticsJob, dseJob, hlsJob, importJob)
 

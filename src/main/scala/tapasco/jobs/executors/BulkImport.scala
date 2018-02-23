@@ -52,7 +52,7 @@ private object BulkImport extends Executor[BulkImportJob] {
       a <- j.architectures
       p <- j.platforms
       t = Target(a, p)
-    } yield new ImportTask(j.zipFile, t, j.id, _ => signal.release(), j.averageClockCycles)(cfg)
+    } yield new ImportTask(j.zipFile, t, j.id, _ => signal.release(), j.averageClockCycles, None, None, 2)(cfg)
 
     importTasks foreach { tsk.apply _ }
 

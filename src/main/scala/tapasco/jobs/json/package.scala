@@ -55,8 +55,10 @@ package object json {
     (JsPath \ "Description").readNullable[String] ~
     (JsPath \ "Average Clock Cycles").readNullable[Int] (verifying[Int](_ > 0)) ~
     (JsPath \ "Skip Evaluation").readNullable[Boolean] ~
+    (JsPath \ "Synth Options").readNullable[String] ~
     (JsPath \ "Architectures").readNullable[Seq[String]] ~
-    (JsPath \ "Platforms").readNullable[Seq[String]]
+    (JsPath \ "Platforms").readNullable[Seq[String]] ~
+    (JsPath \ "Optimization").readNullable[Int] (verifying[Int](_ >= 0))
   ) (ImportJob.apply _)
 
   implicit val importJobWrites: Writes[ImportJob] = (
@@ -66,8 +68,10 @@ package object json {
     (JsPath \ "Description").writeNullable[String] ~
     (JsPath \ "Average Clock Cycles").writeNullable[Int] ~
     (JsPath \ "Skip Evaluation").writeNullable[Boolean] ~
+    (JsPath \ "Synth Options").writeNullable[String] ~
     (JsPath \ "Architectures").writeNullable[Seq[String]] ~
-    (JsPath \ "Platforms").writeNullable[Seq[String]]
+    (JsPath \ "Platforms").writeNullable[Seq[String]] ~
+    (JsPath \ "Optimization").writeNullable[Int]
   ) (unlift(ImportJob.unapply _ andThen (_ map ("Import" +: _))))
   /* ImportJob @} */
 

@@ -37,7 +37,7 @@ private object ImportParser {
   private val jobid = identity[ImportJob] _
 
   private def options: Parser[ImportJob => ImportJob] =
-    (description | avgClockCycles | skipEval | architectures | platforms).rep map (opts =>
+    (description | avgClockCycles | skipEval | architectures | platforms | synthOptions | optimization).rep map (opts =>
       (opts map (applyOption _) fold jobid) (_ andThen _))
 
   private def description: Parser[(String, String)] =
@@ -50,12 +50,20 @@ private object ImportParser {
   private def skipEval: Parser[(String, Boolean)] =
     (longOption("skipEvaluation", "SkipEval") ~ ws) map { case s => (s, true) }
 
+  private def synthOptions: Parser[(String, String)] =
+    longOption("synthOptions", "SynthOptions") ~ ws ~/ qstring.opaque("additional synth_design options as string") ~ ws
+
+  private def optimization: Parser[(String, Int)] =
+    longOption("optimization", "Optimization") ~ ws ~/ posint.opaque("positive integer optimization level") ~ ws
+
   private def applyOption(opt: (String, _)): ImportJob => ImportJob = opt match {
     case ("Description", d: String) => _.copy(description = Some(d))
     case ("AvgCC", cc: Int) => _.copy(averageClockCycles = Some(cc))
     case ("SkipEval", se: Boolean) => _.copy(skipEvaluation = Some(se))
+    case ("SynthOptions", so: String) => _.copy(synthOptions = Some(so))
     case ("Architectures", as: Seq[String @unchecked]) => _.copy(_architectures = Some(as))
     case ("Platforms", ps: Seq[String @unchecked]) => _.copy(_platforms = Some(ps))
+    case ("Optimization", lvl: Int) => _.copy(_optimization = Some(lvl))
     case o => throw new Exception(s"parsed illegal option: $o")
   }
 }

@@ -52,7 +52,8 @@ object Import {
    * @param skipEval Do not perform out-of-context synthesis for resource estimation (optional).
    * @param cfg Implicit [[base.Configuration]].
    **/
-  def apply(zip: Path, id: Kernel.Id, t: Target, acc: Option[Int], skipEval: Option[Boolean])
+  def apply(zip: Path, id: Kernel.Id, t: Target, acc: Option[Int], skipEval: Option[Boolean],
+            optimization: Int, synthOptions: Option[String] = None)
            (implicit cfg: Configuration): Boolean = {
     // get VLNV from the file
     val vlnv = VLNV.fromZip(zip)
@@ -70,7 +71,7 @@ object Import {
 
     // write core.json to output directory (as per config)
     val p = cfg.outputDir(c, t).resolve("ipcore").resolve("core.json")
-    importCore(c, t, p, vlnv, skipEval)
+    importCore(c, t, p, vlnv, skipEval, optimization, synthOptions)
   }
 
   /**
@@ -82,7 +83,8 @@ object Import {
    * @param skipEval Skip out-of-context synthesis step (optional).
    * @param cfg Implicit [[Configuration]].
    **/
-  private def importCore(c: Core, t: Target, p: Path, vlnv: VLNV, skipEval: Option[Boolean])
+  private def importCore(c: Core, t: Target, p: Path, vlnv: VLNV, skipEval: Option[Boolean], optimization: Int,
+                         synthOptions: Option[String])
                         (implicit cfg: Configuration): Boolean = {
     Files.createDirectories(p.getParent)
     logger.trace("created output directories: {}", p.getParent.toString)
@@ -107,7 +109,7 @@ object Import {
     }
 
     // evaluate the ip core and store the report with the link
-    val res = skipEval.getOrElse(false) || evaluateCore(c, t)
+    val res = skipEval.getOrElse(false) || evaluateCore(c, t, optimization = optimization, synthOptions = synthOptions)
 
     // write core.json
     logger.debug("writing core description: {}", p.toString)
@@ -120,11 +122,14 @@ object Import {
    * place-and-route to produce area and Fmax estimates and the netlist.
    * @param c Core description.
    * @param t Target Architecture + Platform combination.
+   * @param optimization Positive integer optimization level.
+   * @param synthOptions Optional arguments for synth_design.
    * @param cfg Implicit [[Configuration]].
    **/
-  private def evaluateCore(c: Core, t: Target)(implicit cfg: Configuration): Boolean = {
+  private def evaluateCore(c: Core, t: Target, optimization: Int, synthOptions: Option[String] = None)
+                          (implicit cfg: Configuration): Boolean = {
     logger.trace("looking for SynthesisReport ...")
-    val period = 0.5
+    val period = 1.0 
     val report = cfg.outputDir(c, t).resolve("ipcore").resolve("%s_export.xml".format(c.name))
     FileAssetManager.reports.synthReport(c.name, t) map { hls_report =>
       logger.trace("found existing synthesis report: " + hls_report)
@@ -134,7 +139,7 @@ object Import {
       true
     } getOrElse {
       logger.info("SynthesisReport for {} not found, starting evaluation ...", c.name)
-      EvaluateIP(c.zipPath, period, t.pd.part, report)
+      EvaluateIP(c.zipPath, period, t.pd.part, report, optimization, synthOptions)
     }
   }
 }
