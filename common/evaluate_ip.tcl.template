@@ -119,7 +119,7 @@ for {} {$period <= $target_period} {set period [expr $period + 0.25]} {
     set opt_directive "RuntimeOptimized"
     if {$opt >= 1} { set opt_directive "Default" }
     if {$opt >= 2} { set opt_directive "Explore" }
-    if {$opt >= 3} { set opt_directive "ExtraTimingOpt" }
+    if {$opt >= 3} { set opt_directive "ExploreWithRemap" }
     puts "running opt_design -directive $opt_directive ..."
     opt_design -directive $opt_directive
     set opt_design_finish [clock seconds]
@@ -127,6 +127,7 @@ for {} {$period <= $target_period} {set period [expr $period + 0.25]} {
     set place_directive "RuntimeOptimized"
     if {$opt >= 1} { set place_directive "Default" }
     if {$opt >= 2} { set place_directive "Explore" }
+    if {$opt >= 3} { set place_directive "ExtraTimingOpt" }
     puts "running place_design -directive $place_directive ..."
     place_design -directive $place_directive
     set place_design_finish [clock seconds]
