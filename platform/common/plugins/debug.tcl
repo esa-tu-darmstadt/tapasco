@@ -32,10 +32,8 @@ namespace eval ::platform::debug {
 
   proc debug_feature {} {
     if {[tapasco::is_feature_enabled "Debug"]} {
-      puts "Creating ILA debug core, will require re-run of synthesis."
       # get config
       set debug [tapasco::get_feature "Debug"]
-      puts "  Debug = $debug"
       # default values
       set depth        4096
       set stages       0
@@ -45,20 +43,24 @@ namespace eval ::platform::debug {
       if {[dict exists $debug "stages"]} { set stages [dict get $debug "stages"] }
       if {[dict exists $debug "use_defaults"]} { set use_defaults [dict get $debug "use_defaults"] }
       if {[dict exists $debug "nets"]} { set nets [dict get $debug "nets"] }
-      set dnl {}
-      if {$use_defaults} { foreach n [get_debug_nets] { lappend dnl $n }}
-      if {[llength $nets] > 0} {
-        foreach n $nets {
-          set nnets [get_nets $n]
-          puts "  for '$n' found [llength $nnets] nets: $nnets"
-          foreach nn $nnets { lappend dnl [list $nn] }
+      if {[llength $nets] > 0) {
+        puts "Creating ILA debug core, will require re-run of synthesis."
+        puts "  Debug = $debug"
+        set dnl {}
+        if {$use_defaults} { foreach n [get_debug_nets] { lappend dnl $n }}
+        if {[llength $nets] > 0} {
+          foreach n $nets {
+            set nnets [get_nets $n]
+            puts "  for '$n' found [llength $nnets] nets: $nnets"
+            foreach nn $nnets { lappend dnl [list $nn] }
+          }
         }
+        # create ILA core
+        set clk [lindex [get_nets system_i/* -filter {NAME =~ *clocks_and_resets_*clk}] 0]
+        puts "  clk = $clk"
+        tapasco::create_debug_core $clk $dnl $depth $stages
+        reset_run synth_1
       }
-      # create ILA core
-      set clk [lindex [get_nets system_i/* -filter {NAME =~ *clocks_and_resets_*clk}] 0] 
-      puts "  clk = $clk"
-      tapasco::create_debug_core $clk $dnl $depth $stages
-      reset_run synth_1
     }
     return {}
   }
