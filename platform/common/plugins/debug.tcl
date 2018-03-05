@@ -43,7 +43,7 @@ namespace eval ::platform::debug {
       if {[dict exists $debug "stages"]} { set stages [dict get $debug "stages"] }
       if {[dict exists $debug "use_defaults"]} { set use_defaults [dict get $debug "use_defaults"] }
       if {[dict exists $debug "nets"]} { set nets [dict get $debug "nets"] }
-      if {[llength $nets] > 0) {
+      if {[llength $nets] > 0} {
         puts "Creating ILA debug core, will require re-run of synthesis."
         puts "  Debug = $debug"
         set dnl {}
