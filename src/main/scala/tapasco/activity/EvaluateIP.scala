@@ -68,6 +68,7 @@ object EvaluateIP {
     lazy val (baseDir, files) = unzipFile(zipFile, Seq(
         """\.v$""".r,
         """\.vhd$""".r,
+        """\.sv$""".r,
         """\.xdc$""".r,
         """\.vh$""".r,
         """\.xci$""".r,
@@ -83,6 +84,9 @@ object EvaluateIP {
     lazy val v_files    = files collect {
       case f if """\.v$""".r.findFirstIn(f.toString).nonEmpty && !includes.contains(f.getFileName) => f
     }
+    lazy val sv_files    = files collect {
+      case f if """\.sv$""".r.findFirstIn(f.toString).nonEmpty && !includes.contains(f.getFileName) => f
+    }
     lazy val vhd_files  = files collect {
       case f if """\.vhd$""".r.findFirstIn(f.toString).nonEmpty &&
                 !(v_files map (_.toString) contains (f.toString.dropRight(suflen) + ".v")) &&
@@ -94,7 +98,7 @@ object EvaluateIP {
     lazy val xci_files  = files.collect {
       case f if f.toString.endsWith(".xci") && !includes.contains(f.getFileName) => f
     }
-    lazy val hdl_files  = v_files ++ vhd_files
+    lazy val hdl_files  = v_files ++ vhd_files ++ sv_files
     lazy val logFile    = baseDir.resolve("evaluate.log")
     lazy val tclFile    = baseDir.resolve("evaluate.tcl")
     lazy val ipxact     = files collectFirst { case f if f.toString.endsWith("component.xml") => f }
