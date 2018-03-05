@@ -23,7 +23,7 @@
 #
 # check TAPASCO_HOME env var
 if {![info exists ::env(TAPASCO_HOME)]} {
-  puts "Missing environment variable 'TAPASCO_HOME' - point to TPC root directory."
+  puts "Missing environment variable 'TAPASCO_HOME' - point to TaPaSCo root directory."
   exit 1
 }
 
@@ -37,6 +37,7 @@ tapasco::call_plugins "pre-header"
 @@HEADER@@
 
 # source architecture-specific Tcl scripts
+source -notrace "$env(TAPASCO_HOME)/arch/common/arch.tcl"
 source -notrace @@ARCHITECTURE_TCL@@
 
 # source platform-specific Tcl scripts
@@ -72,6 +73,9 @@ set_msg_config -suppress -id {[xilinx.com:ip:axi_intc:4.1-7]}
 # create design
 create_bd_design -quiet "system"
 
+# enable PE-local memories
+tapasco::add_capabilities_flag 3
+
 # event: post-init
 tapasco::call_plugins "pre-arch"
 
@@ -84,7 +88,7 @@ tapasco::call_plugins "pre-platform"
 # instantiate and connect platform
 platform::create
 
-# event: post-platform
+# event: pre-wrapper
 tapasco::call_plugins "pre-wrapper"
 
 # create wrapper
@@ -94,9 +98,7 @@ update_compile_order -fileset sources_1
 
 # activate retiming in synthesis
 set_property STEPS.SYNTH_DESIGN.ARGS.RETIMING true [get_runs synth_1]
-if {[version -short] >= "2016.4"} {
-  set_property synth_checkpoint_mode None [get_files system.bd]
-}
+set_property synth_checkpoint_mode None [get_files system.bd]
 
 # generate according to the mode
 platform::generate

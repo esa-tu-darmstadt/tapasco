@@ -117,7 +117,13 @@ object EvaluateIP {
 
   /** Perform the evaluation.
     * @return true if successful **/
-  def apply(zipFile: Path, targetPeriod: Double, targetPart: String, reportFile: Path)(implicit cfg: Configuration): Boolean = {
+  def apply(zipFile: Path,
+            targetPeriod: Double,
+            targetPart: String,
+            reportFile: Path,
+            optimization: Int,
+            synthOptions: Option[String] = None)
+           (implicit cfg: Configuration): Boolean = {
     def deleteOnExit(f: java.io.File) = f.deleteOnExit
     //def deleteOnExit(f: java.io.File) = f        // keep files?
 
@@ -127,7 +133,7 @@ object EvaluateIP {
     // define report filenames
     Files.createDirectories(reportFile.getParent)
     val files = new Files(zipFile, reportFile)
-    writeTclScript(files, targetPart, targetPeriod)
+    writeTclScript(files, targetPart, targetPeriod, optimization, synthOptions)
 
     val lt = new LogTrackingFileWatcher(Some(logger))
     cfg.verbose foreach { _ => lt += files.logFile }
@@ -141,11 +147,11 @@ object EvaluateIP {
 
     logger.trace("Vivado command: {}", vivadoCmd mkString " ")
 
-    cfg.verbose foreach { _ => lt.closeAll }
-
     // execute Vivado (max runtime: 1d)
     val r = InterruptibleProcess(Process(vivadoCmd, files.baseDir.toFile),
-        waitMillis = Some(24 * 60 * 60 * 1000)).!(io)
+        waitMillis = Some((if (optimization == 42) 14 else 1) * 24 * 60 * 60 * 1000)).!(io)
+
+    cfg.verbose foreach { _ => lt.closeAll }
 
     if (r == InterruptibleProcess.TIMEOUT_RETCODE) {
       logger.error("%s: Vivado timeout error".format(runPrefix))
@@ -175,7 +181,11 @@ object EvaluateIP {
    * @param targetPart Part identifier of the target FPGA.
    * @param targetPeriod Target operating period.
    **/
-  private def writeTclScript(files: Files, targetPart: String, targetPeriod: Double): Unit = {
+  private def writeTclScript(files: Files,
+                             targetPart: String,
+                             targetPeriod: Double,
+                             optimization: Int,
+                             synthOptions: Option[String]): Unit = {
     val needles: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map(
       "SRC_FILES"          -> (files.hdl_files map (_.toString) mkString " "),
       "TCL_FILES"          -> (files.tcl_files mkString " "),
@@ -188,7 +198,9 @@ object EvaluateIP {
       "REPORT_POWER"       -> files.rpt_power.toString,
       "SYNTH_CHECKPOINT"   -> files.s_dcp.toString,
       "IMPL_CHECKPOINT"    -> files.i_dcp.toString,
-      "NETLIST"            -> files.netlist.toString
+      "NETLIST"            -> files.netlist.toString,
+      "OPTIMIZATION"       -> optimization.toString,
+      "SYNTH_OPTIONS"      -> (synthOptions getOrElse "")
     )
 
     // write Tcl script

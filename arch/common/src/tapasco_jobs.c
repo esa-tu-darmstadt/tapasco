@@ -47,11 +47,14 @@ struct tapasco_job {
 		uint64_t ret32;
 		uint64_t ret64;
 	} ret;
+	/** transfer array (max. 32 transfers) **/
+	tapasco_transfer_t transfers[TAPASCO_JOB_MAX_ARGS];
 };
 typedef struct tapasco_job tapasco_job_t;
 
 /******************************************************************************/
 inline static void init_job(tapasco_job_t *job, int i) {
+	memset(job, 0, sizeof(*job));
 	job->id = i + 1000;
 	job->args_len = 0;
 	job->args_sz = 0;
@@ -135,6 +138,13 @@ inline uint64_t tapasco_jobs_get_arg64(tapasco_jobs_t const *jobs, tapasco_job_i
 	return jobs->q.elems[j_id - 1000].args[arg_idx].v64;
 }
 
+tapasco_transfer_t *tapasco_jobs_get_arg_transfer(tapasco_jobs_t *jobs,
+		tapasco_job_id_t const j_id, uint32_t const arg_idx) {
+	assert(jobs);
+	assert(arg_idx < jobs->q.elems[j_id - 1000].args_len);
+	return &jobs->q.elems[j_id - 1000].transfers[arg_idx];
+}
+
 inline tapasco_res_t tapasco_jobs_get_arg(tapasco_jobs_t *jobs, tapasco_job_id_t const j_id,
 		uint32_t const arg_idx, size_t const arg_len, void *arg_value) {
 	assert(jobs);
@@ -155,8 +165,6 @@ inline tapasco_res_t tapasco_jobs_get_arg(tapasco_jobs_t *jobs, tapasco_job_id_t
 inline tapasco_res_t tapasco_jobs_set_arg(tapasco_jobs_t *jobs, tapasco_job_id_t const j_id,
 		uint32_t const arg_idx, size_t const arg_len, void const *arg_value) {
 	assert(jobs);
-	/*printf("tapasco_jobs_set_arg: j_id = %d, arg_idx = %d, arg_len = %zd\n",
-			j_id, arg_idx, arg_len);*/
 #ifndef NDEBUG
 	if (arg_len != 4 && arg_len != 8)
 		return TAPASCO_ERR_INVALID_ARG_SIZE;
@@ -176,6 +184,25 @@ inline tapasco_res_t tapasco_jobs_set_arg(tapasco_jobs_t *jobs, tapasco_job_id_t
 		jobs->q.elems[j_id - 1000].args[arg_idx].v64 = v;
 		jobs->q.elems[j_id - 1000].args_sz |= 1 << arg_idx;
 	}
+	if (jobs->q.elems[j_id - 1000].args_len < arg_idx + 1)
+		jobs->q.elems[j_id - 1000].args_len = arg_idx + 1;
+	return TAPASCO_SUCCESS;
+}
+
+inline tapasco_res_t tapasco_jobs_set_arg_transfer(tapasco_jobs_t *jobs,
+		tapasco_job_id_t const j_id, uint32_t const arg_idx,
+		size_t const arg_len, void *arg_value,
+		tapasco_device_alloc_flag_t const flags) {
+	assert(jobs);
+#ifndef NDEBUG
+	if (arg_idx >= TAPASCO_JOB_MAX_ARGS)
+		return TAPASCO_ERR_INVALID_ARG_INDEX;
+	if (j_id - 1000 > TAPASCO_JOBS_Q_SZ)
+		return TAPASCO_ERR_JOB_ID_NOT_FOUND;
+#endif
+	jobs->q.elems[j_id - 1000].transfers[arg_idx].len   = arg_len;
+	jobs->q.elems[j_id - 1000].transfers[arg_idx].data  = arg_value;
+	jobs->q.elems[j_id - 1000].transfers[arg_idx].flags = flags;
 	if (jobs->q.elems[j_id - 1000].args_len < arg_idx + 1)
 		jobs->q.elems[j_id - 1000].args_len = arg_idx + 1;
 	return TAPASCO_SUCCESS;
@@ -217,7 +244,7 @@ inline tapasco_job_id_t tapasco_jobs_acquire(tapasco_jobs_t *jobs) {
 
 inline void tapasco_jobs_release(tapasco_jobs_t *jobs, tapasco_job_id_t const j_id) {
 	assert(jobs);
-	jobs->q.elems[j_id - 1000].args_len = 0;
+	memset(&jobs->q.elems[j_id - 1000], 0, sizeof(tapasco_job_t));
 	jobs->q.elems[j_id - 1000].state = TAPASCO_JOB_STATE_READY;
 	tapasco_jobs_fsp_put(&jobs->q, j_id - 1000);
 }

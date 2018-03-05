@@ -21,7 +21,12 @@
 # @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
 namespace eval leds {
-  set default_led_pins [list "/uArch/irq_0" "/InterruptControl/irq_out"]
+  proc default_led_pins {} {
+    return [concat \
+      [get_bd_pins -of_objects [::tapasco::subsystem::get arch] -filter { TYPE == intr && DIR == O }] \
+      [get_bd_pins -of_objects [::tapasco::subsystem::get intc] -filter { TYPE == intr && DIR == O }] \
+    ]
+  }
 
   proc get_width {input} {
     set l [get_property LEFT $input]
@@ -43,7 +48,7 @@ namespace eval leds {
     set cell [create_bd_cell -type hier "${name}_splitter"]
     current_bd_instance $cell
     for {set i 0} {$i < $width} {incr i} {
-      set slice [tapasco::createSlice ${name}_$i $width $i]
+      set slice [tapasco::ip::create_xlslice ${name}_$i $width $i]
       connect_bd_net $input [get_bd_pins -of_objects $slice -filter { DIR == I }]
       lappend pins [get_bd_pins -of_objects $slice -filter { DIR == O }]
     }
@@ -67,7 +72,7 @@ namespace eval leds {
     set total_width [calc_total_width $rlist]
     if {$total_width < 6} {
       # create tie-off constant zero
-      set zero [tapasco::createConstant zero 1 0]
+      set zero [tapasco::ip::create_constant zero 1 0]
       set pin [get_bd_pins -of_objects $zero -filter {DIR == "O"}]
       for {set i $total_width} {$i < 6} {incr i} { lappend rlist $pin }
     }
@@ -78,10 +83,9 @@ namespace eval leds {
   }
 
   proc create_led_core {{name "gp_led"} {inputs [list]}} {
-    variable default_led_pins
     puts "Creating LED core ..."
     if {[llength $inputs] == 0} {
-      set inputs $default_led_pins
+      set inputs [default_led_pins]
     }
     set old_inst [current_bd_instance .]
     set cell [create_bd_cell -type hier "LEDs"]
@@ -89,7 +93,7 @@ namespace eval leds {
 
     set inputs [get_led_inputs $inputs]
     puts "  Inputs: $inputs"
-    set led_concat [tapasco::createConcat led_concat 6]
+    set led_concat [tapasco::ip::create_xlconcat led_concat 6]
 
     # connect the inputs
     for {set i 0} {$i < 6 && [llength $inputs] > $i} {incr i} {
@@ -109,7 +113,6 @@ namespace eval leds {
 
 
   proc create_leds {{name "gp_leds"}} {
-    variable default_led_pins
     if {[tapasco::is_feature_enabled "LED"]} {
       puts "Implementing Platform feature LED ..."
       # create and connect LED core

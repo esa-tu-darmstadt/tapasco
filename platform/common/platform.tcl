@@ -21,7 +21,116 @@
 # @author	J. Korinth, TU Darmstadt (jk@esa.tu-darmstadt.de)
 #
 namespace eval platform {
+  namespace export create
   namespace export generate
+  namespace export get_address_map
+
+  # Creates the platform infrastructure, consisting of a number of subsystems.
+  # Subsystems "host", "clocks_and_resets", "memory", "intc" and "tapasco" are
+  # mandatory, their wiring pre-defined. Custom subsystems can be instantiated
+  # by implementing a "create_custom_subsystem_<NAME>" proc in platform::, where
+  # <NAME> is a placeholder for the name of the subsystem.
+  proc create {} {
+    set instance [current_bd_instance]
+    # create mandatory subsystems
+    set ss_host    [tapasco::subsystem::create "host"]
+    set ss_cnrs    [tapasco::subsystem::create "clocks_and_resets" true]
+    set ss_mem     [tapasco::subsystem::create "memory"]
+    set ss_intc    [tapasco::subsystem::create "intc"]
+    set ss_tapasco [tapasco::subsystem::create "tapasco"]
+
+    set sss [list $ss_cnrs $ss_host $ss_intc $ss_mem $ss_tapasco]
+
+    foreach ss $sss {
+      set name [string trim $ss "/"]
+      set cmd  "create_subsystem_$name"
+      puts "Creating subsystem $name ..."
+      if {[llength [info commands $cmd]] == 0} {
+        error "Platform does not implement mandatory command $cmd!"
+      }
+      current_bd_instance $ss
+      eval $cmd
+      current_bd_instance $instance
+      puts "Subsystem $name complete."
+    }
+
+    # create custom subsystems
+    foreach ss [info commands create_custom_subsystem_*] {
+      set name [regsub {.*create_custom_subsystem_(.*)} $ss {\1}]
+      puts "Creating custom subsystem $name ..."
+      current_bd_instance [tapasco::subsystem::create $name]
+      eval $ss
+      current_bd_instance $instance
+    }
+
+    wire_subsystem_wires
+    wire_subsystem_intfs
+    construct_address_map
+
+    tapasco::call_plugins "post-platform"
+  }
+
+  proc connect_subsystems {} {
+    foreach s {host design mem} {
+      connect_bd_net [get_bd_pins -of_objects [get_bd_cells] -filter "NAME == ${s}_clk && DIR == O"] \
+        [get_bd_pins -of_objects [get_bd_cells] -filter "NAME =~ ${s}_clk && DIR == I"]
+      connect_bd_net [get_bd_pins -of_objects [get_bd_cells] -filter "NAME == ${s}_interconnect_resetn && DIR == O"] \
+        [get_bd_pins -of_objects [get_bd_cells] -filter "NAME =~ ${s}_interconnect_resetn && DIR == I"] \
+      connect_bd_net [get_bd_pins -of_objects [get_bd_cells] -filter "NAME == ${s}_peripheral_resetn && DIR == O"] \
+        [get_bd_pins -of_objects [get_bd_cells] -filter "NAME =~ ${s}_peripheral_resetn && DIR == I"] \
+      connect_bd_net [get_bd_pins -of_objects [get_bd_cells] -filter "NAME == ${s}_peripheral_reset && DIR == O"] \
+        [get_bd_pins -of_objects [get_bd_cells] -filter "NAME =~ ${s}_peripheral_resetn && DIR == O"] \
+    }
+  }
+
+  proc create_subsystem_tapasco {} {
+    puts "  creating slave port S_TAPASCO ..."
+    set port [create_bd_intf_pin -vlnv [tapasco::ip::get_vlnv "aximm_intf"] -mode Slave "S_TAPASCO"]
+    puts "  instantiating custom status core ..."
+    set tapasco_status [tapasco::ip::create_tapasco_status "tapasco_status"]
+    puts "  wiring ..."
+    connect_bd_intf_net $port [get_bd_intf_pins -of_objects $tapasco_status -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
+    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == clk && DIR == I}]
+    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == rst && DIR == I}]
+    puts "  done!"
+  }
+
+  proc wire_subsystem_wires {} {
+    foreach p [get_bd_pins -quiet -of_objects [get_bd_cells] -filter {INTF == false && DIR == I}] {
+      if {[llength [get_bd_nets -quiet -of_objects $p]] == 0} {
+        set name [get_property NAME $p]
+        set type [get_property TYPE $p]
+        puts "Looking for matching source for $p ($name) with type $type ..."
+        set src [lsort [get_bd_pins -quiet -of_objects [get_bd_cells] -filter "NAME == $name && TYPE == $type && INTF == false && DIR == O"]]
+        if {[llength $src] > 0} {
+          puts "  found pin: $src, connecting $p -> $src"
+          connect_bd_net $src $p
+        } else {
+          puts "  found no matching pin for $p"
+        }
+      }
+    }
+  }
+
+  proc wire_subsystem_intfs {} {
+    foreach p [get_bd_intf_pins -quiet -of_objects [get_bd_cells] -filter {MODE == Slave}] {
+      if {[llength [get_bd_intf_nets -quiet -of_objects $p]] == 0} {
+        set name [regsub {^S_} [get_property NAME $p] {M_}]
+        set vlnv [get_property VLNV $p]
+        puts "Looking for matching source for $p ($name) with VLNV $vlnv ..."
+        set srcs [lsort [get_bd_intf_pins -quiet -of_objects [get_bd_cells] -filter "NAME == $name && VLNV == $vlnv && MODE == Master"]]
+        foreach src $srcs {
+          if {[llength [get_bd_intf_nets -quiet -of_objects $src]] == 0} {
+            puts "  found pin: $src, connecting $p -> $src"
+            connect_bd_intf_net $src $p
+            break
+          } else {
+            puts "  found no matching pin for $p"
+          }
+        }
+      }
+    }
+  }
 
   # Checks all current runs at given step for errors, outputs their log files in case.
   # @param synthesis Checks synthesis runs if true, implementation runs otherwise.
@@ -90,6 +199,85 @@ namespace eval platform {
       write_bitstream -force "${bitstreamname}.bit"
     } else {
       error "timing failure, WNS: $wns"
+    }
+  }
+
+  # Returns the base address of the PEs in the device address space.
+  proc get_pe_base_address {} {
+    error "Platform does not implement mandatory proc get_pe_base_address!"
+  }
+
+  proc get_address_map {{pe_base ""}} {
+    error "Platform does not implement mandatory proc get_address_map!"
+  }
+
+  proc assign_address {address_map master base {stride 0} {range 0}} {
+    foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $master]] {
+      puts [format "  $master: $seg -> 0x%08x (range: 0x%08x)" $base $range]
+      set sintf [get_bd_intf_pins -of_objects $seg]
+      if {$range <= 0} { set range [get_property RANGE $seg] }
+      set kind [get_property USAGE $seg]
+      dict set address_map $sintf "interface $sintf offset $base range $range kind $kind"
+      if {$stride == 0} { incr base $range } else { incr base $stride }
+    }
+    return $address_map
+  }
+
+  proc construct_address_map {{map ""}} {
+    if {$map == ""} { set map [get_address_map [get_pe_base_address]] }
+    puts "ADDRESS MAP: $map"
+    set seg_i 0
+    foreach space [get_bd_addr_spaces] {
+      puts "space: $space"
+      set intfs [get_bd_intf_pins -quiet -of_objects $space -filter { MODE == Master }]
+      foreach intf $intfs {
+        set segs [get_bd_addr_segs -addressables -of_objects $intf]
+        foreach seg $segs {
+          puts "  seg: $seg"
+          set sintf [get_bd_intf_pins -quiet -of_objects $seg]
+          if {[catch {dict get $map $intf}]} {
+            if {[catch {dict get $map $sintf}]} {
+              puts "    neither $intf nor $sintf were found in address map for $seg: $::errorInfo"
+              puts "    assuming internal connection, setting values as found in segment:"
+              set range  [get_property RANGE $seg]
+              puts "      range: $range"
+              if {$range eq ""} {
+                puts "      found no range on segment $seg, skipping"
+                report_property $seg
+                continue
+              }
+              set offset [get_property OFFSET $seg]
+              if {$offset eq ""} {
+                puts "      found no offset on segment $seg, skipping"
+                report_property $seg
+                continue
+              }
+              puts "      offset: $offset"
+              set me [dict create "range" $range "offset" $offset "space" $space seg "$seg"]
+            } else {
+              set me [dict get $map $sintf]
+            }
+          } else {
+            set me [dict get $map $intf]
+          }
+          puts "    address map info: $me]"
+          set range  [expr "max([dict get $me range], 4096)"]
+          set offset [expr "max([dict get $me "offset"], [get_property OFFSET $intf])"]
+          set range  [expr "min($range, [get_property RANGE $intf])"]
+          puts "      range: $range"
+          puts "      offset: $offset"
+          puts "      space: $space"
+          puts "      seg: $seg"
+          if {[expr "(1 << 64) == $range"]} { set range "16E" }
+          create_bd_addr_seg \
+            -offset $offset \
+            -range $range \
+            $space \
+            $seg \
+            [format "AM_SEG_%03d" $seg_i]
+          incr seg_i
+        }
+      }
     }
   }
 }

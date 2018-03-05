@@ -62,7 +62,7 @@ object ComposerLog {
   def apply(file: Path): Option[ComposerLog] = try { Some(new ComposerLog(file)) } catch { case e: Exception =>
       logger.warn("could not read logfile " + file + ": " + e); None }
 
-  private val RE_ERROR   = """(?i)^[^_]*error""".r
+  private val RE_ERROR   = """(?i)(^[^_]*error)|(\(file .*tcl\" line)""".r
   private val RE_WARNING = """(?i)warn""".r
   private val RE_PLACER = """(?i)(Placer could not place all instances)|(ERROR:\s*\[Place)""".r
   private val RE_TIMING = """Timing 38-282""".r

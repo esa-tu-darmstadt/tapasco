@@ -48,7 +48,8 @@ namespace tapasco { namespace platform { extern "C" {
 	_X(PERR_DMA_INVALID_SIZE       , -18      , "invalid read/write dma size") \
 	_X(PERR_VERSION_MISMATCH       , -19      , "Platform API version mismatch") \
 	_X(PERR_NOT_IMPLEMENTED        , -20      , "not implemented") \
-	_X(PERR_SENTINEL               , -21      , "--- no error, just end of list ---")
+	_X(PERR_NO_PE_LOCAL_MEMORY     , -21      , "PE-local memory not available") \
+	_X(PERR_SENTINEL               , -22      , "--- no error, just end of list ---")
 
 #ifdef _X
 	#undef _X

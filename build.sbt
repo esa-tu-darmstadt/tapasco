@@ -1,4 +1,4 @@
-val tapascoVersion = "2017.2"
+val tapascoVersion = "2018.1-SNAPSHOT"
 
 organization := "de.tu_darmstadt.esa.cs"
 
@@ -137,7 +137,8 @@ cleanFiles ++= Seq(
   baseDirectory.value / "bin" / "tapasco",
   baseDirectory.value / "bin" / "itapasco",
   baseDirectory.value / "bin" / "tapasco-logviewer",
-  baseDirectory.value / "bin" / "tapasco-reportviewer"
+  baseDirectory.value / "bin" / "tapasco-reportviewer",
+  baseDirectory.value / "tapasco-status-cache"
 )
 
 lazy val root = (project in file("."))

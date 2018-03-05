@@ -15,7 +15,7 @@ set(GCMNDIR "${TAPASCO_HOME}/common")
 set(PLATFORMDIR "${TAPASCO_HOME}/platform")
 set(LIBPLATFORM_STATIC "${TAPASCO_HOME}/platform/lib/${TAPASCO_TARGET}/static/libplatform.a")
 
-set(BASELINE_SOURCES "${SRCDIR}/tapasco_init.c"
+set(AXI4MM_SOURCES "${SRCDIR}/tapasco_init.c"
                      "${SRCDIR}/tapasco_device.c"
                      "${SRCDIR}/tapasco_address_map.c")
 set(COMMON_SOURCES "${CMNDIR}/tapasco_logging.c"
@@ -25,6 +25,9 @@ set(COMMON_SOURCES "${CMNDIR}/tapasco_logging.c"
                    "${CMNDIR}/tapasco_jobs.c"
                    "${CMNDIR}/tapasco_status.c"
                    "${CMNDIR}/tapasco_version.c"
+                   "${CMNDIR}/tapasco_memory.c"
+                   "${CMNDIR}/tapasco_local_mem.c"
+                   "${GCMNDIR}/src/gen_mem.c"
                    "${GCMNDIR}/src/gen_queue.c")
 set(TAPASCO_LIBS_DIR "${TAPASCO_HOME}/arch/lib")
 
@@ -33,9 +36,9 @@ link_directories("${PLATFORMDIR}/lib/${TAPASCO_TARGET}")
 
 add_definitions(-DUSE_ASSERTIONS)
 
-set_source_files_properties(${BASELINE_SOURCES} ${COMMON_SOURCES} PROPERTIES COMPILE_FLAGS "-g -O3 -Wall -Werror -std=gnu11")
-add_library(tapasco SHARED ${BASELINE_SOURCES} ${COMMON_SOURCES})
-add_library(libtapasco-static STATIC ${BASELINE_SOURCES} ${COMMON_SOURCES} ${LIBPLATFORM_STATIC})
+set_source_files_properties(${AXI4MM_SOURCES} ${COMMON_SOURCES} PROPERTIES COMPILE_FLAGS "-g -O3 -Wall -Werror -std=gnu11")
+add_library(tapasco SHARED ${AXI4MM_SOURCES} ${COMMON_SOURCES})
+add_library(libtapasco-static STATIC ${AXI4MM_SOURCES} ${COMMON_SOURCES} ${LIBPLATFORM_STATIC})
 
 target_link_libraries(tapasco platform atomic pthread)
 set_target_properties(libtapasco-static PROPERTIES OUTPUT_NAME tapasco)

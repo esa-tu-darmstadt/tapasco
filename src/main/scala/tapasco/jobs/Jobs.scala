@@ -226,8 +226,10 @@ final case class HighLevelSynthesisJob(
  * @param description Description of the core (optional).
  * @param averageClockCycles Clock cycles in an average job (optional).
  * @param skipEvaluation Do not perform evaluation (optional).
+ * @param synthOptions Optional parameters for synth_design.
  * @param _architectures Name list of [[base.Architecture]] instances.
  * @param _platforms Name list of [[base.Platform]] instances.
+ * @param _optimization Positive integer optimization level.
  **/
 final case class ImportJob(
     zipFile: Path,
@@ -235,8 +237,10 @@ final case class ImportJob(
     description: Option[String] = None,
     averageClockCycles: Option[Int] = None,
     skipEvaluation: Option[Boolean] = None,
+    synthOptions: Option[String] = None,
     private val _architectures: Option[Seq[String]] = None,
-    private val _platforms: Option[Seq[String]] = None) extends Job("import") {
+    private val _platforms: Option[Seq[String]] = None,
+    private val _optimization: Option[Int] = None) extends Job("import") {
   /** Returns the list of [[base.Architecture]] instances selected in this job. */
   def architectures: Set[Architecture] =
     FileAssetManager.entities.architectures filter (a => _architectures map (_.contains(a.name)) getOrElse true)
@@ -244,6 +248,9 @@ final case class ImportJob(
   /** Returns the list of [[base.Platform]] instances selected in this job. */
   def platforms: Set[Platform] =
     FileAssetManager.entities.platforms filter (p => _platforms map (_.contains(p.name)) getOrElse true)
+
+  /** Returns the optimization level. */
+  def optimization: Int = _optimization getOrElse 0
 }
 
 object BulkImportJob extends Builds[BulkImportJob]

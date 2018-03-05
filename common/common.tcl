@@ -21,27 +21,14 @@
 # @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
 namespace eval tapasco {
-  namespace export createBinaryCounter
-  namespace export createClockingWizard
-  namespace export createConcat
-  namespace export createConstant
-  namespace export createDualDMA
-  namespace export createDWidthConverter
-  namespace export createRegisterSlice
-  namespace export createIntCtrl
-  namespace export createInterconnect
-  namespace export createSmartConnect
-  namespace export createMIG
-  namespace export createOLEDController
-  namespace export createPCIeBridge
-  namespace export createPCIeIntrCtrl
-  namespace export createMSIXIntrCtrl
-  namespace export createProtocolConverter
-  namespace export createSlice
-  namespace export createSystemCache
-  namespace export createZynqBFM
-  namespace export createZynqPS
-  namespace export createLogicInverter
+  namespace export source_quiet
+  proc source_quiet {fn} {
+    eval "source [expr {[string is space [info commands version]] ? {} : {-notrace}}]" $fn
+  }
+
+  source_quiet $::env(TAPASCO_HOME)/common/subsystem.tcl
+  source_quiet $::env(TAPASCO_HOME)/common/ip.tcl
+
   namespace export get_board_preset
   namespace export get_composition
   namespace export get_design_frequency
@@ -49,6 +36,9 @@ namespace eval tapasco {
   namespace export get_number_of_processors
   namespace export get_speed_grade
   namespace export get_wns_from_timing_report
+  namespace export get_capabilities_flags
+  namespace export set_capabilities_flags
+  namespace export add_capabilities_flag
 
   namespace export create_interconnect_tree
   namespace export create_smartconnect_tree
@@ -563,6 +553,10 @@ namespace eval tapasco {
       CONFIG.C_INPUT_PIPE_STAGES $stages \
     ] $inst
     return $inst
+
+  # Returns the Tapasco version.
+  proc get_tapasco_version {} {
+    return "2018.1"
   }
 
   # Returns the interface pin groups for all AXI MM interfaces on cell.
@@ -768,7 +762,7 @@ namespace eval tapasco {
     # special case: bypass (not necessary; only for performance, Tcl is slow)
     if {$totalOut == 1} {
       puts "  building 1-on-1 bypass"
-      set bic [createInterconnect "bic" 1 1]
+      set bic [ip::create_axi_ic "bic" 1 1]
       set m [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" "M000_AXI"]
       set s [create_bd_intf_pin -mode Slave -vlnv "xilinx.com:interface:aximm_rtl:1.0" "S000_AXI"]
       connect_bd_intf_net $s [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Slave"} -of_objects $bic]
@@ -805,7 +799,7 @@ namespace eval tapasco {
       for {set i 0} {$i < $n} {incr i} {
         set rest_ports [expr "$nports - $i * 16"]
         set rest_ports [expr "min($rest_ports, 16)"]
-        set nic [createInterconnect [format "ic_%03d" $ic_n] [expr "$masters ? $rest_ports : 1"] [expr "$masters ? 1 : $rest_ports"]]
+        set nic [ip::create_axi_ic [format "ic_%03d" $ic_n] [expr "$masters ? $rest_ports : 1"] [expr "$masters ? 1 : $rest_ports"]]
         incr ic_n
         lappend curr_ics $nic
       }
@@ -892,6 +886,7 @@ namespace eval tapasco {
     return $group
   }
 
+<<<<<<< HEAD
 
   # Creates a tree of AXI interconnects to accomodate n connections.
   # @param name Name of the group cell
@@ -1188,5 +1183,30 @@ namespace eval tapasco {
   # Returns the speed grade of the FPGA part in the current design.
   proc get_speed_grade {} {
     return [get_property SPEED [get_parts [get_property PART [current_project]]]]
+  }
+
+  set capabilities_0 0
+
+  # Returns the value of the CAPABILITIES_0 bitfield as currently configured.
+  proc get_capabilities_flags {} {
+    variable capabilities_0
+    return $capabilities_0
+  }
+
+  # Sets the value of the CAPABILITIES_0 bitfield.
+  proc set_capabilities_flags {flags} {
+    variable capabilities_0
+    puts [format "Setting Capability bitfield to new value 0x%08x (%d)." $flags $flags]
+    set capabilities_0 $flags
+  }
+
+  # Adds a specific bit to the CAPABILITIES_0 bitfield.
+  proc add_capabilities_flag {bit} {
+    variable capabilities_0
+    if {$bit < 0 || $bit > 31} { error "Invalid bit index: $bit" }
+    set flags [get_capabilities_flags]
+    set nflags [expr "$flags | (1 << $bit)"]
+    puts [format "Adding bit #$bit to capability bitfield: 0x%08x (%d) -> 0x%08x (%d)." $flags $flags $nflags $nflags]
+    set capabilities_0 $nflags
   }
 }

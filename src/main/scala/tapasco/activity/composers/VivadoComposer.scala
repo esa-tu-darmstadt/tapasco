@@ -66,6 +66,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
                 composition  = composition(bd, target))
 
     logger.info("Vivado starting run {}: output in {}", files.runName: Any, files.logFile)
+    files.logFile.toFile.delete
     cfg.verbose foreach { mode =>
       logger.info("verbose mode {} is active, starting to watch {}", mode: Any, files.logFile)
       lt += files.logFile
@@ -82,6 +83,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
           stdoutString => logger.trace("Vivado: {}", stdoutString),
           stderrString => logger.trace("Vivado ERR: {}", stderrString)
         ))
+    lt.closeAll
 
     // check retcode
     if (r == InterruptibleProcess.TIMEOUT_RETCODE) {
@@ -213,7 +215,7 @@ object VivadoComposer {
   private final case class Files(c: Composition, t: Target, f: Heuristics.Frequency, fs: Seq[Feature])
                                 (implicit cfg: Configuration) {
     lazy val outdir: Path    = cfg.outputDir(c, t, f, fs)
-    lazy val logFile: Path   = outdir.resolve("%s.log".format(c.id))
+    lazy val logFile: Path   = outdir.resolve("%s.log".format(Composer.mkProjectName(c, t, f)))
     lazy val tclFile: Path   = outdir.resolve("%s.tcl".format(t.pd.name))
     lazy val bitFile: Path   = logFile.resolveSibling("%s.bit".format(Composer.mkProjectName(c, t, f)))
     lazy val runName: String = "%s with %s[F=%1.3f]".format(logformat(c), t, f)

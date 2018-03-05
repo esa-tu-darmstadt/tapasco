@@ -46,7 +46,9 @@ class ImportTask(val zip: Path,
                  val id: Kernel.Id,
                  val onComplete: Boolean => Unit,
                  val averageClockCycles: Option[Int] = None,
-                 val skipEvaluation: Option[Boolean] = None)
+                 val skipEvaluation: Option[Boolean] = None,
+                 val synthOptions: Option[String] = None,
+                 val optimization: Int)
                 (implicit val cfg: Configuration) extends Task with LogTracking {
   private implicit val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   private val name = try { Some(VLNV.fromZip(zip).name) } catch { case _: Throwable => None }
@@ -59,7 +61,7 @@ class ImportTask(val zip: Path,
     val appender = LogFileTracker.setupLogFileAppender(_logFile.toString)
     logger.trace("current thread name: {}", Thread.currentThread.getName())
     logger.info(description)
-    val result = activity.Import(zip, id, t, averageClockCycles, skipEvaluation)
+    val result = activity.Import(zip, id, t, averageClockCycles, skipEvaluation, optimization, synthOptions)
     LogFileTracker.stopLogFileAppender(appender)
     result
   }

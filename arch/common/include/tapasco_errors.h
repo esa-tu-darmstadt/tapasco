@@ -44,7 +44,8 @@ namespace rpr { namespace tapasco { extern "C" {
 	_X(TAPASCO_ERR_PLATFORM_FAILURE               , -12 , "platform failure, check log") \
 	_X(TAPASCO_ERR_STATUS_CORE_NOT_FOUND          , -13 , "TPC status core not found in bitstream") \
 	_X(TAPASCO_ERR_VERSION_MISMATCH               , -14 , "TPC API library version mismatch") \
-	_X(TAPASCO_ERR_SENTINEL                       , -15 , "--- no error just end of list ---")
+	_X(TAPASCO_ERR_NO_PE_LOCAL_MEMORY_AVAILABLE   , -15 , "PE-local memory was selected, but none available") \
+	_X(TAPASCO_ERR_SENTINEL                       , -16 , "--- no error just end of list ---")
 
 #ifdef _X
 	#undef _X

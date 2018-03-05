@@ -30,14 +30,16 @@ namespace eval debug {
       set interfaces  {}
 
       set debug [tapasco::get_feature "Debug"]
+      puts "Debug feature enabled: $debug"
       dict with debug {
         set num_ifs [llength $interfaces]
         if {$num_ifs > 0} {
           set i 0
           foreach ifs $interfaces {
+            puts "   found interface def: $ifs"
             if {[llength $ifs] == 3} {
-              set s_ila [tapasco::createSystemILA "SILA_$i" $num_ifs $depth $stages]
-              puts "  ifs = $ifs"
+              set s_ila [tapasco::ip::create_system_ila "SILA_$i" $num_ifs $depth $stages]
+              puts "  create System ILA SILA_$i for $num_ifs interfaces with depth $depth and $stages stages"
               set intf [get_bd_intf_pins [lindex $ifs 0]]
               set clk [get_bd_pins [lindex $ifs 1]]
               set rst [get_bd_pins [lindex $ifs 2]]
@@ -56,4 +58,4 @@ namespace eval debug {
   }
 }
 
-tapasco::register_plugin "arch::debug::debug_feature" "post-bd"
+tapasco::register_plugin "arch::debug::debug_feature" "pre-wrapper"

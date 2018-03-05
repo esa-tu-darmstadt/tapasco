@@ -8,7 +8,7 @@ namespace eval blue_dma {
     variable vlnv
     if {[tapasco::is_feature_enabled "BlueDMA"]} {
       # blue_dma is drop-in replacement for dual_dma: replace original VLNV
-      dict set tapasco::stdcomps dualdma vlnv $vlnv
+      dict set tapasco::ip::stdcomps dualdma vlnv $vlnv
     }
   }
 }

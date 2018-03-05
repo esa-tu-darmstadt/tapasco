@@ -30,4 +30,4 @@ namespace eval apu_frequency {
   }
 }
 
-tapasco::register_plugin "platform::apu_frequency::set_max_apu_frequency" "post-bd"
+tapasco::register_plugin "platform::apu_frequency::set_max_apu_frequency" "pre-wrapper"

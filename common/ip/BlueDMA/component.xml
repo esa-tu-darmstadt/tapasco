@@ -1082,7 +1082,7 @@
       <spirit:addressBlock>
         <spirit:name>reg0</spirit:name>
         <spirit:baseAddress spirit:format="bitString" spirit:resolve="user" spirit:bitStringLength="32">0</spirit:baseAddress>
-        <spirit:range spirit:format="long" spirit:resolve="user" spirit:minimum="4096" spirit:rangeType="long">16777216T</spirit:range>
+        <spirit:range spirit:format="long" spirit:resolve="user" spirit:minimum="4096" spirit:rangeType="long">4096</spirit:range>
         <spirit:width spirit:format="long" spirit:resolve="user">64</spirit:width>
         <spirit:usage>register</spirit:usage>
       </spirit:addressBlock>
@@ -1102,7 +1102,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>1cf7cef1</spirit:value>
+            <spirit:value>ff8a092a</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -1118,7 +1118,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>c4f4cbe7</spirit:value>
+            <spirit:value>81bd05da</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -2971,6 +2971,17 @@
         </spirit:define>
       </spirit:file>
       <spirit:file>
+        <spirit:name>constraints/bluedma.tcl</spirit:name>
+        <spirit:fileType>tclSource</spirit:fileType>
+        <spirit:userFileType>USED_IN_implementation</spirit:userFileType>
+        <spirit:userFileType>USED_IN_simulation</spirit:userFileType>
+        <spirit:userFileType>USED_IN_synthesis</spirit:userFileType>
+        <spirit:define>
+          <spirit:name>processing_order</spirit:name>
+          <spirit:value>late</spirit:value>
+        </spirit:define>
+      </spirit:file>
+      <spirit:file>
         <spirit:name>src/FIFO1.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
@@ -2993,7 +3004,7 @@
       <spirit:file>
         <spirit:name>src/mkBlueDMAVivado.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_d06533a1</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_f4b809fa</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -3069,7 +3080,7 @@
       <xilinx:displayName>BlueDMA</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2017-09-05T16:12:56Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2018-01-30T15:28:45Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
@@ -3078,8 +3089,8 @@
       <xilinx:xilinxVersion>2017.2</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="00a31e8a"/>
       <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="39f16c3a"/>
-      <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="5dd283ff"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="84bd677b"/>
+      <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="0f1ff220"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="5e367912"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="d0fc19af"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="4a3aac11"/>
     </xilinx:packagingInfo>

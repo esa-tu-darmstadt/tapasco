@@ -30,6 +30,7 @@
 #include <tapasco_scheduler.h>
 #include <tapasco_logging.h>
 #include <tapasco_status.h>
+#include <tapasco_local_mem.h>
 #include <platform.h>
 #include <platform_errors.h>
 
@@ -40,7 +41,23 @@ struct tapasco_dev_ctx {
 	tapasco_ctx_t *ctx;
 	tapasco_dev_id_t id;
 	tapasco_status_t *status;
+	tapasco_local_mem_t *lmem;
 };
+
+tapasco_functions_t *tapasco_device_functions(tapasco_dev_ctx_t *ctx)
+{
+	return ctx->functions;
+}
+
+tapasco_status_t *tapasco_device_status(tapasco_dev_ctx_t *ctx)
+{
+	return ctx->status;
+}
+
+tapasco_local_mem_t *tapasco_device_local_mem(tapasco_dev_ctx_t *ctx)
+{
+	return ctx->lmem;
+}
 
 /** Interrupt handler callback. */
 void irq_handler(int const event);
@@ -65,6 +82,7 @@ tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx, tapasco_dev_id_t const d
 		res = res == TAPASCO_SUCCESS ? tapasco_functions_init(p->status,
 				&p->functions) : res;
 		res = res == TAPASCO_SUCCESS ? tapasco_jobs_init(&p->jobs) : res;
+		res = res == TAPASCO_SUCCESS ? tapasco_local_mem_init(p->status, &p->lmem) : res;
 		if (res != TAPASCO_SUCCESS) return res;
 		p->ctx = ctx;
 		p->id = dev_id;
@@ -80,6 +98,7 @@ tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx, tapasco_dev_id_t const d
 void tapasco_destroy_device(tapasco_ctx_t *ctx, tapasco_dev_ctx_t *dev_ctx)
 {
 	platform_stop(0);
+	tapasco_local_mem_deinit(dev_ctx->lmem);
 	tapasco_jobs_deinit(dev_ctx->jobs);
 	tapasco_functions_deinit(dev_ctx->functions);
 	tapasco_status_deinit(dev_ctx->status);
@@ -106,54 +125,6 @@ tapasco_res_t tapasco_device_load_bitstream(tapasco_dev_ctx_t *dev_ctx, size_t c
 		tapasco_load_bitstream_flag_t const flags)
 {
 	return TAPASCO_ERR_NOT_IMPLEMENTED;
-}
-
-tapasco_res_t tapasco_device_alloc(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t *h,
-		size_t const len, tapasco_device_alloc_flag_t const flags)
-{
-	platform_mem_addr_t addr;
-	platform_res_t r;
-	if ((r = platform_alloc(len, &addr, PLATFORM_ALLOC_FLAGS_NONE)) == PLATFORM_SUCCESS) {
-		LOG(LALL_MEM, "allocated %zd bytes at 0x%08x", len, addr);
-		*h = addr;
-		return TAPASCO_SUCCESS;
-	}
-	WRN("could not allocate %zd bytes of device memory: %s",
-			len, platform_strerror(r));
-	return TAPASCO_ERR_OUT_OF_MEMORY;
-}
-
-void tapasco_device_free(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t handle,
-		tapasco_device_alloc_flag_t const flags)
-{
-	LOG(LALL_MEM, "freeing handle 0x%08x", (unsigned)handle);
-	platform_dealloc(handle, PLATFORM_ALLOC_FLAGS_NONE);
-}
-
-tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx, void const *src,
-		tapasco_handle_t dst, size_t len,
-		tapasco_device_copy_flag_t const flags)
-{
-	LOG(LALL_MEM, "dst = 0x%08x, len = %zd, flags = %d", (unsigned)dst, len, flags);
-	if (flags & TAPASCO_DEVICE_COPY_NONBLOCKING)
-		return TAPASCO_ERR_NONBLOCKING_MODE_NOT_SUPPORTED;
-	if (flags)
-		return TAPASCO_ERR_NOT_IMPLEMENTED;
-	return platform_write_mem(dst, len, src, PLATFORM_MEM_FLAGS_NONE) == PLATFORM_SUCCESS ?
-			TAPASCO_SUCCESS : TAPASCO_FAILURE;
-}
-
-tapasco_res_t tapasco_device_copy_from(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t src,
-		void *dst, size_t len,
-		tapasco_device_copy_flag_t const flags)
-{
-	LOG(LALL_MEM, "src = 0x%08x, len = %zd, flags = %d", (unsigned)src, len, flags);
-	if (flags & TAPASCO_DEVICE_COPY_NONBLOCKING)
-		return TAPASCO_ERR_NONBLOCKING_MODE_NOT_SUPPORTED;
-	if (flags)
-		return TAPASCO_ERR_NOT_IMPLEMENTED;
-	return platform_read_mem(src, len, dst, PLATFORM_MEM_FLAGS_NONE) == PLATFORM_SUCCESS ?
-			TAPASCO_SUCCESS : TAPASCO_FAILURE;
 }
 
 tapasco_job_id_t tapasco_device_acquire_job_id(tapasco_dev_ctx_t *dev_ctx,
@@ -194,6 +165,15 @@ tapasco_res_t tapasco_device_job_set_arg(tapasco_dev_ctx_t *dev_ctx,
 		size_t const arg_len, void const *arg_value)
 {
 	return tapasco_jobs_set_arg(dev_ctx->jobs, j_id, arg_idx, arg_len, arg_value);
+}
+
+tapasco_res_t tapasco_device_job_set_arg_transfer(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_job_id_t const job_id, uint32_t arg_idx,
+		size_t const arg_len, void *arg_value,
+		tapasco_device_alloc_flag_t const flags)
+{
+	return tapasco_jobs_set_arg_transfer(dev_ctx->jobs, job_id, arg_idx,
+			arg_len, arg_value, flags);
 }
 
 tapasco_res_t tapasco_device_job_get_return(tapasco_dev_ctx_t *dev_ctx,

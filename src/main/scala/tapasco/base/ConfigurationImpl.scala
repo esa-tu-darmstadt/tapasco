@@ -44,6 +44,7 @@ private case class ConfigurationImpl (
       slurm: Boolean                                  = false,
       parallel: Boolean                               = false,
       maxThreads: Option[Int]                         = None,
+      maxTasks: Option[Int]                           = None,
       dryRun: Option[Path]                            = None,
       verbose: Option[String]                         = None,
       jobs: Seq[Job]                                  = Seq()
@@ -64,6 +65,7 @@ private case class ConfigurationImpl (
   def slurm(enabled: Boolean): Configuration          = this.copy(slurm = enabled)
   def parallel(enabled: Boolean): Configuration       = this.copy(parallel = enabled)
   def maxThreads(mt: Option[Int]): Configuration      = this.copy(maxThreads = mt)
+  def maxTasks(mt: Option[Int]): Configuration        = this.copy(maxTasks = mt)
   def dryRun(cfg: Option[Path]): Configuration        = this.copy(dryRun = cfg)
   def verbose(mode: Option[String]): Configuration    = this.copy(verbose = mode)
   def jobs(js: Seq[Job]): Configuration               = this.copy(jobs = js)

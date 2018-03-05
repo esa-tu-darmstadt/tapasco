@@ -46,11 +46,23 @@ private object ImportParserSpec {
     Gen.posNum[Int] map (_.toString)
   ))
 
+  val synthOptionsGen: Gen[String] = join(Seq(
+    genLongOption("synthOptions"),
+    qstringGen
+  ))
+
+  val optimizationGen: Gen[String] = join(Seq(
+    genLongOption("optimization"),
+    Gen.posNum[Int] map (_.toString)
+  ))
+
   val optionGen: Gen[String] = Gen.oneOf(
     descriptionGen,
     avgClockCyclesGen,
     architecturesGen,
-    platformsGen
+    platformsGen,
+    synthOptionsGen,
+    optimizationGen
   )
 
   val optionsGen: Gen[String] = for {
