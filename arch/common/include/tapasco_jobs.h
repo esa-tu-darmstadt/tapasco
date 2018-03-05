@@ -62,6 +62,15 @@ typedef enum {
 	TAPASCO_JOB_STATE_FINISHED,
 } tapasco_job_state_t;
 
+/** Internal structure for ad-hoc data transfers. **/
+struct tapasco_transfer {
+	size_t len;
+	void *data;
+	tapasco_device_alloc_flag_t flags;
+	tapasco_handle_t handle;
+};
+typedef struct tapasco_transfer tapasco_transfer_t;
+
 /**
  * Internal job structure to maintain information on an execution to be 
  * scheduled some time in the future.
@@ -152,6 +161,16 @@ uint64_t tapasco_jobs_get_arg64(tapasco_jobs_t const *jobs, tapasco_job_id_t con
 		uint32_t const arg_idx);
 
 /**
+ * Returns the transfer struct for the given arg.
+ * @param jobs jobs context.
+ * @param j_id job id.
+ * @param arg_idx index of the argument to retrieve.
+ * @return pointer to tapasco_transfer_t struct.
+ **/
+tapasco_transfer_t *tapasco_jobs_get_arg_transfer(tapasco_jobs_t *jobs,
+		tapasco_job_id_t const j_id, uint32_t const arg_idx);
+
+/**
  * Returns the value of an argument in a job.
  * @param jobs jobs context.
  * @param j_id job id.
@@ -176,6 +195,22 @@ tapasco_res_t tapasco_jobs_get_arg(tapasco_jobs_t *jobs, tapasco_job_id_t const 
 tapasco_res_t tapasco_jobs_set_arg(tapasco_jobs_t *jobs, tapasco_job_id_t const j_id,
 		uint32_t const arg_idx, size_t const arg_len,
 		void const *arg_value);
+
+/**
+ * Attaches a data transfer to local memory to be run prior to execution of the
+ * job. Replaces argument arg_idx with the handle to the address.
+ * @param jobs jobs context.
+ * @param j_id job id.
+ * @param arg_idx index of the argument to retrieve.
+ * @param arg_len size of argument in bytes.
+ * @param arg_value pointer to value data.
+ * @param flags transfer flags (see @tapasco_device_alloc_flag_t).
+ * @return TAPASCO_SUCCESS, if value could be set.
+ **/
+tapasco_res_t tapasco_jobs_set_arg_transfer(tapasco_jobs_t *jobs,
+		tapasco_job_id_t const j_id, uint32_t const arg_idx,
+		size_t const arg_len, void *arg_value,
+		tapasco_device_alloc_flag_t const flags);
 
 /**
  * Sets the return value of a job.

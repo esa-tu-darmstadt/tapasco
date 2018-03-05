@@ -137,7 +137,8 @@ cleanFiles ++= Seq(
   baseDirectory.value / "bin" / "tapasco",
   baseDirectory.value / "bin" / "itapasco",
   baseDirectory.value / "bin" / "tapasco-logviewer",
-  baseDirectory.value / "bin" / "tapasco-reportviewer"
+  baseDirectory.value / "bin" / "tapasco-reportviewer",
+  baseDirectory.value / "tapasco-status-cache"
 )
 
 lazy val root = (project in file("."))

@@ -45,7 +45,7 @@ namespace eval full_axi_wrapper {
       foreach fs $full_slave_ifs {
         # create slave port
         set saxi_port [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave "S_AXI_LITE_$si"]
-        set conv [tapasco::createProtocolConverter "conv_$si" "AXI4LITE" [get_property CONFIG.PROTOCOL $fs]]
+        set conv [tapasco::ip::create_proto_conv "conv_$si" "AXI4LITE" [get_property CONFIG.PROTOCOL $fs]]
         connect_bd_intf_net $saxi_port [get_bd_intf_pins -of_objects $conv -filter {MODE == Slave}]
         connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master} -of_objects $conv] $fs
         incr si

@@ -42,6 +42,8 @@
 //!		License along with Tapasco.  If not, see
 //!		<http://www.gnu.org/licenses/>.
 //! @details	### Change Log ###
+//!		- Version 1.4 (jk)
+//!		  + added support for pe-local memories
 //!		- Version 1.3 (jk)
 //!		  + added device capabilities
 //!		- Version 1.2.1 (jk)
@@ -115,7 +117,9 @@ typedef enum {
 /** Flags for memory allocation (implementation defined). **/
 typedef enum {
 	/** no flags **/
-	TAPASCO_DEVICE_ALLOC_FLAGS_NONE 		= 0
+	TAPASCO_DEVICE_ALLOC_FLAGS_NONE 		= 0,
+	/** PE-local, i.e., only accessible from scheduled PE **/
+	TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL             = 1,
 } tapasco_device_alloc_flag_t;
 
 /** Flags for bitstream loading (implementation defined). **/
@@ -132,6 +136,8 @@ typedef enum {
 	TAPASCO_DEVICE_COPY_BLOCKING		= 0,
 	/** return immediately after transfer was scheduled **/
 	TAPASCO_DEVICE_COPY_NONBLOCKING		= 1,
+	/** copy to local memory **/
+	TAPASCO_DEVICE_COPY_PE_LOCAL            = 2,
 } tapasco_device_copy_flag_t;
 
 /** Flags for calls to tapasco_device_acquire_job_id. **/
@@ -170,7 +176,7 @@ typedef enum {
  *  @{
  **/
 
-#define TAPASCO_API_VERSION					"1.3"
+#define TAPASCO_API_VERSION					"1.4"
 
 /**
  * Returns the version string of the library.
@@ -297,8 +303,9 @@ tapasco_res_t tapasco_device_load_bitstream(tapasco_dev_ctx_t *dev_ctx, size_t c
  * @param flags device memory allocation flags
  * @return TAPASCO_SUCCESS if successful, error code otherwise
  **/
-tapasco_res_t tapasco_device_alloc(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t *handle,
-		size_t const len, tapasco_device_alloc_flag_t const flags);
+tapasco_res_t tapasco_device_alloc(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_handle_t *handle, size_t const len,
+		tapasco_device_alloc_flag_t const flags, ...);
 
 /**
  * Frees a previously allocated chunk of device memory.
@@ -307,7 +314,7 @@ tapasco_res_t tapasco_device_alloc(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t 
  * @param flags device memory allocation flags
  **/
 void tapasco_device_free(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t handle,
-		tapasco_device_alloc_flag_t const flags);
+		tapasco_device_alloc_flag_t const flags, ...);
 
 /**
  * Copys memory from main memory to the FPGA device.
@@ -318,9 +325,9 @@ void tapasco_device_free(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t handle,
  * @param flags	flags for copy operation, e.g., TAPASCO_COPY_NONBLOCKING
  * @return TAPASCO_SUCCESS if copy was successful, TAPASCO_FAILURE otherwise
  **/
-tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx, void const *src,
-		tapasco_handle_t dst, size_t len,
-		tapasco_device_copy_flag_t const flags);
+tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx,
+		void const *src, tapasco_handle_t dst, size_t len,
+		tapasco_device_copy_flag_t const flags, ...);
 
 /**
  * Copys memory from FPGA device memory to main memory.
@@ -331,8 +338,9 @@ tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx, void const *src
  * @param flags	flags for copy operation, e.g., TAPASCO_COPY_NONBLOCKING
  * @return TAPASCO_SUCCESS if copy was successful, TAPASCO_FAILURE otherwise
  **/
-tapasco_res_t tapasco_device_copy_from(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t src,
-		void *dst, size_t len, tapasco_device_copy_flag_t const flags);
+tapasco_res_t tapasco_device_copy_from(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_handle_t src, void *dst, size_t len,
+		tapasco_device_copy_flag_t const flags, ...);
 
 /** @} **/
 
@@ -391,6 +399,25 @@ tapasco_res_t tapasco_device_job_launch(tapasco_dev_ctx_t *dev_ctx,
 tapasco_res_t tapasco_device_job_set_arg(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_job_id_t const job_id, uint32_t arg_idx,
 		size_t const arg_len, void const *arg_value);
+
+/**
+ * Sets the arg_idx'th argument of function func_id to trigger an automatic
+ * transfer to and from memory allocated internally. Copies data from arg_value
+ * to a newly allocated buffer before execution of the job, and copies data from
+ * the buffer back to arg_value after its end.
+ * Use flags to control memory location, e.g., pe-local memory.
+ * @param dev_ctx device context
+ * @param job_id job id
+ * @param arg_idx argument number
+ * @param arg_len length of arg_value in bytes (must be power of 4)
+ * @param arg_value data to set argument to.
+ * @param flags allocation flags, see @tapasco_device_alloc_flag_t.
+ * @return TAPASCO_SUCCESS if successful, TAPASCO_FAILURE otherwise.
+ **/
+tapasco_res_t tapasco_device_job_set_arg_transfer(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_job_id_t const job_id, uint32_t arg_idx,
+		size_t const arg_len, void *arg_value,
+		tapasco_device_alloc_flag_t const flags);
 
 /**
  * Gets the value of the arg_idx'th argument of function func_id.

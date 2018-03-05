@@ -20,7 +20,7 @@
     </encoder>
   </appender>
 
-  <logger name="de.tu_darmstadt.cs.esa.tapasco.activity.composers" level="trace">
+  <logger name="de.tu_darmstadt.cs.esa.tapasco.filemgmt.LogTrackingFileWatcher" level="trace">
     <appender-ref ref="STDOUT-DETAIL" />
   </logger>-->
 

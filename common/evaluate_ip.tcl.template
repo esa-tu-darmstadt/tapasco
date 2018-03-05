@@ -24,12 +24,14 @@
 # source base lib
 source -notrace "$::env(TAPASCO_HOME)/common/common.tcl"
 
-# suppress most messages except errors
+# suppress most messages except warnings and errors
 set_msg_config -severity INFO -suppress
-set_msg_config -severity WARNING -suppress
 set_param general.maxThreads 1
 
 create_project -in_memory -part @@PART@@
+
+# add common IP
+set_property IP_REPO_PATHS "$::env(TAPASCO_HOME)/common/ip" [current_project]
 
 # add files
 add_files @@SRC_FILES@@
@@ -132,7 +134,7 @@ for {} {$period <= $target_period} {set period [expr $period + 0.25]} {
     place_design -directive $place_directive
     set place_design_finish [clock seconds]
 
-    set physopt1_directive "RuntimeOptimized"
+    set physopt1_directive "Default"
     if {$opt >= 1} { set physopt1_directive "Explore" }
     if {$opt >= 2} { set physopt1_directive "AggressiveExplore" }
     if {$opt >= 3} { set physopt1_directive "AlternateFlowWithRetiming" }

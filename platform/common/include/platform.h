@@ -45,6 +45,8 @@
  *		License along with Tapasco.  If not, see
  *		<http://www.gnu.org/licenses/>.
  *  @details	### Change Log ###
+ *		- **12/2017: Version 1.4 (jk)**
+ *		  + added support for PE-local memories
  *		- **06/2016: Version 1.3 (jk)**
  *		  + added 'raw' mode for read/write to bypass address filters
  *  		  + added special address for the ATS/PRI checker
@@ -125,7 +127,9 @@ typedef enum {
 
 typedef enum {
 	/** no flags **/
-	PLATFORM_ALLOC_FLAGS_NONE 		= 0
+	PLATFORM_ALLOC_FLAGS_NONE 		= 0,
+	/** PE-local memory **/
+	PLATFORM_ALLOC_FLAGS_PE_LOCAL           = 1,
 } platform_alloc_flags_t;
 
 typedef enum {
@@ -146,7 +150,7 @@ typedef enum {
  *  @{
  **/
 
-#define PLATFORM_API_VERSION				"1.3"
+#define PLATFORM_API_VERSION				"1.4"
 
 /**
  * Returns the version string of the library.

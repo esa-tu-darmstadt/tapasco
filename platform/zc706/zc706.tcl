@@ -19,18 +19,7 @@
 source -notrace $::env(TAPASCO_HOME)/platform/zynq/zynq.tcl
 
 namespace eval platform {
-  namespace export create
-  namespace export max_masters
-
   foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/zc706/plugins" "*.tcl"] {
     source -notrace $f
-  }
-
-  proc max_masters {} {
-    return [zynq::max_masters]
-  }
-
-  proc create {} {
-    return [zynq::create]
   }
 }

@@ -50,6 +50,8 @@ trait Configuration {
   def parallel(enabled: Boolean): Configuration
   def maxThreads: Option[Int]
   def maxThreads(mt: Option[Int]): Configuration
+  def maxTasks: Option[Int]
+  def maxTasks(mt: Option[Int]): Configuration
   def dryRun(cfg: Option[Path]): Configuration
   def dryRun: Option[Path]
   def verbose(mode: Option[String]): Configuration

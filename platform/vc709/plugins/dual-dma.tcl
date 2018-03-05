@@ -24,8 +24,10 @@ namespace eval dual_dma {
   namespace export set_constraints
 
   proc set_constraints {{args {}}} {
-    puts "Setting constraints for dual_dma ..."
-    read_xdc -cells {system_i/Memory/dual_dma} "$::env(TAPASCO_HOME)/common/ip/dual_dma_1.0/dual_async_m32_m64.xdc"
+    if {![tapasco::is_feature_enabled "BlueDMA"]} {
+        puts "Setting constraints for dual_dma ..."
+        read_xdc -cells {system_i/memory/dual_dma} "$::env(TAPASCO_HOME)/common/ip/dual_dma/dual_dma.xdc"
+    }
     return {}
   }
 }

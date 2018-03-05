@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-# @file		axi4mm.tcl
-# @brief	AXI4 memory mapped master/slave interface based Architectures.
-# @author	J. Korinth, TU Darmstadt (jk@esa.tu-darmstadt.de)
+# @file    axi4mm.tcl
+# @brief  AXI4 memory mapped master/slave interface based Architectures.
+# @author  J. Korinth, TU Darmstadt (jk@esa.tu-darmstadt.de)
 #
 namespace eval arch {
   namespace export create
@@ -40,7 +40,7 @@ namespace eval arch {
   # Returns a list of the bd_cells of slave interfaces of the threadpool.
   proc get_slaves {} {
     set inst [current_bd_instance]
-    current_bd_instance "uArch"
+    current_bd_instance [::tapasco::subsystem::get arch]
     set r [list [get_bd_intf_pins -of [get_bd_cells "in1"] -filter { MODE == "Slave" }]]
     current_bd_instance $inst
     return $r
@@ -53,12 +53,12 @@ namespace eval arch {
   }
 
   proc get_processing_elements {} {
-    return [get_bd_cells "uArch/target*"]
+    return [get_bd_cells -of_objects [::tapasco::subsystem::get arch] -filter { NAME =~ target*}]
   }
 
   # Returns a list of interrupt lines from the threadpool.
   proc get_irqs {} {
-    return [get_bd_pins -of_objects [get_bd_cells "uArch"] -filter {TYPE == "intr" && DIR == "O"}]
+    return [get_bd_pins -of_objects [::tapasco::subsystem::get arch] -filter {TYPE == "intr" && DIR == "O"}]
   }
 
   # Checks, if the current composition can be instantiated. Exits script with
@@ -178,11 +178,11 @@ namespace eval arch {
     set ic_ports [list]
     set mdist [list]
     for {set i 0} {$i < [llength $outs] && $i < $no_masters} {incr i} {
-      lappend ic_ports [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" [format "M_AXI_MEM_%02d" $i]]
+      lappend ic_ports [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" [format "M_MEM_%d" $i]]
       lappend mdist 0
     }
 
-    # distribute masters round-robin on all output ports: mdist holds 
+    # distribute masters round-robin on all output ports: mdist holds
     # number of masters for each port
     set j 0
     for {set i 0} {$i < $no_masters} {incr i} {
@@ -224,7 +224,7 @@ namespace eval arch {
     puts "Creating interconnects toward peripherals ..."
     puts "  $ic_s slaves to connect to host"
 
-    set out_port [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI]
+    set out_port [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_ARCH"]
     connect_bd_intf_net $out_port [get_bd_intf_pins -of_objects $in1 -filter {NAME == "S000_AXI"}]
 
     return $in1
@@ -318,7 +318,7 @@ namespace eval arch {
     set i 0
     set j 0
     set left [llength $ips]
-    set cc [tapasco::createConcat "xlconcat_$j" [expr "[llength $ips] > 32 ? 32 : [llength $ips]"]]
+    set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "[llength $ips] > 32 ? 32 : [llength $ips]"]]
     lappend arch_irq_concats $cc
     foreach ip [lsort $ips] {
       foreach pin [get_bd_pins -of $ip -filter { TYPE == intr }] {
@@ -327,11 +327,11 @@ namespace eval arch {
         incr left -1
         if {$i > 31} {
           set i 0
-  	incr j
-  	if { $left > 0 } {
-  	  set cc [tapasco::createConcat "xlconcat_$j" [expr "$left > 32 ? 32 : $left"]]
-  	  lappend arch_irq_concats $cc
-  	}
+          incr j
+          if { $left > 0 } {
+            set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "$left > 32 ? 32 : $left"]]
+            lappend arch_irq_concats $cc
+          }
         }
       }
     }
@@ -339,7 +339,7 @@ namespace eval arch {
     foreach irq_concat $arch_irq_concats {
       # create hierarchical port with correct width
       set port [get_bd_pins -of_objects $irq_concat -filter {DIR == "O"}]
-      set out_port [create_bd_pin -type INTR -dir O -from [get_property LEFT $port] -to [get_property RIGHT $port] "irq_$i"]
+      set out_port [create_bd_pin -type INTR -dir O -from [get_property LEFT $port] -to [get_property RIGHT $port] "intr_$i"]
       connect_bd_net $port $out_port
       incr i
     }
@@ -347,44 +347,21 @@ namespace eval arch {
 
   # Connect internal clock lines.
   proc arch_connect_clocks {} {
-    set host_aclk [create_bd_pin -type clk -dir I "host_aclk"]
-    connect_bd_net $host_aclk [get_bd_pins -filter { NAME == "s_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-    set design_aclk [create_bd_pin -type clk -dir I "design_aclk"]
-    connect_bd_net $design_aclk [get_bd_pins -filter { NAME == "m_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-    connect_bd_net $design_aclk [get_bd_pins -filter { TYPE == clk && DIR == I } -of_objects [get_bd_cells -filter {NAME =~ "target_ip_*"}]]
-    puts "  creating clock lines ..."
-    set memory_aclk [create_bd_pin -type clk -dir I "memory_aclk"]
-    if {[llength [get_bd_cells -filter {NAME =~ "out*"}]] > 0} {
-      connect_bd_net $design_aclk [get_bd_pins -filter { NAME == "s_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "out*"}]]
-      connect_bd_net $memory_aclk [get_bd_pins -filter { NAME == "m_aclk" } -of_objects [get_bd_cells -filter {NAME =~ "out*"}]]
-    }
+    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
+      [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == clk && DIR == I"]
   }
 
   # Connect internal reset lines.
   proc arch_connect_resets {} {
-   # create hierarchical ports for host interconnect and peripheral resets
-   set host_ic_arstn [create_bd_pin -type rst -dir I "host_interconnect_aresetn"]
-   set host_p_arstn  [create_bd_pin -type rst -dir I "host_peripheral_aresetn"]
-   connect_bd_net $host_ic_arstn [get_bd_pins -filter { NAME == "s_interconnect_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-   connect_bd_net $host_p_arstn [get_bd_pins -filter { NAME == "s_peripheral_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-
-   # create hierarchical ports for design interconnect and peripheral resets
-   set design_ic_arstn [create_bd_pin -type rst -dir I "design_interconnect_aresetn"]
-   set design_p_arstn  [create_bd_pin -type rst -dir I "design_peripheral_aresetn"]
-   connect_bd_net $design_ic_arstn [get_bd_pins -filter { NAME == "m_interconnect_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-   connect_bd_net $design_p_arstn [get_bd_pins -filter { NAME == "m_peripheral_aresetn" } -of_objects [get_bd_cells -filter {NAME =~ "in*"}]]
-   connect_bd_net $design_p_arstn [get_bd_pins -filter { TYPE == rst && DIR == I } -of_objects [get_bd_cells -filter {NAME =~ "target_ip*"}]]
-
-   # create hierarchical ports for memory interconnect and peripheral resets
-   set memory_ic_arstn [create_bd_pin -type rst -dir I "memory_interconnect_aresetn"]
-   set memory_p_arstn  [create_bd_pin -type rst -dir I "memory_peripheral_aresetn"]
-   if {[llength [get_bd_cells -filter {NAME =~ "out*"}]] > 0} {
-     set outs [get_bd_cells -filter {NAME =~ "out*"}]
-     connect_bd_net $design_ic_arstn [get_bd_pins -filter { NAME == "s_interconnect_aresetn" } -of_objects $outs]
-     connect_bd_net $design_p_arstn [get_bd_pins -filter { NAME == "s_peripheral_aresetn" } -of_objects $outs]
-     connect_bd_net $memory_ic_arstn [get_bd_pins -filter { NAME == "m_interconnect_aresetn" } -of_objects $outs]
-     connect_bd_net $memory_p_arstn [get_bd_pins -filter { NAME == "m_peripheral_aresetn" } -of_objects $outs]
-   }
+    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "interconnect"] \
+      [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && NAME =~ *interconnect_aresetn && DIR == I"]
+    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
+      [get_bd_pins -of_objects [get_bd_cells -of_objects [current_bd_instance .]] -filter "TYPE == rst && NAME =~ *peripheral_aresetn && DIR == I"] \
+      [get_bd_pins -filter { TYPE == rst && DIR == I && CONFIG.POLARITY != ACTIVE_HIGH } -of_objects [get_bd_cells -filter {NAME =~ "target_ip*"}]]
+    set active_high_resets [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && DIR == I && CONFIG.POLARITY == ACTIVE_HIGH"]
+    if {[llength $active_high_resets] > 0} {
+      connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] $active_high_resets
+    }
   }
 
   # Instantiates the architecture.
@@ -397,7 +374,7 @@ namespace eval arch {
     }
 
     # create hierarchical group
-    set group [create_bd_cell -type hier "uArch"]
+    set group [tapasco::subsystem::create "arch"]
     set instance [current_bd_instance .]
     current_bd_instance $group
 

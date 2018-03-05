@@ -30,6 +30,7 @@
 typedef struct tapasco_status tapasco_status_t;
 struct tapasco_status {
 	tapasco_func_id_t id[TAPASCO_MAX_INSTANCES];
+	size_t mem[TAPASCO_MAX_INSTANCES];
 	uint32_t gen_ts;
 	uint32_t vivado_version;
 	uint32_t tapasco_version;
@@ -43,6 +44,7 @@ struct tapasco_status {
 typedef enum {
   TAPASCO_CAP0_ATSPRI 					   	= (1 << 0),
   TAPASCO_CAP0_ATSCHECK 					= (1 << 1),
+  TAPASCO_CAP0_PE_LOCAL_MEM 					= (1 << 2),
 } tapasco_capabilities_0_t;
 
 #define TAPASCO_VERSION_MAJOR(v) 				((v) >> 16)

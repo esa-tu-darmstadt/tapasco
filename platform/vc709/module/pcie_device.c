@@ -137,7 +137,11 @@ static int register_intr_handler(struct pci_dev *pdev, int c)
 		err = request_irq(pci_irq_vector(pdev, c), intr_handler_dma, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev);
 	}
 
-	if (c == 1 || c == 2 || c == 3) err = -2;
+	if (c == 1) {
+		err = request_irq(pci_irq_vector(pdev, c), intr_handler_dma, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev);
+	}
+
+	if (c == 2 || c == 3) err = -2;
 
 	switch (c) {
 	case 4: err = request_irq(pci_irq_vector(pdev, c), intr_handler_user_0, IRQF_EARLY_RESUME, FFLINK_PCI_NAME, pdev); break;

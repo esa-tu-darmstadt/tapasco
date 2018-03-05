@@ -29,6 +29,97 @@
 #include <tapasco_logging.h>
 #include <platform.h>
 
+// TODO tapasco_scheduler needs refactoring
+
+static inline
+tapasco_res_t tapasco_transfer_to(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_job_id_t const j_id, tapasco_transfer_t *t,
+		tapasco_func_slot_id_t s_id)
+{
+	LOG(LALL_SCHEDULER, "job %lu: executing transfer to with length %zd bytes",
+			(unsigned long)j_id, (unsigned long)t->len);
+	tapasco_res_t res = tapasco_device_alloc(dev_ctx, &t->handle, t->len,
+			t->flags, s_id);
+	if (res != TAPASCO_SUCCESS) {
+		ERR("job %lu: memory allocation failed!", (unsigned long)j_id);
+		return res;
+	}
+	res = tapasco_device_copy_to(dev_ctx, t->data, t->handle, t->len,
+			t->flags, s_id);
+	if (res != TAPASCO_SUCCESS) {
+		ERR("job %lu: transfer failed - %zd bytes -> 0x%08x with flags %lu",
+				(unsigned long)j_id, t->len,
+				(unsigned long)t->handle,
+				(unsigned long)t->flags);
+	}
+	return res;
+}
+
+static inline
+tapasco_res_t tapasco_transfer_from(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_jobs_t *jobs, tapasco_job_id_t const j_id,
+		tapasco_transfer_t *t, tapasco_func_slot_id_t s_id)
+{
+	LOG(LALL_SCHEDULER, "job %lu: executing transfer from with length %zd bytes",
+			(unsigned long)j_id, (unsigned long)t->len);
+	tapasco_res_t res = tapasco_device_copy_from(dev_ctx, t->handle,
+			t->data, t->len, t->flags, s_id);
+	if (res != TAPASCO_SUCCESS) {
+		ERR("job %lu: transfer failed - %zd bytes <- 0x%08x with flags %lu",
+				(unsigned long)j_id, t->len,
+				(unsigned long)t->handle,
+				(unsigned long)t->flags);
+	}
+	tapasco_device_free(dev_ctx, t->handle, t->flags, s_id, t->len);
+	return res;
+}
+
+static inline
+tapasco_res_t tapasco_write_arg(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_jobs_t *jobs, tapasco_job_id_t const j_id,
+		tapasco_handle_t const h, uint32_t const a)
+{
+	int const is64 = tapasco_jobs_is_arg_64bit(jobs, j_id, a);
+	if (is64) {
+		uint64_t v = tapasco_jobs_get_arg64(jobs, j_id, a);
+		LOG(LALL_SCHEDULER, "job %lu: writing 64b arg #%u = 0x%08lx to 0x%08x",
+			(unsigned long)j_id, a, (unsigned long)v, (unsigned)h);
+		if (platform_write_ctl(h, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
+			return TAPASCO_FAILURE;
+	} else {
+		uint32_t v = tapasco_jobs_get_arg32(jobs, j_id, a);
+		LOG(LALL_SCHEDULER, "job %lu: writing 32b arg #%u = 0x%08lx to 0x%08x",
+			(unsigned long)j_id, a, (unsigned long)v, (unsigned)h);
+		if (platform_write_ctl(h, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
+			return TAPASCO_FAILURE;
+	}
+	return TAPASCO_SUCCESS;
+}
+
+static inline
+tapasco_res_t tapasco_read_arg(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_jobs_t *jobs, tapasco_job_id_t const j_id,
+		tapasco_handle_t const h, uint32_t const a)
+{
+	int const is64 = tapasco_jobs_is_arg_64bit(jobs, j_id, a);
+	if (is64) {
+		uint64_t v = 0;
+		if (platform_read_ctl(h, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
+			return TAPASCO_FAILURE;
+		LOG(LALL_SCHEDULER, "job %lu: reading 64b arg #%u = 0x%08lx from 0x%08x",
+			(unsigned long)j_id, a, (unsigned long)v, (unsigned)h);
+		tapasco_jobs_set_arg(jobs, j_id, a, sizeof(v), &v);
+	} else {
+		uint32_t v = 0;
+		if (platform_read_ctl(h, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
+			return TAPASCO_FAILURE;
+		LOG(LALL_SCHEDULER, "job %lu: reading 32b arg #%u = 0x%08lx from 0x%08x",
+			(unsigned long)j_id, a, (unsigned long)v, (unsigned)h);
+		tapasco_jobs_set_arg(jobs, j_id, a, sizeof(v), &v);
+	}
+	return TAPASCO_SUCCESS;
+}
+
 tapasco_res_t tapasco_scheduler_launch(
 		tapasco_dev_ctx_t *dev_ctx,
 		tapasco_jobs_t *jobs,
@@ -55,24 +146,28 @@ tapasco_res_t tapasco_scheduler_launch(
 
 	uint32_t const num_args = tapasco_jobs_arg_count(jobs, j_id);
 	for (uint32_t a = 0; a < num_args; ++a) {
+		tapasco_res_t r = TAPASCO_SUCCESS;
 		tapasco_handle_t h = tapasco_address_map_func_arg_register(
 				dev_ctx,
 				slot_id,
 				a);
-
-		int const is64 = tapasco_jobs_is_arg_64bit(jobs, j_id, a);
-		if (is64) {
-			uint64_t v = tapasco_jobs_get_arg64(jobs, j_id, a);
-			LOG(LALL_SCHEDULER, "job %lu: writing 64b arg #%u = 0x%08lx to 0x%08x",
-				(unsigned long)j_id, a, (unsigned long)v, (unsigned)h);
-			if (platform_write_ctl(h, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
+		tapasco_transfer_t *t = tapasco_jobs_get_arg_transfer(jobs,
+				j_id, a);
+		if (t->len > 0) {
+			LOG(LALL_SCHEDULER, "job %lu: transferring %zd byte arg #%u",
+					(unsigned long)j_id, t->len, a);
+			r = tapasco_transfer_to(dev_ctx, j_id, t, slot_id);
+			if (r != TAPASCO_SUCCESS) { return r; }
+			LOG(LALL_SCHEDULER, "job %lu: writing handle to arg #%u (0x%08x)",
+					(unsigned long)j_id, a, t->handle);
+			if (platform_write_ctl(h, sizeof(t->handle), &t->handle,
+					PLATFORM_CTL_FLAGS_NONE) !=
+					PLATFORM_SUCCESS)
 				return TAPASCO_FAILURE;
 		} else {
-			uint32_t v = tapasco_jobs_get_arg32(jobs, j_id, a);
-			LOG(LALL_SCHEDULER, "job %lu: writing 32b arg #%u = 0x%08lx to 0x%08x",
-				(unsigned long)j_id, a, (unsigned long)v, (unsigned)h);
-			if (platform_write_ctl(h, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
-				return TAPASCO_FAILURE;
+			tapasco_res_t r = tapasco_write_arg(dev_ctx, jobs, j_id,
+					a, h);
+			if (r != TAPASCO_SUCCESS) { return r; }
 		}
 	}
 
@@ -106,23 +201,12 @@ tapasco_res_t tapasco_scheduler_launch(
 				dev_ctx,
 				slot_id,
 				a);
-
-		int const is64 = tapasco_jobs_is_arg_64bit(jobs, j_id, a);
-		if (is64) {
-			uint64_t v = 0;
-			if (platform_read_ctl(h, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
-				return TAPASCO_FAILURE;
-			LOG(LALL_SCHEDULER, "job %lu: reading 64b arg #%u = 0x%08lx from 0x%08x",
-				(unsigned long)j_id, a, (unsigned long)v, (unsigned)h);
-			tapasco_jobs_set_arg(jobs, j_id, a, sizeof(v), &v);
-		} else {
-			uint32_t v = 0;
-			if (platform_read_ctl(h, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
-				return TAPASCO_FAILURE;
-			LOG(LALL_SCHEDULER, "job %lu: reading 32b arg #%u = 0x%08lx from 0x%08x",
-				(unsigned long)j_id, a, (unsigned long)v, (unsigned)h);
-			tapasco_jobs_set_arg(jobs, j_id, a, sizeof(v), &v);
-		}
+		tapasco_res_t r = TAPASCO_SUCCESS;
+		tapasco_transfer_t *t = tapasco_jobs_get_arg_transfer(jobs,
+				j_id, a);
+		r = tapasco_read_arg(dev_ctx, jobs, j_id, h, a);
+		if (r != TAPASCO_SUCCESS) { return r; }
+		r = tapasco_transfer_from(dev_ctx, jobs, j_id, t, slot_id);
 	}
 
 	// ack the interrupt

@@ -1,4 +1,4 @@
-.TH tapasco 1 2017.1 MAN(1)
+.TH tapasco 1 2018.1 MAN(1)
 .SH SYNOPSIS
     tapasco [global option]* [job]*
 or: tapasco \-h | \-\-help [TOPIC]
@@ -80,7 +80,13 @@ Execute all jobs in parallel (careful!)
 .RS
 \-\-maxThreads NUM
 .RS
-Limit internal parallelism of activities (e.g., Vivado) to the given number of threads.
+Limit internal parallelism of tasks (e.g., Vivado) to the given number of threads.
+.RE
+.RE
+.RS
+\-\-maxTasks NUM
+.RS
+Limit max. number tasks executed in parallel to the given number
 .RE
 .RE
 .SH BULK IMPORT JOB
@@ -609,6 +615,12 @@ list of Platforms , e.g., \-p vc709, pynq
 \-\-description TEXT
 .RS
 any quoted or unquoted string containing additional information about the core
+.RE
+.RE
+.RS
+\-\-skipEvaluation
+.RS
+do not perform out\-of\-context synthesis to get resource estimates, only import
 .RE
 .RE
 .RS

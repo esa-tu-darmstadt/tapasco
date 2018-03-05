@@ -82,8 +82,9 @@ configuration via `tapasco -n config.json`.
     Arg("--jobsFile FILE", "Path to Json file with Jobs array") &
     Arg("--slurm", "Activate SLURM cluster execution (requires sbatch)") &
     Arg("--parallel", "Execute all jobs in parallel (careful!)") &
-    Arg("--maxThreads NUM", "Limit internal parallelism of activities (e.g., Vivado)" ~
-                            "to the given number of threads."))
+    Arg("--maxThreads NUM", "Limit internal parallelism of tasks (e.g., Vivado)" ~
+                            "to the given number of threads.") &
+    Arg("--maxTasks NUM", "Limit max. number tasks executed in parallel to the given number"))
 
   private def composition() = Section("Composition Syntax",
     Block("A Composition specifies the number and kind of processing elements (PEs) that" ~
@@ -341,7 +342,7 @@ configuration via `tapasco -n config.json`.
   private def shortTopics() = Section("Help Topics", Block(helpTopics.keys.toSeq.sorted.mkString(", ")))
 
   private def overview() =
-    Header("tapasco", 1, "2017-07-14", "2017.1") &
+    Header("tapasco", 1, "2018-01-22", "2018.1") &
     Synopsis("    tapasco [global option]* [job]*" &
              "or: tapasco -h | --help [TOPIC]" &
              "")

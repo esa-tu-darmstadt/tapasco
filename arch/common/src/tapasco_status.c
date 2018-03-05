@@ -94,6 +94,15 @@ static tapasco_res_t read_tapasco_status(tapasco_status_t **status)
 		platform_read_ctl(h, sizeof(d), &d, PLATFORM_CTL_FLAGS_NONE);
 		LOG(LALL_STATUS, "slot %u has kernel with id %u", i, d);
 		(*status)->id[i] = d;
+
+		if ((*status)->cap0_flags & TAPASCO_CAP0_PE_LOCAL_MEM) {
+			platform_read_ctl(h + 4, sizeof((*status)->mem[i]),
+					&(*status)->mem[i],
+					PLATFORM_CTL_FLAGS_NONE);
+			if ((*status)->mem[i] > 0) {
+				LOG(LALL_STATUS, "slot %u has %u bytes of memory", i, d);
+			}
+		}
 	}
 	return TAPASCO_SUCCESS;
 }

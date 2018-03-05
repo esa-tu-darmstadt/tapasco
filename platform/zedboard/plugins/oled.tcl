@@ -33,14 +33,14 @@ namespace eval oled {
     current_bd_instance $group
 
     # create OLED controller
-    set oled_ctrl [tapasco::createOLEDController oled_ctrl]
+    set oled_ctrl [tapasco::ip::create_oled_ctrl oled_ctrl]
 
     # create ports
     set clk [create_bd_pin -type "clk" -dir I "aclk"]
     set rst [create_bd_pin -type "rst" -dir I "peripheral_aresetn"]
     set initialized [create_bd_port -dir O "initialized"]
     set heartbeat [create_bd_port -dir O "heartbeat"]
-    set op_cc [tapasco::createConcat "op_cc" $no_intcs]
+    set op_cc [tapasco::ip::create_xlconcat "op_cc" $no_intcs]
     connect_bd_net [get_bd_pins -of_objects $op_cc -filter { DIR == "O" }] [get_bd_pins $oled_ctrl/intr]
     for {set i 0} {$i < $no_intcs} {incr i} {
       connect_bd_net [lindex $irqs $i] [get_bd_pins "$op_cc/In$i"]
@@ -80,4 +80,4 @@ namespace eval oled {
   }
 }
 
-tapasco::register_plugin "platform::oled::oled_feature" "post-bd"
+tapasco::register_plugin "platform::oled::oled_feature" "pre-wrapper"

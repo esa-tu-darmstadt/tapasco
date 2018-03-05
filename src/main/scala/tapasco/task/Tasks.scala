@@ -100,12 +100,13 @@ private class GenericTask(
   val licences = Map[String, Int]()
 }
 
-class Tasks extends Publisher {
+class Tasks(maxParallel: Option[Int] = None) extends Publisher {
   type Event = Tasks.Event
   import Tasks.Events._
   private[this] final val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   private[this] final implicit val _exectx = scala.concurrent.ExecutionContext.fromExecutorService(
-    java.util.concurrent.Executors.newCachedThreadPool()
+    if (maxParallel.nonEmpty) java.util.concurrent.Executors.newFixedThreadPool(maxParallel.get)
+    else                      java.util.concurrent.Executors.newCachedThreadPool()
   )
 
   override def +=(el: EventListener): Unit = {
@@ -165,6 +166,7 @@ class Tasks extends Publisher {
     def run() {
       try {
         while (! _stop) {
+          _logger.debug(s"resource status: ${_rm.status}")
           val t: Task = _queued.take()
           if (_rm.canStart(t)) {
             _logger.debug("starting job {}", t.toString)

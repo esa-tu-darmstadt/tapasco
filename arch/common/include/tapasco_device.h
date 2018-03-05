@@ -25,7 +25,11 @@
 
 #include <tapasco.h>
 #include <tapasco_functions.h>
+#include <tapasco_status.h>
+#include <tapasco_local_mem.h>
 
 tapasco_functions_t *tapasco_device_functions(tapasco_dev_ctx_t *dev_ctx);
+tapasco_status_t    *tapasco_device_status(tapasco_dev_ctx_t *dev_ctx);
+tapasco_local_mem_t *tapasco_device_local_mem(tapasco_dev_ctx_t *dev_ctx);
 
 #endif /* TAPASCO_DEVICE_H__ */

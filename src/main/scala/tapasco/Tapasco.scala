@@ -68,52 +68,56 @@ object Tapasco {
   // scalastyle:off cyclomatic.complexity
   // scalastyle:off method.length
   def main(args: Array[String]) {
-    implicit val tasks = new Tasks
-    val ok = try {
-      val cfgargs = if (args.length > 0 && args(0).toLowerCase.equals("itapasco")) args.drop(1) else args
-      // try to parse all arguments
-      val c = CommandLineParser(cfgargs mkString " ")
-      logger.debug("parsed config: {}", c)
-      if (c.isRight) {
-        // get parsed Configuration
-        implicit val cfg = c.right.get
-        // dump config and exit, if dryRun is selected
-        cfg.dryRun foreach (dryRun _)
-        // else continue ...
-        logger.trace("configuring FileAssetManager...")
-        FileAssetManager(cfg)
-        logger.trace("SLURM: {}", cfg.slurm)
-        if (cfg.slurm) Slurm.enabled = cfg.slurm
-        FileAssetManager.start()
-        logger.trace("parallel: {}", cfg.parallel)
-        cfg.logFile map { logfile: Path => setupLogFileAppender(logfile.toString) }
-        logger.info("Running with configuration: {}", cfg.toString)
-        implicit val exe = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(UNLIMITED_THREADS))
-        def get(f: Future[Boolean]): Boolean = { Await.ready(f, duration.Duration.Inf); f.value map (_ getOrElse false) getOrElse false }
+    val cfgargs = if (args.length > 0 && args(0).toLowerCase.equals("itapasco")) args.drop(1) else args
+    // try to parse all arguments
+    val c = CommandLineParser(cfgargs mkString " ")
+    logger.debug("parsed config: {}", c)
+    val ok = if (c.isRight) {
+      implicit val tasks = new Tasks(c.right.get.maxTasks)
+      // get parsed Configuration
+      implicit val cfg = c.right.get
+      // dump config and exit, if dryRun is selected
+      cfg.dryRun foreach (dryRun _)
+      // else continue ...
+      logger.trace("configuring FileAssetManager...")
+      FileAssetManager(cfg)
+      logger.trace("SLURM: {}", cfg.slurm)
+      if (cfg.slurm) Slurm.enabled = cfg.slurm
+      FileAssetManager.start()
+      logger.trace("parallel: {}", cfg.parallel)
+      cfg.logFile map { logfile: Path => setupLogFileAppender(logfile.toString) }
+      logger.info("Running with configuration: {}", cfg.toString)
+
+      def get(f: Future[Boolean]): Boolean = { Await.ready(f, duration.Duration.Inf); f.value map (_ getOrElse false) getOrElse false }
+
+      try {
         if (cfg.parallel) {
+          implicit val exe = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(cfg.maxTasks getOrElse UNLIMITED_THREADS))
           runGui(args) || (cfg.jobs map { j => Future { jobs.executors.execute(j) } } map (get _) fold true) (_ && _)
         } else {
           runGui(args) || (cfg.jobs map { jobs.executors.execute(_) } fold true) (_ && _)
         }
-      } else {
-        logger.error("invalid arguments: {}", c.left.get.toString)
-        logger.error("run `tapasco -h` or `tapasco --help` to get more info")
+      } catch { case ex: Exception =>
+        logger.error(ex.toString)
+        logger.error("Stack trace: {}", ex.getStackTrace() map (_.toString) mkString "\n")
         false
+      } finally {
+        FileAssetManager.stop()
+        tasks.stop()
       }
-    } catch { case ex: Exception =>
-      logger.error(ex.toString)
-      logger.error("Stack trace: {}", ex.getStackTrace() map (_.toString) mkString "\n")
+    } else {
+      logger.error("invalid arguments: {}", c.left.get.toString)
+      logger.error("run `tapasco -h` or `tapasco --help` to get more info")
       false
-    } finally {
-      FileAssetManager.stop()
-      tasks.stop()
     }
+
     logger.debug("active threads: {}", Thread.activeCount())
     if (Thread.activeCount() > 0) {
       import scala.collection.JavaConverters._
       val m = Thread.getAllStackTraces().asScala
       m.values foreach { strace => logger.debug(strace mkString scala.util.Properties.lineSeparator) }
     }
+
     if (! ok) {
       logger.error("TaPaSCo finished with errors")
       sys.exit(1)

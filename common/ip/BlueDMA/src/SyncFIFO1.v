@@ -19,8 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-// $Revision: 29441 $
-// $Date: 2012-08-27 21:58:03 +0000 (Mon, 27 Aug 2012) $
+// $Revision$
+// $Date$
 
 `ifdef BSV_ASSIGNMENT_DELAY
 `else
