@@ -1,12 +1,12 @@
 /**
- *  @file	InterruptLatency.hpp
- *  @brief	Measures the software overhead, i.e., the roundtrip time that is
+ *  @file InterruptLatency.hpp
+ *  @brief  Measures the software overhead, i.e., the roundtrip time that is
  *              added by the TPC software layers. This is done via the 'Counter'
  *              IP cores, which simply provide a cycle-accurate countdown timer.
  *              The default design should provide at least one instance of the
  *              timer, which accepts a cycle count as first argument. The design
  *              should run at 100 Mhz (assumption of timing calculations).
- *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+ *  @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #ifndef INTERRUPT_LATENCY_HPP__
 #define INTERRUPT_LATENCY_HPP__
@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <ncurses.h>
 #include <tapasco.hpp>
+#include <platform.h>
 
 using namespace std;
 using namespace std::chrono;
@@ -36,6 +37,9 @@ public:
   InterruptLatency(Tapasco& tapasco) : tapasco(tapasco) {
     if (tapasco.func_instance_count(COUNTER_ID) == 0)
       throw "need at least one instance of 'Counter' (14) in bitstream";
+    const platform::platform_ctl_addr_t status =
+      platform::platform_address_get_special_base(platform::PLATFORM_SPECIAL_CTL_STATUS);
+    platform::platform_read_ctl(status + 0x24, 4, &design_clk, platform::PLATFORM_CTL_FLAGS_NONE);
   }
   virtual ~InterruptLatency() {}
 
@@ -55,7 +59,7 @@ public:
       move(y, 0);
       clrtoeol();
       mvprintw(y, x, "Runtime: %12zu cc, Latency: % 12.1f, Min: % 12.1f, Max: % 12.1f, Count: %zu/%zu",
-        clock_cycles, cavg(), cavg.min(), cavg.max(), cavg.size(), min_runs);
+               clock_cycles, cavg(), cavg.min(), cavg.max(), cavg.size(), min_runs);
       refresh();
       usleep(1000000);
       // exit gracefully on ctrl+c
@@ -65,10 +69,10 @@ public:
     stop = true;
     f.get();
     mvprintw(y, x, "Runtime: %12zu cc, Latency: % 12.1f, Min: % 12.1f, Max: % 12.1f, Count: %zu/%zu",
-      clock_cycles, cavg(), cavg.min(), cavg.max(), cavg.size(), min_runs);
+             clock_cycles, cavg(), cavg.min(), cavg.max(), cavg.size(), min_runs);
     refresh();
 
-    move((y+1) % maxy, 0);
+    move((y + 1) % maxy, 0);
     if (min) *min = cavg.min();
     if (max) *max = cavg.max();
     return cavg();
@@ -84,17 +88,18 @@ private:
       if ((res = tapasco.launch_no_return(COUNTER_ID, cc)) != TAPASCO_SUCCESS)
         throw Tapasco::tapasco_error(res);
       microseconds const d = duration_cast<microseconds>(high_resolution_clock::now() - tstart);
-      cavg.update(d.count() - cc / 100);
+      cavg.update(d.count() - cc / design_clk);
     }
   }
 
   static const std::string maskToString(long const opmask) {
     stringstream tmp;
-    tmp << (opmask & OP_COPYFROM ? "r" : " ") 
+    tmp << (opmask & OP_COPYFROM ? "r" : " ")
         << (opmask & OP_COPYTO   ? "w" : " ");
     return tmp.str();
   }
 
+  uint32_t design_clk;
   Tapasco& tapasco;
 };
 
