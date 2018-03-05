@@ -32,7 +32,7 @@ object Tapasco {
   import ch.qos.logback.classic.LoggerContext
   import ch.qos.logback.classic.encoder.PatternLayoutEncoder
   import ch.qos.logback.classic.spi.ILoggingEvent
-  private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
+  private[this] implicit val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
   private[this] val logFileAppender: FileAppender[ILoggingEvent] = new FileAppender()
   private[this] final val UNLIMITED_THREADS = 1000
 
