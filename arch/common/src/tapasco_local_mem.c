@@ -97,7 +97,9 @@ size_t tapasco_local_mem_get_size(tapasco_local_mem_t *lmem,
 
 inline
 addr_t tapasco_local_mem_get_base(tapasco_local_mem_t *lmem,
-		tapasco_func_slot_id_t slot_id)
+		tapasco_func_slot_id_t slot_id,
+		addr_t const elem)
 {
+	while (elem > lmem->as[slot_id].high) { ++slot_id; }
 	return lmem->as[slot_id].base;
 }

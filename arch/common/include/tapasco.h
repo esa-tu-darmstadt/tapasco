@@ -119,7 +119,7 @@ typedef enum {
 	/** no flags **/
 	TAPASCO_DEVICE_ALLOC_FLAGS_NONE 		= 0,
 	/** PE-local, i.e., only accessible from scheduled PE **/
-	TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL             = 1,
+	TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL             = 2,
 } tapasco_device_alloc_flag_t;
 
 /** Flags for bitstream loading (implementation defined). **/
@@ -176,7 +176,7 @@ typedef enum {
  *  @{
  **/
 
-#define TAPASCO_API_VERSION					"1.4"
+#define TAPASCO_API_VERSION					"1.4.1"
 
 /**
  * Returns the version string of the library.
