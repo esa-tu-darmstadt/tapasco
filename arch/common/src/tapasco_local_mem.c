@@ -47,11 +47,12 @@ tapasco_res_t tapasco_local_mem_init(tapasco_status_t const *status,
 	addr_t base = 0;
 	for (size_t idx = 0; idx < TAPASCO_MAX_INSTANCES; ++idx) {
 		size_t const sz = status->mem[idx];
-		LOG(LALL_MEM, "memory size for slot_id: %zd bytes", sz);
+		LOG(LALL_MEM, "memory size for slot_id #%zd: %zd bytes",
+				slot_id, sz);
 		(*lmem)->lmem[idx] = sz > 0 ? gen_mem_create(base, sz) : NULL;
 		(*lmem)->as[idx].base = base;
 		(*lmem)->as[idx].high = base + sz;
-		if (! (*lmem)->lmem[idx]) return TAPASCO_ERR_OUT_OF_MEMORY;
+		if (sz && !(*lmem)->lmem[idx]) return TAPASCO_ERR_OUT_OF_MEMORY;
 		if (sz) base += sz; else base = 0;
 	}
 	return TAPASCO_SUCCESS;
