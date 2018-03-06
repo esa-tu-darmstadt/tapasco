@@ -26,8 +26,9 @@ scala-test:
 
 .template: &template
   only:
-    - "gitlab-ci"
-    - "master"
+    - tags
+    - triggers
+    - schedules
 
 sbt-prepare:
   <<: *template
