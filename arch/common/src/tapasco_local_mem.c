@@ -42,7 +42,7 @@ tapasco_res_t tapasco_local_mem_init(tapasco_status_t const *status,
 		tapasco_local_mem_t **lmem)
 {
 	LOG(LALL_MEM, "initialzing ...");
-	*lmem = (tapasco_local_mem_t *)malloc(sizeof(*lmem));
+	*lmem = (tapasco_local_mem_t *)malloc(sizeof(tapasco_local_mem_t));
 	if (! *lmem) return TAPASCO_ERR_OUT_OF_MEMORY;
 	addr_t base = 0;
 	for (size_t idx = 0; idx < TAPASCO_MAX_INSTANCES; ++idx) {
