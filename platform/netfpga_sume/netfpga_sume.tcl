@@ -59,7 +59,7 @@ namespace eval platform {
     connect_bd_net [get_bd_pins mem_clk] [get_bd_pins ${name}/mig/s_axi_aclk]
     connect_bd_net [get_bd_pins mem_peripheral_aresetn] [get_bd_pins ${name}/mig/s_axi_aresetn]
     connect_bd_net [get_bd_pins host_peripheral_aresetn] [get_bd_pins ${name}/clk_wiz_0/resetn]
-    connect_bd_net [get_bd_pins mig/resetn] [get_bd_pins ${name}/ui_clk_sync_rst]
+    connect_bd_net [get_bd_pins ${name}/clk_wiz_0/resetn] [get_bd_pins ${name}/ui_clk_sync_rst]
   }
 
   proc create_pcie_core {} {
