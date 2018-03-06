@@ -100,6 +100,10 @@ addr_t tapasco_local_mem_get_base(tapasco_local_mem_t *lmem,
 		tapasco_func_slot_id_t *slot_id,
 		addr_t const elem)
 {
-	while (elem > lmem->as[*slot_id].high) { ++(*slot_id); }
+	while (elem > lmem->as[*slot_id].high) {
+	  LOG(LALL_MEM, "local mem high address of slot_id #%zd (0x%08lx) < elem address (0x%08lx)",
+	  		*slot_id, (unsigned long)*slot_id, (unsigned long)elem);
+	  ++(*slot_id);
+	}
 	return lmem->as[*slot_id].base;
 }
