@@ -71,8 +71,8 @@ tapasco_res_t tapasco_device_copy_to_local(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_device_copy_flag_t const flags,
 		tapasco_func_slot_id_t slot_id)
 {
+	addr_t lbase = tapasco_local_mem_get_base(tapasco_device_local_mem(dev_ctx), &slot_id, dst);
 	platform_ctl_addr_t a = platform_address_get_slot_base(slot_id, 0);
-	addr_t lbase = tapasco_local_mem_get_base(tapasco_device_local_mem(dev_ctx), slot_id, dst);
 	LOG(LALL_MEM, "copying locally to 0x%08lx of slot_id #%lu, bus address: 0x%08lx",
 			(unsigned long)dst, (unsigned long)slot_id, (unsigned long)a + (dst - lbase));
 	a += (dst - lbase);
@@ -90,8 +90,8 @@ tapasco_res_t tapasco_device_copy_from_local(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_device_copy_flag_t const flags,
 		tapasco_func_slot_id_t slot_id)
 {
+	addr_t lbase = tapasco_local_mem_get_base(tapasco_device_local_mem(dev_ctx), &slot_id, src);
 	platform_ctl_addr_t a = platform_address_get_slot_base(slot_id, 0);
-	addr_t lbase = tapasco_local_mem_get_base(tapasco_device_local_mem(dev_ctx), slot_id, src);
 	LOG(LALL_MEM, "copying locally from 0x%08lx of slot_id #%lu, bus address: 0x%08lx",
 			(unsigned long)src, (unsigned long)slot_id, (unsigned long)a + (src - lbase));
 	a += (src - lbase);

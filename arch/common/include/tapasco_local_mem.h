@@ -45,7 +45,7 @@ size_t tapasco_local_mem_get_size(tapasco_local_mem_t *lmem,
 		tapasco_func_slot_id_t slot_id);
 
 addr_t tapasco_local_mem_get_base(tapasco_local_mem_t *lmem,
-		tapasco_func_slot_id_t slot_id,
+		tapasco_func_slot_id_t *slot_id,
 		addr_t const elem);
 
 #endif /* TAPASCO_LOCAL_MEM_H__ */
