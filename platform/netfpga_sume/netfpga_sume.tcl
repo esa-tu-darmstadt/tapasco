@@ -35,22 +35,20 @@ namespace eval platform {
 
     set s_axi [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_AXI"]
     set ui_clk [create_bd_pin -type "clk" -dir "O" "ui_clk"]
-    set ui_addn_clk_0 [create_bd_pin -type "clk" -dir "O" "ui_addn_clk_0"]
-    set ui_clk_sync_rst [create_bd_pin -type "rst" -dir "O" "ui_clk_sync_rst"]
+    set ui_clk [create_bd_pin -type "reset" -dir "O" "ui_clk_sync_rst"]
 
     create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.0 mig
     set_property -dict [list CONFIG.DATA_WIDTH {512} CONFIG.SINGLE_PORT_BRAM {1} CONFIG.ECC_TYPE {0}] [get_bd_cells mig]
     apply_bd_automation -rule xilinx.com:bd_rule:bram_cntlr -config {BRAM "Auto" }  [get_bd_intf_pins mig/BRAM_PORTA]
 
-    create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:5.4 clk_wiz_0
-    set_property -dict [list CONFIG.CLKOUT2_USED {true} CONFIG.CLK_OUT1_PORT {ui_clk} CONFIG.CLK_OUT2_PORT {ui_addn_clk_0} \
+    tapasco::ip::create_clk_wiz clk_wiz_0
+    set_property -dict [list CONFIG.CLK_OUT1_PORT {ui_clk} \
                         CONFIG.USE_SAFE_CLOCK_STARTUP {true} CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_mem_frequency] \
-                        CONFIG.CLKOUT2_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] CONFIG.USE_LOCKED {false} \
-                        CONFIG.USE_RESET {true} CONFIG.RESET_TYPE {ACTIVE_LOW} CONFIG.RESET_PORT {resetn}] [get_bd_cells clk_wiz_0]
+                        CONFIG.USE_LOCKED {false} \
+                        CONFIG.USE_RESET {false}] [get_bd_cells clk_wiz_0]
 
     connect_bd_intf_net [get_bd_intf_pins mig/S_AXI] $s_axi
     connect_bd_net [get_bd_pins clk_wiz_0/ui_clk] $ui_clk
-    connect_bd_net [get_bd_pins clk_wiz_0/ui_addn_clk_0] $ui_addn_clk_0
 
     # exit the hierarchical group
     current_bd_instance $instance
@@ -58,8 +56,6 @@ namespace eval platform {
     connect_bd_net [get_bd_pins host_clk] [get_bd_pins ${name}/clk_wiz_0/clk_in1]
     connect_bd_net [get_bd_pins mem_clk] [get_bd_pins ${name}/mig/s_axi_aclk]
     connect_bd_net [get_bd_pins mem_peripheral_aresetn] [get_bd_pins ${name}/mig/s_axi_aresetn]
-    connect_bd_net [get_bd_pins host_peripheral_aresetn] [get_bd_pins ${name}/clk_wiz_0/resetn]
-    connect_bd_net [get_bd_pins ${name}/clk_wiz_0/resetn] [get_bd_pins ${name}/ui_clk_sync_rst]
   }
 
   proc create_pcie_core {} {

@@ -27,7 +27,7 @@ namespace eval platform {
 
   proc create_mig_core {name} {
     puts "Creating MIG core for DDR ..."
-    set mig [tapasco::create_us_ddr ${name}]
+    set mig [tapasco::ip::create_us_ddr ${name}]
     apply_board_connection -board_interface "ddr4_sdram_c1" -ip_intf "$name/C0_DDR4" -diagram "system"
     apply_board_connection -board_interface "default_250mhz_clk1" -ip_intf "$name/C0_SYS_CLK" -diagram "system"
     apply_board_connection -board_interface "reset" -ip_intf "$name/SYSTEM_RESET" -diagram "system"
@@ -36,6 +36,7 @@ namespace eval platform {
 
   proc create_pcie_core {} {
     puts "Creating AXI PCIe Gen3 bridge ..."
+
     # create PCIe core
     set axi_pcie3_0 [tapasco::ip::create_axi_pcie3_0_usp "axi_pcie3_0"]
     set pcie_properties [list \

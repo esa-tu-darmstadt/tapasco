@@ -25,3 +25,4 @@ dict set stdcomps   dwidth_conv      vlnv   "xilinx.com:ip:axi_dwidth_converter:
 dict set stdcomps   system_ila       vlnv   "xilinx.com:ip:system_ila:1.0"
 dict set stdcomps   aximm_intf       vlnv   "xilinx.com:interface:aximm_rtl:1.0"
 dict set stdcomps   us_ddr           vlnv   "xilinx.com:ip:ddr4:2.2"
+dict set stdcomps   logic_vector     vlnv   "xilinx.com:ip:util_vector_logic:2.0"
