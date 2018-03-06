@@ -1,4 +1,4 @@
-image: tapasco
+mage: tapasco
 
 variables:
   XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
@@ -28,7 +28,6 @@ scala-test:
   only:
     - "gitlab-ci"
     - "master"
-    - /20\d\d\.\d/
 
 sbt-prepare:
   <<: *template
