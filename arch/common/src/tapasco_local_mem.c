@@ -42,16 +42,16 @@ tapasco_res_t tapasco_local_mem_init(tapasco_status_t const *status,
 		tapasco_local_mem_t **lmem)
 {
 	LOG(LALL_MEM, "initialzing ...");
-	*lmem = (tapasco_local_mem_t *)malloc(sizeof(*lmem));
+	*lmem = (tapasco_local_mem_t *)malloc(sizeof(tapasco_local_mem_t));
 	if (! *lmem) return TAPASCO_ERR_OUT_OF_MEMORY;
 	addr_t base = 0;
 	for (size_t idx = 0; idx < TAPASCO_MAX_INSTANCES; ++idx) {
 		size_t const sz = status->mem[idx];
-		LOG(LALL_MEM, "memory size for slot_id: %zd bytes", sz);
+		LOG(LALL_MEM, "memory size for slot_id #%zd: %zd bytes", idx, sz);
 		(*lmem)->lmem[idx] = sz > 0 ? gen_mem_create(base, sz) : NULL;
 		(*lmem)->as[idx].base = base;
 		(*lmem)->as[idx].high = base + sz;
-		if (! (*lmem)->lmem[idx]) return TAPASCO_ERR_OUT_OF_MEMORY;
+		if (sz && !(*lmem)->lmem[idx]) return TAPASCO_ERR_OUT_OF_MEMORY;
 		if (sz) base += sz; else base = 0;
 	}
 	return TAPASCO_SUCCESS;
@@ -97,7 +97,13 @@ size_t tapasco_local_mem_get_size(tapasco_local_mem_t *lmem,
 
 inline
 addr_t tapasco_local_mem_get_base(tapasco_local_mem_t *lmem,
-		tapasco_func_slot_id_t slot_id)
+		tapasco_func_slot_id_t *slot_id,
+		addr_t const elem)
 {
-	return lmem->as[slot_id].base;
+	while (elem > lmem->as[*slot_id].high) {
+	  LOG(LALL_MEM, "local mem high address of slot_id #%zd (0x%08lx) < elem address (0x%08lx)",
+	  		*slot_id, (unsigned long)*slot_id, (unsigned long)elem);
+	  ++(*slot_id);
+	}
+	return lmem->as[*slot_id].base;
 }

@@ -100,7 +100,8 @@ static tapasco_res_t read_tapasco_status(tapasco_status_t **status)
 					&(*status)->mem[i],
 					PLATFORM_CTL_FLAGS_NONE);
 			if ((*status)->mem[i] > 0) {
-				LOG(LALL_STATUS, "slot %u has %u bytes of memory", i, d);
+				LOG(LALL_STATUS, "slot %u has %u bytes of memory",
+						i, (*status)->mem[i]);
 			}
 		}
 	}

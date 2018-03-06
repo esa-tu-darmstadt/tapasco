@@ -37,5 +37,6 @@ const char *const tapasco_strerror(tapasco_res_t const res)
 {
 	static unsigned long const _l = (unsigned long)-TAPASCO_ERR_SENTINEL;
 	unsigned long const i = (unsigned long) -res;
-	return _err_msg[i < _l ? i : 0];
+	if (i >= _l) return "unknown error";
+	return _err_msg[i];
 }

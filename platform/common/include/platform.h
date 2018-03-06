@@ -84,8 +84,10 @@ namespace tapasco { namespace platform { extern "C" {
 
 /** Platform result enum type. */
 typedef enum {
-	PLATFORM_SUCCESS = 0,
-	PLATFORM_FAILURE
+	/** Indicates unspecific failure, should not be used. **/
+	PLATFORM_FAILURE = 0,
+	/** Indicates successful operation. **/
+	PLATFORM_SUCCESS
 } platform_binary_res_t;
 
 /** Public result type. */
@@ -150,7 +152,7 @@ typedef enum {
  *  @{
  **/
 
-#define PLATFORM_API_VERSION				"1.4"
+#define PLATFORM_API_VERSION				"1.4.1"
 
 /**
  * Returns the version string of the library.
