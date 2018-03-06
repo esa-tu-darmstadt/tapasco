@@ -79,7 +79,7 @@ tapasco_res_t tapasco_device_copy_to_local(tapasco_dev_ctx_t *dev_ctx,
 	a += (dst - lbase);
 	uint32_t *lmem = (uint32_t *)src;
 	platform_res_t res = PLATFORM_SUCCESS;
-	for (size_t i = 0; res == TAPASCO_SUCCESS && i < len; ++i, a += sizeof(*lmem)) {
+	for (size_t i = 0; res == TAPASCO_SUCCESS && i < (len / sizeof(*lmem)) ; ++i, a += sizeof(*lmem)) {
 		res = platform_write_ctl(a, sizeof(*lmem), &lmem[i], flags);
 	}
 	if (res != PLATFORM_SUCCESS) {
@@ -103,7 +103,7 @@ tapasco_res_t tapasco_device_copy_from_local(tapasco_dev_ctx_t *dev_ctx,
 	a += (src - lbase);
 	uint32_t *lmem = (uint32_t *)dst;
 	platform_res_t res = PLATFORM_SUCCESS;
-	for (size_t i = 0; res == TAPASCO_SUCCESS && i < len; ++i, a += sizeof(*lmem)) {
+	for (size_t i = 0; res == TAPASCO_SUCCESS && i < (len / sizeof(*lmem)) ; ++i, a += sizeof(*lmem)) {
 		res = platform_read_ctl(a, sizeof(*lmem), &lmem[i], flags);
 	}
 	if (res != PLATFORM_SUCCESS) {
