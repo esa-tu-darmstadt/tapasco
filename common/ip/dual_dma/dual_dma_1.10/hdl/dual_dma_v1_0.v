@@ -679,7 +679,7 @@
     endgenerate
 
 	// cmd fifos to m64
-	axis_data_fifo_v1_1_14_axis_data_fifo #(
+	axis_data_fifo_v1_1_15_axis_data_fifo #(
 	    .C_FAMILY("virtex"),
 	    .C_AXIS_TDATA_WIDTH(`CMD_64_FIFO_WIDTH),
 	    .C_AXIS_TID_WIDTH(1),
@@ -721,7 +721,7 @@
 	    .axis_rd_data_count()
 	  );	
 
-	axis_data_fifo_v1_1_14_axis_data_fifo #(
+	axis_data_fifo_v1_1_15_axis_data_fifo #(
 	    .C_FAMILY("virtex"),
 	    .C_AXIS_TDATA_WIDTH(`CMD_64_FIFO_WIDTH),
 	    .C_AXIS_TID_WIDTH(1),
@@ -764,7 +764,7 @@
 	  );
 
 	// cmd fifos to ul
-	axis_data_fifo_v1_1_14_axis_data_fifo #(
+	axis_data_fifo_v1_1_15_axis_data_fifo #(
 	    .C_FAMILY("virtex"),
 	    .C_AXIS_TDATA_WIDTH(C_CMD_UL_FIFO_WIDTH),
 	    .C_AXIS_TID_WIDTH(1),
@@ -806,7 +806,7 @@
 	    .axis_rd_data_count()
 	  );
 
-	axis_data_fifo_v1_1_14_axis_data_fifo #(
+	axis_data_fifo_v1_1_15_axis_data_fifo #(
 	    .C_FAMILY("virtex"),
 	    .C_AXIS_TDATA_WIDTH(C_CMD_UL_FIFO_WIDTH),
 	    .C_AXIS_TID_WIDTH(1),
@@ -849,7 +849,7 @@
 	  );
 
 	// sts fifos to m64
-	axis_data_fifo_v1_1_14_axis_data_fifo #(
+	axis_data_fifo_v1_1_15_axis_data_fifo #(
 	    .C_FAMILY("virtex"),
 	    .C_AXIS_TDATA_WIDTH(`STS_64_FIFO_WIDTH),
 	    .C_AXIS_TID_WIDTH(1),
@@ -891,7 +891,7 @@
 	    .axis_rd_data_count()
 	  );	
 
-	axis_data_fifo_v1_1_14_axis_data_fifo #(
+	axis_data_fifo_v1_1_15_axis_data_fifo #(
 	    .C_FAMILY("virtex"),
 	    .C_AXIS_TDATA_WIDTH(`STS_64_FIFO_WIDTH),
 	    .C_AXIS_TID_WIDTH(1),
@@ -934,7 +934,7 @@
 	  );
 
 	// sts fifos to ul
-	axis_data_fifo_v1_1_14_axis_data_fifo #(
+	axis_data_fifo_v1_1_15_axis_data_fifo #(
 	    .C_FAMILY("virtex"),
 	    .C_AXIS_TDATA_WIDTH(C_STS_UL_FIFO_WIDTH),
 	    .C_AXIS_TID_WIDTH(1),
@@ -976,7 +976,7 @@
 	    .axis_rd_data_count()
 	  );
 
-	axis_data_fifo_v1_1_14_axis_data_fifo #(
+	axis_data_fifo_v1_1_15_axis_data_fifo #(
 	    .C_FAMILY("virtex"),
 	    .C_AXIS_TDATA_WIDTH(C_STS_UL_FIFO_WIDTH),
 	    .C_AXIS_TID_WIDTH(1),
@@ -1067,7 +1067,7 @@
     endgenerate
 
 	// data width conversion for m64 to ul	
-	axis_dwidth_converter_v1_1_12_axis_dwidth_converter #(
+	axis_dwidth_converter_v1_1_13_axis_dwidth_converter #(
 	    .C_FAMILY("virtex"),
 	    .C_S_AXIS_TDATA_WIDTH(C_M64_AXI_DATA_WIDTH),
 	    .C_M_AXIS_TDATA_WIDTH(C_UL_WRITE_AXI_DATA_WIDTH),
@@ -1102,7 +1102,7 @@
 	);
 
 	// clock conversion from m64_to_ul_dwc to ul	
-	axis_data_fifo_v1_1_14_axis_data_fifo #(
+	axis_data_fifo_v1_1_15_axis_data_fifo #(
 	    .C_FAMILY("virtex"),
 	    .C_AXIS_TDATA_WIDTH(C_UL_WRITE_AXI_DATA_WIDTH),
 	    .C_AXIS_TID_WIDTH(1),
@@ -1145,7 +1145,7 @@
 	  );
 
 	// clock conversion from ul to ul_to_m64_cdc	
-	axis_data_fifo_v1_1_14_axis_data_fifo #(
+	axis_data_fifo_v1_1_15_axis_data_fifo #(
 	    .C_FAMILY("virtex"),
 	    .C_AXIS_TDATA_WIDTH(C_UL_READ_AXI_DATA_WIDTH),
 	    .C_AXIS_TID_WIDTH(1),
@@ -1189,7 +1189,7 @@
 	  );
 
 	// converting data width from ul_to_m64_cdc to m64	
-	axis_dwidth_converter_v1_1_12_axis_dwidth_converter #(
+	axis_dwidth_converter_v1_1_13_axis_dwidth_converter #(
 	    .C_FAMILY("virtex"),
 	    .C_S_AXIS_TDATA_WIDTH(C_UL_READ_AXI_DATA_WIDTH),
 	    .C_M_AXIS_TDATA_WIDTH(C_M64_AXI_DATA_WIDTH),
