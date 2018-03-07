@@ -1,0 +1,50 @@
+//
+// Copyright (C) 2018 Jens Korinth, TU Darmstadt
+//
+// This file is part of Tapasco (TPC).
+//
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
+//! @file	platform_addr_map.h
+//! @brief	Supporting code for dynamic addr map.
+//! @authors	J. Korinth (jk@esa.cs.tu-darmstadt.de)
+//!
+#ifndef PLATFORM_API_ADDR_MAP_H__
+#define PLATFORM_API_ADDR_MAP_H__
+
+#ifdef __cplusplus
+namespace tapasco { namespace platform { extern "C" {
+#endif /* __cplusplus */
+/********************************************************************************/
+
+typedef struct platform_addr_map platform_addr_map_t;
+
+platform_res_t platform_addr_map_init(platform_addr_map_t **am);
+
+void platform_addr_map_deinit(platform_addr_map_t *am);
+
+platform_ctl_addr_t platform_addr_map_get_slot_base(
+		platform_addr_map_t const* am,
+		platform_slot_id_t const slot_id);
+
+platform_ctl_addr_t platform_addr_map_get_special_base(
+		platform_addr_map_t const* am,
+		platform_special_ctl_t const ent);
+
+/********************************************************************************/
+#ifdef __cplusplus
+} /* extern "C" */ } /* namespace platform */ } /* namespace tapasco */
+#endif /* __cplusplus */
+
+#endif /* PLATFORM_API_ADDR_MAP_H__ */

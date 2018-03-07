@@ -20,12 +20,15 @@ set(PLATFORM_LIBS_DIR "${TAPASCO_HOME}/platform/lib")
 set(CMNSRCS "${CMNDIR}/src/platform_logging.c"
             "${CMNDIR}/src/platform_errors.c"
             "${GCMNDIR}/src/gen_queue.c"
-            "${CMNDIR}/src/platform_version.c")
+            "${CMNDIR}/src/platform_version.c"
+            "${CMNDIR}/src/platform_status.c"
+            "${CMNDIR}/src/platform_addr_map.c")
 set(SRCS "${SRCDIR}/platform_vc709.cpp"
          "${BUDDYDIR}/buddy_allocator.cpp"
 	 "${BUDDYDIR}/buddy_tree.cpp"
 	 "${BUDDYDIR}/logger.cpp")
 
+add_definitions(-DPLATFORM_API_TAPASCO_STATUS_BASE=0x80000)
 add_library(platform SHARED ${CMNSRCS} ${SRCS})
 add_library(libplatform-static STATIC ${CMNSRCS} ${SRCS})
 

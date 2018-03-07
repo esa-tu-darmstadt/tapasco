@@ -22,8 +22,8 @@
 //!		Tapasco support.
 //! @authors 	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //! @authors 	D. de la Chevallerie, TU Darmstadt (dc@esa.cs.tu-darmstadt.de)
-//! @version 	1.2.1
-//! @copyright  Copyright 2014, 2015 J. Korinth, TU Darmstadt
+//! @version 	1.4.2
+//! @copyright  Copyright 2014-2018 J. Korinth, TU Darmstadt
 //!
 //!		This file is part of Tapasco (TAPASCO).
 //!
@@ -41,24 +41,6 @@
 //!  		You should have received a copy of the GNU Lesser General Public
 //!		License along with Tapasco.  If not, see
 //!		<http://www.gnu.org/licenses/>.
-//! @details	### Change Log ###
-//!		- Version 1.4 (jk)
-//!		  + added support for pe-local memories
-//!		- Version 1.3 (jk)
-//!		  + added device capabilities
-//!		- Version 1.2.1 (jk)
-//!		  + renamed to 'tapasco.h'
-//!		- Version 1.2 (jk)
-//!		  + removed 'rpr' namespace
-//!		- Version 1.1 (jk)
-//!		  + added API version constant and automatic checks to guarantee
-//!		    that the user is using the right header for the lib
-//!		    (necessary due to incompatible changes between versions)
-//!		  + added consistent flags to all calls for future use
-//!		- Version 1.0 (jk, dc) 
-//!		  + initial prototype version
-//!
-//! @todo 	device enumeration?
 //!
 #ifndef TAPASCO_H__
 #define TAPASCO_H__
@@ -74,6 +56,8 @@ namespace tapasco { extern "C" {
 #include <string.h>
 #endif /* __cplusplus */
 
+#include <platform_caps.h>
+
 /** @defgroup types Types
  *  @{
  **/
@@ -81,7 +65,7 @@ namespace tapasco { extern "C" {
 /** General purpose result type **/
 typedef enum {
 	/** Indicates unspecific failure, should not be used. **/
-	TAPASCO_FAILURE = 0,
+	TAPASCO_FAILURE 				= 0,
 	/** Indicates successful operation. **/
 	TAPASCO_SUCCESS
 } tapasco_res_t;
@@ -131,13 +115,13 @@ typedef enum {
 /** Flags for calls to tapasco_device_copy_to and tapasco_device_copy_from. **/
 typedef enum {
 	/** no flags **/
-	TAPASCO_DEVICE_COPY_FLAGS_NONE		= 0,
+	TAPASCO_DEVICE_COPY_FLAGS_NONE			= 0,
 	/** wait until transfer is finished (default) **/
-	TAPASCO_DEVICE_COPY_BLOCKING		= 0,
+	TAPASCO_DEVICE_COPY_BLOCKING			= 0,
 	/** return immediately after transfer was scheduled **/
-	TAPASCO_DEVICE_COPY_NONBLOCKING		= 1,
+	TAPASCO_DEVICE_COPY_NONBLOCKING			= 1,
 	/** copy to local memory **/
-	TAPASCO_DEVICE_COPY_PE_LOCAL            = 2,
+	TAPASCO_DEVICE_COPY_PE_LOCAL            	= 2,
 } tapasco_device_copy_flag_t;
 
 /** Flags for calls to tapasco_device_acquire_job_id. **/
@@ -145,7 +129,7 @@ typedef enum {
 	/** no flags **/
 	TAPASCO_DEVICE_ACQUIRE_JOB_ID_FLAGS_NONE	= 0,
 	/** wait until id becomes available (default) **/
-	TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING	= 0,
+	TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING		= 0,
 	/** fail if id is not immediately available, do not wait **/
 	TAPASCO_DEVICE_ACQUIRE_JOB_ID_NONBLOCKING	= 1,
 } tapasco_device_acquire_job_id_flag_t;
@@ -153,21 +137,15 @@ typedef enum {
 /** Flags for calls to tapasco_device_job_launch. **/
 typedef enum {
 	/** no flags **/
-	TAPASCO_DEVICE_JOB_LAUNCH_FLAGS_NONE	= 0,
+	TAPASCO_DEVICE_JOB_LAUNCH_FLAGS_NONE		= 0,
 	/** launch and wait until job is finished (default) **/
 	TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING		= 0,
 	/** return immediately after job is scheduled **/
-	TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING	= 1,
+	TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING		= 1,
 } tapasco_device_job_launch_flag_t;
 
 /** Capabilities: Optional device capabilities. **/
-typedef enum {
-	/** PCIe devices: Adress Translation Services and Page Request Interface
-	 *  support activated. **/
-	TAPASCO_DEVICE_CAP_ATSPRI			= 1,
-	/** PCIe devices: interactive ATS check core is present. **/
-	TAPASCO_DEVICE_CAP_ATSCHECK			= 2,
-} tapasco_device_capability_t;
+typedef platform_capabilities_0_t tapasco_device_capability_t;
 
 /** @} **/
 
@@ -176,7 +154,7 @@ typedef enum {
  *  @{
  **/
 
-#define TAPASCO_API_VERSION					"1.4.1"
+#define TAPASCO_API_VERSION					"1.4.2"
 
 /**
  * Returns the version string of the library.

@@ -106,23 +106,6 @@ static pthread_mutex_t ba_small_lock 	= PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP;
 static pthread_mutex_t ba_medium_lock 	= PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP;
 static pthread_mutex_t ba_large_lock 	= PTHREAD_ADAPTIVE_MUTEX_INITIALIZER_NP;
 
-platform_ctl_addr_t tapasco::platform::platform_address_get_slot_base(platform_slot_id_t const slot_id, platform_slot_region_id_t const region_id)
-{
-#if (INPUT_TESTS == 1)
-	if(slot_id >= MAX_SLOTS) {
-		WRN("Invalid slot id %d", (uint32_t) slot_id);
-		return 0xFFFFFFFF;
-	}
-
-	if(region_id >= MAX_REGIONS) {
-		WRN("Invalid region id %d", (uint32_t) region_id);
-		return 0xFFFFFFFF;
-	}
-#endif
-
-	return slot_id * SLOT_OFFSET + region_id * REGION_OFFSET;
-}
-
 platform_res_t helper_init(int* fd, const string& path)
 {
 	*fd = open(path.c_str(), O_RDWR | O_SYNC);
@@ -416,7 +399,7 @@ platform_res_t tapasco::platform::platform_write_ctl_and_wait(platform_ctl_addr_
 	return PLATFORM_SUCCESS;
 }
 
-platform_ctl_addr_t tapasco::platform::platform_address_get_special_base(
+/*platform_ctl_addr_t tapasco::platform::platform_address_get_special_base(
 		platform_special_ctl_t const ent)
 {
 	switch (ent) {
@@ -429,7 +412,7 @@ platform_ctl_addr_t tapasco::platform::platform_address_get_special_base(
 	case PLATFORM_SPECIAL_CTL_INTC3 : return 0x430000;
 	}
 	return 0;
-}
+}*/
 
 platform_res_t tapasco::platform::platform_register_irq_callback(platform_irq_callback_t cb)
 {

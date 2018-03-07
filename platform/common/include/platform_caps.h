@@ -1,7 +1,7 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TAPASCO).
+// This file is part of Tapasco (PLATFORM).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -17,21 +17,19 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- *  @file	tapasco_status.c
- *  @brief	
+ *  @file	platform_status.h
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#include <tapasco_status.h>
+#ifndef PLATFORM_CAPS_H__
+#define PLATFORM_CAPS_H__
 
-tapasco_res_t tapasco_status_init(tapasco_status_t **status)
-{
-	platform_res_t res = platform_status_init(status);
-	if (platform_res_t != PLATFORM_SUCCESS)
-		return TAPASCO_ERR_PLATFORM_FAILURE;
-	return TAPASCO_SUCCESS;
-}
+typedef enum {
+	PLATFORM_CAP0_ATSPRI 			   	= (1 << 0),
+	PLATFORM_CAP0_ATSCHECK 				= (1 << 1),
+	PLATFORM_CAP0_PE_LOCAL_MEM 			= (1 << 2),
+} platform_capabilities_0_t;
 
-void tapasco_status_deinit(tapasco_status_t *status)
-{
-	platform_status_deinit(status);
-}
+#define PLATFORM_VERSION_MAJOR(v) 			((v) >> 16)
+#define PLATFORM_VERSION_MINOR(v) 			((v) & 0xFFFF)
+
+#endif /* PLATFORM_CAPS_H__ */

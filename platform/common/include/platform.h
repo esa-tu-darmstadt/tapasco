@@ -25,8 +25,8 @@
  *  		methods to wait for a signal from the device (usually
  *  		interrupt-based).
  *  @authors 	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- *  @version 	1.2
- *  @copyright	Copyright 2014, 2015 J. Korinth
+ *  @version 	1.4.2
+ *  @copyright	Copyright 2014-2018 J. Korinth
  *
  *		This file is part of Tapasco (TPC).
  *
@@ -44,26 +44,6 @@
  *  		You should have received a copy of the GNU Lesser General Public
  *		License along with Tapasco.  If not, see
  *		<http://www.gnu.org/licenses/>.
- *  @details	### Change Log ###
- *		- **12/2017: Version 1.4 (jk)**
- *		  + added support for PE-local memories
- *		- **06/2016: Version 1.3 (jk)**
- *		  + added 'raw' mode for read/write to bypass address filters
- *  		  + added special address for the ATS/PRI checker
- *		- **05/2017: Version 1.2.2
- *		  + renamed to platform.h
- *		- **02/2016: Version 1.2.1 (jk)**
- *  		  + added special address for the interrupt controllers, so that
- *  		    they can be accessed in a standard way using Platform API
- *		- **02/2016: Version 1.2 (jk)**
- *  		  + removed 'rpr' namespace for C++ inclusion
- *		- **10/2015: Version 1.1 (jk)**
- *  		  + added API version constant and automatic checks to guarantee
- *  		    that the user is using the right header for the lib
- *  		    (necessary due to incompatible changes between versions)
- *  		  + added consistent flags to all calls for future use
- *		- **10/2014: Version 1.0 (jk)**
- *  		  + initial prototype version
  **/
 #ifndef PLATFORM_API_H__
 #define PLATFORM_API_H__
@@ -152,7 +132,7 @@ typedef enum {
  *  @{
  **/
 
-#define PLATFORM_API_VERSION				"1.4.1"
+#define PLATFORM_API_VERSION				"1.4.2"
 
 /**
  * Returns the version string of the library.
@@ -203,12 +183,10 @@ extern void platform_deinit(void);
 /**
  * Returns the base address of a given region in a slot.
  * @param slot_id The slot to be queried.
- * @param region_id The region to be used.
  * @return Address.
  **/
 extern platform_ctl_addr_t platform_address_get_slot_base(
-		platform_slot_id_t const slot_id,
-		platform_slot_region_id_t const region_id);
+		platform_slot_id_t const slot_id);
 
 /**
  * Returns the base address of a special platform entity.
