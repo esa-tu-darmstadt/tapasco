@@ -122,8 +122,9 @@ namespace eval platform {
         set srcs [lsort [get_bd_intf_pins -quiet -of_objects [get_bd_cells] -filter "NAME == $name && VLNV == $vlnv && MODE == Master"]]
         foreach src $srcs {
           if {[llength [get_bd_intf_nets -quiet -of_objects $src]] == 0} {
-            puts "  found pin: $src, connecting $p -> $src"
-            connect_bd_intf_net $src $p
+            set netname [format "%s_net" [string trim [string map {"/" "_"} "$src"] "_"]]
+            puts "  found pin: $src, connecting $p -> $src via $netname"
+            connect_bd_intf_net -intf_net $netname $src $p
             break
           } else {
             puts "  found no matching pin for $p"
