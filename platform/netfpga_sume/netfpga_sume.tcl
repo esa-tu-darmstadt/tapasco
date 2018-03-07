@@ -35,7 +35,7 @@ namespace eval platform {
 
     set s_axi [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_AXI"]
     set ui_clk [create_bd_pin -type "clk" -dir "O" "ui_clk"]
-    set ui_clk [create_bd_pin -type "reset" -dir "O" "ui_clk_sync_rst"]
+    set ui_clk_sync_rst [create_bd_pin -type "reset" -dir "O" "ui_clk_sync_rst"]
 
     create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.0 mig
     set_property -dict [list CONFIG.DATA_WIDTH {512} CONFIG.SINGLE_PORT_BRAM {1} CONFIG.ECC_TYPE {0}] [get_bd_cells mig]
@@ -49,13 +49,15 @@ namespace eval platform {
 
     connect_bd_intf_net [get_bd_intf_pins mig/S_AXI] $s_axi
     connect_bd_net [get_bd_pins clk_wiz_0/ui_clk] $ui_clk
+    connect_bd_net [get_bd_pins clk_wiz_0/ui_clk] [get_bd_pins mig/s_axi_aclk]
+    connect_bd_net [get_bd_pins mig/s_axi_aresetn] $ui_clk_sync_rst
 
     # exit the hierarchical group
     current_bd_instance $instance
 
     connect_bd_net [get_bd_pins host_clk] [get_bd_pins ${name}/clk_wiz_0/clk_in1]
-    connect_bd_net [get_bd_pins mem_clk] [get_bd_pins ${name}/mig/s_axi_aclk]
-    connect_bd_net [get_bd_pins mem_peripheral_aresetn] [get_bd_pins ${name}/mig/s_axi_aresetn]
+    save_bd_design
+
   }
 
   proc create_pcie_core {} {
