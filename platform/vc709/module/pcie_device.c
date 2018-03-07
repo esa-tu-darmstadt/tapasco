@@ -506,8 +506,19 @@ static int fflink_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id
 
 	report_link_status(pdev);
 
-	return 0;
+    if (char_dma_register()) {
+        fflink_info("Could not register dma char device(s)\n");
+        goto error_cannot_configure;
+    }
 
+    if (char_user_register()) {
+        fflink_info("Could not register user char device(s)\n");
+        goto error_user_register;
+    }
+
+	return 0;
+error_user_register:
+    char_dma_unregister();
 error_cannot_configure:
 	iounmap(pci_data.kvirt_addr_bar0);
 	pci_release_regions(pdev);
@@ -524,6 +535,10 @@ error_no_device:
 static void fflink_pci_remove(struct pci_dev *pdev)
 {
 	fflink_info("Unload pci-device\n");
+
+    char_dma_unregister();
+
+    char_user_unregister();
 
 	free_irqs(pdev);
 	#if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)

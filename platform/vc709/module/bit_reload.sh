@@ -57,7 +57,7 @@ hotplug() {
 # init vars
 BITSTREAM=""
 VERBOSE=0
-RELOADD=1
+RELOADD=0
 
 OPTIND=1
 while getopts vd opt; do

@@ -61,8 +61,6 @@
 
 /* Includes from local files */
 #include "common/debug_print.h"
-#include "common/device_dma.h"
-#include "common/device_user.h"
 #include "common/device_pcie.h"
 
 /******************************************************************************/

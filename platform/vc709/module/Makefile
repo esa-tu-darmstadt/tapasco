@@ -10,8 +10,11 @@ ffLink-objs := pcie_device.o blue_dma_ctrl.o char_device_dma.o char_device_user.
 
 # Path to kernel headers for compilation (path to home can be specific to os)
 LNX=$(shell uname -r)
-#LINUX_HOME?=/usr/src/kernels/$(LNX)
+
 LINUX_HOME?=/lib/modules/$(LNX)/build
+
+INSTDIR := /lib/modules/$(LNX)/kernel/drivers/net
+DRV_NAME := ffLink
 
 # Comment/uncomment the following line to disable/enable debugging
 #DEBUG = y
@@ -37,3 +40,8 @@ all:
 	@ make -C $(LINUX_HOME) M=$(PWD) modules
 clean:
 	@ make -C $(LINUX_HOME) M=$(PWD) clean
+
+install: $(DRV_NAME).ko
+	install -d $(INSTDIR)
+	install -m 644 $(DRV_NAME).ko $(INSTDIR)
+	depmod $(LNX)
