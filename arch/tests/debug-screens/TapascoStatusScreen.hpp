@@ -30,10 +30,15 @@ protected:
         attron(A_REVERSE);
 	mvprintw(start_r + 2 + row, start_c + col * col_d, "%03d:", col * 32 + row);
 	attroff(A_REVERSE);
-        if (id[col * 32 + row] > 0 && id[col * 32 + row] != 0xDEADBEEF)
-          mvprintw(start_r + 2 + row, start_c + 4 + col * col_d, " 0x%08x", id[col * 32 + row]);
-	else
+        if (id[col * 32 + row] > 0 && id[col * 32 + row] != 0xDEADBEEF) {
+	  if (mem[col * 32 + row] > 0 && mem[col*32 + row] != 0xDEADBEEF) {
+            mvprintw(start_r + 2 + row, start_c + 4 + col * col_d, " %7dKiB", mem[col * 32 + row] / 1024);
+	  } else {
+            mvprintw(start_r + 2 + row, start_c + 4 + col * col_d, " 0x%08x", id[col * 32 + row]);
+	  }
+	} else {
           mvprintw(start_r + 2 + row, start_c + 4 + col * col_d, "           ", col * 32 + row);
+	}
       }
     }
     attron(A_REVERSE);
@@ -50,12 +55,6 @@ protected:
   virtual void update() {
     const platform::platform_ctl_addr_t status =
         platform::platform_address_get_special_base(platform::PLATFORM_SPECIAL_CTL_STATUS);
-    // read ids
-    for (int s = 0; s < 128; ++s) {
-      if (platform::platform_read_ctl(status + 0x100 + s * 0x10, 4, &id[s],
-          platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS)
-        id[s] = 0xDEADBEEF;
-    }
     // read number intcs
     if (platform::platform_read_ctl(status + 0x04, 4, &intcs,
         platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS)
@@ -66,6 +65,17 @@ protected:
       caps0 = 0;
     else
       caps0 = caps0 == 0x13371337 ? 0 : caps0;
+    const bool has_pe_local_memories = caps0 != 0x13371337 && caps0 & 4;
+    // read ids
+    for (int s = 0; s < 128; ++s) {
+      if (platform::platform_read_ctl(status + 0x100 + s * 0x10, 4, &id[s],
+          platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS)
+        id[s] = 0xDEADBEEF;
+      if (has_pe_local_memories && platform::platform_read_ctl(status + 0x100 +
+      		s * 0x10 + 0x4, 4, &mem[s], platform::PLATFORM_CTL_FLAGS_NONE)
+				!= platform::PLATFORM_SUCCESS)
+        mem[s] = 0;
+    }
     // read vivado version
     if (platform::platform_read_ctl(status + 0x10, 4, &vivado,
         platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS)
@@ -109,6 +119,7 @@ protected:
 
 private:
   uint32_t id[128];
+  uint32_t mem[128];
   uint32_t intcs;
   uint32_t caps0;
   uint32_t vivado;
