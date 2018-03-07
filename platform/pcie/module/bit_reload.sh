@@ -67,7 +67,7 @@ hotplug() {
 
 # init vars
 BITSTREAM=""
-VERBOSE=1
+VERBOSE=0
 RELOADD=0
 
 OPTIND=1

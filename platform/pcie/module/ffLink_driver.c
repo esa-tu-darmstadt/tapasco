@@ -51,26 +51,10 @@ static int __init fflink_init(void)
 		goto error_pcie_register;
 	}
 
-	err = char_dma_register();
-	if (err) {
-		fflink_info("Could not register dma char device(s)\n");
-		goto error_dma_register;
-	}
-
-	err = char_user_register();
-	if (err) {
-		fflink_info("Could not register user char device(s)\n");
-		goto error_user_register;
-	}
-
 	fflink_warn("Successfully registered driver\n");
 
 	return 0;
 
-error_user_register:
-	char_dma_unregister();
-error_dma_register:
-	pcie_unregister();
 error_pcie_register:
 	return -EACCES;
 }
@@ -83,10 +67,6 @@ error_pcie_register:
 static void __exit fflink_exit(void)
 {
 	fflink_notice("Deallocate char-dev(s)/pci-device\n");
-
-	char_dma_unregister();
-
-	char_user_unregister();
 
 	pcie_unregister();
 
