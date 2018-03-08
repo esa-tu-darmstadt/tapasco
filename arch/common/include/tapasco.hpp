@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2015 Jens Korinth, TU Darmstadt
+// Copyright (C) 2015-2018 Jens Korinth, TU Darmstadt
 //
 // This file is part of Tapasco (TAPASCO).
 //
@@ -17,11 +17,11 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file 	tapasco.hpp
-//! @brief	Primitive C++ wrapper class for TAPASCO API: Simplifies calls to
-//!		FPG and handling of device memory, jobs, etc.
+//! @brief	C++ wrapper class for TAPASCO API: Simplifies calls to
+//!		FPGA and handling of device memory, jobs, etc.
 //! @authors 	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
-//! @version 	1.2
-//! @copyright  Copyright 2015 J. Korinth, TU Darmstadt
+//! @version 	1.5
+//! @copyright  Copyright 2015-2018 J. Korinth, TU Darmstadt
 //!
 //!		This file is part of Tapasco (TAPASCO).
 //!
@@ -39,32 +39,8 @@
 //!  		You should have received a copy of the GNU Lesser General Public
 //!		License along with Tapasco.  If not, see
 //!		<http://www.gnu.org/licenses/>.
-//! @details	### Change Log ###
-//!		- 03/2016 Version 1.3 (jk)
-//!		  + added device capabilities
-//!		- 03/2016 Version 1.2.1 (jk)
-//!		  + renamed to 'tapasco.hpp'
-//!		- 03/2016 Version 1.2 (jk)
-//!		  + added compiler check: header requires g++ >= 5.x.x
-//!		- 02/2016 Version 1.2 (jk)
-//!               + renamed class to 'Tapasco' instead of 'TAPASCO' acro
-//!		  + removed rpr namespace
-//!		  + moved device id to class instance member (instead of type)
-//!		  + new async_launch* methods return futures
-//!               + non-critical code uses exceptions for error handling
-//!		  + correct copy semantics for const/non-const args
-//!               + new type OutOnly<T> as wrapper for output only args
-//!		  + using static_assert for type traits instead of assert
-//!		  + using is_trivially_copyable instead of pod type trait
-//!		  + added constness to most methods
-//!               + added compile-time flag TAPASCO_COPY_MT to use multi-threaded
-//!                 data transfers (based on std::future + async)
-//!		- 10/2015 Version 1.1 (jk)
-//!		  + updated to TAPASCO API 1.1
-//!		  + several minor improvements (error handling, copying)
-//!		- 08/2015 Version 1.0 (jk) 
-//!		  + initial prototype version
 //!
+//! TODO enable delayed transfers with new C API?
 #ifndef TAPASCO_HPP__
 #define TAPASCO_HPP__
 
@@ -78,6 +54,7 @@
 #include <type_traits>
 #include <stdexcept>
 #include <future>
+#include <cstdint>
 
 using namespace std;
 
@@ -158,17 +135,17 @@ struct Tapasco {
 
   /**
    * Launches a job on the device and returns the result.
-   * @param f_id Kernel ID.
+   * @param k_id Kernel ID.
    * @param ret Reference to return value (output).
    * @param args... Parameters for launch.
-   * @return TAPASCO_SUCCESS if launch completed successfully, TAPASCO_FAILURE otherwise.
+   * @return TAPASCO_SUCCESS if launch completed successfully, an error code otherwise.
    **/
   template<typename R, typename... Targs>
-  tapasco_res_t launch(tapasco_func_id_t const f_id, R& ret, Targs... args) const noexcept
+  tapasco_res_t launch(tapasco_kernel_id_t const k_id, R& ret, Targs... args) const noexcept
   {
     tapasco_res_t res;
     // get a job id
-    tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev_ctx, f_id,
+    tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev_ctx, k_id,
         TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
 
 #ifdef TAPASCO_COPY_MT
@@ -196,29 +173,29 @@ struct Tapasco {
 
   /**
    * Launches a job on the device and returns a future to the result.
-   * @param f_id Kernel ID.
+   * @param k_id Kernel ID.
    * @param ret Reference to return value (output).
    * @param args... Parameters for launch.
-   * @return future with value TAPASCO_SUCCESS if launch completed successfully, TAPASCO_FAILURE otherwise.
+   * @return future with value TAPASCO_SUCCESS if launch completed successfully, an error code otherwise.
    **/
   template<typename R, typename... Targs>
-  future<tapasco_res_t> async_launch(tapasco_func_id_t const f_id, R& ret, Targs... args) const noexcept
+  future<tapasco_res_t> async_launch(tapasco_kernel_id_t const k_id, R& ret, Targs... args) const noexcept
   {
-    return async(std::launch::async, [=, &ret]{ return launch(f_id, ret, args...); });
+    return async(std::launch::async, [=, &ret]{ return launch(k_id, ret, args...); });
   }
 
   /**
    * Launches a job on the device without return value.
-   * @param f_id Kernel ID.
+   * @param k_id Kernel ID.
    * @param args... Parameters for launch.
-   * @return TAPASCO_SUCCESS if launch completed successfully, TAPASCO_FAILURE otherwise.
+   * @return TAPASCO_SUCCESS if launch completed successfully, an error code otherwise.
    **/
   template<typename... Targs>
-  tapasco_res_t launch_no_return(tapasco_func_id_t const f_id, Targs... args) const noexcept
+  tapasco_res_t launch_no_return(tapasco_kernel_id_t const k_id, Targs... args) const noexcept
   {
     tapasco_res_t res;
     // get a job id
-    tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev_ctx, f_id,
+    tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev_ctx, k_id,
         TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
 
 #ifdef TAPASCO_COPY_MT
@@ -245,14 +222,14 @@ struct Tapasco {
 
   /**
    * Launches a job on the device without return value and returns a future to the result.
-   * @param f_id Kernel ID.
+   * @param k_id Kernel ID.
    * @param args... Parameters for launch.
-   * @return future with value TAPASCO_SUCCESS if launch completed successfully, TAPASCO_FAILURE otherwise.
+   * @return future with value TAPASCO_SUCCESS if launch completed successfully, an error code otherwise.
    **/
   template<typename... Targs>
-  future<tapasco_res_t> async_launch_no_return(tapasco_func_id_t const f_id, Targs... args) const noexcept
+  future<tapasco_res_t> async_launch_no_return(tapasco_kernel_id_t const k_id, Targs... args) const noexcept
   {
-    return async(std::launch::async, [=]{ return launch_no_return(f_id, args...); });
+    return async(std::launch::async, [=]{ return launch_no_return(k_id, args...); });
   }
 
   /**
@@ -260,7 +237,7 @@ struct Tapasco {
    * @param len size in bytes
    * @param h output parameter for handle
    * @param flags device memory allocation flags
-   * @return handle > 0 if successful, 0 otherwise
+   * @return TAPASCO_SUCCESS if successful, an error code otherwise.
    **/
   tapasco_res_t alloc(tapasco_handle_t &h, size_t const len, tapasco_device_alloc_flag_t const flags) const noexcept
   {
@@ -279,10 +256,10 @@ struct Tapasco {
   /**
    * Copys memory from main memory to the FPGA device.
    * @param src source address
-   * @param dst destination device handle (prev. alloc'ed with tapasco_alloc)
+   * @param dst destination device handle
    * @param len number of bytes to copy
-   * @param flags	flags for copy operation, e.g., TAPASCO_COPY_NONBLOCKING
-   * @return TAPASCO_SUCCESS if copy was successful, TAPASCO_FAILURE otherwise
+   * @param flags flags for copy operation
+   * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
    **/
   tapasco_res_t copy_to(void const *src, tapasco_handle_t dst, size_t len, tapasco_device_copy_flag_t const flags) const noexcept
   {
@@ -295,7 +272,7 @@ struct Tapasco {
    * @param dst destination address
    * @param len number of bytes to copy
    * @param flags flags for copy operation, e.g., TAPASCO_DEVICE_COPY_NONBLOCKING
-   * @return TAPASCO_SUCCESS if copy was successful, TAPASCO_FAILURE otherwise
+   * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
    **/
   tapasco_res_t copy_from(tapasco_handle_t src, void *dst, size_t len, tapasco_device_copy_flag_t const flags) const noexcept
   {
@@ -303,21 +280,20 @@ struct Tapasco {
   }
 
   /**
-   * Returns the number of instances of function func_id in the currently
-   * loaded bitstream.
-   * @param func_id function id
-   * @return number of instances > 0 if function is instantiated in the
-   *         bitstream, 0 if function is unavailable
+   * Returns the number of PEs of kernel k_id in the currently loaded bitstream.
+   * @param k_id kernel id
+   * @return number of instances > 0 if kernel is instantiated in the
+   *         bitstream, 0 if kernel is unavailable
    **/
-  uint32_t func_instance_count(tapasco_func_id_t const func_id) const noexcept
+  size_t kernel_pe_count(tapasco_kernel_id_t const k_id) const noexcept
   {
-    return tapasco_device_func_instance_count(dev_ctx, func_id);
+    return tapasco_device_kernel_pe_count(dev_ctx, k_id);
   }
 
   /**
    * Checks if the current bitstream supports a given capability.
    * @param cap capability to check
-   * @return TAPASCO_SUCCESS, if capability is available, TAPASCO_FAILURE otherwise
+   * @return TAPASCO_SUCCESS, if capability is available, an error code otherwise
    **/
   tapasco_res_t has_capability(tapasco_device_capability_t cap) const noexcept
   {
@@ -327,10 +303,10 @@ struct Tapasco {
 private:
   /** Sets a single value argument. **/
   template<typename T>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, uint32_t const arg_idx, T const t) const noexcept
+  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t const arg_idx, T const t) const noexcept
   {
     // only 32/64bit values can be passed directly (i.e., via register)
-    if (sizeof(T) > 8)  // TODO remove magic number?
+    if (sizeof(T) > sizeof(uint64_t))
       return set_args(j_id, arg_idx, &t);
     else
       return tapasco_device_job_set_arg(dev_ctx, j_id, arg_idx, sizeof(t), &t);
@@ -338,7 +314,7 @@ private:
 
   /** Sets a single output-only pointer argument (alloc only). **/
   template<typename T>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, uint32_t const arg_idx, OutOnly<T> t) const noexcept
+  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t const arg_idx, OutOnly<T> t) const noexcept
   {
     tapasco_handle_t h { 0 };
     tapasco_res_t r;
@@ -348,7 +324,7 @@ private:
 
   /** Sets a single pointer argument (alloc + copy). **/
   template<typename T>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, uint32_t const arg_idx, T* t) const noexcept
+  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t const arg_idx, T* t) const noexcept
   {
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
     tapasco_handle_t h { 0 };
@@ -360,7 +336,7 @@ private:
 
   /** Sets a single const pointer argument (alloc + copy). **/
   template<typename T>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, uint32_t const arg_idx, const T* t) const noexcept
+  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t const arg_idx, const T* t) const noexcept
   {
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
     tapasco_handle_t h { 0 };
@@ -373,7 +349,7 @@ private:
 #ifdef TAPASCO_COPY_MT
   /** Variadic: recursively wraps setting all given arguments in vector of futures. **/
   template<typename... Targs>
-  vector<future<tapasco_res_t> > r_set_args(tapasco_job_id_t const j_id, uint32_t const arg_idx, Targs... args) const noexcept
+  vector<future<tapasco_res_t> > r_set_args(tapasco_job_id_t const j_id, size_t const arg_idx, Targs... args) const noexcept
   {
     vector<future<tapasco_res_t> > fs;
     set_args(fs, j_id, arg_idx, args...);
@@ -382,21 +358,21 @@ private:
 
   /** Variadic: recursively sets all given arguments. **/
   template<typename T, typename... Targs>
-  void set_args(vector<future<tapasco_res_t> >& fs, tapasco_job_id_t const j_id, uint32_t const arg_idx, T t, Targs... args) const noexcept
+  void set_args(vector<future<tapasco_res_t> >& fs, tapasco_job_id_t const j_id, size_t const arg_idx, T t, Targs... args) const noexcept
   {
     fs.push_back(async(std::launch::async, [&]{ return set_args(j_id, arg_idx, t); }));
     set_args(fs, j_id, arg_idx + 1, args...);
   }
   /** Recursion leaf. **/
   template<typename T>
-  void set_args(vector<future<tapasco_res_t> >& fs, tapasco_job_id_t const j_id, uint32_t const arg_idx, T t) const noexcept
+  void set_args(vector<future<tapasco_res_t> >& fs, tapasco_job_id_t const j_id, size_t const arg_idx, T t) const noexcept
   {
     fs.push_back(async(std::launch::async, [&]{ return set_args(j_id, arg_idx, t); }));
   }
 #else
   /** Variadic: recursively sets all given arguments. **/
   template<typename T, typename... Targs>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, uint32_t const arg_idx, T t, Targs... args) const noexcept
+  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t arg_idx, T t, Targs... args) const noexcept
   {
     tapasco_res_t r;
     if ((r = set_args(j_id, arg_idx, t)) != TAPASCO_SUCCESS) return r;
@@ -406,19 +382,19 @@ private:
 
   /** Gets a single value argument. **/
   template<typename T>
-  tapasco_res_t get_args(tapasco_job_id_t const j_id, uint32_t const arg_idx, T const t) const noexcept {
+  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T const t) const noexcept {
     return TAPASCO_SUCCESS;
   }
 
   /** Gets a single output-only argument (copy + dealloc). **/
   template<typename T>
-  tapasco_res_t get_args(tapasco_job_id_t const j_id, uint32_t const arg_idx, OutOnly<T> t) const noexcept {
+  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, OutOnly<T> t) const noexcept {
     return get_args(j_id, arg_idx, t.value);
   }
 
   /** Gets a single pointer argument (copy + dealloc). **/
   template<typename T>
-  tapasco_res_t get_args(tapasco_job_id_t const j_id, uint32_t const arg_idx, T* t) const noexcept
+  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T* t) const noexcept
   {
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
     tapasco_handle_t h;
@@ -431,7 +407,7 @@ private:
 
   /** Gets a single const pointer argument (dealloc only). **/
   template<typename T>
-  tapasco_res_t get_args(tapasco_job_id_t const j_id, uint32_t const arg_idx, T const* t) const noexcept
+  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T const* t) const noexcept
   {
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
     tapasco_handle_t h;
@@ -444,7 +420,7 @@ private:
 #ifdef TAPASCO_COPY_MT
   /** Variadic: recursively wraps getting all given arguments in vector of futures. **/
   template<typename... Targs>
-  vector<future<tapasco_res_t> > r_get_args(tapasco_job_id_t const j_id, uint32_t const arg_idx, Targs... args) const noexcept
+  vector<future<tapasco_res_t> > r_get_args(tapasco_job_id_t const j_id, size_t const arg_idx, Targs... args) const noexcept
   {
     vector<future<tapasco_res_t> > fs;
     get_args(fs, j_id, arg_idx, args...);
@@ -453,21 +429,21 @@ private:
 
   /** Variadic: recursively gets all given arguments. **/
   template<typename T, typename... Targs>
-  void get_args(vector<future<tapasco_res_t> >& fs, tapasco_job_id_t const j_id, uint32_t const arg_idx, T t, Targs... args) const noexcept
+  void get_args(vector<future<tapasco_res_t> >& fs, tapasco_job_id_t const j_id, size_t const arg_idx, T t, Targs... args) const noexcept
   {
     fs.push_back(async(std::launch::async, [&]{ return get_args(j_id, arg_idx, t); }));
     get_args(fs, j_id, arg_idx + 1, args...);
   }
   /** Recursion leaf. **/
   template<typename T>
-  void get_args(vector<future<tapasco_res_t> >& fs, tapasco_job_id_t const j_id, uint32_t const arg_idx, T t) const noexcept
+  void get_args(vector<future<tapasco_res_t> >& fs, tapasco_job_id_t const j_id, size_t const arg_idx, T t) const noexcept
   {
     fs.push_back(async(std::launch::async, [&]{ return get_args(j_id, arg_idx, t); }));
   }
 #else
   /** Variadic: recursively gets all given arguments. **/
   template<typename T, typename... Targs>
-  tapasco_res_t get_args(tapasco_job_id_t const j_id, uint32_t const arg_idx, T t, Targs... args) const noexcept
+  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T t, Targs... args) const noexcept
   {
     tapasco_res_t r;
     if ((r = get_args(j_id, arg_idx, t)) != TAPASCO_SUCCESS) return r;

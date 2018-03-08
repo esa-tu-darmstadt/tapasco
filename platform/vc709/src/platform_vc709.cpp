@@ -399,27 +399,7 @@ platform_res_t tapasco::platform::platform_write_ctl_and_wait(platform_ctl_addr_
 	return PLATFORM_SUCCESS;
 }
 
-/*platform_ctl_addr_t tapasco::platform::platform_address_get_special_base(
-		platform_special_ctl_t const ent)
-{
-	switch (ent) {
-	// TPC Status IP core is fixed at 0x0280_0000 (physically)
-	case PLATFORM_SPECIAL_CTL_STATUS: return HW_ID_ADDR;
-	case PLATFORM_SPECIAL_CTL_ATSPRI: return 0x390000;
-	case PLATFORM_SPECIAL_CTL_INTC0 : return 0x400000;
-	case PLATFORM_SPECIAL_CTL_INTC1 : return 0x410000;
-	case PLATFORM_SPECIAL_CTL_INTC2 : return 0x420000;
-	case PLATFORM_SPECIAL_CTL_INTC3 : return 0x430000;
-	}
-	return 0;
-}*/
-
 platform_res_t tapasco::platform::platform_register_irq_callback(platform_irq_callback_t cb)
-{
-	return (platform_res_t) PERR_NOT_IMPLEMENTED;
-}
-
-platform_res_t tapasco::platform::platform_stop(const int result)
 {
 	return (platform_res_t) PERR_NOT_IMPLEMENTED;
 }

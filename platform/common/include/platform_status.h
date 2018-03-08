@@ -33,11 +33,17 @@ void platform_status_deinit(platform_status_t *status);
 int platform_status_has_capability_0(const platform_status_t *status,
 		platform_capabilities_0_t caps);
 uint32_t platform_status_get_vivado_version(const platform_status_t *status);
-uint32_t platform_status_get_platform_version(const platform_status_t *status);
+uint32_t platform_status_get_tapasco_version(const platform_status_t *status);
 uint32_t platform_status_get_gen_ts(const platform_status_t *status);
 uint32_t platform_status_get_host_clk(const platform_status_t *status);
 uint32_t platform_status_get_mem_clk(const platform_status_t *status);
 uint32_t platform_status_get_design_clk(const platform_status_t *status);
+
+uint32_t platform_status_get_slot_id(const platform_status_t *status,
+		platform_slot_id_t const slot_id);
+
+uint32_t platform_status_get_slot_mem(const platform_status_t *status,
+		platform_slot_id_t const slot_id);
 
 platform_ctl_addr_t platform_status_get_slot_base(const platform_status_t *status,
 		platform_slot_id_t const slot_id);

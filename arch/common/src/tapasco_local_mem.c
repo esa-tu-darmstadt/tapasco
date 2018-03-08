@@ -26,6 +26,8 @@
 #include <tapasco_errors.h>
 #include <tapasco_logging.h>
 #include <gen_mem.h>
+#include <platform.h>
+#include <platform_status.h>
 #include <stdlib.h>
 
 typedef struct {
@@ -34,8 +36,8 @@ typedef struct {
 } address_space_t;
 
 struct tapasco_local_mem {
-	address_space_t as[TAPASCO_MAX_INSTANCES];
-	block_t *lmem[TAPASCO_MAX_INSTANCES];
+	address_space_t as[PLATFORM_NUM_SLOTS];
+	block_t *lmem[PLATFORM_NUM_SLOTS];
 };
 
 tapasco_res_t tapasco_local_mem_init(tapasco_status_t const *status,
@@ -45,8 +47,8 @@ tapasco_res_t tapasco_local_mem_init(tapasco_status_t const *status,
 	*lmem = (tapasco_local_mem_t *)malloc(sizeof(tapasco_local_mem_t));
 	if (! *lmem) return TAPASCO_ERR_OUT_OF_MEMORY;
 	addr_t base = 0;
-	for (size_t idx = 0; idx < TAPASCO_MAX_INSTANCES; ++idx) {
-		size_t const sz = status->mem[idx];
+	for (size_t idx = 0; idx < PLATFORM_NUM_SLOTS; ++idx) {
+		size_t const sz = platform_status_get_slot_mem(status, idx);
 		LOG(LALL_MEM, "memory size for slot_id #%zd: %zd bytes", idx, sz);
 		(*lmem)->lmem[idx] = sz > 0 ? gen_mem_create(base, sz) : NULL;
 		(*lmem)->as[idx].base = base;
@@ -64,7 +66,7 @@ void tapasco_local_mem_deinit(tapasco_local_mem_t *lmem)
 }
 
 tapasco_res_t tapasco_local_mem_alloc(tapasco_local_mem_t *lmem,
-		tapasco_func_slot_id_t slot_id, size_t const sz,
+		tapasco_slot_id_t slot_id, size_t const sz,
 		tapasco_handle_t *h)
 {
 	*h = INVALID_ADDRESS;
@@ -75,11 +77,11 @@ tapasco_res_t tapasco_local_mem_alloc(tapasco_local_mem_t *lmem,
 	}
 	LOG(LALL_MEM, "request to allocate %zd bytes for slot_id #%d -> 0x%08lx",
 			sz, slot_id, (unsigned long)*h);
-	return *h != INVALID_ADDRESS ? TAPASCO_SUCCESS : TAPASCO_FAILURE;
+	return *h != INVALID_ADDRESS ? TAPASCO_SUCCESS : TAPASCO_ERR_OUT_OF_MEMORY;
 }
 
 void tapasco_local_mem_dealloc(tapasco_local_mem_t *lmem,
-		tapasco_func_slot_id_t slot_id, tapasco_handle_t h, size_t sz)
+		tapasco_slot_id_t slot_id, tapasco_handle_t h, size_t sz)
 {
 	LOG(LALL_MEM, "request to free %zd bytes at slot_id #%d:0x%08lx",
 			sz, slot_id, (unsigned long)h);
@@ -90,14 +92,14 @@ void tapasco_local_mem_dealloc(tapasco_local_mem_t *lmem,
 
 inline
 size_t tapasco_local_mem_get_size(tapasco_local_mem_t *lmem,
-		tapasco_func_slot_id_t slot_id)
+		tapasco_slot_id_t slot_id)
 {
 	return lmem->as[slot_id].high - lmem->as[slot_id].base;
 }
 
 inline
-addr_t tapasco_local_mem_get_base(tapasco_local_mem_t *lmem,
-		tapasco_func_slot_id_t *slot_id,
+addr_t tapasco_local_mem_get_slot_and_base(tapasco_local_mem_t *lmem,
+		tapasco_slot_id_t *slot_id,
 		addr_t const elem)
 {
 	while (elem > lmem->as[*slot_id].high) {

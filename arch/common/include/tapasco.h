@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
 // This file is part of Tapasco (TAPASCO).
 //
@@ -46,115 +46,20 @@
 #define TAPASCO_H__
 
 #ifdef __cplusplus
-#include <cstdint>
 #include <cstdlib>
-#include <cstring>
 namespace tapasco { extern "C" {
 #else
-#include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
 #endif /* __cplusplus */
 
+#include <tapasco_types.h>
 #include <platform_caps.h>
-
-/** @defgroup types Types
- *  @{
- **/
-
-/** General purpose result type **/
-typedef enum {
-	/** Indicates unspecific failure, should not be used. **/
-	TAPASCO_FAILURE 				= 0,
-	/** Indicates successful operation. **/
-	TAPASCO_SUCCESS
-} tapasco_res_t;
-
-/** FPGA context; opaque forward decl. **/
-typedef struct tapasco_ctx tapasco_ctx_t;
-
-/** Device context; opaque forward decl. **/
-typedef struct tapasco_dev_ctx tapasco_dev_ctx_t;
-
-/** Identifies a FPGA device (currently only one). **/
-typedef uint32_t tapasco_dev_id_t;
-
-/**
- * Identifies a 'processing element' on the device, i.e., a rpr::kernel
- * occurrence.
- * Note: A function can have more than one instantiation in a bitstream.
- **/
-typedef uint32_t tapasco_func_id_t;
-
-/** Identifies jobs, i.e,, sets of arguments for a kernel execution. **/
-typedef uint32_t tapasco_job_id_t;
-
-/** Device memory location handle (opaque). **/
-typedef uint32_t tapasco_handle_t;
-
-/** Flags for device creation (implementation defined). **/
-typedef enum {
-	/** no flags **/
-	TAPASCO_DEVICE_CREATE_FLAGS_NONE 		= 0
-} tapasco_device_create_flag_t;
-
-/** Flags for memory allocation (implementation defined). **/
-typedef enum {
-	/** no flags **/
-	TAPASCO_DEVICE_ALLOC_FLAGS_NONE 		= 0,
-	/** PE-local, i.e., only accessible from scheduled PE **/
-	TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL             = 2,
-} tapasco_device_alloc_flag_t;
-
-/** Flags for bitstream loading (implementation defined). **/
-typedef enum {
-	/** no flags **/
-	TAPASCO_LOAD_BITSTREAM_FLAGS_NONE 		= 0
-} tapasco_load_bitstream_flag_t;
-
-/** Flags for calls to tapasco_device_copy_to and tapasco_device_copy_from. **/
-typedef enum {
-	/** no flags **/
-	TAPASCO_DEVICE_COPY_FLAGS_NONE			= 0,
-	/** wait until transfer is finished (default) **/
-	TAPASCO_DEVICE_COPY_BLOCKING			= 0,
-	/** return immediately after transfer was scheduled **/
-	TAPASCO_DEVICE_COPY_NONBLOCKING			= 1,
-	/** copy to local memory **/
-	TAPASCO_DEVICE_COPY_PE_LOCAL            	= 2,
-} tapasco_device_copy_flag_t;
-
-/** Flags for calls to tapasco_device_acquire_job_id. **/
-typedef enum {
-	/** no flags **/
-	TAPASCO_DEVICE_ACQUIRE_JOB_ID_FLAGS_NONE	= 0,
-	/** wait until id becomes available (default) **/
-	TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING		= 0,
-	/** fail if id is not immediately available, do not wait **/
-	TAPASCO_DEVICE_ACQUIRE_JOB_ID_NONBLOCKING	= 1,
-} tapasco_device_acquire_job_id_flag_t;
-
-/** Flags for calls to tapasco_device_job_launch. **/
-typedef enum {
-	/** no flags **/
-	TAPASCO_DEVICE_JOB_LAUNCH_FLAGS_NONE		= 0,
-	/** launch and wait until job is finished (default) **/
-	TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING		= 0,
-	/** return immediately after job is scheduled **/
-	TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING		= 1,
-} tapasco_device_job_launch_flag_t;
-
-/** Capabilities: Optional device capabilities. **/
-typedef platform_capabilities_0_t tapasco_device_capability_t;
-
-/** @} **/
-
 
 /** @defgroup version Version Info
  *  @{
  **/
 
-#define TAPASCO_API_VERSION					"1.4.2"
+#define TAPASCO_API_VERSION					"1.5"
 
 /**
  * Returns the version string of the library.
@@ -223,37 +128,41 @@ void tapasco_deinit(tapasco_ctx_t *ctx);
  * @param flags device creation flags
  * @return TAPASCO_SUCCESS if sucessful, an error code otherwise
  **/
-tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx, tapasco_dev_id_t const dev_id,
-		tapasco_dev_ctx_t **pdev_ctx, tapasco_device_create_flag_t const flags);
+tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx,
+		tapasco_dev_id_t const dev_id,
+		tapasco_dev_ctx_t **pdev_ctx,
+		tapasco_device_create_flag_t const flags);
 
 /**
- * Device deinit: called once for each valid tapasco_dev_ctx_t to release exclusive
- * access to the device and perform clean-up tasks.
+ * Device deinit: called once for each valid tapasco_dev_ctx_t to release
+ * exclusive access to the device and perform clean-up tasks.
  * @param ctx global context
  * @param dev_ctx device context
  **/
 void tapasco_destroy_device(tapasco_ctx_t *ctx, tapasco_dev_ctx_t *dev_ctx);
 
 /**
- * Returns the number of instances of function func_id in the currently
- * loaded bitstream.
+ * Returns the number of instances of kernel k_id in the currently loaded
+ * bitstream.
  * @param dev_ctx device context
- * @param func_id function id
- * @return number of instances > 0 if function is instantiated in the bitstream,
- *         0 if function is unavailable
+ * @param k_id kernel id
+ * @return number of instances > 0 if kernel is instantiated in the bitstream,
+ *         0 if kernel is unavailable
  **/
-uint32_t tapasco_device_func_instance_count(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_func_id_t const func_id);
+size_t tapasco_device_kernel_pe_count(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_kernel_id_t const k_id);
 
 /**
  * Loads the bitstream from the given file to the device.
  * @param dev_ctx device context
  * @param filename bitstream file name
  * @param flags bitstream loading flags
- * @return TAPASCO_SUCCESS if sucessful, TAPASCO_FAILURE otherwise
+ * @return TAPASCO_SUCCESS if sucessful, an error code otherwise
  **/
-tapasco_res_t tapasco_device_load_bitstream_from_file(tapasco_dev_ctx_t *dev_ctx,
-		char const *filename, tapasco_load_bitstream_flag_t const flags);
+tapasco_res_t tapasco_device_load_bitstream_from_file(
+		tapasco_dev_ctx_t *dev_ctx,
+		char const *filename,
+		tapasco_load_bitstream_flag_t const flags);
 
 /**
  * Loads a bitstream to the given device.
@@ -261,10 +170,12 @@ tapasco_res_t tapasco_device_load_bitstream_from_file(tapasco_dev_ctx_t *dev_ctx
  * @param len size in bytes
  * @param data pointer to bitstream data
  * @param flags bitstream loading flags
- * @return TAPASCO_SUCCESS if sucessful, TAPASCO_FAILURE otherwise
+ * @return TAPASCO_SUCCESS if sucessful, an error code otherwise
  **/
-tapasco_res_t tapasco_device_load_bitstream(tapasco_dev_ctx_t *dev_ctx, size_t const len,
-		void const *data, tapasco_load_bitstream_flag_t const flags);
+tapasco_res_t tapasco_device_load_bitstream(tapasco_dev_ctx_t *dev_ctx,
+		size_t const len,
+		void const *data,
+		tapasco_load_bitstream_flag_t const flags);
 
 /** @} **/
 
@@ -301,7 +212,7 @@ void tapasco_device_free(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t handle,
  * @param dst destination device handle (prev. alloc'ed with tapasco_alloc)
  * @param len number of bytes to copy
  * @param flags	flags for copy operation, e.g., TAPASCO_COPY_NONBLOCKING
- * @return TAPASCO_SUCCESS if copy was successful, TAPASCO_FAILURE otherwise
+ * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx,
 		void const *src, tapasco_handle_t dst, size_t len,
@@ -314,7 +225,7 @@ tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx,
  * @param dst destination address
  * @param len number of bytes to copy
  * @param flags	flags for copy operation, e.g., TAPASCO_COPY_NONBLOCKING
- * @return TAPASCO_SUCCESS if copy was successful, TAPASCO_FAILURE otherwise
+ * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_copy_from(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_handle_t src, void *dst, size_t len,
@@ -328,17 +239,19 @@ tapasco_res_t tapasco_device_copy_from(tapasco_dev_ctx_t *dev_ctx,
  **/
 
 /**
- * Obtains a job context to associate function parameters with, i.e., that can
+ * Obtains a job context to associate kernel parameters with, i.e., that can
  * be used in @see tapasco_set_arg calls to set kernel arguments.
  * Note: May block until job context is available.
  * @param dev_ctx device context
- * @param func_id function id
- * @param flags or'ed flags for the call, @see tapasco_device_acquire_job_id_flag_t
- * 	  for options
- * @return job id > 0 if successful, 0 otherwise
+ * @param j_id pointer to job_id var
+ * @param k_id kernel id
+ * @param flags or'ed flags for the call,
+ *        @see tapasco_device_acquire_job_id_flag_t for options
+ * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
-tapasco_job_id_t tapasco_device_acquire_job_id(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_func_id_t const func_id,
+tapasco_res_t tapasco_device_acquire_job_id(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_job_id_t *j_id,
+		tapasco_kernel_id_t const k_id,
 		tapasco_device_acquire_job_id_flag_t flags);
 
 /**
@@ -359,27 +272,27 @@ void tapasco_device_release_job_id(tapasco_dev_ctx_t *dev_ctx,
  * @param job_id job id
  * @param flags launch flags, e.g., TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING
  * @return TAPASCO_SUCCESS if execution was successful and results can be
- *         retrieved, TAPASCO_FAILURE otherwise.
+ *         retrieved, an error code otherwise
  **/
 tapasco_res_t tapasco_device_job_launch(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_job_id_t const job_id,
 		tapasco_device_job_launch_flag_t const flags);
 
 /**
- * Sets the arg_idx'th argument of function func_id to arg_value.
+ * Sets the arg_idx'th argument of kernel k_id to arg_value.
  * @param dev_ctx device context
  * @param job_id job id
  * @param arg_idx argument number
  * @param arg_len length of arg_value in bytes (must be power of 4)
  * @param arg_value data to set argument to.
- * @return TAPASCO_SUCCESS if successful, TAPASCO_FAILURE otherwise.
+ * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_job_set_arg(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_job_id_t const job_id, uint32_t arg_idx,
+		tapasco_job_id_t const job_id, size_t arg_idx,
 		size_t const arg_len, void const *arg_value);
 
 /**
- * Sets the arg_idx'th argument of function func_id to trigger an automatic
+ * Sets the arg_idx'th argument of kernel k_id to trigger an automatic
  * transfer to and from memory allocated internally. Copies data from arg_value
  * to a newly allocated buffer before execution of the job, and copies data from
  * the buffer back to arg_value after its end.
@@ -390,24 +303,24 @@ tapasco_res_t tapasco_device_job_set_arg(tapasco_dev_ctx_t *dev_ctx,
  * @param arg_len length of arg_value in bytes (must be power of 4)
  * @param arg_value data to set argument to.
  * @param flags allocation flags, see @tapasco_device_alloc_flag_t.
- * @return TAPASCO_SUCCESS if successful, TAPASCO_FAILURE otherwise.
+ * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_job_set_arg_transfer(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_job_id_t const job_id, uint32_t arg_idx,
+		tapasco_job_id_t const job_id, size_t arg_idx,
 		size_t const arg_len, void *arg_value,
 		tapasco_device_alloc_flag_t const flags);
 
 /**
- * Gets the value of the arg_idx'th argument of function func_id.
+ * Gets the value of the arg_idx'th argument of kernel k_id.
  * @param dev_ctx device context
  * @param job_id job id
  * @param arg_idx argument number
  * @param arg_len length of arg_value in bytes (must be power of 4)
  * @param arg_value data to store argument in.
- * @return TAPASCO_SUCCESS if successful, TAPASCO_FAILURE otherwise.
+ * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_job_get_arg(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_job_id_t const job_id, uint32_t arg_idx,
+		tapasco_job_id_t const job_id, size_t arg_idx,
 		size_t const arg_len, void *arg_value);
 /**
  * Retrieves the return value of job with the given id to ret_value.
@@ -415,7 +328,7 @@ tapasco_res_t tapasco_device_job_get_arg(tapasco_dev_ctx_t *dev_ctx,
  * @param job_id job id
  * @param ret_len size of return value in bytes (must be power of 4)
  * @param ret_value pointer to mem to write return value to
- * @return TAPASCO_SUCCESS if sucessful, TAPASCO_FAILURE otherwise.
+ * @return TAPASCO_SUCCESS if sucessful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_job_get_return(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_job_id_t const job_id, size_t const ret_len,
@@ -432,7 +345,7 @@ tapasco_res_t tapasco_device_job_get_return(tapasco_dev_ctx_t *dev_ctx,
  * Checks if the specified capability is available in the current bitstream.
  * @param dev_ctx device context
  * @param cap capability
- * @return TAPASCO_SUCCESS, if available, TAPASCO_FAILURE otherwise.
+ * @return TAPASCO_SUCCESS, if available, an error code otherwise
  **/
 tapasco_res_t tapasco_device_has_capability(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_device_capability_t cap);

@@ -35,7 +35,7 @@ extern tapasco_res_t tapasco_status_set_id(int idx, tapasco_func_id_t id);
 /* Fakes a composition consisting of ascending function ids. */
 static inline void composition_asc(void)
 {
-	for (int i = 0; i < TAPASCO_MAX_INSTANCES; ++i)
+	for (int i = 0; i < TAPASCO_NUM_SLOTS; ++i)
 		tapasco_status_set_id(i, i+1);
 }
 
@@ -47,7 +47,7 @@ START_TEST (tapasco_functions_check_counts)
 	tapasco_functions_t *funcs = NULL;
 	tapasco_functions_init(&funcs);
 
-	for (int i = 0; i < TAPASCO_MAX_INSTANCES; ++i) {
+	for (int i = 0; i < TAPASCO_NUM_SLOTS; ++i) {
 		fail_if (tapasco_functions_count(funcs, i + 1) != 1);
 		tapasco_func_slot_id_t slot_id = tapasco_functions_acquire(funcs, i + 1);
 		printf("f_id = %d -> slot_id = %d\n", i + 1, slot_id);
@@ -66,7 +66,7 @@ static void *run(void *fp)
 {
 	tapasco_functions_t *funcs = (tapasco_functions_t *)fp;
 	for (int i = 0; i < 100; ++i) {
-		tapasco_func_id_t const f_id = (rand() % TAPASCO_MAX_INSTANCES) + 1;
+		tapasco_func_id_t const f_id = (rand() % TAPASCO_NUM_SLOTS) + 1;
 		tapasco_func_slot_id_t slot_id;
 		do {
 			slot_id = tapasco_functions_acquire(funcs, f_id);

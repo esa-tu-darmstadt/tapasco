@@ -18,13 +18,13 @@
 //
 /**
  *  @file	tapasco_status.h
- *  @brief	
+ *  @brief	Thin wrapper around platform_status.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #ifndef TAPASCO_STATUS_H__
 #define TAPASCO_STATUS_H__
 
-#include <tapasco.h>
+#include <tapasco_types.h>
 #include <tapasco_global.h>
 #include <platform.h>
 #include <platform_caps.h>
@@ -33,7 +33,7 @@
 #define TAPASCO_VERSION_MAJOR(v) 				((v) >> 16)
 #define TAPASCO_VERSION_MINOR(v) 				((v) & 0xFFFF)
 
-typedef platform_status_t tapasco_status_init_t;
+typedef platform_status_t tapasco_status_t;
 typedef platform_capabilities_0_t tapasco_capabilities_0_t;
 
 tapasco_res_t tapasco_status_init(tapasco_status_t **status);
@@ -80,6 +80,13 @@ inline
 uint32_t tapasco_status_get_design_clk(const tapasco_status_t *status)
 {
 	return platform_status_get_design_clk(status);
+}
+
+inline
+tapasco_handle_t tapasco_status_get_slot_base(const tapasco_status_t *status,
+		const tapasco_slot_id_t slot_id)
+{
+	return platform_status_get_slot_base(status, slot_id);
 }
 
 #endif /* TAPASCO_STATUS_H__ */

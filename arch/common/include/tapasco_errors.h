@@ -23,13 +23,12 @@
 #ifndef TAPASCO_API_ERROR_H__
 #define TAPASCO_API_ERROR_H__
 
-#include <tapasco.h>
-
 #ifdef __cplusplus
 namespace rpr { namespace tapasco { extern "C" {
 #endif /* __cplusplus */
 
 #define TAPASCO_ERRORS \
+	_X(TAPASCO_ERR_UNKNOWN_ERROR                  ,  0  , "unknown error") \
 	_X(TAPASCO_ERR_CONTEXT_NOT_AVAILABLE          , -1  , "no FPGA context available") \
 	_X(TAPASCO_ERR_DEVICE_NOT_FOUND               , -2  , "FPGA device not found") \
 	_X(TAPASCO_ERR_DEVICE_BUSY                    , -3  , "FPGA device is busy") \
@@ -41,11 +40,12 @@ namespace rpr { namespace tapasco { extern "C" {
 	_X(TAPASCO_ERR_INVALID_ARG_SIZE               , -9  , "invalid kernel argument size") \
 	_X(TAPASCO_ERR_NOT_IMPLEMENTED                , -10 , "not implemented") \
 	_X(TAPASCO_ERR_JOB_ID_NOT_FOUND               , -11 , "job id not found") \
-	_X(TAPASCO_ERR_PLATFORM_FAILURE               , -12 , "platform failure, check log") \
-	_X(TAPASCO_ERR_STATUS_CORE_NOT_FOUND          , -13 , "TPC status core not found in bitstream") \
-	_X(TAPASCO_ERR_VERSION_MISMATCH               , -14 , "TPC API library version mismatch") \
-	_X(TAPASCO_ERR_NO_PE_LOCAL_MEMORY_AVAILABLE   , -15 , "PE-local memory was selected, but none available") \
-	_X(TAPASCO_ERR_SENTINEL                       , -16 , "--- no error just end of list ---")
+	_X(TAPASCO_ERR_PLATFORM_FAILURE               , -12 , "platform failure, check platform log") \
+	_X(TAPASCO_ERR_STATUS_CORE_NOT_FOUND          , -13 , "status core not found in bitstream") \
+	_X(TAPASCO_ERR_VERSION_MISMATCH               , -14 , "TaPaSCo API library version mismatch") \
+	_X(TAPASCO_ERR_PE_LOCAL_MEMORY_NOT_SUPPORTED  , -15 , "PE-local memory not supported") \
+	_X(TAPASCO_ERR_NO_PE_LOCAL_MEMORY_AVAILABLE   , -16 , "PE-local memory was selected, but none available") \
+	_X(TAPASCO_ERR_SENTINEL                       , -17 , "--- no error just end of list ---")
 
 #ifdef _X
 	#undef _X

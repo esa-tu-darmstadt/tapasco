@@ -24,7 +24,7 @@
 #ifndef TAPASCO_MEMORY_H__
 #define TAPASCO_MEMORY_H__
 
-#include <tapasco.h>
+#include <tapasco_types.h>
 
 /**
  * Allocates a chunk of len bytes on the device.
@@ -57,7 +57,7 @@ void tapasco_device_free(tapasco_dev_ctx_t *dev_ctx,
  * @param dst destination device handle (prev. alloc'ed with tapasco_alloc)
  * @param len number of bytes to copy
  * @param flags	flags for copy operation, e.g., TAPASCO_COPY_NONBLOCKING
- * @return TAPASCO_SUCCESS if copy was successful, TAPASCO_FAILURE otherwise
+ * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx, void const *src,
 		tapasco_handle_t dst, size_t len,
@@ -71,7 +71,7 @@ tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx, void const *src
  * @param dst destination address
  * @param len number of bytes to copy
  * @param flags	flags for copy operation, e.g., TAPASCO_COPY_NONBLOCKING
- * @return TAPASCO_SUCCESS if copy was successful, TAPASCO_FAILURE otherwise
+ * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_copy_from(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_handle_t src,

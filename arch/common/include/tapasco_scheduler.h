@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
 // This file is part of Tapasco (TPC).
 //
@@ -23,23 +23,23 @@
 #ifndef TAPASCO_SCHEDULER_H__
 #define TAPASCO_SCHEDULER_H__
 
-#include <tapasco.h>
+#include <tapasco_types.h>
 #include <tapasco_jobs.h>
-#include <tapasco_functions.h>
+#include <tapasco_pemgmt.h>
 
 /**
  * Schedule a job for execution on the hardware threadpool.
  * @param dev_ctx device context.
  * @param jobs jobs context.
- * @param functions functions context.
+ * @param pemgmt PE management context.
  * @param j_id job id.
- * @return TAPASCO_SUCCESS, if job could be scheduled and will execute.
+ * @return TAPASCO_SUCCESS, if job could be scheduled and will execute, an error
+ *         code otherwise
  **/
 tapasco_res_t tapasco_scheduler_launch(
 		tapasco_dev_ctx_t *dev_ctx,
 		tapasco_jobs_t *jobs,
-		tapasco_functions_t *functions,
+		tapasco_pemgmt_t *pemgmt,
 		tapasco_job_id_t const j_id);
 
 #endif /* TAPASCO_SCHEDULER_H__ */
-

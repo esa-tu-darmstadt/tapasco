@@ -77,7 +77,8 @@ void tapasco_log(tapasco_ll_t const level, char *fmt, ...)
 	}
 }
 
-static inline void handle_msg(struct log_msg_t *m)
+static inline
+void handle_msg(struct log_msg_t *m)
 {
 	fprintf(libtapasco_logging_file ? libtapasco_logging_file : stderr, 
 		m->lvl ? (m->lvl ^ 1 ?
@@ -88,7 +89,8 @@ static inline void handle_msg(struct log_msg_t *m)
 	gs_push(&log_s, m);
 }
 
-static void *log_thread_main(void *p)
+static
+void *log_thread_main(void *p)
 {
 	struct gq_t *q = (struct gq_t *)p;
 	void *lm;

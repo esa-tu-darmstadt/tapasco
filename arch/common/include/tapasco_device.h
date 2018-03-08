@@ -23,12 +23,12 @@
 #ifndef TAPASCO_DEVICE_H__
 #define TAPASCO_DEVICE_H__
 
-#include <tapasco.h>
-#include <tapasco_functions.h>
+#include <tapasco_types.h>
+#include <tapasco_pemgmt.h>
 #include <tapasco_status.h>
 #include <tapasco_local_mem.h>
 
-tapasco_functions_t *tapasco_device_functions(tapasco_dev_ctx_t *dev_ctx);
+tapasco_pemgmt_t    *tapasco_device_pemgmt(tapasco_dev_ctx_t *dev_ctx);
 tapasco_status_t    *tapasco_device_status(tapasco_dev_ctx_t *dev_ctx);
 tapasco_local_mem_t *tapasco_device_local_mem(tapasco_dev_ctx_t *dev_ctx);
 

@@ -39,12 +39,13 @@
 #include <tapasco_status.h>
 #include <tapasco_local_mem.h>
 #include <platform.h>
+#include <platform_status.h>
 
 static
 tapasco_res_t tapasco_device_alloc_local(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_handle_t *h, size_t const len,
 		tapasco_device_alloc_flag_t const flags,
-		tapasco_func_slot_id_t slot_id)
+		tapasco_slot_id_t slot_id)
 {
 	LOG(LALL_MEM, "allocating %zd bytes of pe-local memory for function #%lu",
 			len, (unsigned long)slot_id);
@@ -56,7 +57,7 @@ static
 tapasco_res_t tapasco_device_free_local(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_handle_t h, size_t const len,
 		tapasco_device_alloc_flag_t const flags,
-		tapasco_func_slot_id_t slot_id)
+		tapasco_slot_id_t slot_id)
 {
 	LOG(LALL_MEM, "freeing %zd bytes of pe-local memory for function #%lu",
 			len, (unsigned long)slot_id);
@@ -69,10 +70,12 @@ static
 tapasco_res_t tapasco_device_copy_to_local(tapasco_dev_ctx_t *dev_ctx,
 		void const *src, tapasco_handle_t dst, size_t len,
 		tapasco_device_copy_flag_t const flags,
-		tapasco_func_slot_id_t slot_id)
+		tapasco_slot_id_t slot_id)
 {
-	addr_t lbase = tapasco_local_mem_get_base(tapasco_device_local_mem(dev_ctx), &slot_id, dst);
-	platform_ctl_addr_t a = platform_address_get_slot_base(slot_id, 0);
+	addr_t lbase = tapasco_local_mem_get_slot_and_base(
+			tapasco_device_local_mem(dev_ctx), &slot_id, dst);
+	platform_ctl_addr_t a = platform_status_get_slot_base(
+			tapasco_device_status(dev_ctx), slot_id);
 	LOG(LALL_MEM, "copying %zd bytes locally to 0x%08lx of slot_id #%lu, bus address: 0x%08lx",
 			len, (unsigned long)dst, (unsigned long)slot_id,
 			(unsigned long)a + (dst - lbase));
@@ -93,10 +96,12 @@ static
 tapasco_res_t tapasco_device_copy_from_local(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_handle_t src, void *dst, size_t len,
 		tapasco_device_copy_flag_t const flags,
-		tapasco_func_slot_id_t slot_id)
+		tapasco_slot_id_t slot_id)
 {
-	addr_t lbase = tapasco_local_mem_get_base(tapasco_device_local_mem(dev_ctx), &slot_id, src);
-	platform_ctl_addr_t a = platform_address_get_slot_base(slot_id, 0);
+	addr_t lbase = tapasco_local_mem_get_slot_and_base(
+			tapasco_device_local_mem(dev_ctx), &slot_id, src);
+	platform_ctl_addr_t a = platform_status_get_slot_base(
+			tapasco_device_status(dev_ctx), slot_id);
 	LOG(LALL_MEM, "copying %zd bytes locally from 0x%08lx of slot_id #%lu, bus address: 0x%08lx",
 			len, (unsigned long)dst, (unsigned long)slot_id,
 			(unsigned long)a + (src - lbase));
@@ -122,7 +127,7 @@ tapasco_res_t tapasco_device_alloc(tapasco_dev_ctx_t *dev_ctx,
 	platform_res_t r;
 	if (flags & TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL) {
 		va_list ap; va_start(ap, flags);
-		tapasco_func_slot_id_t slot_id = va_arg(ap, tapasco_func_slot_id_t);
+		tapasco_slot_id_t slot_id = va_arg(ap, tapasco_slot_id_t);
 		va_end(ap);
 		return tapasco_device_alloc_local(dev_ctx, h, len, flags, slot_id);
 	}
@@ -142,7 +147,7 @@ void tapasco_device_free(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t handle,
 	LOG(LALL_MEM, "freeing handle 0x%08x", (unsigned)handle);
 	if (flags & TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL) {
 		va_list ap; va_start(ap, flags);
-		tapasco_func_slot_id_t slot_id = va_arg(ap, tapasco_func_slot_id_t);
+		tapasco_slot_id_t slot_id = va_arg(ap, tapasco_slot_id_t);
 		size_t len = va_arg(ap, size_t);
 		va_end(ap);
 		tapasco_device_free_local(dev_ctx, handle, len, flags, slot_id);
@@ -160,14 +165,15 @@ tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx, void const *src
 	if (flags & TAPASCO_DEVICE_COPY_PE_LOCAL) {
 		va_list ap;
 		va_start(ap, flags);
-		tapasco_func_slot_id_t slot_id = va_arg(ap, tapasco_func_slot_id_t);
+		tapasco_slot_id_t slot_id = va_arg(ap, tapasco_slot_id_t);
 		va_end(ap);
 		return tapasco_device_copy_to_local(dev_ctx, src, dst, len, flags, slot_id);
 	}
 	if (flags)
 		return TAPASCO_ERR_NOT_IMPLEMENTED;
-	return platform_write_mem(dst, len, src, PLATFORM_MEM_FLAGS_NONE) == PLATFORM_SUCCESS ?
-			TAPASCO_SUCCESS : TAPASCO_FAILURE;
+	return platform_write_mem(dst, len, src, PLATFORM_MEM_FLAGS_NONE) ==
+			PLATFORM_SUCCESS ?
+			TAPASCO_SUCCESS : TAPASCO_ERR_PLATFORM_FAILURE;
 }
 
 tapasco_res_t tapasco_device_copy_from(tapasco_dev_ctx_t *dev_ctx,
@@ -181,12 +187,13 @@ tapasco_res_t tapasco_device_copy_from(tapasco_dev_ctx_t *dev_ctx,
 	if (flags & TAPASCO_DEVICE_COPY_PE_LOCAL) {
 		va_list ap;
 		va_start(ap, flags);
-		tapasco_func_slot_id_t slot_id = va_arg(ap, tapasco_func_slot_id_t);
+		tapasco_slot_id_t slot_id = va_arg(ap, tapasco_slot_id_t);
 		va_end(ap);
 		return tapasco_device_copy_from_local(dev_ctx, src, dst, len, flags, slot_id);
 	}
 	if (flags)
 		return TAPASCO_ERR_NOT_IMPLEMENTED;
-	return platform_read_mem(src, len, dst, PLATFORM_MEM_FLAGS_NONE) == PLATFORM_SUCCESS ?
-			TAPASCO_SUCCESS : TAPASCO_FAILURE;
+	return platform_read_mem(src, len, dst, PLATFORM_MEM_FLAGS_NONE) ==
+			PLATFORM_SUCCESS ?
+			TAPASCO_SUCCESS : TAPASCO_ERR_PLATFORM_FAILURE;
 }

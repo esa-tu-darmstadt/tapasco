@@ -23,11 +23,12 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <tapasco.h>
 #include <tapasco_errors.h>
-#include <tapasco_jobs.h>
-#include <tapasco_functions.h>
+/*#include <tapasco_jobs.h>
+#include <tapasco_pemgmt.h>*/
 #include <tapasco_logging.h>
 #include <platform.h>
 #include <platform_errors.h>
@@ -40,25 +41,32 @@ struct tapasco_ctx {
 	int conn_sock;
 };
 
-static void _flush_logs_on_sigint(int sig) {
+static
+void _flush_logs_on_sigint(int sig)
+{
 	LOG(LALL_INIT, "caught SIGINT, flushing logs and leaving the sinking ship");
 	tapasco_logging_exit();
 	platform_logging_exit();
 	exit(sig);
 }
 
-static int _tapasco_install_sigint_handler() {
+static
+int _tapasco_install_sigint_handler()
+{
 	struct sigaction act;
 	memset(&act, '\0', sizeof(act));
 	act.sa_handler = &_flush_logs_on_sigint;
 	return sigaction(SIGINT, &act, NULL);
 }
 
-tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **pctx) {
+tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **pctx)
+{
 	tapasco_logging_init();
-	LOG(LALL_INIT, "version: %s, expected version: %s", tapasco_version(), version);
+	LOG(LALL_INIT, "version: %s, expected version: %s", tapasco_version(),
+			version);
 	if (tapasco_check_version(version) != TAPASCO_SUCCESS) {
-		ERR("version mismatch: found %s, expected %s", tapasco_version(), version);
+		ERR("version mismatch: found %s, expected %s",
+				tapasco_version(), version);
 		return TAPASCO_ERR_VERSION_MISMATCH;
 	}
 
@@ -74,15 +82,16 @@ tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **pctx) {
 		ERR("could not install signal handler: %s", strerror(errno));
 		platform_deinit();
 		free(pctx);
-		return TAPASCO_FAILURE;
+		return TAPASCO_ERR_UNKNOWN_ERROR;
 	}
 	LOG(LALL_INIT, "tapasco initialization done");
 	if (*pctx) return TAPASCO_SUCCESS;
 
-	return TAPASCO_FAILURE;
+	return TAPASCO_ERR_UNKNOWN_ERROR;
 }
 
-void tapasco_deinit(tapasco_ctx_t *ctx) {
+void tapasco_deinit(tapasco_ctx_t *ctx)
+{
 	LOG(LALL_INIT, "shutting down TPC");
 	if (ctx) {
 		platform_deinit();
@@ -91,4 +100,3 @@ void tapasco_deinit(tapasco_ctx_t *ctx) {
 	LOG(LALL_INIT, "all's well that ends well, bye");
 	tapasco_logging_exit();
 }
-

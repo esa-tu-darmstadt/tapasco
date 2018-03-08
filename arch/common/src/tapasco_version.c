@@ -18,7 +18,7 @@
 //
 /**
  *  @file	tapasco_version.c
- *  @brief	Common implementations of the TPC version info functions.
+ *  @brief	Common implementations of the TaPaSCo version info.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #include <string.h>
@@ -32,5 +32,6 @@ const char *const tapasco_version()
 
 tapasco_res_t tapasco_check_version(const char *const version)
 {
-	return strcmp(TAPASCO_API_VERSION, version) ? TAPASCO_ERR_VERSION_MISMATCH : TAPASCO_SUCCESS;
+	return strcmp(TAPASCO_API_VERSION, version) ?
+			TAPASCO_ERR_VERSION_MISMATCH : TAPASCO_SUCCESS;
 }

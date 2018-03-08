@@ -1,7 +1,7 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TPC).
+// This file is part of Tapasco (TAPASCO).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -33,7 +33,7 @@
 	_LALL(SCHEDULER,	(1 << 3)) \
 	_LALL(IRQ,		(1 << 4)) \
 	_LALL(MEM,		(1 << 5)) \
-	_LALL(FUNCTIONS,	(1 << 6)) \
+	_LALL(PEMGMT,		(1 << 6)) \
 	_LALL(STATUS,		(1 << 7))
 
 typedef enum {

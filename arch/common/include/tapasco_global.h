@@ -23,6 +23,8 @@
 #ifndef TAPASCO_GLOBAL_H__
 #define TAPASCO_GLOBAL_H__
 
-#define TAPASCO_MAX_INSTANCES					128
+#include <platform_global.h>
+
+#define TAPASCO_NUM_SLOTS				PLATFORM_NUM_SLOTS
 
 #endif /* TAPASCO_GLOBAL_H__ */

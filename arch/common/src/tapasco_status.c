@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
 // This file is part of Tapasco (TAPASCO).
 //
@@ -18,15 +18,15 @@
 //
 /**
  *  @file	tapasco_status.c
- *  @brief	
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #include <tapasco_status.h>
+#include <tapasco_errors.h>
 
 tapasco_res_t tapasco_status_init(tapasco_status_t **status)
 {
 	platform_res_t res = platform_status_init(status);
-	if (platform_res_t != PLATFORM_SUCCESS)
+	if (res != PLATFORM_SUCCESS)
 		return TAPASCO_ERR_PLATFORM_FAILURE;
 	return TAPASCO_SUCCESS;
 }

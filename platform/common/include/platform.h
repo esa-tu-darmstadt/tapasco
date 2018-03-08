@@ -48,6 +48,7 @@
 #ifndef PLATFORM_API_H__
 #define PLATFORM_API_H__
 
+#include <platform_global.h>
 #include <platform_errors.h>
 
 #ifdef __cplusplus
@@ -132,7 +133,7 @@ typedef enum {
  *  @{
  **/
 
-#define PLATFORM_API_VERSION				"1.4.2"
+#define PLATFORM_API_VERSION				"1.5"
 
 /**
  * Returns the version string of the library.
@@ -174,30 +175,6 @@ inline static platform_res_t platform_init()
 extern void platform_deinit(void);
 
 /** @} **/
-
-
-/** @defgroup addressing Addressing functions
- *  @{
- **/
-
-/**
- * Returns the base address of a given region in a slot.
- * @param slot_id The slot to be queried.
- * @return Address.
- **/
-extern platform_ctl_addr_t platform_address_get_slot_base(
-		platform_slot_id_t const slot_id);
-
-/**
- * Returns the base address of a special platform entity.
- * @param ent The special platform entity.
- * @return Address.
- **/
-extern platform_ctl_addr_t platform_address_get_special_base(
-		platform_special_ctl_t const ent);
-
-/* @} */
-
 
 /** @defgroup platform Platform functions
  *  @{
@@ -307,36 +284,6 @@ extern platform_res_t platform_wait_for_irq(const uint32_t inst);
 extern platform_res_t platform_register_irq_callback(platform_irq_callback_t cb);
 
 /** @} **/
-
-
-/** @defgroup platform_sim Optional platform functions for simulation
- *  @{
- **/
-
-/**
- * Send stop command to the platform.
- * Implementation-defined behaviour; may do nothing at all.
- * @return PLATFORM_SUCCESS if successful, PLATFORM_FAILURE otherwise.
- **/
-extern platform_res_t platform_stop(const int result);
-
-/**
- * Returns the current time at the platform.
- * Implementation-defined behaviour; only really useful in simulation.
- * @param time Output var for timestamp (often in cycles).
- * @return PLATFORM_SUCESS if valid, PLATFORM_FAILURE otherwise.
- **/
-extern platform_res_t platform_get_time(int64_t *time);
-
-/**
- * Advances the simulation by given number of cycles.
- * @param cycles Number of cycles to advance simulation time by.
- * @return PLATFORM_SUCCESS if possible, PLATFORM_FAILURE otherwise.
- **/
-extern platform_res_t platform_wait_cycles(const int cycles);
-
-/** @} **/
-
 
 #ifdef __cplusplus
 } /* extern "C" */ } /* namespace platform */ } /* namespace tapasco */

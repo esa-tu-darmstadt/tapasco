@@ -20,7 +20,8 @@
 //! @brief Implementation of error-related messages.
 //! @authors J. Korinth (jk@esa.cs.tu-darmstadt.de)
 //!
-#include "tapasco_errors.h"
+#include <tapasco_errors.h>
+#include <tapasco_types.h>
 
 #ifdef _X
 	#undef _X
@@ -28,7 +29,6 @@
 
 #define _X(constant, code, msg) msg,
 static const char *const _err_msg[] = {
-	"success",
 	TAPASCO_ERRORS
 };
 #undef _X
