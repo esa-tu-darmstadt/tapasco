@@ -7,7 +7,9 @@
 #define BLUE_DEBUG_SCREEN_HPP__
 
 #include <tapasco.hpp>
-#include <platform.h>
+extern "C" {
+  #include <platform.h>
+}
 #include "MenuScreen.hpp"
 
 class BlueDebugScreen : public MenuScreen {
@@ -24,7 +26,7 @@ public:
       intr.pba.push_back(0);
     }
     uint64_t accumulated_delay = 199;
-    platform::platform_write_ctl(0x300000 + 96, sizeof(accumulated_delay), &accumulated_delay, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform_write_ctl(0x300000 + 96, sizeof(accumulated_delay), &accumulated_delay, PLATFORM_CTL_FLAGS_RAW);
   }
   virtual ~BlueDebugScreen() {}
 
@@ -48,42 +50,42 @@ protected:
 
   virtual void update() {
     // Update BlueDMA data
-    platform::platform_read_ctl(0x300000 + 0, sizeof(dma.host_addr), &dma.host_addr, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 8, sizeof(dma.fpga_addr), &dma.fpga_addr, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 16, sizeof(dma.transfer_length), &dma.transfer_length, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 24, sizeof(dma.id), &dma.id, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 32, sizeof(dma.cmd), &dma.cmd, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 40, sizeof(dma.status), &dma.status, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 48, sizeof(dma.read_requests), &dma.read_requests, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 56, sizeof(dma.write_requests), &dma.write_requests, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 64, sizeof(dma.last_request), &dma.last_request, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 72, sizeof(dma.cycles_between), &dma.cycles_between, platform::PLATFORM_CTL_FLAGS_RAW);
-    platform::platform_read_ctl(0x300000 + 96, sizeof(dma.cycles_between_set), &dma.cycles_between_set, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(0x300000 + 0, sizeof(dma.host_addr), &dma.host_addr, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(0x300000 + 8, sizeof(dma.fpga_addr), &dma.fpga_addr, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(0x300000 + 16, sizeof(dma.transfer_length), &dma.transfer_length, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(0x300000 + 24, sizeof(dma.id), &dma.id, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(0x300000 + 32, sizeof(dma.cmd), &dma.cmd, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(0x300000 + 40, sizeof(dma.status), &dma.status, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(0x300000 + 48, sizeof(dma.read_requests), &dma.read_requests, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(0x300000 + 56, sizeof(dma.write_requests), &dma.write_requests, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(0x300000 + 64, sizeof(dma.last_request), &dma.last_request, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(0x300000 + 72, sizeof(dma.cycles_between), &dma.cycles_between, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(0x300000 + 96, sizeof(dma.cycles_between_set), &dma.cycles_between_set, PLATFORM_CTL_FLAGS_RAW);
     ++dma.cycles_between_set; // Register contains num requests - 1
 
     // Update Interrupt data
     uint32_t base_addr = 0x500000;
     for(int i = 0; i < total_interrupts; ++i) {
-      platform::platform_read_ctl(base_addr, sizeof(intr.interrupts[i].addr), &intr.interrupts[i].addr, platform::PLATFORM_CTL_FLAGS_RAW);
+      platform_read_ctl(base_addr, sizeof(intr.interrupts[i].addr), &intr.interrupts[i].addr, PLATFORM_CTL_FLAGS_RAW);
       base_addr += 8;
-      platform::platform_read_ctl(base_addr, sizeof(intr.interrupts[i].data), &intr.interrupts[i].data, platform::PLATFORM_CTL_FLAGS_RAW);
+      platform_read_ctl(base_addr, sizeof(intr.interrupts[i].data), &intr.interrupts[i].data, PLATFORM_CTL_FLAGS_RAW);
       base_addr += 4;
-      platform::platform_read_ctl(base_addr, sizeof(intr.interrupts[i].vector_control), &intr.interrupts[i].vector_control, platform::PLATFORM_CTL_FLAGS_RAW);
+      platform_read_ctl(base_addr, sizeof(intr.interrupts[i].vector_control), &intr.interrupts[i].vector_control, PLATFORM_CTL_FLAGS_RAW);
       base_addr += 4;
     }
     base_addr = 0x508000;
     for(int i = 0; i < 1 + (total_interrupts / 64) + ((total_interrupts % 64) != 0); ++i) {
-      platform::platform_read_ctl(base_addr, sizeof(intr.pba[i]), &intr.pba[i], platform::PLATFORM_CTL_FLAGS_RAW);
+      platform_read_ctl(base_addr, sizeof(intr.pba[i]), &intr.pba[i], PLATFORM_CTL_FLAGS_RAW);
       base_addr += 8;
     }
     base_addr = 0x508100;
-    platform::platform_read_ctl(base_addr, sizeof(intr.core_id), &intr.core_id, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(base_addr, sizeof(intr.core_id), &intr.core_id, PLATFORM_CTL_FLAGS_RAW);
     base_addr += 4;
-    platform::platform_read_ctl(base_addr, sizeof(intr.enableAndMask), &intr.enableAndMask, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(base_addr, sizeof(intr.enableAndMask), &intr.enableAndMask, PLATFORM_CTL_FLAGS_RAW);
     base_addr += 4;
-    platform::platform_read_ctl(base_addr, sizeof(intr.completedInterrupts), &intr.completedInterrupts, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(base_addr, sizeof(intr.completedInterrupts), &intr.completedInterrupts, PLATFORM_CTL_FLAGS_RAW);
     base_addr += 4;
-    platform::platform_read_ctl(base_addr, sizeof(intr.sentInterrupts), &intr.sentInterrupts, platform::PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(base_addr, sizeof(intr.sentInterrupts), &intr.sentInterrupts, PLATFORM_CTL_FLAGS_RAW);
   }
 
 private:

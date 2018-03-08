@@ -32,7 +32,9 @@
 #include <vector>
 #include <sys/utsname.h>
 #include <tapasco.hpp>
-#include <platform.h>
+extern "C" {
+	#include <platform.h>
+}
 #include <unistd.h>
 #include "CumulativeAverage.hpp"
 #include "TransferSpeed.hpp"
@@ -193,8 +195,8 @@ int main(int argc, const char *argv[]) {
       {"Interrupt Latency", latency},
       {"Job Throughput", jobs},
       {"Library Versions", Json::object {
-          {"Tapasco API",  tapasco::tapasco_version()},
-          {"Platform API", platform::platform_version()}
+          {"Tapasco API",  tapasco_version()},
+          {"Platform API", platform_version()}
         }
       }
     };

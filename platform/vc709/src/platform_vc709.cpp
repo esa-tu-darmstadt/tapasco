@@ -1,7 +1,7 @@
 //
 // Copyright (C) 2014 David de la Chevallerie, TU Darmstadt
 //
-// This file is part of Tapasco (TPC).
+// This file is part of TaPaSCo (TAPASCO).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -31,16 +31,13 @@ extern "C" {
 	#include "dma_ioctl_calls.h"
 	#include "user_ioctl_calls.h"
 
-	#include "platform_logging.h"
+	#include <platform_logging.h>
+	#include <platform_errors.h>
+	#include <platform_context.h>
+	#include <platform.h>
 }
 
-#include "platform_errors.h"
-#include "platform.h"
 #include "buddy_allocator.hpp"
-
-#ifdef __cplusplus
-using namespace tapasco::platform;
-#endif /* __cplusplus */
 
 #define INPUT_TESTS			0
 
@@ -93,6 +90,7 @@ static const char *user_dev_path = "/dev/FFLINK_USER_DEVICE_0";
 #define ATSPRI_ADDRESS			0x00390000
 
 static struct {
+	platform_ctx_t			*ctx;
 	int				fd_dma_engine[NUM_DMA_DEV];
 	int				fd_user[NUM_USER_DEV];
 	int				opened_dma_devs  = 0;
@@ -117,7 +115,7 @@ platform_res_t helper_init(int* fd, const string& path)
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t tapasco::platform::_platform_init(const char *const version)
+platform_res_t _platform_init(const char *const version, platform_ctx_t **ctx)
 {
 	uint32_t data = 0;
 	platform_res_t res;
@@ -129,6 +127,13 @@ platform_res_t tapasco::platform::_platform_init(const char *const version)
 		return PERR_VERSION_MISMATCH;
 	}
 
+	platform_res_t const r = platform_context_init(ctx);
+	if (r != PLATFORM_SUCCESS) {
+		ERR("could not initialize platform context: %s (%d)", platform_strerror(r), r);
+		return r;
+	}
+	vc709_platform.ctx = *ctx;
+
 	if(helper_init(&vc709_platform.fd_dma_engine[0], dma_dev_path[0]) != PLATFORM_SUCCESS)
 		return (platform_res_t) PERR_OPEN_DEV;
 	vc709_platform.opened_dma_devs++;
@@ -137,7 +142,7 @@ platform_res_t tapasco::platform::_platform_init(const char *const version)
 		return (platform_res_t) PERR_OPEN_DEV;
 	vc709_platform.opened_user_devs++;
 
-	res = platform_read_ctl((platform_ctl_addr_t) HW_ID_ADDR + HW_ID_MAX_OFFSET, 4, &data, PLATFORM_CTL_FLAGS_NONE);
+	res = platform_read_ctl(*ctx, (platform_ctl_addr_t) HW_ID_ADDR + HW_ID_MAX_OFFSET, 4, &data, PLATFORM_CTL_FLAGS_NONE);
 	if(res != PLATFORM_SUCCESS || data > NUM_USER_DEV) {
 		ERR("Wrong status core setting - irq_cores are: %X", data);
 		return (platform_res_t) PERR_OPEN_DEV;
@@ -150,7 +155,7 @@ platform_res_t tapasco::platform::_platform_init(const char *const version)
 	return PLATFORM_SUCCESS;
 }
 
-void tapasco::platform::platform_deinit(void)
+void platform_deinit(platform_ctx_t *ctx)
 {
 	LOG(LPLL_INIT, "Close devices");
 
@@ -164,10 +169,11 @@ void tapasco::platform::platform_deinit(void)
 	delete(vc709_platform.ba_medium);
 	delete(vc709_platform.ba_large);
 
+	platform_context_deinit(ctx);
 	platform_logging_exit();
 }
 
-platform_res_t tapasco::platform::platform_alloc(size_t const len, platform_mem_addr_t *addr, platform_alloc_flags_t const flags)
+platform_res_t platform_alloc(platform_ctx_t *ctx, size_t const len, platform_mem_addr_t *addr, platform_alloc_flags_t const flags)
 {
 	if(len > 0 && len <= ALLOC_SMALL_MAX) {
 		LOG(LPLL_MEM, "Using small allocator");
@@ -198,7 +204,7 @@ platform_res_t tapasco::platform::platform_alloc(size_t const len, platform_mem_
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t tapasco::platform::platform_dealloc(platform_mem_addr_t const addr, platform_alloc_flags_t const flags)
+platform_res_t platform_dealloc(platform_ctx_t *ctx, platform_mem_addr_t const addr, platform_alloc_flags_t const flags)
 {
 	LOG(LPLL_MEM, "Remove address %X ", addr);
 
@@ -225,7 +231,7 @@ platform_res_t tapasco::platform::platform_dealloc(platform_mem_addr_t const add
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t tapasco::platform::platform_read_mem(platform_mem_addr_t const start_addr, size_t const no_of_bytes, void *data, platform_mem_flags_t const flags)
+platform_res_t platform_read_mem(platform_ctx_t *ctx, platform_mem_addr_t const start_addr, size_t const no_of_bytes, void *data, platform_mem_flags_t const flags)
 {
 	int err;
 	struct dma_ioctl_params params { 0 };
@@ -256,7 +262,7 @@ platform_res_t tapasco::platform::platform_read_mem(platform_mem_addr_t const st
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t tapasco::platform::platform_write_mem(platform_mem_addr_t const start_addr, size_t const no_of_bytes, void const*data, platform_mem_flags_t const flags)
+platform_res_t platform_write_mem(platform_ctx_t *ctx, platform_mem_addr_t const start_addr, size_t const no_of_bytes, void const*data, platform_mem_flags_t const flags)
 {
 	int err;
 	struct dma_ioctl_params params { 0 };
@@ -287,7 +293,7 @@ platform_res_t tapasco::platform::platform_write_mem(platform_mem_addr_t const s
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t tapasco::platform::platform_read_ctl(platform_ctl_addr_t const start_addr, size_t const no_of_bytes, void *data, platform_ctl_flags_t const flags)
+platform_res_t platform_read_ctl(platform_ctx_t *ctx, platform_ctl_addr_t const start_addr, size_t const no_of_bytes, void *data, platform_ctl_flags_t const flags)
 {
 	int err;
 	struct user_rw_params params { 0 };
@@ -326,7 +332,7 @@ platform_res_t tapasco::platform::platform_read_ctl(platform_ctl_addr_t const st
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t tapasco::platform::platform_write_ctl(platform_ctl_addr_t const start_addr, size_t const no_of_bytes, void const*data, platform_ctl_flags_t const flags)
+platform_res_t platform_write_ctl(platform_ctx_t *ctx, platform_ctl_addr_t const start_addr, size_t const no_of_bytes, void const*data, platform_ctl_flags_t const flags)
 {
 	int err;
 	struct user_rw_params params { 0 };
@@ -364,7 +370,7 @@ platform_res_t tapasco::platform::platform_write_ctl(platform_ctl_addr_t const s
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t tapasco::platform::platform_write_ctl_and_wait(platform_ctl_addr_t const w_addr, size_t const w_no_of_bytes, void const *w_data, uint32_t const event, platform_ctl_flags_t const flags)
+platform_res_t platform_write_ctl_and_wait(platform_ctx_t *ctx, platform_ctl_addr_t const w_addr, size_t const w_no_of_bytes, void const *w_data, uint32_t const event, platform_ctl_flags_t const flags)
 {
 	int err = -ENOENT;
 	struct user_ioctl_params params { 0 };
@@ -397,9 +403,4 @@ platform_res_t tapasco::platform::platform_write_ctl_and_wait(platform_ctl_addr_
 	}
 
 	return PLATFORM_SUCCESS;
-}
-
-platform_res_t tapasco::platform::platform_register_irq_callback(platform_irq_callback_t cb)
-{
-	return (platform_res_t) PERR_NOT_IMPLEMENTED;
 }

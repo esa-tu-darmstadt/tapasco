@@ -27,109 +27,10 @@
 #include <tapasco_regs.h>
 #include <tapasco_device.h>
 #include <tapasco_logging.h>
+#include <tapasco_delayed_transfers.h>
 #include <platform.h>
 
 // TODO tapasco_scheduler needs refactoring
-
-static inline
-tapasco_res_t tapasco_transfer_to(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_job_id_t const j_id,
-		tapasco_transfer_t *t,
-		tapasco_slot_id_t s_id)
-{
-	LOG(LALL_SCHEDULER, "job %lu: executing transfer to with length %zd bytes",
-			(unsigned long)j_id, (unsigned long)t->len);
-	tapasco_res_t res = tapasco_device_alloc(dev_ctx, &t->handle, t->len,
-			t->flags, s_id);
-	if (res != TAPASCO_SUCCESS) {
-		ERR("job %lu: memory allocation failed!", (unsigned long)j_id);
-		return res;
-	}
-	res = tapasco_device_copy_to(dev_ctx, t->data, t->handle, t->len,
-			t->flags, s_id);
-	if (res != TAPASCO_SUCCESS) {
-		ERR("job %lu: transfer failed - %zd bytes -> 0x%08x with flags %lu",
-				(unsigned long)j_id, t->len,
-				(unsigned long)t->handle,
-				(unsigned long)t->flags);
-	}
-	return res;
-}
-
-static inline
-tapasco_res_t tapasco_transfer_from(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_jobs_t *jobs,
-		tapasco_job_id_t const j_id,
-		tapasco_transfer_t *t,
-		tapasco_slot_id_t s_id)
-{
-	LOG(LALL_SCHEDULER, "job %lu: executing transfer from with length %zd bytes",
-			(unsigned long)j_id, (unsigned long)t->len);
-	tapasco_res_t res = tapasco_device_copy_from(dev_ctx, t->handle,
-			t->data, t->len, t->flags, s_id);
-	if (res != TAPASCO_SUCCESS) {
-		ERR("job %lu: transfer failed - %zd bytes <- 0x%08x with flags %lu",
-				(unsigned long)j_id, t->len,
-				(unsigned long)t->handle,
-				(unsigned long)t->flags);
-	}
-	tapasco_device_free(dev_ctx, t->handle, t->flags, s_id, t->len);
-	return res;
-}
-
-static inline
-tapasco_res_t tapasco_write_arg(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_jobs_t *jobs,
-		tapasco_job_id_t const j_id,
-		tapasco_handle_t const h,
-		size_t const a)
-{
-	int const is64 = tapasco_jobs_is_arg_64bit(jobs, j_id, a);
-	if (is64) {
-		uint64_t v = tapasco_jobs_get_arg64(jobs, j_id, a);
-		LOG(LALL_SCHEDULER, "job %lu: writing 64b arg #%u = 0x%08lx to 0x%08x",
-			(unsigned long)j_id, a, (unsigned long)v, (unsigned)h);
-		if (platform_write_ctl(h, sizeof(v), &v,
-				PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
-			return TAPASCO_ERR_PLATFORM_FAILURE;
-	} else {
-		uint32_t v = tapasco_jobs_get_arg32(jobs, j_id, a);
-		LOG(LALL_SCHEDULER, "job %lu: writing 32b arg #%u = 0x%08lx to 0x%08x",
-			(unsigned long)j_id, a, (unsigned long)v, (unsigned)h);
-		if (platform_write_ctl(h, sizeof(v), &v,
-				PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
-			return TAPASCO_ERR_PLATFORM_FAILURE;
-	}
-	return TAPASCO_SUCCESS;
-}
-
-static inline
-tapasco_res_t tapasco_read_arg(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_jobs_t *jobs,
-		tapasco_job_id_t const j_id,
-		tapasco_handle_t const h,
-		size_t const a)
-{
-	int const is64 = tapasco_jobs_is_arg_64bit(jobs, j_id, a);
-	if (is64) {
-		uint64_t v = 0;
-		if (platform_read_ctl(h, sizeof(v), &v,
-				PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
-			return TAPASCO_ERR_PLATFORM_FAILURE;
-		LOG(LALL_SCHEDULER, "job %lu: reading 64b arg #%u = 0x%08lx from 0x%08x",
-			(unsigned long)j_id, a, (unsigned long)v, (unsigned)h);
-		tapasco_jobs_set_arg(jobs, j_id, a, sizeof(v), &v);
-	} else {
-		uint32_t v = 0;
-		if (platform_read_ctl(h, sizeof(v), &v,
-				PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
-			return TAPASCO_ERR_PLATFORM_FAILURE;
-		LOG(LALL_SCHEDULER, "job %lu: reading 32b arg #%u = 0x%08lx from 0x%08x",
-			(unsigned long)j_id, a, (unsigned long)v, (unsigned)h);
-		tapasco_jobs_set_arg(jobs, j_id, a, sizeof(v), &v);
-	}
-	return TAPASCO_SUCCESS;
-}
 
 tapasco_res_t tapasco_scheduler_launch(
 		tapasco_dev_ctx_t *dev_ctx,
@@ -140,6 +41,7 @@ tapasco_res_t tapasco_scheduler_launch(
 	tapasco_res_t result = TAPASCO_SUCCESS;
 	tapasco_kernel_id_t const k_id = tapasco_jobs_get_kernel_id(jobs, j_id);
 	tapasco_slot_id_t slot_id;
+	platform_ctx_t *pctx = tapasco_device_platform(dev_ctx);
 
 	LOG(LALL_SCHEDULER, "job %lu: launching for kernel %lu, acquiring PE ... ",
 			(unsigned long)j_id, (unsigned long)k_id);
@@ -168,8 +70,8 @@ tapasco_res_t tapasco_scheduler_launch(
 			if (r != TAPASCO_SUCCESS) { return r; }
 			LOG(LALL_SCHEDULER, "job %lu: writing handle to arg #%zd (0x%08x)",
 					(unsigned long)j_id, a, t->handle);
-			if (platform_write_ctl(h, sizeof(t->handle), &t->handle,
-					PLATFORM_CTL_FLAGS_NONE) !=
+			if (platform_write_ctl(pctx, h, sizeof(t->handle),
+					&t->handle, PLATFORM_CTL_FLAGS_NONE) !=
 					PLATFORM_SUCCESS)
 				return TAPASCO_ERR_PLATFORM_FAILURE;
 		} else {
@@ -188,8 +90,9 @@ tapasco_res_t tapasco_scheduler_launch(
 
 	uint32_t start_cmd = 1;
 	tapasco_jobs_set_state(jobs, j_id, TAPASCO_JOB_STATE_RUNNING);
-	if (platform_write_ctl_and_wait(ctl, sizeof(start_cmd), &start_cmd,
-			slot_id, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
+	if (platform_write_ctl_and_wait(pctx, ctl, sizeof(start_cmd),
+			&start_cmd, slot_id, PLATFORM_CTL_FLAGS_NONE) !=
+			PLATFORM_SUCCESS)
 		return TAPASCO_ERR_PLATFORM_FAILURE;
 
 	LOG(LALL_SCHEDULER, "job %lu: returned from waiting",
@@ -199,7 +102,7 @@ tapasco_res_t tapasco_scheduler_launch(
 	tapasco_handle_t const rh = tapasco_regs_named_register(dev_ctx,
 			slot_id, TAPASCO_REG_RET);
 
-	if (platform_read_ctl(rh, sizeof(ret), &ret,
+	if (platform_read_ctl(pctx, rh, sizeof(ret), &ret,
 			PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
 		return TAPASCO_ERR_PLATFORM_FAILURE;
 	tapasco_jobs_set_return(jobs, j_id, sizeof(ret), &ret);
@@ -219,9 +122,9 @@ tapasco_res_t tapasco_scheduler_launch(
 	}
 
 	// ack the interrupt
-	if (platform_write_ctl(tapasco_regs_named_register(dev_ctx, slot_id,
-			TAPASCO_REG_IAR), sizeof(start_cmd), &start_cmd,
-			PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
+	if (platform_write_ctl(pctx, tapasco_regs_named_register(dev_ctx,
+			slot_id, TAPASCO_REG_IAR), sizeof(start_cmd),
+			&start_cmd, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
 		return TAPASCO_ERR_PLATFORM_FAILURE;
 
 	// release the PE

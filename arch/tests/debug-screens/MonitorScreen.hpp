@@ -67,29 +67,29 @@ protected:
 
   virtual void update() {
     for (uint32_t intc = 0; intc < intc_addr.size(); ++intc) {
-      if (platform::platform_read_ctl(intc_addr[intc], sizeof(intc_isr[intc]),
-          &intc_isr[intc], platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS) {
+      if (platform_read_ctl(intc_addr[intc], sizeof(intc_isr[intc]),
+          &intc_isr[intc], PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	intc_isr[intc] = 0xDEADBEEF;
       }
     }
     for (slot_t *sp : slots) {
-      if (platform::platform_read_ctl(sp->base_addr + 0x0c, 4, &sp->isr,
-          platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS) {
+      if (platform_read_ctl(sp->base_addr + 0x0c, 4, &sp->isr,
+          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	sp->isr = 0xDEADBEEF;
       }
-      if (platform::platform_read_ctl(sp->base_addr + 0x10, 4, &sp->retval[0],
-          platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS) {
+      if (platform_read_ctl(sp->base_addr + 0x10, 4, &sp->retval[0],
+          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	sp->retval[0] = 0xDEADBEEF;
       }
-      if (platform::platform_read_ctl(sp->base_addr + 0x14, 4, &sp->retval[1],
-          platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS) {
+      if (platform_read_ctl(sp->base_addr + 0x14, 4, &sp->retval[1],
+          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	sp->retval[1] = 0xDEADBEEF;
       }
       for (int i = 0; i < NUM_ARGS; ++i) {
         for (int j = 0; j < 2; ++j) {
-          if (platform::platform_read_ctl(sp->base_addr + 0x20 + 0x10 * i + 0x04 * j, 4,
-	      &sp->argval[i * 2 + j], platform::PLATFORM_CTL_FLAGS_NONE) !=
-	      platform::PLATFORM_SUCCESS) {
+          if (platform_read_ctl(sp->base_addr + 0x20 + 0x10 * i + 0x04 * j, 4,
+	      &sp->argval[i * 2 + j], PLATFORM_CTL_FLAGS_NONE) !=
+	      PLATFORM_SUCCESS) {
 	    sp->argval[i * 2 + j] = 0xDEADBEEF;
           }
 	}
@@ -105,7 +105,7 @@ private:
     uint32_t isr;
     uint32_t retval[2];
     uint32_t argval[NUM_ARGS * 2];
-    platform::platform_ctl_addr_t base_addr;
+    platform_ctl_addr_t base_addr;
   };
 
   void render_slot(const slot_t *slot, int start_row, int start_col) {
@@ -136,7 +136,7 @@ private:
 
   int peek() {
     char tmp[255];
-    platform::platform_ctl_addr_t addr { 0x43c0000c };
+    platform_ctl_addr_t addr { 0x43c0000c };
     uint32_t val { 0 };
     int c = ERR;
     clear();
@@ -160,7 +160,7 @@ private:
       c = getch();
       chr = static_cast<char>(c);
       if (chr == 'y') {
-        platform::platform_read_ctl(addr, sizeof(val), &val, platform::PLATFORM_CTL_FLAGS_NONE);
+        platform_read_ctl(addr, sizeof(val), &val, PLATFORM_CTL_FLAGS_NONE);
         mvprintw(rows / 2 + 1, (cols - 25) / 2 + 10, "0x%08x", val);
         mvprintw(rows / 2 + 2, (cols - 25) / 2, "                 ");
       }
@@ -173,7 +173,7 @@ private:
 
   int poke() {
     char tmp[255];
-    platform::platform_ctl_addr_t addr { 0x43c0000c };
+    platform_ctl_addr_t addr { 0x43c0000c };
     uint32_t val { 0 };
     int c;
     clear();
@@ -201,7 +201,7 @@ private:
       c = getch();
       char chr = static_cast<char>(c);
       if (chr == 'y')
-        platform::platform_write_ctl(addr, sizeof(val), &val, platform::PLATFORM_CTL_FLAGS_NONE);
+        platform_write_ctl(addr, sizeof(val), &val, PLATFORM_CTL_FLAGS_NONE);
     } while (c == ERR);
     clear();
     return ERR;
@@ -209,7 +209,7 @@ private:
 
   int poke_and_wait() {
     char tmp[255];
-    platform::platform_ctl_addr_t addr { 0x43c0000c };
+    platform_ctl_addr_t addr { 0x43c0000c };
     uint32_t val { 0 }, job { 0 };
     int c;
     clear();
@@ -245,7 +245,7 @@ private:
       c = getch();
       char chr = static_cast<char>(c);
       if (chr == 'y')
-        platform::platform_write_ctl_and_wait(addr, sizeof(val), &val, job, platform::PLATFORM_CTL_FLAGS_NONE);
+        platform_write_ctl_and_wait(addr, sizeof(val), &val, job, PLATFORM_CTL_FLAGS_NONE);
     } while (c == ERR);
     clear();
     return ERR;
@@ -253,36 +253,36 @@ private:
 
   int check_bitstream() {
     uint32_t cnt { 0 };
-    const platform::platform_ctl_addr_t status =
-        platform::platform_address_get_special_base(platform::PLATFORM_SPECIAL_CTL_STATUS);
-    if (platform::platform_read_ctl(status + 0x04, sizeof(cnt), &cnt,
-        platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS) {
+    const platform_ctl_addr_t status =
+        platform_address_get_special_base(PLATFORM_SPECIAL_CTL_STATUS);
+    if (platform_read_ctl(status + 0x04, sizeof(cnt), &cnt,
+        PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
       return -1;
     }
     while (cnt > 0) {
-      platform::platform_special_ctl_t isr_addr;
-      platform::platform_ctl_addr_t intc;
+      platform_special_ctl_t isr_addr;
+      platform_ctl_addr_t intc;
       switch (cnt) {
-      case 4: isr_addr = platform::PLATFORM_SPECIAL_CTL_INTC3; break;
-      case 3: isr_addr = platform::PLATFORM_SPECIAL_CTL_INTC2; break;
-      case 2: isr_addr = platform::PLATFORM_SPECIAL_CTL_INTC1; break;
-      case 1: isr_addr = platform::PLATFORM_SPECIAL_CTL_INTC0; break;
+      case 4: isr_addr = PLATFORM_SPECIAL_CTL_INTC3; break;
+      case 3: isr_addr = PLATFORM_SPECIAL_CTL_INTC2; break;
+      case 2: isr_addr = PLATFORM_SPECIAL_CTL_INTC1; break;
+      case 1: isr_addr = PLATFORM_SPECIAL_CTL_INTC0; break;
       default: return cnt * -10;
       }
-      intc = platform::platform_address_get_special_base(isr_addr);
+      intc = platform_address_get_special_base(isr_addr);
       cerr << intc << endl;
       intc_addr.push_back(intc);
       --cnt;
     }
     for (int s = 0; s < 128; ++s) {
       uint32_t id { 0 };
-      if (platform::platform_read_ctl(status + 0x100 + s * 0x10, 4, &id,
-          platform::PLATFORM_CTL_FLAGS_NONE) == platform::PLATFORM_SUCCESS)
+      if (platform_read_ctl(status + 0x100 + s * 0x10, 4, &id,
+          PLATFORM_CTL_FLAGS_NONE) == PLATFORM_SUCCESS)
 	if (id) {
 	  struct slot_t *sp = new struct slot_t;
 	  sp->slot_id = s;
 	  sp->id = id;
-	  sp->base_addr = platform::platform_address_get_slot_base(s, 0);
+	  sp->base_addr = platform_address_get_slot_base(s, 0);
 	  slots.push_back(sp);
 	  ++cnt;
 	}
@@ -291,7 +291,7 @@ private:
   }
 
   vector<slot_t *> slots;
-  vector<platform::platform_ctl_addr_t> intc_addr;
+  vector<platform_ctl_addr_t> intc_addr;
   uint32_t intc_isr[4];
   Tapasco *tapasco;
 };

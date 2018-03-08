@@ -1,7 +1,7 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TPC).
+// This file is part of Tapasco (TAPASCO).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -25,7 +25,7 @@
  *  		methods to wait for a signal from the device (usually
  *  		interrupt-based).
  *  @authors 	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- *  @version 	1.4.2
+ *  @version 	1.5
  *  @copyright	Copyright 2014-2018 J. Korinth
  *
  *		This file is part of Tapasco (TPC).
@@ -48,86 +48,9 @@
 #ifndef PLATFORM_API_H__
 #define PLATFORM_API_H__
 
-#include <platform_global.h>
 #include <platform_errors.h>
-
-#ifdef __cplusplus
-namespace tapasco { namespace platform { extern "C" {
-#include <cstdint>
-#else
-#include <stdint.h>
-#include <stdlib.h>
-#endif
-
-/** @defgroup platform_types Platform types
- *  @{
- **/
-
-/** Platform result enum type. */
-typedef enum {
-	/** Indicates unspecific failure, should not be used. **/
-	PLATFORM_FAILURE = 0,
-	/** Indicates successful operation. **/
-	PLATFORM_SUCCESS
-} platform_binary_res_t;
-
-/** Public result type. */
-typedef ssize_t platform_res_t;
-
-/** Get error string for error code. */
-const char *const platform_strerror(platform_res_t res);
-
-/** Device register space address type (opaque). **/
-typedef uint32_t platform_ctl_addr_t;
-
-/** Device memory space address type (opaque). **/
-typedef uint32_t platform_mem_addr_t;
-
-/** Identifies a slot in the design, i.e., a Function. **/
-typedef unsigned long platform_slot_id_t;
-
-/** Identifies a region in a slot, e.g., an AXI slave. **/
-typedef unsigned long platform_slot_region_id_t;
-
-/** Callback function for interrupts. **/
-typedef void (*platform_irq_callback_t)(int);
-
-/** Special platform entities with fixed addresses. **/
-typedef enum {
-	/** TPC Status Core: bitstream information. **/
-	PLATFORM_SPECIAL_CTL_STATUS 		= 1,
-	/** Interrupt controller #0. **/
-	PLATFORM_SPECIAL_CTL_INTC0,
-	/** Interrupt controller #1. **/
-	PLATFORM_SPECIAL_CTL_INTC1,
-	/** Interrupt controller #2. **/
-	PLATFORM_SPECIAL_CTL_INTC2,
-	/** Interrupt controller #3. **/
-	PLATFORM_SPECIAL_CTL_INTC3,
-	/** ATS/PRI checker. **/
-	PLATFORM_SPECIAL_CTL_ATSPRI,
-} platform_special_ctl_t;
-
-typedef enum {
-	/** no flags **/
-	PLATFORM_ALLOC_FLAGS_NONE 		= 0,
-	/** PE-local memory **/
-	PLATFORM_ALLOC_FLAGS_PE_LOCAL           = 1,
-} platform_alloc_flags_t;
-
-typedef enum {
-	/** no flags **/
-	PLATFORM_CTL_FLAGS_NONE			= 0,
-	PLATFORM_CTL_FLAGS_RAW			= 1
-} platform_ctl_flags_t;
-
-typedef enum {
-	/** no flags **/
-	PLATFORM_MEM_FLAGS_NONE			= 0
-} platform_mem_flags_t;
-
-/** @} **/
-
+#include <platform_global.h>
+#include <platform_types.h>
 
 /** @defgroup version Version Info
  *  @{
@@ -150,6 +73,20 @@ platform_res_t platform_check_version(const char *const version);
 /** @} **/
 
 
+/** @defgroup platform_mgmt Auxiliary Functions
+ *  @{
+ **/
+
+/**
+ * Returns a pointer to a string describing the error code in res.
+ * @param res error code
+ * @return pointer to description of error
+ **/
+const char *const platform_strerror(platform_res_t res);
+
+/** @} **/
+
+
 /** @defgroup platform_mgmt Platform management
  *  @{
  **/
@@ -158,21 +95,22 @@ platform_res_t platform_check_version(const char *const version);
  * Initialize platform.
  * Do not call directly, @see platform_init.
  * @param version version string of expected Platform API version
+ * @param ctx pointer to platform context to initialize
  * @return PLATFORM_SUCCESS if ok, error code otherwise
  **/
-platform_res_t _platform_init(const char *const version);
+platform_res_t _platform_init(const char *const version, platform_ctx_t **ctx);
 
 /**
  * Initialize platform.
  * @return PLATFORM_SUCCESS if ok, error code otherwise
  **/
-inline static platform_res_t platform_init()
+inline static platform_res_t platform_init(platform_ctx_t **ctx)
 {
-	return _platform_init(PLATFORM_API_VERSION);
+	return _platform_init(PLATFORM_API_VERSION, ctx);
 }
 
 /** Deinitializer. **/
-extern void platform_deinit(void);
+void platform_deinit(platform_ctx_t *ctx);
 
 /** @} **/
 
@@ -182,30 +120,34 @@ extern void platform_deinit(void);
 
 /**
  * Allocates a device memory block of size len.
+ * @param ctx Platform context
  * @param len Size in bytes.
  * @param addr Address of memory (out).
  * @return PLATFORM_SUCCESS, if allocation succeeded.
  **/
-extern platform_res_t platform_alloc(
+platform_res_t platform_alloc(platform_ctx_t *ctx,
 		size_t const len,
 		platform_mem_addr_t *addr,
 		platform_alloc_flags_t const flags);
 
 /**
  * Deallocates a block of device memory.
+ * @param ctx Platform context
  * @param addr Address of memory.
  **/
-extern platform_res_t platform_dealloc(platform_mem_addr_t const addr,
+platform_res_t platform_dealloc(platform_ctx_t *ctx,
+		platform_mem_addr_t const addr,
 		platform_alloc_flags_t const flags);
 
 /**
  * Reads the device memory at the given address.
+ * @param ctx Platform context
  * @param start_addr Device memory space address to start reading from.
  * @param no_of_bytes Number of bytes to read.
  * @param data Preallocated memory to read into.
  * @return PLATFORM_SUCCESS if read was valid, an error code otherwise.
  **/
-extern platform_res_t platform_read_mem(
+platform_res_t platform_read_mem(platform_ctx_t *ctx,
 		platform_mem_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void *data,
@@ -213,12 +155,13 @@ extern platform_res_t platform_read_mem(
 
 /**
  * Writes data to device memory at the given address.
+ * @param ctx Platform context
  * @param start_addr Device memory space address to start writing to.
  * @param no_of_bytes Number of bytes to write.
  * @param data Data to write.
  * @return PLATFORM_SUCCESS if write succeeded, an error code otherwise.
  **/
-extern platform_res_t platform_write_mem(
+platform_res_t platform_write_mem(platform_ctx_t *ctx,
 		platform_mem_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void const*data,
@@ -226,12 +169,13 @@ extern platform_res_t platform_write_mem(
 
 /**
  * Reads the device register space at the given address.
+ * @param ctx Platform context
  * @param start_addr Device register space address to start reading from.
  * @param no_of_bytes Number of bytes to read.
  * @param data Preallocated memory to read into.
  * @return PLATFORM_SUCCESS if read was valid, an error code otherwise.
  **/
-extern platform_res_t platform_read_ctl(
+platform_res_t platform_read_ctl(platform_ctx_t *ctx,
 		platform_ctl_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void *data,
@@ -239,12 +183,13 @@ extern platform_res_t platform_read_ctl(
 
 /**
  * Writes device register space at the given address.
+ * @param ctx Platform context
  * @param start_addr Device register space address to start writing to.
  * @param no_of_bytes Number of bytes to write.
  * @param data Pointer to block of no_of_bytes bytes of data to write.
  * @return PLATFORM_SUCCESS if write succeeded, an error code otherwise.
  **/
-extern platform_res_t platform_write_ctl(
+platform_res_t platform_write_ctl(platform_ctx_t *ctx,
 		platform_ctl_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void const*data,
@@ -254,13 +199,14 @@ extern platform_res_t platform_write_ctl(
  * Writes device register space at the given address and then waits for an
  * interrupt from the device (sleep); checks r_addr upon interrupt and 
  * returns if r_mask has bits set, or repeats sleep otherwise.
+ * @param ctx Platform context
  * @param w_addr Device register space address to write.
  * @param w_no_of_bytes Number of bytes to write.
  * @param w_data Data to write.
  * @param event Event # to wait for.
  * @return PLATFORM_SUCCESS if successful, an error code otherwise.
  **/
-extern platform_res_t platform_write_ctl_and_wait(
+platform_res_t platform_write_ctl_and_wait(platform_ctx_t *ctx,
 		platform_ctl_addr_t const w_addr,
 		size_t const w_no_of_bytes,
 		void const *w_data,
@@ -269,25 +215,42 @@ extern platform_res_t platform_write_ctl_and_wait(
 
 /**
  * Puts the calling thread to sleep until an interrupt is received.
- * @param inst Deprecated, use any value.
+ * @param ctx Platform context
+ * @param event Event # to wait for.
  * @return PLATFORM_SUCCESS if interrupt occurred, an error code if
  * not possible (platform-dependent).
  **/
-extern platform_res_t platform_wait_for_irq(const uint32_t inst);
-
-/**
- * Registers the given interrupt callback function. It will be called
- * with the corr. event number, whenever an interrupt occurs.
- * Note: cb should be reentrant.
- * @param cb Callback function.
- **/
-extern platform_res_t platform_register_irq_callback(platform_irq_callback_t cb);
+platform_res_t platform_wait_for_irq(platform_ctx_t *ctx,
+		const uint32_t event);
 
 /** @} **/
 
-#ifdef __cplusplus
-} /* extern "C" */ } /* namespace platform */ } /* namespace tapasco */
-#endif
+/** @defgroup Address Map
+ *  @{
+ **/
+
+/**
+ * Returns the base address for the given slot id.
+ * @param ctx Platform context
+ * @param slot_id Slot identifier
+ * @param addr Address var (output)
+ * @return Slot bus address
+ **/
+platform_res_t platform_address_get_slot_base(platform_ctx_t *ctx,
+		platform_slot_id_t const slot_id,
+		platform_ctl_addr_t *addr);
+
+/**
+ * Returns the base address for the given platform infrastructure component.
+ * @param ctx Platform context
+ * @param comp_id Component identifier
+ * @param addr Address var (output)
+ * @return Component bus address, or 0
+ **/
+platform_res_t platform_address_get_component_base(platform_ctx_t *ctx,
+		platform_component_t const comp_id,
+		platform_ctl_addr_t *addr);
+/** @} **/
 
 #endif /* PLATFORM_API_H__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

@@ -23,10 +23,6 @@
 #ifndef TAPASCO_API_ERROR_H__
 #define TAPASCO_API_ERROR_H__
 
-#ifdef __cplusplus
-namespace rpr { namespace tapasco { extern "C" {
-#endif /* __cplusplus */
-
 #define TAPASCO_ERRORS \
 	_X(TAPASCO_ERR_UNKNOWN_ERROR                  ,  0  , "unknown error") \
 	_X(TAPASCO_ERR_CONTEXT_NOT_AVAILABLE          , -1  , "no FPGA context available") \
@@ -58,9 +54,5 @@ typedef enum {
 	TAPASCO_ERRORS
 } tapasco_error_t;
 #undef _X
-
-#ifdef __cplusplus
-} /* extern "C" */ } /* namespace tapasco */ } /* namespace rpr */
-#endif /* __cplusplus */
 
 #endif /* TAPASCO_API_ERROR_H__ */

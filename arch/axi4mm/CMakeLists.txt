@@ -23,10 +23,10 @@ set(COMMON_SOURCES "${CMNDIR}/tapasco_logging.c"
                    "${CMNDIR}/tapasco_pemgmt.c"
                    "${CMNDIR}/tapasco_scheduler.c"
                    "${CMNDIR}/tapasco_jobs.c"
-                   "${CMNDIR}/tapasco_status.c"
                    "${CMNDIR}/tapasco_version.c"
                    "${CMNDIR}/tapasco_memory.c"
                    "${CMNDIR}/tapasco_local_mem.c"
+                   "${CMNDIR}/tapasco_delayed_transfers.c"
                    "${GCMNDIR}/src/gen_mem.c"
                    "${GCMNDIR}/src/gen_queue.c")
 set(TAPASCO_LIBS_DIR "${TAPASCO_HOME}/arch/lib")

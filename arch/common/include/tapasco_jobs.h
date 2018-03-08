@@ -29,10 +29,6 @@
 #define TAPASCO_JOBS_Q_SZ						250
 #define	TAPASCO_JOB_MAX_ARGS						32
 
-#ifdef __cplusplus
-namespace tapasco { extern "C" {
-#endif
-
 /** @defgroup common_job common: job struct
  *  @{
  */
@@ -250,9 +246,5 @@ tapasco_job_id_t tapasco_jobs_acquire(tapasco_jobs_t *jobs);
  * @param j_id job id.
  **/
 void tapasco_jobs_release(tapasco_jobs_t *jobs, tapasco_job_id_t const j_id);
-
-#ifdef __cplusplus
-} /* extern "C" */ } /* namespace tapasco */
-#endif
 
 #endif /* TAPASCO_API_JOBS_H__ */

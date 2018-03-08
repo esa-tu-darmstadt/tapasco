@@ -1,7 +1,7 @@
 //
 // Copyright (C) 2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TPC).
+// This file is part of Tapasco (TAPASCO).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -16,17 +16,19 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-/** @file 	platform_globals.h
- *  @brief 	Global defines for libplatform.
- *  @authors 	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- *  @version 	1.0
- *  @copyright	Copyright 2014-2018 J. Korinth
+/**
+ *  @file	tapasco_context.c
+ *  @brief	Default implementation tapasco context struct.
+ *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#ifndef PLATFORM_API_GLOBAL_H__
-#define PLATFORM_API_GLOBAL_H__
+ #include <tapasco_types.h>
+ #include <tapasco_context.h>
 
-#define PLATFORM_NUM_SLOTS				128
-#define PLATFORM_ADDRESS_MAP_START			0x800
-#define PLATFORM_ADDRESS_MAP_INVALID_BASE		0xFFC0FEFE
+ struct tapasco_ctx {
+ 	tapasco_dev_ctx_t dev_ctx;
+ };
 
-#endif /* PLATFORM_API_GLOBAL_H__ */
+ tapasco_dev_ctx_t *tapasco_context_device(tapasco_ctx_t const *ctx)
+ {
+ 	return ctx->dev_ctx;
+ }

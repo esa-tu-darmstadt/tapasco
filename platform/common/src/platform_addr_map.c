@@ -23,6 +23,7 @@
  **/
 #include <platform.h>
 #include <platform_global.h>
+#include <platform_context.h>
 #include <platform_errors.h>
 #include <platform_logging.h>
 #include <platform_addr_map.h>
@@ -38,7 +39,8 @@ struct platform_addr_map {
 	platform_ctl_addr_t arch_base[PLATFORM_NUM_SLOTS];
 };
 
-platform_res_t platform_addr_map_init(platform_addr_map_t **am)
+platform_res_t platform_addr_map_init(platform_ctx_t *ctx,
+		platform_addr_map_t **am)
 {
 	*am = (platform_addr_map_t *)malloc(sizeof(*am));
 	if (! *am) {
@@ -55,10 +57,10 @@ platform_res_t platform_addr_map_init(platform_addr_map_t **am)
 	
 	do {
 		cont = 0;
-		pres = platform_read_ctl(pbase, sizeof(pbase),
+		pres = platform_read_ctl(ctx, pbase, sizeof(pbase),
 				&(*am)->platform_base[slot_id],
 				PLATFORM_CTL_FLAGS_NONE);
-		ares = platform_read_ctl(abase, sizeof(abase),
+		ares = platform_read_ctl(ctx, abase, sizeof(abase),
 				&(*am)->arch_base[slot_id],
 				PLATFORM_CTL_FLAGS_NONE);
 		if (ares == PLATFORM_SUCCESS && pres == PLATFORM_SUCCESS) {
@@ -98,33 +100,61 @@ platform_res_t platform_addr_map_init(platform_addr_map_t **am)
 	return PLATFORM_SUCCESS;
 }
 
-void platform_addr_map_deinit(platform_addr_map_t *am)
+void platform_addr_map_deinit(platform_ctx_t *ctx, platform_addr_map_t *am)
 {
 	free(am);
 	LOG(LPLL_ADDR, "destroyed");
 }
 
-platform_ctl_addr_t platform_addr_map_get_slot_base(
-		platform_addr_map_t const* am,
-		platform_slot_id_t const slot_id)
+platform_res_t platform_addr_map_get_slot_base(platform_addr_map_t const* am,
+		platform_slot_id_t const slot_id,
+		platform_ctl_addr_t *addr)
 {
+#ifndef NDEBUG
 	assert(am || "addr struct must not be NULL");
-	if (slot_id >= 0 && slot_id < PLATFORM_NUM_SLOTS) {
-		return am->arch_base[slot_id];
+	if (slot_id < 0 || slot_id >= PLATFORM_NUM_SLOTS) {
+		ERR("invalid slot_id %d: must be >= 0 and <= %d",
+				slot_id, PLATFORM_NUM_SLOTS);
+		return PLATFORM_ADDRESS_MAP_INVALID_BASE;
 	}
-	ERR("invalid slot_id %d: must be >= 0 and <= %d",
-			slot_id, PLATFORM_NUM_SLOTS);
-	return PLATFORM_ADDRESS_MAP_INVALID_BASE;
+#endif
+	*addr = am->arch_base[slot_id];
+	return PLATFORM_SUCCESS;
 }
 
-platform_ctl_addr_t platform_addr_map_get_special_base(
-		platform_addr_map_t const* am,
-		platform_special_ctl_t const ent)
+inline
+platform_res_t platform_address_get_slot_base(platform_ctx_t *ctx,
+		platform_slot_id_t const slot_id,
+		platform_ctl_addr_t *addr)
 {
-	if (ent == PLATFORM_SPECIAL_CTL_STATUS) {
+	return platform_addr_map_get_slot_base(
+			platform_context_addr_map(ctx), slot_id, addr);
+}
+
+platform_res_t platform_addr_map_get_component_base(
+		platform_addr_map_t const* am,
+		platform_component_t const comp_id,
+		platform_ctl_addr_t *addr)
+{
+	if (comp_id == PLATFORM_COMPONENT_STATUS) {
 		return PLATFORM_API_TAPASCO_STATUS_BASE;
 	}
-	ERR("invalid ent_id %d: must be >= 0 and <= %d",
-			ent, PLATFORM_NUM_SLOTS);
-	return PLATFORM_ADDRESS_MAP_INVALID_BASE;
+#ifndef NDEBUG
+	if (comp_id < 0 || comp_id >= PLATFORM_NUM_SLOTS) {
+		ERR("invalid comp_id %d: must be >= 0 and <= %d",
+				comp_id, PLATFORM_NUM_SLOTS);
+		return PERR_ADDR_INVALID_COMP_ID;
+	}
+#endif
+	*addr = am->platform_base[comp_id];
+	return PLATFORM_SUCCESS;
+}
+
+inline
+platform_res_t platform_address_get_component_base(platform_ctx_t *ctx,
+		platform_component_t const ent,
+		platform_ctl_addr_t *addr)
+{
+	return platform_addr_map_get_component_base(
+			platform_context_addr_map(ctx), ent, addr);
 }

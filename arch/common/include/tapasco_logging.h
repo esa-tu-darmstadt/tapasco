@@ -34,7 +34,8 @@
 	_LALL(IRQ,		(1 << 4)) \
 	_LALL(MEM,		(1 << 5)) \
 	_LALL(PEMGMT,		(1 << 6)) \
-	_LALL(STATUS,		(1 << 7))
+	_LALL(STATUS,		(1 << 7)) \
+	_LALL(TRANSFERS,	(1 << 8))
 
 typedef enum {
 #define _LALL(name, level) LALL_##name = level,

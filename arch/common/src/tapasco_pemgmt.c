@@ -30,6 +30,7 @@
 #include <tapasco_logging.h>
 #include <tapasco_global.h>
 #include <platform.h>
+#include <platform_context.h>
 #include <platform_status.h>
 
 /** State of PEs, e.g., busy or idle. */
@@ -72,8 +73,7 @@ struct tapasco_pemgmt {
 };
 
 static
-void setup_pes_from_status(tapasco_status_t const *status,
-		tapasco_pemgmt_t *p)
+void setup_pes_from_status(platform_status_t const *status, tapasco_pemgmt_t *p)
 {
 	for (int i = 0; i < TAPASCO_NUM_SLOTS; ++i) {
 		uint32_t id = platform_status_get_slot_id(status, i);
@@ -81,13 +81,15 @@ void setup_pes_from_status(tapasco_status_t const *status,
 	}
 }
 
-tapasco_res_t tapasco_pemgmt_init(const tapasco_status_t *status,
+tapasco_res_t tapasco_pemgmt_init(const tapasco_dev_ctx_t *dev_ctx,
 		tapasco_pemgmt_t **pemgmt)
 {
 	tapasco_res_t res = TAPASCO_SUCCESS;
 	*pemgmt = (tapasco_pemgmt_t *)malloc(sizeof(tapasco_pemgmt_t));
 	if (! pemgmt) return TAPASCO_ERR_OUT_OF_MEMORY;
 	memset(*pemgmt, 0, sizeof(**pemgmt));
+	platform_status_t *status = platform_context_status(
+			tapasco_device_platform(dev_ctx));
 	assert (status);
 	setup_pes_from_status(status, *pemgmt);
 	return res;
@@ -106,6 +108,7 @@ void tapasco_pemgmt_setup_system(tapasco_dev_ctx_t *dev_ctx,
 	assert (ctx);
 	uint32_t d = 1;
 	tapasco_slot_id_t slot_id = 0;
+	platform_ctx_t *pctx = tapasco_device_platform(dev_ctx);
 	tapasco_pe_t **pemgmt = ctx->pe;
 	while (slot_id < TAPASCO_NUM_SLOTS) {
 		if (*pemgmt) {
@@ -116,15 +119,15 @@ void tapasco_pemgmt_setup_system(tapasco_dev_ctx_t *dev_ctx,
 			tapasco_handle_t const iar = tapasco_regs_named_register(
 				dev_ctx, slot_id, TAPASCO_REG_IAR);
 			// enable IP interrupts
-			platform_write_ctl(gier, sizeof(d), &d,
+			platform_write_ctl(pctx, gier, sizeof(d), &d,
 				PLATFORM_CTL_FLAGS_NONE);		// GIER
 			// enable ap_done interrupt generation
-			platform_write_ctl(ier, sizeof(d), &d,
+			platform_write_ctl(pctx, ier, sizeof(d), &d,
 				PLATFORM_CTL_FLAGS_NONE); 		// IPIER
 			// ack all existing interrupts
-			platform_read_ctl(iar, sizeof(d), &d, 
+			platform_read_ctl(pctx, iar, sizeof(d), &d, 
 				PLATFORM_CTL_FLAGS_NONE);               // IAR
-			platform_write_ctl(iar, sizeof(d), &d,
+			platform_write_ctl(pctx, iar, sizeof(d), &d,
 				PLATFORM_CTL_FLAGS_NONE);
 			d = 1;
 		}
@@ -170,8 +173,15 @@ inline
 size_t tapasco_pemgmt_count(tapasco_pemgmt_t const *ctx,
 		tapasco_kernel_id_t const k_id)
 {
-	uint32_t ret = 0;
+	size_t ret = 0;
 	for (tapasco_slot_id_t i = 0; i < TAPASCO_NUM_SLOTS; ++i)
 		ret += ctx->pe[i] ? ctx->pe[i]->id == k_id : 0;
 	return ret;
+}
+
+size_t tapasco_device_kernel_pe_count(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_kernel_id_t const k_id)
+{
+	return tapasco_pemgmt_count(tapasco_device_pemgmt(dev_ctx), k_id);
+
 }

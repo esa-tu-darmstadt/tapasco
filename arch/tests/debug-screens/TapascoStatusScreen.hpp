@@ -7,7 +7,9 @@
 #define TAPASCO_STATUS_SCREEN_HPP__
 
 #include <tapasco.hpp>
-#include <platform.h>
+extern "C" {
+  #include <platform.h>
+}
 #include <ctime>
 #include "MenuScreen.hpp"
 using namespace tapasco;
@@ -48,57 +50,57 @@ protected:
   }
 
   virtual void update() {
-    const platform::platform_ctl_addr_t status =
-        platform::platform_address_get_special_base(platform::PLATFORM_SPECIAL_CTL_STATUS);
+    const platform_ctl_addr_t status =
+        platform_address_get_special_base(PLATFORM_SPECIAL_CTL_STATUS);
     // read ids
     for (int s = 0; s < 128; ++s) {
-      if (platform::platform_read_ctl(status + 0x100 + s * 0x10, 4, &id[s],
-          platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS)
+      if (platform_read_ctl(status + 0x100 + s * 0x10, 4, &id[s],
+          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
         id[s] = 0xDEADBEEF;
     }
     // read number intcs
-    if (platform::platform_read_ctl(status + 0x04, 4, &intcs,
-        platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS)
+    if (platform_read_ctl(status + 0x04, 4, &intcs,
+        PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
       intcs = 0;
     // read caps bitfield
-    if (platform::platform_read_ctl(status + 0x08, 4, &caps0,
-        platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS)
+    if (platform_read_ctl(status + 0x08, 4, &caps0,
+        PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
       caps0 = 0;
     else
       caps0 = caps0 == 0x13371337 ? 0 : caps0;
     // read vivado version
-    if (platform::platform_read_ctl(status + 0x10, 4, &vivado,
-        platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS)
+    if (platform_read_ctl(status + 0x10, 4, &vivado,
+        PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
       vivado = 0;
     if (vivado) {
       snprintf(vivado_str, sizeof(vivado_str), "%4d.%1d", vivado >> 16, vivado & 0xFFFF);
     }
     // read tapasco version
-    if (platform::platform_read_ctl(status + 0x14, 4, &tapasco,
-        platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS)
+    if (platform_read_ctl(status + 0x14, 4, &tapasco,
+        PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
       tapasco = 0;
     if (tapasco) {
       snprintf(tapasco_str, sizeof(tapasco_str), "%4d.%1d", tapasco >> 16, tapasco & 0xFFFF);
     }
     // read generation timestamp
-    if (platform::platform_read_ctl(status + 0x18, 4, &gen_ts,
-        platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS)
+    if (platform_read_ctl(status + 0x18, 4, &gen_ts,
+        PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
       gen_ts = 0;
     if (gen_ts) {
       struct tm ts = *localtime(static_cast<const time_t *>(&gen_ts));
       strftime(gen_ts_str, sizeof(gen_ts_str), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
     }
     // read host clk
-    if (platform::platform_read_ctl(status + 0x1c, 4, &host_clk,
-        platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS)
+    if (platform_read_ctl(status + 0x1c, 4, &host_clk,
+        PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
       host_clk = 0;
     // read mem clk
-    if (platform::platform_read_ctl(status + 0x20, 4, &mem_clk,
-        platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS)
+    if (platform_read_ctl(status + 0x20, 4, &mem_clk,
+        PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
       mem_clk = 0;
     // read design clk
-    if (platform::platform_read_ctl(status + 0x24, 4, &design_clk,
-        platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS)
+    if (platform_read_ctl(status + 0x24, 4, &design_clk,
+        PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
       design_clk = 0;
   }
 

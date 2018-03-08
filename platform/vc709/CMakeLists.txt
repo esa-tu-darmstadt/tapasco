@@ -22,7 +22,8 @@ set(CMNSRCS "${CMNDIR}/src/platform_logging.c"
             "${GCMNDIR}/src/gen_queue.c"
             "${CMNDIR}/src/platform_version.c"
             "${CMNDIR}/src/platform_status.c"
-            "${CMNDIR}/src/platform_addr_map.c")
+            "${CMNDIR}/src/platform_addr_map.c"
+            "${CMNDIR}/src/platform_context.c")
 set(SRCS "${SRCDIR}/platform_vc709.cpp"
          "${BUDDYDIR}/buddy_allocator.cpp"
 	 "${BUDDYDIR}/buddy_tree.cpp"

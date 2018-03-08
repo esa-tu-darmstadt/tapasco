@@ -25,8 +25,10 @@
 #include <tapasco_global.h>
 #include <tapasco_errors.h>
 #include <tapasco_logging.h>
+#include <tapasco_device.h>
 #include <gen_mem.h>
 #include <platform.h>
+#include <platform_context.h>
 #include <platform_status.h>
 #include <stdlib.h>
 
@@ -40,7 +42,15 @@ struct tapasco_local_mem {
 	block_t *lmem[PLATFORM_NUM_SLOTS];
 };
 
-tapasco_res_t tapasco_local_mem_init(tapasco_status_t const *status,
+static inline
+size_t get_slot_mem(tapasco_dev_ctx_t const *dev_ctx, tapasco_slot_id_t const slot_id)
+{
+	platform_ctx_t *p = tapasco_device_platform(dev_ctx);
+	platform_status_t *s = platform_context_status(p);
+	return platform_status_get_slot_mem(s, slot_id);
+}
+
+tapasco_res_t tapasco_local_mem_init(tapasco_dev_ctx_t const *dev_ctx,
 		tapasco_local_mem_t **lmem)
 {
 	LOG(LALL_MEM, "initialzing ...");
@@ -48,7 +58,7 @@ tapasco_res_t tapasco_local_mem_init(tapasco_status_t const *status,
 	if (! *lmem) return TAPASCO_ERR_OUT_OF_MEMORY;
 	addr_t base = 0;
 	for (size_t idx = 0; idx < PLATFORM_NUM_SLOTS; ++idx) {
-		size_t const sz = platform_status_get_slot_mem(status, idx);
+		size_t const sz = get_slot_mem(dev_ctx, idx);
 		LOG(LALL_MEM, "memory size for slot_id #%zd: %zd bytes", idx, sz);
 		(*lmem)->lmem[idx] = sz > 0 ? gen_mem_create(base, sz) : NULL;
 		(*lmem)->as[idx].base = base;
@@ -98,14 +108,16 @@ size_t tapasco_local_mem_get_size(tapasco_local_mem_t *lmem,
 }
 
 inline
-addr_t tapasco_local_mem_get_slot_and_base(tapasco_local_mem_t *lmem,
+tapasco_handle_t tapasco_local_mem_get_slot_and_base(tapasco_local_mem_t *lmem,
 		tapasco_slot_id_t *slot_id,
 		addr_t const elem)
 {
 	while (elem > lmem->as[*slot_id].high) {
-	  LOG(LALL_MEM, "local mem high address of slot_id #%zd (0x%08lx) < elem address (0x%08lx)",
-	  		*slot_id, (unsigned long)*slot_id, (unsigned long)elem);
-	  ++(*slot_id);
+		LOG(LALL_MEM, "local mem high address of slot_id #%zd (0x%08lx)"
+				" < elem address (0x%08lx)",
+				*slot_id, (unsigned long)*slot_id,
+				(unsigned long)elem);
+		++(*slot_id);
 	}
 	return lmem->as[*slot_id].base;
 }

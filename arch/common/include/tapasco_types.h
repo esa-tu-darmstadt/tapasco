@@ -24,13 +24,8 @@
 #ifndef TAPASCO_TYPES_H__
 #define TAPASCO_TYPES_H__
 
-#ifdef __cplusplus
-#include <cstdint>
-namespace tapasco { extern "C" {
-#else
 #include <stdint.h>
-#endif /* __cplusplus */
-
+#include <stdlib.h>
 #include <platform_caps.h>
 
 #define PE_LOCAL_FLAG					2
@@ -39,9 +34,12 @@ namespace tapasco { extern "C" {
 typedef enum {
 	/** Indicates successful operation. **/
 	TAPASCO_SUCCESS					= 1
-} tapasco_res_t;
+} tapasco_binary_res_t;
 
-/** FPGA context; opaque forward decl. **/
+/** Public result type. */
+typedef ssize_t tapasco_res_t;
+
+/** TaPaSCo context; opaque forward decl. **/
 typedef struct tapasco_ctx tapasco_ctx_t;
 
 /** Device context; opaque forward decl. **/
@@ -116,10 +114,6 @@ typedef enum {
 
 /** Capabilities: Optional device capabilities. **/
 typedef platform_capabilities_0_t tapasco_device_capability_t;
-
-#ifdef __cplusplus
-} /* extern "C" */ } /* namespace tapasco */
-#endif /* __cplusplus */
 
 #endif /* TAPASCO_TYPES_H__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

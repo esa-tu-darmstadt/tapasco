@@ -23,11 +23,6 @@
 #ifndef __PLATFORM_API_ERROR_H__
 #define __PLATFORM_API_ERROR_H__
 
-#ifdef __cplusplus
-namespace tapasco { namespace platform { extern "C" {
-#endif /* __cplusplus */
-/********************************************************************************/
-
 #define PLATFORM_ERRORS \
 	_X(PERR_NO_CONNECTION          , -1       , "no connection to simulator") \
 	_X(PERR_OUT_OF_MEMORY          , -2       , "out of memory (host)") \
@@ -51,7 +46,7 @@ namespace tapasco { namespace platform { extern "C" {
 	_X(PERR_NOT_IMPLEMENTED        , -20      , "not implemented") \
 	_X(PERR_NO_PE_LOCAL_MEMORY     , -21      , "PE-local memory not available") \
 	_X(PERR_STATUS_CORE_NOT_FOUND  , -22      , "TaPaSCO status core not found, invalid bitstream") \
-	_X(PERR_ADDR_INVALID_ENT_ID    , -23      , "invalid platform entity id") \
+	_X(PERR_ADDR_INVALID_COMP_ID   , -23      , "invalid platform component id") \
 	_X(PERR_ADDR_INVALID_SLOT_ID   , -24      , "invalid slot id") \
 	_X(PERR_SENTINEL               , -25      , "--- no error, just end of list ---")
 
@@ -66,10 +61,5 @@ typedef enum {
 	PLATFORM_ERRORS
 } platform_error_t;
 #undef _X
-
-/********************************************************************************/
-#ifdef __cplusplus
-} /* extern "C" */ } /* namespace platform */ } /* namespace tapasco */
-#endif /* __cplusplus */
 
 #endif /* __PLATFORM_API_ERROR_H__ */

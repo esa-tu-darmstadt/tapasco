@@ -74,17 +74,17 @@ protected:
   virtual void update() {
     for (int i = 0; i < 128; ++i) {
       if (! avail[i]) continue;
-      const platform::platform_ctl_addr_t base = platform::platform_address_get_slot_base(i, 0);
-      if (platform::platform_read_ctl(base + 0x20, 4, &cycles[i],
-          platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS) {
+      const platform_ctl_addr_t base = platform_address_get_slot_base(i, 0);
+      if (platform_read_ctl(base + 0x20, 4, &cycles[i],
+          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	cycles[i] = 0xDEADBEEF;
       }
-      if (platform::platform_read_ctl(base + 0x10, 4, &retval[i],
-          platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS) {
+      if (platform_read_ctl(base + 0x10, 4, &retval[i],
+          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	retval[i] = 0xDEADBEEF;
       }
-      if (platform::platform_read_ctl(base + 0x0c, 4, &intrdy[i],
-          platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS) {
+      if (platform_read_ctl(base + 0x0c, 4, &intrdy[i],
+          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	intrdy[i] = 0xDEADBEEF;
       }
     }
@@ -126,11 +126,11 @@ protected:
 private:
   bool check_bitstream() {
     uint32_t id { 0 }, cnt { 0 };
-    const platform::platform_ctl_addr_t status =
-        platform::platform_address_get_special_base(platform::PLATFORM_SPECIAL_CTL_STATUS);
+    const platform_ctl_addr_t status =
+        platform_address_get_special_base(PLATFORM_SPECIAL_CTL_STATUS);
     for (int s = 0; s < 128; ++s) {
-      if (platform::platform_read_ctl(status + 0x100 + s * 0x10, 4, &id,
-          platform::PLATFORM_CTL_FLAGS_NONE) != platform::PLATFORM_SUCCESS)
+      if (platform_read_ctl(status + 0x100 + s * 0x10, 4, &id,
+          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
         avail[s] = false;
       else {
         avail[s] = id == COUNTER_ID;

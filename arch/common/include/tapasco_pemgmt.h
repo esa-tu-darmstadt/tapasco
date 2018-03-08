@@ -26,7 +26,6 @@
 
 #include <tapasco_types.h>
 #include <tapasco_global.h>
-#include <tapasco_status.h>
 
 /** Implementation defined functions struct. (opaque) */
 typedef struct tapasco_pemgmt tapasco_pemgmt_t;
@@ -37,7 +36,7 @@ typedef struct tapasco_pemgmt tapasco_pemgmt_t;
  * @param pes pointer to internal functions struct pointer.
  * @return TAPASCO_SUCCESS if successful.
  **/
-tapasco_res_t tapasco_pemgmt_init(const tapasco_status_t *status,
+tapasco_res_t tapasco_pemgmt_init(const tapasco_dev_ctx_t *dev_ctx,
 		tapasco_pemgmt_t **pes);
 
 /**

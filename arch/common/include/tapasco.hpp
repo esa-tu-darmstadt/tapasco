@@ -50,7 +50,9 @@
 #endif
 #endif
 
-#include <tapasco.h>
+extern "C" {
+  #include <tapasco.h>
+}
 #include <type_traits>
 #include <stdexcept>
 #include <future>
@@ -143,10 +145,10 @@ struct Tapasco {
   template<typename R, typename... Targs>
   tapasco_res_t launch(tapasco_kernel_id_t const k_id, R& ret, Targs... args) const noexcept
   {
-    tapasco_res_t res;
     // get a job id
-    tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev_ctx, k_id,
-        TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
+    tapasco_job_id_t j_id = 0;
+    tapasco_res_t res = tapasco_device_acquire_job_id(dev_ctx, &j_id, k_id, TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
+    if (res != TAPASCO_SUCCESS) return res;
 
 #ifdef TAPASCO_COPY_MT
     vector<future<tapasco_res_t> > fs { r_set_args(j_id, 0, args...) };
@@ -193,10 +195,10 @@ struct Tapasco {
   template<typename... Targs>
   tapasco_res_t launch_no_return(tapasco_kernel_id_t const k_id, Targs... args) const noexcept
   {
-    tapasco_res_t res;
     // get a job id
-    tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev_ctx, k_id,
-        TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
+    tapasco_job_id_t j_id = 0;
+    tapasco_res_t res = ::tapasco_device_acquire_job_id(dev_ctx, &j_id, k_id, TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
+    if (res != TAPASCO_SUCCESS) return res;
 
 #ifdef TAPASCO_COPY_MT
     vector<future<tapasco_res_t> > fs { r_set_args(j_id, 0, args...) };
@@ -216,7 +218,7 @@ struct Tapasco {
 #endif
 
     // release job id
-    tapasco_device_release_job_id(dev_ctx, j_id);
+    ::tapasco_device_release_job_id(dev_ctx, j_id);
     return res;
   }
 
@@ -241,7 +243,7 @@ struct Tapasco {
    **/
   tapasco_res_t alloc(tapasco_handle_t &h, size_t const len, tapasco_device_alloc_flag_t const flags) const noexcept
   {
-    return tapasco_device_alloc(dev_ctx, &h, len, flags);
+    return ::tapasco_device_alloc(dev_ctx, &h, len, flags);
   }
 
   /**
@@ -250,7 +252,7 @@ struct Tapasco {
    **/
   void free(tapasco_handle_t const handle, tapasco_device_alloc_flag_t const flags) const noexcept
   {
-    tapasco_device_free(dev_ctx, handle, flags);
+    ::tapasco_device_free(dev_ctx, handle, flags);
   }
 
   /**
@@ -263,7 +265,7 @@ struct Tapasco {
    **/
   tapasco_res_t copy_to(void const *src, tapasco_handle_t dst, size_t len, tapasco_device_copy_flag_t const flags) const noexcept
   {
-    return tapasco_device_copy_to(dev_ctx, src, dst, len, flags);
+    return ::tapasco_device_copy_to(dev_ctx, src, dst, len, flags);
   }
 
   /**
@@ -276,7 +278,7 @@ struct Tapasco {
    **/
   tapasco_res_t copy_from(tapasco_handle_t src, void *dst, size_t len, tapasco_device_copy_flag_t const flags) const noexcept
   {
-    return tapasco_device_copy_from(dev_ctx, src, dst, len, flags);
+    return ::tapasco_device_copy_from(dev_ctx, src, dst, len, flags);
   }
 
   /**

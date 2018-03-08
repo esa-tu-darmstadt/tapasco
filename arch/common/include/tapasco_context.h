@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2018 Jens Korinth, TU Darmstadt
 //
 // This file is part of Tapasco (TPC).
 //
@@ -16,21 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-//! @file	tapasco_device.h
-//! @brief	Device context struct and helper methods.
+//! @file	tapasco_context.h
+//! @brief	Global context helper methods.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //! 
-#ifndef TAPASCO_DEVICE_H__
-#define TAPASCO_DEVICE_H__
+#ifndef TAPASCO_CONTEXT_H__
+#define TAPASCO_CONTEXT_H__
 
-#include <tapasco_types.h>
-#include <tapasco_pemgmt.h>
-#include <tapasco_local_mem.h>
-#include <platform_types.h>
+struct tapasco_ctx { };
 
-tapasco_ctx_t       *tapasco_device_context(tapasco_dev_ctx_t const *dev_ctx);
-tapasco_pemgmt_t    *tapasco_device_pemgmt(tapasco_dev_ctx_t const *dev_ctx);
-tapasco_local_mem_t *tapasco_device_local_mem(tapasco_dev_ctx_t const  *dev_ctx);
-platform_ctx_t      *tapasco_device_platform(tapasco_dev_ctx_t const *dev_ctx);
-
-#endif /* TAPASCO_DEVICE_H__ */
+#endif /* TAPASCO_CONTEXT_H__ */

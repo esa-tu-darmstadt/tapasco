@@ -25,8 +25,7 @@
 
 #include <tapasco.h>
 #include <tapasco_pemgmt.h>
-#include <tapasco_status.h>
-#include <gen_mem.h>
+#include <platform_types.h>
 
 /** Forward declaration of local memory management struct (opaque). */
 typedef struct tapasco_local_mem tapasco_local_mem_t;
@@ -37,7 +36,7 @@ typedef struct tapasco_local_mem tapasco_local_mem_t;
  * @param lmem output pointer to initialize
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
-tapasco_res_t tapasco_local_mem_init(tapasco_status_t const *status,
+tapasco_res_t tapasco_local_mem_init(tapasco_dev_ctx_t const *dev_ctx,
 		tapasco_local_mem_t **lmem);
 void tapasco_local_mem_deinit(tapasco_local_mem_t *lmem);
 
@@ -85,8 +84,9 @@ size_t tapasco_local_mem_get_size(tapasco_local_mem_t *lmem,
  * @param elem address in PE-local memory space to find the slot and base for.
  * @return return base address of memory controller managing elem
  **/
-addr_t tapasco_local_mem_get_slot_and_base(tapasco_local_mem_t *lmem,
+platform_ctl_addr_t tapasco_local_mem_get_slot_and_base(
+		tapasco_local_mem_t *lmem,
 		tapasco_slot_id_t *slot_id,
-		addr_t const elem);
+		platform_ctl_addr_t const elem);
 
 #endif /* TAPASCO_LOCAL_MEM_H__ */

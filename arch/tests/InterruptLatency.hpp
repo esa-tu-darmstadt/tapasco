@@ -31,10 +31,10 @@ using namespace tapasco;
  **/
 class InterruptLatency {
 public:
-  static tapasco_func_id_t const COUNTER_ID = 14;
+  static tapasco_kernel_id_t const COUNTER_ID = 14;
 
   InterruptLatency(Tapasco& tapasco) : tapasco(tapasco) {
-    if (tapasco.func_instance_count(COUNTER_ID) == 0)
+    if (tapasco.kernel_pe_count(COUNTER_ID) == 0)
       throw "need at least one instance of 'Counter' (14) in bitstream";
   }
   virtual ~InterruptLatency() {}

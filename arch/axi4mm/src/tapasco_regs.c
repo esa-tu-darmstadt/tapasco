@@ -26,8 +26,9 @@
 #include <tapasco_global.h>
 #include <tapasco_regs.h>
 #include <tapasco_device.h>
-#include <tapasco_status.h>
 #include <platform.h>
+#include <platform_context.h>
+#include <platform_addr_map.h>
 
 #define FIRST_ARG_OFFSET 					0x20
 #define ARG_OFFSET						0x10
@@ -37,19 +38,19 @@
 #define RET_OFFSET						0x10
 
 static tapasco_handle_t _bases[TAPASCO_NUM_SLOTS] = { 0 };
+ 
 
 static inline tapasco_handle_t base_addr(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_slot_id_t const slot_id)
 {
 	assert(slot_id < TAPASCO_NUM_SLOTS);
-	tapasco_handle_t ret = _bases[slot_id];
-	tapasco_status_t *s = tapasco_device_status(dev_ctx);
-	if (! ret) {
-		ret = (_bases[slot_id] =
-				platform_status_get_slot_base(s, slot_id));
+	platform_ctx_t *pctx = tapasco_device_platform(dev_ctx);
+	platform_addr_map_t *am = platform_context_addr_map(pctx);
+	if (! _bases[slot_id]) {
+		platform_addr_map_get_slot_base(am, slot_id, &_bases[slot_id]);
 	}
-	assert(slot_id == 0 || ret > 0);
-	return ret;
+	assert(slot_id == 0 || _bases[slot_id] > 0);
+	return _bases[slot_id];
 }
 
 tapasco_handle_t tapasco_regs_arg_register(
@@ -57,8 +58,7 @@ tapasco_handle_t tapasco_regs_arg_register(
 		tapasco_slot_id_t const slot_id,
 		size_t const arg_idx)
 {
-	tapasco_handle_t base = tapasco_status_get_slot_base(
-			tapasco_device_status(dev_ctx), slot_id);
+	tapasco_handle_t base = base_addr(dev_ctx, slot_id);
 	return base
 	     + FIRST_ARG_OFFSET
 	     + arg_idx * ARG_OFFSET;
@@ -68,18 +68,18 @@ tapasco_handle_t tapasco_regs_named_register(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_slot_id_t const slot_id,
 		tapasco_reg_t const reg)
 {
-	tapasco_status_t *s = tapasco_device_status(dev_ctx);
+	tapasco_handle_t const base = base_addr(dev_ctx, slot_id);
 	switch (reg) {
 	case TAPASCO_REG_CTRL:
-		return platform_status_get_slot_base(s, slot_id);
+		return base;
 	case TAPASCO_REG_GIER:
-		return platform_status_get_slot_base(s, slot_id) + GIER_OFFSET;
+		return base + GIER_OFFSET;
 	case TAPASCO_REG_IER:
-		return platform_status_get_slot_base(s, slot_id) + IER_OFFSET;
+		return base + IER_OFFSET;
 	case TAPASCO_REG_IAR:
-		return platform_status_get_slot_base(s, slot_id) + IAR_OFFSET;
+		return base + IAR_OFFSET;
 	case TAPASCO_REG_RET:
-		return platform_status_get_slot_base(s, slot_id) + RET_OFFSET;
+		return base + RET_OFFSET;
 	default:
 		return 0;
 	}

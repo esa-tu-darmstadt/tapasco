@@ -23,28 +23,22 @@
 #ifndef PLATFORM_API_ADDR_MAP_H__
 #define PLATFORM_API_ADDR_MAP_H__
 
-#ifdef __cplusplus
-namespace tapasco { namespace platform { extern "C" {
-#endif /* __cplusplus */
-/********************************************************************************/
+#include <platform_types.h>
 
 typedef struct platform_addr_map platform_addr_map_t;
 
-platform_res_t platform_addr_map_init(platform_addr_map_t **am);
+platform_res_t platform_addr_map_init(platform_ctx_t *ctx,
+		platform_addr_map_t **am);
 
-void platform_addr_map_deinit(platform_addr_map_t *am);
+void platform_addr_map_deinit(platform_ctx_t *ctx, platform_addr_map_t *am);
 
-platform_ctl_addr_t platform_addr_map_get_slot_base(
+platform_res_t platform_addr_map_get_slot_base(platform_addr_map_t const* am,
+		platform_slot_id_t const slot_id,
+		platform_ctl_addr_t *addr);
+
+platform_res_t platform_addr_map_get_component_base(
 		platform_addr_map_t const* am,
-		platform_slot_id_t const slot_id);
-
-platform_ctl_addr_t platform_addr_map_get_special_base(
-		platform_addr_map_t const* am,
-		platform_special_ctl_t const ent);
-
-/********************************************************************************/
-#ifdef __cplusplus
-} /* extern "C" */ } /* namespace platform */ } /* namespace tapasco */
-#endif /* __cplusplus */
+		platform_component_t const comp_id,
+		platform_ctl_addr_t *addr);
 
 #endif /* PLATFORM_API_ADDR_MAP_H__ */

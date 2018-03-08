@@ -16,8 +16,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-//! @file	tapasco-sim.c
-//! @brief	TPC API intialization implementation for the Zynq platform.
+//! @file	tapasco_device.c
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
 #include <signal.h>
@@ -26,20 +25,13 @@
 #include <string.h>
 #include <errno.h>
 #include <tapasco.h>
+#include <tapasco_context.h>
 #include <tapasco_errors.h>
-/*#include <tapasco_jobs.h>
-#include <tapasco_pemgmt.h>*/
 #include <tapasco_logging.h>
-#include <platform.h>
-#include <platform_errors.h>
 
 // declare logging exit for flushing
 // TODO: is it possible to handle this more nicely?
 extern void platform_logging_exit(void);
-
-struct tapasco_ctx {
-	int conn_sock;
-};
 
 static
 void _flush_logs_on_sigint(int sig)
@@ -59,7 +51,7 @@ int _tapasco_install_sigint_handler()
 	return sigaction(SIGINT, &act, NULL);
 }
 
-tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **pctx)
+tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **ctx)
 {
 	tapasco_logging_init();
 	LOG(LALL_INIT, "version: %s, expected version: %s", tapasco_version(),
@@ -70,22 +62,19 @@ tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **pctx)
 		return TAPASCO_ERR_VERSION_MISMATCH;
 	}
 
-	*pctx = (tapasco_ctx_t *)malloc(sizeof(struct tapasco_ctx));
-	platform_res_t pr;
-	if ((pr = platform_init()) != PLATFORM_SUCCESS) {
-		ERR("Platform error: %s", platform_strerror(pr));
-		return TAPASCO_ERR_PLATFORM_FAILURE;
+	*ctx = (tapasco_ctx_t *)malloc(sizeof(**ctx));
+	if (! *ctx) {
+		ERR("could not allocate tapasco context");
+		return TAPASCO_ERR_OUT_OF_MEMORY;
 	}
 
 	// install signal handler
 	if (_tapasco_install_sigint_handler()) {
 		ERR("could not install signal handler: %s", strerror(errno));
-		platform_deinit();
-		free(pctx);
+		free(*ctx);
 		return TAPASCO_ERR_UNKNOWN_ERROR;
 	}
 	LOG(LALL_INIT, "tapasco initialization done");
-	if (*pctx) return TAPASCO_SUCCESS;
 
 	return TAPASCO_ERR_UNKNOWN_ERROR;
 }
@@ -94,7 +83,6 @@ void tapasco_deinit(tapasco_ctx_t *ctx)
 {
 	LOG(LALL_INIT, "shutting down TPC");
 	if (ctx) {
-		platform_deinit();
 		free(ctx);
 	}
 	LOG(LALL_INIT, "all's well that ends well, bye");

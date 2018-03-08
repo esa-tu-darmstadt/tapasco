@@ -30,35 +30,45 @@
 #include <tapasco_regs.h>
 #include <tapasco_scheduler.h>
 #include <tapasco_logging.h>
-#include <tapasco_status.h>
 #include <tapasco_local_mem.h>
 #include <platform.h>
 #include <platform_errors.h>
 #include <platform_caps.h>
+#include <platform_status.h>
+#include <platform_context.h>
 
 /** Internal device struct implementation. */
 struct tapasco_dev_ctx {
+	tapasco_ctx_t *ctx;
 	tapasco_pemgmt_t *pemgmt;
 	tapasco_jobs_t *jobs;
-	tapasco_ctx_t *ctx;
 	tapasco_dev_id_t id;
-	tapasco_status_t *status;
 	tapasco_local_mem_t *lmem;
+	platform_ctx_t *pctx;
 };
 
-tapasco_pemgmt_t *tapasco_device_pemgmt(tapasco_dev_ctx_t *ctx)
+tapasco_ctx_t *tapasco_device_context(tapasco_dev_ctx_t const *ctx)
 {
+	assert(ctx);
+	return ctx->ctx;
+}
+
+tapasco_pemgmt_t *tapasco_device_pemgmt(tapasco_dev_ctx_t const *ctx)
+{
+	assert(ctx);
 	return ctx->pemgmt;
 }
 
-tapasco_status_t *tapasco_device_status(tapasco_dev_ctx_t *ctx)
+tapasco_local_mem_t *tapasco_device_local_mem(tapasco_dev_ctx_t const *ctx)
 {
-	return ctx->status;
+	assert(ctx);
+	return ctx->lmem;
 }
 
-tapasco_local_mem_t *tapasco_device_local_mem(tapasco_dev_ctx_t *ctx)
+platform_ctx_t *tapasco_device_platform(tapasco_dev_ctx_t const *ctx)
 {
-	return ctx->lmem;
+	assert(ctx);
+	return ctx->pctx;
 }
 
 /** Interrupt handler callback. */
@@ -81,23 +91,29 @@ tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx,
 {
 	tapasco_dev_ctx_t *p = (tapasco_dev_ctx_t *)
 			malloc(sizeof(struct tapasco_dev_ctx));
-	if (p) {
-		tapasco_res_t res = tapasco_status_init(&p->status);
-		res = res == TAPASCO_SUCCESS ? tapasco_pemgmt_init(p->status,
-				&p->pemgmt) : res;
-		res = res == TAPASCO_SUCCESS ? tapasco_jobs_init(&p->jobs) : res;
-		res = res == TAPASCO_SUCCESS ? tapasco_local_mem_init(p->status,
-				&p->lmem) : res;
-		if (res != TAPASCO_SUCCESS) return res;
-		p->ctx = ctx;
-		p->id = dev_id;
-		*pdev_ctx = p;
-		setup_system(p);
-		platform_register_irq_callback(irq_handler);
-		LOG(LALL_DEVICE, "device %d created successfully", dev_id);
-		return TAPASCO_SUCCESS;
+	if (! p) {
+		ERR("could not allocate tapasco device context");
+		return TAPASCO_ERR_OUT_OF_MEMORY;
 	}
-	return TAPASCO_ERR_OUT_OF_MEMORY;
+
+	platform_res_t pr = platform_init(&p->pctx);
+	if (pr != PLATFORM_SUCCESS) {
+		ERR("platform context init failed, error: %s (%d)",
+				platform_strerror(pr), pr);
+		return TAPASCO_ERR_PLATFORM_FAILURE;
+	}
+
+	tapasco_res_t res = tapasco_pemgmt_init(p, &p->pemgmt);
+	res = res == TAPASCO_SUCCESS ? tapasco_jobs_init(&p->jobs) : res;
+	res = res == TAPASCO_SUCCESS ? tapasco_local_mem_init(p,
+			&p->lmem) : res;
+	if (res != TAPASCO_SUCCESS) return res;
+	p->ctx = ctx;
+	p->id = dev_id;
+	*pdev_ctx = p;
+	setup_system(p);
+	LOG(LALL_DEVICE, "device %d created successfully", dev_id);
+	return TAPASCO_SUCCESS;
 }
 
 void tapasco_destroy_device(tapasco_ctx_t *ctx, tapasco_dev_ctx_t *dev_ctx)
@@ -105,7 +121,7 @@ void tapasco_destroy_device(tapasco_ctx_t *ctx, tapasco_dev_ctx_t *dev_ctx)
 	tapasco_local_mem_deinit(dev_ctx->lmem);
 	tapasco_jobs_deinit(dev_ctx->jobs);
 	tapasco_pemgmt_deinit(dev_ctx->pemgmt);
-	tapasco_status_deinit(dev_ctx->status);
+	platform_deinit(dev_ctx->pctx);
 	free(dev_ctx);
 }
 
@@ -199,7 +215,11 @@ tapasco_res_t tapasco_device_job_get_return(tapasco_dev_ctx_t *dev_ctx,
 tapasco_res_t tapasco_device_has_capability(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_device_capability_t cap)
 {
-	return platform_status_has_capability_0(dev_ctx->status, cap);
+	platform_ctx_t *pctx = tapasco_device_platform(dev_ctx);
+	assert(pctx);
+	platform_status_t *status = platform_context_status(pctx);
+	assert(status);
+	return platform_status_has_capability_0(status, cap);
 }
 
 void irq_handler(int const event)

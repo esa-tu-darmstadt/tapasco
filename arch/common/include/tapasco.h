@@ -47,13 +47,17 @@
 
 #ifdef __cplusplus
 #include <cstdlib>
-namespace tapasco { extern "C" {
 #else
 #include <stdlib.h>
 #endif /* __cplusplus */
 
+#include <tapasco_errors.h>
+#include <tapasco_global.h>
 #include <tapasco_types.h>
 #include <platform_caps.h>
+
+#define TAPASCO_VERSION_MAJOR(v) 				((v) >> 16)
+#define TAPASCO_VERSION_MINOR(v) 				((v) & 0xFFFF)
 
 /** @defgroup version Version Info
  *  @{
@@ -153,6 +157,70 @@ size_t tapasco_device_kernel_pe_count(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_kernel_id_t const k_id);
 
 /**
+ * Checks if the specified capability is available in the current bitstream.
+ * @param dev_ctx device context
+ * @param cap capability
+ * @return TAPASCO_SUCCESS, if available, an error code otherwise
+ **/
+tapasco_res_t tapasco_device_has_capability(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_device_capability_t cap);
+
+/**
+ * Get the processing element op. frequency of the currently loaded bitstream.
+ * @param dev_ctx device context
+ * @param freq output frequency var
+ * @return TAPASCO_SUCCESS if successful, an error code otherwise
+ **/
+tapasco_res_t tapasco_device_design_clk(tapasco_dev_ctx_t *dev_ctx,
+		uint32_t *freq);
+
+/**
+ * Get the host interface frequency of the currently loaded bitstream.
+ * @param dev_ctx device context
+ * @param freq output frequency var
+ * @return TAPASCO_SUCCESS if successful, an error code otherwise
+ **/
+tapasco_res_t tapasco_device_host_clk(tapasco_dev_ctx_t *dev_ctx,
+		uint32_t *freq);
+
+/**
+ * Get the memory interface frequency of the currently loaded bitstream.
+ * @param dev_ctx device context
+ * @param freq output frequency var
+ * @return TAPASCO_SUCCESS if successful, an error code otherwise
+ **/
+tapasco_res_t tapasco_device_mem_clk(tapasco_dev_ctx_t *dev_ctx,
+		uint32_t *freq);
+
+/**
+ * Get the Vivado version with which the currently loaded bitstream was built.
+ * @param dev_ctx device context
+ * @param version output version var
+ * @return TAPASCO_SUCCESS if successful, an error code otherwise
+ **/
+tapasco_res_t tapasco_get_vivado_version(tapasco_dev_ctx_t* dev_ctx,
+		uint32_t *version);
+
+/**
+ * Get the TaPaSCo version with which the currently loaded bitstream was built.
+ * @param dev_ctx device context
+ * @param version output version var
+ * @return TAPASCO_SUCCESS if successful, an error code otherwise
+ **/
+tapasco_res_t tapasco_get_tapasco_version(tapasco_dev_ctx_t *dev_ctx,
+		uint32_t *version);
+
+/**
+ * Get the epoch timestamp of the time when the currently loaded bitstream was
+ * built.
+ * @param dev_ctx device context
+ * @param timestampt output version var
+ * @return TAPASCO_SUCCESS if successful, an error code otherwise
+ **/
+tapasco_res_t tapasco_get_compose_ts(tapasco_dev_ctx_t *dev_ctx,
+		uint32_t *ts);
+
+/**
  * Loads the bitstream from the given file to the device.
  * @param dev_ctx device context
  * @param filename bitstream file name
@@ -193,8 +261,10 @@ tapasco_res_t tapasco_device_load_bitstream(tapasco_dev_ctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS if successful, error code otherwise
  **/
 tapasco_res_t tapasco_device_alloc(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_handle_t *handle, size_t const len,
-		tapasco_device_alloc_flag_t const flags, ...);
+		tapasco_handle_t *handle,
+		size_t const len,
+		tapasco_device_alloc_flag_t const flags,
+		...);
 
 /**
  * Frees a previously allocated chunk of device memory.
@@ -202,8 +272,10 @@ tapasco_res_t tapasco_device_alloc(tapasco_dev_ctx_t *dev_ctx,
  * @param handle memory chunk handle returned by @see tapasco_alloc
  * @param flags device memory allocation flags
  **/
-void tapasco_device_free(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t handle,
-		tapasco_device_alloc_flag_t const flags, ...);
+void tapasco_device_free(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_handle_t handle,
+		tapasco_device_alloc_flag_t const flags,
+		...);
 
 /**
  * Copys memory from main memory to the FPGA device.
@@ -215,8 +287,11 @@ void tapasco_device_free(tapasco_dev_ctx_t *dev_ctx, tapasco_handle_t handle,
  * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx,
-		void const *src, tapasco_handle_t dst, size_t len,
-		tapasco_device_copy_flag_t const flags, ...);
+		void const *src,
+		tapasco_handle_t dst,
+		size_t len,
+		tapasco_device_copy_flag_t const flags,
+		...);
 
 /**
  * Copys memory from FPGA device memory to main memory.
@@ -228,8 +303,11 @@ tapasco_res_t tapasco_device_copy_to(tapasco_dev_ctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_copy_from(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_handle_t src, void *dst, size_t len,
-		tapasco_device_copy_flag_t const flags, ...);
+		tapasco_handle_t src,
+		void *dst,
+		size_t len,
+		tapasco_device_copy_flag_t const flags,
+		...);
 
 /** @} **/
 
@@ -336,25 +414,6 @@ tapasco_res_t tapasco_device_job_get_return(tapasco_dev_ctx_t *dev_ctx,
 
 /** @} **/
 
-
-/** @defgroup caps Device capability query
- *  @{
- **/
-
-/**
- * Checks if the specified capability is available in the current bitstream.
- * @param dev_ctx device context
- * @param cap capability
- * @return TAPASCO_SUCCESS, if available, an error code otherwise
- **/
-tapasco_res_t tapasco_device_has_capability(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_device_capability_t cap);
-
-/** @} **/
-
-#ifdef __cplusplus
-} /* extern "C" */ } /* namespace tapasco */
-#endif /* __cplusplus */
 
 #endif /* TAPASCO_H__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

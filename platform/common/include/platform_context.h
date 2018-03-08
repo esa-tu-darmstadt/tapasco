@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
+// Copyright (C) 2018 Jens Korinth, TU Darmstadt
 //
 // This file is part of Tapasco (TAPASCO).
 //
@@ -17,21 +17,20 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- *  @file	tapasco_status.c
+ *  @file	platform_context.h
+ *  @brief	Accessors for platform context elements.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#include <tapasco_status.h>
-#include <tapasco_errors.h>
+#ifndef PLATFORM_CONTEXT_H__
+#define PLATFORM_CONTEXT_H__
 
-tapasco_res_t tapasco_status_init(tapasco_status_t **status)
-{
-	platform_res_t res = platform_status_init(status);
-	if (res != PLATFORM_SUCCESS)
-		return TAPASCO_ERR_PLATFORM_FAILURE;
-	return TAPASCO_SUCCESS;
-}
+#include <platform_status.h>
+#include <platform_addr_map.h>
 
-void tapasco_status_deinit(tapasco_status_t *status)
-{
-	platform_status_deinit(status);
-}
+platform_status_t *platform_context_status(platform_ctx_t const *ctx);
+platform_addr_map_t *platform_context_addr_map(platform_ctx_t const *ctx);
+
+platform_res_t platform_context_init(platform_ctx_t **ctx);
+void platform_context_deinit(platform_ctx_t *ctx);
+
+#endif /* PLATFORM_CONTEXT_H__ */

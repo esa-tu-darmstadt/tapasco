@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.8)
 include(ExternalProject)
 project (tapasco-debug)
-set(ADD_CXXFLAGS "-g -Wall -Werror -std=c++11 -fno-rtti")
+set(ADD_CXXFLAGS "-g -Wall -Werror -std=c++11 -fno-rtti -fdiagnostics-color=auto")
 set(ADD_LDFLAGS "-flto -static-libstdc++ -static-libgcc")
 
 if ("$ENV{TAPASCO_HOME}" STREQUAL "")
