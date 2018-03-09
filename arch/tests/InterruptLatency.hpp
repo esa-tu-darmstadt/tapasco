@@ -21,7 +21,9 @@
 #include <unistd.h>
 #include <ncurses.h>
 #include <tapasco.hpp>
-#include <platform.h>
+extern "C" {
+  #include <platform.h>
+}
 
 using namespace std;
 using namespace std::chrono;
@@ -37,9 +39,12 @@ public:
   InterruptLatency(Tapasco& tapasco) : tapasco(tapasco) {
     if (tapasco.kernel_pe_count(COUNTER_ID) == 0)
       throw "need at least one instance of 'Counter' (14) in bitstream";
-    const platform::platform_ctl_addr_t status =
-      platform::platform_address_get_special_base(platform::PLATFORM_SPECIAL_CTL_STATUS);
-    platform::platform_read_ctl(status + 0x24, 4, &design_clk, platform::PLATFORM_CTL_FLAGS_NONE);
+    platform_ctl_addr_t status;
+    platform_res_t r = platform_address_get_component_base(tapasco.platform(),
+    		PLATFORM_COMPONENT_STATUS,
+		&status);
+    if (r != PLATFORM_SUCCESS) throw Tapasco::tapasco_error(TAPASCO_ERR_PLATFORM_FAILURE);
+    platform_read_ctl(tapasco.platform(), status + 0x24, 4, &design_clk, PLATFORM_CTL_FLAGS_NONE);
   }
   virtual ~InterruptLatency() {}
 

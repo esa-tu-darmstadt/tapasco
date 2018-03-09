@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2018 Jens Korinth, TU Darmstadt
 //
 // This file is part of Tapasco (PLATFORM).
 //
@@ -21,13 +21,8 @@
  *  @brief	
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#ifdef __cplusplus
-	#include <cstdint>
-	#include <cstring>
-#else
-	#include <stdint.h>
-	#include <string.h>
-#endif
+#include <stdint.h>
+#include <string.h>
 #include <platform.h>
 #include <platform_status.h>
 #include <platform_logging.h>

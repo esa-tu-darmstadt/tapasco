@@ -14,6 +14,10 @@
 #include "BlueDebugScreen.hpp"
 #include "AtsPriScreen.hpp"
 
+extern "C" {
+  #include <platform_caps.h>
+}
+
 using namespace tapasco;
 
 class TapascoDebugMenu : public MenuScreen {
@@ -27,8 +31,8 @@ public:
     screens.push_back(new MonitorScreen(&tapasco));
     options.push_back("Monitor blue infrastructure");
     screens.push_back(new BlueDebugScreen(&tapasco));
-    if (tapasco.has_capability(TAPASCO_DEVICE_CAP_ATSPRI) == TAPASCO_SUCCESS &&
-        tapasco.has_capability(TAPASCO_DEVICE_CAP_ATSCHECK) == TAPASCO_SUCCESS) {
+    if (tapasco.has_capability(PLATFORM_CAP0_ATSPRI) == TAPASCO_SUCCESS &&
+        tapasco.has_capability(PLATFORM_CAP0_ATSCHECK) == TAPASCO_SUCCESS) {
       options.push_back("ATS/PRI direct interface");
       screens.push_back(new AtsPriScreen(&tapasco));
     }

@@ -52,6 +52,8 @@
 
 extern "C" {
   #include <tapasco.h>
+  #include <tapasco_device.h>
+  #include <platform.h>
 }
 #include <type_traits>
 #include <stdexcept>
@@ -129,8 +131,13 @@ struct Tapasco {
       throw tapasco_error(r);
     if ((r = tapasco_create_device(ctx, dev_id, &dev_ctx, TAPASCO_DEVICE_CREATE_FLAGS_NONE)) != TAPASCO_SUCCESS)
       throw tapasco_error(r);
+    p_ctx = tapasco_device_platform(dev_ctx);
     _ok = true;
   }
+
+  tapasco_ctx_t *context()    const { return ctx; }
+  tapasco_dev_ctx_t *device() const { return dev_ctx; }
+  platform_ctx_t *platform()  const { return p_ctx; }
 
   /** Returns true, if initialization was successful and device is ready. **/
   bool is_ready() const noexcept { return _ok; }
@@ -456,6 +463,7 @@ private:
   bool _ok { false };
   tapasco_ctx_t* ctx { nullptr };
   tapasco_dev_ctx_t* dev_ctx { nullptr };
+  platform_ctx_t *p_ctx { nullptr };
 };
 
 } /* namespace tapasco */

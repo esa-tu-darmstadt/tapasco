@@ -23,7 +23,7 @@ public:
     while (threads.size() > 0) pop();
   }
 
-  static constexpr tapasco_func_id_t COUNTER_ID { 14 };
+  static constexpr tapasco_kernel_id_t COUNTER_ID { 14 };
 
 protected:
   virtual void render() {
@@ -74,16 +74,17 @@ protected:
   virtual void update() {
     for (int i = 0; i < 128; ++i) {
       if (! avail[i]) continue;
-      const platform_ctl_addr_t base = platform_address_get_slot_base(i, 0);
-      if (platform_read_ctl(base + 0x20, 4, &cycles[i],
+      platform_ctl_addr_t base;
+      platform_address_get_slot_base(tapasco->platform(), i, &base);
+      if (platform_read_ctl(tapasco->platform(), base + 0x20, 4, &cycles[i],
           PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	cycles[i] = 0xDEADBEEF;
       }
-      if (platform_read_ctl(base + 0x10, 4, &retval[i],
+      if (platform_read_ctl(tapasco->platform(), base + 0x10, 4, &retval[i],
           PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	retval[i] = 0xDEADBEEF;
       }
-      if (platform_read_ctl(base + 0x0c, 4, &intrdy[i],
+      if (platform_read_ctl(tapasco->platform(), base + 0x0c, 4, &intrdy[i],
           PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	intrdy[i] = 0xDEADBEEF;
       }
@@ -126,10 +127,10 @@ protected:
 private:
   bool check_bitstream() {
     uint32_t id { 0 }, cnt { 0 };
-    const platform_ctl_addr_t status =
-        platform_address_get_special_base(PLATFORM_SPECIAL_CTL_STATUS);
+    platform_ctl_addr_t status;
+    platform_address_get_component_base(tapasco->platform(), PLATFORM_COMPONENT_STATUS, &status);
     for (int s = 0; s < 128; ++s) {
-      if (platform_read_ctl(status + 0x100 + s * 0x10, 4, &id,
+      if (platform_read_ctl(tapasco->platform(), status + 0x100 + s * 0x10, 4, &id,
           PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
         avail[s] = false;
       else {

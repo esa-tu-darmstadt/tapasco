@@ -70,13 +70,15 @@ private:
   tapasco_res_t do_read(volatile bool& stop, size_t const chunk_sz, long opmask, uint8_t *data) {
     if (!(opmask & OP_COPYFROM))
       return TAPASCO_SUCCESS;
+    tapasco_handle_t h;
+    tapasco_res_t r;
     while (!stop) {
-      tapasco_handle_t h;
-      if (tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE) != TAPASCO_SUCCESS)
-        return TAPASCO_FAILURE;
-      if (tapasco.copy_from(h, data, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS) {
+      r = tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+      if (r != TAPASCO_SUCCESS) return r;
+      r = tapasco.copy_from(h, data, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING);
+      if (r != TAPASCO_SUCCESS) {
         tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
-        return TAPASCO_FAILURE;
+        return r;
       }
       tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
       bytes += chunk_sz;
@@ -88,12 +90,14 @@ private:
     if (!(opmask & OP_COPYTO))
       return TAPASCO_SUCCESS;
     tapasco_handle_t h;
+    tapasco_res_t r;
     while (! stop) {
-      if (tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE) != TAPASCO_SUCCESS)
-        return TAPASCO_FAILURE;
-      if (tapasco.copy_to(data, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS) {
+      r = tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+      if (r != TAPASCO_SUCCESS) return r;
+      r = tapasco.copy_to(data, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING);
+      if (r != TAPASCO_SUCCESS) {
         tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
-        return TAPASCO_FAILURE;
+        return r;
       }
       tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
       bytes += chunk_sz;

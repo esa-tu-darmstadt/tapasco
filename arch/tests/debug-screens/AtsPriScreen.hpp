@@ -7,8 +7,10 @@
 #define ATSPRI_SCREEN_HPP__
 
 #include <tapasco.hpp>
+#include <cstring>
 extern "C" {
   #include <platform.h>
+  #include <platform_caps.h>
   #include <platform_status.h>
 }
 #include "MenuScreen.hpp"
@@ -17,17 +19,14 @@ extern "C" {
 class AtsPriScreen : public MenuScreen {
 public:
   AtsPriScreen(Tapasco *tapasco) : MenuScreen("ATS/PRI direct interface",
-      vector<string>()), _w(0), _b(31), _maxlen(0), tapasco(tapasco) {
+      vector<string>()), _w(0), _b(31), _maxlen(0), tapasco(*tapasco) {
     delay_us = 250; // update delay
     // require ATS/PRI
-    if (tapasco->has_capability(TAPASCO_DEVICE_CAP_ATSPRI) != TAPASCO_SUCCESS ||
-        tapasco->has_capability(TAPASCO_DEVICE_CAP_ATSCHECK) != TAPASCO_SUCCESS)
+    if (tapasco->has_capability(PLATFORM_CAP0_ATSPRI) != TAPASCO_SUCCESS ||
+        tapasco->has_capability(PLATFORM_CAP0_ATSCHECK) != TAPASCO_SUCCESS)
       throw "need both ATS/PRI and ATScheck capabilities!";
     // get ATScheck base address
-    _base = platform_status_get_special_base(
-      tapasco->dev_ctx_t,
-      PLATFORM_SPECIAL_CTL_ATSPRI
-    );
+    platform_address_get_component_base(tapasco->platform(), PLATFORM_COMPONENT_ATSPRI, &atspri);
     // intialize word manipulators
     for (int i = 0; i < ATS_REGC; ++i)
       _word[i].reset(new WordManipulator(0));
@@ -55,7 +54,6 @@ public:
   virtual ~AtsPriScreen() {}
 
 protected:
-  platform_status_t *status { tapasco_device_status(tapsaco->dev_ctx) };
   virtual void render() {
     const int h = (rows - 3) / ATS_REGC;
     int start_row = (rows - 3 - h * ATS_REGC) / 2;
@@ -139,29 +137,23 @@ private:
   std::unique_ptr<WordManipulator> _inv_counter;
   std::unique_ptr<WordManipulator> _inc_pkg_counter;
   size_t _maxlen;
-  platform_ctl_addr_t _base;
-  Tapasco *tapasco;
+  platform_ctl_addr_t atspri;
+  Tapasco &tapasco;
 
   int toggle_bit() {
-      _word[_w]->tgl(_b);
-      platform_ctl_addr_t h = platform_status_get_special_base(
-        PLATFORM_SPECIAL_CTL_ATSPRI
-      );
-      auto v = _word[_w]->value();
-      if (platform_write_ctl(h + _w * 0x4, sizeof(v), &v,
-          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
-	_word[_w + 8]->error_on();
-      }
-      return ERR;
+    _word[_w]->tgl(_b);
+    platform_ctl_addr_t h = atspri;
+    auto v = _word[_w]->value();
+    if (platform_write_ctl(tapasco.platform(), h + _w * 0x4, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
+      _word[_w + 8]->error_on();
+    }
+    return ERR;
   }
 
   int send() {
     uint32_t v { 1 };
-    platform_ctl_addr_t h = platform_status_get_special_base(
-      PLATFORM_SPECIAL_CTL_ATSPRI
-    );
-    if (platform_write_ctl(h + 0x4 * 17, sizeof(v), &v,
-          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
+    platform_ctl_addr_t h = atspri;
+    if (platform_write_ctl(tapasco.platform(), h + 0x4 * 17, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
       return 0;
     }
     return ERR;
@@ -169,10 +161,8 @@ private:
 
   int request() {
     uint32_t v { 0 };
-    platform_ctl_addr_t h = platform_status_get_special_base(
-      PLATFORM_SPECIAL_CTL_ATSPRI
-    );
-    if (platform_write_ctl(h + 0x4 * 16, sizeof(v), &v,
+    platform_ctl_addr_t h = atspri;
+    if (platform_write_ctl(tapasco.platform(), h + 0x4 * 16, sizeof(v), &v,
           PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
       return 0;
     }
@@ -180,10 +170,7 @@ private:
   }
 
   int reset() {
-    platform_ctl_addr_t h = platform_status_get_special_base(
-      ta
-      PLATFORM_SPECIAL_CTL_ATSPRI
-    );
+    platform_ctl_addr_t h = atspri;
     uint32_t v[] = {
       0x0,
       0x0,
@@ -195,7 +182,7 @@ private:
       0x0,
     };
     for (int i = 0; i < ATS_REGC / 2; ++i) {
-      if (platform_write_ctl(h + i * 0x4, sizeof(v[i]), &v[i],
+      if (platform_write_ctl(tapasco.platform(), h + i * 0x4, sizeof(v[i]), &v[i],
           PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
         throw "could not write register";
       }
@@ -212,7 +199,7 @@ private:
 
   void updateWord(WordManipulator& w, size_t reg_idx) {
     uint32_t d { 0 };
-    if (platform_read_ctl(_base + 0x4 * reg_idx, sizeof(d), &d,
+    if (platform_read_ctl(tapasco.platform(), atspri + 0x4 * reg_idx, sizeof(d), &d,
         PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
       w.error_on();
     } else {

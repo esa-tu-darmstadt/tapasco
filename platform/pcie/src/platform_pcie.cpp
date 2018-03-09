@@ -127,18 +127,14 @@ platform_res_t _platform_init(const char *const version, platform_ctx_t **ctx)
 		return PERR_VERSION_MISMATCH;
 	}
 
-<<<<<<< HEAD:platform/vc709/src/platform_vc709.cpp
 	platform_res_t const r = platform_context_init(ctx);
 	if (r != PLATFORM_SUCCESS) {
 		ERR("could not initialize platform context: %s (%d)", platform_strerror(r), r);
 		return r;
 	}
-	vc709_platform.ctx = *ctx;
+	pcie_platform.ctx = *ctx;
 
-	if(helper_init(&vc709_platform.fd_dma_engine[0], dma_dev_path[0]) != PLATFORM_SUCCESS)
-=======
 	if(helper_init(&pcie_platform.fd_dma_engine[0], dma_dev_path[0]) != PLATFORM_SUCCESS)
->>>>>>> 2018.1:platform/pcie/src/platform_pcie.cpp
 		return (platform_res_t) PERR_OPEN_DEV;
 	pcie_platform.opened_dma_devs++;
 

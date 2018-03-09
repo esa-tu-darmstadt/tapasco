@@ -54,6 +54,7 @@
 #include <tapasco_errors.h>
 #include <tapasco_global.h>
 #include <tapasco_types.h>
+#include <tapasco_device_info.h>
 #include <platform_caps.h>
 
 #define TAPASCO_VERSION_MAJOR(v) 				((v) >> 16)
@@ -144,6 +145,16 @@ tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx,
  * @param dev_ctx device context
  **/
 void tapasco_destroy_device(tapasco_ctx_t *ctx, tapasco_dev_ctx_t *dev_ctx);
+
+/**
+ * Retrieves an info struct containing all available information about the
+ * currently loaded bitstream.
+ * @param dev_ctx device context
+ * @param info struct to fill with data
+ * @return TAPASCO_SUCCESS if successful, an error code otherwise
+ **/
+tapasco_res_t tapasco_device_info(tapasco_dev_ctx_t const *dev_ctx,
+		tapasco_device_info_t *info);
 
 /**
  * Returns the number of instances of kernel k_id in the currently loaded
