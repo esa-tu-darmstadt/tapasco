@@ -1,7 +1,7 @@
 /**
- *  @file	TransferSpeed.hpp
- *  @brief	Measures the transfer speed via TPC for a given chunk size.
- *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+ *  @file TransferSpeed.hpp
+ *  @brief  Measures the transfer speed via TPC for a given chunk size.
+ *  @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #ifndef TRANSFER_SPEED_HPP__
 #define TRANSFER_SPEED_HPP__
@@ -46,7 +46,7 @@ public:
     auto c = getch();
     do {
       mvprintw(y, x, "Chunk size: %8.2f KiB, Mask: %s, Speed: %8.2f MiB/s",
-          cs, ms.c_str(), cavg());
+               cs, ms.c_str(), cavg());
       refresh();
       usleep(1000000);
       b = bytes.load() / (1024.0 * 1024.0);
@@ -59,36 +59,68 @@ public:
     f.get();
 
     mvprintw(y, x, "Chunk size: %8.2f KiB, Mask: %s, Speed: %8.2f MiB/s",
-        cs, ms.c_str(), cavg());
+             cs, ms.c_str(), cavg());
     refresh();
-    move(y+1, 0);
+    move(y + 1, 0);
     return cavg();
   }
 
 private:
-  void transfer(volatile bool& stop, size_t const chunk_sz, long opmask) {
-    tapasco_handle_t h;
-    uint8_t *data = new (std::nothrow) uint8_t[chunk_sz];
-    if (! data) return;
-    for (size_t i = 0; i < chunk_sz; ++i)
-      data[i] = rand();
 
+  tapasco_res_t do_read(volatile bool& stop, size_t const chunk_sz, long opmask, uint8_t *data) {
+    if (!(opmask & OP_COPYFROM))
+      return TAPASCO_SUCCESS;
+    while (!stop) {
+      tapasco_handle_t h;
+      if (tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE) != TAPASCO_SUCCESS)
+        return TAPASCO_FAILURE;
+      if (tapasco.copy_from(h, data, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS) {
+        tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+        return TAPASCO_FAILURE;
+      }
+      tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+      bytes += chunk_sz;
+    }
+    return TAPASCO_SUCCESS;
+  }
+
+  tapasco_res_t do_write(volatile bool& stop, size_t const chunk_sz, long opmask, uint8_t *data) {
+    if (!(opmask & OP_COPYTO))
+      return TAPASCO_SUCCESS;
+    tapasco_handle_t h;
     while (! stop) {
       if (tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE) != TAPASCO_SUCCESS)
-        return;
-      if (opmask & OP_COPYTO && tapasco.copy_to(data, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS)
-        return;
-      if (opmask & OP_COPYFROM && tapasco.copy_from(h, data, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS) {
+        return TAPASCO_FAILURE;
+      if (tapasco.copy_to(data, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING) != TAPASCO_SUCCESS) {
         tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
-        return;
+        return TAPASCO_FAILURE;
       }
-      if (opmask & OP_COPYFROM)
-        bytes += chunk_sz;
-      if (opmask & OP_COPYTO)
-        bytes += chunk_sz;
       tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+      bytes += chunk_sz;
     }
-    delete[] data;
+    return TAPASCO_SUCCESS;
+  }
+
+  void transfer(volatile bool& stop, size_t const chunk_sz, long opmask) {
+
+    uint8_t *data_read = new (std::nothrow) uint8_t[chunk_sz];
+    if (! data_read) return;
+    for (size_t i = 0; i < chunk_sz; ++i)
+      data_read[i] = rand();
+
+    uint8_t *data_write = new (std::nothrow) uint8_t[chunk_sz];
+    if (! data_write) return;
+    for (size_t i = 0; i < chunk_sz; ++i)
+      data_write[i] = rand();
+
+    std::thread readthread(&TransferSpeed::do_read, this, std::ref(stop), chunk_sz, opmask, data_read);
+    std::thread writethread(&TransferSpeed::do_write, this, std::ref(stop), chunk_sz, opmask, data_write);
+
+    readthread.join();
+    writethread.join();
+
+    delete[] data_read;
+    delete[] data_write;
   }
 
   static const std::string maskToString(long const opmask) {

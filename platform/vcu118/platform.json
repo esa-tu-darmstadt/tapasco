@@ -1,0 +1,12 @@
+{
+	"Name" : "vcu118",
+	"Description" : "Xilinx Virtex UltraScale+ FPGA VCU118 Evaluation Kit ES1",
+	"TclLibrary" : "vcu118.tcl",
+	"Part" : "xcvu9p-flga2104-2Lv-e-es1",
+	"BoardPart" : "xilinx.com:vcu118_es1:part0:1.2",
+	"BoardPreset" : "VCU118",
+	"TargetUtilization" : 90,
+	"Benchmark" : "vcu118.benchmark",
+	"HostFrequency": 250.0,
+	"MemFrequency": 300.0
+}
