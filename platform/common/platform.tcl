@@ -24,6 +24,7 @@ namespace eval platform {
   namespace export create
   namespace export generate
   namespace export get_address_map
+  source "$::env(TAPASCO_HOME)/platform/common/addressmap.tcl"
 
   # Creates the platform infrastructure, consisting of a number of subsystems.
   # Subsystems "host", "clocks_and_resets", "memory", "intc" and "tapasco" are
@@ -65,7 +66,7 @@ namespace eval platform {
 
     wire_subsystem_wires
     wire_subsystem_intfs
-    construct_address_map
+    addressmap::construct_address_map
 
     tapasco::call_plugins "post-platform"
   }
@@ -211,75 +212,5 @@ namespace eval platform {
 
   proc get_address_map {{pe_base ""}} {
     error "Platform does not implement mandatory proc get_address_map!"
-  }
-
-  proc assign_address {address_map master base {stride 0} {range 0}} {
-    foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $master]] {
-      puts [format "  $master: $seg -> 0x%08x (range: 0x%08x)" $base $range]
-      set sintf [get_bd_intf_pins -of_objects $seg]
-      if {$range <= 0} { set range [get_property RANGE $seg] }
-      set kind [get_property USAGE $seg]
-      dict set address_map $sintf "interface $sintf offset $base range $range kind $kind"
-      if {$stride == 0} { incr base $range } else { incr base $stride }
-    }
-    return $address_map
-  }
-
-  proc construct_address_map {{map ""}} {
-    if {$map == ""} { set map [get_address_map [get_pe_base_address]] }
-    puts "ADDRESS MAP: $map"
-    set seg_i 0
-    foreach space [get_bd_addr_spaces] {
-      puts "space: $space"
-      set intfs [get_bd_intf_pins -quiet -of_objects $space -filter { MODE == Master }]
-      foreach intf $intfs {
-        set segs [get_bd_addr_segs -addressables -of_objects $intf]
-        foreach seg $segs {
-          puts "  seg: $seg"
-          set sintf [get_bd_intf_pins -quiet -of_objects $seg]
-          if {[catch {dict get $map $intf}]} {
-            if {[catch {dict get $map $sintf}]} {
-              puts "    neither $intf nor $sintf were found in address map for $seg: $::errorInfo"
-              puts "    assuming internal connection, setting values as found in segment:"
-              set range  [get_property RANGE $seg]
-              puts "      range: $range"
-              if {$range eq ""} {
-                puts "      found no range on segment $seg, skipping"
-                report_property $seg
-                continue
-              }
-              set offset [get_property OFFSET $seg]
-              if {$offset eq ""} {
-                puts "      found no offset on segment $seg, skipping"
-                report_property $seg
-                continue
-              }
-              puts "      offset: $offset"
-              set me [dict create "range" $range "offset" $offset "space" $space seg "$seg"]
-            } else {
-              set me [dict get $map $sintf]
-            }
-          } else {
-            set me [dict get $map $intf]
-          }
-          puts "    address map info: $me]"
-          set range  [expr "max([dict get $me range], 4096)"]
-          set offset [expr "max([dict get $me "offset"], [get_property OFFSET $intf])"]
-          set range  [expr "min($range, [get_property RANGE $intf])"]
-          puts "      range: $range"
-          puts "      offset: $offset"
-          puts "      space: $space"
-          puts "      seg: $seg"
-          if {[expr "(1 << 64) == $range"]} { set range "16E" }
-          create_bd_addr_seg \
-            -offset $offset \
-            -range $range \
-            $space \
-            $seg \
-            [format "AM_SEG_%03d" $seg_i]
-          incr seg_i
-        }
-      }
-    }
   }
 }

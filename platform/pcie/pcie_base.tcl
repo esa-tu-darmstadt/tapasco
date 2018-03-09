@@ -58,7 +58,7 @@
         "M_ARCH"    { set base "skip" }
         default     { foreach {base stride range} [list 0 0 0]                     {} }
       }
-      if {$base != "skip"} { set peam [assign_address $peam $m $base $stride $range] }
+      if {$base != "skip"} { set peam [addressmap::assign_address $peam $m $base $stride $range] }
     }
     return $peam
   }

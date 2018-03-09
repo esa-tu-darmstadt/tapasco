@@ -411,6 +411,30 @@ namespace eval ::tapasco::ip {
         default { error "invalid kind: [dict get $addr $intf kind]" }
       }
     }
+    puts "  finished composition map, composing JSON ..."
+
+    set offset [platform::get_pe_base_address]
+    # TODO replace with dynamic computation based on range
+    set segcnt [llength [get_bd_addr_segs /arch/*]]
+    for {set i 0} {$i < $segcnt} {incr i} {
+      ::platform::addressmap::add_processing_element $i $offset
+      incr offset 0x10000
+    }
+
+    set pe_bases [list]
+    foreach pe_base [::platform::addressmap::get_processing_element_bases] {
+      lappend pe_bases [json::write object "Address" \
+        [json::write string [format "0x%08x" $pe_base]]
+      ]
+    }
+
+    # FIXME registering of platform components is not taking place yet
+    set pc_bases [list]
+    foreach pc_base [::platform::addressmap::get_platform_component_bases] {
+      lappend pc_bases [json::write object "Address" \
+        [json::write string [format "0x%08x" $pe_base]] \
+      ]
+    }
     puts "  finished address map, composing JSON ..."
 
     set regex {([0-9][0-9][0-9][0-9]).([0-9][0-9]*)}
@@ -432,6 +456,10 @@ namespace eval ::tapasco::ip {
         [json::write object "Domain" [json::write string "Memory"] "Frequency" [::tapasco::get_mem_frequency]] \
       ] \
       "Capabilities" [json::write object "Capabilities 0" [::tapasco::get_capabilities_flags]] \
+      "BaseAddresses" [json::write object \
+        "Architecture" [json::write array {*}$pe_bases] \
+        "Platform" [json::write array {*}$pc_bases] \
+      ] \
     ]
   }
 }
