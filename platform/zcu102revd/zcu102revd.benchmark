@@ -1,0 +1,342 @@
+{
+  "Host": {
+    "Machine": "aarch64",
+    "Node": "zynqmp",
+    "Operating System": "Linux",
+    "Release": "4.6.0-dirty",
+    "Version": "#5 SMP Tue Aug 1 17:22:48 PDT 2017"
+  },
+  "Interrupt Latency": [
+    {
+      "Avg Latency": 4.0257593616326508,
+      "Cycle Count": 1,
+      "Max Latency": 32,
+      "Min Latency": 4
+    },
+    {
+      "Avg Latency": 4.0279551699922571,
+      "Cycle Count": 2,
+      "Max Latency": 22,
+      "Min Latency": 4
+    },
+    {
+      "Avg Latency": 4.0242561538247843,
+      "Cycle Count": 4,
+      "Max Latency": 30,
+      "Min Latency": 4
+    },
+    {
+      "Avg Latency": 9.8183746534832519,
+      "Cycle Count": 8,
+      "Max Latency": 24,
+      "Min Latency": 8
+    },
+    {
+      "Avg Latency": 4.0243353658873495,
+      "Cycle Count": 16,
+      "Max Latency": 31,
+      "Min Latency": 4
+    },
+    {
+      "Avg Latency": 4.0236519074207795,
+      "Cycle Count": 32,
+      "Max Latency": 17,
+      "Min Latency": 4
+    },
+    {
+      "Avg Latency": 4.0240398418692944,
+      "Cycle Count": 64,
+      "Max Latency": 31,
+      "Min Latency": 4
+    },
+    {
+      "Avg Latency": 9.847880411535618,
+      "Cycle Count": 128,
+      "Max Latency": 37,
+      "Min Latency": 8
+    },
+    {
+      "Avg Latency": 7.8485616926856352,
+      "Cycle Count": 256,
+      "Max Latency": 33,
+      "Min Latency": 5
+    },
+    {
+      "Avg Latency": 8.9330620701706582,
+      "Cycle Count": 512,
+      "Max Latency": 37,
+      "Min Latency": 8
+    },
+    {
+      "Avg Latency": 8.9251598118441873,
+      "Cycle Count": 1024,
+      "Max Latency": 31,
+      "Min Latency": 7
+    },
+    {
+      "Avg Latency": 8.9277565007056161,
+      "Cycle Count": 2048,
+      "Max Latency": 27,
+      "Min Latency": 7
+    },
+    {
+      "Avg Latency": 9.0015221626886781,
+      "Cycle Count": 4096,
+      "Max Latency": 37,
+      "Min Latency": 7
+    },
+    {
+      "Avg Latency": 9.7778966676856385,
+      "Cycle Count": 8192,
+      "Max Latency": 22,
+      "Min Latency": 8
+    },
+    {
+      "Avg Latency": 9.6407169117646756,
+      "Cycle Count": 16384,
+      "Max Latency": 37,
+      "Min Latency": 8
+    },
+    {
+      "Avg Latency": 9.4870457311771546,
+      "Cycle Count": 32768,
+      "Max Latency": 32,
+      "Min Latency": 8
+    },
+    {
+      "Avg Latency": 9.2120905099628256,
+      "Cycle Count": 65536,
+      "Max Latency": 18,
+      "Min Latency": 8
+    },
+    {
+      "Avg Latency": 9.270791749833668,
+      "Cycle Count": 131072,
+      "Max Latency": 23,
+      "Min Latency": 8
+    },
+    {
+      "Avg Latency": 10.10303830911494,
+      "Cycle Count": 262144,
+      "Max Latency": 17,
+      "Min Latency": 8
+    },
+    {
+      "Avg Latency": 10.186842105263159,
+      "Cycle Count": 524288,
+      "Max Latency": 16,
+      "Min Latency": 8
+    },
+    {
+      "Avg Latency": 11.078534031413612,
+      "Cycle Count": 1048576,
+      "Max Latency": 13,
+      "Min Latency": 10
+    },
+    {
+      "Avg Latency": 11.38541666666667,
+      "Cycle Count": 2097152,
+      "Max Latency": 13,
+      "Min Latency": 10
+    },
+    {
+      "Avg Latency": 11.60416666666667,
+      "Cycle Count": 4194304,
+      "Max Latency": 16,
+      "Min Latency": 10
+    },
+    {
+      "Avg Latency": 11.708333333333334,
+      "Cycle Count": 8388608,
+      "Max Latency": 15,
+      "Min Latency": 10
+    },
+    {
+      "Avg Latency": 12.222222222222221,
+      "Cycle Count": 16777216,
+      "Max Latency": 15,
+      "Min Latency": 10
+    },
+    {
+      "Avg Latency": 13.166666666666666,
+      "Cycle Count": 33554432,
+      "Max Latency": 16,
+      "Min Latency": 11
+    },
+    {
+      "Avg Latency": 14.583333333333334,
+      "Cycle Count": 67108864,
+      "Max Latency": 17,
+      "Min Latency": 12
+    },
+    {
+      "Avg Latency": 17.151515151515145,
+      "Cycle Count": 134217728,
+      "Max Latency": 20,
+      "Min Latency": 15
+    },
+    {
+      "Avg Latency": 20,
+      "Cycle Count": 268435456,
+      "Max Latency": 22,
+      "Min Latency": 18
+    },
+    {
+      "Avg Latency": 26.0625,
+      "Cycle Count": 536870912,
+      "Max Latency": 28,
+      "Min Latency": 25
+    },
+    {
+      "Avg Latency": 37.07692307692308,
+      "Cycle Count": 1073741824,
+      "Max Latency": 41,
+      "Min Latency": 35
+    },
+    {
+      "Avg Latency": 59.909090909090907,
+      "Cycle Count": 2147483648,
+      "Max Latency": 62,
+      "Min Latency": 58
+    }
+  ],
+  "Job Throughput": [
+    {
+      "Jobs per second": 90640.55625850342,
+      "Number of threads": 2
+    },
+    {
+      "Jobs per second": 88548.298977493629,
+      "Number of threads": 3
+    },
+    {
+      "Jobs per second": 88608.428893527118,
+      "Number of threads": 4
+    },
+    {
+      "Jobs per second": 88401.855793650771,
+      "Number of threads": 5
+    },
+    {
+      "Jobs per second": 88428.94217687074,
+      "Number of threads": 6
+    },
+    {
+      "Jobs per second": 88295.187999999995,
+      "Number of threads": 7
+    },
+    {
+      "Jobs per second": 88128.369999999995,
+      "Number of threads": 8
+    }
+  ],
+  "Library Versions": {
+    "Platform API": "1.3",
+    "Tapasco API": "1.3"
+  },
+  "Timestamp": "2017-08-03 17:17:56",
+  "Transfer Speed": [
+    {
+      "Chunk Size": 1024,
+      "Read": 26.962137284403241,
+      "ReadWrite": 52.47454250106739,
+      "Write": 33.496059174457123
+    },
+    {
+      "Chunk Size": 2048,
+      "Read": 44.842283605038624,
+      "ReadWrite": 87.236651760130314,
+      "Write": 66.486674707125246
+    },
+    {
+      "Chunk Size": 4096,
+      "Read": 66.82655061754113,
+      "ReadWrite": 130.0670787490337,
+      "Write": 130.37960967622493
+    },
+    {
+      "Chunk Size": 8192,
+      "Read": 86.627188135707271,
+      "ReadWrite": 168.22503487986214,
+      "Write": 235.11803284507732
+    },
+    {
+      "Chunk Size": 16384,
+      "Read": 103.7988597931341,
+      "ReadWrite": 201.14940675035041,
+      "Write": 427.45061606824714
+    },
+    {
+      "Chunk Size": 32768,
+      "Read": 114.41960370403153,
+      "ReadWrite": 221.60014825515699,
+      "Write": 690.59202156435686
+    },
+    {
+      "Chunk Size": 65536,
+      "Read": 120.46796878269505,
+      "ReadWrite": 233.44450590755451,
+      "Write": 995.7091948680968
+    },
+    {
+      "Chunk Size": 131072,
+      "Read": 122.2714152826907,
+      "ReadWrite": 237.08959106104138,
+      "Write": 1140.6333149255815
+    },
+    {
+      "Chunk Size": 262144,
+      "Read": 125.28170081437209,
+      "ReadWrite": 242.87023449503988,
+      "Write": 1484.7611618870235
+    },
+    {
+      "Chunk Size": 524288,
+      "Read": 121.63264016874751,
+      "ReadWrite": 236.02788645070692,
+      "Write": 1122.6920139641186
+    },
+    {
+      "Chunk Size": 1048576,
+      "Read": 122.75468368094987,
+      "ReadWrite": 236.52769607708635,
+      "Write": 1327.482335452424
+    },
+    {
+      "Chunk Size": 2097152,
+      "Read": 120.42329767101927,
+      "ReadWrite": 229.14417402052123,
+      "Write": 1236.8150830294235
+    },
+    {
+      "Chunk Size": 4194304,
+      "Read": 118.28376892263962,
+      "ReadWrite": 226.37470733470485,
+      "Write": 1211.9514589193479
+    },
+    {
+      "Chunk Size": 8388608,
+      "Read": 116.53360935465118,
+      "ReadWrite": 223.25496176322898,
+      "Write": 1198.3361592666884
+    },
+    {
+      "Chunk Size": 16777216,
+      "Read": 113.66149109597482,
+      "ReadWrite": 219.13403680854131,
+      "Write": 1194.2032011711706
+    },
+    {
+      "Chunk Size": 33554432,
+      "Read": 110.62758757546605,
+      "ReadWrite": 214.05418453975543,
+      "Write": 1188.0110600702444
+    },
+    {
+      "Chunk Size": 67108864,
+      "Read": 105.42713439631709,
+      "ReadWrite": 207.84630734370066,
+      "Write": 1179.659064819574
+    }
+  ]
+}
