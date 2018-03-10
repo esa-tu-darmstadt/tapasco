@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <platform_info.h>
 
 #define PE_LOCAL_FLAG						2
 

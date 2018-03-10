@@ -123,7 +123,7 @@ platform_res_t platform_addr_map_get_slot_base(platform_addr_map_t const* am,
 }
 
 inline
-platform_res_t platform_address_get_slot_base(platform_ctx_t *ctx,
+platform_res_t platform_address_get_slot_base(platform_ctx_t const *ctx,
 		platform_slot_id_t const slot_id,
 		platform_ctl_addr_t *addr)
 {
@@ -151,7 +151,7 @@ platform_res_t platform_addr_map_get_component_base(
 }
 
 inline
-platform_res_t platform_address_get_component_base(platform_ctx_t *ctx,
+platform_res_t platform_address_get_component_base(platform_ctx_t const *ctx,
 		platform_component_t const ent,
 		platform_ctl_addr_t *addr)
 {

@@ -33,4 +33,7 @@ tapasco_pemgmt_t    *tapasco_device_pemgmt(tapasco_dev_ctx_t const *dev_ctx);
 tapasco_local_mem_t *tapasco_device_local_mem(tapasco_dev_ctx_t const  *dev_ctx);
 platform_ctx_t      *tapasco_device_platform(tapasco_dev_ctx_t const *dev_ctx);
 
+tapasco_res_t tapasco_device_info(tapasco_dev_ctx_t const *dev_ctx,
+		platform_info_t *info);
+
 #endif /* TAPASCO_DEVICE_H__ */

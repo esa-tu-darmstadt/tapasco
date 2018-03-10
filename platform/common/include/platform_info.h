@@ -1,7 +1,7 @@
 //
 // Copyright (C) 2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TAPASCO).
+// This file is part of Tapasco (PLATFORM).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -16,21 +16,26 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-/**
- *  @file	tapasco_context.c
- *  @brief	Default implementation tapasco context struct. You can link this
- *              if your Architecture does not require anything special.
- *              Otherwise you need to implement the tapasco_context.h interface.
- *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-#include <tapasco_types.h>
-#include <tapasco_context.h>
+#ifndef PLATFORM_INFO_H__
+#define PLATFORM_INFO_H__
 
-struct tapasco_ctx {
-	tapasco_dev_ctx_t dev_ctx;
-};
+#include <stdint.h>
+#include <platform_global.h>
 
-tapasco_dev_ctx_t *tapasco_context_device(tapasco_ctx_t const *ctx)
-{
-	return ctx->dev_ctx;
-}
+typedef struct platform_info {
+	uint32_t magic_id;
+	uint32_t num_intc;
+	uint32_t caps0;
+	uint32_t vivado_version;
+	uint32_t tapasco_version;
+	uint32_t compose_ts;
+	struct {
+		uint32_t host;
+		uint32_t design;
+		uint32_t memory;
+	} clock;
+	uint32_t kernel_id[PLATFORM_NUM_SLOTS];
+	uint32_t memory[PLATFORM_NUM_SLOTS];
+} platform_info_t;
+
+#endif /* PLATFORM_INFO_H__ */

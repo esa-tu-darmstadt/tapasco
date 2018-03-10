@@ -56,11 +56,12 @@
 #include <module/zynq_ioctl_cmds.h>
 #include <platform.h>
 #include <platform_errors.h>
-#include "platform_logging.h"
+#include <platform_logging.h>
+#include <platform_context.h>
 
 /******************************************************************************/
 
-static struct zynq_platform_t {
+typedef struct zynq_platform {
 	int		fd_wait;
 	int 		fd_gp0_map;
 	int 		fd_gp1_map;
@@ -69,7 +70,11 @@ static struct zynq_platform_t {
 	volatile void	*gp1_map;
 	volatile void	*status_map;
 	int		fd_control;
-} zynq_platform = {
+	platform_info_t info;
+	platform_ctx_t  *ctx;
+} zynq_platform_t;
+
+static zynq_platform_t zynq_platform = {
 	.fd_wait       = -1,
 	.fd_gp0_map    = -1,
 	.fd_gp1_map    = -1,
@@ -78,11 +83,16 @@ static struct zynq_platform_t {
 	.gp1_map       = NULL,
 	.status_map    = NULL,
 	.fd_control    = -1,
+	.ctx           = NULL,
 };
 
-static platform_res_t init_platform(struct zynq_platform_t *p)
+static platform_res_t init_platform(zynq_platform_t *p)
 {
-	platform_res_t result = PLATFORM_SUCCESS;
+	platform_res_t result = platform_info(p->ctx, &(p->info));
+	if (result != PLATFORM_SUCCESS) return result;
+	result = platform_context_init(&p->ctx);
+	if (result != PLATFORM_SUCCESS) return result;
+
 	p->fd_wait     = open(ZYNQ_PLATFORM_WAITFILENAME, O_WRONLY);
 	if (p->fd_wait == -1) {
 		ERR("could not open device file: %s", ZYNQ_PLATFORM_WAITFILENAME);
@@ -159,7 +169,7 @@ static platform_res_t init_platform(struct zynq_platform_t *p)
 	return result;
 }
 
-static platform_res_t release_platform(struct zynq_platform_t *p)
+static platform_res_t release_platform(zynq_platform_t *p)
 {
 	if (p->fd_control != -1) {
 		close(p->fd_control);
@@ -196,6 +206,7 @@ static platform_res_t release_platform(struct zynq_platform_t *p)
 		close(p->fd_wait);
 		p->fd_wait = -1;
 	}
+	platform_context_deinit(p->ctx);
 	LOG(LPLL_INIT, "so long & thanks for all the fish, bye");
 	platform_logging_exit();
 	return PLATFORM_SUCCESS;
@@ -204,33 +215,32 @@ static platform_res_t release_platform(struct zynq_platform_t *p)
 /******************************************************************************/
 
 /** Enables the interrupt controllers. */
-static platform_res_t enable_interrupts(void)
+static platform_res_t enable_interrupts(zynq_platform_t *ctx)
 {
 	int32_t const on = -1, off = 0;
 	int32_t outstanding = 0;
-	uint32_t intcs = 1;
-	platform_read_ctl(platform_address_get_special_base(
-			PLATFORM_SPECIAL_CTL_STATUS) + 0x4,
-			4, &intcs, PLATFORM_CTL_FLAGS_NONE);
+	uint32_t intcs = ctx->info.num_intc;
+	platform_ctl_flags_t const f = PLATFORM_CTL_FLAGS_NONE;
 	assert (intcs > 0 && intcs <= ZYNQ_PLATFORM_INTC_NUM);
+	// TODO move code to interrupt controller unit
 	LOG(LPLL_IRQ, "enabling interrupts at %d controllers", intcs);
 	for (int i = 0; i < intcs; ++i) {
 		platform_ctl_addr_t intc = ZYNQ_PLATFORM_INTC_BASE + ZYNQ_PLATFORM_INTC_OFFS * i;
 		// disable all interrupts
-		platform_write_ctl(intc + 0x8, sizeof(off), &off, PLATFORM_CTL_FLAGS_NONE);
-		platform_write_ctl(intc + 0x1c, sizeof(off), &off, PLATFORM_CTL_FLAGS_NONE);
+		platform_write_ctl(ctx->ctx, intc + 0x8, sizeof(off), &off, f);
+		platform_write_ctl(ctx->ctx, intc + 0x1c, sizeof(off), &off, f);
 		// check & ack all outstanding IRQs
-		platform_read_ctl(intc, sizeof(outstanding), &outstanding, PLATFORM_CTL_FLAGS_NONE);
-		platform_write_ctl(intc, sizeof(outstanding), &outstanding, PLATFORM_CTL_FLAGS_NONE);
+		platform_read_ctl(ctx->ctx, intc, sizeof(outstanding), &outstanding, f);
+		platform_write_ctl(ctx->ctx, intc, sizeof(outstanding), &outstanding, f);
 		// enable all interrupts
-		platform_write_ctl(intc + 0x8, sizeof(on), &on, PLATFORM_CTL_FLAGS_NONE);
-		platform_write_ctl(intc + 0x1c, sizeof(on), &on, PLATFORM_CTL_FLAGS_NONE);
-		platform_read_ctl(intc, sizeof(outstanding), &outstanding, PLATFORM_CTL_FLAGS_NONE);
+		platform_write_ctl(ctx->ctx, intc + 0x8, sizeof(on), &on, f);
+		platform_write_ctl(ctx->ctx, intc + 0x1c, sizeof(on), &on, f);
+		platform_read_ctl(ctx->ctx, intc, sizeof(outstanding), &outstanding, f);
 	}
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t _platform_init(const char *const version)
+platform_res_t _platform_init(const char *const version, platform_ctx_t **pctx)
 {
 	platform_logging_init();
 	LOG(LPLL_INIT, "Platform API Version: %s", platform_version());
@@ -242,21 +252,26 @@ platform_res_t _platform_init(const char *const version)
 
 	platform_res_t const r = init_platform(&zynq_platform);
 	if (r != PLATFORM_SUCCESS) {
-		ERR("failed with error: %s\n", platform_strerror(r));
+		ERR("failed to initialize Zynq platform: %s (%d)",
+				platform_strerror(r), r);
 		platform_logging_exit();
 	} else
-		enable_interrupts();
+		enable_interrupts(&zynq_platform);
+
+	*pctx = zynq_platform.ctx;
 	return r;
 }
 
-void platform_deinit(void)
+void platform_deinit(platform_ctx_t *ctx)
 {
 	LOG(LPLL_INIT, "shutting down platform");
 	release_platform(&zynq_platform);
+	free(ctx);
 }
 
 /******************************************************************************/
-platform_res_t platform_alloc(size_t const len, platform_mem_addr_t *addr,
+platform_res_t platform_alloc(platform_ctx_t *ctx,
+		size_t const len, platform_mem_addr_t *addr,
 		platform_alloc_flags_t const flags)
 {
 	assert(addr);
@@ -273,7 +288,8 @@ platform_res_t platform_alloc(size_t const len, platform_mem_addr_t *addr,
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_dealloc(platform_mem_addr_t const addr,
+platform_res_t platform_dealloc(platform_ctx_t *ctx,
+		platform_mem_addr_t const addr,
 		platform_alloc_flags_t const flags)
 {
 	LOG(LPLL_MM, "dma_addr = 0x%08lx", (unsigned long) addr);
@@ -287,7 +303,8 @@ platform_res_t platform_dealloc(platform_mem_addr_t const addr,
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_read_mem(platform_mem_addr_t const start_addr,
+platform_res_t platform_read_mem(platform_ctx_t const *ctx,
+		platform_mem_addr_t const start_addr,
 		size_t const no_of_bytes, void *data,
 		platform_mem_flags_t const flags)
 {
@@ -306,7 +323,8 @@ platform_res_t platform_read_mem(platform_mem_addr_t const start_addr,
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_write_mem(platform_mem_addr_t const start_addr,
+platform_res_t platform_write_mem(platform_ctx_t const *ctx,
+		platform_mem_addr_t const start_addr,
 		size_t const no_of_bytes, void const*data,
 		platform_mem_flags_t const flags)
 {
@@ -337,7 +355,7 @@ platform_res_t platform_check_ctl_addr(platform_ctl_addr_t const addr)
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_read_ctl(
+platform_res_t platform_read_ctl(platform_ctx_t const *ctx,
 		platform_ctl_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void *data,
@@ -373,7 +391,7 @@ platform_res_t platform_read_ctl(
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_write_ctl(
+platform_res_t platform_write_ctl(platform_ctx_t const *ctx,
 		platform_ctl_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void const*data,
@@ -406,33 +424,23 @@ platform_res_t platform_write_ctl(
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_write_ctl_and_wait(
+platform_res_t platform_write_ctl_and_wait(platform_ctx_t *ctx,
 		platform_ctl_addr_t const w_addr,
 		size_t const w_no_of_bytes,
 		void const *w_data,
 		uint32_t const event,
 		platform_ctl_flags_t const flags)
 {
-	platform_res_t res = platform_write_ctl(w_addr, w_no_of_bytes, w_data,
-			PLATFORM_CTL_FLAGS_NONE);
+	platform_res_t res = platform_write_ctl(ctx, w_addr, w_no_of_bytes,
+			w_data, PLATFORM_CTL_FLAGS_NONE);
 	if (res != PLATFORM_SUCCESS) return res;
-	return platform_wait_for_irq(event);
+	return platform_wait_for_irq(ctx, event);
 }
 
-platform_res_t platform_wait_for_irq(const uint32_t inst)
+platform_res_t platform_wait_for_irq(platform_ctx_t *ctx, const uint32_t event)
 {
-	int retval = write(zynq_platform.fd_wait, &inst, sizeof(inst));
+	int retval = write(zynq_platform.fd_wait, &event, sizeof(event));
 	if (retval < 0)
-		WRN("waiting for %u failed: %d", inst, retval);
+		WRN("waiting for %u failed: %d", event, retval);
 	return retval < 0 ? PERR_IRQ_WAIT : PLATFORM_SUCCESS;
-}
-
-platform_res_t platform_register_irq_callback(platform_irq_callback_t cb)
-{
-	return PERR_NOT_IMPLEMENTED;
-}
-
-platform_res_t platform_stop(const int result)
-{
-	return PERR_NOT_IMPLEMENTED;
 }

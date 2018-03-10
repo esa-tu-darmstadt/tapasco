@@ -1,7 +1,7 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TPC).
+// This file is part of Tapasco (TAPASCO).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-//! @file	tapasco_device.c
+//! @file	tapasco_axi4mm.c
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
 #include <signal.h>
@@ -28,6 +28,15 @@
 #include <tapasco_context.h>
 #include <tapasco_errors.h>
 #include <tapasco_logging.h>
+
+struct tapasco_ctx {
+	tapasco_dev_ctx_t *dev_ctx;
+};
+
+tapasco_dev_ctx_t *tapasco_context_device(tapasco_ctx_t *ctx)
+{
+	return ctx->dev_ctx;
+}
 
 // declare logging exit for flushing
 // TODO: is it possible to handle this more nicely?

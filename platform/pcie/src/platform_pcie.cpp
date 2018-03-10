@@ -231,7 +231,7 @@ platform_res_t platform_dealloc(platform_ctx_t *ctx, platform_mem_addr_t const a
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_read_mem(platform_ctx_t *ctx, platform_mem_addr_t const start_addr, size_t const no_of_bytes, void *data, platform_mem_flags_t const flags)
+platform_res_t platform_read_mem(platform_ctx_t const *ctx, platform_mem_addr_t const start_addr, size_t const no_of_bytes, void *data, platform_mem_flags_t const flags)
 {
 	int err;
 	struct dma_ioctl_params params { 0 };
@@ -262,7 +262,7 @@ platform_res_t platform_read_mem(platform_ctx_t *ctx, platform_mem_addr_t const 
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_write_mem(platform_ctx_t *ctx, platform_mem_addr_t const start_addr, size_t const no_of_bytes, void const*data, platform_mem_flags_t const flags)
+platform_res_t platform_write_mem(platform_ctx_t const *ctx, platform_mem_addr_t const start_addr, size_t const no_of_bytes, void const*data, platform_mem_flags_t const flags)
 {
 	int err;
 	struct dma_ioctl_params params { 0 };
@@ -293,7 +293,7 @@ platform_res_t platform_write_mem(platform_ctx_t *ctx, platform_mem_addr_t const
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_read_ctl(platform_ctx_t *ctx, platform_ctl_addr_t const start_addr, size_t const no_of_bytes, void *data, platform_ctl_flags_t const flags)
+platform_res_t platform_read_ctl(platform_ctx_t const *ctx, platform_ctl_addr_t const start_addr, size_t const no_of_bytes, void *data, platform_ctl_flags_t const flags)
 {
 	int err;
 	struct user_rw_params params { 0 };
@@ -332,7 +332,7 @@ platform_res_t platform_read_ctl(platform_ctx_t *ctx, platform_ctl_addr_t const 
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_write_ctl(platform_ctx_t *ctx, platform_ctl_addr_t const start_addr, size_t const no_of_bytes, void const*data, platform_ctl_flags_t const flags)
+platform_res_t platform_write_ctl(platform_ctx_t const *ctx, platform_ctl_addr_t const start_addr, size_t const no_of_bytes, void const*data, platform_ctl_flags_t const flags)
 {
 	int err;
 	struct user_rw_params params { 0 };

@@ -23,6 +23,4 @@
 #ifndef TAPASCO_CONTEXT_H__
 #define TAPASCO_CONTEXT_H__
 
-struct tapasco_ctx { };
-
 #endif /* TAPASCO_CONTEXT_H__ */

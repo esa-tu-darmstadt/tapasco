@@ -16,26 +16,23 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-#ifndef TAPASCO_DEVICE_INFO_H__
-#define TAPASCO_DEVICE_INFO_H__
+//! @file	tapasco_device.c
+//! @brief	Device context struct and helper methods.
+//! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+//! 
+#include <tapasco_device.h>
+#include <tapasco_logging.h>
+#include <platform.h>
 
-#include <stdint.h>
-#include <tapasco_global.h>
-
-typedef struct tapasco_device_info {
-	uint32_t magic_id;
-	uint32_t num_intc;
-	uint32_t caps0;
-	uint32_t vivado_version;
-	uint32_t tapasco_version;
-	uint32_t compose_ts;
-	struct {
-		uint32_t host;
-		uint32_t design;
-		uint32_t memory;
-	} clock;
-	uint32_t kernel_id[TAPASCO_NUM_SLOTS];
-	uint32_t memory[TAPASCO_NUM_SLOTS];
-} tapasco_device_info_t;
-
-#endif /* TAPASCO_DEVICE_INFO_H__ */
+tapasco_res_t tapasco_device_info(tapasco_dev_ctx_t const *dev_ctx,
+		platform_info_t *info)
+{
+	platform_ctx_t const *p = tapasco_device_platform(dev_ctx);
+	platform_res_t r = platform_info(p, info);
+	if (r != PLATFORM_SUCCESS) {
+		ERR("failed to get device info: %s (%d)",
+				platform_strerror(r), r);
+		return TAPASCO_ERR_PLATFORM_FAILURE;
+	}
+	return TAPASCO_SUCCESS;
+}

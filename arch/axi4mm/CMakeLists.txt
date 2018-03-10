@@ -15,19 +15,19 @@ set(GCMNDIR "${TAPASCO_HOME}/common")
 set(PLATFORMDIR "${TAPASCO_HOME}/platform")
 set(LIBPLATFORM_STATIC "${TAPASCO_HOME}/platform/lib/${TAPASCO_TARGET}/static/libplatform.a")
 
-set(AXI4MM_SOURCES "${SRCDIR}/tapasco_init.c"
-                     "${SRCDIR}/tapasco_device.c"
-                     "${SRCDIR}/tapasco_regs.c")
-set(COMMON_SOURCES "${CMNDIR}/tapasco_logging.c"
+set(AXI4MM_SOURCES "${SRCDIR}/tapasco_axi4mm.c"
+                   "${SRCDIR}/tapasco_device.c"
+                   "${SRCDIR}/tapasco_regs.c")
+set(COMMON_SOURCES "${CMNDIR}/tapasco_delayed_transfers.c"
+                   "${CMNDIR}/tapasco_device.c"
                    "${CMNDIR}/tapasco_errors.c"
+                   "${CMNDIR}/tapasco_jobs.c"
+	           "${CMNDIR}/tapasco_logging.c"
+                   "${CMNDIR}/tapasco_local_mem.c"
+                   "${CMNDIR}/tapasco_memory.c"
                    "${CMNDIR}/tapasco_pemgmt.c"
                    "${CMNDIR}/tapasco_scheduler.c"
-                   "${CMNDIR}/tapasco_jobs.c"
                    "${CMNDIR}/tapasco_version.c"
-                   "${CMNDIR}/tapasco_memory.c"
-                   "${CMNDIR}/tapasco_local_mem.c"
-                   "${CMNDIR}/tapasco_delayed_transfers.c"
-                   "${CMNDIR}/tapasco_device_info.c"
                    "${GCMNDIR}/src/gen_mem.c"
                    "${GCMNDIR}/src/gen_queue.c")
 set(TAPASCO_LIBS_DIR "${TAPASCO_HOME}/arch/lib")

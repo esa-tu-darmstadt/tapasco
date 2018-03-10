@@ -9,13 +9,18 @@ endif (NOT EXISTS "$ENV{TAPASCO_HOME}")
 
 include ("$ENV{TAPASCO_HOME}/cmake/Tapasco.cmake")
 
+add_definitions(-DPLATFORM_API_TAPASCO_STATUS_BASE=0x77770000)
+
 set(SRCDIR "src")
 set(CMNDIR "../common")
 set(GCMNDIR "${TAPASCO_HOME}/common")
 set(COMPFLAGS "-Wall -Werror -g -O3 -std=gnu11")
-set(CMNSRCS "${CMNDIR}/src/platform_logging.c"
+set(CMNSRCS "${CMNDIR}/src/platform_addr_map.c"
+            "${CMNDIR}/src/platform_context.c"
             "${CMNDIR}/src/platform_errors.c"
-            "${SRCDIR}/platform_address_map.c"
+            "${CMNDIR}/src/platform_info.c"
+	    "${CMNDIR}/src/platform_logging.c"
+            "${CMNDIR}/src/platform_status.c"
             "${CMNDIR}/src/platform_version.c"
             "${GCMNDIR}/src/gen_queue.c")
 set(SRCS "${SRCDIR}/platform_zynq.c")

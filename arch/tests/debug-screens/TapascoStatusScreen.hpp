@@ -9,7 +9,6 @@
 #include <tapasco.hpp>
 extern "C" {
   #include <tapasco.h>
-  #include <tapasco_device_info.h>
 }
 #include <cstring>
 #include <ctime>
@@ -53,7 +52,7 @@ protected:
 
   virtual void update() {
     memset(&info, 0, sizeof(info));
-    tapasco_device_info(tapasco.device(), &info);
+    tapasco.info(&info);
     snprintf(vivado_str, sizeof(vivado_str), "%4d.%1d",
     		TAPASCO_VERSION_MAJOR(info.vivado_version),
 		TAPASCO_VERSION_MINOR(info.vivado_version));
@@ -69,7 +68,7 @@ protected:
 
 private:
   Tapasco &tapasco;
-  tapasco_device_info_t info;
+  platform_info_t info;
   char     vivado_str[16];
   char     tapasco_str[16];
   char     gen_ts_str[64];

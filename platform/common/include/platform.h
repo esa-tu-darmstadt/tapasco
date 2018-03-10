@@ -112,6 +112,9 @@ inline static platform_res_t platform_init(platform_ctx_t **ctx)
 /** Deinitializer. **/
 void platform_deinit(platform_ctx_t *ctx);
 
+/** Retrieves an info struct from the hardware. **/
+platform_res_t platform_info(platform_ctx_t const *ctx, platform_info_t *info);
+
 /** @} **/
 
 /** @defgroup platform Platform functions
@@ -147,7 +150,7 @@ platform_res_t platform_dealloc(platform_ctx_t *ctx,
  * @param data Preallocated memory to read into.
  * @return PLATFORM_SUCCESS if read was valid, an error code otherwise.
  **/
-platform_res_t platform_read_mem(platform_ctx_t *ctx,
+platform_res_t platform_read_mem(platform_ctx_t const *ctx,
 		platform_mem_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void *data,
@@ -161,7 +164,7 @@ platform_res_t platform_read_mem(platform_ctx_t *ctx,
  * @param data Data to write.
  * @return PLATFORM_SUCCESS if write succeeded, an error code otherwise.
  **/
-platform_res_t platform_write_mem(platform_ctx_t *ctx,
+platform_res_t platform_write_mem(platform_ctx_t const *ctx,
 		platform_mem_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void const*data,
@@ -175,7 +178,7 @@ platform_res_t platform_write_mem(platform_ctx_t *ctx,
  * @param data Preallocated memory to read into.
  * @return PLATFORM_SUCCESS if read was valid, an error code otherwise.
  **/
-platform_res_t platform_read_ctl(platform_ctx_t *ctx,
+platform_res_t platform_read_ctl(platform_ctx_t const *ctx,
 		platform_ctl_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void *data,
@@ -189,7 +192,7 @@ platform_res_t platform_read_ctl(platform_ctx_t *ctx,
  * @param data Pointer to block of no_of_bytes bytes of data to write.
  * @return PLATFORM_SUCCESS if write succeeded, an error code otherwise.
  **/
-platform_res_t platform_write_ctl(platform_ctx_t *ctx,
+platform_res_t platform_write_ctl(platform_ctx_t const *ctx,
 		platform_ctl_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void const*data,
@@ -236,7 +239,7 @@ platform_res_t platform_wait_for_irq(platform_ctx_t *ctx,
  * @param addr Address var (output)
  * @return Slot bus address
  **/
-platform_res_t platform_address_get_slot_base(platform_ctx_t *ctx,
+platform_res_t platform_address_get_slot_base(platform_ctx_t const *ctx,
 		platform_slot_id_t const slot_id,
 		platform_ctl_addr_t *addr);
 
@@ -247,7 +250,7 @@ platform_res_t platform_address_get_slot_base(platform_ctx_t *ctx,
  * @param addr Address var (output)
  * @return Component bus address, or 0
  **/
-platform_res_t platform_address_get_component_base(platform_ctx_t *ctx,
+platform_res_t platform_address_get_component_base(platform_ctx_t const *ctx,
 		platform_component_t const comp_id,
 		platform_ctl_addr_t *addr);
 /** @} **/

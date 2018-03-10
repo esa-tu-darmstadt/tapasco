@@ -135,6 +135,10 @@ struct Tapasco {
     _ok = true;
   }
 
+  tapasco_res_t info(platform_info_t *info) const {
+    return tapasco_device_info(dev_ctx, info);
+  }
+
   tapasco_ctx_t *context()    const { return ctx; }
   tapasco_dev_ctx_t *device() const { return dev_ctx; }
   platform_ctx_t *platform()  const { return p_ctx; }
