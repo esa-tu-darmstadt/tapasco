@@ -49,7 +49,6 @@ static inline tapasco_handle_t base_addr(tapasco_dev_ctx_t *dev_ctx,
 	if (! _bases[slot_id]) {
 		platform_addr_map_get_slot_base(am, slot_id, &_bases[slot_id]);
 	}
-	assert(slot_id == 0 || _bases[slot_id] > 0);
 	return _bases[slot_id];
 }
 

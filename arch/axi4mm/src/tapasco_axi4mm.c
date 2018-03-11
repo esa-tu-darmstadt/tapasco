@@ -57,7 +57,7 @@ int _tapasco_install_sigint_handler()
 	struct sigaction act;
 	memset(&act, '\0', sizeof(act));
 	act.sa_handler = &_flush_logs_on_sigint;
-	return sigaction(SIGINT, &act, NULL);
+	return sigaction(SIGINT, &act, NULL) + sigaction(SIGABRT, &act, NULL);
 }
 
 tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **ctx)

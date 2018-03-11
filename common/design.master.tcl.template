@@ -76,6 +76,9 @@ create_bd_design -quiet "system"
 # enable PE-local memories
 tapasco::add_capabilities_flag 2
 
+# enable dynamic address map
+tapasco::add_capabilities_flag 3
+
 # event: post-init
 tapasco::call_plugins "pre-arch"
 
