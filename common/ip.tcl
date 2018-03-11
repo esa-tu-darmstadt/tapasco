@@ -413,14 +413,6 @@ namespace eval ::tapasco::ip {
     }
     puts "  finished composition map, composing JSON ..."
 
-    set offset [platform::get_pe_base_address]
-    # TODO replace with dynamic computation based on range
-    set segcnt [llength [get_bd_addr_segs /arch/*]]
-    for {set i 0} {$i < $segcnt} {incr i} {
-      ::platform::addressmap::add_processing_element $i $offset
-      incr offset 0x10000
-    }
-
     set pe_bases [list]
     foreach pe_base [::platform::addressmap::get_processing_element_bases] {
       lappend pe_bases [json::write object "Address" \

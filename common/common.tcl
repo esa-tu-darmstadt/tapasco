@@ -66,12 +66,12 @@ namespace eval tapasco {
       set nets [get_bd_intf_nets -hierarchical -boundary_type lower -of_objects $intf]
       set srcs [get_bd_intf_pins -of_objects $nets -filter "$property != {}"]
       if {[llength $srcs] == 0} {
-        error "could not find a connected interface pin where $property is set"
+        error "ERROR: could not find a connected interface pin where $property is set"
       } else {
         set dws {}
         foreach s $srcs { lappend dws [get_property $property $s] }
         if {[llength $dws] > 1} {
-          error "found conflicting values for $property @ $intf: $dws"
+          error "ERROR: found conflicting values for $property @ $intf: $dws"
         }
         return [lindex $dws 0]
       }
@@ -450,11 +450,32 @@ namespace eval tapasco {
 
   # Adds a specific bit to the CAPABILITIES_0 bitfield.
   proc add_capabilities_flag {bit} {
-    variable capabilities_0
-    if {$bit < 0 || $bit > 31} { error "Invalid bit index: $bit" }
+    if {[string is integer $bit]} {
+      variable capabilities_0
+      if {$bit < 0 || $bit > 31} { error "Invalid bit index: $bit" }
+      set flag [expr "(1 << $bit)"]
+    } else {
+      set caps_file [open "$::env(TAPASCO_HOME)/platform/common/include/platform_caps.h" "r"]
+      set caps_cnts [split [read $caps_file] "\n"]
+      close $caps_file
+
+      set caps [dict create]
+      foreach line $caps_cnts {
+        if {[regexp {(PLATFORM_CAP[^\s]*)\s*=\s*([^,]+)\s*,} $line _ n v]} {
+          dict set caps $n [expr $v]
+        }
+      }
+
+      if {[dict exists $caps $bit]} {
+        set flag [dict get $caps $bit]
+        puts "  matched $bit to value $v, adding ..."
+      } else {
+        error "ERROR: unknown capability flag: $bit - known caps: [dict keys $caps]"
+      }
+    }
     set flags [get_capabilities_flags]
-    set nflags [expr "$flags | (1 << $bit)"]
-    puts [format "Adding bit #$bit to capability bitfield: 0x%08x (%d) -> 0x%08x (%d)." $flags $flags $nflags $nflags]
+    set nflags [expr "$flags | $flag"]
+    puts [format "Adding bit $flag to capability bitfield: 0x%08x (%d) -> 0x%08x (%d)." $flags $flags $nflags $nflags]
     set capabilities_0 $nflags
   }
 }

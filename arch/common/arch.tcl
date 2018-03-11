@@ -17,6 +17,7 @@ namespace eval arch {
         set seg [lindex $usrs $i]
         set intf [get_bd_intf_pins -of_objects $seg]
         set range [get_property RANGE $seg]
+        ::platform::addressmap::add_processing_element [llength [dict keys $ret]] $offset
         dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind register"
       }
       puts "  processing $pe memories ..."
@@ -25,6 +26,7 @@ namespace eval arch {
         set seg [lindex $usrs $i]
         set intf [get_bd_intf_pins -of_objects $seg]
         set range [get_property RANGE $seg]
+        ::platform::addressmap::add_processing_element [llength [dict keys $ret]] $offset
         dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind memory"
       }
 
