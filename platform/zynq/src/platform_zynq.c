@@ -88,11 +88,7 @@ static zynq_platform_t zynq_platform = {
 
 static platform_res_t init_platform(zynq_platform_t *p)
 {
-	platform_res_t result = platform_info(p->ctx, &(p->info));
-	if (result != PLATFORM_SUCCESS) return result;
-	result = platform_context_init(&p->ctx);
-	if (result != PLATFORM_SUCCESS) return result;
-
+	platform_res_t result;
 	p->fd_wait     = open(ZYNQ_PLATFORM_WAITFILENAME, O_WRONLY);
 	if (p->fd_wait == -1) {
 		ERR("could not open device file: %s", ZYNQ_PLATFORM_WAITFILENAME);
@@ -165,6 +161,12 @@ static platform_res_t init_platform(zynq_platform_t *p)
 				strerror(errno));
 		result = PERR_OPEN_DEV;
 	}
+
+	result  = platform_context_init(&p->ctx);
+	if (result != PLATFORM_SUCCESS) return result;
+	result = platform_info(p->ctx, &(p->info));
+	if (result != PLATFORM_SUCCESS) return result;
+
 	LOG(LPLL_INIT, "platform initialization done");
 	return result;
 }

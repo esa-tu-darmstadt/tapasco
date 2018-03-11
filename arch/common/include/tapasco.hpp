@@ -127,10 +127,14 @@ struct Tapasco {
   void init(tapasco_dev_id_t const dev_id)
   {
     tapasco_res_t r = tapasco_init(&ctx);
-    if (r != TAPASCO_SUCCESS)
+    if (r != TAPASCO_SUCCESS) {
+      cerr << "ERROR: failed to initialize tapasco system: " << tapasco_strerror(r) << " (" << r << ")" << endl;
       throw tapasco_error(r);
-    if ((r = tapasco_create_device(ctx, dev_id, &dev_ctx, TAPASCO_DEVICE_CREATE_FLAGS_NONE)) != TAPASCO_SUCCESS)
+    }
+    if ((r = tapasco_create_device(ctx, dev_id, &dev_ctx, TAPASCO_DEVICE_CREATE_FLAGS_NONE)) != TAPASCO_SUCCESS) {
+      cerr << "ERROR: failed to initialize tapasco device " << dev_id << ": " << tapasco_strerror(r) << " (" << r << ")" << endl;
       throw tapasco_error(r);
+    }
     p_ctx = tapasco_device_platform(dev_ctx);
     _ok = true;
   }

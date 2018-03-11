@@ -41,7 +41,7 @@ struct platform_addr_map {
 platform_res_t platform_addr_map_init(platform_ctx_t *ctx,
 		platform_addr_map_t **am)
 {
-	*am = (platform_addr_map_t *)malloc(sizeof(*am));
+	*am = (platform_addr_map_t *)malloc(sizeof(**am));
 	if (! *am) {
 		ERR("could not allocate memory for platform_addr_map_t");
 		return PERR_OUT_OF_MEMORY;
@@ -60,7 +60,7 @@ platform_res_t platform_addr_map_init(platform_ctx_t *ctx,
 
 void platform_addr_map_deinit(platform_ctx_t *ctx, platform_addr_map_t *am)
 {
-	free(am);
+	if (am) free(am);
 	LOG(LPLL_ADDR, "destroyed");
 }
 

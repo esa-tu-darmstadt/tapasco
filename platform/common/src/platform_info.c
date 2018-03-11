@@ -130,39 +130,26 @@ platform_res_t read_info_from_status_core(platform_ctx_t const *p,
 						platform_strerror(r), r);
 				return r;
 			} 
+		} else {
+			ERR("loaded bitstream does not support dynamic address map - "
+			    "please use a libplatform version < 1.5 with this bitstream");
+			return PERR_INCOMPATIBLE_BITSTREAM;
 		}
 
 	}
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_info(platform_ctx_t const *ctx,
-		platform_info_t *info)
-{
-	LOG(LPLL_STATUS, "reading status core information ...");
-	assert(ctx);
-	assert(info);
-	platform_res_t r = PLATFORM_SUCCESS;
-	if (_last_ctx != ctx) {
-		_last_ctx = ctx;
-		r = read_info_from_status_core(ctx, &_last_info);
-	}
-	if (r == PLATFORM_SUCCESS) {
-		LOG(LPLL_STATUS, "read device info successfully, copying ...");
-		memcpy(info, &_last_info, sizeof(*info));
-	}
-	return r;
-}
-
 static inline
 void log_device_info(platform_info_t const *info)
 {
 #ifndef NDEBUG
+#define STRINGIFY(f)					#f
 #ifdef _X
 	#undef _X
 #endif
-#define _X(_name, _val, _field) \
-	LOG(LPLL_STATUS, "_field = _val");
+#define _X(name, value, field) \
+	LOG(LPLL_STATUS, "" STRINGIFY(field) " =  " STRINGIFY(value));
 	PLATFORM_STATUS_REGISTERS
 #undef _X
 	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
@@ -178,4 +165,26 @@ void log_device_info(platform_info_t const *info)
 					(unsigned long)info->composition.memory[s]);
 	}
 #endif
+}
+
+platform_res_t platform_info(platform_ctx_t const *ctx,
+		platform_info_t *info)
+{
+	assert(ctx);
+	assert(info);
+	platform_res_t r = PLATFORM_SUCCESS;
+	if (_last_ctx != ctx) {
+		_last_ctx = ctx;
+		LOG(LPLL_STATUS, "reading device info ...");
+		r = read_info_from_status_core(ctx, &_last_info);
+		if (r == PLATFORM_SUCCESS) {
+			LOG(LPLL_STATUS, "read device info successfully");
+			log_device_info(&_last_info);
+		}
+	}
+	if (r == PLATFORM_SUCCESS) {
+		// LOG(LPLL_STATUS, "read device info successfully, copying ...");
+		memcpy(info, &_last_info, sizeof(*info));
+	}
+	return r;
 }
