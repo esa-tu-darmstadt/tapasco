@@ -85,7 +85,7 @@ tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **ctx)
 	}
 	LOG(LALL_INIT, "tapasco initialization done");
 
-	return TAPASCO_ERR_UNKNOWN_ERROR;
+	return TAPASCO_SUCCESS;
 }
 
 void tapasco_deinit(tapasco_ctx_t *ctx)
