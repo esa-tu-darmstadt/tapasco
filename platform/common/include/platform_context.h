@@ -24,10 +24,8 @@
 #ifndef PLATFORM_CONTEXT_H__
 #define PLATFORM_CONTEXT_H__
 
-#include <platform_status.h>
 #include <platform_addr_map.h>
 
-platform_status_t *platform_context_status(platform_ctx_t const *ctx);
 platform_addr_map_t *platform_context_addr_map(platform_ctx_t const *ctx);
 
 platform_res_t platform_context_init(platform_ctx_t **ctx);

@@ -33,18 +33,17 @@
 #include <tapasco_local_mem.h>
 #include <platform.h>
 #include <platform_errors.h>
-#include <platform_caps.h>
-#include <platform_status.h>
+#include <platform_info.h>
 #include <platform_context.h>
 
 /** Internal device struct implementation. */
 struct tapasco_dev_ctx {
-	tapasco_ctx_t *ctx;
-	tapasco_pemgmt_t *pemgmt;
-	tapasco_jobs_t *jobs;
-	tapasco_dev_id_t id;
-	tapasco_local_mem_t *lmem;
-	platform_ctx_t *pctx;
+	tapasco_ctx_t 		*ctx;
+	tapasco_pemgmt_t 	*pemgmt;
+	tapasco_jobs_t 		*jobs;
+	tapasco_dev_id_t 	id;
+	tapasco_local_mem_t 	*lmem;
+	platform_ctx_t 		*pctx;
 };
 
 tapasco_ctx_t *tapasco_device_context(tapasco_dev_ctx_t const *ctx)
@@ -217,9 +216,9 @@ tapasco_res_t tapasco_device_has_capability(tapasco_dev_ctx_t *dev_ctx,
 {
 	platform_ctx_t *pctx = tapasco_device_platform(dev_ctx);
 	assert(pctx);
-	platform_status_t *status = platform_context_status(pctx);
-	assert(status);
-	return platform_status_has_capability_0(status, cap);
+	platform_info_t info;
+	platform_info(pctx, &info);
+	return info.caps0 & cap;
 }
 
 void irq_handler(int const event)

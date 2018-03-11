@@ -31,7 +31,6 @@
 #include <tapasco_global.h>
 #include <platform.h>
 #include <platform_context.h>
-#include <platform_status.h>
 
 /** State of PEs, e.g., busy or idle. */
 typedef enum {
@@ -73,11 +72,18 @@ struct tapasco_pemgmt {
 };
 
 static
-void setup_pes_from_status(platform_status_t const *status, tapasco_pemgmt_t *p)
+void setup_pes_from_status(platform_ctx_t *ctx, tapasco_pemgmt_t *p)
 {
+	platform_info_t info;
+	platform_res_t r = platform_info(ctx, &info);
+	if (r != PLATFORM_SUCCESS) {
+		ERR("could not get platform info: %s (%d)",
+				platform_strerror(r), r);
+		return;
+	}
 	for (int i = 0; i < TAPASCO_NUM_SLOTS; ++i) {
-		uint32_t id = platform_status_get_slot_id(status, i);
-		p->pe[i] = id ? tapasco_pemgmt_create(id, i) : NULL;
+		platform_kernel_id_t const k_id = info.composition.kernel[i];
+		p->pe[i] = k_id ? tapasco_pemgmt_create(k_id, i) : NULL;
 	}
 }
 
@@ -88,10 +94,7 @@ tapasco_res_t tapasco_pemgmt_init(const tapasco_dev_ctx_t *dev_ctx,
 	*pemgmt = (tapasco_pemgmt_t *)malloc(sizeof(tapasco_pemgmt_t));
 	if (! pemgmt) return TAPASCO_ERR_OUT_OF_MEMORY;
 	memset(*pemgmt, 0, sizeof(**pemgmt));
-	platform_status_t *status = platform_context_status(
-			tapasco_device_platform(dev_ctx));
-	assert (status);
-	setup_pes_from_status(status, *pemgmt);
+	setup_pes_from_status(tapasco_device_platform(dev_ctx), *pemgmt);
 	return res;
 }
 

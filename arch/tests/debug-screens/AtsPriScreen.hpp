@@ -11,7 +11,6 @@
 extern "C" {
   #include <platform.h>
   #include <platform_caps.h>
-  #include <platform_status.h>
 }
 #include "MenuScreen.hpp"
 #include "WordManipulator.hpp"

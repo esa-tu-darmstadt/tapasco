@@ -21,7 +21,6 @@ set(CMNSRCS "${CMNDIR}/src/platform_logging.c"
             "${CMNDIR}/src/platform_errors.c"
             "${GCMNDIR}/src/gen_queue.c"
             "${CMNDIR}/src/platform_version.c"
-            "${CMNDIR}/src/platform_status.c"
             "${CMNDIR}/src/platform_addr_map.c"
             "${CMNDIR}/src/platform_context.c"
             "${CMNDIR}/src/platform_info.c")

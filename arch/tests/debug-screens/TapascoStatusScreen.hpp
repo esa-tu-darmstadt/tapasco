@@ -33,8 +33,8 @@ protected:
         attron(A_REVERSE);
 	mvprintw(start_r + 2 + row, start_c + col * col_d, "%03d:", col * 32 + row);
 	attroff(A_REVERSE);
-        if (info.kernel_id[col * 32 + row])
-          mvprintw(start_r + 2 + row, start_c + 4 + col * col_d, " 0x%08x", info.kernel_id[col * 32 + row]);
+        if (info.composition.kernel[col * 32 + row])
+          mvprintw(start_r + 2 + row, start_c + 4 + col * col_d, " 0x%08x", info.composition.kernel[col * 32 + row]);
 	else
           mvprintw(start_r + 2 + row, start_c + 4 + col * col_d, "           ", col * 32 + row);
       }
@@ -54,11 +54,11 @@ protected:
     memset(&info, 0, sizeof(info));
     tapasco.info(&info);
     snprintf(vivado_str, sizeof(vivado_str), "%4d.%1d",
-    		TAPASCO_VERSION_MAJOR(info.vivado_version),
-		TAPASCO_VERSION_MINOR(info.vivado_version));
+    		TAPASCO_VERSION_MAJOR(info.version.vivado),
+		TAPASCO_VERSION_MINOR(info.version.vivado));
     snprintf(tapasco_str, sizeof(tapasco_str), "%4d.%1d",
-    		TAPASCO_VERSION_MAJOR(info.tapasco_version),
-		TAPASCO_VERSION_MINOR(info.tapasco_version));
+    		TAPASCO_VERSION_MAJOR(info.version.tapasco),
+		TAPASCO_VERSION_MINOR(info.version.tapasco));
   }
 
   virtual int perform(const int choice) {

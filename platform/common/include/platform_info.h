@@ -21,21 +21,40 @@
 
 #include <stdint.h>
 #include <platform_global.h>
+#include <platform_types.h>
 
 typedef struct platform_info {
 	uint32_t magic_id;
 	uint32_t num_intc;
 	uint32_t caps0;
-	uint32_t vivado_version;
-	uint32_t tapasco_version;
+	struct {
+		uint32_t vivado;
+		uint32_t tapasco;
+	} version;
 	uint32_t compose_ts;
 	struct {
 		uint32_t host;
 		uint32_t design;
 		uint32_t memory;
 	} clock;
-	uint32_t kernel_id[PLATFORM_NUM_SLOTS];
-	uint32_t memory[PLATFORM_NUM_SLOTS];
+	struct {
+		platform_kernel_id_t kernel[PLATFORM_NUM_SLOTS];
+		size_t memory[PLATFORM_NUM_SLOTS];
+	} composition;
+	struct {
+		platform_ctl_addr_t platform[PLATFORM_NUM_SLOTS];
+		platform_ctl_addr_t arch[PLATFORM_NUM_SLOTS];
+	} base;
 } platform_info_t;
+
+inline
+size_t platform_info_pe_count(platform_info_t const *info, 
+		platform_kernel_id_t const k_id)
+{
+	size_t ret = 0;
+	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s)
+		if (info->composition.kernel[s] == k_id) ++ret;
+	return ret;
+}
 
 #endif /* PLATFORM_INFO_H__ */

@@ -21,7 +21,6 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <platform_info.h>
 
 #define PE_LOCAL_FLAG						2
 
@@ -45,6 +44,9 @@ typedef uint32_t platform_mem_addr_t;
 
 /** Identifies a slot in the design, i.e., a Function. **/
 typedef uint32_t platform_slot_id_t;
+
+/** Type used to identify kernels. **/
+typedef uint32_t platform_kernel_id_t;
 
 /** Special platform entities with fixed addresses. **/
 typedef enum {
@@ -81,6 +83,7 @@ typedef enum {
 	PLATFORM_MEM_FLAGS_NONE					= 0
 } platform_mem_flags_t;
 
+#include <platform_info.h>
 /** @} **/
 
 #endif /* PLATFORM_TYPES_H__ */

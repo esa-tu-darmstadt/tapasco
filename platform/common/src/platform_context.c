@@ -23,19 +23,12 @@
  **/
  #include <platform_context.h>
  #include <platform.h>
- #include <platform_status.h>
  #include <platform_addr_map.h>
  #include <platform_logging.h>
 
 struct platform_ctx {
-	platform_status_t   *status;
 	platform_addr_map_t *addrmap;
 };
-
-platform_status_t *platform_context_status(platform_ctx_t const *ctx)
-{
-	return ctx->status;
-}
 
 platform_addr_map_t *platform_context_addr_map(platform_ctx_t const *ctx)
 {
@@ -50,15 +43,7 @@ platform_res_t platform_context_init(platform_ctx_t **ctx)
 		return PERR_OUT_OF_MEMORY;
 	}
 
-	platform_res_t r = platform_status_init(*ctx, &(*ctx)->status);
-	if (r != PLATFORM_SUCCESS) {
-		ERR("could not initialize platform status: %s (%d)",
-				platform_strerror(r), r);
-		return r;
-	}
-	LOG(LPLL_INIT, "initialized platform status");
-
-	r = platform_addr_map_init(*ctx, &(*ctx)->addrmap);
+	platform_res_t r = platform_addr_map_init(*ctx, &(*ctx)->addrmap);
 	if (r != PLATFORM_SUCCESS) {
 		ERR("could not initialize platform address map: %s (%d)",
 				platform_strerror(r), r);
@@ -74,8 +59,6 @@ void platform_context_deinit(platform_ctx_t *ctx)
 	if (ctx) {
 		LOG(LPLL_INIT, "destroying platform address map ...");
 		platform_addr_map_deinit(ctx, ctx->addrmap);
-		LOG(LPLL_INIT, "destroying platform status ...");
-		platform_status_deinit(ctx, ctx->status);
 		LOG(LPLL_INIT, "platform context destroyed, have a nice 'un");
 	}
 }

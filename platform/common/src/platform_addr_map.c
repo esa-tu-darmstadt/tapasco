@@ -35,8 +35,7 @@
 #endif
 
 struct platform_addr_map {
-	platform_ctl_addr_t platform_base[PLATFORM_NUM_SLOTS];
-	platform_ctl_addr_t arch_base[PLATFORM_NUM_SLOTS];
+	platform_info_t info;
 };
 
 platform_res_t platform_addr_map_init(platform_ctx_t *ctx,
@@ -48,55 +47,14 @@ platform_res_t platform_addr_map_init(platform_ctx_t *ctx,
 		return PERR_OUT_OF_MEMORY;
 	}
 
-	size_t slot_id = 0;
-	platform_res_t pres = PLATFORM_SUCCESS, ares = PLATFORM_SUCCESS;
-	platform_ctl_addr_t pbase = PLATFORM_API_TAPASCO_STATUS_BASE +
-			PLATFORM_ADDRESS_MAP_START;
-	platform_ctl_addr_t abase = pbase + (PLATFORM_NUM_SLOTS * sizeof(uint64_t));
-	int cont = 1;
-	
-	do {
-		cont = 0;
-		pres = platform_read_ctl(ctx, pbase, sizeof(pbase),
-				&(*am)->platform_base[slot_id],
-				PLATFORM_CTL_FLAGS_NONE);
-		ares = platform_read_ctl(ctx, abase, sizeof(abase),
-				&(*am)->arch_base[slot_id],
-				PLATFORM_CTL_FLAGS_NONE);
-		if (ares == PLATFORM_SUCCESS && pres == PLATFORM_SUCCESS) {
-			LOG(LPLL_ADDR, "read base 0x%08lx for platform base #%zd "
-					"from status core at 0x%08lx",
-					(unsigned long)(*am)->platform_base[slot_id],
-					(unsigned long)pbase, slot_id);
-			LOG(LPLL_ADDR, "read base 0x%08lx for arch slot base #%zd "
-					"from status core at 0x%08lx",
-					(unsigned long)(*am)->arch_base[slot_id],
-					(unsigned long)abase, slot_id);
-			cont = (*am)->platform_base[slot_id] !=
-					PLATFORM_ADDRESS_MAP_INVALID_BASE ||
-					(*am)->arch_base[slot_id] !=
-					PLATFORM_ADDRESS_MAP_INVALID_BASE;
-			pbase += sizeof(uint64_t);
-			abase += sizeof(uint64_t);
-			++slot_id;
-		}
-	} while (pres == PLATFORM_SUCCESS && ares == PLATFORM_SUCCESS && cont &&
-			++slot_id < PLATFORM_NUM_SLOTS);
-
-	if (pres != PLATFORM_SUCCESS) {
-		ERR("could not read at 0x%08lx, platform base for slot #%zd: %s (%d)",
-				(unsigned long)pbase, slot_id,
-				platform_strerror(pres), pres);
-		return pres;
+	platform_res_t r = platform_info(ctx, &(*am)->info);
+	if (r != PLATFORM_SUCCESS) {
+		ERR("could not initialize address map: %s (%d)",
+				platform_strerror(r), r);
+		return r;
 	}
 
-	if (ares != PLATFORM_SUCCESS) {
-		ERR("could not read at 0x%08lx, arch base for slot #%zd: %s (%d)",
-				(unsigned long)abase, slot_id,
-				platform_strerror(ares), ares);
-		return ares;
-	}
-	LOG(LPLL_ADDR, "addr map successfully initialized");
+	LOG(LPLL_ADDR, "address map successfully initialized");
 	return PLATFORM_SUCCESS;
 }
 
@@ -118,7 +76,7 @@ platform_res_t platform_addr_map_get_slot_base(platform_addr_map_t const* am,
 		return PLATFORM_ADDRESS_MAP_INVALID_BASE;
 	}
 #endif
-	*addr = am->arch_base[slot_id];
+	*addr = am->info.base.arch[slot_id];
 	return PLATFORM_SUCCESS;
 }
 
@@ -146,7 +104,7 @@ platform_res_t platform_addr_map_get_component_base(
 		return PERR_ADDR_INVALID_COMP_ID;
 	}
 #endif
-	*addr = am->platform_base[comp_id];
+	*addr = am->info.base.platform[comp_id];
 	return PLATFORM_SUCCESS;
 }
 

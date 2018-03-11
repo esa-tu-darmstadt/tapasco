@@ -29,7 +29,7 @@
 #include <gen_mem.h>
 #include <platform.h>
 #include <platform_context.h>
-#include <platform_status.h>
+#include <platform_info.h>
 #include <stdlib.h>
 
 typedef struct {
@@ -46,8 +46,9 @@ static inline
 size_t get_slot_mem(tapasco_dev_ctx_t const *dev_ctx, tapasco_slot_id_t const slot_id)
 {
 	platform_ctx_t *p = tapasco_device_platform(dev_ctx);
-	platform_status_t *s = platform_context_status(p);
-	return platform_status_get_slot_mem(s, slot_id);
+	platform_info_t info;
+	platform_info(p, &info);
+	return info.composition.memory[slot_id];
 }
 
 tapasco_res_t tapasco_local_mem_init(tapasco_dev_ctx_t const *dev_ctx,

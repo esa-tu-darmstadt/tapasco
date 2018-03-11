@@ -33,7 +33,6 @@
 #include <tapasco_local_mem.h>
 #include <platform.h>
 #include <platform_context.h>
-#include <platform_status.h>
 #include <platform_addr_map.h>
 
 static
