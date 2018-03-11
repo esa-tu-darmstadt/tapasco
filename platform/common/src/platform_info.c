@@ -149,7 +149,7 @@ void log_device_info(platform_info_t const *info)
 	#undef _X
 #endif
 #define _X(name, value, field) \
-	LOG(LPLL_STATUS, "" STRINGIFY(field) " =  " STRINGIFY(value));
+	LOG(LPLL_STATUS, "" STRINGIFY(field) " = 0x%08lx", (unsigned long)info->field);
 	PLATFORM_STATUS_REGISTERS
 #undef _X
 	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
