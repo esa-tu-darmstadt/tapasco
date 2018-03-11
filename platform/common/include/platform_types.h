@@ -48,7 +48,12 @@ typedef uint32_t platform_slot_id_t;
 /** Type used to identify kernels. **/
 typedef uint32_t platform_kernel_id_t;
 
-/** Special platform entities with fixed addresses. **/
+/**
+ * Platform component identifiers.
+ * NOTE: This will be parsed by a simple regex in Tcl, which uses the order of
+ * appearance to determine the value of the constant; make sure not to change
+ * the values by assigning explicitly, or start below 1.
+ **/
 typedef enum {
 	/** TPC Status Core: bitstream information. **/
 	PLATFORM_COMPONENT_STATUS 				= 1,
