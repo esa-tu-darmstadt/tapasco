@@ -110,6 +110,17 @@ namespace eval addressmap {
     return $ret
   }
 
+  proc get_platform_components {} {
+    set f [open "$::env(TAPASCO_HOME)/platform/common/include/platform_types.h" "r"]
+    set fl [split [read $f] "\n"]
+    foreach line $fl {
+      if {[regexp {.*(PLATFORM_COMPONENT_[^\s,]*)} $line _ name]} {
+        lappend components $name
+      }
+    }
+    return $components
+  }
+
   proc assign_address {address_map master base {stride 0} {range 0}} {
     foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $master]] {
       puts [format "  $master: $seg -> 0x%08x (range: 0x%08x)" $base $range]
