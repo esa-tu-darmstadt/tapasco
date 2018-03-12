@@ -103,6 +103,10 @@ platform_res_t platform_addr_map_get_component_base(
 				comp_id, PLATFORM_NUM_SLOTS);
 		return PERR_ADDR_INVALID_COMP_ID;
 	}
+	if (am->info.base.platform[comp_id] == 0) {
+		ERR("no base defined for component #%lu", (unsigned long)comp_id);
+		return PERR_COMPONENT_NOT_FOUND;
+	}
 #endif
 	*addr = am->info.base.platform[comp_id];
 	return PLATFORM_SUCCESS;

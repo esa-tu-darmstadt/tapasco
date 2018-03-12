@@ -49,7 +49,8 @@
 	_X(PERR_ADDR_INVALID_COMP_ID   , -23      , "invalid platform component id") \
 	_X(PERR_ADDR_INVALID_SLOT_ID   , -24      , "invalid slot id") \
 	_X(PERR_INCOMPATIBLE_BITSTREAM , -25      , "incompatible bitstream") \
-	_X(PERR_SENTINEL               , -26      , "--- no error, just end of list ---")
+	_X(PERR_COMPONENT_NOT_FOUND    , -26      , "component not found in bitstream") \
+	_X(PERR_SENTINEL               , -27      , "--- no error, just end of list ---")
 
 #ifdef _X
 	#undef _X
