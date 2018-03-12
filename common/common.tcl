@@ -450,8 +450,8 @@ namespace eval tapasco {
 
   # Adds a specific bit to the CAPABILITIES_0 bitfield.
   proc add_capabilities_flag {bit} {
+    variable capabilities_0
     if {[string is integer $bit]} {
-      variable capabilities_0
       if {$bit < 0 || $bit > 31} { error "Invalid bit index: $bit" }
       set flag [expr "(1 << $bit)"]
     } else {
