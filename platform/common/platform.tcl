@@ -75,6 +75,7 @@ namespace eval platform {
   proc update_status_core {} {
     set inst [current_bd_instance]
     current_bd_instance [tapasco::subsystem::get tapasco]
+    file delete -force "[get_property DIRECTORY [current_project]]/../user_ip/tapasco*"
     set status [get_bd_cells -filter "VLNV == [tapasco::ip::get_vlnv tapasco_status]"]
     replace_bd_cell -preserve_name -preserve_configuration $status [tapasco::ip::create_tapasco_status "tapasco_status2"]
     delete_bd_objs $status

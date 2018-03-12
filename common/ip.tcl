@@ -366,7 +366,7 @@ namespace eval ::tapasco::ip {
     # generate core
     set old_pwd [pwd]
     set jar "$::env(TAPASCO_HOME)/common/ip/tapasco_status/tapasco-status.jar"
-    set cache "$::env(TAPASCO_HOME)/tapasco-status-cache"
+    set cache "[get_property DIRECTORY [current_project]]/../user_ip/tapasco-status"
     if {[catch {exec -ignorestderr java -jar $jar $cache $json_file | tee ${json_file}.log >@stdout 2>@1}]} {
       puts stderr "Building TaPaSCO status core failed, see ${json_file}.log:"
       puts stderr [read [open ${json_file}.log r]]
@@ -378,10 +378,7 @@ namespace eval ::tapasco::ip {
     set log [read [open ${json_file}.log r]]
     set ip_path [regsub {.*Finished, IP Core is located in ([^ \n\t]*).*} $log {\1}]
     puts "  Path to custom IP: $ip_path"
-    set ip_repo_paths [get_property IP_REPO_PATHS [current_project]]
-    lappend ip_repo_paths $ip_path
-    set_property IP_REPO_PATHS $ip_repo_paths [current_project]
-    update_ip_catalog
+    update_ip_catalog -rebuild
 
     puts "  done!"
     # create the IP core
