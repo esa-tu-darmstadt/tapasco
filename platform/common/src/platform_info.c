@@ -57,7 +57,9 @@ typedef enum {
 #define REG_SLOT_OFFSET						0x0010
 #define REG_PLATFORM_BASE_START					0x0800
 #define	REG_ARCH_BASE_START \
-		(REG_PLATFORM_BASE_START + sizeof(uint32_t) * PLATFORM_NUM_SLOTS)
+		(REG_PLATFORM_BASE_START + sizeof(uint64_t) * PLATFORM_NUM_SLOTS)
+
+#define STRINGIFY(f)					#f
 
 static platform_ctx_t const *_last_ctx = NULL;
 static platform_info_t _last_info;
@@ -77,7 +79,8 @@ platform_res_t read_info_from_status_core(platform_ctx_t const *p,
 	if (r != PLATFORM_SUCCESS) { \
 		ERR("could not read _name: %s (%d)", platform_strerror(r), r); \
 		return r; \
-	}
+	} \
+	LOG(LPLL_STATUS, "read " STRINGIFY(_name) ": 0x%08x", info->_field);
 	PLATFORM_STATUS_REGISTERS
 #undef _X
 	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
@@ -105,7 +108,7 @@ platform_res_t read_info_from_status_core(platform_ctx_t const *p,
 		if (info->caps0 & PLATFORM_CAP0_DYNAMIC_ADDRESS_MAP) {
 			platform_ctl_addr_t const pb = status +
 					REG_PLATFORM_BASE_START +
-					s * sizeof(uint32_t);
+					s * sizeof(uint64_t);
 			r = platform_read_ctl(p, pb,
 					sizeof(info->base.platform[s]),
 					&(info->base.platform[s]),
@@ -119,7 +122,7 @@ platform_res_t read_info_from_status_core(platform_ctx_t const *p,
 
 			platform_ctl_addr_t const ab = status +
 					REG_ARCH_BASE_START +
-					s * sizeof(uint32_t);
+					s * sizeof(uint64_t);
 			r = platform_read_ctl(p, ab,
 					sizeof(info->base.arch[s]),
 					&(info->base.arch[s]),
@@ -144,7 +147,6 @@ static inline
 void log_device_info(platform_info_t const *info)
 {
 #ifndef NDEBUG
-#define STRINGIFY(f)					#f
 #ifdef _X
 	#undef _X
 #endif
@@ -163,6 +165,14 @@ void log_device_info(platform_info_t const *info)
 					(unsigned long)s,
 					(unsigned)info->composition.memory[s],
 					(unsigned long)info->composition.memory[s]);
+		if (info->base.platform[s])
+			LOG(LPLL_STATUS, "platform base #%lu: 0x%08lx",
+					(unsigned long)s,
+					(unsigned long)info->base.platform[s]);
+		if (info->base.arch[s])
+			LOG(LPLL_STATUS, "arch     base #%lu: 0x%08lx",
+					(unsigned long)s,
+					(unsigned long)info->base.arch[s]);
 	}
 #endif
 }
