@@ -27,7 +27,6 @@ namespace eval addressmap {
   namespace export get_processing_element_bases
 
   set platform_components [dict create]
-  set platform_components_order [list]
   set processing_elements [dict create]
 
   proc get_num_slots {} {
@@ -38,30 +37,20 @@ namespace eval addressmap {
     return $num_slots
   }
 
-  for {set i 0} {$i < 128} {incr i} {
-    if     {$i == 0} { lappend platform_components_order "STATUS" } \
-    elseif {$i == 1} { lappend platform_components_order "MDM" } \
-    elseif {$i == 2} { lappend platform_components_order "ATSPRI" } \
-    elseif {$i >= 15 && $i <= 31} {
-      lappend platform_components_order [format "INTC_%02d" [expr $i - 16]]
-    } \
-    elseif {$i >= 32 && $i <= 47} {
-      lappend platform_components_order [format "MSIX_%02d" [expr $i - 32]]
-    } \
-    elseif {$i >= 48 && $i <= 63} {
-      lappend platform_components_order [format "DMA_%02d"  [expr $i - 48]]
-    } \
-    elseif {$i >= 64 && $i <= 127} {
-      lappend platform_components_order [format "MISC_%02d" [expr $i - 64]]
-    } \
-    else {
-      lappend platform_components_order [format "RESERVED_%03d" $i]
+  proc get_known_platform_components {} {
+    set f [open "$::env(TAPASCO_HOME)/platform/common/include/platform_types.h" "r"]
+    set fl [split [read $f] "\n"]
+    foreach line $fl {
+      if {[regexp {.*(PLATFORM_COMPONENT_[^\s,]*)} $line _ name]} {
+        lappend components $name
+      }
     }
+    return $components
   }
 
   proc add_platform_component {name base} {
     variable platform_components
-    puts "Adding platform component $name at $base ..."
+    puts "Adding platform component $name at [format "0x%08x" $base] ..."
     if {[dict exists $platform_components $name]} {
       puts "WARNING: platform component $name already exists, overwriting!"
     }
@@ -71,23 +60,24 @@ namespace eval addressmap {
   proc get_platform_component {name} {
     variable platform_components
     if {[dict exists $platform_components $name]} {
-      return [dict get $platform_components $name]
+      set base [dict get $platform_components $name]
+      puts "  platform component $name found at $base"
+      return $base
     }
     return 0
   }
 
   proc get_platform_component_bases {} {
-    variable platform_components
-    variable platform_components_order
-    foreach c $platform_components_order {
+    foreach c [get_known_platform_components] {
       lappend ret [get_platform_component $c]
     }
+    puts "Platform component bases: $ret"
     return $ret
   }
 
   proc add_processing_element {slot base} {
     variable processing_elements
-    puts "Adding processing element in slot $slot with base $base ..."
+    puts "Adding processing element in slot $slot with base [format "0x%08x" $base] ..."
     if {[dict exists $processing_elements $slot]} {
       puts "WARNING: processing element in slot $slot already exists, overwriting!"
     }
@@ -104,30 +94,32 @@ namespace eval addressmap {
 
   proc get_processing_element_bases {} {
     variable processing_elements
-    for {set i 0} {$i < [get_num_slots]} {incr i} {
+    set max_slot [lindex [lsort -integer -decreasing [dict keys $processing_elements]] 0]
+    for {set i 0} {$i <= $max_slot} {incr i} {
       lappend ret [get_processing_element $i]
     }
     return $ret
   }
 
-  proc get_platform_components {} {
-    set f [open "$::env(TAPASCO_HOME)/platform/common/include/platform_types.h" "r"]
-    set fl [split [read $f] "\n"]
-    foreach line $fl {
-      if {[regexp {.*(PLATFORM_COMPONENT_[^\s,]*)} $line _ name]} {
-        lappend components $name
-      }
+  proc increase_component_name {component} {
+    if {[regexp {(.*)(\d+)} $component _ prefix suffix]} {
+      incr suffix
+      return [format "%s%d" $prefix $suffix]
     }
-    return $components
+    return $component
   }
 
-  proc assign_address {address_map master base {stride 0} {range 0}} {
+  proc assign_address {address_map master base {stride 0} {range 0} {component ""}} {
     foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $master]] {
       puts [format "  $master: $seg -> 0x%08x (range: 0x%08x)" $base $range]
       set sintf [get_bd_intf_pins -of_objects $seg]
       if {$range <= 0} { set range [get_property RANGE $seg] }
       set kind [get_property USAGE $seg]
       dict set address_map $sintf "interface $sintf offset $base range $range kind $kind"
+      if {[string compare $component ""] != 0} {
+        add_platform_component $component $base
+        set component [increase_component_name $component]
+      }
       if {$stride == 0} { incr base $range } else { incr base $stride }
     }
     return $address_map
@@ -135,7 +127,6 @@ namespace eval addressmap {
 
   proc construct_address_map {{map ""}} {
     if {$map == ""} { set map [::platform::get_address_map [::platform::get_pe_base_address]] }
-    puts "ADDRESS MAP: $map"
     set seg_i 0
     foreach space [get_bd_addr_spaces] {
       puts "space: $space"
