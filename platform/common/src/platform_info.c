@@ -55,7 +55,7 @@ typedef enum {
 #define REG_KERNEL_ID_START					0x0100
 #define REG_LOCAL_MEM_START					0x0104
 #define REG_SLOT_OFFSET						0x0010
-#define REG_PLATFORM_BASE_START					0x0800
+#define REG_PLATFORM_BASE_START					0x1000
 #define	REG_ARCH_BASE_START \
 		(REG_PLATFORM_BASE_START + sizeof(uint64_t) * PLATFORM_NUM_SLOTS)
 

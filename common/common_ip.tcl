@@ -16,7 +16,7 @@ dict set stdcomps   mm_to_lite       vlnv   "esa.cs.tu-darmstadt.de:user:mm_to_l
 dict set stdcomps   system_cache     vlnv   "xilinx.com:ip:system_cache:3.1"
 dict set stdcomps   mig_core         vlnv   "xilinx.com:ip:mig_7series:4.0"
 dict set stdcomps   axi_pcie3_0      vlnv   "xilinx.com:ip:axi_pcie3:3.0"
-dict set stdcomps   tapasco_status   vlnv   "esa.cs.tu-darmstadt.de:tapasco:tapasco_status:1.3"
+dict set stdcomps   tapasco_status   vlnv   "esa.cs.tu-darmstadt.de:tapasco:tapasco_status:1.4"
 dict set stdcomps   axi_pcie3_0_usp  vlnv   "xilinx.com:ip:xdma:3.1"
 dict set stdcomps   clk_wiz          vlnv   "xilinx.com:ip:clk_wiz:5.4"
 dict set stdcomps   msix_intr_ctrl   vlnv   "esa.informatik.tu-darmstadt.de:user:MSIXIntrCtrl:1.0"
