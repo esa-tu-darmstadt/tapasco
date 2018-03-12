@@ -55,12 +55,12 @@ namespace eval ::platform {
     puts "Computing addresses for masters ..."
     foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
       switch -glob [get_property NAME $m] {
-        "M_TAPASCO" { foreach {base stride range} [list 0x77770000 0       0     ] {} }
-        "M_INTC"    { foreach {base stride range} [list 0x81800000 0x10000 0     ] {} }
+        "M_TAPASCO" { foreach {base stride range comp} [list 0x77770000 0       0 "PLATFORM_COMPONENT_STATUS"] {} }
+        "M_INTC"    { foreach {base stride range comp} [list 0x81800000 0x10000 0 "PLATFORM_COMPONENT_INTC0"] {} }
         "M_ARCH"    { set base "skip" }
-        default     { foreach {base stride range} [list 0 0 0]                     {} }
+        default     { foreach {base stride range comp} [list 0 0 0 ""] {} }
       }
-      if {$base != "skip"} { set peam [addressmap::assign_address $peam $m $base $stride $range] }
+      if {$base != "skip"} { set peam [addressmap::assign_address $peam $m $base $stride $range $comp] }
     }
     return $peam
   }
