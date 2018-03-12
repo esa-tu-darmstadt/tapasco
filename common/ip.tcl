@@ -413,6 +413,7 @@ namespace eval ::tapasco::ip {
     }
     puts "  finished composition map, composing JSON ..."
 
+    # get PE base addresses
     set pe_bases [list]
     foreach pe_base [::platform::addressmap::get_processing_element_bases] {
       lappend pe_bases [json::write object "Address" \
@@ -420,11 +421,11 @@ namespace eval ::tapasco::ip {
       ]
     }
 
-    # FIXME registering of platform components is not taking place yet
+    # get platform component base addresses
     set pc_bases [list]
     foreach pc_base [::platform::addressmap::get_platform_component_bases] {
       lappend pc_bases [json::write object "Address" \
-        [json::write string [format "0x%08x" $pe_base]] \
+        [json::write string [format "0x%08x" $pc_base]] \
       ]
     }
     puts "  finished address map, composing JSON ..."
