@@ -321,9 +321,6 @@ platform_res_t platform_read_mem(platform_ctx_t const *ctx,
 		ERR("could not read: %s", strerror(errno));
 		return PERR_MEM_NO_SUCH_HANDLE; // FIXME
 	}
-	LOG(LPLL_MEM, "start_addr = 0x%08lx, no_of_bytes = %zu, data = 0x%08lx",
-			(unsigned long) start_addr, no_of_bytes,
-			(unsigned long) data);
 	return PLATFORM_SUCCESS;
 }
 
@@ -332,8 +329,8 @@ platform_res_t platform_write_mem(platform_ctx_t const *ctx,
 		size_t const no_of_bytes, void const*data,
 		platform_mem_flags_t const flags)
 {
-	LOG(LPLL_MEM, "start_addr = 0x%08lx, no_of_bytes = %zu, data = 0x%08lx",
-			(unsigned long) start_addr, no_of_bytes, (unsigned long)data);
+	LOG(LPLL_MEM, "start_addr = 0x%08lx, no_of_bytes = %zu",
+			(unsigned long) start_addr, no_of_bytes);
 	struct zynq_ioctl_cmd_t cmd = { 0 };
 	cmd.id = -1;
 	cmd.length = no_of_bytes;
@@ -392,8 +389,6 @@ platform_res_t platform_read_ctl(platform_ctx_t const *ctx,
 	for (i = 0; i < (no_of_bytes >> 2); ++i, ++p, ++r)
 		*p = *r;
 
-	LOG(LPLL_CTL, "start_addr = 0x%08lx, no_of_bytes = %zu, data = 0x%08lx",
-			(unsigned long)start_addr, no_of_bytes, (unsigned long)data);
 	return PLATFORM_SUCCESS;
 }
 
@@ -407,8 +402,8 @@ platform_res_t platform_write_ctl(platform_ctx_t const *ctx,
 	uint32_t const *p = (uint32_t const *)data;
 	volatile uint32_t *r;
 	platform_res_t res;
-	LOG(LPLL_CTL, "start_addr = 0x%08lx, no_of_bytes = %zu, data = 0x%08lx",
-			(unsigned long)start_addr, no_of_bytes, (unsigned long)data);
+	LOG(LPLL_CTL, "start_addr = 0x%08lx, no_of_bytes = %zu",
+			(unsigned long)start_addr, no_of_bytes);
 
 	res = platform_check_ctl_addr(start_addr);
 	if (res != PLATFORM_SUCCESS)
