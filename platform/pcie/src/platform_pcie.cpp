@@ -34,6 +34,7 @@ extern "C" {
 	#include <platform_logging.h>
 	#include <platform_errors.h>
 	#include <platform_context.h>
+	#include <platform_info.h>
 	#include <platform.h>
 }
 
@@ -91,6 +92,7 @@ static const char *user_dev_path = "/dev/FFLINK_USER_DEVICE_0";
 
 static struct {
 	platform_ctx_t			*ctx;
+	platform_info_t			info;
 	int				fd_dma_engine[NUM_DMA_DEV];
 	int				fd_user[NUM_USER_DEV];
 	int				opened_dma_devs  = 0;
@@ -151,6 +153,12 @@ platform_res_t _platform_init(const char *const version, platform_ctx_t **ctx)
 	pcie_platform.ba_small = new buddy_allocator(ALLOC_SMALL_OFFSET, ALLOC_SMALL_TOTAL, ALLOC_START_ORDER, ALLOC_SMALL_ORDER);
 	pcie_platform.ba_medium = new buddy_allocator(ALLOC_MEDIUM_OFFSET, ALLOC_MEDIUM_TOTAL, ALLOC_SMALL_ORDER + 1, ALLOC_MEDIUM_ORDER);
 	pcie_platform.ba_large = new buddy_allocator(ALLOC_LARGE_OFFSET, ALLOC_LARGE_TOTAL, ALLOC_MEDIUM_ORDER + 1, ALLOC_LARGE_ORDER);
+
+	res = platform_info(*ctx, &pcie_platform.info);
+	if (res != PLATFORM_SUCCESS) {
+		ERR("Could not get device info: %s (%d)", platform_strerror(res), res);
+		return res;
+	}
 
 	return PLATFORM_SUCCESS;
 }
@@ -293,14 +301,27 @@ platform_res_t platform_write_mem(platform_ctx_t const *ctx, platform_mem_addr_t
 	return PLATFORM_SUCCESS;
 }
 
+static
+bool is_raw_base(platform_info_t const &info, platform_ctl_addr_t const addr)
+{
+	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
+		if (info.base.platform[s] && info.base.platform[s] == addr)
+			return true;
+	}
+	return false;
+}
+
 platform_res_t platform_read_ctl(platform_ctx_t const *ctx, platform_ctl_addr_t const start_addr, size_t const no_of_bytes, void *data, platform_ctl_flags_t const flags)
 {
 	int err;
 	struct user_rw_params params { 0 };
-	if (start_addr == INTC0_ADDRESS || start_addr == INTC1_ADDRESS || start_addr == INTC2_ADDRESS || start_addr == INTC3_ADDRESS || (start_addr & 0xFFFF0000) == ATSPRI_ADDRESS || flags == PLATFORM_CTL_FLAGS_RAW)
+	if (flags & PLATFORM_CTL_FLAGS_RAW || 
+	    (start_addr & 0xFFFF0000) == ATSPRI_ADDRESS ||
+            is_raw_base(pcie_platform.info, start_addr)) {
 	  params.fpga_addr = start_addr;
-	else
+	} else {
 	  params.fpga_addr = start_addr + USER_ADDRESS_OFFSET;
+	}
 	params.host_addr = (uint64_t) data;
 	params.btt = no_of_bytes;
 
