@@ -138,7 +138,7 @@ static platform_res_t init_platform(zynq_platform_t *p)
 	if (p->fd_status_map != -1) {
 		p->status_map = mmap(
 				NULL,
-				0x1000,
+				0x2000,
 				PROT_READ,
 				MAP_SHARED,
 				p->fd_status_map,
@@ -179,7 +179,7 @@ static platform_res_t release_platform(zynq_platform_t *p)
 	}
 	if (p->fd_status_map != -1) {
 		if (p->status_map != NULL && p->status_map != MAP_FAILED) {
-			munmap((void *)p->status_map, 0x1000);
+			munmap((void *)p->status_map, 0x2000);
 			p->status_map = NULL;
 		}
 		close(p->fd_status_map);
@@ -348,7 +348,7 @@ platform_res_t platform_check_ctl_addr(platform_ctl_addr_t const addr)
 {
 	// FIXME remove magic literals
 	if (!((addr >= 0x43C00000 && addr < 0x44400000) ||
-			(addr >= 0x77770000 && addr < 0x77771000) ||
+			(addr >= 0x77770000 && addr < 0x77772000) ||
 			(addr >= 0x81800000 && addr < 0x81850000))) {
 		ERR("invalid start_addr: start_addr = 0x%08lx", (unsigned long)addr);
 		return PERR_CTL_INVALID_ADDRESS;
