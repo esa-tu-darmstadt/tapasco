@@ -126,19 +126,14 @@ protected:
   }
 private:
   bool check_bitstream() {
-    uint32_t id { 0 }, cnt { 0 };
-    platform_ctl_addr_t status;
-    platform_address_get_component_base(tapasco->platform(), PLATFORM_COMPONENT_STATUS, &status);
-    for (int s = 0; s < 128; ++s) {
-      if (platform_read_ctl(tapasco->platform(), status + 0x100 + s * 0x10, 4, &id,
-          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
-        avail[s] = false;
-      else {
-        avail[s] = id == COUNTER_ID;
-	if (avail[s]) ++cnt;
-      }
+    platform_info_t info;
+    platform_res_t r = tapasco->info(&info);
+    if (r != PLATFORM_SUCCESS)
+      throw new Tapasco::tapasco_error(TAPASCO_ERR_PLATFORM_FAILURE);
+    for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
+      if (info.composition.kernel[s] == COUNTER_ID) return true;
     }
-    return cnt > 0;
+    return false;
   }
 
   stack<thread> threads;
