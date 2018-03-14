@@ -125,8 +125,17 @@ namespace eval addressmap {
     return $address_map
   }
 
+  proc apply_address_map_mods {map} {
+    foreach p [lsort [info commands ::platform::modify_address_map_*]] {
+      puts "  found address map extension proc: $p"
+      set map [eval {$p} {$map}]
+    }
+    return $map
+  }
+
   proc construct_address_map {{map ""}} {
     if {$map == ""} { set map [::platform::get_address_map [::platform::get_pe_base_address]] }
+    set map [apply_address_map_mods $map]
     set seg_i 0
     foreach space [get_bd_addr_spaces] {
       puts "space: $space"
