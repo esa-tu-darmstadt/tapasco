@@ -28,6 +28,7 @@
 typedef struct platform_addr_map platform_addr_map_t;
 
 platform_res_t platform_addr_map_init(platform_ctx_t *ctx,
+		platform_info_t const *info,
 		platform_addr_map_t **am);
 
 void platform_addr_map_deinit(platform_ctx_t *ctx, platform_addr_map_t *am);

@@ -27,6 +27,7 @@
  #include <platform_logging.h>
 
 struct platform_ctx {
+	platform_info_t info;
 	platform_addr_map_t *addrmap;
 };
 
@@ -43,8 +44,17 @@ platform_res_t platform_context_init(platform_ctx_t **ctx)
 		return PERR_OUT_OF_MEMORY;
 	}
 
-	platform_res_t r = platform_addr_map_init(*ctx, &(*ctx)->addrmap);
+	platform_res_t r = platform_info(*ctx, &(*ctx)->info);
 	if (r != PLATFORM_SUCCESS) {
+		free(*ctx);
+		ERR("could not get device info: %s (%d)",
+				platform_strerror(r), r);
+		return r;
+	}
+
+	r = platform_addr_map_init(*ctx, &(*ctx)->info, &(*ctx)->addrmap);
+	if (r != PLATFORM_SUCCESS) {
+		free(*ctx);
 		ERR("could not initialize platform address map: %s (%d)",
 				platform_strerror(r), r);
 		return r;

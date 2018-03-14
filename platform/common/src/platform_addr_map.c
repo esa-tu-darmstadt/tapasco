@@ -35,10 +35,11 @@
 #endif
 
 struct platform_addr_map {
-	platform_info_t info;
+	platform_info_t const *info;
 };
 
 platform_res_t platform_addr_map_init(platform_ctx_t *ctx,
+		platform_info_t const *info,
 		platform_addr_map_t **am)
 {
 	*am = (platform_addr_map_t *)malloc(sizeof(**am));
@@ -46,13 +47,7 @@ platform_res_t platform_addr_map_init(platform_ctx_t *ctx,
 		ERR("could not allocate memory for platform_addr_map_t");
 		return PERR_OUT_OF_MEMORY;
 	}
-
-	platform_res_t r = platform_info(ctx, &(*am)->info);
-	if (r != PLATFORM_SUCCESS) {
-		ERR("could not initialize address map: %s (%d)",
-				platform_strerror(r), r);
-		return r;
-	}
+	(*am)->info = info;
 
 	LOG(LPLL_ADDR, "address map successfully initialized");
 	return PLATFORM_SUCCESS;
@@ -76,7 +71,7 @@ platform_res_t platform_addr_map_get_slot_base(platform_addr_map_t const* am,
 		return PLATFORM_ADDRESS_MAP_INVALID_BASE;
 	}
 #endif
-	*addr = am->info.base.arch[slot_id];
+	*addr = am->info->base.arch[slot_id];
 	return PLATFORM_SUCCESS;
 }
 
@@ -103,12 +98,12 @@ platform_res_t platform_addr_map_get_component_base(
 				comp_id, PLATFORM_NUM_SLOTS);
 		return PERR_ADDR_INVALID_COMP_ID;
 	}
-	if (am->info.base.platform[comp_id] == 0) {
+	if (am->info->base.platform[comp_id] == 0) {
 		ERR("no base defined for component #%lu", (unsigned long)comp_id);
 		return PERR_COMPONENT_NOT_FOUND;
 	}
 #endif
-	*addr = am->info.base.platform[comp_id];
+	*addr = am->info->base.platform[comp_id];
 	return PLATFORM_SUCCESS;
 }
 
