@@ -51,6 +51,7 @@ struct tapasco_transfer {
 	size_t len;
 	void *data;
 	tapasco_device_alloc_flag_t flags;
+	tapasco_copy_direction_flag_t dir_flags;
 	tapasco_handle_t handle;
 };
 typedef struct tapasco_transfer tapasco_transfer_t;
@@ -207,7 +208,8 @@ tapasco_res_t tapasco_jobs_set_arg_transfer(tapasco_jobs_t *jobs,
 		size_t const arg_idx,
 		size_t const arg_len,
 		void *arg_value,
-		tapasco_device_alloc_flag_t const flags);
+		tapasco_device_alloc_flag_t const flags,
+		tapasco_copy_direction_flag_t const dir_flags);
 
 /**
  * Sets the return value of a job.

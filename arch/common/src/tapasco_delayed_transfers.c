@@ -40,13 +40,15 @@ tapasco_res_t tapasco_transfer_to(tapasco_dev_ctx_t *dev_ctx,
 		ERR("job %lu: memory allocation failed!", (unsigned long)j_id);
 		return res;
 	}
-	res = tapasco_device_copy_to(dev_ctx, t->data, t->handle, t->len,
-			t->flags, s_id);
-	if (res != TAPASCO_SUCCESS) {
-		ERR("job %lu: transfer failed - %zd bytes -> 0x%08x with flags %lu",
-				(unsigned long)j_id, t->len,
-				(unsigned long)t->handle,
-				(unsigned long)t->flags);
+	if (t->dir_flags & COPY_TO) {
+		res = tapasco_device_copy_to(dev_ctx, t->data, t->handle, t->len,
+				t->flags, s_id);
+		if (res != TAPASCO_SUCCESS) {
+			ERR("job %lu: transfer failed - %zd bytes -> 0x%08x with flags %lu",
+					(unsigned long)j_id, t->len,
+					(unsigned long)t->handle,
+					(unsigned long)t->flags);
+		}
 	}
 	return res;
 }
@@ -59,13 +61,16 @@ tapasco_res_t tapasco_transfer_from(tapasco_dev_ctx_t *dev_ctx,
 {
 	LOG(LALL_TRANSFERS, "job %lu: executing transfer from with length %zd bytes",
 			(unsigned long)j_id, (unsigned long)t->len);
-	tapasco_res_t res = tapasco_device_copy_from(dev_ctx, t->handle,
-			t->data, t->len, t->flags, s_id);
-	if (res != TAPASCO_SUCCESS) {
-		ERR("job %lu: transfer failed - %zd bytes <- 0x%08x with flags %lu",
-				(unsigned long)j_id, t->len,
-				(unsigned long)t->handle,
-				(unsigned long)t->flags);
+	tapasco_res_t res = TAPASCO_SUCCESS;
+	if (t->dir_flags & COPY_FROM) {
+		tapasco_res_t res = tapasco_device_copy_from(dev_ctx, t->handle,
+				t->data, t->len, t->flags, s_id);
+		if (res != TAPASCO_SUCCESS) {
+			ERR("job %lu: transfer failed - %zd bytes <- 0x%08x with flags %lu",
+					(unsigned long)j_id, t->len,
+					(unsigned long)t->handle,
+					(unsigned long)t->flags);
+		}
 	}
 	tapasco_device_free(dev_ctx, t->handle, t->flags, s_id, t->len);
 	return res;

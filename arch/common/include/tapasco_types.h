@@ -60,16 +60,19 @@ typedef uint32_t tapasco_job_id_t;
 /** Device memory location handle (opaque). **/
 typedef uint32_t tapasco_handle_t;
 
+/** default value for no flags **/
+#define NONE						0
+
 /** Flags for device creation (implementation defined). **/
 typedef enum {
 	/** no flags **/
-	TAPASCO_DEVICE_CREATE_FLAGS_NONE 		= 0
+	TAPASCO_DEVICE_CREATE_FLAGS_NONE 		= NONE
 } tapasco_device_create_flag_t;
 
 /** Flags for memory allocation (implementation defined). **/
 typedef enum {
 	/** no flags **/
-	TAPASCO_DEVICE_ALLOC_FLAGS_NONE 		= 0,
+	TAPASCO_DEVICE_ALLOC_FLAGS_NONE 		= NONE,
 	/** PE-local, i.e., only accessible from scheduled PE **/
 	TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL             = PE_LOCAL_FLAG,
 } tapasco_device_alloc_flag_t;
@@ -77,15 +80,15 @@ typedef enum {
 /** Flags for bitstream loading (implementation defined). **/
 typedef enum {
 	/** no flags **/
-	TAPASCO_LOAD_BITSTREAM_FLAGS_NONE 		= 0
+	TAPASCO_LOAD_BITSTREAM_FLAGS_NONE 		= NONE,
 } tapasco_load_bitstream_flag_t;
 
 /** Flags for calls to tapasco_device_copy_to and tapasco_device_copy_from. **/
 typedef enum {
 	/** no flags **/
-	TAPASCO_DEVICE_COPY_FLAGS_NONE			= 0,
+	TAPASCO_DEVICE_COPY_FLAGS_NONE			= NONE,
 	/** wait until transfer is finished (default) **/
-	TAPASCO_DEVICE_COPY_BLOCKING			= 0,
+	TAPASCO_DEVICE_COPY_BLOCKING			= NONE,
 	/** return immediately after transfer was scheduled **/
 	TAPASCO_DEVICE_COPY_NONBLOCKING			= 1,
 	/** copy to local memory **/
@@ -95,9 +98,9 @@ typedef enum {
 /** Flags for calls to tapasco_device_acquire_job_id. **/
 typedef enum {
 	/** no flags **/
-	TAPASCO_DEVICE_ACQUIRE_JOB_ID_FLAGS_NONE	= 0,
+	TAPASCO_DEVICE_ACQUIRE_JOB_ID_FLAGS_NONE	= NONE,
 	/** wait until id becomes available (default) **/
-	TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING		= 0,
+	TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING		= NONE,
 	/** fail if id is not immediately available, do not wait **/
 	TAPASCO_DEVICE_ACQUIRE_JOB_ID_NONBLOCKING	= 1,
 } tapasco_device_acquire_job_id_flag_t;
@@ -105,12 +108,26 @@ typedef enum {
 /** Flags for calls to tapasco_device_job_launch. **/
 typedef enum {
 	/** no flags **/
-	TAPASCO_DEVICE_JOB_LAUNCH_FLAGS_NONE		= 0,
+	TAPASCO_DEVICE_JOB_LAUNCH_FLAGS_NONE		= NONE,
 	/** launch and wait until job is finished (default) **/
-	TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING		= 0,
+	TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING		= NONE,
 	/** return immediately after job is scheduled **/
 	TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING		= 1,
 } tapasco_device_job_launch_flag_t;
+
+/** Flags for memory transfer directions. **/
+typedef enum {
+        /** Copy to the device before launch. */
+	TAPASCO_COPY_DIRECTION_TO			= 1,
+	/** Allocate and copy from the device after launch. */
+	TAPASCO_COPY_DIRECTION_FROM			= 2,
+	/** Allocate, copy to before and back after launch. */
+	TAPASCO_COPY_DIRECTION_BOTH			= 3
+} tapasco_copy_direction_flag_t;
+
+#define COPY_TO					(TAPASCO_COPY_DIRECTION_TO)
+#define COPY_FROM				(TAPASCO_COPY_DIRECTION_FROM)
+#define COPY_BOTH				(TAPASCO_COPY_DIRECTION_BOTH)
 
 /** Capabilities: Optional device capabilities. **/
 typedef platform_capabilities_0_t tapasco_device_capability_t;

@@ -392,12 +392,14 @@ tapasco_res_t tapasco_device_job_set_arg(tapasco_dev_ctx_t *dev_ctx,
  * @param arg_len length of arg_value in bytes (must be power of 4)
  * @param arg_value data to set argument to.
  * @param flags allocation flags, see @tapasco_device_alloc_flag_t.
+ * @param flags copy direction flags, see @tapasco_copy_direction_flag_t.
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_job_set_arg_transfer(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_job_id_t const job_id, size_t arg_idx,
 		size_t const arg_len, void *arg_value,
-		tapasco_device_alloc_flag_t const flags);
+		tapasco_device_alloc_flag_t const flags,
+		tapasco_copy_direction_flag_t const dir_flags);
 
 /**
  * Gets the value of the arg_idx'th argument of kernel k_id.

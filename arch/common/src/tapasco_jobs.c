@@ -230,7 +230,8 @@ tapasco_res_t tapasco_jobs_set_arg_transfer(tapasco_jobs_t *jobs,
 		size_t const arg_idx,
 		size_t const arg_len,
 		void *arg_value,
-		tapasco_device_alloc_flag_t const flags)
+		tapasco_device_alloc_flag_t const flags,
+		tapasco_copy_direction_flag_t const dir_flags)
 {
 	assert(jobs);
 #ifndef NDEBUG
@@ -242,6 +243,7 @@ tapasco_res_t tapasco_jobs_set_arg_transfer(tapasco_jobs_t *jobs,
 	jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].len   = arg_len;
 	jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].data  = arg_value;
 	jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].flags = flags;
+	jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].dir_flags = dir_flags;
 	if (jobs->q.elems[j_id - JOB_ID_OFFSET].args_len < arg_idx + 1)
 		jobs->q.elems[j_id - JOB_ID_OFFSET].args_len = arg_idx + 1;
 	return TAPASCO_SUCCESS;

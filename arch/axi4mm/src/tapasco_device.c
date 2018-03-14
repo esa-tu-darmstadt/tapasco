@@ -197,10 +197,11 @@ tapasco_res_t tapasco_device_job_set_arg_transfer(tapasco_dev_ctx_t *dev_ctx,
 		size_t arg_idx,
 		size_t const arg_len,
 		void *arg_value,
-		tapasco_device_alloc_flag_t const flags)
+		tapasco_device_alloc_flag_t const flags,
+		tapasco_copy_direction_flag_t const dir_flags)
 {
 	return tapasco_jobs_set_arg_transfer(dev_ctx->jobs, job_id, arg_idx,
-			arg_len, arg_value, flags);
+			arg_len, arg_value, flags, dir_flags);
 }
 
 tapasco_res_t tapasco_device_job_get_return(tapasco_dev_ctx_t *dev_ctx,
