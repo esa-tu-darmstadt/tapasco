@@ -40,11 +40,11 @@ static int zynq_device_mmap(struct file *filp, struct vm_area_struct *vma)
 	size = vma->vm_end - vma->vm_start;
 	minor = iminor(filp->f_path.dentry->d_inode);
 	if (minor == zynq_dev.miscdev[0].minor) {
-		start_addr = ZYNQ_DEVICE_THREADS_BASE;
+		start_addr = ZYNQ_PLATFORM_GP0_BASE;
 	} else if (minor == zynq_dev.miscdev[1].minor) {
-		start_addr = ZYNQ_DEVICE_INTC_BASE;
+		start_addr = ZYNQ_PLATFORM_GP1_BASE;
 	} else {
-		start_addr = ZYNQ_DEVICE_TAPASCO_STATUS_BASE;
+		start_addr = PLATFORM_API_TAPASCO_STATUS_BASE;
 	}
 
 	LOG(ZYNQ_LL_DEVICE, "d%u: mmapping %zu bytes, from 0x%08lx-0x%08lx",
@@ -106,7 +106,7 @@ static ssize_t zynq_device_pending_ev(struct device *dev,
 {
 	int i;
 	ssize_t r = 0;
-	for (i = 0; i < ZYNQ_DEVICE_THREADS_NUM; ++i)
+	for (i = 0; i < PLATFORM_NUM_SLOTS; ++i)
 		r += sprintf(&buf[i * 16], "%03d: %10ld\n", i, zynq_dev.pending_ev[i]);
 	return r;
 }
@@ -212,37 +212,35 @@ static void exit_sysfs_files(void)
 static int init_iomapping(void)
 {
 	int retval = 0;
-	zynq_dev.gp_map[0] = ioremap_nocache(ZYNQ_DEVICE_THREADS_BASE,
-			ZYNQ_DEVICE_THREADS_OFFS * ZYNQ_DEVICE_THREADS_NUM);
+	zynq_dev.gp_map[0] = ioremap_nocache(ZYNQ_PLATFORM_GP0_BASE,
+		ZYNQ_PLATFORM_GPX_SIZE);
 	if (IS_ERR(zynq_dev.gp_map[0])) {
-		ERR("could not ioremap the AXI register space at 0x%08x-0x%08x",
-				ZYNQ_DEVICE_THREADS_BASE,
-				ZYNQ_DEVICE_THREADS_BASE +
-				ZYNQ_DEVICE_THREADS_NUM *
-				ZYNQ_DEVICE_THREADS_OFFS);
+		ERR("could not ioremap the AXI register space at 0x%08lx-0x%08lx",
+				ZYNQ_PLATFORM_GP0_BASE,
+				ZYNQ_PLATFORM_GP0_BASE +
+				ZYNQ_PLATFORM_GPX_SIZE - 1);
 		retval = PTR_ERR(zynq_dev.gp_map[0]);
 		goto err_gp0;
 	}
 
-	zynq_dev.gp_map[1] = ioremap_nocache(ZYNQ_DEVICE_INTC_BASE,
-			ZYNQ_DEVICE_INTC_NUM * ZYNQ_DEVICE_INTC_OFFS);
+	zynq_dev.gp_map[1] = ioremap_nocache(ZYNQ_PLATFORM_GP1_BASE,
+			ZYNQ_PLATFORM_INTC_MAX_NUM * ZYNQ_PLATFORM_INTC_OFFS);
 	if (IS_ERR(zynq_dev.gp_map[1])) {
-		ERR("could not ioremap the AXI register space at 0x%08x-0x%08x",
-				ZYNQ_DEVICE_INTC_BASE,
-				ZYNQ_DEVICE_INTC_BASE +
-				ZYNQ_DEVICE_INTC_NUM *
-				ZYNQ_DEVICE_INTC_OFFS);
-		retval = PTR_ERR(zynq_dev.gp_map[0]);
+		ERR("could not ioremap the AXI register space at 0x%08lx-0x%08lx",
+				ZYNQ_PLATFORM_GP1_BASE,
+				ZYNQ_PLATFORM_GP1_BASE +
+				ZYNQ_PLATFORM_GPX_SIZE - 1);
+		retval = PTR_ERR(zynq_dev.gp_map[1]);
 		goto err_gp1;
 	}
 
-	zynq_dev.tapasco_status = ioremap_nocache(ZYNQ_DEVICE_TAPASCO_STATUS_BASE,
-			ZYNQ_DEVICE_TAPASCO_STATUS_SIZE);
+	zynq_dev.tapasco_status = ioremap_nocache(PLATFORM_API_TAPASCO_STATUS_BASE,
+			PLATFORM_API_TAPASCO_STATUS_SIZE);
 	if (IS_ERR(zynq_dev.tapasco_status)) {
-		ERR("could not ioremap the AXI register space at 0x%08x-0x%08x",
-				ZYNQ_DEVICE_TAPASCO_STATUS_BASE,
-				ZYNQ_DEVICE_TAPASCO_STATUS_BASE +
-				ZYNQ_DEVICE_TAPASCO_STATUS_SIZE);
+		ERR("could not ioremap the AXI register space at 0x%08lx-0x%08lx",
+				PLATFORM_API_TAPASCO_STATUS_BASE,
+				PLATFORM_API_TAPASCO_STATUS_BASE +
+				PLATFORM_API_TAPASCO_STATUS_SIZE);
 		retval = PTR_ERR(zynq_dev.tapasco_status);
 		goto err_tapasco_status;
 	}
@@ -269,7 +267,7 @@ int zynq_device_init(void)
 	int retval;
 	LOG(ZYNQ_LL_ENTEREXIT, "enter" );
 
-	for (retval = 0; retval < ZYNQ_DEVICE_THREADS_NUM; ++retval) {
+	for (retval = 0; retval < PLATFORM_NUM_SLOTS; ++retval) {
 		zynq_dev.pending_ev[retval] = 0;
 		init_waitqueue_head(&zynq_dev.ev_q[retval]);
 	}

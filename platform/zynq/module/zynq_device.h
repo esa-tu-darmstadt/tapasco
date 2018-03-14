@@ -23,28 +23,25 @@
 #ifndef __ZYNQ_DEVICE_H__
 #define __ZYNQ_DEVICE_H__
 
+#ifndef PLATFORM_API_TAPASCO_STATUS_BASE
+#error "PLATFORM_API_TAPASCO_STATUS_BASE is not defined - set to base addr "
+       "of TaPaSCo status core in kernel module implementation"
+#endif
+
 #include <linux/miscdevice.h>
 #include "zynq_platform.h"
 
-#define ZYNQ_DEVICE_CLSNAME					"tapasco_platform"
-#define ZYNQ_DEVICE_DEVNAME					"zynq"
-#define ZYNQ_DEVICE_THREADS_BASE				(0x43c00000)
-#define ZYNQ_DEVICE_THREADS_OFFS				(0x00010000)
-#define ZYNQ_DEVICE_THREADS_NUM					(128)
-#define ZYNQ_DEVICE_INTC_BASE					ZYNQ_PLATFORM_INTC_BASE
-#define ZYNQ_DEVICE_INTC_OFFS					ZYNQ_PLATFORM_INTC_OFFS
-#define ZYNQ_DEVICE_INTC_NUM					ZYNQ_PLATFORM_INTC_NUM
-#define ZYNQ_DEVICE_TAPASCO_STATUS_BASE				(0x77770000)
-#define ZYNQ_DEVICE_TAPASCO_STATUS_SIZE				(0x00001000)
+#define ZYNQ_DEVICE_CLSNAME			"tapasco_platform"
+#define ZYNQ_DEVICE_DEVNAME			"zynq"
 
 struct zynq_device {
 	int			devnum;
 	struct miscdevice	miscdev[3];
 	void __iomem 		*gp_map[2];
 	void __iomem		*tapasco_status;
-	volatile long		pending_ev[ZYNQ_DEVICE_THREADS_NUM];
+	volatile long		pending_ev[PLATFORM_NUM_SLOTS];
 	volatile unsigned long	total_ev;
-	wait_queue_head_t	ev_q[ZYNQ_DEVICE_THREADS_NUM];
+	wait_queue_head_t	ev_q[PLATFORM_NUM_SLOTS];
 };
 
 int zynq_device_init(void);

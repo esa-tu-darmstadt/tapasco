@@ -1,3 +1,4 @@
+PLATFORM_API_TAPASCO_STATUS_BASE?=0x77770000UL
 LINUX_HOME ?= /lib/modules/$(shell uname -r)/build
 ifeq ($(ARCH), arm)
 CROSS_COMPILE ?= arm-unknown-linux-gnueabihf-
@@ -6,13 +7,16 @@ endif
 obj-m += tapasco-platform-zynq.o
 tapasco-platform-zynq-objs := zynq_module.o zynq_device.o zynq_dmamgmt.o zynq_irq.o zynq_ioctl.o
 
+CPPFLAGS=-DPLATFORM_API_TAPASCO_STATUS_BASE=$(PLATFORM_API_TAPASCO_STATUS_BASE)
+CPPFLAGS+=-I$(TAPASCO_HOME)/platform/common/include
+
 .PHONY:	all clean
 
 all:
-	make -C $(LINUX_HOME) M=$(PWD) modules
+	make KCPPFLAGS="$(CPPFLAGS)" -C $(LINUX_HOME) M=$(PWD) modules
 
 release:
-	KCPPFLAGS="-DNDEBUG -O3" make -C $(LINUX_HOME) M=$(PWD) modules
+	KCPPFLAGS+="$(CPPFLAGS) -DNDEBUG -O3" make -C $(LINUX_HOME) M=$(PWD) modules
 
 clean:
 	make -C $(LINUX_HOME) M=$(PWD) clean

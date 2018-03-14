@@ -92,46 +92,46 @@ static platform_res_t init_platform(zynq_platform_t *p)
 	p->fd_wait     = open(ZYNQ_PLATFORM_WAITFILENAME, O_WRONLY);
 	if (p->fd_wait == -1) {
 		ERR("could not open device file: %s", ZYNQ_PLATFORM_WAITFILENAME);
-		result = PERR_OPEN_DEV;
+		return PERR_OPEN_DEV;
 	}
 	p->fd_gp0_map = open("/dev/" ZYNQ_PLATFORM_DEVFILENAME "_gp0", O_RDWR);
 	if (p->fd_gp0_map != -1) {
 		p->gp0_map = mmap(
 				NULL,
-				129 * 0x10000UL,
+				0x40000000UL,
 				PROT_READ | PROT_WRITE | PROT_EXEC,
 				MAP_SHARED,
 				p->fd_gp0_map,
 				0);
 		if (p->gp0_map == MAP_FAILED) {
 			ERR("could not mmap regmap: %s", strerror(errno));
-			result = PERR_MMAP_DEV;
+			return PERR_MMAP_DEV;
 		}
 	} else {
 		ERR("could not open '%s': %s",
 				"/dev/" ZYNQ_PLATFORM_DEVFILENAME "_gp0",
 				strerror(errno));
-		result = PERR_OPEN_DEV;
+		return PERR_OPEN_DEV;
 	}
 
 	p->fd_gp1_map = open("/dev/" ZYNQ_PLATFORM_DEVFILENAME "_gp1", O_RDWR);
 	if (p->fd_gp1_map != -1) {
 		p->gp1_map = mmap(
 				NULL,
-				0x100000UL,
+				0x40000000UL,
 				PROT_READ | PROT_WRITE | PROT_EXEC,
 				MAP_SHARED,
 				p->fd_gp1_map,
 				0);
 		if (p->gp1_map == MAP_FAILED) {
 			ERR("could not mmap regmap: %s", strerror(errno));
-			result = PERR_MMAP_DEV;
+			return PERR_MMAP_DEV;
 		}
 	} else {
 		ERR("could not open '%s': %s",
 				"/dev/" ZYNQ_PLATFORM_DEVFILENAME "_gp1",
 				strerror(errno));
-		result = PERR_OPEN_DEV;
+		return PERR_OPEN_DEV;
 	}
 
 	p->fd_status_map = open("/dev/" ZYNQ_PLATFORM_DEVFILENAME "_tapasco_status", O_RDONLY);
@@ -145,7 +145,7 @@ static platform_res_t init_platform(zynq_platform_t *p)
 				0);
 		if (p->status_map == MAP_FAILED) {
 			ERR("could not mmap regmap: %s", strerror(errno));
-			result = PERR_MMAP_DEV;
+			return PERR_MMAP_DEV;
 		}
 	} else {
 		ERR("could not open '%s': %s",
@@ -159,7 +159,7 @@ static platform_res_t init_platform(zynq_platform_t *p)
 		ERR("could not open '%s': %s",
 				"/dev/" ZYNQ_PLATFORM_DEVFILENAME "_control",
 				strerror(errno));
-		result = PERR_OPEN_DEV;
+		return PERR_OPEN_DEV;
 	}
 
 	result  = platform_context_init(&p->ctx);
