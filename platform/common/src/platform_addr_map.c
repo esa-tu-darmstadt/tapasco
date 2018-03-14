@@ -68,7 +68,7 @@ platform_res_t platform_addr_map_get_slot_base(platform_addr_map_t const* am,
 	if (slot_id < 0 || slot_id >= PLATFORM_NUM_SLOTS) {
 		ERR("invalid slot_id %d: must be >= 0 and <= %d",
 				slot_id, PLATFORM_NUM_SLOTS);
-		return PLATFORM_ADDRESS_MAP_INVALID_BASE;
+		return 0;
 	}
 #endif
 	*addr = am->info->base.arch[slot_id];
