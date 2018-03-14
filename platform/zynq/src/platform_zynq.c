@@ -223,7 +223,7 @@ static platform_res_t enable_interrupts(zynq_platform_t *ctx)
 	int32_t outstanding = 0;
 	uint32_t intcs = ctx->info.num_intc;
 	platform_ctl_flags_t const f = PLATFORM_CTL_FLAGS_NONE;
-	assert (intcs > 0 && intcs <= ZYNQ_PLATFORM_INTC_NUM);
+	assert (intcs > 0 && intcs <= ZYNQ_PLATFORM_INTC_MAX_NUM);
 	// TODO move code to interrupt controller unit
 	LOG(LPLL_IRQ, "enabling interrupts at %d controllers", intcs);
 	for (int i = 0; i < intcs; ++i) {
