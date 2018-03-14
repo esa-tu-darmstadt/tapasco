@@ -39,7 +39,7 @@
   }
 
   proc max_masters {} {
-    return [list 128]
+    return [list [::tapasco::get_platform_num_slots]]
   }
 
   proc get_address_map {{pe_base ""}} {
@@ -96,8 +96,8 @@
     set msix_int [create_bd_pin -dir "O" "msix_int"]
     set m_axi [create_bd_intf_pin -mode Master -vlnv [tapasco::ip::get_vlnv "aximm_intf"] "M_MSIX"]
 
-    set num_irqs 132
-    set num_irqs_threadpools 128
+    set num_irqs_threadpools [::tapasco::get_platform_num_slots]
+    set num_irqs [expr $num_irqs_threadpools + 4]
 
     set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 6]
 

@@ -32,4 +32,21 @@ package de.tu_darmstadt.cs.esa
   * currently loaded composition, and to setup, launch and collect
   * jobs to be executed on the threadpool.
   **/
-package object tapasco
+package object tapasco {
+  import java.nio.file._
+  import scala.io._
+
+  private lazy val REGEX_PLATFORM_NUM_SLOTS = """define\s+PLATFORM_NUM_SLOTS\s+(\d+)""".r
+
+  lazy val PLATFORM_NUM_SLOTS: Int = {
+    val f = Paths.get(sys.env("TAPASCO_HOME"))
+      .resolve("platform")
+      .resolve("common")
+      .resolve("include")
+      .resolve("platform_global.h")
+    assert (f.toFile.exists, s"$f does not exist")
+    REGEX_PLATFORM_NUM_SLOTS.findFirstMatchIn(Source.fromFile(f.toString) mkString "")
+      .map(_.group(1).toInt)
+      .getOrElse(throw new Exception("could not parse PLATFORM_NUM_SLOTS"))
+  }
+}

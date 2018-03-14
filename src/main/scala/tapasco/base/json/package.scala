@@ -17,6 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 package de.tu_darmstadt.cs.esa.tapasco.base
+import  de.tu_darmstadt.cs.esa.tapasco.{PLATFORM_NUM_SLOTS => MAX_SLOTS}
 import  de.tu_darmstadt.cs.esa.tapasco.json._
 import  de.tu_darmstadt.cs.esa.tapasco.jobs._
 import  de.tu_darmstadt.cs.esa.tapasco.jobs.json._
@@ -32,7 +33,6 @@ import  java.time.format.DateTimeFormatter, java.time.LocalDateTime
  * deserialize basic TPC entities to and from Json format.
  **/
 package object json {
-  private final val MAX_SLOTS = 128
   private def totalCountOk(c: Seq[Composition.Entry]): Boolean =
     (c map (_.count) fold 0) (_ + _) <= MAX_SLOTS
 

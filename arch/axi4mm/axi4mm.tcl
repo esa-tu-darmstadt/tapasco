@@ -79,8 +79,8 @@ namespace eval arch {
       set mc [expr "$mc + ($no * $masterc)"]
       set sc [expr "$sc + ($no * $slavec)"]
     }
-    if {$totalInst > 128} {
-      error "ERROR: Currently only 128 instances of target IP are supported."
+    if {$totalInst > [::tapasco::get_platform_num_slots]} {
+      error "ERROR: Currently only [::tapasco::get_platform_num_slots] instances of target IP are supported."
       exit 1
     }
     set max_masters [expr [join [platform::max_masters] +]]
@@ -88,8 +88,8 @@ namespace eval arch {
       puts "ERROR: Configuration requires connection of $mc M-AXI interfaces, but the Platform supports only $max_masters."
       exit 1
     }
-    if {$sc > 128} {
-      puts "ERROR: Configuration requires connection of $sc S-AXI interfaces; at the moment only 128 are supported."
+    if {$sc > [::tapasco::get_platform_num_slots]} {
+      puts "ERROR: Configuration requires connection of $sc S-AXI interfaces; at the moment only [::tapasco::get_platform_num_slots] are supported."
       exit 1
     }
   }

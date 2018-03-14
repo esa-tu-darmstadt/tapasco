@@ -17,6 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 package de.tu_darmstadt.cs.esa.tapasco.parser
+import  de.tu_darmstadt.cs.esa.tapasco.PLATFORM_NUM_SLOTS
 import  FormatObject._
 import  scala.util.Properties.{lineSeparator => NL}
 
@@ -92,7 +93,7 @@ configuration via `tapasco -n config.json`.
     "" &
     Arg("COMPOSITION", """'[' <KERNEL> x <COUNT> [, <KERNEL> x <COUNT>]* ']'""") &
     Indent(Arg("KERNEL", "name of kernel/core, a quoted/unquoted string") &
-           Arg("COUNT", "number of instances (0 < x <= 128)")) &
+           Arg("COUNT", s"number of instances (0 < x <= ${PLATFORM_NUM_SLOTS})")) &
     "" &
     Arg("Examples:", "[ precision_counter x 128 ]" & "[arrayupdate x 4, arraysum x 8]"))
 
@@ -168,7 +169,7 @@ configuration via `tapasco -n config.json`.
                   Arg("  p", "generate only placer errors") &
                   Arg("  o", "generate only other errors"))) &
     "" &
-    "NOTE: Currently the  total number of PEs must be <= 128.")
+    "NOTE: Currently the  total number of PEs must be <= ${PLATFORM_NUM_SLOTS}.")
 
   private def corestats()  = Section("Core Statistics Job",
     Block("Evaluation helper job that automatically gathres the out-of-context results" ~

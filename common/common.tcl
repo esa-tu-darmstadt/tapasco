@@ -478,4 +478,14 @@ namespace eval tapasco {
     puts [format "Adding bit $flag to capability bitfield: 0x%08x (%d) -> 0x%08x (%d)." $flags $flags $nflags $nflags]
     set capabilities_0 $nflags
   }
+
+  proc get_platform_num_slots {} {
+    set f [open "$::env(TAPASCO_HOME)/platform/common/include/platform_global.h" "r"]
+    set fl [split [read $f] "\n"]
+    foreach line $fl {
+      if {[regexp {.PLATFORM_NUM_SLOTS\s*(\d+)} $line _ ret} {
+        return $ret
+      }
+    }
+  }
 }

@@ -49,5 +49,5 @@ case class Platform (
 }
 
 object Platform extends Builds[Platform] {
-  private final val DEFAULT_SLOTCOUNT: Int = 128
+  private final val DEFAULT_SLOTCOUNT: Int = de.tu_darmstadt.cs.esa.tapasco.PLATFORM_NUM_SLOTS
 }
