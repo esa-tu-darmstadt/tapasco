@@ -35,8 +35,11 @@ protected:
 	attroff(A_REVERSE);
         if (info.composition.kernel[col * 32 + row])
           mvprintw(start_r + 2 + row, start_c + 4 + col * col_d, " 0x%08x", info.composition.kernel[col * 32 + row]);
-	else
+	else if (info.composition.memory[col * 32 + row] > 0) {
+          mvprintw(start_r + 2 + row, start_c + 4 + col * col_d, " %7dKiB", info.composition.memory[col * 32 + row] / 1024);
+	} else {
           mvprintw(start_r + 2 + row, start_c + 4 + col * col_d, "           ", col * 32 + row);
+	}
       }
     }
     attron(A_REVERSE);
