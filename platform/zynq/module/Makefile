@@ -5,7 +5,7 @@ CROSS_COMPILE ?= arm-unknown-linux-gnueabihf-
 endif
 
 obj-m += tapasco-platform-zynq.o
-tapasco-platform-zynq-objs := zynq_module.o zynq_device.o zynq_dmamgmt.o zynq_irq.o zynq_ioctl.o
+tapasco-platform-zynq-objs := zynq_module.o zynq_device.o zynq_dmamgmt.o zynq_irq.o zynq_ioctl.o zynq_async.o
 
 CPPFLAGS=-DPLATFORM_API_TAPASCO_STATUS_BASE=$(PLATFORM_API_TAPASCO_STATUS_BASE)
 CPPFLAGS+=-I$(TAPASCO_HOME)/platform/common/include

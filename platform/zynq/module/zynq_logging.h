@@ -33,6 +33,7 @@
 	_ZLL(DMAMGMT   , (1 << 4)) \
 	_ZLL(FOPS      , (1 << 5)) \
 	_ZLL(IRQ       , (1 << 6)) \
+	_ZLL(ASYNC     , (1 << 7)) \
 	_ZLL(ENTEREXIT , (1 << 31))
 
 typedef enum {

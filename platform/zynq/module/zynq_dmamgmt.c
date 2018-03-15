@@ -81,7 +81,8 @@ dma_addr_t zynq_dmamgmt_alloc(struct device *dev, size_t const len,
 	}
 	_dmabuf.elems[id].kvirt_addr = dma_alloc_coherent(
 			dev, len, &_dmabuf.elems[id].dma_addr,
-			GFP_TEMPORARY | GFP_DMA | __GFP_RECLAIMABLE);
+			//GFP_TEMPORARY | GFP_DMA | __GFP_RECLAIMABLE);
+			GFP_DMA | __GFP_RECLAIMABLE);
 	if (! _dmabuf.elems[id].kvirt_addr) {
 		WRN("could not allocate DMA buffer of size %zu byte!", len);
 		dmabuf_fsp_put(&_dmabuf, id);

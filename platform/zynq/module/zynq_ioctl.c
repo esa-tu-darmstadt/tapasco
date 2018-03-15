@@ -23,7 +23,8 @@
  **/
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
-#include <asm/uaccess.h>
+//#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 
 #include "zynq_logging.h"
 #include "zynq_ioctl.h"
@@ -141,7 +142,7 @@ static long zynq_ioctl_fops_ioctl(struct file *fp, unsigned int ioctl_num,
 	struct zynq_ioctl_cmd_t cmd;
 
 	if (_IOC_SIZE(ioctl_num) != sizeof(cmd)) {
-		WRN("illegal size of ioctl command: %zu, expected %zu bytes",
+		WRN("illegal size of ioctl command: %u, expected %zu bytes",
 				_IOC_SIZE(ioctl_num), sizeof(cmd));
 		return -EINVAL;
 	}

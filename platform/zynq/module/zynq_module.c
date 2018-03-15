@@ -30,6 +30,7 @@
 #include "zynq_device.h"
 #include "zynq_irq.h"
 #include "zynq_ioctl.h"
+#include "zynq_async.h"
 
 extern struct zynq_device zynq_dev;
 
@@ -38,10 +39,16 @@ static int __init zynq_module_init(void)
 	int retval = 0;
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
 	LOG(ZYNQ_LL_MODULE, "module loaded");
+	retval = zynq_async_init();
+	if (retval < 0) {
+		ERR("async init failed!");
+		goto exit;
+	}
+
 	retval = zynq_dmamgmt_init();
 	if (retval < 0) {
 		ERR("DMA management init failed!");
-		goto exit;
+		goto err_dma;
 	}
 
 	retval = zynq_device_init();
@@ -72,6 +79,8 @@ err_irq:
 	zynq_device_exit();
 err_chardev:
 	zynq_dmamgmt_exit();
+err_dma:
+	zynq_async_exit();
 exit:
 	LOG(ZYNQ_LL_ENTEREXIT, "exit with error");
 	return retval;
@@ -84,6 +93,7 @@ static void __exit zynq_module_exit(void)
 	zynq_irq_exit();
 	zynq_device_exit();
 	zynq_dmamgmt_exit();
+	zynq_async_init();
 	LOG(ZYNQ_LL_MODULE, "unloading module");
 	LOG(ZYNQ_LL_ENTEREXIT, "exit");
 }
