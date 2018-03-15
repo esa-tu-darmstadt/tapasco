@@ -16,7 +16,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-//! @file	tapasco_functions_test.c
+//! @file	tapasco_pemgmt_test.c
 //! @brief	Unit tests for functions micro API implementation.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
@@ -27,10 +27,49 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sched.h>
-#include <tapasco_functions.h>
-#include "tapasco_functions_test.h"
+#include <tapasco_pemgmt.h>
+#include <platform.h>
+#include <platform_addr_map.h>
+#include "tapasco_pemgmt_test.h"
 
-extern tapasco_res_t tapasco_status_set_id(int idx, tapasco_func_id_t id);
+static platform_info_t _info;
+
+platform_res_t  platform_info(platform_ctx_t const *ctx,
+		platform_info_t *info)
+{
+	memcpy(info, &_info, sizeof(_info));
+	return PLATFORM_SUCCESS;
+}
+
+platform_addr_map_t *platform_context_addr_map(platform_ctx_t const *ctx)
+{
+	return NULL;
+}
+
+platform_res_t platform_addr_map_get_slot_base(platform_addr_map_t const*am,
+		platform_slot_id_t const s,
+		platform_ctl_addr_t *addr)
+{
+	*addr = 0x0UL;
+	return PLATFORM_SUCCESS;
+}
+
+tapasco_res_t tapasco_status_set_id(int idx, tapasco_kernel_id_t id) {
+	_info.composition.kernel[idx] = id;
+	return TAPASCO_SUCCESS;
+}
+
+tapasco_res_t tapasco_device_platform(tapasco_ctx_t *ctx, tapasco_dev_ctx_t **p)
+{
+	*p = NULL;
+	return TAPASCO_SUCCESS;
+}
+
+tapasco_res_t tapasco_device_pemgmt(tapasco_ctx_t *ctx, tapasco_pemgmt_t **p)
+{
+	*p = NULL;
+	return TAPASCO_SUCCESS;
+}
 
 /* Fakes a composition consisting of ascending function ids. */
 static inline void composition_asc(void)
@@ -40,73 +79,73 @@ static inline void composition_asc(void)
 }
 
 /* Checks the function counting. */
-START_TEST (tapasco_functions_check_counts)
+START_TEST (tapasco_pemgmt_check_counts)
 {
 	composition_asc();
 
-	tapasco_functions_t *funcs = NULL;
-	tapasco_functions_init(&funcs);
+	tapasco_pemgmt_t *pemgmt = NULL;
+	tapasco_pemgmt_init(NULL, &pemgmt);
 
 	for (int i = 0; i < TAPASCO_NUM_SLOTS; ++i) {
-		fail_if (tapasco_functions_count(funcs, i + 1) != 1);
-		tapasco_func_slot_id_t slot_id = tapasco_functions_acquire(funcs, i + 1);
+		fail_if (tapasco_pemgmt_count(pemgmt, i + 1) != 1);
+		tapasco_slot_id_t slot_id = tapasco_pemgmt_acquire(pemgmt, i + 1);
 		printf("f_id = %d -> slot_id = %d\n", i + 1, slot_id);
 		fail_if (slot_id < 0);
-		tapasco_func_slot_id_t unavail = tapasco_functions_acquire(funcs, i + 1);
+		tapasco_slot_id_t unavail = tapasco_pemgmt_acquire(pemgmt, i + 1);
 		fail_if (unavail >= 0);
-		tapasco_functions_release(funcs, slot_id);
+		tapasco_pemgmt_release(pemgmt, slot_id);
 	}
 
-	tapasco_functions_deinit(funcs);
+	tapasco_pemgmt_deinit(pemgmt);
 }
 END_TEST
 
 /* Acquire a random function id a hundred times and release. */
 static void *run(void *fp)
 {
-	tapasco_functions_t *funcs = (tapasco_functions_t *)fp;
+	tapasco_pemgmt_t *pemgmt = (tapasco_pemgmt_t *)fp;
 	for (int i = 0; i < 100; ++i) {
-		tapasco_func_id_t const f_id = (rand() % TAPASCO_NUM_SLOTS) + 1;
-		tapasco_func_slot_id_t slot_id;
+		tapasco_kernel_id_t const f_id = (rand() % TAPASCO_NUM_SLOTS) + 1;
+		tapasco_slot_id_t slot_id;
 		do {
-			slot_id = tapasco_functions_acquire(funcs, f_id);
+			slot_id = tapasco_pemgmt_acquire(pemgmt, f_id);
 			sched_yield();
 		} while (slot_id < 0);
-		tapasco_functions_release(funcs, slot_id);
+		tapasco_pemgmt_release(pemgmt, slot_id);
 	}
 	return NULL;
 }
 
 /* Spawns as many threads as host has cores, each starting run. */
-START_TEST (tapasco_functions_mt)
+START_TEST (tapasco_pemgmt_mt)
 {
 	size_t const nprocs = sysconf(_SC_NPROCESSORS_CONF);
 	composition_asc();
 
 
-	tapasco_functions_t *funcs = NULL;
-	tapasco_functions_init(&funcs);
+	tapasco_pemgmt_t *pemgmt = NULL;
+	tapasco_pemgmt_init(NULL, &pemgmt);
 
 	pthread_t *threads = malloc(sizeof(pthread_t *) * nprocs);
 	fail_if(! threads);
 
 	printf("starting %zd threads ...\n", nprocs);
 	for (int i = 0; i < nprocs; ++i)
-		fail_if (pthread_create(&threads[i], NULL, run, funcs));
+		fail_if (pthread_create(&threads[i], NULL, run, pemgmt));
 
 	// join all threads
 	for (int i = 0; i < nprocs; ++i)
 		fail_if (pthread_join(threads[i], NULL));
 
 	free(threads);
-	tapasco_functions_deinit(funcs);
+	tapasco_pemgmt_deinit(pemgmt);
 }
 END_TEST
 
-TCase *functions_testcase(void)
+TCase *pemgmt_testcase(void)
 {
 	TCase *tc_core = tcase_create("Functions");
-	tcase_add_test(tc_core, tapasco_functions_check_counts);
-	tcase_add_test(tc_core, tapasco_functions_mt);
+	tcase_add_test(tc_core, tapasco_pemgmt_check_counts);
+	tcase_add_test(tc_core, tapasco_pemgmt_mt);
 	return tc_core;
 }

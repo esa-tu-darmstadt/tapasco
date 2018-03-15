@@ -89,7 +89,7 @@ START_TEST (tapasco_jobs_set_all_args)
 END_TEST
 
 /* Acquires all job ids, sets and checks function id. */
-START_TEST (tapasco_jobs_set_func_ids)
+START_TEST (tapasco_jobs_set_kernel_ids)
 {
 	int i;
 	tapasco_jobs_t *jobs = NULL;
@@ -99,11 +99,11 @@ START_TEST (tapasco_jobs_set_func_ids)
 	for (i = 0; i < TAPASCO_JOBS_Q_SZ; ++i) {
 		j_id[i] = tapasco_jobs_acquire(jobs);
 		fail_if(j_id[i] <= 0);
-		tapasco_jobs_set_func_id(jobs, j_id[i], (tapasco_func_id_t)(i % 10));
+		tapasco_jobs_set_kernel_id(jobs, j_id[i], (tapasco_kernel_id_t)(i % 10));
 	}
 	for (i = 0; i < TAPASCO_JOBS_Q_SZ; ++i) {
-		tapasco_func_id_t f_id = tapasco_jobs_get_func_id(jobs, j_id[i]);
-		fail_if(f_id != (tapasco_func_id_t)(i % 10));
+		tapasco_kernel_id_t f_id = tapasco_jobs_get_kernel_id(jobs, j_id[i]);
+		fail_if(f_id != (tapasco_kernel_id_t)(i % 10));
 		tapasco_jobs_release(jobs, j_id[i]);
 	}
 	tapasco_jobs_deinit(jobs);
@@ -176,7 +176,7 @@ TCase *jobs_testcase(void)
 
 	tcase_add_test(tc_core, tapasco_jobs_acquire_all);
 	tcase_add_test(tc_core, tapasco_jobs_set_all_args);
-	tcase_add_test(tc_core, tapasco_jobs_set_func_ids);
+	tcase_add_test(tc_core, tapasco_jobs_set_kernel_ids);
 	tcase_add_test(tc_core, tapasco_jobs_toggle_states);
 	tcase_add_test(tc_core, tapasco_jobs_set_returns);
 

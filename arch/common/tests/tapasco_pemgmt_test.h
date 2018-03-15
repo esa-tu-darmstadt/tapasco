@@ -16,15 +16,15 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-//! @file	tapasco_functions_test.h
+//! @file	tapasco_pemgmt_test.h
 //! @brief	Unit tests for functions micro API implementation.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#ifndef TAPASCO_COMMON_FUNCTIONS_TEST_H__
-#define TAPASCO_COMMON_FUNCTIONS_TEST_H__
+#ifndef TAPASCO_COMMON_PEMGMT_TEST_H__
+#define TAPASCO_COMMON_PEMGMT_TEST_H__
 
 #include <check.h>
 
-TCase *functions_testcase(void);
+TCase *pemgmt_testcase(void);
 
-#endif /* TAPASCO_COMMON_FUNCTIONS_TEST_H__ */
+#endif /* TAPASCO_COMMON_PEMGMT_TEST_H__ */

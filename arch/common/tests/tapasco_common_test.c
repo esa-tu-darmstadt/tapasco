@@ -24,13 +24,13 @@
 #include <check.h>
 #include <tapasco_logging.h>
 #include "tapasco_jobs_test.h"
-#include "tapasco_functions_test.h"
+#include "tapasco_pemgmt_test.h"
 
 int main(void)
 {
 	TCase *testcases[] = {
 		jobs_testcase(),
-		functions_testcase(),
+		pemgmt_testcase(),
 	};
 
 	Suite *s = suite_create("tapasco_common");

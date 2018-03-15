@@ -24,6 +24,7 @@
 #include <platform.h>
 
 platform_res_t platform_read_mem(
+		platform_ctx_t const *ctx,
 		platform_mem_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void *data,
@@ -33,6 +34,7 @@ platform_res_t platform_read_mem(
 }
 
 platform_res_t platform_write_mem(
+		platform_ctx_t const *ctx,
 		platform_mem_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void const*data,
@@ -42,6 +44,7 @@ platform_res_t platform_write_mem(
 }
 
 platform_res_t platform_read_ctl(
+		platform_ctx_t const *ctx,
 		platform_ctl_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void *data,
@@ -51,6 +54,7 @@ platform_res_t platform_read_ctl(
 }
 
 platform_res_t platform_write_ctl(
+		platform_ctx_t const *ctx,
 		platform_ctl_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void const*data,
@@ -60,6 +64,7 @@ platform_res_t platform_write_ctl(
 }
 
 platform_res_t platform_write_ctl_and_wait(
+		platform_ctx_t *ctx,
 		platform_ctl_addr_t const w_addr,
 		size_t const w_no_of_bytes,
 		void const *w_data,
