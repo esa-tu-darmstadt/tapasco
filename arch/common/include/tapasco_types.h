@@ -55,7 +55,7 @@ typedef uint32_t tapasco_kernel_id_t;
 typedef uint32_t tapasco_slot_id_t;
 
 /** Identifies jobs, i.e,, sets of arguments for a kernel execution. **/
-typedef uint32_t tapasco_job_id_t;
+typedef uintptr_t tapasco_job_id_t;
 
 /** Device memory location handle (opaque). **/
 typedef uint32_t tapasco_handle_t;

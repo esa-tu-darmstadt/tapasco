@@ -25,6 +25,7 @@
 //! @todo Remove stdio and debug output.
 #include <stdio.h>
 #include <assert.h>
+#include <tapasco_async.h>
 #include <tapasco_device.h>
 #include <tapasco_jobs.h>
 #include <tapasco_regs.h>
@@ -43,6 +44,7 @@ struct tapasco_dev_ctx {
 	tapasco_jobs_t 		*jobs;
 	tapasco_dev_id_t 	id;
 	tapasco_local_mem_t 	*lmem;
+	tapasco_async_t		*async;
 	platform_ctx_t 		*pctx;
 };
 
@@ -62,6 +64,12 @@ tapasco_local_mem_t *tapasco_device_local_mem(tapasco_dev_ctx_t const *ctx)
 {
 	assert(ctx);
 	return ctx->lmem;
+}
+
+tapasco_async_t *tapasco_device_async(tapasco_dev_ctx_t const *ctx)
+{
+	assert(ctx);
+	return ctx->async;
 }
 
 platform_ctx_t *tapasco_device_platform(tapasco_dev_ctx_t const *ctx)
@@ -111,6 +119,10 @@ tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx,
 	p->id = dev_id;
 	*pdev_ctx = p;
 	setup_system(p);
+
+	res = tapasco_async_init(&(*pdev_ctx)->async);
+	if (res != TAPASCO_SUCCESS) return res;
+
 	LOG(LALL_DEVICE, "device %d created successfully", dev_id);
 	return TAPASCO_SUCCESS;
 }
