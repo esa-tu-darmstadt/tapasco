@@ -99,7 +99,7 @@ static platform_res_t init_platform(zynq_platform_t *p)
 	if (p->fd_gp0_map != -1) {
 		p->gp0_map = mmap(
 				NULL,
-				ZYNQ_PLATFORM_GPX_SIZE,
+				ZYNQ_PLATFORM_GP0_SIZE,
 				PROT_READ | PROT_WRITE | PROT_EXEC,
 				MAP_SHARED,
 				p->fd_gp0_map,
@@ -119,7 +119,7 @@ static platform_res_t init_platform(zynq_platform_t *p)
 	if (p->fd_gp1_map != -1) {
 		p->gp1_map = mmap(
 				NULL,
-				ZYNQ_PLATFORM_GPX_SIZE,
+				ZYNQ_PLATFORM_GP1_SIZE,
 				PROT_READ | PROT_WRITE | PROT_EXEC,
 				MAP_SHARED,
 				p->fd_gp1_map,
@@ -139,7 +139,7 @@ static platform_res_t init_platform(zynq_platform_t *p)
 	if (p->fd_status_map != -1) {
 		p->status_map = mmap(
 				NULL,
-				0x2000,
+				PLATFORM_API_TAPASCO_STATUS_SIZE,
 				PROT_READ,
 				MAP_SHARED,
 				p->fd_status_map,
@@ -189,7 +189,7 @@ static platform_res_t release_platform(zynq_platform_t *p)
 	}
 	if (p->fd_gp1_map != -1) {
 		if (p->gp1_map != NULL && p->gp1_map != MAP_FAILED) {
-			munmap((void *)p->gp1_map, ZYNQ_PLATFORM_GPX_SIZE);
+			munmap((void *)p->gp1_map, ZYNQ_PLATFORM_GP1_SIZE);
 			p->gp1_map = NULL;
 		}
 		close(p->fd_gp1_map);
@@ -198,7 +198,7 @@ static platform_res_t release_platform(zynq_platform_t *p)
 	}
 	if (p->fd_gp0_map != -1) {
 		if (p->gp0_map != NULL && p->gp0_map != MAP_FAILED) {
-			munmap((void *)p->gp0_map, ZYNQ_PLATFORM_GPX_SIZE);
+			munmap((void *)p->gp0_map, ZYNQ_PLATFORM_GP0_SIZE);
 			p->gp0_map = NULL;
 		}
 		close(p->fd_gp0_map);
@@ -228,7 +228,7 @@ static platform_res_t enable_interrupts(zynq_platform_t *ctx)
 	// TODO move code to interrupt controller unit
 	LOG(LPLL_IRQ, "enabling interrupts at %d controllers", intcs);
 	for (int i = 0; i < intcs; ++i) {
-		platform_ctl_addr_t intc = ZYNQ_PLATFORM_INTC_BASE + ZYNQ_PLATFORM_INTC_OFFS * i;
+		platform_ctl_addr_t intc = ZYNQ_PLATFORM_INTC_BASE - ZYNQ_PLATFORM_GP1_BASE + ZYNQ_PLATFORM_INTC_OFFS * i;
 		// disable all interrupts
 		platform_write_ctl(ctx->ctx, intc + 0x8, sizeof(off), &off, f);
 		platform_write_ctl(ctx->ctx, intc + 0x1c, sizeof(off), &off, f);

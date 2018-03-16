@@ -1,4 +1,4 @@
-PLATFORM_API_TAPASCO_STATUS_BASE?=0x40000000UL
+PLATFORM_API_TAPASCO_STATUS_BASE?=0x77770000UL
 LINUX_HOME ?= /lib/modules/$(shell uname -r)/build
 ifeq ($(ARCH), arm)
 CROSS_COMPILE ?= arm-unknown-linux-gnueabihf-

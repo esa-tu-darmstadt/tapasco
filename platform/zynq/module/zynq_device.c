@@ -68,55 +68,6 @@ static struct file_operations zynq_device_fops = {
 	.mmap  = zynq_device_mmap
 };
 
-/******************************************************************************/
-static ssize_t zynq_device_wait(struct device *dev,
-		struct device_attribute *attr, char const *buf, size_t count)
-{
-	u32 id, cd = 0;
-	long got_ev, wait_ret;
-	LOG(ZYNQ_LL_ENTEREXIT, "enter");
-	id = *(u32 *)buf;
-	LOG(ZYNQ_LL_DEVICE, "checking for %u", id);
-
-	while ((got_ev = zynq_dev.pending_ev[id]) <= 0) {
-		++cd;
-		LOG(ZYNQ_LL_DEVICE, "sleeping on %u", id);
-		wait_ret = wait_event_interruptible_timeout(zynq_dev.ev_q[id],
-				zynq_dev.pending_ev[id] != 0,
-				10 * HZ);
-		if (wait_ret < 0) {
-			WRN("wait for %u interrupted by signal %ld!", id, wait_ret);
-			return wait_ret;
-		}
-	}
-
-	if (! got_ev) {
-		WRN("TIMEOUT: did not get event %u", id);
-		return -ETIMEDOUT;
-	}
-
-	__atomic_fetch_sub(&zynq_dev.pending_ev[id], 1, __ATOMIC_SEQ_CST);
-
-	LOG(ZYNQ_LL_ENTEREXIT, "exit");
-	return 0;
-}
-
-static ssize_t zynq_device_pending_ev(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	int i;
-	ssize_t r = 0;
-	for (i = 0; i < PLATFORM_NUM_SLOTS; ++i)
-		r += sprintf(&buf[i * 16], "%03d: %10ld\n", i, zynq_dev.pending_ev[i]);
-	return r;
-}
-
-static ssize_t zynq_device_total_ev(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	return sprintf(buf, "%lu\n", zynq_dev.total_ev);
-}
-
 static int init_misc_devs(void)
 {
 	int retval;
@@ -166,70 +117,27 @@ static void exit_misc_devs(void)
 	misc_deregister(&zynq_dev.miscdev[0]);
 }
 
-static DEVICE_ATTR(wait, S_IWUSR | S_IWGRP, NULL, zynq_device_wait);
-static DEVICE_ATTR(pending_ev, S_IRUSR | S_IRGRP, zynq_device_pending_ev, NULL);
-static DEVICE_ATTR(total_ev, S_IRUSR | S_IRGRP, zynq_device_total_ev, NULL);
-
-static int init_sysfs_files(void)
-{
-	int retval;
-
-	retval = device_create_file(zynq_dev.miscdev[2].this_device, &dev_attr_wait);
-	if (retval < 0) {
-		ERR("failed to create 'wait' device file");
-		goto err_wait;
-	}
-	retval = device_create_file(zynq_dev.miscdev[2].this_device, &dev_attr_pending_ev);
-	if (retval < 0) {
-		ERR("failed to create 'pending_ev' device file");
-		goto err_pending_ev;
-	}
-	retval = device_create_file(zynq_dev.miscdev[2].this_device, &dev_attr_total_ev);
-	if (retval < 0) {
-		ERR("failed to create 'total_ev' device file");
-		goto err_total_ev;
-	}
-
-	return retval;
-
-
-	device_remove_file(zynq_dev.miscdev[2].this_device, &dev_attr_total_ev);
-err_total_ev:
-	device_remove_file(zynq_dev.miscdev[2].this_device, &dev_attr_pending_ev);
-err_pending_ev:
-	device_remove_file(zynq_dev.miscdev[2].this_device, &dev_attr_wait);
-err_wait:
-	return retval;
-}
-
-static void exit_sysfs_files(void)
-{
-	device_remove_file(zynq_dev.miscdev[2].this_device, &dev_attr_total_ev);
-	device_remove_file(zynq_dev.miscdev[2].this_device, &dev_attr_pending_ev);
-	device_remove_file(zynq_dev.miscdev[2].this_device, &dev_attr_wait);
-}
-
 static int init_iomapping(void)
 {
 	int retval = 0;
 	zynq_dev.gp_map[0] = ioremap_nocache(ZYNQ_PLATFORM_GP0_BASE,
-		ZYNQ_PLATFORM_GPX_SIZE);
+		ZYNQ_PLATFORM_GP0_SIZE);
 	if (IS_ERR(zynq_dev.gp_map[0])) {
 		ERR("could not ioremap the AXI register space at 0x%08lx-0x%08lx",
 				ZYNQ_PLATFORM_GP0_BASE,
 				ZYNQ_PLATFORM_GP0_BASE +
-				ZYNQ_PLATFORM_GPX_SIZE - 1);
+				ZYNQ_PLATFORM_GP0_SIZE - 1);
 		retval = PTR_ERR(zynq_dev.gp_map[0]);
 		goto err_gp0;
 	}
 
 	zynq_dev.gp_map[1] = ioremap_nocache(ZYNQ_PLATFORM_GP1_BASE,
-			ZYNQ_PLATFORM_INTC_MAX_NUM * ZYNQ_PLATFORM_INTC_OFFS);
+			ZYNQ_PLATFORM_GP1_SIZE);
 	if (IS_ERR(zynq_dev.gp_map[1])) {
 		ERR("could not ioremap the AXI register space at 0x%08lx-0x%08lx",
 				ZYNQ_PLATFORM_GP1_BASE,
 				ZYNQ_PLATFORM_GP1_BASE +
-				ZYNQ_PLATFORM_GPX_SIZE - 1);
+				ZYNQ_PLATFORM_GP1_SIZE - 1);
 		retval = PTR_ERR(zynq_dev.gp_map[1]);
 		goto err_gp1;
 	}
@@ -279,12 +187,6 @@ int zynq_device_init(void)
 		goto err_miscdev;
 	}
 
-	retval = init_sysfs_files();
-	if (retval < 0) {
-		ERR("alloc/dealloc files could not be created!");
-		goto err_sysfs_files;
-	}
-
 	retval = init_iomapping();
 	if (retval < 0) {
 		ERR("I/O remapping failed!");
@@ -296,8 +198,6 @@ int zynq_device_init(void)
 
 	exit_iomapping();
 err_iomapping:
-	exit_sysfs_files();
-err_sysfs_files:
 	exit_misc_devs();
 err_miscdev:
 	LOG(ZYNQ_LL_ENTEREXIT, "exit with error %d", retval);
@@ -309,8 +209,6 @@ void zynq_device_exit(void)
 	LOG(ZYNQ_LL_ENTEREXIT, "enter" );
 	LOG(ZYNQ_LL_DEVICE, "unmapping I/O areas");
 	exit_iomapping();
-	LOG(ZYNQ_LL_DEVICE, "releasing sysfs device files");
-	exit_sysfs_files();
 	LOG(ZYNQ_LL_DEVICE, "releasing devices");
 	exit_misc_devs();
 	LOG(ZYNQ_LL_ENTEREXIT, "exit" );
