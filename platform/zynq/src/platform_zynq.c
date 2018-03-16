@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
 // This file is part of Tapasco (TPC).
 //
@@ -21,8 +21,8 @@
 //!		loadable kernel module. Communicates with the Zynq fabric via 
 //!		device driver.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
-//! @version	1.2
-//! @copyright  Copyright 2014, 2015 J. Korinth
+//! @version	1.3
+//! @copyright  Copyright 2014-2018 J. Korinth
 //!
 //!		This file is part of Tapasco (TPC).
 //!
@@ -89,16 +89,17 @@ static zynq_platform_t zynq_platform = {
 static platform_res_t init_platform(zynq_platform_t *p)
 {
 	platform_res_t result;
-	p->fd_wait     = open(ZYNQ_PLATFORM_WAITFILENAME, O_WRONLY);
+	p->fd_wait     = open("/dev/" ZYNQ_PLATFORM_WAITFILENAME, O_RDONLY);
 	if (p->fd_wait == -1) {
-		ERR("could not open device file: %s", ZYNQ_PLATFORM_WAITFILENAME);
+		ERR("could not open device file: %s",
+				"/dev/" ZYNQ_PLATFORM_WAITFILENAME);
 		return PERR_OPEN_DEV;
 	}
 	p->fd_gp0_map = open("/dev/" ZYNQ_PLATFORM_DEVFILENAME "_gp0", O_RDWR);
 	if (p->fd_gp0_map != -1) {
 		p->gp0_map = mmap(
 				NULL,
-				0x40000000UL,
+				ZYNQ_PLATFORM_GPX_SIZE,
 				PROT_READ | PROT_WRITE | PROT_EXEC,
 				MAP_SHARED,
 				p->fd_gp0_map,
@@ -118,7 +119,7 @@ static platform_res_t init_platform(zynq_platform_t *p)
 	if (p->fd_gp1_map != -1) {
 		p->gp1_map = mmap(
 				NULL,
-				0x40000000UL,
+				ZYNQ_PLATFORM_GPX_SIZE,
 				PROT_READ | PROT_WRITE | PROT_EXEC,
 				MAP_SHARED,
 				p->fd_gp1_map,
@@ -188,7 +189,7 @@ static platform_res_t release_platform(zynq_platform_t *p)
 	}
 	if (p->fd_gp1_map != -1) {
 		if (p->gp1_map != NULL && p->gp1_map != MAP_FAILED) {
-			munmap((void *)p->gp1_map, 0x100000UL);
+			munmap((void *)p->gp1_map, ZYNQ_PLATFORM_GPX_SIZE);
 			p->gp1_map = NULL;
 		}
 		close(p->fd_gp1_map);
@@ -197,7 +198,7 @@ static platform_res_t release_platform(zynq_platform_t *p)
 	}
 	if (p->fd_gp0_map != -1) {
 		if (p->gp0_map != NULL && p->gp0_map != MAP_FAILED) {
-			munmap((void *)p->gp0_map, 48 * 0x10000UL);
+			munmap((void *)p->gp0_map, ZYNQ_PLATFORM_GPX_SIZE);
 			p->gp0_map = NULL;
 		}
 		close(p->fd_gp0_map);

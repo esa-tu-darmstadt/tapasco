@@ -10,7 +10,7 @@ void *dispatcher_main(void *p)
 	tapasco_async_t *a = (tapasco_async_t *)p;
 	while (1) {
 		tapasco_job_id_t j_id;
-		while (j_id = (tapasco_job_id_t)gq_dequeue(a->launch_q)) {
+		while ((j_id = (tapasco_job_id_t)gq_dequeue(a->launch_q))) {
 			LOG(LALL_ASYNC, "launching job %lu ...", j_id);
 			gq_enqueue(a->finished_q, (void *)j_id);
 		}

@@ -10,6 +10,9 @@
 #include <linux/miscdevice.h>
 #include <platform_global.h>
 #include "zynq_logging.h"
+#include "zynq_platform.h"
+
+#define ASYNC_BUFFER_SZ					1024U
 
 #define ASYNC_BUFFER_SZ					1024U
 
@@ -28,9 +31,6 @@ static
 int open(struct inode *inod, struct file *file)
 {
 	LOG(ZYNQ_LL_ASYNC, "opening async file");
-	zynq_async.out_r_idx = 0;
-	zynq_async.out_w_idx = 0;
-	zynq_async.outstanding = 0;
 	return 0;
 }
 
@@ -117,7 +117,7 @@ static
 int init_async_dev(void)
 {
 	zynq_async.miscdev.minor = MISC_DYNAMIC_MINOR;
-	zynq_async.miscdev.name  = "tapasco_async";
+	zynq_async.miscdev.name  = ZYNQ_PLATFORM_WAITFILENAME;
 	zynq_async.miscdev.fops  = &zynq_async_fops;
 	return misc_register(&zynq_async.miscdev);
 }
