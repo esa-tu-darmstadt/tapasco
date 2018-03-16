@@ -16,7 +16,7 @@ all:
 	make KCPPFLAGS="$(CPPFLAGS)" -C $(LINUX_HOME) M=$(PWD) modules
 
 release:
-	KCPPFLAGS+="$(CPPFLAGS) -DNDEBUG -O3" make -C $(LINUX_HOME) M=$(PWD) modules
+	make KCPPFLAGS+="$(CPPFLAGS) -DNDEBUG -O3" -C $(LINUX_HOME) M=$(PWD) modules
 
 clean:
 	make -C $(LINUX_HOME) M=$(PWD) clean

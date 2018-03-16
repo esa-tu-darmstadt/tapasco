@@ -11,50 +11,106 @@
 #include <platform_global.h>
 #include "zynq_logging.h"
 
+#define ASYNC_BUFFER_SZ					1024U
+
 static struct {
 	struct miscdevice	miscdev;
 	wait_queue_head_t	read_q;
-	u32			out_slots[PLATFORM_NUM_SLOTS << 2];
+	wait_queue_head_t	write_q;
+	u32			out_slots[ASYNC_BUFFER_SZ];
 	u32			out_r_idx;
 	u32			out_w_idx;
 	struct mutex		out_mutex;
+	u32			outstanding;
 } zynq_async;
 
+static
+int open(struct inode *inod, struct file *file)
+{
+	LOG(ZYNQ_LL_ASYNC, "opening async file");
+	zynq_async.out_r_idx = 0;
+	zynq_async.out_w_idx = 0;
+	zynq_async.outstanding = 0;
+	return 0;
+}
+
+static
+int release(struct inode *inod, struct file *file)
+{
+	ERR("releasing async file: outstanding = %u", zynq_async.outstanding);
+	return 0;
+}
+
+static
 ssize_t read(struct file *file, char __user *usr, size_t sz, loff_t *loff)
 {
 	ssize_t out = 0;
 	u32 out_val = 0;
-	mutex_lock(&zynq_async.out_mutex);
-	out = zynq_async.out_w_idx - zynq_async.out_r_idx;
-	if (out > 0) {
-		out_val = zynq_async.out_slots[zynq_async.out_r_idx];
-		zynq_async.out_r_idx = (zynq_async.out_r_idx + 1) %
-				(PLATFORM_NUM_SLOTS << 2);
-	}
-	mutex_unlock(&zynq_async.out_mutex);
-	if (out > 0) {
-		out = copy_to_user(usr, &out_val, sizeof(out_val));
-	}
-	return out;
+	do {
+		mutex_lock(&zynq_async.out_mutex);
+		out = zynq_async.out_w_idx != zynq_async.out_r_idx;
+		if (out) {
+			out_val = zynq_async.out_slots[zynq_async.out_r_idx];
+			zynq_async.out_r_idx = (zynq_async.out_r_idx + 1) %
+					ASYNC_BUFFER_SZ;
+			--zynq_async.outstanding;
+		}
+		mutex_unlock(&zynq_async.out_mutex);
+		if (! out) {
+			LOG(ZYNQ_LL_ASYNC, "waiting on data ...");
+			wait_event_interruptible(zynq_async.read_q,
+					zynq_async.out_w_idx !=
+					zynq_async.out_r_idx);
+			if (signal_pending(current)) return -ERESTARTSYS;
+		} else {
+			LOG(ZYNQ_LL_ASYNC, "read %zd bytes, out_val = %u",
+					sz, out_val);
+			wake_up_interruptible(&zynq_async.write_q);
+		}
+	} while (! out);
+	out = copy_to_user(usr, &out_val, sizeof(out_val));
+	if (out) return -EFAULT;
+	return sizeof(out_val);
 }
 
-ssize_t write(struct file *file, const char __user *usr, size_t sz, loff_t *loff)
+static
+ssize_t write(struct file *file, const char __user *usr, size_t sz, loff_t *o)
 {
 	u32 in_val = 0;
-	ssize_t in = copy_from_user(&in_val, usr, sizeof(in_val));
-	if (in > 0) {
-		mutex_lock(&zynq_async.out_mutex);
-		zynq_async.out_slots[zynq_async.out_w_idx] = in_val;
-		zynq_async.out_w_idx = (zynq_async.out_w_idx + 1) %
-				(PLATFORM_NUM_SLOTS << 2);
+	ssize_t in;
+	in = copy_from_user(&in_val, usr, sizeof(in_val));
+	if (in) return -EFAULT;
+	mutex_lock(&zynq_async.out_mutex);
+	while (zynq_async.outstanding > ASYNC_BUFFER_SZ - 2) {
+		WRN("buffer thrashing, throttling write ...");
 		mutex_unlock(&zynq_async.out_mutex);
+		wait_event_interruptible(zynq_async.write_q,
+				zynq_async.outstanding <= (ASYNC_BUFFER_SZ >> 1));
+		if (signal_pending(current)) return -ERESTARTSYS;
+		mutex_lock(&zynq_async.out_mutex);
 	}
-	return in;
+	mutex_unlock(&zynq_async.out_mutex);
+	LOG(ZYNQ_LL_ASYNC, "writing %zd bytes, in_val = %u, in = %zd",
+			sz, in_val, in);
+	mutex_lock(&zynq_async.out_mutex);
+	zynq_async.out_slots[zynq_async.out_w_idx] = in_val;
+	zynq_async.out_w_idx = (zynq_async.out_w_idx + 1) % ASYNC_BUFFER_SZ;
+	++zynq_async.outstanding;
+#ifndef NDEBUG
+	if (zynq_async.outstanding >= ASYNC_BUFFER_SZ)
+		ERR("buffer size exceeded! expect missing data!");
+#endif
+	mutex_unlock(&zynq_async.out_mutex);
+	wake_up_interruptible(&zynq_async.read_q);
+	return sizeof(in_val);
 }
 
-static struct file_operations zynq_async_fops = {
-	.owner = THIS_MODULE,
-	.read  = read,
+static const struct file_operations zynq_async_fops = {
+	.owner   = THIS_MODULE,
+	.read    = read,
+	.write   = write,
+	.open    = open,
+	.release = release,
 };
 
 static
@@ -71,15 +127,19 @@ int zynq_async_init(void)
 	int retval;
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
 	init_waitqueue_head(&zynq_async.read_q);
+	init_waitqueue_head(&zynq_async.write_q);
 	zynq_async.out_r_idx = 0;
 	zynq_async.out_w_idx = 0;
+	zynq_async.outstanding = 0;
 	mutex_init(&zynq_async.out_mutex);
 	retval = init_async_dev();
 	if (retval < 0) {
 		ERR("async device init failed");
 		goto err_asyncdev;
 	}
+	LOG(ZYNQ_LL_ASYNC, "async initialized");
 	LOG(ZYNQ_LL_ENTEREXIT, "exit");
+
 	return 0;
 
 err_asyncdev:

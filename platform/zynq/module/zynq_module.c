@@ -93,7 +93,7 @@ static void __exit zynq_module_exit(void)
 	zynq_irq_exit();
 	zynq_device_exit();
 	zynq_dmamgmt_exit();
-	zynq_async_init();
+	zynq_async_exit();
 	LOG(ZYNQ_LL_MODULE, "unloading module");
 	LOG(ZYNQ_LL_ENTEREXIT, "exit");
 }
@@ -104,4 +104,4 @@ module_exit(zynq_module_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)");
 MODULE_DESCRIPTION("Tapasco Platform Module: Zynq-7000 series");
-MODULE_VERSION("1.1");
+MODULE_VERSION("1.2");

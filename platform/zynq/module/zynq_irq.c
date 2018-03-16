@@ -71,10 +71,6 @@ int zynq_irq_init(void)
 				IRQF_TRIGGER_NONE | IRQF_ONESHOT,
 				ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME,
 				&zynq_dev);
-		// enable all irqs
-		iowrite32(0xffffffffUL, intc + ((irqn * ZYNQ_PLATFORM_INTC_OFFS + 0x08) >> 2));
-		iowrite32(0xffffffffUL, intc + ((irqn * ZYNQ_PLATFORM_INTC_OFFS + 0x1c) >> 2));
-		ioread32(intc); // read ISR
 		intc += ZYNQ_PLATFORM_INTC_OFFS >> 2; // next INTC
 	}
 
@@ -98,16 +94,10 @@ err:
 void zynq_irq_exit(void)
 {
 	int irqn = ZYNQ_PLATFORM_INTC_MAX_NUM;
-	u32 *intc = (u32 *)zynq_dev.gp_map[1];
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
 	while (irqn) {
 		--irqn;
 		LOG(ZYNQ_LL_IRQ, "releasing IRQ #%d", ZYNQ_IRQ_BASE_IRQ + irqn);
-		// ack all ints
-		iowrite32(0xffffffffUL, intc + ((irqn * ZYNQ_PLATFORM_INTC_OFFS) >> 2));
-		// mask all ints
-		iowrite32(0, intc + ((irqn * ZYNQ_PLATFORM_INTC_OFFS + 0x08) >> 2));
-		iowrite32(0, intc + ((irqn * ZYNQ_PLATFORM_INTC_OFFS + 0x1C) >> 2));
 		disable_irq(ZYNQ_IRQ_BASE_IRQ + irqn);
 		free_irq(ZYNQ_IRQ_BASE_IRQ + irqn, &zynq_dev);
 	}
