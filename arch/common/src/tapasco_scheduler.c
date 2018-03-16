@@ -166,7 +166,7 @@ tapasco_res_t tapasco_scheduler_launch(
 				return TAPASCO_FAILURE;
 		} else {
 			tapasco_res_t r = tapasco_write_arg(dev_ctx, jobs, j_id,
-					a, h);
+					h, a);
 			if (r != TAPASCO_SUCCESS) { return r; }
 		}
 	}

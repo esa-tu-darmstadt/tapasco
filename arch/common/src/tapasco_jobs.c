@@ -18,7 +18,7 @@
 //
 /**
  *  @file	tapasco_jobs.c
- *  @brief	
+ *  @brief
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 // #include <stdio.h>
@@ -244,7 +244,6 @@ inline tapasco_job_id_t tapasco_jobs_acquire(tapasco_jobs_t *jobs) {
 
 inline void tapasco_jobs_release(tapasco_jobs_t *jobs, tapasco_job_id_t const j_id) {
 	assert(jobs);
-	memset(&jobs->q.elems[j_id - 1000], 0, sizeof(tapasco_job_t));
 	jobs->q.elems[j_id - 1000].state = TAPASCO_JOB_STATE_READY;
 	tapasco_jobs_fsp_put(&jobs->q, j_id - 1000);
 }
