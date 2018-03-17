@@ -25,10 +25,12 @@
 #define PLATFORM_CONTEXT_H__
 
 #include <platform_addr_map.h>
-
-platform_addr_map_t *platform_context_addr_map(platform_ctx_t const *ctx);
+#include <platform_async.h>
 
 platform_res_t platform_context_init(platform_ctx_t **ctx);
 void platform_context_deinit(platform_ctx_t *ctx);
+
+platform_addr_map_t *platform_context_addr_map(platform_ctx_t const *ctx);
+platform_async_t *platform_context_async(platform_ctx_t const *ctx);
 
 #endif /* PLATFORM_CONTEXT_H__ */

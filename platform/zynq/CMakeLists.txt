@@ -16,6 +16,7 @@ set(CMNDIR "../common")
 set(GCMNDIR "${TAPASCO_HOME}/common")
 set(COMPFLAGS "-Wall -Werror -g -O3 -std=gnu11")
 set(CMNSRCS "${CMNDIR}/src/platform_addr_map.c"
+            "${CMNDIR}/src/platform_async.c"
             "${CMNDIR}/src/platform_context.c"
             "${CMNDIR}/src/platform_errors.c"
             "${CMNDIR}/src/platform_info.c"

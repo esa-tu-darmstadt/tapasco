@@ -236,6 +236,24 @@ int tapasco_jobs_is_arg_64bit(tapasco_jobs_t const *jobs,
 		size_t const arg_idx);
 
 /**
+ * Returns the assign slot id for this job.
+ * @param jobs jobs context.
+ * @param j_id job id.
+ * @return slot id this job will run on.
+ **/
+tapasco_slot_id_t tapasco_jobs_get_slot(tapasco_jobs_t const *jobs, tapasco_job_id_t const j_id);
+
+/**
+ * Assigns the slot id for this job.
+ * @param jobs jobs context.
+ * @param j_id job id.
+ * @param slot_id slot to assign.
+ **/
+void tapasco_jobs_set_slot(tapasco_jobs_t *jobs,
+		tapasco_job_id_t const j_id,
+		tapasco_slot_id_t const slot_id);
+
+/**
  * Reserves a job id for preparation.
  * @param jobs jobs context.
  * @return job id.

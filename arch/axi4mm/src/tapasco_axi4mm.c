@@ -90,7 +90,7 @@ tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **ctx)
 
 void tapasco_deinit(tapasco_ctx_t *ctx)
 {
-	LOG(LALL_INIT, "shutting down TPC");
+	LOG(LALL_INIT, "shutting down TaPaSCo");
 	if (ctx) {
 		free(ctx);
 	}

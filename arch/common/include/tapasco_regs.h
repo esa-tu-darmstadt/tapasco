@@ -53,7 +53,7 @@ typedef enum {
  * @return Register space address of arg register.
  **/
 tapasco_handle_t tapasco_regs_arg_register(
-		tapasco_dev_ctx_t *dev_ctx,
+		tapasco_dev_ctx_t const *dev_ctx,
 		tapasco_slot_id_t const slot_id,
 		size_t const arg_idx);
 
@@ -65,7 +65,7 @@ tapasco_handle_t tapasco_regs_arg_register(
  * @param reg Named register to resolve.
  * @return Register space address > 0 if found.
  **/
-tapasco_handle_t tapasco_regs_named_register(tapasco_dev_ctx_t *dev_ctx,
+tapasco_handle_t tapasco_regs_named_register(tapasco_dev_ctx_t const *dev_ctx,
 		tapasco_slot_id_t const slot_id,
 		tapasco_reg_t const reg);
 

@@ -40,7 +40,7 @@
 static tapasco_handle_t _bases[TAPASCO_NUM_SLOTS] = { 0 };
  
 
-static inline tapasco_handle_t base_addr(tapasco_dev_ctx_t *dev_ctx,
+static inline tapasco_handle_t base_addr(tapasco_dev_ctx_t const *dev_ctx,
 		tapasco_slot_id_t const slot_id)
 {
 	assert(slot_id < TAPASCO_NUM_SLOTS);
@@ -53,7 +53,7 @@ static inline tapasco_handle_t base_addr(tapasco_dev_ctx_t *dev_ctx,
 }
 
 tapasco_handle_t tapasco_regs_arg_register(
-		tapasco_dev_ctx_t *dev_ctx,
+		tapasco_dev_ctx_t const *dev_ctx,
 		tapasco_slot_id_t const slot_id,
 		size_t const arg_idx)
 {
@@ -63,7 +63,7 @@ tapasco_handle_t tapasco_regs_arg_register(
 	     + arg_idx * ARG_OFFSET;
 }
 
-tapasco_handle_t tapasco_regs_named_register(tapasco_dev_ctx_t *dev_ctx,
+tapasco_handle_t tapasco_regs_named_register(tapasco_dev_ctx_t const *dev_ctx,
 		tapasco_slot_id_t const slot_id,
 		tapasco_reg_t const reg)
 {

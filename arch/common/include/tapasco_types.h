@@ -30,6 +30,9 @@
 
 #define PE_LOCAL_FLAG					2
 
+/** Shorthand for unsigned long int. */
+typedef unsigned long int ul;
+
 /** General purpose result type **/
 typedef enum {
 	/** Indicates successful operation. **/

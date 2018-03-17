@@ -81,4 +81,35 @@ void tapasco_pemgmt_release(tapasco_pemgmt_t *ctx,
 size_t tapasco_pemgmt_count(tapasco_pemgmt_t const *ctx,
 		tapasco_kernel_id_t const k_id);
 
+/**
+ * Prepares the given job for the execution of the job by transferring
+ * all arguments and set PE registers.
+ * @param dev_ctx device context.
+ * @param j_id job id.
+ * @param slot_id id of the slot.
+ * @return TAPASCO_SUCCESS if successful, an error code otherwise.
+ **/
+tapasco_res_t tapasco_pemgmt_prepare_slot(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_job_id_t const j_id,
+		tapasco_slot_id_t const slot_id);
+
+/**
+ * Starts execution of PE in given slot.
+ * @param slot_id id of the slot to start.
+ * @return TAPASCO_SUCCESS if successful, an error code otherwise.
+ **/
+tapasco_res_t tapasco_pemgmt_start(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_slot_id_t const slot_id);
+
+/**
+ * Bottom half of job launch: Retrieves the arguments for the given
+ * job from the registers of the PE it was assigned to. Then releases
+ * the PE and sets the job to finished.
+ * @param dev_ctx device context.
+ * @param j_id job id.
+ * @return TAPASCO_SUCCESS if successful, an error code otherwise.
+ **/
+tapasco_res_t tapasco_pemgmt_finish_job(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_job_id_t const j_id);
+
 #endif /* TAPASCO_PEMGMT_H__ */

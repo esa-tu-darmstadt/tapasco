@@ -26,11 +26,13 @@
 #include <tapasco_types.h>
 #include <tapasco_pemgmt.h>
 #include <tapasco_local_mem.h>
+#include <tapasco_jobs.h>
 #include <platform_types.h>
 
 tapasco_ctx_t       *tapasco_device_context(tapasco_dev_ctx_t const *dev_ctx);
 tapasco_pemgmt_t    *tapasco_device_pemgmt(tapasco_dev_ctx_t const *dev_ctx);
 tapasco_local_mem_t *tapasco_device_local_mem(tapasco_dev_ctx_t const  *dev_ctx);
+tapasco_jobs_t	    *tapasco_device_jobs(tapasco_dev_ctx_t const *dev_ctx);
 platform_ctx_t      *tapasco_device_platform(tapasco_dev_ctx_t const *dev_ctx);
 
 tapasco_res_t tapasco_device_info(tapasco_dev_ctx_t const *dev_ctx,

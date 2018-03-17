@@ -51,6 +51,8 @@ struct tapasco_job {
 	} ret;
 	/** transfer array (max. 32 transfers) **/
 	tapasco_transfer_t transfers[TAPASCO_JOB_MAX_ARGS];
+	/** slot id this job is scheduled on **/
+	tapasco_slot_id_t slot;
 };
 typedef struct tapasco_job tapasco_job_t;
 
@@ -280,6 +282,22 @@ int tapasco_jobs_is_arg_64bit(tapasco_jobs_t const *jobs,
 	assert(jobs);
 	assert(arg_idx < TAPASCO_JOB_MAX_ARGS);
 	return ((1 << arg_idx) & jobs->q.elems[j_id - JOB_ID_OFFSET].args_sz) > 0;
+}
+
+tapasco_slot_id_t tapasco_jobs_get_slot(tapasco_jobs_t const *jobs, tapasco_job_id_t const j_id)
+{
+	assert(jobs);
+	assert(j_id - JOB_ID_OFFSET < TAPASCO_JOBS_Q_SZ);
+	return jobs->q.elems[j_id - JOB_ID_OFFSET].slot;
+}
+
+void tapasco_jobs_set_slot(tapasco_jobs_t *jobs,
+		tapasco_job_id_t const j_id,
+		tapasco_slot_id_t const slot_id)
+{
+	assert(jobs);
+	assert(j_id - JOB_ID_OFFSET < TAPASCO_JOBS_Q_SZ);
+	jobs->q.elems[j_id - JOB_ID_OFFSET].slot = slot_id;
 }
 
 inline

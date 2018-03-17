@@ -62,7 +62,6 @@
 /******************************************************************************/
 
 typedef struct zynq_platform {
-	int		fd_wait;
 	int 		fd_gp0_map;
 	int 		fd_gp1_map;
 	int 		fd_status_map;
@@ -75,7 +74,6 @@ typedef struct zynq_platform {
 } zynq_platform_t;
 
 static zynq_platform_t zynq_platform = {
-	.fd_wait       = -1,
 	.fd_gp0_map    = -1,
 	.fd_gp1_map    = -1,
 	.fd_status_map = -1,
@@ -86,15 +84,14 @@ static zynq_platform_t zynq_platform = {
 	.ctx           = NULL,
 };
 
+const char *const platform_waitfile(platform_ctx_t const *p)
+{
+	return "/dev/" ZYNQ_PLATFORM_WAITFILENAME;
+}
+
 static platform_res_t init_platform(zynq_platform_t *p)
 {
 	platform_res_t result;
-	p->fd_wait     = open("/dev/" ZYNQ_PLATFORM_WAITFILENAME, O_RDONLY);
-	if (p->fd_wait == -1) {
-		ERR("could not open device file: %s",
-				"/dev/" ZYNQ_PLATFORM_WAITFILENAME);
-		return PERR_OPEN_DEV;
-	}
 	p->fd_gp0_map = open("/dev/" ZYNQ_PLATFORM_DEVFILENAME "_gp0", O_RDWR);
 	if (p->fd_gp0_map != -1) {
 		p->gp0_map = mmap(
@@ -180,7 +177,8 @@ static platform_res_t release_platform(zynq_platform_t *p)
 	}
 	if (p->fd_status_map != -1) {
 		if (p->status_map != NULL && p->status_map != MAP_FAILED) {
-			munmap((void *)p->status_map, 0x2000);
+			munmap((void *)p->status_map,
+					PLATFORM_API_TAPASCO_STATUS_SIZE);
 			p->status_map = NULL;
 		}
 		close(p->fd_status_map);
@@ -205,10 +203,6 @@ static platform_res_t release_platform(zynq_platform_t *p)
 		p->fd_gp0_map = -1;
 		p->gp0_map    = NULL;
 	}
-	if (p->fd_wait != -1) {
-		close(p->fd_wait);
-		p->fd_wait = -1;
-	}
 	platform_context_deinit(p->ctx);
 	LOG(LPLL_INIT, "so long & thanks for all the fish, bye");
 	platform_logging_exit();
@@ -228,7 +222,9 @@ static platform_res_t enable_interrupts(zynq_platform_t *ctx)
 	// TODO move code to interrupt controller unit
 	LOG(LPLL_IRQ, "enabling interrupts at %d controllers", intcs);
 	for (int i = 0; i < intcs; ++i) {
-		platform_ctl_addr_t intc = ZYNQ_PLATFORM_INTC_BASE - ZYNQ_PLATFORM_GP1_BASE + ZYNQ_PLATFORM_INTC_OFFS * i;
+		platform_ctl_addr_t intc = ZYNQ_PLATFORM_INTC_BASE -
+				ZYNQ_PLATFORM_GP1_BASE +
+				ZYNQ_PLATFORM_INTC_OFFS * i;
 		// disable all interrupts
 		platform_write_ctl(ctx->ctx, intc + 0x8, sizeof(off), &off, f);
 		platform_write_ctl(ctx->ctx, intc + 0x1c, sizeof(off), &off, f);
@@ -344,21 +340,8 @@ platform_res_t platform_write_mem(platform_ctx_t const *ctx,
 	return PLATFORM_SUCCESS;
 }
 
-static inline
-platform_res_t platform_check_ctl_addr(platform_ctl_addr_t const addr)
-{
-	// FIXME remove magic literals
-	if (!((addr >= 0x43C00000 && addr < 0x44400000) ||
-			(addr >= 0x77770000 && addr < 0x77772000) ||
-			(addr >= 0x81800000 && addr < 0x81850000))) {
-		ERR("invalid start_addr: start_addr = 0x%08lx", (unsigned long)addr);
-		return PERR_CTL_INVALID_ADDRESS;
-	}
-	return PLATFORM_SUCCESS;
-}
-
 platform_res_t platform_read_ctl(platform_ctx_t const *ctx,
-		platform_ctl_addr_t const start_addr,
+		platform_ctl_addr_t const addr,
 		size_t const no_of_bytes,
 		void *data,
 		platform_ctl_flags_t const flags)
@@ -366,27 +349,31 @@ platform_res_t platform_read_ctl(platform_ctx_t const *ctx,
 	int i;
 	uint32_t *p = (uint32_t *)data;
 	volatile uint32_t *r;
-	platform_res_t res;
-	LOG(LPLL_CTL, "start_addr = 0x%08lx, no_of_bytes = %zu",
-			(unsigned long)start_addr, no_of_bytes);
+	LOG(LPLL_CTL, "addr = 0x%08lx, no_of_bytes = %zu",
+			(unsigned long)addr, no_of_bytes);
 
-	res = platform_check_ctl_addr(start_addr);
-	if (res != PLATFORM_SUCCESS)
-		return res;
-
+#ifndef NDEBUG
 	if (no_of_bytes % 4) {
 		ERR("error: invalid size!");
 		return PERR_CTL_INVALID_SIZE;
 	}
-	if (start_addr >= 0x81800000)
-		r = (volatile uint32_t *)zynq_platform.gp1_map +
-				((start_addr - 0x81800000) >> 2);
-	else if (start_addr >= 0x77770000)
-		r = (volatile uint32_t *)zynq_platform.status_map +
-				((start_addr - 0x77770000) >> 2);
-	else
+#endif
+
+	if (ISBETWEEN(addr, ZYNQ_PLATFORM_GP0_BASE, ZYNQ_PLATFORM_GP0_HIGH))
 		r = (volatile uint32_t *)zynq_platform.gp0_map +
-				((start_addr - 0x43C00000) >> 2);
+				((addr - ZYNQ_PLATFORM_GP0_BASE) >> 2);
+	else if (ISBETWEEN(addr, ZYNQ_PLATFORM_GP1_BASE, ZYNQ_PLATFORM_GP1_HIGH))
+		r = (volatile uint32_t *)zynq_platform.gp1_map +
+				((addr - ZYNQ_PLATFORM_GP1_BASE) >> 2);
+	else if (ISBETWEEN(addr, PLATFORM_API_TAPASCO_STATUS_BASE,
+			PLATFORM_API_TAPASCO_STATUS_HIGH))
+		r = (volatile uint32_t *)zynq_platform.status_map + ((addr -
+				PLATFORM_API_TAPASCO_STATUS_BASE) >> 2);
+	else {
+		ERR("invalid platform address: 0x%08lx", (unsigned long)addr);
+		return PERR_CTL_INVALID_ADDRESS;
+	}
+
 	for (i = 0; i < (no_of_bytes >> 2); ++i, ++p, ++r)
 		*p = *r;
 
@@ -394,7 +381,7 @@ platform_res_t platform_read_ctl(platform_ctx_t const *ctx,
 }
 
 platform_res_t platform_write_ctl(platform_ctx_t const *ctx,
-		platform_ctl_addr_t const start_addr,
+		platform_ctl_addr_t const addr,
 		size_t const no_of_bytes,
 		void const*data,
 		platform_ctl_flags_t const flags)
@@ -402,47 +389,29 @@ platform_res_t platform_write_ctl(platform_ctx_t const *ctx,
 	int i;
 	uint32_t const *p = (uint32_t const *)data;
 	volatile uint32_t *r;
-	platform_res_t res;
-	LOG(LPLL_CTL, "start_addr = 0x%08lx, no_of_bytes = %zu",
-			(unsigned long)start_addr, no_of_bytes);
+	LOG(LPLL_CTL, "addr = 0x%08lx, no_of_bytes = %zu",
+			(unsigned long)addr, no_of_bytes);
 
-	res = platform_check_ctl_addr(start_addr);
-	if (res != PLATFORM_SUCCESS)
-		return res;
-
+#ifndef NDEBUG
 	if (no_of_bytes % 4) {
 		ERR("invalid size: %zd", no_of_bytes);
 		return PERR_CTL_INVALID_SIZE;
 	}
-	if (start_addr >= 0x81800000)
-		r = (volatile uint32_t *)zynq_platform.gp1_map +
-				((start_addr - 0x81800000) >> 2);
-	else
+#endif
+
+	if (ISBETWEEN(addr, ZYNQ_PLATFORM_GP0_BASE, ZYNQ_PLATFORM_GP0_HIGH))
 		r = (volatile uint32_t *)zynq_platform.gp0_map +
-				((start_addr - 0x43C00000) >> 2);
+				((addr - ZYNQ_PLATFORM_GP0_BASE) >> 2);
+	else if (ISBETWEEN(addr, ZYNQ_PLATFORM_GP1_BASE, ZYNQ_PLATFORM_GP1_HIGH))
+		r = (volatile uint32_t *)zynq_platform.gp1_map +
+				((addr - ZYNQ_PLATFORM_GP1_BASE) >> 2);
+	else {
+		ERR("invalid platform address: 0x%08lx", (unsigned long)addr);
+		return PERR_CTL_INVALID_ADDRESS;
+	}
+
 	for (i = 0; i < (no_of_bytes >> 2); ++i, ++p, ++r)
 		*r = *p;
 
 	return PLATFORM_SUCCESS;
-}
-
-platform_res_t platform_write_ctl_and_wait(platform_ctx_t *ctx,
-		platform_ctl_addr_t const w_addr,
-		size_t const w_no_of_bytes,
-		void const *w_data,
-		uint32_t const event,
-		platform_ctl_flags_t const flags)
-{
-	platform_res_t res = platform_write_ctl(ctx, w_addr, w_no_of_bytes,
-			w_data, PLATFORM_CTL_FLAGS_NONE);
-	if (res != PLATFORM_SUCCESS) return res;
-	return platform_wait_for_irq(ctx, event);
-}
-
-platform_res_t platform_wait_for_irq(platform_ctx_t *ctx, const uint32_t event)
-{
-	int retval = write(zynq_platform.fd_wait, &event, sizeof(event));
-	if (retval < 0)
-		WRN("waiting for %u failed: %d", event, retval);
-	return retval < 0 ? PERR_IRQ_WAIT : PLATFORM_SUCCESS;
 }

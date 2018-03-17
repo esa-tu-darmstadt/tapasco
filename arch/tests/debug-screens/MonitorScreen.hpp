@@ -243,9 +243,10 @@ private:
     noecho();
     do {
       c = getch();
-      char chr = static_cast<char>(c);
+      /*char chr = static_cast<char>(c);
+      // FIXME reimplement with PAPI 1.5?
       if (chr == 'y')
-        platform_write_ctl_and_wait(tapasco.platform(), addr, sizeof(val), &val, job, PLATFORM_CTL_FLAGS_NONE);
+        platform_write_ctl_and_wait(tapasco.platform(), addr, sizeof(val), &val, job, PLATFORM_CTL_FLAGS_NONE);*/
     } while (c == ERR);
     clear();
     return ERR;

@@ -199,32 +199,22 @@ platform_res_t platform_write_ctl(platform_ctx_t const *ctx,
 		platform_ctl_flags_t const flags);
 
 /**
- * Writes device register space at the given address and then waits for an
- * interrupt from the device (sleep); checks r_addr upon interrupt and 
- * returns if r_mask has bits set, or repeats sleep otherwise.
+ * Puts the calling thread to sleep until an interrupt is received from
+ * the given slot.
  * @param ctx Platform context
- * @param w_addr Device register space address to write.
- * @param w_no_of_bytes Number of bytes to write.
- * @param w_data Data to write.
- * @param event Event # to wait for.
- * @return PLATFORM_SUCCESS if successful, an error code otherwise.
- **/
-platform_res_t platform_write_ctl_and_wait(platform_ctx_t *ctx,
-		platform_ctl_addr_t const w_addr,
-		size_t const w_no_of_bytes,
-		void const *w_data,
-		uint32_t const event,
-		platform_ctl_flags_t const flags);
-
-/**
- * Puts the calling thread to sleep until an interrupt is received.
- * @param ctx Platform context
- * @param event Event # to wait for.
+ * @param slot id to wait for
  * @return PLATFORM_SUCCESS if interrupt occurred, an error code if
  * not possible (platform-dependent).
  **/
-platform_res_t platform_wait_for_irq(platform_ctx_t *ctx,
-		const uint32_t event);
+platform_res_t platform_wait_for_slot(platform_ctx_t *ctx,
+		const platform_slot_id_t slot);
+
+/**
+ * Returns the filename of the wait file provided by the driver.
+ * @param ctx Platform context
+ * @return Filename
+ **/
+const char *const platform_waitfile(platform_ctx_t const *ctx);
 
 /** @} **/
 

@@ -35,7 +35,8 @@
 	_LPLL(IRQ,	(1 << 5)) \
 	_LPLL(DMA,	(1 << 6)) \
 	_LPLL(STATUS,	(1 << 7)) \
-	_LPLL(ADDR,	(1 << 8))
+	_LPLL(ADDR,	(1 << 8)) \
+	_LPLL(ASYNC,	(1 << 9))
 
 typedef enum {
 #define _LPLL(name, level) LPLL_##name = level,

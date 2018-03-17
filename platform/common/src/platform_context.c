@@ -21,19 +21,26 @@
  *  @brief	Definition of a generic platform context with local mem support.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
- #include <platform_context.h>
- #include <platform.h>
- #include <platform_addr_map.h>
- #include <platform_logging.h>
+#include <platform_context.h>
+#include <platform.h>
+#include <platform_addr_map.h>
+#include <platform_async.h>
+#include <platform_logging.h>
 
 struct platform_ctx {
 	platform_info_t info;
 	platform_addr_map_t *addrmap;
+	platform_async_t *async;
 };
 
 platform_addr_map_t *platform_context_addr_map(platform_ctx_t const *ctx)
 {
 	return ctx->addrmap;
+}
+
+platform_async_t *platform_context_async(platform_ctx_t const *ctx)
+{
+	return ctx->async;
 }
 
 platform_res_t platform_context_init(platform_ctx_t **ctx)
@@ -59,6 +66,15 @@ platform_res_t platform_context_init(platform_ctx_t **ctx)
 				platform_strerror(r), r);
 		return r;
 	}
+
+	r = platform_async_init(*ctx, &(*ctx)->async);
+	if (r != PLATFORM_SUCCESS) {
+		free(*ctx);
+		ERR("could not initialize async: %s (%d)",
+				platform_strerror(r), r);
+		return r;
+	}
+
 	LOG(LPLL_INIT, "initialized platform address map");
 	LOG(LPLL_INIT, "platform context initialization finished");
 	return PLATFORM_SUCCESS;
@@ -67,6 +83,8 @@ platform_res_t platform_context_init(platform_ctx_t **ctx)
 void platform_context_deinit(platform_ctx_t *ctx)
 {
 	if (ctx) {
+		LOG(LPLL_INIT, "destroying platform async ...");
+		platform_async_deinit(ctx->async);
 		LOG(LPLL_INIT, "destroying platform address map ...");
 		platform_addr_map_deinit(ctx, ctx->addrmap);
 		LOG(LPLL_INIT, "platform context destroyed, have a nice 'un");

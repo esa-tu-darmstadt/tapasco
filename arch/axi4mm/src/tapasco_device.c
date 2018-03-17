@@ -72,14 +72,17 @@ tapasco_async_t *tapasco_device_async(tapasco_dev_ctx_t const *ctx)
 	return ctx->async;
 }
 
+tapasco_jobs_t *tapasco_device_jobs(tapasco_dev_ctx_t const *ctx)
+{
+	assert(ctx);
+	return ctx->jobs;
+}
+
 platform_ctx_t *tapasco_device_platform(tapasco_dev_ctx_t const *ctx)
 {
 	assert(ctx);
 	return ctx->pctx;
 }
-
-/** Interrupt handler callback. */
-void irq_handler(int const event);
 
 /** System setup function. */
 static void setup_system(tapasco_dev_ctx_t *dev_ctx)
@@ -88,8 +91,6 @@ static void setup_system(tapasco_dev_ctx_t *dev_ctx)
 	tapasco_pemgmt_setup_system(dev_ctx, dev_ctx->pemgmt);
 }
 
-/******************************************************************************/
-/* TPC API implementation. */
 
 tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx,
 		tapasco_dev_id_t const dev_id,
@@ -180,10 +181,12 @@ tapasco_res_t tapasco_device_job_launch(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_job_id_t const j_id,
 		tapasco_device_job_launch_flag_t const flags)
 {
-	if (flags & TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING)
-		return TAPASCO_ERR_NONBLOCKING_MODE_NOT_SUPPORTED;
-	if (flags) return TAPASCO_ERR_NOT_IMPLEMENTED;
-	return tapasco_scheduler_launch(dev_ctx, dev_ctx->jobs, dev_ctx->pemgmt, j_id);
+	tapasco_res_t const r = tapasco_scheduler_launch(dev_ctx, j_id);
+	if (r != TAPASCO_SUCCESS || (flags & TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING)) {
+		return r;
+	} else {
+		return tapasco_scheduler_finish_job(dev_ctx, j_id);
+	}
 }
 
 tapasco_res_t tapasco_device_job_get_arg(tapasco_dev_ctx_t *dev_ctx,
