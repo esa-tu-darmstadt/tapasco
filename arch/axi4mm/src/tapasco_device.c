@@ -236,9 +236,3 @@ tapasco_res_t tapasco_device_has_capability(tapasco_dev_ctx_t *dev_ctx,
 	platform_info(pctx, &info);
 	return info.caps0 & cap;
 }
-
-void irq_handler(int const event)
-{
-	LOG(LALL_IRQ, "IRQ event #%d", event);
-}
-
