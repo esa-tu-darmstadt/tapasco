@@ -77,6 +77,7 @@ tapasco_res_t tapasco_scheduler_finish_job(tapasco_dev_ctx_t *dev_ctx,
 	tapasco_jobs_t *jobs = tapasco_device_jobs(dev_ctx);
 	platform_ctx_t *pctx = tapasco_device_platform(dev_ctx);
 	tapasco_slot_id_t slot_id = tapasco_jobs_get_slot(jobs, j_id);
+	LOG(LALL_SCHEDULER, "job %lu:  waiting for slot #%lu ...", (ul)j_id, (ul)slot_id);
 	platform_res_t pr = platform_wait_for_slot(pctx, slot_id);
 
 	if (pr != PLATFORM_SUCCESS) {
