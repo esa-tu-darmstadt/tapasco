@@ -119,6 +119,14 @@ struct Tapasco {
     explicit tapasco_error (const tapasco_res_t result) : runtime_error(tapasco_strerror(result)) {}
   };
 
+  /** A Platform runtime error. **/
+  class platform_error : public runtime_error {
+  public:
+    explicit platform_error (const string& msg) : runtime_error(msg) {}
+    explicit platform_error (const char* msg) : runtime_error(msg) {}
+    explicit platform_error (const platform_res_t result): runtime_error(platform_strerror(result)) {}
+  };
+
   /**
    * Global and device context initialization.
    * @param  dev_id device id
