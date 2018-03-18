@@ -238,7 +238,7 @@ tapasco_res_t tapasco_pemgmt_prepare_slot(tapasco_dev_ctx_t *dev_ctx,
 					&t->handle, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
 				return TAPASCO_ERR_PLATFORM_FAILURE;
 		} else {
-			tapasco_res_t r = tapasco_write_arg(dev_ctx, jobs, j_id, a, h);
+			tapasco_res_t r = tapasco_write_arg(dev_ctx, jobs, j_id, h, a);
 			if (r != TAPASCO_SUCCESS) { return r; }
 		}
 	}
