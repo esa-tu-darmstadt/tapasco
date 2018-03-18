@@ -73,27 +73,21 @@ ssize_t read(struct file *file, char __user *usr, size_t sz, loff_t *loff)
 	return sizeof(out_val);
 }
 
-static
-ssize_t write(struct file *file, const char __user *usr, size_t sz, loff_t *o)
+ssize_t async_signal_slot_interrupt(const u32 s_id)
 {
-	u32 in_val = 0;
-	ssize_t in;
-	in = copy_from_user(&in_val, usr, sizeof(in_val));
-	if (in) return -EFAULT;
 	mutex_lock(&zynq_async.out_mutex);
 	while (zynq_async.outstanding > ASYNC_BUFFER_SZ - 2) {
 		WRN("buffer thrashing, throttling write ...");
 		mutex_unlock(&zynq_async.out_mutex);
 		wait_event_interruptible(zynq_async.write_q,
-				zynq_async.outstanding <= (ASYNC_BUFFER_SZ >> 1));
+				zynq_async.outstanding <= (ASYNC_BUFFER_SZ/2));
 		if (signal_pending(current)) return -ERESTARTSYS;
 		mutex_lock(&zynq_async.out_mutex);
 	}
 	mutex_unlock(&zynq_async.out_mutex);
-	LOG(ZYNQ_LL_ASYNC, "writing %zd bytes, in_val = %u, in = %zd",
-			sz, in_val, in);
+	LOG(ZYNQ_LL_ASYNC, "signaling slot #%u", s_id);
 	mutex_lock(&zynq_async.out_mutex);
-	zynq_async.out_slots[zynq_async.out_w_idx] = in_val;
+	zynq_async.out_slots[zynq_async.out_w_idx] = s_id;
 	zynq_async.out_w_idx = (zynq_async.out_w_idx + 1) % ASYNC_BUFFER_SZ;
 	++zynq_async.outstanding;
 #ifndef NDEBUG
@@ -102,7 +96,17 @@ ssize_t write(struct file *file, const char __user *usr, size_t sz, loff_t *o)
 #endif
 	mutex_unlock(&zynq_async.out_mutex);
 	wake_up_interruptible(&zynq_async.read_q);
-	return sizeof(in_val);
+	return sizeof(u32);
+}
+
+static
+ssize_t write(struct file *file, const char __user *usr, size_t sz, loff_t *o)
+{
+	u32 in_val = 0;
+	ssize_t in;
+	in = copy_from_user(&in_val, usr, sizeof(in_val));
+	if (in) return -EFAULT;
+	return async_signal_slot_interrupt(in_val);
 }
 
 static const struct file_operations zynq_async_fops = {

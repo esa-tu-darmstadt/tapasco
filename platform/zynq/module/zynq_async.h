@@ -27,6 +27,8 @@
 int zynq_async_init(void);
 void zynq_async_exit(void);
 
+ssize_t async_signal_slot_interrupt(const u32 s_id);
+
 #endif /*_ZYNQ_ASYNC_H__ */
 /* vim: set foldmarker=@{,}@ foldlevel=0 foldmethod=marker : */
 
