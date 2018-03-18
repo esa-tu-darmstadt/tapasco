@@ -17,7 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file	zynq_platform.h
-//! @brief	General configuration parameters for zynq TPC Platform.
+//! @brief	General configuration parameters for zynq platform.
 //! authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
 #ifndef __ZYNQ_PLATFORM_H__
@@ -47,6 +47,7 @@
 #define ZYNQ_PLATFORM_GP1_HIGH		(ZYNQ_PLATFORM_GP1_BASE +\
 		ZYNQ_PLATFORM_GP1_SIZE)
 
+// FIXME remove
 #define ZYNQ_PLATFORM_INTC_BASE		(0x81800000UL)
 #define ZYNQ_PLATFORM_INTC_OFFS		(0x00010000UL)
 #define ZYNQ_PLATFORM_INTC_MAX_NUM	(4)
