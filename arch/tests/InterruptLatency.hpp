@@ -43,7 +43,7 @@ public:
     platform_res_t r = platform_address_get_component_base(tapasco.platform(),
     		PLATFORM_COMPONENT_STATUS,
 		&status);
-    if (r != PLATFORM_SUCCESS) throw Tapasco::tapasco_error("platform error: %s (%d)", platform_strerror(r), r);
+    if (r != PLATFORM_SUCCESS) throw Tapasco::platform_error(r);
     platform_read_ctl(tapasco.platform(), status + 0x24, 4, &design_clk, PLATFORM_CTL_FLAGS_NONE);
   }
   virtual ~InterruptLatency() {}
