@@ -90,7 +90,8 @@ platform_res_t platform_addr_map_get_component_base(
 		platform_ctl_addr_t *addr)
 {
 	if (comp_id == PLATFORM_COMPONENT_STATUS) {
-		return PLATFORM_API_TAPASCO_STATUS_BASE;
+		*addr = PLATFORM_API_TAPASCO_STATUS_BASE;
+		return PLATFORM_SUCCESS;
 	}
 #ifndef NDEBUG
 	if (comp_id < 0 || comp_id >= PLATFORM_NUM_SLOTS) {
