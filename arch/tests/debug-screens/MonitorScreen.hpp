@@ -11,7 +11,7 @@
 
 class MonitorScreen : public MenuScreen {
 public:
-  MonitorScreen(Tapasco *tapasco) : MenuScreen("TPC Monitor", vector<string>()), tapasco(*tapasco) {
+  MonitorScreen(Tapasco *tapasco) : MenuScreen("TaPaSCo Monitor", vector<string>()), tapasco(*tapasco) {
     delay_us = 250;
     int r = check_bitstream();
     if (r) throw r;
