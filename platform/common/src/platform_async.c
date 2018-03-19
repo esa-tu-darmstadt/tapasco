@@ -27,7 +27,8 @@ void *platform_async_read_waitfile(void *p)
 	do {
 		if (read(a->fd_wait, &s, sizeof(s)) == sizeof(s)) {
 			LOG(LPLL_ASYNC, "received finish notification from slot #%u", (unsigned)s);
-			sem_post(&a->finished[s]);
+			if (s < PLATFORM_NUM_SLOTS) sem_post(&a->finished[s]);
+			else ERR("invalid slot id received: %u", (unsigned)s);
 		}
 	} while (1);
 	return NULL;
