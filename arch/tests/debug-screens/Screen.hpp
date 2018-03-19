@@ -24,6 +24,14 @@ protected:
   virtual int perform(const int choice) { if (choice == ERR) delay(); return choice; }
   virtual void delay() { usleep(delay_us); }
 
+  /** Toggle to reversed, print, untoggle. **/
+  void print_reversed(std::function<void()> fn) {
+    attron(A_REVERSE);
+    fn();
+    attroff(A_REVERSE);
+  }
+
+
   int rows;
   int cols;
   unsigned long delay_us { 500 };

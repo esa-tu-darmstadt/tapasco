@@ -189,13 +189,6 @@ private:
     return ERR;
   }
 
-  /** Toggle to reversed, print, untoggle. **/
-  void print_reversed(std::function<void()> fn) {
-    attron(A_REVERSE);
-    fn();
-    attroff(A_REVERSE);
-  }
-
   void updateWord(WordManipulator& w, size_t reg_idx) {
     uint32_t d { 0 };
     if (platform_read_ctl(tapasco.platform(), atspri + 0x4 * reg_idx, sizeof(d), &d,
