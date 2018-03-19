@@ -13,6 +13,7 @@
 #include "MonitorScreen.hpp"
 #include "BlueDebugScreen.hpp"
 #include "AtsPriScreen.hpp"
+#include "AddressMapScreen.hpp"
 
 extern "C" {
   #include <platform_caps.h>
@@ -25,14 +26,17 @@ public:
   TapascoDebugMenu() : MenuScreen("Welcome to the interactive TaPaSCo Debugger", vector<string>()) {
     options.push_back("Show kernel map of current bitstream");
     screens.push_back(new TapascoStatusScreen(&tapasco));
+    if (tapasco.has_capability(PLATFORM_CAP0_DYNAMIC_ADDRESS_MAP)) {
+      options.push_back("Address map");
+      screens.push_back(new AddressMapScreen(tapasco));
+    }
     options.push_back("Perform interrupt stress test");
     screens.push_back(new InterruptStressTestScreen(&tapasco));
     options.push_back("Monitor device registers");
     screens.push_back(new MonitorScreen(&tapasco));
     options.push_back("Monitor blue infrastructure");
     screens.push_back(new BlueDebugScreen(&tapasco));
-    if (tapasco.has_capability(PLATFORM_CAP0_ATSPRI) == TAPASCO_SUCCESS &&
-        tapasco.has_capability(PLATFORM_CAP0_ATSCHECK) == TAPASCO_SUCCESS) {
+    if (tapasco.has_capability(PLATFORM_CAP0_ATSPRI) && tapasco.has_capability(PLATFORM_CAP0_ATSCHECK)) {
       options.push_back("ATS/PRI direct interface");
       screens.push_back(new AtsPriScreen(&tapasco));
     }
