@@ -52,11 +52,11 @@ typedef uint32_t platform_kernel_id_t;
  * Platform component identifiers.
  * NOTE: This will be parsed by a simple regex in Tcl, which uses the order of
  * appearance to determine the value of the constant; make sure not to change
- * the values by assigning explicitly, or start below 1.
+ * the values by assigning explicitly, or start at something other than 0.
  **/
 typedef enum {
-	/** TPC Status Core: bitstream information. **/
-	PLATFORM_COMPONENT_STATUS 				= 1,
+	/** TaPaSCo Status Core: bitstream information. **/
+	PLATFORM_COMPONENT_STATUS 				= 0,
 	/** ATS/PRI checker. **/
 	PLATFORM_COMPONENT_ATSPRI,
 	/** Interrupt controller #0. **/
