@@ -77,10 +77,12 @@ static irqreturn_t zynq_irq_handler_ ## N(int irq, void *dev_id) \
 { \
 	u32 status; \
 	struct zynq_device *zynq_dev = (struct zynq_device *)dev_id; \
-	u32 *intc = ((u32 *)zynq_dev->gp_map[1]) + zynq_irq.intc_ ## N.base; \
+	u32 *intc = (u32 *)zynq_dev->gp_map[1] + (zynq_irq.intc_ ## N.base >> 2); \
+	LOG(ZYNQ_LL_IRQ, "intcn = %d", N); \
 	status = ioread32(intc); \
 	LOG(ZYNQ_LL_IRQ, "status = 0x%08x, intcn = %d", status, N); \
 	iowrite32(status, intc + (0x0c >> 2)); \
+	zynq_irq.intc_ ## N.status |= status; \
 	tasklet_schedule(&zynq_irq_tasklet_ ## N); \
 	return IRQ_HANDLED; \
 }
@@ -88,48 +90,20 @@ static irqreturn_t zynq_irq_handler_ ## N(int irq, void *dev_id) \
 INTERRUPT_CONTROLLERS
 #undef _X
 
-/*static irqreturn_t zynq_irq_handler(int irq, void *dev_id)
-{
-	u32 status;
-	struct zynq_device *zynq_dev = (struct zynq_device *)dev_id;
-	s32 *intc = (s32 *)zynq_dev->gp_map[1];
-	long intcn = irq - ZYNQ_IRQ_BASE_IRQ, irq_no = 0;
-
-	intc += (intcn * ZYNQ_PLATFORM_INTC_OFFS) >> 2;
-	status = ioread32(intc); // read ISR
-	iowrite32(status, intc + (0x0c >> 2));
-	intcn <<= 5; // * 32
-	LOG(ZYNQ_LL_IRQ, "irq = %d, status = 0x%08x, intcn = %ld", irq, status, intcn);
-	while (status > 0) {
-		if (status & 1) {
-			__atomic_fetch_add(&zynq_dev->pending_ev[intcn + irq_no], 1, __ATOMIC_SEQ_CST);
-			__atomic_fetch_add(&zynq_dev->total_ev, 1, __ATOMIC_SEQ_CST);
-			// wake up sleepers
-			wake_up_interruptible(&zynq_dev->ev_q[intcn + irq_no]);
-		}
-		status >>= 1;
-		++irq_no;
-	}
-	return IRQ_HANDLED;
-}*/
-
 static
 void zynq_init_intc(u32 const base)
 {
 	u32 *intc = (u32 *)zynq_dev.gp_map[1] +
 			((base - ZYNQ_PLATFORM_GP1_BASE) >> 2);
-	LOG(ZYNQ_LL_IRQ, "writing 1 to: 0x%08x", (u32)(intc + (0x08 >> 2)));
 	iowrite32((u32) 1, intc + (0x08 >> 2));
-	LOG(ZYNQ_LL_IRQ, "writing 1 to: 0x%08x", (u32)(intc + (0x1c >> 2)));
 	iowrite32((u32) 1, intc + (0x1c >> 2));
-	LOG(ZYNQ_LL_IRQ, "reading from: 0x%08x", (u32)intc);
 	ioread32(intc);
 }
 
 
 int zynq_irq_init(void)
 {
-	int retval = 0, irqn = ZYNQ_PLATFORM_INTC_MAX_NUM;
+	int retval = 0, irqn = 0;
 	u32 *status = (u32 *)zynq_dev.tapasco_status;
 
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
@@ -143,12 +117,12 @@ int zynq_irq_init(void)
 				zynq_irq.intc_ ## N.base); \
 		zynq_init_intc(zynq_irq.intc_ ## N.base); \
 	} \
-	--irqn; \
 	LOG(ZYNQ_LL_IRQ, "registering IRQ #%d", ZYNQ_IRQ_BASE_IRQ + irqn); \
 	retval = request_irq(ZYNQ_IRQ_BASE_IRQ + irqn, zynq_irq_handler_ ## N, \
 			IRQF_TRIGGER_NONE | IRQF_ONESHOT, \
 			ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME, \
 			&zynq_dev); \
+	++irqn; \
 	if (retval) { \
 		ERR("could not register IRQ #%d!", ZYNQ_IRQ_BASE_IRQ + irqn); \
 		goto err; \
@@ -161,7 +135,7 @@ int zynq_irq_init(void)
 	return retval;
 
 err:
-	while (++irqn < ZYNQ_PLATFORM_INTC_MAX_NUM) {
+	while (--irqn <= 0) {
 		disable_irq(ZYNQ_IRQ_BASE_IRQ + irqn);
 		free_irq(ZYNQ_IRQ_BASE_IRQ + irqn, &zynq_dev);
 	}
