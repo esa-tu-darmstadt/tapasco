@@ -58,7 +58,7 @@ static struct {
 #undef _X
 
 #define		_X(N) \
-void zynq_irq_func_ ## N(unsigned long d) \
+static void zynq_irq_func_ ## N(struct work_struct *work) \
 { \
 	u32 s_off = (N * 32U); \
 	u32 status = zynq_irq.intc_ ## N.status; \
@@ -71,19 +71,18 @@ void zynq_irq_func_ ## N(unsigned long d) \
 	} \
 } \
 \
-DECLARE_TASKLET(zynq_irq_tasklet_ ## N, zynq_irq_func_ ## N, (unsigned long)&zynq_dev); \
+static DECLARE_WORK(zynq_irq_work_ ## N, zynq_irq_func_ ## N); \
 \
 static irqreturn_t zynq_irq_handler_ ## N(int irq, void *dev_id) \
 { \
 	u32 status; \
 	struct zynq_device *zynq_dev = (struct zynq_device *)dev_id; \
-	u32 *intc = (u32 *)zynq_dev->gp_map[1] + (zynq_irq.intc_ ## N.base >> 2); \
-	LOG(ZYNQ_LL_IRQ, "intcn = %d", N); \
+	u32 *intc = (u32 *)zynq_dev->gp_map[1] + zynq_irq.intc_ ## N.base; \
 	status = ioread32(intc); \
-	LOG(ZYNQ_LL_IRQ, "status = 0x%08x, intcn = %d", status, N); \
+	LOG(ZYNQ_LL_IRQ, "intcn = %d, status = 0x%08x", N, status); \
 	iowrite32(status, intc + (0x0c >> 2)); \
 	zynq_irq.intc_ ## N.status |= status; \
-	tasklet_schedule(&zynq_irq_tasklet_ ## N); \
+	schedule_work(&zynq_irq_work_ ## N); \
 	return IRQ_HANDLED; \
 }
 
@@ -93,10 +92,9 @@ INTERRUPT_CONTROLLERS
 static
 void zynq_init_intc(u32 const base)
 {
-	u32 *intc = (u32 *)zynq_dev.gp_map[1] +
-			((base - ZYNQ_PLATFORM_GP1_BASE) >> 2);
-	iowrite32((u32) 1, intc + (0x08 >> 2));
-	iowrite32((u32) 1, intc + (0x1c >> 2));
+	u32 *intc = (u32 *)zynq_dev.gp_map[1] + base;
+	iowrite32((u32)-1, intc + (0x08 >> 2));
+	iowrite32((u32) 3, intc + (0x1c >> 2));
 	ioread32(intc);
 }
 
@@ -109,12 +107,13 @@ int zynq_irq_init(void)
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
 
 #define	_X(N)	\
-	zynq_irq.intc_ ## N.base = ioread32(status + (0x1010 >> 2) + N * 2); \
+	zynq_irq.intc_ ## N.base = (ioread32(status + (0x1010 >> 2) + N * 2) - \
+			ZYNQ_PLATFORM_GP1_BASE) >> 2; \
 	zynq_irq.intc_ ## N.status = 0; \
 	if (zynq_irq.intc_ ## N.base) { \
 		LOG(ZYNQ_LL_IRQ, "controller for IRQ #%d at 0x%08x", \
 				ZYNQ_IRQ_BASE_IRQ + irqn, \
-				zynq_irq.intc_ ## N.base); \
+				zynq_irq.intc_ ## N.base << 2); \
 		zynq_init_intc(zynq_irq.intc_ ## N.base); \
 	} \
 	LOG(ZYNQ_LL_IRQ, "registering IRQ #%d", ZYNQ_IRQ_BASE_IRQ + irqn); \
