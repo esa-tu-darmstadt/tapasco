@@ -314,7 +314,6 @@ inline
 void tapasco_jobs_release(tapasco_jobs_t *jobs, tapasco_job_id_t const j_id)
 {
 	assert(jobs);
-	memset(&jobs->q.elems[j_id - JOB_ID_OFFSET], 0, sizeof(tapasco_job_t));
 	jobs->q.elems[j_id - JOB_ID_OFFSET].state = TAPASCO_JOB_STATE_READY;
 	tapasco_jobs_fsp_put(&jobs->q, j_id - JOB_ID_OFFSET);
 }
