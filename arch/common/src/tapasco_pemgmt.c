@@ -287,8 +287,10 @@ tapasco_res_t tapasco_pemgmt_finish_job(tapasco_dev_ctx_t *dev_ctx,
 
 		r = tapasco_read_arg(dev_ctx, jobs, j_id, h, a);
 		if (r != TAPASCO_SUCCESS) { return r; }
-		r = tapasco_transfer_from(dev_ctx, jobs, j_id, t, slot_id);
-		if (r != TAPASCO_SUCCESS) { return r; }
+		if (t->len > 0) {
+			r = tapasco_transfer_from(dev_ctx, jobs, j_id, t, slot_id);
+			if (r != TAPASCO_SUCCESS) { return r; }
+		}
 	}
 
 	tapasco_jobs_set_state(jobs, j_id, TAPASCO_JOB_STATE_FINISHED);
