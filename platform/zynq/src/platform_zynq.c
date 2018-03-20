@@ -209,36 +209,6 @@ static platform_res_t release_platform(zynq_platform_t *p)
 	return PLATFORM_SUCCESS;
 }
 
-/******************************************************************************/
-
-/** Enables the interrupt controllers. */
-static platform_res_t enable_interrupts(zynq_platform_t *ctx)
-{
-	int32_t const on = -1, off = 0;
-	int32_t outstanding = 0;
-	uint32_t intcs = ctx->info.num_intc;
-	platform_ctl_flags_t const f = PLATFORM_CTL_FLAGS_NONE;
-	assert (intcs > 0 && intcs <= ZYNQ_PLATFORM_INTC_MAX_NUM);
-	// TODO move code to interrupt controller unit
-	LOG(LPLL_IRQ, "enabling interrupts at %d controllers", intcs);
-	for (int i = 0; i < intcs; ++i) {
-		platform_ctl_addr_t intc = ZYNQ_PLATFORM_INTC_BASE -
-				ZYNQ_PLATFORM_GP1_BASE +
-				ZYNQ_PLATFORM_INTC_OFFS * i;
-		// disable all interrupts
-		platform_write_ctl(ctx->ctx, intc + 0x8, sizeof(off), &off, f);
-		platform_write_ctl(ctx->ctx, intc + 0x1c, sizeof(off), &off, f);
-		// check & ack all outstanding IRQs
-		platform_read_ctl(ctx->ctx, intc, sizeof(outstanding), &outstanding, f);
-		platform_write_ctl(ctx->ctx, intc, sizeof(outstanding), &outstanding, f);
-		// enable all interrupts
-		platform_write_ctl(ctx->ctx, intc + 0x8, sizeof(on), &on, f);
-		platform_write_ctl(ctx->ctx, intc + 0x1c, sizeof(on), &on, f);
-		platform_read_ctl(ctx->ctx, intc, sizeof(outstanding), &outstanding, f);
-	}
-	return PLATFORM_SUCCESS;
-}
-
 platform_res_t _platform_init(const char *const version, platform_ctx_t **pctx)
 {
 	platform_logging_init();
@@ -254,8 +224,7 @@ platform_res_t _platform_init(const char *const version, platform_ctx_t **pctx)
 		ERR("failed to initialize Zynq platform: %s (%d)",
 				platform_strerror(r), r);
 		platform_logging_exit();
-	} else
-		enable_interrupts(&zynq_platform);
+	}
 
 	*pctx = zynq_platform.ctx;
 	return r;
