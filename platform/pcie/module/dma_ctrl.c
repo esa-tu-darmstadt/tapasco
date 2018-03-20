@@ -40,8 +40,8 @@ typedef enum {
 } dma_used_t;
 
 typedef irqreturn_t (*dma_intr_handler)(int , void *);
-typedef void (*dma_from_device)(void *, dma_addr_t, int, void *);
-typedef void (*dma_to_device)(void *, dma_addr_t , int , void *);
+typedef void (*dma_from_device)(void *, dma_addr_t, uint64_t, void *);
+typedef void (*dma_to_device)(void *, dma_addr_t , uint64_t , void *);
 
 typedef struct {
 	dma_intr_handler intr_read;
@@ -119,7 +119,7 @@ irqreturn_t intr_handler_dma_write(int irq, void * dev_id)
  * @param device_base_addr Address of dma engine registers
  * @return none
  * */
-void transmit_from_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr)
+void transmit_from_device(void * device_buffer, dma_addr_t host_handle, uint64_t btt, void * device_base_addr)
 {
 	fflink_dma[dma_used].from_dev(device_buffer, host_handle, btt, device_base_addr);
 }
@@ -132,7 +132,7 @@ void transmit_from_device(void * device_buffer, dma_addr_t host_handle, int btt,
  * @param device_base_addr Address of dma engine registers
  * @return none
  * */
-void transmit_to_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr)
+void transmit_to_device(void * device_buffer, dma_addr_t host_handle, uint64_t btt, void * device_base_addr)
 {
 	fflink_dma[dma_used].to_dev(device_buffer, host_handle, btt, device_base_addr);
 }
