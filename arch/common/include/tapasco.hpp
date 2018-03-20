@@ -62,14 +62,6 @@ extern "C" {
 
 using namespace std;
 
-/* set this argument to add multithreaded copies instead of sequential copies in
- * set_args during launch calls; performance depends on platform and application */
-// #define TAPASCO_COPY_MT  1
-
-#ifdef TAPASCO_COPY_MT
-#include <vector>
-#endif
-
 namespace tapasco {
 
 /**
@@ -173,23 +165,10 @@ struct Tapasco {
     tapasco_res_t res = tapasco_device_acquire_job_id(dev_ctx, &j_id, k_id, TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
     if (res != TAPASCO_SUCCESS) return res;
 
-#ifdef TAPASCO_COPY_MT
-    vector<future<tapasco_res_t> > fs { r_set_args(j_id, 0, args...) };
-    for (auto& f : fs)
-      if ((res = f.get()) != TAPASCO_SUCCESS) return res;
-#else
     if ((res = set_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
-#endif
     if ((res = tapasco_device_job_launch(dev_ctx, j_id, TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING)) != TAPASCO_SUCCESS) return res;
     if ((res = tapasco_device_job_get_return(dev_ctx, j_id, sizeof(ret), &ret)) != TAPASCO_SUCCESS) return res;
-#ifdef TAPASCO_COPY_MT
-    fs.clear();
-    fs = r_get_args(j_id, 0, args...);
-    for (auto& f : fs)
-      if ((res = f.get()) != TAPASCO_SUCCESS) return res;
-#else
     if ((res = get_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
-#endif
 
     // release job id
     tapasco_device_release_job_id(dev_ctx, j_id);
@@ -223,25 +202,12 @@ struct Tapasco {
     tapasco_res_t res = ::tapasco_device_acquire_job_id(dev_ctx, &j_id, k_id, TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
     if (res != TAPASCO_SUCCESS) return res;
 
-#ifdef TAPASCO_COPY_MT
-    vector<future<tapasco_res_t> > fs { r_set_args(j_id, 0, args...) };
-    for (auto& f : fs)
-      if ((res = f.get()) != TAPASCO_SUCCESS) return res;
-#else
     if ((res = set_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
-#endif
     if ((res = tapasco_device_job_launch(dev_ctx, j_id, TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING)) != TAPASCO_SUCCESS) return res;
-#ifdef TAPASCO_COPY_MT
-    fs.clear();
-    fs = r_get_args(j_id, 0, args...);
-    for (auto& f : fs)
-      if ((res = f.get()) != TAPASCO_SUCCESS) return res;
-#else
     if ((res = get_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
-#endif
 
     // release job id
-    ::tapasco_device_release_job_id(dev_ctx, j_id);
+    tapasco_device_release_job_id(dev_ctx, j_id);
     return res;
   }
 
@@ -266,7 +232,7 @@ struct Tapasco {
    **/
   tapasco_res_t alloc(tapasco_handle_t &h, size_t const len, tapasco_device_alloc_flag_t const flags) const noexcept
   {
-    return ::tapasco_device_alloc(dev_ctx, &h, len, flags);
+    return tapasco_device_alloc(dev_ctx, &h, len, flags);
   }
 
   /**
@@ -275,7 +241,7 @@ struct Tapasco {
    **/
   void free(tapasco_handle_t const handle, tapasco_device_alloc_flag_t const flags) const noexcept
   {
-    ::tapasco_device_free(dev_ctx, handle, flags);
+    tapasco_device_free(dev_ctx, handle, flags);
   }
 
   /**
@@ -288,7 +254,7 @@ struct Tapasco {
    **/
   tapasco_res_t copy_to(void const *src, tapasco_handle_t dst, size_t len, tapasco_device_copy_flag_t const flags) const noexcept
   {
-    return ::tapasco_device_copy_to(dev_ctx, src, dst, len, flags);
+    return tapasco_device_copy_to(dev_ctx, src, dst, len, flags);
   }
 
   /**
@@ -301,7 +267,7 @@ struct Tapasco {
    **/
   tapasco_res_t copy_from(tapasco_handle_t src, void *dst, size_t len, tapasco_device_copy_flag_t const flags) const noexcept
   {
-    return ::tapasco_device_copy_from(dev_ctx, src, dst, len, flags);
+    return tapasco_device_copy_from(dev_ctx, src, dst, len, flags);
   }
 
   /**
@@ -371,30 +337,6 @@ private:
     return tapasco_device_job_set_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h);
   }
 
-#ifdef TAPASCO_COPY_MT
-  /** Variadic: recursively wraps setting all given arguments in vector of futures. **/
-  template<typename... Targs>
-  vector<future<tapasco_res_t> > r_set_args(tapasco_job_id_t const j_id, size_t const arg_idx, Targs... args) const noexcept
-  {
-    vector<future<tapasco_res_t> > fs;
-    set_args(fs, j_id, arg_idx, args...);
-    return fs;
-  }
-
-  /** Variadic: recursively sets all given arguments. **/
-  template<typename T, typename... Targs>
-  void set_args(vector<future<tapasco_res_t> >& fs, tapasco_job_id_t const j_id, size_t const arg_idx, T t, Targs... args) const noexcept
-  {
-    fs.push_back(async(std::launch::async, [&]{ return set_args(j_id, arg_idx, t); }));
-    set_args(fs, j_id, arg_idx + 1, args...);
-  }
-  /** Recursion leaf. **/
-  template<typename T>
-  void set_args(vector<future<tapasco_res_t> >& fs, tapasco_job_id_t const j_id, size_t const arg_idx, T t) const noexcept
-  {
-    fs.push_back(async(std::launch::async, [&]{ return set_args(j_id, arg_idx, t); }));
-  }
-#else
   /** Variadic: recursively sets all given arguments. **/
   template<typename T, typename... Targs>
   tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t arg_idx, T t, Targs... args) const noexcept
@@ -403,7 +345,6 @@ private:
     if ((r = set_args(j_id, arg_idx, t)) != TAPASCO_SUCCESS) return r;
     return set_args(j_id, arg_idx + 1, args...);
   }
-#endif
 
   /** Gets a single value argument. **/
   template<typename T>
@@ -442,30 +383,6 @@ private:
     return TAPASCO_SUCCESS;
   }
 
-#ifdef TAPASCO_COPY_MT
-  /** Variadic: recursively wraps getting all given arguments in vector of futures. **/
-  template<typename... Targs>
-  vector<future<tapasco_res_t> > r_get_args(tapasco_job_id_t const j_id, size_t const arg_idx, Targs... args) const noexcept
-  {
-    vector<future<tapasco_res_t> > fs;
-    get_args(fs, j_id, arg_idx, args...);
-    return fs;
-  }
-
-  /** Variadic: recursively gets all given arguments. **/
-  template<typename T, typename... Targs>
-  void get_args(vector<future<tapasco_res_t> >& fs, tapasco_job_id_t const j_id, size_t const arg_idx, T t, Targs... args) const noexcept
-  {
-    fs.push_back(async(std::launch::async, [&]{ return get_args(j_id, arg_idx, t); }));
-    get_args(fs, j_id, arg_idx + 1, args...);
-  }
-  /** Recursion leaf. **/
-  template<typename T>
-  void get_args(vector<future<tapasco_res_t> >& fs, tapasco_job_id_t const j_id, size_t const arg_idx, T t) const noexcept
-  {
-    fs.push_back(async(std::launch::async, [&]{ return get_args(j_id, arg_idx, t); }));
-  }
-#else
   /** Variadic: recursively gets all given arguments. **/
   template<typename T, typename... Targs>
   tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T t, Targs... args) const noexcept
@@ -474,7 +391,6 @@ private:
     if ((r = get_args(j_id, arg_idx, t)) != TAPASCO_SUCCESS) return r;
     return get_args(j_id, arg_idx + 1, args...);
   }
-#endif
 
   bool _ok { false };
   tapasco_ctx_t* ctx { nullptr };
