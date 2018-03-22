@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 BOARD=${1:-zedboard}
 VERSION=${2:-2016.4}
 IMGSIZE=${3:-8192}
