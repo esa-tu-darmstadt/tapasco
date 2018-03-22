@@ -103,28 +103,35 @@ int zynq_irq_init(void)
 {
 	int retval = 0, irqn = 0;
 	u32 *status = (u32 *)zynq_dev.tapasco_status;
+	u32 base;
 
 	LOG(ZYNQ_LL_ENTEREXIT, "enter");
 
 #define	_X(N)	\
-	zynq_irq.intc_ ## N.base = (ioread32(status + (0x1010 >> 2) + N * 2) - \
-			ZYNQ_PLATFORM_GP1_BASE) >> 2; \
-	zynq_irq.intc_ ## N.status = 0; \
-	if (zynq_irq.intc_ ## N.base) { \
-		LOG(ZYNQ_LL_IRQ, "controller for IRQ #%d at 0x%08x", \
-				ZYNQ_IRQ_BASE_IRQ + irqn, \
-				zynq_irq.intc_ ## N.base << 2); \
-		zynq_init_intc(zynq_irq.intc_ ## N.base); \
-	} \
-	LOG(ZYNQ_LL_IRQ, "registering IRQ #%d", ZYNQ_IRQ_BASE_IRQ + irqn); \
-	retval = request_irq(ZYNQ_IRQ_BASE_IRQ + irqn, zynq_irq_handler_ ## N, \
-			IRQF_TRIGGER_NONE | IRQF_ONESHOT, \
-			ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME, \
-			&zynq_dev); \
-	++irqn; \
-	if (retval) { \
-		ERR("could not register IRQ #%d!", ZYNQ_IRQ_BASE_IRQ + irqn); \
-		goto err; \
+	base = ioread32(status + (0x1010 >> 2) + N * 2); \
+	if (base) { \
+		zynq_irq.intc_ ## N.base = (base - \
+				ZYNQ_PLATFORM_GP1_BASE) >> 2; \
+		zynq_irq.intc_ ## N.status = 0; \
+		if (zynq_irq.intc_ ## N.base) { \
+			LOG(ZYNQ_LL_IRQ, "controller for IRQ #%d at 0x%08x", \
+					ZYNQ_IRQ_BASE_IRQ + irqn, \
+					zynq_irq.intc_ ## N.base << 2); \
+			zynq_init_intc(zynq_irq.intc_ ## N.base); \
+		} \
+		LOG(ZYNQ_LL_IRQ, "registering IRQ #%d", ZYNQ_IRQ_BASE_IRQ + \
+				irqn); \
+		retval = request_irq(ZYNQ_IRQ_BASE_IRQ + irqn, \
+				zynq_irq_handler_ ## N, \
+				IRQF_TRIGGER_NONE | IRQF_ONESHOT, \
+				ZYNQ_DEVICE_CLSNAME "_" ZYNQ_DEVICE_DEVNAME, \
+				&zynq_dev); \
+		++irqn; \
+		if (retval) { \
+			ERR("could not register IRQ #%d!", ZYNQ_IRQ_BASE_IRQ + \
+					irqn); \
+			goto err; \
+		} \
 	}
 
 	INTERRUPT_CONTROLLERS
