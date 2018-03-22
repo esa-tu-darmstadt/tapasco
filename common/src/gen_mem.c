@@ -52,7 +52,7 @@ addr_t gen_mem_next_base(block_t *root)
 {
 	assert(root || "argument to gen_mem_next_base may not be NULL");
 	block_t *nxt = root;
-	while (nxt != NULL) {
+	while (nxt != NULL && nxt->range == 0) {
 		nxt = nxt->next;
 	}
 	if (! nxt) return INVALID_ADDRESS;
