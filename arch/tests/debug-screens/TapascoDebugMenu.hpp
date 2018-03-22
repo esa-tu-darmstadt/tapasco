@@ -14,6 +14,7 @@
 #include "BlueDebugScreen.hpp"
 #include "AtsPriScreen.hpp"
 #include "AddressMapScreen.hpp"
+#include "LocalMemoryScreen.hpp"
 
 extern "C" {
   #include <platform_caps.h>
@@ -31,10 +32,14 @@ public:
       options.push_back("Show address map of current bitstream");
       screens.push_back(new AddressMapScreen(tapasco));
     }
-    options.push_back("Perform interrupt stress test");
-    screens.push_back(new InterruptStressTestScreen(&tapasco));
     options.push_back("Monitor device registers");
     screens.push_back(new MonitorScreen(&tapasco));
+    if (LocalMemoryScreen::has_local_memories(tapasco)) {
+      options.push_back("Monitor PE-local memories");
+      screens.push_back(new LocalMemoryScreen(tapasco));
+    }
+    options.push_back("Perform interrupt stress test");
+    screens.push_back(new InterruptStressTestScreen(&tapasco));
     if (blue) {
       options.push_back("Monitor blue infrastructure");
       screens.push_back(new BlueDebugScreen(&tapasco));
