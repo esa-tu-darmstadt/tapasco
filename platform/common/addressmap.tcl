@@ -25,9 +25,15 @@ namespace eval addressmap {
   namespace export add_processing_element
   namespace export get_platform_component_bases
   namespace export get_processing_element_bases
+  namespace export reset
 
   set platform_components [dict create]
   set processing_elements [dict create]
+
+  proc reset {} {
+    variable processing_elements
+    set processing_elements [dict create]
+  }
 
   proc get_num_slots {} {
     set f [open "$::env(TAPASCO_HOME)/platform/common/include/platform_global.h" "r"]
@@ -95,6 +101,7 @@ namespace eval addressmap {
   proc get_processing_element_bases {} {
     variable processing_elements
     set max_slot [lindex [lsort -integer -decreasing [dict keys $processing_elements]] 0]
+    set ret [list]
     for {set i 0} {$i <= $max_slot} {incr i} {
       lappend ret [get_processing_element $i]
     }
