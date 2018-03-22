@@ -43,6 +43,9 @@ extern
 addr_t gen_mem_malloc(block_t **root, size_t const length);
 
 extern
+addr_t gen_mem_next_base(block_t *root);
+
+extern
 void gen_mem_free(block_t **root, addr_t const p, size_t const length);
 
 #endif /* GEN_MEM_H__ */

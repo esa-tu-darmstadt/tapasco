@@ -48,6 +48,17 @@ block_t *gen_mem_create(addr_t const base, size_t const range)
 	return b;
 }
 
+addr_t gen_mem_next_base(block_t *root)
+{
+	assert(root || "argument to gen_mem_next_base may not be NULL");
+	block_t *nxt = root;
+	while (nxt != NULL) {
+		nxt = nxt->next;
+	}
+	if (! nxt) return INVALID_ADDRESS;
+	return nxt->base;
+}
+
 addr_t gen_mem_malloc(block_t **root, size_t const length)
 {
 	assert(root || "argument to gen_mem_malloc may not be NULL");

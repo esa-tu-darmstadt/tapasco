@@ -75,7 +75,16 @@ void tapasco_local_mem_dealloc(tapasco_local_mem_t *lmem,
  * @return number of bytes > 0 if memory controller is in slot, 0 otherwise
  **/
 size_t tapasco_local_mem_get_size(tapasco_local_mem_t *lmem,
-		tapasco_slot_id_t slot_id);
+		tapasco_slot_id_t const slot_id);
+
+/**
+ * Returns the number of free bytes of memory in given slot id.
+ * @param lmem local memory management struct
+ * @param slot_id slot to check for local memory
+ * @return available number of bytes.
+ **/
+size_t tapasco_local_mem_get_free(tapasco_local_mem_t *lmem,
+		tapasco_slot_id_t const slot_id);
 
 /**
  * Returns the base address in PE-local memory space for memory at given slot.

@@ -103,9 +103,16 @@ void tapasco_local_mem_dealloc(tapasco_local_mem_t *lmem,
 
 inline
 size_t tapasco_local_mem_get_size(tapasco_local_mem_t *lmem,
-		tapasco_slot_id_t slot_id)
+		tapasco_slot_id_t const slot_id)
 {
 	return lmem->as[slot_id].high - lmem->as[slot_id].base;
+}
+
+inline
+size_t tapasco_local_mem_get_free(tapasco_local_mem_t *lmem,
+		tapasco_slot_id_t const slot_id)
+{
+	return gen_mem_next_base(lmem->lmem[slot_id]) - lmem->as[slot_id].base;
 }
 
 inline
