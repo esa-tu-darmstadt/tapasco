@@ -79,4 +79,38 @@ tapasco_res_t tapasco_device_copy_from(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_device_copy_flag_t const flags,
 		...);
 
+/**
+ * Copys data from main memory to PE-local memory in the given slot.
+ * @param dev_ctx device context
+ * @param src source data pointer
+ * @param dst destination device handle
+ * @param len number of bytes to copy
+ * @param flags	flags for copy operation, e.g., TAPASCO_COPY_NONBLOCKING
+ * @param slot_id PE-local memory slot
+ * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
+ **/
+tapasco_res_t tapasco_device_copy_to_local(tapasco_dev_ctx_t *dev_ctx,
+		void const *src,
+		tapasco_handle_t dst,
+		size_t len,
+		tapasco_device_copy_flag_t const flags,
+		tapasco_slot_id_t slot_id);
+
+/**
+ * Copys data from PE-local memory in the given slot to main memory.
+ * @param dev_ctx device context
+ * @param src source device handle
+ * @param dst destination data pointer
+ * @param len number of bytes to copy
+ * @param flags	flags for copy operation, e.g., TAPASCO_COPY_NONBLOCKING
+ * @param slot_id PE-local memory slot
+ * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
+ **/
+tapasco_res_t tapasco_device_copy_from_local(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_handle_t src,
+		void *dst,
+		size_t len,
+		tapasco_device_copy_flag_t const flags,
+		tapasco_slot_id_t slot_id);
+
 #endif /* TAPASCO_MEMORY_H__ */

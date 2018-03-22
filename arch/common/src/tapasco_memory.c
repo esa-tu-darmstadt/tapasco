@@ -76,7 +76,6 @@ platform_ctl_addr_t get_slot_base(tapasco_dev_ctx_t *dev_ctx,
 	return a;
 }
 
-static
 tapasco_res_t tapasco_device_copy_to_local(tapasco_dev_ctx_t *dev_ctx,
 		void const *src,
 		tapasco_handle_t dst,
@@ -106,7 +105,6 @@ tapasco_res_t tapasco_device_copy_to_local(tapasco_dev_ctx_t *dev_ctx,
 	return TAPASCO_SUCCESS;
 }
 
-static
 tapasco_res_t tapasco_device_copy_from_local(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_handle_t src,
 		void *dst,
