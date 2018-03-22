@@ -27,39 +27,26 @@ public:
 
 protected:
   virtual void render() {
-    const int col_d = 18;
-    const int row_d = 3;
-    int cw = cols / col_d;
-    int start_c = (cols - cw * col_d) / 2;
-    int start_r = 2;
-    const string t = "Interrupt Stress Test using 'counter' instances";
+    const int height = 36;
+    const int start_r = (rows - 36) / 2;
+    const int col_w = 17;
+    const int num_cols = threads.size() / 32 + 1;
+    const int start_c = (cols - num_cols * col_w) / 2;
+    const string title = " Interrupt Stress Test using 'counter' instances ";
+    const string bottom = " +/-: add/remove thread  j/k: add/remove 8 threads ";
+    char tmp[128] = "";
 
-    mvprintw(0, (cols - t.length()) / 2, t.c_str());
-    int col = 0; int row = 0;
-    for (int id = 0; id < 128; ++id) {
-      if (! avail[id]) continue;
-      attron(A_REVERSE);
-      mvprintw(start_r + row * row_d, start_c + (col + 1) * col_d,
-          "%03d:", id);
-      attroff(A_REVERSE);
-      mvprintw(start_r + row * row_d, start_c + (col + 1) * col_d + 4,
-          " 0x%08x", id, cycles[id]);
-      mvprintw(start_r + row * row_d + 1, start_c + (col + 1) * col_d,
-          "     0x%08x", retval[id]);
-      mvprintw(start_r + row * row_d + 2, start_c + (col + 1) * col_d,
-          "     0x%08x", intrdy[id]);
-      ++col;
-      if (col + 1 >= cw) {
-        col = 0;
-	++row;
-      }
+    erase();
+
+    print_reversed([&](){mvprintw(start_r, (cols - title.length()) / 2, title.c_str());});
+    print_reversed([&](){mvprintw(start_r + height, (cols - bottom.length()) / 2, bottom.c_str());});
+
+    for (size_t t = 0; t < threads.size(); ++t) {
+      snprintf(tmp, 128, "%03zu:", t);
+      print_reversed([&](){mvprintw(start_r + 2 + t % 32, start_c + t / 32 * col_w, tmp);});
+      snprintf(tmp, 128, "%11u", *(counters[t]));
+      mvprintw(start_r + 2 + t % 32, start_c + t / 32 * col_w + 5, tmp);
     }
-    attron(A_REVERSE);
-    int r = 0;
-    mvprintw(r++, 2,   "Threads: %8u", threads.size());
-    for (uint32_t *c : counters)
-      mvprintw(r++, 2, "Jobs   : %8u", *c);
-    attroff(A_REVERSE);
   }
 
   virtual int perform(const int choice) {
