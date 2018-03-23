@@ -28,6 +28,7 @@
 /******************************************************************************/
 
 #include "char_device_user.h"
+#include "async.h"
 
 /******************************************************************************/
 /* global struct and variable declarations */
@@ -308,7 +309,7 @@ static int user_mmap(struct file *filp, struct vm_area_struct *vma)
 irqreturn_t intr_handler_user_ ## nr(int irq, void * dev_id) 		\
 { 									\
 	priv_data.user_condition[nr] += 1; 				\
-	wake_up_interruptible_sync(&priv_data.user_wait_queue[nr]); 	\
+	async_signal_slot_interrupt(nr);                                \
 	return IRQ_HANDLED; 						\
 }
 

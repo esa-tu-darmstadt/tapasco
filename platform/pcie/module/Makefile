@@ -6,7 +6,7 @@ obj-m := ffLink.o
 
 # composition of files needed to compile
 # one can exchange dual_dma_ctrl with cdma_dma_ctrl, when dma engine from Xilinx is used
-ffLink-objs := pcie_device.o blue_dma_ctrl.o char_device_dma.o char_device_user.o ffLink_driver.o dual_dma_ctrl.o dma_ctrl.o
+ffLink-objs := pcie_device.o blue_dma_ctrl.o char_device_dma.o char_device_user.o ffLink_driver.o dual_dma_ctrl.o dma_ctrl.o async.o
 
 # Path to kernel headers for compilation (path to home can be specific to os)
 LNX=$(shell uname -r)

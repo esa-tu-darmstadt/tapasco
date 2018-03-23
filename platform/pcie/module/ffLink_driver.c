@@ -27,6 +27,7 @@
 /******************************************************************************/
 
 #include "ffLink_driver.h"
+#include "async.h"
 
 /******************************************************************************/
 /* init and exit calls when driver is (un)loaded */
@@ -51,10 +52,18 @@ static int __init fflink_init(void)
 		goto error_pcie_register;
 	}
 
+	err = async_init();
+	if (err) {
+		fflink_warn("Could not register async file\n");
+		goto error_async_init;
+	}
+
 	fflink_warn("Successfully registered driver\n");
 
 	return 0;
 
+error_async_init:
+	pcie_unregister();
 error_pcie_register:
 	return -EACCES;
 }
@@ -68,6 +77,7 @@ static void __exit fflink_exit(void)
 {
 	fflink_notice("Deallocate char-dev(s)/pci-device\n");
 
+	async_exit();
 	pcie_unregister();
 
 	fflink_warn("Successfully unregistered driver\n");
