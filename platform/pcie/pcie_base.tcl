@@ -393,5 +393,9 @@
   }
 
   proc get_pe_base_address {} {
+    return [get_user_offset]
+  }
+
+  proc get_user_offset {} {
     return 0x02000000
   }

@@ -221,6 +221,10 @@ namespace eval platform {
     error "Platform does not implement mandatory proc get_pe_base_address!"
   }
 
+  proc get_user_offset {} {
+    return 0x0
+  }
+
   proc get_address_map {{pe_base ""}} {
     error "Platform does not implement mandatory proc get_address_map!"
   }

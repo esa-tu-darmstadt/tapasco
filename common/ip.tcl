@@ -416,15 +416,17 @@ namespace eval ::tapasco::ip {
     set pe_bases [list]
     foreach pe_base [::platform::addressmap::get_processing_element_bases] {
       lappend pe_bases [json::write object "Address" \
-        [json::write string [format "0x%08x" $pe_base]]
+        [json::write string [format "0x%08x" [expr "$pe_base - [::platform::get_user_offset]"]]]
       ]
     }
 
     # get platform component base addresses
     set pc_bases [list]
     foreach pc_base [::platform::addressmap::get_platform_component_bases] {
+      set base $pc_base
+      if {$base >= [::platform::get_user_offset]} { set base [expr "$pc_base - [::platform::get_user_offset]"] }
       lappend pc_bases [json::write object "Address" \
-        [json::write string [format "0x%08x" $pc_base]] \
+        [json::write string [format "0x%08x" $base]] \
       ]
     }
     puts "  finished address map, composing JSON ..."
