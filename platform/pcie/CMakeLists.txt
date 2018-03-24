@@ -30,7 +30,7 @@ set(SRCS "${SRCDIR}/platform_pcie.cpp"
 	 "${BUDDYDIR}/buddy_tree.cpp"
 	 "${BUDDYDIR}/logger.cpp")
 
-add_definitions(-DPLATFORM_API_TAPASCO_STATUS_BASE=0x80000)
+add_definitions(-DPLATFORM_API_TAPASCO_STATUS_BASE=0x800000)
 add_library(platform SHARED ${CMNSRCS} ${SRCS})
 add_library(libplatform-static STATIC ${CMNSRCS} ${SRCS})
 
