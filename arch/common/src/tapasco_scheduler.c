@@ -39,7 +39,7 @@ tapasco_res_t tapasco_scheduler_launch(tapasco_dev_ctx_t *dev_ctx, tapasco_job_i
 	LOG(LALL_SCHEDULER, "job %lu: launching for kernel %lu, acquiring PE ... ",
 			(ul)j_id, (ul)k_id);
 
-	while ((slot_id = tapasco_pemgmt_acquire(pemgmt, k_id)) < 0)
+	while ((slot_id = tapasco_pemgmt_acquire(pemgmt, k_id)) >= TAPASCO_NUM_SLOTS)
 		usleep(250);
 
 	LOG(LALL_SCHEDULER, "job %lu: got PE %lu", (ul)j_id, (ul)slot_id);
@@ -68,6 +68,12 @@ tapasco_res_t tapasco_scheduler_launch(tapasco_dev_ctx_t *dev_ctx, tapasco_job_i
 	}
 
 	return TAPASCO_SUCCESS;
+}
+
+inline
+tapasco_res_t tapasco_device_job_collect(tapasco_dev_ctx_t *dev_ctx, tapasco_job_id_t const job_id)
+{
+	return tapasco_scheduler_finish_job(dev_ctx, job_id);
 }
 
 

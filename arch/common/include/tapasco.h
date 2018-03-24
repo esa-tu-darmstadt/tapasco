@@ -356,7 +356,6 @@ void tapasco_device_release_job_id(tapasco_dev_ctx_t *dev_ctx,
 /**
  * Launches the given job and releases its id (does not affect alloc'ed handles,
  * means only that kernel arguments can no longer be set using this id).
- * Blocks caller execution until kernel has finished.
  * @param dev_ctx device context
  * @param job_id job id
  * @param flags launch flags, e.g., TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING
@@ -366,6 +365,16 @@ void tapasco_device_release_job_id(tapasco_dev_ctx_t *dev_ctx,
 tapasco_res_t tapasco_device_job_launch(tapasco_dev_ctx_t *dev_ctx,
 		tapasco_job_id_t const job_id,
 		tapasco_device_job_launch_flag_t const flags);
+
+/**
+ * Waits for the given job and returns after it has finished.
+ * @param dev_ctx device context
+ * @param job_id job id
+ * @return TAPASCO_SUCCESS, if execution finished successfully an error code
+           otherwise.
+ **/
+tapasco_res_t tapasco_device_job_collect(tapasco_dev_ctx_t *dev_ctx,
+		tapasco_job_id_t const job_id);
 
 /**
  * Sets the arg_idx'th argument of kernel k_id to arg_value.

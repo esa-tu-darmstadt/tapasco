@@ -224,6 +224,16 @@ struct Tapasco {
   }
 
   /**
+   * Waits for a job to finish.
+   * @param j_id job id
+   * @return TAPASCO_SUCCESS, if successful, an error code otherwise.
+   **/
+  tapasco_res_t wait_for(tapasco_job_id_t const j_id) noexcept
+  {
+    return tapasco_device_job_collect(dev_ctx, j_id);
+  }
+
+  /**
    * Allocates a chunk of len bytes on the device.
    * @param len size in bytes
    * @param h output parameter for handle
