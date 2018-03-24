@@ -224,4 +224,9 @@ namespace eval platform {
   proc get_address_map {{pe_base ""}} {
     error "Platform does not implement mandatory proc get_address_map!"
   }
+
+  # Returns the number of interrupt controllers for the current design.
+  proc number_of_interrupt_controllers {} {
+    error "Platform does not implement mandatory proc number_of_interrupt_controllers!"
+  }
 }

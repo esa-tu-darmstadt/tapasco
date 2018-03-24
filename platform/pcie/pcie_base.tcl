@@ -42,6 +42,10 @@
     return [list [::tapasco::get_platform_num_slots]]
   }
 
+  proc number_of_interrupt_controllers {} {
+    return 1
+  }
+
   proc get_address_map {{pe_base ""}} {
     set max32 [expr "1 << 32"]
     set max64 [expr "1 << 64"]

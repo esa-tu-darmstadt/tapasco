@@ -430,8 +430,7 @@ namespace eval ::tapasco::ip {
     puts "  finished address map, composing JSON ..."
 
     set regex {([0-9][0-9][0-9][0-9]).([0-9][0-9]*)}
-    set no_pes [llength [arch::get_processing_elements]]
-    set no_intc [expr "$no_pes > 96 ? 4 : ($no_pes > 64 ? 3 : ($no_pes > 32 ? 2 : 1))"]
+    set no_intc [::platform::number_of_interrupt_controllers]
     set ts [clock seconds]
 
     return [json::write object \

@@ -65,6 +65,11 @@ namespace eval ::platform {
     return $peam
   }
 
+  proc number_of_interrupt_controllers {} {
+    set no_pes [llength [arch::get_processing_elements]]
+    return [expr "$no_pes > 96 ? 4 : ($no_pes > 64 ? 3 : ($no_pes > 32 ? 2 : 1))"]
+  }
+
   # Creates a subsystem with clock and reset generation for a list of clocks.
   # Consists of clocking wizard + reset generators with single ext. reset in.
   # @param freqs list of name frequency (MHz) pairs, e.g., [list design 100 memory 250]
