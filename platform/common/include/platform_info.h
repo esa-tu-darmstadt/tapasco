@@ -39,7 +39,7 @@ typedef struct platform_info {
 	} clock;
 	struct {
 		platform_kernel_id_t kernel[PLATFORM_NUM_SLOTS];
-		size_t memory[PLATFORM_NUM_SLOTS];
+		uint32_t memory[PLATFORM_NUM_SLOTS];
 	} composition;
 	struct {
 		platform_ctl_addr_t platform[PLATFORM_NUM_SLOTS];
