@@ -28,9 +28,6 @@ set(COMMON_SOURCES "${CMNDIR}/tapasco_delayed_transfers.c"
                    "${CMNDIR}/tapasco_pemgmt.c"
                    "${CMNDIR}/tapasco_scheduler.c"
                    "${CMNDIR}/tapasco_version.c"
-                   "${CMNDIR}/tapasco_async.c"
-                   "${CMNDIR}/tapasco_async_dispatcher.c"
-                   "${CMNDIR}/tapasco_async_collector.c"
                    "${GCMNDIR}/src/gen_mem.c"
                    "${GCMNDIR}/src/gen_queue.c")
 set(TAPASCO_LIBS_DIR "${TAPASCO_HOME}/arch/lib")
