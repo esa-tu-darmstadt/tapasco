@@ -18,9 +18,6 @@
 extern "C" {
   #include <gen_queue.h>
   #include <assert.h>
-  #include <tapasco.h>
-  #include <tapasco_context.h>
-  #include <tapasco_jobs.h>
 }
 
 using namespace std; using namespace std::chrono;
@@ -52,10 +49,11 @@ public:
     do {
       move(y, 0);
       clrtoeol();
-      mvprintw(y, x, "Num threads: % 2zu, jobs/second: % 12.1f, max: % 12.f, min: % 12.1f",
-          num_threads, cavg(), cavg.max(), cavg.min());
+      mvprintw(y, x, "Num threads: % 2zu, jobs/second: % 12.1f, max: % 12.f, min: % 12.1f, waiting for: %lu",
+          num_threads, cavg(), cavg.max(), cavg.min(), (unsigned long)job);
       refresh();
-      usleep(5000000);
+      //usleep(5000000);
+      usleep(500000);
       auto const j = jobs.load();
       auto const t = high_resolution_clock::now();
       auto const s = duration_cast<seconds>(t - t_start);
@@ -98,18 +96,17 @@ private:
       if (res != TAPASCO_SUCCESS) throw Tapasco::tapasco_error(res);
       res = tapasco_device_job_set_arg(dev_ctx, j_id, 0, sizeof(d), &d);
       if (res != TAPASCO_SUCCESS) throw Tapasco::tapasco_error(res);
-      gq_enqueue(q, (void *)j_id);
       tapasco_device_job_launch(dev_ctx, j_id, TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING);
+      gq_enqueue(q, (void *)j_id);
     }
   }
 
   void collect(volatile bool& stop, atomic<uint64_t>& count) {
     tapasco_job_id_t j_id;
-    tapasco_jobs_t *jobs = tapasco_device_jobs(tapasco.device());
-    platform_ctx_t *pctx = tapasco.platform();
     while (! stop) {
-      if ((j_id = (tapasco_job_id_t)gq_dequeue(q))) {
-        platform_wait_for_slot(pctx, tapasco_jobs_get_slot(jobs, j_id));
+      while ((j_id = (tapasco_job_id_t)gq_dequeue(q))) {
+        job = j_id;
+        tapasco.wait_for(j_id);
 	tapasco_device_release_job_id(tapasco.device(), j_id);
 	count++;
       }
@@ -119,5 +116,6 @@ private:
   gq_t *q;
   Tapasco& tapasco;
   atomic<uint64_t> jobs { 0 };
+  atomic<tapasco_job_id_t> job { 0 };
 };
 #endif /* JOB_THROUGHPUT_HPP__ */
