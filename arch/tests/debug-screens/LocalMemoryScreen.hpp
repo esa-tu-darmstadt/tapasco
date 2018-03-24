@@ -146,7 +146,8 @@ private:
     static const string copying = " ... copying ... ";
     clear();
     mvprintw(rows / 2, (cols - copying.length()) / 2, copying.c_str());
-    uint32_t *data = new uint32_t[m.size / sizeof(uint32_t)];
+    uint32_t *data = new (std::nothrow) uint32_t[m.size / sizeof(uint32_t)];
+    if (! data) throw Tapasco::tapasco_error(TAPASCO_ERR_OUT_OF_MEMORY);
     memset((void *)data, 0, m.size);
     tapasco_res_t r = tapasco_device_copy_from_local(tapasco.device(), 0, data, m.size, TAPASCO_DEVICE_COPY_FLAGS_NONE, m.slot);
     if (r != TAPASCO_SUCCESS) throw Tapasco::tapasco_error(r);
@@ -172,7 +173,8 @@ private:
     static const string copying = " ... copying ... ";
     clear();
     mvprintw(rows / 2, (cols - copying.length()) / 2, copying.c_str());
-    uint32_t *data = new uint32_t[m.size / sizeof(uint32_t)];
+    uint32_t *data = new (std::nothrow) uint32_t[m.size / sizeof(uint32_t)];
+    if (! data) throw Tapasco::tapasco_error(TAPASCO_ERR_OUT_OF_MEMORY);
     memset((void *)data, 0, m.size);
 
     ifstream inf(fn, ios::in | ios::binary);
@@ -190,6 +192,7 @@ private:
       stringstream ss;
       ss << "I/O error: " << strerror(errno);
       mvprintw(rows / 2, (cols - ss.str().length()) / 2, ss.str().c_str());
+      delete data;
     }
     do {} while (getch() == ERR);
     clear();
