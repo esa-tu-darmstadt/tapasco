@@ -12,9 +12,9 @@ include ("$ENV{TAPASCO_HOME}/cmake/Tapasco.cmake")
 set (CMAKE_INSTALL_PREFIX "${TAPASCO_HOME}/bin")
 
 link_directories(${TAPASCO_HOME}/arch/lib/${TAPASCO_TARGET}/static  ${TAPASCO_HOME}/platform/lib/${TAPASCO_TARGET}/static)
-include_directories(${TAPASCO_HOME}/arch/common/include ${TAPASCO_HOME}/platform/common/include)
+include_directories(${TAPASCO_HOME}/common/include ${TAPASCO_HOME}/arch/common/include ${TAPASCO_HOME}/platform/common/include)
 
-add_executable (tapasco-debug tapasco_debug.cpp)
+add_executable (tapasco-debug tapasco_debug.cpp ${TAPASCO_HOME}/common/src/gen_queue.c)
 target_link_libraries (tapasco-debug tapasco platform pthread atomic ncurses)
 set_target_properties (tapasco-debug PROPERTIES COMPILE_FLAGS ${ADD_CXXFLAGS})
 set_target_properties (tapasco-debug PROPERTIES LINK_FLAGS ${ADD_LDFLAGS})

@@ -15,9 +15,15 @@
 #include <vector>
 #include <ncurses.h>
 #include <tapasco.hpp>
+extern "C" {
+  #include <gen_queue.h>
+  #include <assert.h>
+  #include <tapasco.h>
+  #include <tapasco_context.h>
+  #include <tapasco_jobs.h>
+}
 
-using namespace std;
-using namespace std::chrono;
+using namespace std; using namespace std::chrono;
 using namespace tapasco;
 
 class JobThroughput {
@@ -26,6 +32,8 @@ public:
   JobThroughput(Tapasco& tapasco): tapasco(tapasco), jobs(0) {
     if (tapasco.kernel_pe_count(COUNTER_ID) < 1)
       throw "need at least one instance of 'Counter' (14) in bitstream";
+    q = gq_init();
+    assert(q);
   }
   virtual ~JobThroughput() {}
 
@@ -37,8 +45,9 @@ public:
     getyx(stdscr, y, x);
     vector<future<void> > threads;
     auto const t_start = high_resolution_clock::now();
-    for (size_t t = 0; t < num_threads; ++t)
-      threads.push_back(async(launch::async, [&]() { run(stop, jobs); }));
+    //for (size_t t = 0; t < num_threads; ++t)
+      threads.push_back(async(launch::async, [&]() { collect(stop, jobs); }));
+      threads.push_back(async(launch::async, [&]() { run2(stop, jobs); }));
     auto c = getch();
     do {
       move(y, 0);
@@ -75,9 +84,39 @@ private:
     while (! stop) {
       if ((res = tapasco.launch_no_return(COUNTER_ID, 1U)) != TAPASCO_SUCCESS)
         throw Tapasco::tapasco_error(res);
-      jobs++;
+      count++;
     }
   }
+
+  void run2(volatile bool& stop, atomic<uint64_t>& count) {
+    tapasco_res_t res;
+    tapasco_dev_ctx_t *dev_ctx = tapasco.device();
+    unsigned long const d = 1U;
+    while (! stop) {
+      tapasco_job_id_t j_id;
+      res = tapasco_device_acquire_job_id(dev_ctx, &j_id, COUNTER_ID, TAPASCO_DEVICE_ACQUIRE_JOB_ID_FLAGS_NONE);
+      if (res != TAPASCO_SUCCESS) throw Tapasco::tapasco_error(res);
+      res = tapasco_device_job_set_arg(dev_ctx, j_id, 0, sizeof(d), &d);
+      if (res != TAPASCO_SUCCESS) throw Tapasco::tapasco_error(res);
+      gq_enqueue(q, (void *)j_id);
+      tapasco_device_job_launch(dev_ctx, j_id, TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING);
+    }
+  }
+
+  void collect(volatile bool& stop, atomic<uint64_t>& count) {
+    tapasco_job_id_t j_id;
+    tapasco_jobs_t *jobs = tapasco_device_jobs(tapasco.device());
+    platform_ctx_t *pctx = tapasco.platform();
+    while (! stop) {
+      if ((j_id = (tapasco_job_id_t)gq_dequeue(q))) {
+        platform_wait_for_slot(pctx, tapasco_jobs_get_slot(jobs, j_id));
+	tapasco_device_release_job_id(tapasco.device(), j_id);
+	count++;
+      }
+    }
+  }
+
+  gq_t *q;
   Tapasco& tapasco;
   atomic<uint64_t> jobs { 0 };
 };
