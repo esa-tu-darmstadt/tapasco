@@ -129,13 +129,6 @@ platform_res_t _platform_init(const char *const version, platform_ctx_t **ctx)
 		return PERR_VERSION_MISMATCH;
 	}
 
-	platform_res_t const r = platform_context_init(ctx);
-	if (r != PLATFORM_SUCCESS) {
-		ERR("could not initialize platform context: %s (%d)", platform_strerror(r), r);
-		return r;
-	}
-	pcie_platform.ctx = *ctx;
-
 	if(helper_init(&pcie_platform.fd_dma_engine[0], dma_dev_path[0]) != PLATFORM_SUCCESS)
 		return (platform_res_t) PERR_OPEN_DEV;
 	pcie_platform.opened_dma_devs++;
@@ -147,12 +140,19 @@ platform_res_t _platform_init(const char *const version, platform_ctx_t **ctx)
 	res = platform_read_ctl(*ctx, (platform_ctl_addr_t) HW_ID_ADDR + HW_ID_MAX_OFFSET, 4, &data, PLATFORM_CTL_FLAGS_NONE);
 	if(res != PLATFORM_SUCCESS || data > NUM_USER_DEV) {
 		ERR("Wrong status core setting - irq_cores are: %X", data);
-		return (platform_res_t) PERR_OPEN_DEV;
+		//return (platform_res_t) PERR_OPEN_DEV;
 	}
 
 	pcie_platform.ba_small = new buddy_allocator(ALLOC_SMALL_OFFSET, ALLOC_SMALL_TOTAL, ALLOC_START_ORDER, ALLOC_SMALL_ORDER);
 	pcie_platform.ba_medium = new buddy_allocator(ALLOC_MEDIUM_OFFSET, ALLOC_MEDIUM_TOTAL, ALLOC_SMALL_ORDER + 1, ALLOC_MEDIUM_ORDER);
 	pcie_platform.ba_large = new buddy_allocator(ALLOC_LARGE_OFFSET, ALLOC_LARGE_TOTAL, ALLOC_MEDIUM_ORDER + 1, ALLOC_LARGE_ORDER);
+
+	platform_res_t const r = platform_context_init(ctx);
+	if (r != PLATFORM_SUCCESS) {
+		ERR("could not initialize platform context: %s (%d)", platform_strerror(r), r);
+		return r;
+	}
+	pcie_platform.ctx = *ctx;
 
 	res = platform_info(*ctx, &pcie_platform.info);
 	if (res != PLATFORM_SUCCESS) {
@@ -166,6 +166,7 @@ platform_res_t _platform_init(const char *const version, platform_ctx_t **ctx)
 void platform_deinit(platform_ctx_t *ctx)
 {
 	LOG(LPLL_INIT, "Close devices");
+	platform_context_deinit(ctx);
 
 	for(int i = 0; i < pcie_platform.opened_user_devs; i++)
 		close(pcie_platform.fd_user[i]);
@@ -177,7 +178,6 @@ void platform_deinit(platform_ctx_t *ctx)
 	delete(pcie_platform.ba_medium);
 	delete(pcie_platform.ba_large);
 
-	platform_context_deinit(ctx);
 	platform_logging_exit();
 }
 
@@ -424,4 +424,9 @@ platform_res_t platform_write_ctl_and_wait(platform_ctx_t *ctx, platform_ctl_add
 	}
 
 	return PLATFORM_SUCCESS;
+}
+
+const char *const platform_waitfile(platform_ctx_t const *ctx)
+{
+	return "/dev/FFLINK_ASYNC";
 }

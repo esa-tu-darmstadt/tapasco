@@ -18,7 +18,7 @@
 #ifndef ASYNC_H__
 #define ASYNC_H__
 
-#define PLATFORM_WAITFILENAME		"/dev/FFLINK_ASYNC"
+#define PLATFORM_WAITFILENAME		"FFLINK_ASYNC"
 
 int async_init(void);
 void async_exit(void);
