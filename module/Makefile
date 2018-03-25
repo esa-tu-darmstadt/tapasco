@@ -4,10 +4,10 @@ CROSS_COMPILE ?= arm-linux-gnueabihf-
 endif
 
 obj-m += tlkm.o
-tlkm-objs := tlkm_module.o tlkm_logging.o tlkm_perfc.o tlkm_perfc_miscdev.o tlkm_async.o
+tlkm-objs := tlkm_module.o common/tlkm_logging.o common/tlkm_perfc.o common/tlkm_perfc_miscdev.o common/tlkm_async.o
 
 CPPFLAGS=-DPLATFORM_API_TAPASCO_STATUS_BASE=$(PLATFORM_API_TAPASCO_STATUS_BASE)
-CPPFLAGS+=-I$(TAPASCO_HOME)/module
+CPPFLAGS+=-I$(TAPASCO_HOME)/module -I$(TAPASCO_HOME)/module/common
 
 .PHONY:	all clean
 
