@@ -28,11 +28,15 @@
 #include "tlkm_perfc_miscdev.h"
 #include "tlkm_async.h"
 
+extern
+int is_zynq_machine(void);
+
 static
 int __init tlkm_module_init(void)
 {
 	int ret = 0;
 	LOG(TLKM_LF_MODULE, "TaPaSCo loadable kernel module v" TLKM_VERSION);
+	LOG(TLKM_LF_MODULE, "Zynq: %d", is_zynq_machine());
 
 #ifndef NDEBUG
 	if ((ret = tlkm_perfc_miscdev_init())) {
