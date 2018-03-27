@@ -26,6 +26,7 @@
 #include <linux/mutex.h>
 #include <linux/uaccess.h>
 #include <linux/miscdevice.h>
+#include <linux/sched/signal.h>
 #include "tlkm_logging.h"
 #include "tlkm_perfc.h"
 #include "tlkm_async.h"

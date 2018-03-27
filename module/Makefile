@@ -1,10 +1,14 @@
+ifndef TAPASCO_HOME
+$(error "environment variable TAPASCO_HOME is not set - did you source TaPaSCo's setup.sh?")
+endif
+
 LINUX_HOME ?= /lib/modules/$(shell uname -r)/build
 ifeq ($(ARCH), arm)
 CROSS_COMPILE ?= arm-linux-gnueabihf-
 endif
 
 obj-m += tlkm.o
-tlkm-objs := tlkm_module.o common/tlkm_logging.o common/tlkm_perfc.o common/tlkm_perfc_miscdev.o common/tlkm_async.o
+tlkm-objs := tlkm_module.o common/tlkm_logging.o common/tlkm_perfc.o common/tlkm_perfc_miscdev.o common/tlkm_async.o common/tlkm_bus.o zynq/tlkm_zynq_enumerate.o
 
 CPPFLAGS=-DPLATFORM_API_TAPASCO_STATUS_BASE=$(PLATFORM_API_TAPASCO_STATUS_BASE)
 CPPFLAGS+=-I$(TAPASCO_HOME)/module -I$(TAPASCO_HOME)/module/common

@@ -1,6 +1,8 @@
 #ifndef TLKM_BUS_H__
 #define TLKM_BUS_H__
 
+#include "tlkm_devices.h"
+
 struct tlkm_bus;
 
 int tlkm_enumerate(void);
