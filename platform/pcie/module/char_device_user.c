@@ -73,7 +73,7 @@ static int user_open(struct inode *inode, struct file *filp)
 {
 	spin_lock(&device_open_close_mutex);
 
-	fflink_notice("Already %d files in use.\n", device_opened);
+	fflink_notice("Already %lld files in use.\n", (s64)device_opened);
 
 	++device_opened;
 	/* set filp for further sys calls to this minor number */
@@ -306,12 +306,19 @@ static int user_mmap(struct file *filp, struct vm_area_struct *vma)
  * @return Tells OS, that irq is handled properly
  * */
 #define DEFINE_USER_INTR_HANDLER(nr) 					\
+									\
+static void signal_slot_ ## nr(struct work_struct *work) 		\
+{									\
+	async_signal_slot_interrupt(nr);				\
+}									\
+									\
+static DECLARE_WORK(irq_work_ ## nr, signal_slot_ ## nr);		\
+									\
 irqreturn_t intr_handler_user_ ## nr(int irq, void * dev_id) 		\
 { 									\
-	priv_data.user_condition[nr] += 1; 				\
-	async_signal_slot_interrupt(nr);                                \
+	schedule_work(&irq_work_ ## nr);				\
 	return IRQ_HANDLED; 						\
-}
+}									\
 
 DEFINE_USER_INTR_HANDLER(0);
 DEFINE_USER_INTR_HANDLER(1);

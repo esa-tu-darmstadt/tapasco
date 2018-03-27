@@ -69,13 +69,13 @@ static atomic64_t device_opened = ATOMIC_INIT(0);
 static void transmit_to_user(void * user_buffer, void * kvirt_buffer, dma_addr_t dma_handle, int64_t btt)
 {
 	int64_t copy_count;
-	fflink_info("user_buf %lX kvirt_buf %lX \nsize %d dma_handle %lX\n", (unsigned long) user_buffer, (unsigned long) kvirt_buffer, btt, (unsigned long) dma_handle);
+	fflink_info("user_buf %lX kvirt_buf %lX \nsize %lld dma_handle %lX\n", (unsigned long) user_buffer, (unsigned long) kvirt_buffer, btt, (unsigned long) dma_handle);
 
 	dma_sync_single_for_cpu(&get_pcie_dev()->dev, dma_handle, dma_cache_fit(btt), PCI_DMA_FROMDEVICE);
 
 	copy_count = copy_to_user(user_buffer, kvirt_buffer, btt);
 	if (copy_count)
-		fflink_warn("left copy %llu bytes - cache flush %llu bytes\n", copy_count, dma_cache_fit(btt));
+		fflink_warn("left copy %lld bytes - cache flush %lld bytes\n", (s64)copy_count, dma_cache_fit(btt));
 
 	dma_sync_single_for_device(&get_pcie_dev()->dev, dma_handle, dma_cache_fit(btt), PCI_DMA_FROMDEVICE);
 }
@@ -91,13 +91,13 @@ static void transmit_to_user(void * user_buffer, void * kvirt_buffer, dma_addr_t
 static void transmit_from_user(void * user_buffer, void * kvirt_buffer, dma_addr_t dma_handle, int64_t btt)
 {
 	int64_t copy_count;
-	fflink_info("user_buf %lX kvirt_buf %lX \nsize %d dma_handle %lX\n", (unsigned long) user_buffer, (unsigned long) kvirt_buffer, dma_cache_fit(btt), (unsigned long) dma_handle);
+	fflink_info("user_buf %lX kvirt_buf %lX \nsize %lld dma_handle %lX\n", (unsigned long) user_buffer, (unsigned long) kvirt_buffer, dma_cache_fit(btt), (unsigned long) dma_handle);
 
 	dma_sync_single_for_cpu(&get_pcie_dev()->dev, dma_handle, dma_cache_fit(btt), PCI_DMA_TODEVICE);
 	// copy data from user
 	copy_count = copy_from_user(kvirt_buffer, user_buffer, btt);
 	if (copy_count)
-		fflink_warn("left copy %llu bytes - cache flush %llu bytes\n", copy_count, dma_cache_fit(btt));
+		fflink_warn("left copy %lld bytes - cache flush %lld bytes\n", (s64)copy_count, dma_cache_fit(btt));
 
 	dma_sync_single_for_device(&get_pcie_dev()->dev, dma_handle, dma_cache_fit(btt), PCI_DMA_TODEVICE);
 }
@@ -226,7 +226,7 @@ static int read_with_bounce(int64_t count, char __user *buf, void * mem_addr, st
 	fflink_notice("Using bounce buffering\n");
 
 	while (current_count > 0) {
-		fflink_info("outstanding %d bytes - \n\t\t user addr %lX - mem addr %lx\n", current_count, (unsigned long) buf, (unsigned long) mem_addr);
+		fflink_info("outstanding %lld bytes - \n\t\t user addr %lX - mem addr %lx\n", (s64)current_count, (unsigned long) buf, (unsigned long) mem_addr);
 		if (current_count <= BUFFER_SIZE)
 			copy_size = current_count;
 		else
@@ -277,7 +277,7 @@ static int write_with_bounce(int64_t count, const char __user *buf, void * mem_a
 	fflink_notice("Using bounce buffering\n");
 
 	while (current_count > 0) {
-		fflink_info("outstanding %d bytes - \n\t\t user addr %lX - mem addr %lx\n", current_count, (unsigned long) buf, (unsigned long) mem_addr);
+		fflink_info("outstanding %lld bytes - \n\t\t user addr %lX - mem addr %lx\n", (s64)current_count, (unsigned long) buf, (unsigned long) mem_addr);
 		expected_val = atomic64_read(&p->writes_processed) + 1;
 		if (current_count <= BUFFER_SIZE) {
 			transmit_from_user((void *) buf, p->kvirt_h2l, p->dma_handle_h2l, current_count);
@@ -342,7 +342,7 @@ static void dma_deinit(void) {
  * */
 static int dma_open(struct inode *inode, struct file *filp)
 {
-	fflink_notice("Already %d files in use.\n", device_opened);
+	fflink_notice("Already %lld files in use.\n", (s64)atomic64_read(&device_opened));
 
 	atomic64_inc(&device_opened);
 	/* set filp for further sys calls to this minor number */
@@ -359,7 +359,7 @@ static int dma_open(struct inode *inode, struct file *filp)
 static int dma_close(struct inode *inode, struct file *filp)
 {
 	atomic64_dec(&device_opened);
-	fflink_notice("Still %d files in use.\n", device_opened);
+	fflink_notice("Still %lld files in use.\n", (s64)atomic64_read(&device_opened));
 	return 0;
 }
 
