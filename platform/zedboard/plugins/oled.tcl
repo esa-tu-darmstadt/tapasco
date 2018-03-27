@@ -21,23 +21,18 @@
 #         counts of interrupts at each slot graphically.
 # @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
-namespace eval oled {
+if {[tapasco::is_feature_enabled "OLED"]} {
   # Creates the optional OLED controller indicating interrupts.
   # @param ps Processing System instance
-  proc create_subsystem_oled {name irqs} {
+  proc create_custom_subsystem_oled {} {
     # number of INTC's
+    set irqs [::arch::get_irqs]
     set no_intcs [llength $irqs]
-    # make new group for OLED
-    set instance [current_bd_instance .]
-    set group [create_bd_cell -type hier $name]
-    current_bd_instance $group
 
     # create OLED controller
     set oled_ctrl [tapasco::ip::create_oled_ctrl oled_ctrl]
 
     # create ports
-    set clk [create_bd_pin -type "clk" -dir I "aclk"]
-    set rst [create_bd_pin -type "rst" -dir I "peripheral_aresetn"]
     set initialized [create_bd_port -dir O "initialized"]
     set heartbeat [create_bd_port -dir O "heartbeat"]
     set op_cc [tapasco::ip::create_xlconcat "op_cc" $no_intcs]
@@ -46,38 +41,26 @@ namespace eval oled {
       connect_bd_net [lindex $irqs $i] [get_bd_pins "$op_cc/In$i"]
     }
 
-    # connect clock port
-    connect_bd_net $clk [get_bd_pins -of_objects $oled_ctrl -filter { TYPE == "clk" && DIR == "I" }]
+    # create clock
+    set clk_wiz [::tapasco::ip::create_clk_wiz "clk_wiz"]
+    set_property -dict [list \
+      CONFIG.USE_LOCKED {false} \
+      CONFIG.USE_RESET {false} \
+      CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {10.000} \
+    ] $clk_wiz
+    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
+      [get_bd_pins -of_objects $clk_wiz -filter { TYPE == clk && DIR == I }]
+    connect_bd_net [get_bd_pins -of_objects $clk_wiz -filter { TYPE == clk && DIR == O }] \
+      [get_bd_pins -of_objects $oled_ctrl -filter { TYPE == clk && DIR == I }]
 
     # connect reset
-    connect_bd_net $rst [get_bd_pins $oled_ctrl/rst_n]
+    connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
+      [get_bd_pins $oled_ctrl/rst_n]
 
     # create external port 'oled'
     set op [create_bd_intf_port -mode "master" -vlnv "esa.cs.tu-darmstadt.de:user:oled_rtl:1.0" "oled"]
     connect_bd_intf_net [get_bd_intf_pins -of_objects $oled_ctrl] $op
     connect_bd_net [get_bd_pins $oled_ctrl/initialized] $initialized
     connect_bd_net [get_bd_pins $oled_ctrl/heartbeat] $heartbeat
-
-    current_bd_instance $instance
-    return $group
-  }
-
-  proc oled_feature {{args {}}} {
-    if {[tapasco::is_feature_enabled "OLED"]} {
-      set oled [create_subsystem_oled "OLED" [arch::get_irqs]]
-      set ps [get_bd_cell -hierarchical -filter {VLNV =~ "xilinx.com:ip:processing_system*"}]
-      set ps_rst [get_bd_pin "/Host/ps_resetn"]
-
-      set cnr_oled [tapasco::create_subsystem_clocks_and_resets [list "oled" 10] "OLED_ClockReset"]
-      connect_bd_net $ps_rst [get_bd_pins -filter {TYPE == rst && DIR == I} -of_objects $cnr_oled]
-      set clk [get_bd_pins -filter {TYPE == clk && DIR == O} -of_objects $cnr_oled]
-      set rst [get_bd_pins "$cnr_oled/oled_peripheral_aresetn"]
-
-      connect_bd_net $clk [get_bd_pins "$oled/aclk"]
-      connect_bd_net $rst [get_bd_pins "$oled/peripheral_aresetn"]
-    }
-    return {}
   }
 }
-
-tapasco::register_plugin "platform::oled::oled_feature" "pre-wrapper"

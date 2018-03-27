@@ -66,16 +66,16 @@ static atomic64_t device_opened = ATOMIC_INIT(0);
  * @param btt Bytes to transfer
  * @return none
  * */
-static void transmit_to_user(void * user_buffer, void * kvirt_buffer, dma_addr_t dma_handle, int btt)
+static void transmit_to_user(void * user_buffer, void * kvirt_buffer, dma_addr_t dma_handle, int64_t btt)
 {
-	int copy_count;
+	int64_t copy_count;
 	fflink_info("user_buf %lX kvirt_buf %lX \nsize %d dma_handle %lX\n", (unsigned long) user_buffer, (unsigned long) kvirt_buffer, btt, (unsigned long) dma_handle);
 
 	dma_sync_single_for_cpu(&get_pcie_dev()->dev, dma_handle, dma_cache_fit(btt), PCI_DMA_FROMDEVICE);
 
 	copy_count = copy_to_user(user_buffer, kvirt_buffer, btt);
 	if (copy_count)
-		fflink_warn("left copy %u bytes - cache flush %u bytes\n", copy_count, dma_cache_fit(btt));
+		fflink_warn("left copy %llu bytes - cache flush %llu bytes\n", copy_count, dma_cache_fit(btt));
 
 	dma_sync_single_for_device(&get_pcie_dev()->dev, dma_handle, dma_cache_fit(btt), PCI_DMA_FROMDEVICE);
 }
@@ -88,16 +88,16 @@ static void transmit_to_user(void * user_buffer, void * kvirt_buffer, dma_addr_t
  * @param btt Bytes to transfer
  * @return none
  * */
-static void transmit_from_user(void * user_buffer, void * kvirt_buffer, dma_addr_t dma_handle, int btt)
+static void transmit_from_user(void * user_buffer, void * kvirt_buffer, dma_addr_t dma_handle, int64_t btt)
 {
-	int copy_count;
+	int64_t copy_count;
 	fflink_info("user_buf %lX kvirt_buf %lX \nsize %d dma_handle %lX\n", (unsigned long) user_buffer, (unsigned long) kvirt_buffer, dma_cache_fit(btt), (unsigned long) dma_handle);
 
 	dma_sync_single_for_cpu(&get_pcie_dev()->dev, dma_handle, dma_cache_fit(btt), PCI_DMA_TODEVICE);
 	// copy data from user
 	copy_count = copy_from_user(kvirt_buffer, user_buffer, btt);
 	if (copy_count)
-		fflink_warn("left copy %u bytes - cache flush %u bytes\n", copy_count, dma_cache_fit(btt));
+		fflink_warn("left copy %llu bytes - cache flush %llu bytes\n", copy_count, dma_cache_fit(btt));
 
 	dma_sync_single_for_device(&get_pcie_dev()->dev, dma_handle, dma_cache_fit(btt), PCI_DMA_TODEVICE);
 }
@@ -108,7 +108,7 @@ static void transmit_from_user(void * user_buffer, void * kvirt_buffer, dma_addr
  * @param btt Bytes to transfer
  * @return BTT as multiple of cache_line_size
  * */
-static unsigned int dma_cache_fit(unsigned int btt)
+static int64_t dma_cache_fit(int64_t btt)
 {
 	if ((btt & (priv_data.cache_lsize - 1)) > 0)
 		return (btt & priv_data.cache_mask) + priv_data.cache_lsize;
@@ -205,7 +205,7 @@ static void dma_init_pdata(struct priv_data_struct * p)
  * @param p Pointer to priv_data of associated minor node, needed for kernel buffers and sleeping
  * @return Zero, if transfer was successful, error code otherwise
  * */
-static inline int read_device(int count, char __user *buf, void * mem_addr, struct priv_data_struct *p)
+static inline int read_device(int64_t count, char __user *buf, void * mem_addr, struct priv_data_struct *p)
 {
 	return read_with_bounce(count, buf, mem_addr, p);
 }
@@ -218,9 +218,9 @@ static inline int read_device(int count, char __user *buf, void * mem_addr, stru
  * @param p Pointer to priv_data of associated minor node, needed for kernel buffers and sleeping
  * @return Zero, if transfer was successful, error code otherwise
  * */
-static int read_with_bounce(int count, char __user *buf, void * mem_addr, struct priv_data_struct *p)
+static int read_with_bounce(int64_t count, char __user *buf, void * mem_addr, struct priv_data_struct *p)
 {
-	int current_count = count;
+	int64_t current_count = count;
 	unsigned int copy_size;
 	uint64_t expected_val;
 	fflink_notice("Using bounce buffering\n");
@@ -257,7 +257,7 @@ static int read_with_bounce(int count, char __user *buf, void * mem_addr, struct
  * @param p Pointer to priv_data of associated minor node, needed for kernel buffers and sleeping
  * @return Zero, if transfer was successful, error code otherwise
  * */
-static inline int write_device(int count, const char __user *buf, void * mem_addr, struct priv_data_struct *p)
+static inline int write_device(int64_t count, const char __user *buf, void * mem_addr, struct priv_data_struct *p)
 {
 	return write_with_bounce(count, buf, mem_addr, p);
 }
@@ -270,9 +270,9 @@ static inline int write_device(int count, const char __user *buf, void * mem_add
  * @param p Pointer to priv_data of associated minor node, needed for kernel buffers and sleeping
  * @return Zero, if transfer was successful, error code otherwise
  * */
-static int write_with_bounce(int count, const char __user *buf, void * mem_addr, struct priv_data_struct *p)
+static int write_with_bounce(int64_t count, const char __user *buf, void * mem_addr, struct priv_data_struct *p)
 {
-	int current_count = count;
+	int64_t current_count = count;
 	uint64_t expected_val;
 	fflink_notice("Using bounce buffering\n");
 

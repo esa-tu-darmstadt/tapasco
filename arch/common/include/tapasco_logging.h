@@ -47,13 +47,15 @@ LIBTAPASCO_LOGLEVELS
 int tapasco_logging_init(void);
 void tapasco_logging_exit(void);
 #ifdef NDEBUG
-inline void tapasco_log(tapasco_ll_t const level, char *fmt, ...) {}
+#define ERR(msg, ...)		(void)0
+#define WRN(msg, ...)		(void)0
+#define LOG(l, msg, ...)	(void)0
 #else
 void tapasco_log(tapasco_ll_t const level, char *fmt, ...);
-#endif
 
 #define ERR(msg, ...)		tapasco_log(0, "[%s] " msg "\n", __func__, ##__VA_ARGS__)
 #define WRN(msg, ...)		tapasco_log(1, "[%s] " msg "\n", __func__, ##__VA_ARGS__)
 #define LOG(l, msg, ...)	tapasco_log(l, "[%s] " msg "\n", __func__, ##__VA_ARGS__)
+#endif
 
 #endif /* TAPASCO_LOGGING_H__ */

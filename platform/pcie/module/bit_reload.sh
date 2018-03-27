@@ -103,7 +103,7 @@ then
 		vivado -nolog -nojournal -notrace -mode tcl -source $BITLOAD_SCRIPT -tclargs $BITSTREAM
 		VIVADORET=$?
 	else
-		echo "programming bitstream silently, this could take while ..."
+		echo "programming bitstream silently, this could take a while ..."
 		vivado -nolog -nojournal -notrace -mode batch -source $BITLOAD_SCRIPT -tclargs $BITSTREAM > /dev/null
 		VIVADORET=$?
 	fi
