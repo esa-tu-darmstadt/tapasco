@@ -1,6 +1,8 @@
 #ifndef TLKM_DEVICE_H__
 #define TLKM_DEVICE_H__
 
+#include <linux/list.h>
+
 #define TLKM_DEVICE_NAME_LEN				100
 
 struct tlkm_device;
@@ -9,6 +11,7 @@ int  (*tlkm_device_init_f)(tlkm_device_t **pdev);
 void (*tlkm_device_exit_f)(tlkm_device_t *dev);
 
 struct tlkm_device {
+	struct list_head device; /* this device in tlkm_bus */
 	char name[100];
 	int vendor_id;
 	int product_id;
