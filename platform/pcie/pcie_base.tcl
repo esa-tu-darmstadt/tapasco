@@ -96,7 +96,7 @@
     set num_irqs_threadpools [::tapasco::get_platform_num_slots]
     set num_irqs [expr $num_irqs_threadpools + 4]
 
-    set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 6]
+    set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 8]
 
     # create MSIX interrupt controller
     set msix_intr_ctrl [tapasco::ip::create_msix_intr_ctrl "msix_intr_ctrl"]
@@ -111,8 +111,8 @@
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In2"}]
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In3"}]
 
-    for {set i 0} {$i < 1} {incr i} {
-      set port [create_bd_pin -from 63 -to 0 -dir I -type intr "intr_$i"]
+    for {set i 0} {$i < 4} {incr i} {
+      set port [create_bd_pin -from 31 -to 0 -dir I -type intr "intr_$i"]
       connect_bd_net $port [get_bd_pin $irq_concat_ss/[format "In%d" [expr "$i + 4"]]]
     }
 
