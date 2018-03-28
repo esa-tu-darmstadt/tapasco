@@ -70,6 +70,10 @@ protected:
   }
 
   bool has_blue_dma() {
+#if defined(__i386__) || defined (__x86_64__) || defined(__amd64__)
+    // x86 platforms might have PCIe devices, so blue monitors are useful regardless of whether BlueDMA is present
+    return true;
+#else
     platform_info_t info;
     tapasco.info(&info);
     uint32_t v;
@@ -80,6 +84,7 @@ protected:
       }
     }
     return false;
+#endif
   }
 
 private:
