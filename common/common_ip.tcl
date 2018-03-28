@@ -20,6 +20,7 @@ dict set stdcomps   tapasco_status   vlnv   "esa.cs.tu-darmstadt.de:tapasco:tapa
 dict set stdcomps   axi_pcie3_0_usp  vlnv   "xilinx.com:ip:xdma:3.1"
 dict set stdcomps   clk_wiz          vlnv   "xilinx.com:ip:clk_wiz:5.4"
 dict set stdcomps   msix_intr_ctrl   vlnv   "esa.informatik.tu-darmstadt.de:user:MSIXIntrCtrl:1.0"
+dict set stdcomps   axioffset   vlnv   "esa.informatik.tu-darmstadt.de:user:AXIOffset:1.0"
 dict set stdcomps   axi_reg_slice    vlnv   "xilinx.com:ip:axi_register_slice:2.1"
 dict set stdcomps   dwidth_conv      vlnv   "xilinx.com:ip:axi_dwidth_converter:2.1"
 dict set stdcomps   system_ila       vlnv   "xilinx.com:ip:system_ila:1.0"

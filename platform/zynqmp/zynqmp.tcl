@@ -61,6 +61,8 @@ source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
       }
       if {$base != "skip"} { set peam [addressmap::assign_address $peam $m $base $stride $range $comp] }
     }
+    assign_bd_address [get_bd_addr_segs {host/zynqmp/SAXIGP2/HP0_DDR_HIGH }]
+    assign_bd_address [get_bd_addr_segs {host/zynqmp/SAXIGP4/HP2_DDR_HIGH }]
     return $peam
   }
 
@@ -269,8 +271,9 @@ source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
     }
 
     # create hierarchical ports
+    set hp_ports [list "HP0" "HP1"]
     set mem_slaves [list]
-    foreach s [list "HP0" "HP1"] {
+    foreach s $hp_ports {
       lappend mem_slaves [create_bd_intf_pin -mode Slave -vlnv $aximm_vlnv "S_$s"]
     }
 
@@ -286,12 +289,21 @@ source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
     set design_p_arstn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
     set design_ic_arstn [tapasco::subsystem::get_port "design" "rst" "interconnect"]
 
+    set mem_offsets [list]
+    foreach s $mem_slaves n $hp_ports {
+      set offset [tapasco::ip::create_axioffset "${n}_offset"]
+      connect_bd_net [get_bd_pins $offset/CLK] $mem_aclk
+      connect_bd_net [get_bd_pins $offset/RST_N] $mem_p_arstn
+      connect_bd_intf_net $s [get_bd_intf_pins $offset/S_AXI]
+      lappend mem_offsets [get_bd_intf_pin $offset/M_AXI]
+    }
+
     # generate PS MPSoC instance. Default values are fine
     set ps [tapasco::ip::create_ultra_ps "zynqmp" [tapasco::get_board_preset] [tapasco::get_design_frequency]]
 
     puts "  PS generated..."
     puts "  PS configuration ..."
-    save_bd_design
+
     # activate ACP, HP0, HP2 and GP0/1 (+ FCLK1 @10MHz)
     set_property -dict [list \
       CONFIG.PSU__FPGA_PL1_ENABLE {1} \
@@ -299,7 +311,8 @@ source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
       CONFIG.PSU__USE__S_AXI_GP4 {1}  \
       CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ [tapasco::get_design_frequency] \
       CONFIG.PSU__CRL_APB__PL1_REF_CTRL__FREQMHZ {10} \
-      CONFIG.PSU__USE__IRQ1 {1}
+      CONFIG.PSU__USE__IRQ1 {1} \
+      CONFIG.PSU__HIGH_ADDRESS__ENABLE {1}
       ] $ps
     puts "  PS configuration finished"
 
@@ -312,9 +325,7 @@ source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
       [get_bd_intf_pins "$ps/S_AXI_HP0_FPD"] \
       [get_bd_intf_pins "$ps/S_AXI_HP2_FPD"]
     ]
-    foreach ms $mem_slaves pms $ps_mem_slaves { connect_bd_intf_net $ms $pms }
-
-    save_bd_design
+    foreach ms $mem_offsets pms $ps_mem_slaves { connect_bd_intf_net $ms $pms }
 
     # connect interrupt
     set irq_top [tapasco::ip::create_xlslice irq_top 16 0]
@@ -334,7 +345,7 @@ source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
 
     # connect clocks
     connect_bd_net $host_aclk \
-      [get_bd_pins -of_objects [get_bd_cells] -filter { TYPE == clk && DIR == I && NAME !~ "s*hp*aclk"}]
+      [get_bd_pins -of_objects [get_bd_cells -filter {NAME !~ "*_offset"}] -filter { TYPE == clk && DIR == I && NAME !~ "s*hp*aclk"}]
     connect_bd_net $host_ic_arstn \
       [get_bd_pins -of_objects [list $gp0_ic_tree $gp1_ic_tree] -filter { TYPE == rst && DIR == I && NAME =~ *interconnect* }]
     connect_bd_net $host_p_arstn \
