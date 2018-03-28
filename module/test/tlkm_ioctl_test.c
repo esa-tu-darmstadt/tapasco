@@ -8,6 +8,24 @@
 
 #define DEV_FN	"/dev/" TLKM_IOCTL_FN
 
+static int init_device(int fd, size_t dev_id)
+{
+	struct tlkm_ioctl_device_cmd device_cmd = {
+		.dev_id = dev_id,
+	};
+	int r = ioctl(fd, TLKM_IOCTL_CREATE_DEVICE, &device_cmd);
+	if (r) {
+		fprintf(stderr, "ERROR ioctl create: %s (%d)\n", strerror(errno), errno);
+		return r;
+	}
+
+	r = ioctl(fd, TLKM_IOCTL_DESTROY_DEVICE, &device_cmd);
+	if (r) {
+		fprintf(stderr, "ERROR ioctl destroy: %s (%d)\n", strerror(errno), errno);
+	}
+	return r;
+}
+
 int main(int argc, char *argv[])
 {
 	int fd = open(DEV_FN, O_RDWR);
@@ -38,21 +56,10 @@ int main(int argc, char *argv[])
 					enum_devices_cmd.devs[i].vendor_id,
 					enum_devices_cmd.devs[i].product_id);
 		}
+		for (size_t i = 0; i < enum_devices_cmd.num_devs; ++i) {
+			init_device(fd, i);
+		}
 	}
 
-	struct tlkm_ioctl_device_cmd device_cmd = {
-		.dev_id = 1,
-	};
-	r = ioctl(fd, TLKM_IOCTL_CREATE_DEVICE, &device_cmd);
-	if (r) {
-		fprintf(stderr, "ERROR ioctl create: %s (%d)\n", strerror(errno), errno);
-		return r;
-	}
-
-	r = ioctl(fd, TLKM_IOCTL_DESTROY_DEVICE, &device_cmd);
-	if (r) {
-		fprintf(stderr, "ERROR ioctl destroy: %s (%d)\n", strerror(errno), errno);
-		return r;
-	}
 	close(fd);
 }

@@ -25,7 +25,7 @@ int  tlkm_bus_create_device(dev_id_t dev_id, tlkm_access_t access)
 inline static
 void tlkm_bus_destroy_device(dev_id_t dev_id, tlkm_access_t access)
 {
-	tlkm_device_create(tlkm_bus_get_device(dev_id), access);
+	tlkm_device_destroy(tlkm_bus_get_device(dev_id), access);
 }
 
 #endif /* TLKM_BUS_H__ */

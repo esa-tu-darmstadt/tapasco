@@ -31,12 +31,11 @@ void destroy_device_instance(struct tlkm_device *pdev)
 int tlkm_device_create(struct tlkm_device *pdev, tlkm_access_t access)
 {
 	int ret = 0;
-#ifndef NDEBUG
 	if (! pdev) {
-		ERR("called with NULL device");
+		ERR("device does not exist");
 		return -ENXIO;
 	}
-#endif
+
 	mutex_lock(&pdev->mtx);
 	if (pdev->inst) {
 		LOG(TLKM_LF_DEVICE, "instance for device #%03u already exists, "
@@ -77,6 +76,7 @@ int tlkm_device_create(struct tlkm_device *pdev, tlkm_access_t access)
 void tlkm_device_destroy(struct tlkm_device *pdev, tlkm_access_t access)
 {
 	tlkm_access_t a;
+	if (! pdev) return;
 	mutex_lock(&pdev->mtx);
 	if (pdev->inst) {
 		size_t total_refs = 0;
