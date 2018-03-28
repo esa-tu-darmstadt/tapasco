@@ -28,11 +28,15 @@
 #include "tlkm_bus.h"
 #include "tlkm_ioctl.h"
 
+extern
+int is_zynq_machine(void);
+
 static
 int __init tlkm_module_init(void)
 {
 	int ret = 0;
 	LOG(TLKM_LF_MODULE, "TaPaSCo loadable kernel module v" TLKM_VERSION);
+	LOG(TLKM_LF_MODULE, "Zynq: %d", is_zynq_machine());
 
 	if ((ret = tlkm_bus_init())) {
 		ERR("failed to initialize TaPaSCo subsystem: %d", ret);
