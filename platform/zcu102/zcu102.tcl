@@ -16,21 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-source -notrace $::env(TAPASCO_HOME)/platform/zynqmp/zynqmp.tcl
 
 namespace eval platform {
-  namespace export create
-  namespace export max_masters
+  set platform_dirname "zcu102"
 
-  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/zcu102/plugins" "*.tcl"] {
-    source -notrace $f
-  }
-
-  proc max_masters {} {
-    return [zynqmp::max_masters]
-  }
-
-  proc create {} {
-    return [zynqmp::create]
-  }
+  source -notrace $::env(TAPASCO_HOME)/platform/zynqmp/zynqmp.tcl
 }

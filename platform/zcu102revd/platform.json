@@ -3,7 +3,7 @@
 	"Description" : "Xilinx Zynq UltraScale+ MPSoC ZCU102 Evaluation Kit Rev D1/ES1",
 	"TclLibrary" : "zcu102revd.tcl",
 	"Part" : "xczu9eg-ffvb1156-2L-e-es1",
-	"BoardPart" : "xilinx.com:zcu102:part0:1.4",
+	"BoardPart" : "xilinx.com:zcu102:part0:3.0",
 	"BoardPreset" : "ZCU102",
 	"TargetUtilization" : 97,
 	"Benchmark" : "zcu102revd.benchmark",
