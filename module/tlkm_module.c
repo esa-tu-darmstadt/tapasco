@@ -25,8 +25,8 @@
 #include <linux/module.h>
 #include "tlkm_module.h"
 #include "tlkm_logging.h"
-#include "tlkm_perfc_miscdev.h"
-#include "tlkm_async.h"
+#include "tlkm_bus.h"
+#include "tlkm_ioctl.h"
 
 static
 int __init tlkm_module_init(void)
@@ -34,30 +34,16 @@ int __init tlkm_module_init(void)
 	int ret = 0;
 	LOG(TLKM_LF_MODULE, "TaPaSCo loadable kernel module v" TLKM_VERSION);
 
-#ifndef NDEBUG
-	if ((ret = tlkm_perfc_miscdev_init())) {
-		ERR("could not initialize performance counter device: %d", ret);
-		goto err_perfc;
+	if ((ret = tlkm_bus_init())) {
+		ERR("failed to initialize TaPaSCo subsystem: %d", ret);
 	}
-#endif
-	if ((ret = tlkm_async_init())) {
-		ERR("could not initialize async device: %d", ret);
-		goto err_async_dev;
-	}
-	return ret;
-
-err_async_dev:
-#ifndef NDEBUG
-err_perfc:
-#endif
 	return ret;
 }
 
 static
 void __exit tlkm_module_exit(void)
 {
-	tlkm_async_exit();
-	tlkm_perfc_miscdev_exit();
+	tlkm_bus_exit();
 	LOG(TLKM_LF_MODULE, "TaPaSCo loadable kernel module unloaded.");
 }
 
