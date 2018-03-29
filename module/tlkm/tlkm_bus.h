@@ -1,7 +1,7 @@
 #ifndef TLKM_BUS_H__
 #define TLKM_BUS_H__
 
-#include "tlkm_devices.h"
+#include "tlkm_device.h"
 
 struct tlkm_bus;
 

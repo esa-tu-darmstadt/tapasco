@@ -25,7 +25,7 @@
 #ifndef TLKM_PERFC_H__
 #define TLKM_PERFC_H__
 
-#include "tlkm_devices.h"
+#include "tlkm_device.h"
 
 #ifdef _PC
 	#undef _PC

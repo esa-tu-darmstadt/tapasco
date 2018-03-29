@@ -1,7 +1,7 @@
 #include <linux/of.h>
 #include <linux/mutex.h>
 #include "tlkm_logging.h"
-#include "tlkm_devices.h"
+#include "tlkm_device.h"
 #include "tlkm_bus.h"
 #include "tlkm_zynq_enumerate.h"
 #include "zynq_device.h"

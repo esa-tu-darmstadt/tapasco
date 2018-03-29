@@ -25,7 +25,7 @@
 
 #ifndef NPERFC
 
-#include "tlkm_devices.h"
+#include "tlkm_device.h"
 
 int  tlkm_perfc_miscdev_init(struct tlkm_device_inst *dev);
 void tlkm_perfc_miscdev_exit(struct tlkm_device_inst *dev);

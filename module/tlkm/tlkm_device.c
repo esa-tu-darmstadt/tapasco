@@ -1,7 +1,7 @@
 #include <linux/gfp.h>
 #include <linux/slab.h>
 #include "tlkm_logging.h"
-#include "tlkm_devices.h"
+#include "tlkm_device.h"
 #include "tlkm_control.h"
 
 static
