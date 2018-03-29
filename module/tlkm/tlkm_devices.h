@@ -3,15 +3,20 @@
 
 #include <linux/list.h>
 #include <linux/mutex.h>
+#include <linux/miscdevice.h>
+#include "tlkm_types.h"
+#include "tlkm_perfc.h"
 #include "tlkm_access.h"
 
 #define TLKM_DEVICE_NAME_LEN				30
 
-typedef u32 dev_id_t;
-
 struct tlkm_device_inst {
 	dev_id_t 		dev_id;
 	size_t			ref_cnt[TLKM_ACCESS_TYPES];
+	struct tlkm_control	*ctrl;
+#ifndef NPERFC
+	struct miscdevice	perfc_dev;
+#endif
 	void 			*private_data;
 };
 

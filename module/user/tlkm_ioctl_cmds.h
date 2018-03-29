@@ -23,6 +23,7 @@
 #ifndef TLKM_IOCTL_CMDS_H__
 #define TLKM_IOCTL_CMDS_H__
 
+#include "tlkm_types.h"
 #include "tlkm_access.h"
 
 #define TLKM_DEVNAME_SZ					30
@@ -30,9 +31,7 @@
 #define TLKM_DEVS_SZ					10
 
 #ifndef __KERNEL__
-#include <stdint.h>
 #include <sys/ioctl.h>
-typedef uint32_t u32;
 #else
 #include <linux/ioctl.h>
 #endif

@@ -23,6 +23,7 @@
 #include <linux/miscdevice.h>
 #include <linux/uaccess.h>
 #include <linux/fs.h>
+#include <linux/slab.h>
 #include "tlkm_module.h"
 #include "tlkm_perfc.h"
 #include "tlkm_perfc_miscdev.h"
@@ -31,21 +32,26 @@
 #ifndef NDEBUG
 #define TLKM_PERFC_MISCDEV_BUFSZ			512
 
-static
-struct tlkm_perfc_miscdev_t {
-	struct miscdevice 	miscdev;
-} tlkm_perfc_miscdev;
+inline static
+dev_id_t get_dev_id_from_file(struct file *file)
+{
+	struct miscdevice *dev = (struct miscdevice *)file->private_data;
+	struct tlkm_device_inst *inst = container_of(dev,
+			struct tlkm_device_inst, perfc_dev);
+	return inst->dev_id;
+}
 
 static
 ssize_t tlkm_perfc_miscdev_read(struct file *file, char __user *usr, size_t sz,
 		loff_t *loff)
 {
 	ssize_t sl;
+	dev_id_t dev_id = get_dev_id_from_file(file);
 #define _PC(name) STR(name) ":\t%8lu\n"
 	const char *const fmt = TLKM_PERFC_COUNTERS "TLKM version:\t%s\n";
 #undef _PC
 	char tmp[TLKM_PERFC_MISCDEV_BUFSZ];
-#define _PC(name) (unsigned long int)tlkm_perfc_ ## name ## _get(),
+#define _PC(name) (unsigned long int)tlkm_perfc_ ## name ## _get(dev_id),
 	LOG(TLKM_LF_PERFC, "reading %zu bytes at off %lld "
 			"from performance counters ...", sz, loff ? *loff : -1);
 	snprintf(tmp, TLKM_PERFC_MISCDEV_BUFSZ, fmt, TLKM_PERFC_COUNTERS
@@ -66,25 +72,27 @@ const struct file_operations tlkm_perfc_miscdev_fops = {
 	.read  = tlkm_perfc_miscdev_read,
 };
 
-int tlkm_perfc_miscdev_init(void)
+int tlkm_perfc_miscdev_init(struct tlkm_device_inst *dev)
 {
 	int ret = 0;
-	LOG(TLKM_LF_PERFC, "setup /dev/" TLKM_PERFC_MISCDEV_FILENAME " ...");
-	tlkm_perfc_miscdev.miscdev.minor = MISC_DYNAMIC_MINOR;
-	tlkm_perfc_miscdev.miscdev.name  = TLKM_PERFC_MISCDEV_FILENAME;
-	tlkm_perfc_miscdev.miscdev.fops  = &tlkm_perfc_miscdev_fops;
-	if ((ret = misc_register(&tlkm_perfc_miscdev.miscdev))) {
-		ERR("could not setup /dev/" TLKM_PERFC_MISCDEV_FILENAME ": %d",
-				ret);
+	char fn[256];
+	snprintf(fn, 256, "/dev/tlkm%03u_perfc", dev->dev_id);
+	LOG(TLKM_LF_PERFC, "setting up performance counter file %s ...", fn);
+	dev->perfc_dev.minor = MISC_DYNAMIC_MINOR;
+	dev->perfc_dev.name  = kstrdup(fn, GFP_KERNEL);
+	dev->perfc_dev.fops  = &tlkm_perfc_miscdev_fops;
+	if ((ret = misc_register(&dev->perfc_dev))) {
+		ERR("could not setup %s: %d", fn, ret);
 		return ret;
 	}
-	LOG(TLKM_LF_PERFC, "/dev/" TLKM_PERFC_MISCDEV_FILENAME " is set up");
+	LOG(TLKM_LF_PERFC, "%s is set up", fn);
 	return 0;
 }
 
-void tlkm_perfc_miscdev_exit(void)
+void tlkm_perfc_miscdev_exit(struct tlkm_device_inst *dev)
 {
-	misc_deregister(&tlkm_perfc_miscdev.miscdev);
+	misc_deregister(&dev->perfc_dev);
+	kfree(dev->perfc_dev.name);
 	LOG(TLKM_LF_PERFC, "removed performance counter miscdev");
 }
 #endif /* NDEBUG */

@@ -33,12 +33,13 @@
 	_LF(MODULE    , (1 << 1)) \
 	_LF(BUS       , (1 << 2)) \
 	_LF(DEVICE    , (1 << 3)) \
-	_LF(IOCTL     , (1 << 4)) \
-	_LF(DMAMGMT   , (1 << 5)) \
-	_LF(FOPS      , (1 << 6)) \
-	_LF(IRQ       , (1 << 7)) \
-	_LF(ASYNC     , (1 << 8)) \
-	_LF(PERFC     , (1 << 9))
+	_LF(CONTROL   , (1 << 4)) \
+	_LF(IOCTL     , (1 << 5)) \
+	_LF(DMAMGMT   , (1 << 6)) \
+	_LF(FOPS      , (1 << 7)) \
+	_LF(IRQ       , (1 << 8)) \
+	_LF(ASYNC     , (1 << 9)) \
+	_LF(PERFC     , (1 << 10))
 
 typedef enum {
 #define _LF(name, level) TLKM_LF_##name = level,

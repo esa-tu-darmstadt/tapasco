@@ -22,27 +22,28 @@
 //!             unified TaPaSCo loadable kernel module (TLKM).
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#include <asm/atomic.h>
+#include <linux/atomic.h>
+#include "tlkm_ioctl_cmds.h"
 #include "tlkm_perfc.h"
 
 #ifndef NDEBUG
 
 static
 struct tlkm_perfc_t {
-#define _PC(NAME) 	atomic_t pc_ ## NAME;
+#define _PC(NAME) 	atomic_t pc_ ## NAME[TLKM_DEVS_SZ];
 	TLKM_PERFC_COUNTERS
 } tlkm_perfc;
 
 #undef _PC
 #define _PC(name) \
-void tlkm_perfc_ ## name ## _inc(void) \
+void tlkm_perfc_ ## name ## _inc(dev_id_t dev_id) \
 { \
-	atomic_inc(&tlkm_perfc.pc_ ## name); \
+	atomic_inc(&tlkm_perfc.pc_ ## name[dev_id]); \
 } \
 \
-int tlkm_perfc_ ## name ## _get(void) \
+int tlkm_perfc_ ## name ## _get(dev_id_t dev_id) \
 { \
-	return atomic_read(&tlkm_perfc.pc_ ## name); \
+	return atomic_read(&tlkm_perfc.pc_ ## name[dev_id]); \
 }
 TLKM_PERFC_COUNTERS
 #undef _PC

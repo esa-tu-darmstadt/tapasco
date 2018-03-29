@@ -2,10 +2,12 @@
 #include <linux/slab.h>
 #include "tlkm_logging.h"
 #include "tlkm_devices.h"
+#include "tlkm_control.h"
 
 static
 int create_device_instance(struct tlkm_device *pdev, tlkm_access_t access)
 {
+	int ret = 0;
 	pdev->inst = kmalloc(sizeof(*(pdev->inst)), GFP_KERNEL);
 	if (! pdev->inst) {
 		ERR("could not allocate kernel memory for device instance");
@@ -15,7 +17,17 @@ int create_device_instance(struct tlkm_device *pdev, tlkm_access_t access)
 	pdev->inst->dev_id 		= pdev->dev_id;
 	pdev->inst->ref_cnt[access] 	= 1;
 	pdev->inst->private_data 	= NULL;
+
+	if ((ret = tlkm_control_init(pdev->dev_id, &pdev->inst->ctrl))) {
+		ERR("could not setup control for device #%03u: %d", pdev->dev_id, ret);
+		goto err_control;
+	}
 	return pdev->init(pdev->inst);
+
+err_control:
+	kfree(pdev->inst);
+	pdev->inst = NULL;
+	return ret;
 }
 
 static
@@ -23,6 +35,7 @@ void destroy_device_instance(struct tlkm_device *pdev)
 {
 	if (pdev->inst) {
 		pdev->exit(pdev->inst);
+		tlkm_control_exit(pdev->inst->ctrl);
 		kfree(pdev->inst);
 		pdev->inst = NULL;
 	}

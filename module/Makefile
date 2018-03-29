@@ -8,7 +8,7 @@ CROSS_COMPILE ?= arm-linux-gnueabihf-
 endif
 
 obj-m += tlkm.o
-tlkm-objs := tlkm_module.o tlkm/tlkm_logging.o tlkm/tlkm_bus.o tlkm/tlkm.o tlkm/tlkm_ioctl.o tlkm/tlkm_device.o common/tlkm_perfc.o common/tlkm_perfc_miscdev.o common/tlkm_async.o zynq/tlkm_zynq_enumerate.o zynq/zynq_device.o
+tlkm-objs := tlkm_module.o tlkm/tlkm_logging.o tlkm/tlkm_bus.o tlkm/tlkm.o tlkm/tlkm_ioctl.o tlkm/tlkm_device.o common/tlkm_perfc.o common/tlkm_perfc_miscdev.o common/tlkm_control.o common/tlkm_control_fops.o zynq/tlkm_zynq_enumerate.o zynq/zynq_device.o
 
 CPPFLAGS=-DPLATFORM_API_TAPASCO_STATUS_BASE=$(PLATFORM_API_TAPASCO_STATUS_BASE)
 CPPFLAGS+=-I$(TAPASCO_HOME)/module -I$(TAPASCO_HOME)/module/common -I$(TAPASCO_HOME)/module/tlkm -I$(TAPASCO_HOME)/module/user

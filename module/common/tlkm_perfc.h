@@ -25,20 +25,17 @@
 #ifndef TLKM_PERFC_H__
 #define TLKM_PERFC_H__
 
+#include "tlkm_devices.h"
+
 #ifdef _PC
 	#undef _PC
 #endif
 
 #define TLKM_PERFC_COUNTERS \
-	_PC(async_open) \
-	_PC(async_release) \
-	_PC(async_read) \
-	_PC(async_written) \
-	_PC(async_signaled) \
-	_PC(total_irq) \
+	_PC(control_read) \
+	_PC(control_written) \
+	_PC(control_signaled) \
 	_PC(total_mem) \
-	_PC(slot_pe_irq) \
-	_PC(slot_pe_mem) \
 	_PC(dma_transfers) \
 	_PC(dma_bytes)
 
@@ -46,8 +43,8 @@
 #include <linux/types.h>
 
 #define _PC(name) \
-void tlkm_perfc_ ## name ## _inc(void); \
-int  tlkm_perfc_ ## name ## _get(void);
+void tlkm_perfc_ ## name ## _inc(dev_id_t dev_id); \
+int  tlkm_perfc_ ## name ## _get(dev_id_t dev_id);
 
 TLKM_PERFC_COUNTERS
 #undef _PC
@@ -55,8 +52,8 @@ TLKM_PERFC_COUNTERS
 #else /* NDEBUG */
 
 #define _PC(name) \
-void tlkm_perfc_ ## name ## _inc(void) {} \
-int  tlkm_perfc_ ## name ## _get(void) { return 0; } \
+inline static void tlkm_perfc_ ## name ## _inc(dev_id_t dev_id) {} \
+inline static int  tlkm_perfc_ ## name ## _get(dev_id_t dev_id) { return 0; } \
 
 TLKM_PERFC_COUNTERS
 #undef _PC

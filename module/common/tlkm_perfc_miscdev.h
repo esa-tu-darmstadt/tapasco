@@ -23,17 +23,17 @@
 #ifndef TLKM_PERFC_MISCDEV_H__
 #define TLKM_PERFC_MISCDEV_H__
 
-#define TLKM_PERFC_MISCDEV_FILENAME			"tlkm_perfc"
+#ifndef NPERFC
 
-#ifndef NDEBUG
+#include "tlkm_devices.h"
 
-int  tlkm_perfc_miscdev_init(void);
-void tlkm_perfc_miscdev_exit(void);
+int  tlkm_perfc_miscdev_init(struct tlkm_device_inst *dev);
+void tlkm_perfc_miscdev_exit(struct tlkm_device_inst *dev);
 
-#else /* NDEBUG */
+#else /* NPERFC */
 
 #define  tlkm_perfc_miscdev_init(...)				(0)
 #define  tlkm_perfc_miscdev_exit(...)
 
-#endif /* NDEBUG */
+#endif /* NPERFC */
 #endif /* TLKM_PERFC_MISCDEV_H__ */
