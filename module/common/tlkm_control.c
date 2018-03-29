@@ -5,9 +5,10 @@
 #include "tlkm_control.h"
 #include "tlkm_control_fops.h"
 #include "tlkm_perfc.h"
+#include "tlkm_device_ioctl.h"
 
-static struct file_operations _tlkm_control_fops = {
-	.unlocked_ioctl = tlkm_control_fops_ioctl,
+static const struct file_operations _tlkm_control_fops = {
+	.unlocked_ioctl = tlkm_device_ioctl,
 	.read  		= tlkm_control_fops_read,
 	.write 		= tlkm_control_fops_write,
 };
@@ -60,7 +61,7 @@ ssize_t tlkm_control_signal_slot_interrupt(struct tlkm_control *pctl, const u32 
 int  tlkm_control_init(dev_id_t dev_id, struct tlkm_control **ppctl)
 {
 	int ret = 0;
-	struct tlkm_control *p = (struct tlkm_control *)kmalloc(sizeof(*p), GFP_KERNEL);
+	struct tlkm_control *p = (struct tlkm_control *)kzalloc(sizeof(*p), GFP_KERNEL);
 	if (! p) {
 		ERR("could not allocate struct tlkm_control");
 		return -ENOMEM;

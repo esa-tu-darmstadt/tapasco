@@ -58,9 +58,3 @@ ssize_t tlkm_control_fops_write(struct file *fp, const char __user *usr, size_t 
 	if (in) return -EFAULT;
 	return tlkm_control_signal_slot_interrupt(pctl, in_val);
 }
-
-long tlkm_control_fops_ioctl(struct file *fp, unsigned int ioctl, unsigned long data)
-{
-	return 0; // FIXME
-}
-
