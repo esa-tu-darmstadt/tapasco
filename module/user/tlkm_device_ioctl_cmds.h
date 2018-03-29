@@ -61,21 +61,21 @@ struct tlkm_dev_cmd {
 #endif
 
 #define TLKM_DEV_IOCTL_CMDS \
-	_TLKM_DEV_IOCTL(INFO,		0x01, 	struct tlkm_device_info)
+	_TLKM_DEV_IOCTL(INFO,		info,		0x01, 	struct tlkm_device_info) \
+	_TLKM_DEV_IOCTL(ALLOC,		alloc,		0x10, 	struct tlkm_mm_cmd) \
+	_TLKM_DEV_IOCTL(FREE,		free,		0x11,	struct tlkm_mm_cmd) \
+	_TLKM_DEV_IOCTL(COPYTO,		copyto,		0x12,	struct tlkm_copy_cmd) \
+	_TLKM_DEV_IOCTL(COPYFROM,	copyfrom,	0x13,	struct tlkm_copy_cmd)
 
 	/*
-	_TLKM_DEV_IOCTL(ALLOC,		0x10, 	struct tlkm_mm_cmd) \
-	_TLKM_DEV_IOCTL(FREE,		0x11,	struct tlkm_mm_cmd) \
-	_TLKM_DEV_IOCTL(COPYTO,		0x12,	struct tlkm_copy_cmd) \
-	_TLKM_DEV_IOCTL(COPYFROM,	0x13,	struct tlkm_copy_cmd) \
 	_TLKM_DEV_IOCTL(ALLOC_COPYTO,	0x20,	struct tlkm_bulk_cmd) \
 	_TLKM_DEV_IOCTL(COPYFROM_FREE,	0x21,	struct tlkm_bulk_cmd) \
 	_TLKM_DEV_IOCTL(READ,		0x30,	struct tlkm_dev_cmd) \
 	_TLKM_DEV_IOCTL(WRITE,		0x31,	struct tlkm_dev_cmd)*/
 
 enum {
-#define _TLKM_DEV_IOCTL(name, id, dt) \
-	TLKM_DEV_IOCTL_ ## name = _IOWR('d', id, dt),
+#define _TLKM_DEV_IOCTL(NAME, name, id, dt) \
+	TLKM_DEV_IOCTL_ ## NAME = _IOWR('d', id, dt),
 	TLKM_DEV_IOCTL_CMDS
 #undef _TLKM_DEV_IOCTL
 };

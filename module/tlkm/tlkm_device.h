@@ -22,6 +22,7 @@ struct tlkm_device_inst {
 
 typedef int  (*tlkm_device_init_f)(struct tlkm_device_inst *);
 typedef void (*tlkm_device_exit_f)(struct tlkm_device_inst *);
+typedef long (*tlkm_device_ioctl_f)(struct tlkm_device_inst *, unsigned int ioctl, unsigned long data);
 
 struct tlkm_device {
 	struct list_head 	device; /* this device in tlkm_bus */
@@ -32,6 +33,7 @@ struct tlkm_device {
 	int 			product_id;
 	tlkm_device_init_f 	init;
 	tlkm_device_exit_f 	exit;
+	tlkm_device_ioctl_f	ioctl;
 	struct tlkm_device_inst *inst;
 };
 typedef struct tlkm_device tlkm_device_t;

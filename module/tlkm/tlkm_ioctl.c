@@ -31,7 +31,7 @@
 static const char _tlkm_version[] = TLKM_VERSION;
 
 static
-long tlkm_ioctl_VERSION(struct file *fp, unsigned int ioctl,
+long tlkm_ioctl_version(struct file *fp, unsigned int ioctl,
 		struct tlkm_ioctl_version_cmd __user *cmd)
 {
 	LOG(TLKM_LF_IOCTL, "version command received");
@@ -44,7 +44,7 @@ long tlkm_ioctl_VERSION(struct file *fp, unsigned int ioctl,
 }
 
 static
-long tlkm_ioctl_ENUM_DEVICES(struct file *fp, unsigned int ioctl,
+long tlkm_ioctl_enum_devices(struct file *fp, unsigned int ioctl,
 		struct tlkm_ioctl_enum_devices_cmd __user *cmd)
 {
 	size_t i;
@@ -72,7 +72,7 @@ long tlkm_ioctl_ENUM_DEVICES(struct file *fp, unsigned int ioctl,
 }
 
 static
-long tlkm_ioctl_CREATE_DEVICE(struct file *fp, unsigned int ioctl,
+long tlkm_ioctl_create_device(struct file *fp, unsigned int ioctl,
 		struct tlkm_ioctl_device_cmd __user *cmd)
 {
 	struct tlkm_ioctl_device_cmd kc;
@@ -85,7 +85,7 @@ long tlkm_ioctl_CREATE_DEVICE(struct file *fp, unsigned int ioctl,
 }
 
 static
-long tlkm_ioctl_DESTROY_DEVICE(struct file *fp, unsigned int ioctl,
+long tlkm_ioctl_destroy_device(struct file *fp, unsigned int ioctl,
 		struct tlkm_ioctl_device_cmd __user *cmd)
 {
 	struct tlkm_ioctl_device_cmd kc;
@@ -98,14 +98,14 @@ long tlkm_ioctl_DESTROY_DEVICE(struct file *fp, unsigned int ioctl,
 	return 0;
 }
 
-#ifdef _X
-	#undef _X
+#ifdef _TLKM_IOCTL
+	#undef _TLKM_IOCTL
 #endif
 
 long tlkm_ioctl_ioctl(struct file *fp, unsigned int ioctl, unsigned long data)
 {
-#define _X(name, id, dt) \
-	if (ioctl == TLKM_IOCTL_ ## name) { \
+#define _TLKM_IOCTL(NAME, name, id, dt) \
+	if (ioctl == TLKM_IOCTL_ ## NAME) { \
 		return tlkm_ioctl_ ## name(fp, ioctl, (dt __user *)data); \
 	}
 	TLKM_IOCTL_CMDS

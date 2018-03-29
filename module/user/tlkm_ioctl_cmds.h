@@ -60,19 +60,19 @@ struct tlkm_ioctl_device_cmd {
 
 #define TLKM_IOCTL_FN			"tlkm"
 
-#ifdef _X
-	#undef _X
+#ifdef _TLKM_IOCTL
+	#undef _TLKM_IOCTL
 #endif
 
 #define TLKM_IOCTL_CMDS \
-	_X(VERSION,		1, 	struct tlkm_ioctl_version_cmd) \
-	_X(ENUM_DEVICES,	2, 	struct tlkm_ioctl_enum_devices_cmd) \
-	_X(CREATE_DEVICE, 	3, 	struct tlkm_ioctl_device_cmd) \
-	_X(DESTROY_DEVICE, 	4, 	struct tlkm_ioctl_device_cmd)
+	_TLKM_IOCTL(VERSION,		version,	1, 	struct tlkm_ioctl_version_cmd) \
+	_TLKM_IOCTL(ENUM_DEVICES,	enum_devices,	2, 	struct tlkm_ioctl_enum_devices_cmd) \
+	_TLKM_IOCTL(CREATE_DEVICE, 	create_device, 	3, 	struct tlkm_ioctl_device_cmd) \
+	_TLKM_IOCTL(DESTROY_DEVICE, 	destroy_device,	4, 	struct tlkm_ioctl_device_cmd)
 
 enum {
-#define _X(name, id, dt) \
-	TLKM_IOCTL_ ## name = _IOWR('t', id, dt),
+#define _TLKM_IOCTL(NAME, name, id, dt) \
+	TLKM_IOCTL_ ## NAME = _IOWR('t', id, dt),
 	TLKM_IOCTL_CMDS
 #undef _X
 };

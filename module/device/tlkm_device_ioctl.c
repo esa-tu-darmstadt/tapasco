@@ -6,13 +6,28 @@
 #include "tlkm_bus.h"
 #include "tlkm_control.h"
 
+static
 struct tlkm_control *control_from_file(struct file *fp)
 {
 	struct miscdevice *m = (struct miscdevice *)fp->private_data;
 	return (struct tlkm_control *)container_of(m, struct tlkm_control, miscdev);
 }
 
-long tlkm_device_ioctl_INFO(struct file *fp, unsigned int ioctl,
+static
+struct tlkm_device *device_from_file(struct file *fp)
+{
+	struct miscdevice *m = (struct miscdevice *)fp->private_data;
+	struct tlkm_control *c = (struct tlkm_control *)container_of(m, struct tlkm_control, miscdev);
+	return tlkm_bus_get_device(c->dev_id);
+}
+
+static
+struct tlkm_device_inst *device_inst_from_file(struct file *fp)
+{
+	return device_from_file(fp)->inst;
+}
+
+long tlkm_device_ioctl_info(struct file *fp, unsigned int ioctl,
 		struct tlkm_device_info __user *info)
 {
 	struct tlkm_device_info kinfo;
@@ -41,12 +56,8 @@ long tlkm_device_ioctl_INFO(struct file *fp, unsigned int ioctl,
 
 long tlkm_device_ioctl(struct file *fp, unsigned int ioctl, unsigned long data)
 {
-#define _TLKM_DEV_IOCTL(name, id,  dt) \
-	if (ioctl == TLKM_DEV_IOCTL_ ## name) { \
-		return tlkm_device_ioctl_ ## name(fp, ioctl, (dt __user *)data); \
+	if (ioctl == TLKM_DEV_IOCTL_INFO) {
+		return tlkm_device_ioctl_info(fp, ioctl, (struct tlkm_device_info __user *)data);
 	}
-	TLKM_DEV_IOCTL_CMDS
-#undef _TLKM_DEV_IOCTL
-	ERR("illegal ioctl received: 0x%08x", ioctl);
-	return -EIO;
+	return device_from_file(fp)->ioctl(device_inst_from_file(fp), ioctl, data);
 }

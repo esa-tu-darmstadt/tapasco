@@ -31,7 +31,7 @@ void tlkm_bus_del_device(struct tlkm_device *pdev)
 
 ssize_t tlkm_bus_enumerate(void)
 {
-	return tlkm_zynq_enumerate();
+	return zynq_enumerate();
 }
 
 int tlkm_bus_init(void)
