@@ -4,7 +4,7 @@
 #include "tlkm.h"
 #include "tlkm_bus.h"
 #include "tlkm_logging.h"
-#include "zynq/tlkm_zynq_enumerate.h"
+#include "zynq/zynq_enumerate.h"
 
 static
 struct tlkm_bus {

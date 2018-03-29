@@ -3,7 +3,7 @@
 #include "tlkm_logging.h"
 #include "tlkm_device.h"
 #include "tlkm_bus.h"
-#include "tlkm_zynq_enumerate.h"
+#include "zynq_enumerate.h"
 #include "zynq_device.h"
 
 #define ZYNQ_NAME			"xlnx,zynq-7000"
@@ -20,7 +20,7 @@ static tlkm_device_t zynq_dev = {
 	.exit = zynq_device_exit,
 };
 
-ssize_t tlkm_zynq_enumerate()
+ssize_t zynq_enumerate()
 {
 	LOG(TLKM_LF_DEVICE, "searching for Xilinx Zynq-7000 series devices ...");
 	if (of_find_matching_node(NULL, zynq_ids)) {
