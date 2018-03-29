@@ -1,0 +1,160 @@
+//
+// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
+//
+// This file is part of Tapasco (TaPaSCo).
+//
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
+//! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+//!
+//#include <linux/version.h>
+#include <linux/interrupt.h>
+//#include <linux/module.h>
+#include <linux/io.h>
+#include <linux/sched.h>
+#include "tlkm_logging.h"
+#include "zynq_irq.h"
+
+#define ZYNQ_IRQ_BASE_IRQ					45
+#define ZYNQ_MAX_NUM_INTCS					4	
+
+#define INTERRUPT_CONTROLLERS \
+		_INTC(0) \
+		_INTC(1) \
+		_INTC(2) \
+		_INTC(3)
+
+#define _INTC(N) 1 +
+#if (INTERRUPT_CONTROLLERS 0 != ZYNQ_MAX_NUM_INTCS)
+#error "when changing maximum number of interrupt controllers, you must change " \
+		"both the INTERRUPT_CONTROLLERS and ZYNQ_MAX_NUM_INTCS macros"
+#endif
+#undef _INTC
+
+#ifndef STR
+	#define STR(v)						#v
+#endif
+
+typedef struct {
+	u32 base;
+	u32 status;
+} intc_t;
+
+#ifdef _INTC
+	#undef _INTC
+#endif
+
+static struct {
+	struct tlkm_control *ctrl;
+#define		_INTC(N) intc_t intc_ ## N;
+	INTERRUPT_CONTROLLERS
+#undef _INTC
+} zynq_irq;
+
+#define		_INTC(N) \
+static void zynq_irq_func_ ## N(struct work_struct *work) \
+{ \
+	u32 s_off = (N * 32U); \
+	u32 status = zynq_irq.intc_ ## N.status; \
+	LOG(TLKM_LF_IRQ, "status = 0x%08x, intcn = %d", status, N); \
+	while (status > 0) { \
+		if (status & 1) { \
+			tlkm_control_signal_slot_interrupt(zynq_irq.ctrl, s_off++); \
+		} \
+		status >>= 1; \
+	} \
+} \
+\
+static DECLARE_WORK(zynq_irq_work_ ## N, zynq_irq_func_ ## N); \
+\
+static irqreturn_t zynq_irq_handler_ ## N(int irq, void *dev_id) \
+{ \
+	u32 status; \
+	struct zynq_device *zynq_dev = (struct zynq_device *)dev_id; \
+	u32 *intc = (u32 *)zynq_dev->gp_map[1] + zynq_irq.intc_ ## N.base; \
+	status = ioread32(intc); \
+	LOG(TLKM_LF_IRQ, "intcn = %d, status = 0x%08x", N, status); \
+	iowrite32(status, intc + (0x0c >> 2)); \
+	zynq_irq.intc_ ## N.status |= status; \
+	schedule_work(&zynq_irq_work_ ## N); \
+	return IRQ_HANDLED; \
+}
+
+INTERRUPT_CONTROLLERS
+#undef _INTC
+
+static
+void zynq_init_intc(struct zynq_device *zynq_dev, u32 const base)
+{
+	u32 *intc = (u32 *)zynq_dev->gp_map[1] + base;
+	iowrite32((u32)-1, intc + (0x08 >> 2));
+	iowrite32((u32) 3, intc + (0x1c >> 2));
+	ioread32(intc);
+}
+
+
+int zynq_irq_init(struct zynq_device *zynq_dev, struct tlkm_control *ctrl)
+{
+	int retval = 0, irqn = 0;
+	u32 *status = (u32 *)zynq_dev->tapasco_status;
+	u32 base;
+	zynq_irq.ctrl = ctrl;
+
+#define	_INTC(N)	\
+	base = ioread32(status + (0x1010 >> 2) + N * 2); \
+	if (base) { \
+		zynq_irq.intc_ ## N.base = (base - ZYNQ_PLATFORM_GP1_BASE) >> 2; \
+		zynq_irq.intc_ ## N.status = 0; \
+		if (zynq_irq.intc_ ## N.base) { \
+			LOG(TLKM_LF_IRQ, "controller for IRQ #%d at 0x%08x", \
+					ZYNQ_IRQ_BASE_IRQ + irqn, \
+					zynq_irq.intc_ ## N.base << 2); \
+			zynq_init_intc(zynq_dev, zynq_irq.intc_ ## N.base); \
+		} \
+		LOG(TLKM_LF_IRQ, "registering IRQ #%d", ZYNQ_IRQ_BASE_IRQ + irqn); \
+		retval = request_irq(ZYNQ_IRQ_BASE_IRQ + irqn, \
+				zynq_irq_handler_ ## N, \
+				IRQF_TRIGGER_NONE | IRQF_ONESHOT, \
+				"tapasco_zynq_" STR(N), \
+				zynq_dev); \
+		++irqn; \
+		if (retval) { \
+			ERR("could not register IRQ #%d!", ZYNQ_IRQ_BASE_IRQ + irqn); \
+			goto err; \
+		} \
+	}
+
+	INTERRUPT_CONTROLLERS
+#undef _X
+
+	return retval;
+
+err:
+	while (--irqn <= 0) {
+		disable_irq(ZYNQ_IRQ_BASE_IRQ + irqn);
+		free_irq(ZYNQ_IRQ_BASE_IRQ + irqn, zynq_dev);
+	}
+	return retval;
+}
+
+void zynq_irq_exit(struct zynq_device *zynq_dev)
+{
+	int irqn = ZYNQ_MAX_NUM_INTCS;
+	while (irqn) {
+		--irqn;
+		LOG(TLKM_LF_IRQ, "releasing IRQ #%d", ZYNQ_IRQ_BASE_IRQ + irqn);
+		disable_irq(ZYNQ_IRQ_BASE_IRQ + irqn);
+		free_irq(ZYNQ_IRQ_BASE_IRQ + irqn, zynq_dev);
+	}
+}
