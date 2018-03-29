@@ -5,8 +5,35 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include "tlkm_ioctl_cmds.h"
+#include "tlkm_device_ioctl_cmds.h"
 
 #define DEV_FN	"/dev/" TLKM_IOCTL_FN
+
+static int test_dev_ioctl(dev_id_t dev_id)
+{
+	int r = 0;
+	struct tlkm_device_info info;
+	char dfn[30] = "";
+	snprintf(dfn, 30, "%s_%03u", DEV_FN, dev_id);
+
+	//printf("ready to open %s?", dfn);
+	//getchar();
+	usleep(100000);
+
+	int dfd = open(dfn, O_RDWR);
+	if (dfd == -1) {
+		return errno;
+	}
+
+	r = ioctl(dfd, TLKM_DEV_IOCTL_INFO, &info);
+	if (! r) {
+		printf("device name: %s\n", info.name);
+	}
+
+	close(dfd);
+	return r;
+
+}
 
 static int init_device(int fd, size_t dev_id)
 {
@@ -17,6 +44,11 @@ static int init_device(int fd, size_t dev_id)
 	if (r) {
 		fprintf(stderr, "ERROR ioctl create: %s (%d)\n", strerror(errno), errno);
 		return r;
+	}
+
+	r = test_dev_ioctl(dev_id);
+	if (r) {
+		fprintf(stderr, "ERROR testing device ioctl: %s (%d)\n", strerror(errno), errno);
 	}
 
 	r = ioctl(fd, TLKM_IOCTL_DESTROY_DEVICE, &device_cmd);
