@@ -1,7 +1,7 @@
 //
 // Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TAPASCO).
+// This file is part of Tapasco (TaPaSCo).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -25,25 +25,7 @@
  *  		methods to wait for a signal from the device (usually
  *  		interrupt-based).
  *  @authors 	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- *  @version 	1.5
- *  @copyright	Copyright 2014-2018 J. Korinth
- *
- *		This file is part of Tapasco (TPC).
- *
- *  		Tapasco is free software: you can redistribute it
- *		and/or modify it under the terms of the GNU Lesser General
- *		Public License as published by the Free Software Foundation,
- *		either version 3 of the License, or (at your option) any later
- *		version.
- *
- *  		Tapasco is distributed in the hope that it will be
- *		useful, but WITHOUT ANY WARRANTY; without even the implied
- *		warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *		See the GNU Lesser General Public License for more details.
- *
- *  		You should have received a copy of the GNU Lesser General Public
- *		License along with Tapasco.  If not, see
- *		<http://www.gnu.org/licenses/>.
+ *  @version 	1.6
  **/
 #ifndef PLATFORM_API_H__
 #define PLATFORM_API_H__
@@ -56,7 +38,7 @@
  *  @{
  **/
 
-#define PLATFORM_API_VERSION				"1.5"
+#define PLATFORM_API_VERSION				"1.6"
 
 /**
  * Returns the version string of the library.
@@ -112,12 +94,41 @@ inline static platform_res_t platform_init(platform_ctx_t **ctx)
 /** Deinitializer. **/
 void platform_deinit(platform_ctx_t *ctx);
 
+/**
+ * Enumerate available devices on current platform.
+ * @param ctx Platform context
+ * @param num_devices number of devices (out param)
+ * @param devs pointer to array of device structs (out param)
+ **/
+platform_res_t platform_enum_devices(platform_ctx_t *ctx,
+		size_t *num_devices,
+		platform_device_info_t **devs);
+/**
+ * Acquire the selected device and initialize the given device context.
+ * @param ctx platform context
+ * @param devctx device context to initialize
+ * @param dev_id device id
+ * @param mode device access type 
+ * @return PLATFORM_SUCCESS, if successful, an error code otherwise.
+ **/
+platform_res_t platform_create_device(platform_ctx_t *ctx, 
+		platform_devctx_t **pdctx,
+		platform_dev_id_t const dev_id,
+		platform_access_t const mode);
+
+/**
+ * Destroy the given device context and release the selected device.
+ * @param ctx platform context
+ * @param devctx device context to destroy
+ **/
+void platform_destroy_device(platform_ctx_t *ctx, platform_dev_id_t const dev_id);
+
 /** Retrieves an info struct from the hardware. **/
-platform_res_t platform_info(platform_ctx_t const *ctx, platform_info_t *info);
+platform_res_t platform_info(platform_devctx_t const *ctx, platform_info_t *info);
 
 /** @} **/
 
-/** @defgroup platform Platform functions
+/** @defgroup platform Platform device functions
  *  @{
  **/
 
@@ -128,7 +139,7 @@ platform_res_t platform_info(platform_ctx_t const *ctx, platform_info_t *info);
  * @param addr Address of memory (out).
  * @return PLATFORM_SUCCESS, if allocation succeeded.
  **/
-platform_res_t platform_alloc(platform_ctx_t *ctx,
+platform_res_t platform_alloc(platform_devctx_t *ctx,
 		size_t const len,
 		platform_mem_addr_t *addr,
 		platform_alloc_flags_t const flags);
@@ -138,7 +149,7 @@ platform_res_t platform_alloc(platform_ctx_t *ctx,
  * @param ctx Platform context
  * @param addr Address of memory.
  **/
-platform_res_t platform_dealloc(platform_ctx_t *ctx,
+platform_res_t platform_dealloc(platform_devctx_t *ctx,
 		platform_mem_addr_t const addr,
 		platform_alloc_flags_t const flags);
 
@@ -150,7 +161,7 @@ platform_res_t platform_dealloc(platform_ctx_t *ctx,
  * @param data Preallocated memory to read into.
  * @return PLATFORM_SUCCESS if read was valid, an error code otherwise.
  **/
-platform_res_t platform_read_mem(platform_ctx_t const *ctx,
+platform_res_t platform_read_mem(platform_devctx_t const *ctx,
 		platform_mem_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void *data,
@@ -164,7 +175,7 @@ platform_res_t platform_read_mem(platform_ctx_t const *ctx,
  * @param data Data to write.
  * @return PLATFORM_SUCCESS if write succeeded, an error code otherwise.
  **/
-platform_res_t platform_write_mem(platform_ctx_t const *ctx,
+platform_res_t platform_write_mem(platform_devctx_t const *ctx,
 		platform_mem_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void const*data,
@@ -178,7 +189,7 @@ platform_res_t platform_write_mem(platform_ctx_t const *ctx,
  * @param data Preallocated memory to read into.
  * @return PLATFORM_SUCCESS if read was valid, an error code otherwise.
  **/
-platform_res_t platform_read_ctl(platform_ctx_t const *ctx,
+platform_res_t platform_read_ctl(platform_devctx_t const *ctx,
 		platform_ctl_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void *data,
@@ -192,7 +203,7 @@ platform_res_t platform_read_ctl(platform_ctx_t const *ctx,
  * @param data Pointer to block of no_of_bytes bytes of data to write.
  * @return PLATFORM_SUCCESS if write succeeded, an error code otherwise.
  **/
-platform_res_t platform_write_ctl(platform_ctx_t const *ctx,
+platform_res_t platform_write_ctl(platform_devctx_t const *ctx,
 		platform_ctl_addr_t const start_addr,
 		size_t const no_of_bytes,
 		void const*data,
@@ -206,7 +217,7 @@ platform_res_t platform_write_ctl(platform_ctx_t const *ctx,
  * @return PLATFORM_SUCCESS if interrupt occurred, an error code if
  * not possible (platform-dependent).
  **/
-platform_res_t platform_wait_for_slot(platform_ctx_t *ctx,
+platform_res_t platform_wait_for_slot(platform_devctx_t *ctx,
 		const platform_slot_id_t slot);
 
 /**
@@ -214,7 +225,7 @@ platform_res_t platform_wait_for_slot(platform_ctx_t *ctx,
  * @param ctx Platform context
  * @return Filename
  **/
-const char *const platform_waitfile(platform_ctx_t const *ctx);
+const char *const platform_waitfile(platform_devctx_t const *ctx);
 
 /** @} **/
 
@@ -229,7 +240,7 @@ const char *const platform_waitfile(platform_ctx_t const *ctx);
  * @param addr Address var (output)
  * @return Slot bus address
  **/
-platform_res_t platform_address_get_slot_base(platform_ctx_t const *ctx,
+platform_res_t platform_address_get_slot_base(platform_devctx_t const *ctx,
 		platform_slot_id_t const slot_id,
 		platform_ctl_addr_t *addr);
 
@@ -240,7 +251,7 @@ platform_res_t platform_address_get_slot_base(platform_ctx_t const *ctx,
  * @param addr Address var (output)
  * @return Component bus address, or 0
  **/
-platform_res_t platform_address_get_component_base(platform_ctx_t const *ctx,
+platform_res_t platform_address_get_component_base(platform_devctx_t const *ctx,
 		platform_component_t const comp_id,
 		platform_ctl_addr_t *addr);
 /** @} **/

@@ -1,7 +1,7 @@
 //
 // Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TPC).
+// This file is part of Tapasco (TaPaSCo).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -21,7 +21,7 @@
 //!		loadable kernel module. Communicates with the Zynq fabric via 
 //!		device driver.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
-//! @version	1.3
+//! @version	1.4
 //! @copyright  Copyright 2014-2018 J. Korinth
 //!
 //!		This file is part of Tapasco (TPC).
@@ -57,7 +57,7 @@
 #include <platform.h>
 #include <platform_errors.h>
 #include <platform_logging.h>
-#include <platform_context.h>
+#include <platform_devctx.h>
 
 /******************************************************************************/
 
@@ -70,7 +70,7 @@ typedef struct zynq_platform {
 	volatile void	*status_map;
 	int		fd_control;
 	platform_info_t info;
-	platform_ctx_t  *ctx;
+	platform_devctx_t  *ctx;
 } zynq_platform_t;
 
 static zynq_platform_t zynq_platform = {
@@ -84,7 +84,7 @@ static zynq_platform_t zynq_platform = {
 	.ctx           = NULL,
 };
 
-const char *const platform_waitfile(platform_ctx_t const *p)
+const char *const platform_waitfile(platform_devctx_t const *p)
 {
 	return "/dev/" ZYNQ_PLATFORM_WAITFILENAME;
 }
@@ -209,7 +209,7 @@ static platform_res_t release_platform(zynq_platform_t *p)
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t _platform_init(const char *const version, platform_ctx_t **pctx)
+platform_res_t _platform_init(const char *const version, platform_devctx_t **pctx)
 {
 	platform_logging_init();
 	LOG(LPLL_INIT, "Platform API Version: %s", platform_version());
@@ -230,7 +230,7 @@ platform_res_t _platform_init(const char *const version, platform_ctx_t **pctx)
 	return r;
 }
 
-void platform_deinit(platform_ctx_t *ctx)
+void platform_deinit(platform_devctx_t *ctx)
 {
 	LOG(LPLL_INIT, "shutting down platform");
 	release_platform(&zynq_platform);
@@ -238,7 +238,7 @@ void platform_deinit(platform_ctx_t *ctx)
 }
 
 /******************************************************************************/
-platform_res_t platform_alloc(platform_ctx_t *ctx,
+platform_res_t platform_alloc(platform_devctx_t *ctx,
 		size_t const len, platform_mem_addr_t *addr,
 		platform_alloc_flags_t const flags)
 {
@@ -256,7 +256,7 @@ platform_res_t platform_alloc(platform_ctx_t *ctx,
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_dealloc(platform_ctx_t *ctx,
+platform_res_t platform_dealloc(platform_devctx_t *ctx,
 		platform_mem_addr_t const addr,
 		platform_alloc_flags_t const flags)
 {
@@ -271,7 +271,7 @@ platform_res_t platform_dealloc(platform_ctx_t *ctx,
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_read_mem(platform_ctx_t const *ctx,
+platform_res_t platform_read_mem(platform_devctx_t const *ctx,
 		platform_mem_addr_t const start_addr,
 		size_t const no_of_bytes, void *data,
 		platform_mem_flags_t const flags)
@@ -290,7 +290,7 @@ platform_res_t platform_read_mem(platform_ctx_t const *ctx,
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_write_mem(platform_ctx_t const *ctx,
+platform_res_t platform_write_mem(platform_devctx_t const *ctx,
 		platform_mem_addr_t const start_addr,
 		size_t const no_of_bytes, void const*data,
 		platform_mem_flags_t const flags)
@@ -309,7 +309,7 @@ platform_res_t platform_write_mem(platform_ctx_t const *ctx,
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_read_ctl(platform_ctx_t const *ctx,
+platform_res_t platform_read_ctl(platform_devctx_t const *ctx,
 		platform_ctl_addr_t const addr,
 		size_t const no_of_bytes,
 		void *data,
@@ -349,7 +349,7 @@ platform_res_t platform_read_ctl(platform_ctx_t const *ctx,
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_write_ctl(platform_ctx_t const *ctx,
+platform_res_t platform_write_ctl(platform_devctx_t const *ctx,
 		platform_ctl_addr_t const addr,
 		size_t const no_of_bytes,
 		void const*data,

@@ -1,7 +1,7 @@
 //
 // Copyright (C) 2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TAPASCO).
+// This file is part of Tapasco (TaPaSCo).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -17,20 +17,26 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- *  @file	platform_context.h
- *  @brief	Accessors for platform context elements.
+ *  @file	platform_devctx.h
+ *  @brief	Device context management.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#ifndef PLATFORM_CONTEXT_H__
-#define PLATFORM_CONTEXT_H__
+#ifndef PLATFORM_DEVCTX_H__
+#define PLATFORM_DEVCTX_H__
 
+#include <platform_types.h>
 #include <platform_addr_map.h>
 #include <platform_async.h>
 
-platform_res_t platform_context_init(platform_ctx_t **ctx);
-void platform_context_deinit(platform_ctx_t *ctx);
+platform_res_t platform_devctx_init(platform_devctx_t **ctx,
+		platform_dev_id_t const dev_id,
+		platform_access_t const mode);
+void platform_devctx_deinit(platform_devctx_t *devctx);
 
-platform_addr_map_t *platform_context_addr_map(platform_ctx_t const *ctx);
-platform_async_t *platform_context_async(platform_ctx_t const *ctx);
+platform_dev_id_t platform_devctx_dev_id(platform_devctx_t const *devctx);
+int platform_devctx_control(platform_devctx_t const *devctx);
+platform_access_t platform_devctx_access(platform_devctx_t const *devctx);
+platform_addr_map_t *platform_devctx_addr_map(platform_devctx_t const *devctx);
+platform_async_t *platform_devctx_async(platform_devctx_t const *devctx);
 
-#endif /* PLATFORM_CONTEXT_H__ */
+#endif /* PLATFORM_DEVCTX_H__ */

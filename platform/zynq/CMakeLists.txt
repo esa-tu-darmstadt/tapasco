@@ -14,10 +14,12 @@ add_definitions(-DPLATFORM_API_TAPASCO_STATUS_BASE=0x77770000)
 set(SRCDIR "src")
 set(CMNDIR "../common")
 set(GCMNDIR "${TAPASCO_HOME}/common")
+set(TLKMDIR "${TAPASCO_HOME}/module")
 set(COMPFLAGS "-Wall -Werror -g -O3 -std=gnu11")
 set(CMNSRCS "${CMNDIR}/src/platform_addr_map.c"
             "${CMNDIR}/src/platform_async.c"
-            "${CMNDIR}/src/platform_context.c"
+            "${CMNDIR}/src/platform_ctx.c"
+            "${CMNDIR}/src/platform_devctx.c"
             "${CMNDIR}/src/platform_errors.c"
             "${CMNDIR}/src/platform_info.c"
 	    "${CMNDIR}/src/platform_logging.c"
@@ -26,7 +28,7 @@ set(CMNSRCS "${CMNDIR}/src/platform_addr_map.c"
 set(SRCS "${SRCDIR}/platform_zynq.c")
 set(PLATFORM_LIBS_DIR "${TAPASCO_HOME}/platform/lib")
 
-include_directories("." "include" "${CMNDIR}/include" "${GCMNDIR}/include")
+include_directories("." "include" "${CMNDIR}/include" "${GCMNDIR}/include" "${TLKMDIR}/user")
 set_source_files_properties(${CMNSRCS} ${SRCS} PROPERTIES COMPILE_FLAGS ${COMPFLAGS})
 
 add_library(platform SHARED ${CMNSRCS} ${SRCS})

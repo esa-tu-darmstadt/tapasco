@@ -20,7 +20,7 @@
 #include <string.h>
 #include <platform_info.h>
 #include <platform_caps.h>
-#include <platform_context.h>
+#include <platform_devctx.h>
 #include <platform_logging.h>
 #include <platform_addr_map.h>
 #include <platform.h>
@@ -61,15 +61,15 @@ typedef enum {
 
 #define STRINGIFY(f)					#f
 
-static platform_ctx_t const *_last_ctx = NULL;
-static platform_info_t _last_info;
+static platform_info_t _info[PLATFORM_MAX_DEVS];
 
 static
-platform_res_t read_info_from_status_core(platform_ctx_t const *p,
+platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 		platform_info_t *info)
 {
 	platform_res_t r;
-	platform_ctl_addr_t status = PLATFORM_API_TAPASCO_STATUS_BASE;
+	platform_dev_id_t dev_id = platform_devctx_dev_id(p);
+	platform_ctl_addr_t status = 0x0;// FIXME PLATFORM_API_TAPASCO_STATUS_BASE;
 #ifdef _X
 	#undef _X
 #endif
@@ -77,29 +77,28 @@ platform_res_t read_info_from_status_core(platform_ctx_t const *p,
 	r = platform_read_ctl(p, status + _name, sizeof(info->_field), \
 			&(info->_field), PLATFORM_CTL_FLAGS_NONE); \
 	if (r != PLATFORM_SUCCESS) { \
-		ERR("could not read _name: %s (%d)", platform_strerror(r), r); \
+		ERR("device #%03u: could not read _name: %s (%d)", dev_id, platform_strerror(r), r); \
 		return r; \
 	} \
-	LOG(LPLL_STATUS, "read " STRINGIFY(_name) ": 0x%08x", info->_field);
+	LOG(LPLL_STATUS, "device #%03u: read " STRINGIFY(_name) ": 0x%08x", dev_id, info->_field);
 	PLATFORM_STATUS_REGISTERS
 #undef _X
 	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
-		platform_ctl_addr_t const rk = status + REG_KERNEL_ID_START +
-				s * REG_SLOT_OFFSET;
-		r = platform_read_ctl(p, rk, sizeof(uint32_t),
-				&(info->composition.kernel[s]), PLATFORM_CTL_FLAGS_NONE);
+		platform_ctl_addr_t const rk = status + REG_KERNEL_ID_START + s * REG_SLOT_OFFSET;
+		r = platform_read_ctl(p, rk, sizeof(uint32_t), &(info->composition.kernel[s]), 0);
 		if (r != PLATFORM_SUCCESS) {
-			ERR("could not read kernel id at slot %lu: %s (%d)",
+			ERR("device #%03u: could not read kernel id at slot %lu: %s (%d)",
+					dev_id,
 					(unsigned long)s,
 					platform_strerror(r), r);
 			return r;
 		}
-		platform_ctl_addr_t const rm = status + REG_LOCAL_MEM_START +
-				s * REG_SLOT_OFFSET;
+		platform_ctl_addr_t const rm = status + REG_LOCAL_MEM_START + s * REG_SLOT_OFFSET;
 		r = platform_read_ctl(p, rm, sizeof(info->composition.memory[s]),
 				&(info->composition.memory[s]), PLATFORM_CTL_FLAGS_NONE);
 		if (r != PLATFORM_SUCCESS) {
-			ERR("could not read memory id at slot %lu: %s (%d)",
+			ERR("device #%03u: could not read memory at slot %lu: %s (%d)",
+					dev_id,
 					(unsigned long)s,
 					platform_strerror(r), r);
 			return r;
@@ -114,28 +113,26 @@ platform_res_t read_info_from_status_core(platform_ctx_t const *p,
 					&(info->base.platform[s]),
 					PLATFORM_CTL_FLAGS_NONE);
 			if (r != PLATFORM_SUCCESS) {
-				ERR("could not read platform base %lu: %s (%d)",
+				ERR("device #%03u: could not read platform base %lu: %s (%d)",
+						dev_id,
 						(unsigned long)s,
 						platform_strerror(r), r);
 				return r;
 			} 
 
-			platform_ctl_addr_t const ab = status +
-					REG_ARCH_BASE_START +
-					s * sizeof(uint64_t);
-			r = platform_read_ctl(p, ab,
-					sizeof(info->base.arch[s]),
-					&(info->base.arch[s]),
-				  	PLATFORM_CTL_FLAGS_NONE);
+			platform_ctl_addr_t const ab = status + REG_ARCH_BASE_START + s * sizeof(uint64_t);
+			r = platform_read_ctl(p, ab, sizeof(info->base.arch[s]), &(info->base.arch[s]), 0);
 			if (r != PLATFORM_SUCCESS) {
-				ERR("could not read platform base %lu: %s (%d)",
+				ERR("device #%03u: could not read platform base %lu: %s (%d)",
+						dev_id,
 						(unsigned long)s,
 						platform_strerror(r), r);
 				return r;
 			} 
 		} else {
-			ERR("loaded bitstream does not support dynamic address map - "
-			    "please use a libplatform version < 1.5 with this bitstream");
+			ERR("device #%03u: loaded bitstream does not support dynamic address map - "
+			    "please use a libplatform version < 1.5 with this bitstream",
+			    dev_id);
 			return PERR_INCOMPATIBLE_BITSTREAM;
 		}
 
@@ -177,24 +174,23 @@ void log_device_info(platform_info_t const *info)
 #endif
 }
 
-platform_res_t platform_info(platform_ctx_t const *ctx,
-		platform_info_t *info)
+platform_res_t platform_info(platform_devctx_t const *ctx, platform_info_t *info)
 {
 	assert(ctx);
 	assert(info);
+	assert(ctx->dev_id < PLATFORM_MAX_DEVS);
 	platform_res_t r = PLATFORM_SUCCESS;
-	if (_last_ctx != ctx) {
-		_last_ctx = ctx;
-		LOG(LPLL_STATUS, "reading device info ...");
-		r = read_info_from_status_core(ctx, &_last_info);
+	platform_dev_id_t dev_id = platform_devctx_dev_id(ctx);
+	if (! _info[dev_id].magic_id) {
+		LOG(LPLL_STATUS, "device #%03u: reading device info ..." , dev_id);
+		r = read_info_from_status_core(ctx, &_info[dev_id]);
 		if (r == PLATFORM_SUCCESS) {
-			LOG(LPLL_STATUS, "read device info successfully");
-			log_device_info(&_last_info);
+			LOG(LPLL_STATUS, "device #%03u: read device info successfully", dev_id);
+			log_device_info(&_info[dev_id]);
 		}
 	}
 	if (r == PLATFORM_SUCCESS) {
-		// LOG(LPLL_STATUS, "read device info successfully, copying ...");
-		memcpy(info, &_last_info, sizeof(*info));
+		memcpy(info, &_info[dev_id], sizeof(*info));
 	}
 	return r;
 }

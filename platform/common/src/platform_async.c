@@ -1,6 +1,6 @@
 #include <platform.h>
 #include <platform_async.h>
-#include <platform_context.h>
+#include <platform_devctx.h>
 #include <platform_errors.h>
 #include <platform_logging.h>
 #include <pthread.h>
@@ -34,7 +34,7 @@ void *platform_async_read_waitfile(void *p)
 	return NULL;
 }
 
-platform_res_t platform_async_init(platform_ctx_t const *pctx, platform_async_t **a)
+platform_res_t platform_async_init(platform_devctx_t const *pctx, platform_async_t **a)
 {
 	*a = (platform_async_t *)malloc(sizeof(**a));
 	if (! a) {
@@ -46,11 +46,8 @@ platform_res_t platform_async_init(platform_ctx_t const *pctx, platform_async_t 
 		sem_init(&(*a)->finished[s], 0, 0);
 	}
 
-	(*a)->fd_wait = open(platform_waitfile(pctx), O_RDONLY);
-	if ((*a)->fd_wait == -1) {
-		ERR("could not open file %s: %s (%d)",
-				platform_waitfile(pctx), strerror(errno), errno);
-	}
+	(*a)->fd_wait = platform_devctx_control(pctx);
+	assert((*a)->fd_wait != -1);
 
 	LOG(LPLL_ASYNC, "starting collector thread");
 	int x = pthread_create(&(*a)->collector, NULL, platform_async_read_waitfile, *a);
@@ -78,8 +75,7 @@ void platform_async_deinit(platform_async_t *a)
 	LOG(LPLL_ASYNC, "async deinitialized");
 }
 
-platform_res_t platform_async_wait_for_slot(platform_async_t *a,
-		platform_slot_id_t const slot)
+platform_res_t platform_async_wait_for_slot(platform_async_t *a, platform_slot_id_t const slot)
 {
 	LOG(LPLL_ASYNC, "waiting for slot #%lu", (unsigned long)slot);
 	sem_wait(&a->finished[slot]);
@@ -87,8 +83,7 @@ platform_res_t platform_async_wait_for_slot(platform_async_t *a,
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_wait_for_slot(platform_ctx_t *ctx,
-		platform_slot_id_t const s)
+platform_res_t platform_wait_for_slot(platform_devctx_t *ctx, platform_slot_id_t const s)
 {
-	return platform_async_wait_for_slot(platform_context_async(ctx), s);
+	return platform_async_wait_for_slot(platform_devctx_async(ctx), s);
 }

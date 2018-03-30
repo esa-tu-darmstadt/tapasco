@@ -23,7 +23,7 @@
  **/
 #include <platform.h>
 #include <platform_global.h>
-#include <platform_context.h>
+#include <platform_devctx.h>
 #include <platform_errors.h>
 #include <platform_logging.h>
 #include <platform_addr_map.h>
@@ -38,7 +38,7 @@ struct platform_addr_map {
 	platform_info_t const *info;
 };
 
-platform_res_t platform_addr_map_init(platform_ctx_t *ctx,
+platform_res_t platform_addr_map_init(platform_devctx_t *ctx,
 		platform_info_t const *info,
 		platform_addr_map_t **am)
 {
@@ -53,7 +53,7 @@ platform_res_t platform_addr_map_init(platform_ctx_t *ctx,
 	return PLATFORM_SUCCESS;
 }
 
-void platform_addr_map_deinit(platform_ctx_t *ctx, platform_addr_map_t *am)
+void platform_addr_map_deinit(platform_devctx_t *ctx, platform_addr_map_t *am)
 {
 	if (am) free(am);
 	LOG(LPLL_ADDR, "destroyed");
@@ -76,12 +76,12 @@ platform_res_t platform_addr_map_get_slot_base(platform_addr_map_t const* am,
 }
 
 inline
-platform_res_t platform_address_get_slot_base(platform_ctx_t const *ctx,
+platform_res_t platform_address_get_slot_base(platform_devctx_t const *ctx,
 		platform_slot_id_t const slot_id,
 		platform_ctl_addr_t *addr)
 {
 	return platform_addr_map_get_slot_base(
-			platform_context_addr_map(ctx), slot_id, addr);
+			platform_devctx_addr_map(ctx), slot_id, addr);
 }
 
 platform_res_t platform_addr_map_get_component_base(
@@ -109,10 +109,10 @@ platform_res_t platform_addr_map_get_component_base(
 }
 
 inline
-platform_res_t platform_address_get_component_base(platform_ctx_t const *ctx,
+platform_res_t platform_address_get_component_base(platform_devctx_t const *ctx,
 		platform_component_t const ent,
 		platform_ctl_addr_t *addr)
 {
 	return platform_addr_map_get_component_base(
-			platform_context_addr_map(ctx), ent, addr);
+			platform_devctx_addr_map(ctx), ent, addr);
 }

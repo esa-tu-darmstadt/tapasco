@@ -22,7 +22,7 @@
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 
-platform_res_t *_platform_init(const char *const version, platform_ctx_t **ctx)
+platform_res_t *_platform_init(const char *const version, platform_devctx_t **ctx)
 {
 	platform_logging_init();
 	LOG(LPLL_INIT, "version: %s, expected version: %s", platform_version(),

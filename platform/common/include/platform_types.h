@@ -21,6 +21,8 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <tlkm_access.h>
+#include <tlkm_ioctl_cmds.h>
 
 #define PE_LOCAL_FLAG						2
 
@@ -36,6 +38,12 @@ typedef ssize_t platform_res_t;
 /** Platform context: opaque forward declaration. */
 typedef struct platform_ctx platform_ctx_t;
 
+/** Platform device context: opaque forward declaration. */
+typedef struct platform_devctx platform_devctx_t;
+
+/** Platform device id type. */
+typedef uint32_t platform_dev_id_t;
+
 /** Device register space address type (opaque). **/
 typedef uint32_t platform_ctl_addr_t;
 
@@ -47,6 +55,20 @@ typedef uint32_t platform_slot_id_t;
 
 /** Type used to identify kernels. **/
 typedef uint32_t platform_kernel_id_t;
+
+/**
+ * Device access types:
+ * Exclusive is the default for applications, they can use the device without
+ * any consideration of other users/processes. Shared access enables multiple
+ * devices to share limited access, which rules out exclusive access. Monitor
+ * access is used by monitoring applications (e.g., tapasco-debug) to access
+ * the device passively during the execution of another program.
+ **/
+typedef enum {
+	PLATFORM_EXCLUSIVE_ACCESS 		= TLKM_ACCESS_EXCLUSIVE,
+	PLATFORM_SHARED_ACCESS			= TLKM_ACCESS_SHARED,
+	PLATFORM_MONITOR_ACCESS			= TLKM_ACCESS_MONITOR,
+} platform_access_t;
 
 /**
  * Platform component identifiers.
@@ -103,6 +125,8 @@ typedef enum {
 	/** no flags **/
 	PLATFORM_MEM_FLAGS_NONE					= 0
 } platform_mem_flags_t;
+
+typedef struct tlkm_device_info platform_device_info_t;
 
 #include <platform_info.h>
 /** @} **/

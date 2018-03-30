@@ -32,6 +32,7 @@
 
 #ifndef __KERNEL__
 #include <sys/ioctl.h>
+#include <stdlib.h>
 #else
 #include <linux/ioctl.h>
 #endif

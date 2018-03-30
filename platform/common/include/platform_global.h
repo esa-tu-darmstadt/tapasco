@@ -26,5 +26,6 @@
 #define PLATFORM_API_GLOBAL_H__
 
 #define PLATFORM_NUM_SLOTS				128
+#define PLATFORM_MAX_DEVS				 16
 
 #endif /* PLATFORM_API_GLOBAL_H__ */
