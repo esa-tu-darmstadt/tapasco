@@ -30,6 +30,8 @@ static int test_dev_ioctl(dev_id_t dev_id)
 		printf("device name: %s\n", info.name);
 	}
 
+	getchar();
+
 	close(dfd);
 	return r;
 
@@ -83,7 +85,7 @@ int main(int argc, char *argv[])
 	} else {
 		printf("Found %zu devices:\n", enum_devices_cmd.num_devs);
 		for (size_t i = 0; i < enum_devices_cmd.num_devs; ++i) {
-			printf("  device #%03zd: '%s' (%03x:%03x)\n",
+			printf("  device #%03zd: '%s' (%04x:%04x)\n",
 					i, enum_devices_cmd.devs[i].name,
 					enum_devices_cmd.devs[i].vendor_id,
 					enum_devices_cmd.devs[i].product_id);
