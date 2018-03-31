@@ -1,7 +1,7 @@
 #
-# Copyright (C) 2014 Jens Korinth, TU Darmstadt
+# Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 #
-# This file is part of Tapasco (TPC).
+# This file is part of Tapasco (TaPaSCo).
 #
 # Tapasco is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -20,8 +20,19 @@ if (NOT EXISTS "$ENV{TAPASCO_HOME}")
   message (FATAL_ERROR "Please set TAPASCO_HOME environment variable to root directory of Tapasco")
 endif (NOT EXISTS "$ENV{TAPASCO_HOME}")
 
+# don't link with full path
 set (CMAKE_SKIP_RPATH true)
+
+# basic directory variables
 set (TAPASCO_HOME "$ENV{TAPASCO_HOME}")
+set (TAPASCO_TLKM_DIR		"${TAPASCO_HOME}/module")
+set (TAPASCO_COMMON_DIR 	"${TAPASCO_HOME}/common")
+set (TAPASCO_PLATFORM_DIR 	"${TAPASCO_HOME}/platform")
+set (TAPASCO_PLATFORM_LIBS_DIR 	"${TAPASCO_PLATFORM_DIR}/lib")
+set (TAPASCO_ARCH_DIR		"${TAPASCO_HOME}/arch")
+set (TAPASCO_ARCH_LIBS_DIR	"${TAPASCO_ARCH_DIR}/lib")
+
+# set target architecture
 if (NOT EXISTS "$ENV{TAPASCO_TARGET}")
   message (STATUS "TAPASCO_TARGET environment variable not set, using ${CMAKE_SYSTEM_PROCESSOR}")
   set (TAPASCO_TARGET "${CMAKE_SYSTEM_PROCESSOR}")
@@ -29,6 +40,38 @@ else (NOT EXISTS "$ENV{TAPASCO_TARGET}")
   set (TAPASCO_TARGET "$ENV{TAPASCO_TARGET}")
 endif (NOT EXISTS "$ENV{TAPASCO_TARGET}")
 
+# static libraries
+set (TAPASCO_PLATFORM_LIB "${TAPASCO_PLATFORM_LIBS_DIR}/${TAPASCO_TARGET}/static/libplatform.a")
+set (TAPASCO_ARCH_LIB "${TAPASCO_ARCH_LIBS_DIR}/${TAPASCO_TARGET}/static/libtapasco.a")
+
+# basic include directories
+set (TAPASCO_INCDIRS
+	"${TAPASCO_TLKM_DIR}/user"
+	"${TAPASCO_COMMON_DIR}/include"
+	"${TAPASCO_PLATFORM_DIR}/include"
+	"${TAPASCO_ARCH_DIR}/include"
+)
+
+# directories for static libraries
+set (TAPASCO_STATICLINKDIRS
+	"${TAPASCO_PLATFORM_DIR}/lib/${TAPASCO_TARGET}/static"
+	"${TAPASCO_ARCH_DIR}/lib/${TAPASCO_TARGET}/static"
+)
+
+# directories for dynamic link libraries
+set (TAPASCO_LINKDIRS
+	"${TAPASCO_PLATFORM_DIR}/lib/${TAPASCO_TARGET}"
+	"${TAPASCO_ARCH_DIR}/lib/${TAPASCO_TARGET}"
+)
+
+# default C flags
+set (TAPASCO_CFLAGS   "-Wall -Werror -g -std=gnu11")
+# default C++ flags
+set (TAPASCO_CXXFLAGS "-Wall -Werror -g -std=c++11 -Wno-write-strings -fno-rtti")
+# default linker flags (activates link-time optimizations)
+set (TAPASCO_LDFLAGS  "-flto -static-libstdc++ -static-libgcc")
+
+# used to analyze the code using clang instead of actually building
 if (${ANALYZE})
   message ("Static analysis pass, skipping build.")
   set (TAPASCO_ANALYZE_ONLY true)
