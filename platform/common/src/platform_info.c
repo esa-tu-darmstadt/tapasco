@@ -64,7 +64,7 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 		platform_info_t *info)
 {
 	platform_res_t r;
-	platform_dev_id_t dev_id = platform_devctx_dev_id(p);
+	platform_dev_id_t dev_id = p->dev_id;
 	platform_ctl_addr_t status = ZYNQ_PLATFORM_STATUS_BASE;
 #ifdef _X
 	#undef _X
@@ -173,7 +173,7 @@ void log_device_info(platform_info_t const *info)
 platform_res_t platform_info(platform_devctx_t const *ctx, platform_info_t *info)
 {
 	platform_res_t r = PLATFORM_SUCCESS;
-	platform_dev_id_t dev_id = platform_devctx_dev_id(ctx);
+	platform_dev_id_t dev_id = ctx->dev_id;
 	assert(ctx);
 	assert(info);
 	assert(dev_id < PLATFORM_MAX_DEVS);

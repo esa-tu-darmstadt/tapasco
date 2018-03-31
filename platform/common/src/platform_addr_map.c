@@ -1,7 +1,7 @@
 //
 // Copyright (C) 2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TPC).
+// This file is part of Tapasco (TaPaSCo).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -76,8 +76,7 @@ platform_res_t platform_address_get_slot_base(platform_devctx_t const *ctx,
 		platform_slot_id_t const slot_id,
 		platform_ctl_addr_t *addr)
 {
-	return platform_addr_map_get_slot_base(
-			platform_devctx_addr_map(ctx), slot_id, addr);
+	return platform_addr_map_get_slot_base(ctx->addrmap, slot_id, addr);
 }
 
 platform_res_t platform_addr_map_get_component_base(
@@ -109,6 +108,5 @@ platform_res_t platform_address_get_component_base(platform_devctx_t const *ctx,
 		platform_component_t const ent,
 		platform_ctl_addr_t *addr)
 {
-	return platform_addr_map_get_component_base(
-			platform_devctx_addr_map(ctx), ent, addr);
+	return platform_addr_map_get_component_base(ctx->addrmap, ent, addr);
 }

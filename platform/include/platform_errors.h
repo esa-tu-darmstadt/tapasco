@@ -20,8 +20,8 @@
 //! @brief	Error messages and codes.
 //! @authors	J. Korinth (jk@esa.cs.tu-darmstadt.de)
 //!
-#ifndef __PLATFORM_API_ERROR_H__
-#define __PLATFORM_API_ERROR_H__
+#ifndef PLATFORM_ERRORS_H__
+#define PLATFORM_ERRORS_H__
 
 #define PLATFORM_ERRORS \
 	_X(PERR_NO_CONNECTION          , -1       , "no connection to simulator") \
@@ -33,8 +33,8 @@
 	_X(PERR_MMAP_DEV               , -7       , "could not mmap device file") \
 	_X(PERR_MEM_ALLOC              , -8       , "could not allocate device memory") \
 	_X(PERR_MEM_MMAP               , -9       , "could not mmap device memory") \
-	_X(PERR_MEM_NO_SUCH_HANDLE     , -10       , "device memory with specified handle does not exist") \
-	_X(PERR_MEM_NO_SUCH_BUFFER     , -11       , "device memory buffer with specified id does not exist") \
+	_X(PERR_MEM_NO_SUCH_HANDLE     , -10      , "device memory with specified handle does not exist") \
+	_X(PERR_MEM_NO_SUCH_BUFFER     , -11      , "device memory buffer with specified id does not exist") \
 	_X(PERR_CTL_INVALID_ADDRESS    , -12      , "invalid ctl address") \
 	_X(PERR_CTL_INVALID_SIZE       , -13      , "invalid read/write ctl size") \
 	_X(PERR_IRQ_WAIT               , -14      , "waiting for interrupt failed") \
@@ -53,7 +53,9 @@
 	_X(PERR_COMPONENT_NOT_FOUND    , -27      , "component not found in bitstream") \
 	_X(PERR_PTHREAD_ERROR          , -28      , "pthread error") \
 	_X(PERR_TLKM_ERROR             , -29      , "tlkm error") \
-	_X(PERR_SENTINEL               , -30      , "--- no error, just end of list ---")
+	_X(PERR_NO_SUCH_DEVICE         , -30      , "no such device") \
+	_X(PERR_INCOMPATIBLE_DEVICE    , -31      , "incompatible device") \
+	_X(PERR_SENTINEL               , -32      , "--- no error, just end of list ---")
 
 #ifdef _X
 	#undef _X
@@ -67,4 +69,4 @@ typedef enum {
 } platform_error_t;
 #undef _X
 
-#endif /* __PLATFORM_API_ERROR_H__ */
+#endif /* PLATFORM_ERRORS_H__ */

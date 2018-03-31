@@ -23,8 +23,7 @@ set(CMNSRCS "${CMNDIR}/src/platform_addr_map.c"
 	    "${CMNDIR}/src/platform_logging.c"
             "${CMNDIR}/src/platform_version.c"
             "${GCMNDIR}/src/gen_queue.c")
-#set(ZYNQSRCS "${SRCDIR}/platform_zynq.c")
-set(ZYNQSRCS "")
+set(ZYNQSRCS "zynq/platform_zynq.c")
 
 include_directories(
 	"include"
@@ -32,7 +31,7 @@ include_directories(
 	"${GCMNDIR}/include"
 	"${TLKMDIR}"
 	"${TLKMDIR}/user"
-	"zynq/include"
+	"zynq/src"
 )
 
 set_source_files_properties(${CMNSRCS} ${ZYNQSRCS} PROPERTIES COMPILE_FLAGS ${TAPASCO_CFLAGS})

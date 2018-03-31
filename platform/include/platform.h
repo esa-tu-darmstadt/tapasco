@@ -103,6 +103,17 @@ void platform_deinit(platform_ctx_t *ctx);
 platform_res_t platform_enum_devices(platform_ctx_t *ctx,
 		size_t *num_devices,
 		platform_device_info_t **devs);
+
+/**
+ * Retrieve info about the given device.
+ * @param ctx Platform context
+ * @param dev_id id of the device
+ * @param info info structure (out param)
+ * @return PLATFORM_SUCCESS, if successful, an error code otherwise.
+ **/
+platform_res_t platform_device_info(platform_ctx_t *ctx,
+		platform_dev_id_t const dev_id,
+		platform_device_info_t *info);
 /**
  * Acquire the selected device and initialize the given device context.
  * @param ctx platform context
@@ -219,13 +230,6 @@ platform_res_t platform_write_ctl(platform_devctx_t const *ctx,
  **/
 platform_res_t platform_wait_for_slot(platform_devctx_t *ctx,
 		const platform_slot_id_t slot);
-
-/**
- * Returns the filename of the wait file provided by the driver.
- * @param ctx Platform context
- * @return Filename
- **/
-const char *const platform_waitfile(platform_devctx_t const *ctx);
 
 /** @} **/
 

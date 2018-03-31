@@ -50,6 +50,17 @@ int enum_devs(platform_ctx_t *ctx)
 }
 
 static
+platform_res_t get_dev(platform_ctx_t *ctx, platform_dev_id_t const dev_id, platform_device_info_t *info)
+{
+	if (dev_id >= ctx->num_devs) {
+		ERR("unknown device #%03u", dev_id);
+		return PERR_NO_SUCH_DEVICE;
+	}
+	memcpy(info, &ctx->devs[dev_id], sizeof(*info));
+	return PLATFORM_SUCCESS;
+}
+
+static
 platform_res_t init_platform(platform_ctx_t *ctx)
 {
 	platform_res_t r = PLATFORM_SUCCESS;
@@ -134,6 +145,13 @@ platform_res_t platform_enum_devs(platform_ctx_t *ctx, size_t *num_devs, platfor
 	return PLATFORM_SUCCESS;
 }
 
+platform_res_t platform_device_info(platform_ctx_t *ctx,
+		platform_dev_id_t const dev_id,
+		platform_device_info_t *info)
+{
+	return get_dev(ctx, dev_id, info);
+}
+
 platform_res_t platform_create_device(platform_ctx_t *ctx,
 		platform_dev_id_t const dev_id,
 		platform_access_t const mode,
@@ -153,7 +171,7 @@ platform_res_t platform_create_device(platform_ctx_t *ctx,
 		return PERR_TLKM_ERROR;
 	}
 	LOG(LPLL_TLKM, "created device #%03u, initializing device context ...");
-	if ((res = platform_devctx_init(&ctx->devctx[dev_id], dev_id, mode)) != PLATFORM_SUCCESS) {
+	if ((res = platform_devctx_init(ctx, dev_id, mode, &ctx->devctx[dev_id])) != PLATFORM_SUCCESS) {
 		ERR("could not initialized device context for #%03u: %s (%d)",
 				dev_id, platform_strerror(r), r);
 		platform_destroy_device(ctx, dev_id);
@@ -173,13 +191,13 @@ void platform_destroy_device(platform_ctx_t *ctx, platform_dev_id_t const dev_id
 	assert(ctx->devctx[dev_id]);
 	struct tlkm_ioctl_device_cmd c = {
 		.dev_id = dev_id,
-		.access = platform_devctx_access(ctx->devctx[dev_id]),
+		.access = ctx->devctx[dev_id]->mode,
 	};
 	int r = 0;
 	assert(ctx);
 	assert(ctx->fd_tlkm > 0);
 	assert(dev_id < PLATFORM_MAX_DEVS);
-	platform_devctx_deinit(ctx->devctx[dev_id]);
+	platform_devctx_exit(ctx->devctx[dev_id]);
 	ctx->devctx[dev_id] = NULL;
 	if ((r = ioctl(ctx->fd_tlkm, TLKM_IOCTL_DESTROY_DEVICE, &c))) {
 		ERR("could not destroy device #%03u: %s (%d)", dev_id, strerror(errno), errno);

@@ -46,7 +46,7 @@ platform_res_t platform_signaling_init(platform_devctx_t const *pctx, platform_s
 		sem_init(&(*a)->finished[s], 0, 0);
 	}
 
-	(*a)->fd_wait = platform_devctx_control(pctx);
+	(*a)->fd_wait = pctx->fd_ctrl;
 	assert((*a)->fd_wait != -1);
 
 	LOG(LPLL_ASYNC, "starting collector thread");
@@ -85,5 +85,5 @@ platform_res_t platform_signaling_wait_for_slot(platform_signaling_t *a, platfor
 
 platform_res_t platform_wait_for_slot(platform_devctx_t *ctx, platform_slot_id_t const s)
 {
-	return platform_signaling_wait_for_slot(platform_devctx_async(ctx), s);
+	return platform_signaling_wait_for_slot(ctx->signaling, s);
 }

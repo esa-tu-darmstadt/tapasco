@@ -21,25 +21,6 @@
 //!		loadable kernel module. Communicates with the Zynq fabric via 
 //!		device driver.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
-//! @version	1.4
-//! @copyright  Copyright 2014-2018 J. Korinth
-//!
-//!		This file is part of Tapasco (TPC).
-//!
-//!  		Tapasco is free software: you can redistribute it
-//!		and/or modify it under the terms of the GNU Lesser General
-//!		Public License as published by the Free Software Foundation,
-//!		either version 3 of the License, or (at your option) any later
-//!		version.
-//!
-//!  		Tapasco is distributed in the hope that it will be
-//!		useful, but WITHOUT ANY WARRANTY; without even the implied
-//!		warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-//!		See the GNU Lesser General Public License for more details.
-//!
-//!  		You should have received a copy of the GNU Lesser General Public
-//!		License along with Tapasco.  If not, see
-//!		<http://www.gnu.org/licenses/>.
 //!
 #include <sys/mman.h>
 #include <sys/resource.h>
@@ -52,14 +33,12 @@
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
-#include <module/zynq_platform.h>
-#include <module/zynq_ioctl_cmds.h>
+#include <zynq/zynq_platform.h>
+#include <tlkm_device_ioctl_cmds.h>
 #include <platform.h>
 #include <platform_errors.h>
 #include <platform_logging.h>
-#include <platform_devctx.h>
-
-/******************************************************************************/
+#include <platform_device_operations.h>
 
 typedef struct zynq_platform {
 	int 		fd_gp0_map;
@@ -69,8 +48,6 @@ typedef struct zynq_platform {
 	volatile void	*gp1_map;
 	volatile void	*status_map;
 	int		fd_control;
-	platform_info_t info;
-	platform_devctx_t  *ctx;
 } zynq_platform_t;
 
 static zynq_platform_t zynq_platform = {
@@ -84,12 +61,22 @@ static zynq_platform_t zynq_platform = {
 	.ctx           = NULL,
 };
 
-const char *const platform_waitfile(platform_devctx_t const *p)
+platform_res_t zynq_init(platform_devctx_t *devctx)
 {
-	return "/dev/" ZYNQ_PLATFORM_WAITFILENAME;
+	assert(devctx);
+	assert(devctx->dev_info.name);
+	if (! strncmp(ZYNQ_NAME, devctx->dev_info.name, strlen(ZYNQ_NAME))) {
+		LOG(LPLL_DEVICE, "device #%03u matches Zynq platform", devctx->dev_id);
+	}
+	LOG(LPLL_DEVICE, "device #%03u does not match Zynq platform", devctx->dev_id);
+	return PERR_INCOMPATIBLE_DEVICE;
 }
 
-static platform_res_t init_platform(zynq_platform_t *p)
+void zynq_exit(platform_devctx_t *devctx)
+{
+}
+
+static platform_res_t init_zynq(zynq_platform_t *p)
 {
 	platform_res_t result;
 	p->fd_gp0_map = open("/dev/" ZYNQ_PLATFORM_DEVFILENAME "_gp0", O_RDWR);
@@ -169,7 +156,7 @@ static platform_res_t init_platform(zynq_platform_t *p)
 	return result;
 }
 
-static platform_res_t release_platform(zynq_platform_t *p)
+static platform_res_t release_zynq(zynq_platform_t *p)
 {
 	if (p->fd_control != -1) {
 		close(p->fd_control);
@@ -203,13 +190,13 @@ static platform_res_t release_platform(zynq_platform_t *p)
 		p->fd_gp0_map = -1;
 		p->gp0_map    = NULL;
 	}
-	platform_context_deinit(p->ctx);
+	platform_deinit(p->ctx);
 	LOG(LPLL_INIT, "so long & thanks for all the fish, bye");
 	platform_logging_exit();
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t _platform_init(const char *const version, platform_devctx_t **pctx)
+platform_res_t zynq_init()
 {
 	platform_logging_init();
 	LOG(LPLL_INIT, "Platform API Version: %s", platform_version());
@@ -237,8 +224,8 @@ void platform_deinit(platform_devctx_t *ctx)
 	free(ctx);
 }
 
-/******************************************************************************/
-platform_res_t platform_alloc(platform_devctx_t *ctx,
+static 
+platform_res_t zynq_alloc(platform_devctx_t *ctx,
 		size_t const len, platform_mem_addr_t *addr,
 		platform_alloc_flags_t const flags)
 {
@@ -256,7 +243,8 @@ platform_res_t platform_alloc(platform_devctx_t *ctx,
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_dealloc(platform_devctx_t *ctx,
+static
+platform_res_t zynq_dealloc(platform_devctx_t *ctx,
 		platform_mem_addr_t const addr,
 		platform_alloc_flags_t const flags)
 {
@@ -271,7 +259,8 @@ platform_res_t platform_dealloc(platform_devctx_t *ctx,
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_read_mem(platform_devctx_t const *ctx,
+static
+platform_res_t zynq_read_mem(platform_devctx_t const *ctx,
 		platform_mem_addr_t const start_addr,
 		size_t const no_of_bytes, void *data,
 		platform_mem_flags_t const flags)
@@ -290,7 +279,8 @@ platform_res_t platform_read_mem(platform_devctx_t const *ctx,
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_write_mem(platform_devctx_t const *ctx,
+static
+platform_res_t zynq_write_mem(platform_devctx_t const *ctx,
 		platform_mem_addr_t const start_addr,
 		size_t const no_of_bytes, void const*data,
 		platform_mem_flags_t const flags)
@@ -309,7 +299,8 @@ platform_res_t platform_write_mem(platform_devctx_t const *ctx,
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_read_ctl(platform_devctx_t const *ctx,
+static
+platform_res_t zynq_read_ctl(platform_devctx_t const *ctx,
 		platform_ctl_addr_t const addr,
 		size_t const no_of_bytes,
 		void *data,
@@ -349,7 +340,7 @@ platform_res_t platform_read_ctl(platform_devctx_t const *ctx,
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_write_ctl(platform_devctx_t const *ctx,
+platform_res_t zynq_write_ctl(platform_devctx_t const *ctx,
 		platform_ctl_addr_t const addr,
 		size_t const no_of_bytes,
 		void const*data,
@@ -384,3 +375,12 @@ platform_res_t platform_write_ctl(platform_devctx_t const *ctx,
 
 	return PLATFORM_SUCCESS;
 }
+
+static const struct platform_device_operations _zynq_dops = {
+	.alloc		= zynq_alloc,
+	.dealloc	= zynq_dealloc,
+	.read_mem	= zynq_read_mem,
+	.write_mem	= zynq_write_mem,
+	.read_ctl	= zynq_read_ctl,
+	.write_ctl	= zynq_write_ctl,
+};

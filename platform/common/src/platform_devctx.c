@@ -11,47 +11,18 @@
 #include <platform_devfiles.h>
 #include <platform_addr_map.h>
 #include <platform_signaling.h>
+#include <platform_device_operations.h>
+#include <platform_zynq.h>
 
-struct platform_devctx {
-	platform_dev_id_t			dev_id;
-	int					fd_ctrl;
-	platform_access_t			mode;
-	platform_info_t 			info;
-	platform_addr_map_t 			*addrmap;
-	platform_signaling_t 			*async;
-};
-
-platform_dev_id_t platform_devctx_dev_id(platform_devctx_t const *ctx)
-{
-	return ctx->dev_id;
-}
-
-int platform_devctx_control(platform_devctx_t const *ctx)
-{
-	return ctx->fd_ctrl;
-}
-
-platform_access_t platform_devctx_access(platform_devctx_t const *ctx)
-{
-	return ctx->mode;
-}
-
-platform_addr_map_t *platform_devctx_addr_map(platform_devctx_t const *ctx)
-{
-	return ctx->addrmap;
-}
-
-platform_signaling_t *platform_devctx_async(platform_devctx_t const *ctx)
-{
-	return ctx->async;
-}
-
-platform_res_t platform_devctx_init(platform_devctx_t **ctx, platform_dev_id_t const dev_id,
-		platform_access_t const mode)
+platform_res_t platform_devctx_init(platform_ctx_t *ctx,
+		platform_dev_id_t const dev_id,
+		platform_access_t const mode,
+		platform_devctx_t **pdctx)
 {
 	platform_res_t res = PLATFORM_SUCCESS;
 	char *fn = control_file(dev_id);
 	assert(ctx);
+	assert(pdctx);
 	assert(fn);
 	platform_devctx_t *devctx = (platform_devctx_t *)calloc(sizeof(*devctx), 1);
 	if (! devctx) {
@@ -62,6 +33,14 @@ platform_res_t platform_devctx_init(platform_devctx_t **ctx, platform_dev_id_t c
 	LOG(LPLL_DEVICE, "preparing device #%03u ...", dev_id);
 	devctx->dev_id = dev_id;
 	devctx->mode = mode;
+
+	if ((res = platform_device_info(ctx, dev_id, &devctx->dev_info))) {
+		ERR("device #%03u: could not get device information: %s (%d)",
+				dev_id, platform_strerror(res), res);
+		free (devctx);
+		return res;
+	}
+
 	devctx->fd_ctrl = open(control_file(dev_id), O_RDWR);
 	if (devctx->fd_ctrl == -1) {
 		ERR("could not open %s: %s (%d)", fn, strerror(errno), errno);
@@ -83,19 +62,26 @@ platform_res_t platform_devctx_init(platform_devctx_t **ctx, platform_dev_id_t c
 	}
 	LOG(LPLL_INIT, "device #%03u: initialized device address map", dev_id);
 
-	res = platform_signaling_init(devctx, &devctx->async);
+	res = platform_signaling_init(devctx, &devctx->signaling);
 	if (res != PLATFORM_SUCCESS) {
-		ERR("device #%03u: could not initialize async: %s (%d)",
+		ERR("device #%03u: could not initialize signaling: %s (%d)",
 				dev_id, platform_strerror(res), res);
-		goto err_async;
+		goto err_signaling;
 	}
-	LOG(LPLL_INIT, "device #%03u: initialized device async", dev_id);
+	LOG(LPLL_INIT, "device #%03u: initialized device signaling", dev_id);
 
-	*ctx = devctx;
+	if ((res = zynq_init(devctx)) != PLATFORM_SUCCESS) {
+		ERR("found no matching platform definition for device #%03u", dev_id);
+		goto err_platform;
+	}
+
+	*pdctx = devctx;
 	LOG(LPLL_INIT, "device #%03u: context initialization finished", dev_id);
 	return PLATFORM_SUCCESS;
 
-err_async:
+err_platform:
+	platform_signaling_deinit(devctx->signaling);
+err_signaling:
 	platform_addr_map_deinit(devctx, devctx->addrmap);
 err_addr_map:
 err_info:
@@ -107,8 +93,8 @@ void platform_devctx_deinit(platform_devctx_t *devctx)
 {
 	if (devctx) {
 		platform_dev_id_t dev_id = devctx->dev_id;
-		LOG(LPLL_INIT, "device #%03u: destroying platform async ...", dev_id);
-		platform_signaling_deinit(devctx->async);
+		LOG(LPLL_INIT, "device #%03u: destroying platform signaling ...", dev_id);
+		platform_signaling_deinit(devctx->signaling);
 		LOG(LPLL_INIT, "device #%03u: destroying platform address map ...", dev_id);
 		platform_addr_map_deinit(devctx, devctx->addrmap);
 		close(devctx->fd_ctrl);
