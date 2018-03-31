@@ -24,11 +24,7 @@
 #include <platform_logging.h>
 #include <platform_addr_map.h>
 #include <platform.h>
-
-#ifndef PLATFORM_API_TAPASCO_STATUS_BASE
-#error "PLATFORM_API_TAPASCO_STATUS_BASE is not defined - set to base addr "
-       "of TaPaSCo status core in libplatform implementation"
-#endif
+#include <zynq/zynq_platform.h>
 
 #define PLATFORM_STATUS_REGISTERS \
 	_X(REG_MAGIC_ID ,		0x0000 ,	magic_id) \
@@ -69,7 +65,7 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 {
 	platform_res_t r;
 	platform_dev_id_t dev_id = platform_devctx_dev_id(p);
-	platform_ctl_addr_t status = 0x0;// FIXME PLATFORM_API_TAPASCO_STATUS_BASE;
+	platform_ctl_addr_t status = ZYNQ_PLATFORM_STATUS_BASE;
 #ifdef _X
 	#undef _X
 #endif
@@ -176,11 +172,11 @@ void log_device_info(platform_info_t const *info)
 
 platform_res_t platform_info(platform_devctx_t const *ctx, platform_info_t *info)
 {
-	assert(ctx);
-	assert(info);
-	assert(ctx->dev_id < PLATFORM_MAX_DEVS);
 	platform_res_t r = PLATFORM_SUCCESS;
 	platform_dev_id_t dev_id = platform_devctx_dev_id(ctx);
+	assert(ctx);
+	assert(info);
+	assert(dev_id < PLATFORM_MAX_DEVS);
 	if (! _info[dev_id].magic_id) {
 		LOG(LPLL_STATUS, "device #%03u: reading device info ..." , dev_id);
 		r = read_info_from_status_core(ctx, &_info[dev_id]);

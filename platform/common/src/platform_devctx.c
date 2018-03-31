@@ -51,7 +51,7 @@ platform_res_t platform_devctx_init(platform_devctx_t **ctx, platform_dev_id_t c
 {
 	platform_res_t res = PLATFORM_SUCCESS;
 	char *fn = control_file(dev_id);
-	assert(devctx);
+	assert(ctx);
 	assert(fn);
 	platform_devctx_t *devctx = (platform_devctx_t *)calloc(sizeof(*devctx), 1);
 	if (! devctx) {
