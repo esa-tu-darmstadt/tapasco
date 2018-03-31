@@ -15,7 +15,7 @@ set(CMNDIR "common")
 set(GCMNDIR "${TAPASCO_HOME}/common")
 set(TLKMDIR "${TAPASCO_HOME}/module")
 set(CMNSRCS "${CMNDIR}/src/platform_addr_map.c"
-            "${CMNDIR}/src/platform_async.c"
+            "${CMNDIR}/src/platform_signaling.c"
             "${CMNDIR}/src/platform_ctx.c"
             "${CMNDIR}/src/platform_devctx.c"
             "${CMNDIR}/src/platform_errors.c"

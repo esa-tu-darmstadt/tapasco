@@ -106,15 +106,15 @@ platform_res_t platform_enum_devices(platform_ctx_t *ctx,
 /**
  * Acquire the selected device and initialize the given device context.
  * @param ctx platform context
- * @param devctx device context to initialize
  * @param dev_id device id
  * @param mode device access type 
+ * @param devctx device context to initialize (may be NULL)
  * @return PLATFORM_SUCCESS, if successful, an error code otherwise.
  **/
 platform_res_t platform_create_device(platform_ctx_t *ctx, 
-		platform_devctx_t **pdctx,
 		platform_dev_id_t const dev_id,
-		platform_access_t const mode);
+		platform_access_t const mode,
+		platform_devctx_t **pdctx);
 
 /**
  * Destroy the given device context and release the selected device.

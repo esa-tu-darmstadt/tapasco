@@ -24,7 +24,7 @@ set(CMNSRCS "${CMNDIR}/src/platform_logging.c"
             "${CMNDIR}/src/platform_addr_map.c"
             "${CMNDIR}/src/platform_context.c"
             "${CMNDIR}/src/platform_info.c"
-            "${CMNDIR}/src/platform_async.c")
+            "${CMNDIR}/src/platform_signaling.c")
 set(SRCS "${SRCDIR}/platform_pcie.cpp"
          "${BUDDYDIR}/buddy_allocator.cpp"
 	 "${BUDDYDIR}/buddy_tree.cpp"

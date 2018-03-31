@@ -10,7 +10,7 @@
 #include <platform_logging.h>
 #include <platform_devfiles.h>
 #include <platform_addr_map.h>
-#include <platform_async.h>
+#include <platform_signaling.h>
 
 struct platform_devctx {
 	platform_dev_id_t			dev_id;
@@ -18,7 +18,7 @@ struct platform_devctx {
 	platform_access_t			mode;
 	platform_info_t 			info;
 	platform_addr_map_t 			*addrmap;
-	platform_async_t 			*async;
+	platform_signaling_t 			*async;
 };
 
 platform_dev_id_t platform_devctx_dev_id(platform_devctx_t const *ctx)
@@ -41,7 +41,7 @@ platform_addr_map_t *platform_devctx_addr_map(platform_devctx_t const *ctx)
 	return ctx->addrmap;
 }
 
-platform_async_t *platform_devctx_async(platform_devctx_t const *ctx)
+platform_signaling_t *platform_devctx_async(platform_devctx_t const *ctx)
 {
 	return ctx->async;
 }
@@ -83,7 +83,7 @@ platform_res_t platform_devctx_init(platform_devctx_t **ctx, platform_dev_id_t c
 	}
 	LOG(LPLL_INIT, "device #%03u: initialized device address map", dev_id);
 
-	res = platform_async_init(devctx, &devctx->async);
+	res = platform_signaling_init(devctx, &devctx->async);
 	if (res != PLATFORM_SUCCESS) {
 		ERR("device #%03u: could not initialize async: %s (%d)",
 				dev_id, platform_strerror(res), res);
@@ -108,7 +108,7 @@ void platform_devctx_deinit(platform_devctx_t *devctx)
 	if (devctx) {
 		platform_dev_id_t dev_id = devctx->dev_id;
 		LOG(LPLL_INIT, "device #%03u: destroying platform async ...", dev_id);
-		platform_async_deinit(devctx->async);
+		platform_signaling_deinit(devctx->async);
 		LOG(LPLL_INIT, "device #%03u: destroying platform address map ...", dev_id);
 		platform_addr_map_deinit(devctx, devctx->addrmap);
 		close(devctx->fd_ctrl);

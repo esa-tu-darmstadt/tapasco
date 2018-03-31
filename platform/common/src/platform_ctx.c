@@ -134,8 +134,10 @@ platform_res_t platform_enum_devs(platform_ctx_t *ctx, size_t *num_devs, platfor
 	return PLATFORM_SUCCESS;
 }
 
-platform_res_t platform_create_device(platform_ctx_t *ctx, platform_devctx_t **pdctx,
-		platform_dev_id_t const dev_id, platform_access_t const mode)
+platform_res_t platform_create_device(platform_ctx_t *ctx,
+		platform_dev_id_t const dev_id,
+		platform_access_t const mode,
+		platform_devctx_t **pdctx)
 {
 	int r = 0;
 	platform_res_t res = PLATFORM_SUCCESS;
@@ -157,7 +159,7 @@ platform_res_t platform_create_device(platform_ctx_t *ctx, platform_devctx_t **p
 		platform_destroy_device(ctx, dev_id);
 		goto err_pdev;
 	}
-	*pdctx = ctx->devctx[dev_id];
+	if (pdctx) *pdctx = ctx->devctx[dev_id];
 	LOG(LPLL_DEVICE, "successfully initialized device #%03u", dev_id);
 
 err_pdev:

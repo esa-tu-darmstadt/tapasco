@@ -1,5 +1,5 @@
 #include <platform.h>
-#include <platform_async.h>
+#include <platform_signaling.h>
 #include <platform_devctx.h>
 #include <platform_errors.h>
 #include <platform_logging.h>
@@ -11,18 +11,18 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-struct platform_async {
+struct platform_signaling {
 	int		fd_wait;
 	pthread_t 	collector;
 	sem_t 		finished[PLATFORM_NUM_SLOTS];
 };
 
 static
-void *platform_async_read_waitfile(void *p)
+void *platform_signaling_read_waitfile(void *p)
 {
 	platform_slot_id_t s = 0;
 	assert(p);
-	platform_async_t *a = (platform_async_t *)p;
+	platform_signaling_t *a = (platform_signaling_t *)p;
 	assert(a->fd_wait);
 	do {
 		if (read(a->fd_wait, &s, sizeof(s)) == sizeof(s)) {
@@ -34,11 +34,11 @@ void *platform_async_read_waitfile(void *p)
 	return NULL;
 }
 
-platform_res_t platform_async_init(platform_devctx_t const *pctx, platform_async_t **a)
+platform_res_t platform_signaling_init(platform_devctx_t const *pctx, platform_signaling_t **a)
 {
-	*a = (platform_async_t *)malloc(sizeof(**a));
+	*a = (platform_signaling_t *)malloc(sizeof(**a));
 	if (! a) {
-		ERR("could not allocate platform_async");
+		ERR("could not allocate platform_signaling");
 		return PERR_OUT_OF_MEMORY;
 	}
 
@@ -50,7 +50,7 @@ platform_res_t platform_async_init(platform_devctx_t const *pctx, platform_async
 	assert((*a)->fd_wait != -1);
 
 	LOG(LPLL_ASYNC, "starting collector thread");
-	int x = pthread_create(&(*a)->collector, NULL, platform_async_read_waitfile, *a);
+	int x = pthread_create(&(*a)->collector, NULL, platform_signaling_read_waitfile, *a);
 	if (x != 0) {
 		ERR("could not start collector thread: %s (%d)", strerror(errno), errno);
 		free(*a);
@@ -61,7 +61,7 @@ platform_res_t platform_async_init(platform_devctx_t const *pctx, platform_async
 	return PLATFORM_SUCCESS;
 }
 
-void platform_async_deinit(platform_async_t *a)
+void platform_signaling_deinit(platform_signaling_t *a)
 {
 	pthread_cancel(a->collector);
 	pthread_join(a->collector, NULL);
@@ -75,7 +75,7 @@ void platform_async_deinit(platform_async_t *a)
 	LOG(LPLL_ASYNC, "async deinitialized");
 }
 
-platform_res_t platform_async_wait_for_slot(platform_async_t *a, platform_slot_id_t const slot)
+platform_res_t platform_signaling_wait_for_slot(platform_signaling_t *a, platform_slot_id_t const slot)
 {
 	LOG(LPLL_ASYNC, "waiting for slot #%lu", (unsigned long)slot);
 	sem_wait(&a->finished[slot]);
@@ -85,5 +85,5 @@ platform_res_t platform_async_wait_for_slot(platform_async_t *a, platform_slot_i
 
 platform_res_t platform_wait_for_slot(platform_devctx_t *ctx, platform_slot_id_t const s)
 {
-	return platform_async_wait_for_slot(platform_devctx_async(ctx), s);
+	return platform_signaling_wait_for_slot(platform_devctx_async(ctx), s);
 }
