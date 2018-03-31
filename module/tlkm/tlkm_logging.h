@@ -53,30 +53,56 @@ TLKM_LOGFLAGS
 
 extern ulong tlkm_logging_flags;
 
-#define ERR(msg, ...)		tlkm_log(0, msg, ##__VA_ARGS__)
-#define WRN(msg, ...)		tlkm_log(1, msg, ##__VA_ARGS__)
-#define LOG(l, msg, ...)	tlkm_log((l), msg, ##__VA_ARGS__)
+#define ERR(msg, ...)			tlkm_log(0, msg, ##__VA_ARGS__)
+#define WRN(msg, ...)			tlkm_log(1, msg, ##__VA_ARGS__)
+#define LOG(l, msg, ...)		tlkm_log((l), msg, ##__VA_ARGS__)
 
 #define tlkm_log(level, fmt, ...) do { \
 		switch ((int)level) { \
 		case 0: \
-			printk(KERN_ERR "tapasco: [%s] " \
+			printk(KERN_ERR "tapasco [%s]: " \
 					fmt "\n", __func__, \
 					##__VA_ARGS__); \
 			break; \
 		case 1: \
-			printk(KERN_WARNING "tapasco: [%s] " \
+			printk(KERN_WARNING "tapasco [%s]: " \
 					fmt "\n", __func__, \
 					##__VA_ARGS__); \
 			break; \
 		default: \
 			if (tlkm_logging_flags & level) \
-				printk(KERN_NOTICE "tapasco: [%s] " \
+				printk(KERN_NOTICE "tapasco [%s]: " \
 						fmt "\n", __func__, \
 						##__VA_ARGS__); \
 			break; \
 		} \
 	} while(0)
+
+#define DEVERR(dev_id, msg, ...)	tlkm_device_log(dev_id, 0, msg, ##__VA_ARGS__)
+#define DEVWRN(dev_id, msg, ...)	tlkm_device_log(dev_id, 1, msg, ##__VA_ARGS__)
+#define DEVLOG(dev_id, l, msg, ...)	tlkm_device_log(dev_id, (l), msg, ##__VA_ARGS__)
+
+#define tlkm_device_log(dev_id, level, fmt, ...) do { \
+		switch ((int)level) { \
+		case 0: \
+			printk(KERN_ERR "tapasco device #%03u [%s]: " \
+					fmt "\n", dev_id, __func__, \
+					##__VA_ARGS__); \
+			break; \
+		case 1: \
+			printk(KERN_WARNING "tapasco device #%03u [%s]: " \
+					fmt "\n", dev_id, __func__, \
+					##__VA_ARGS__); \
+			break; \
+		default: \
+			if (tlkm_logging_flags & level) \
+				printk(KERN_NOTICE "tapasco device #%03u [%s]: " \
+						fmt "\n", dev_id, __func__, \
+						##__VA_ARGS__); \
+			break; \
+		} \
+	} while(0)
+
 #else
 /* only errors and warnings, no other messages */
 #define ERR(fmt, ...)		printk(KERN_ERR "tapasco: [%s] " \
@@ -89,6 +115,17 @@ extern ulong tlkm_logging_flags;
 
 #define LOG(l, msg, ...)
 #define tlkm_log(level, fmt, ...)
+
+#define DEVERR(dev_id, fmt, ...)	printk(KERN_ERR "tapasco device #%03u [%s]: " \
+						fmt "\n", dev_id, __func__, \
+						##__VA_ARGS__)
+
+#define DEVWRN(dev_id, fmt, ...)	printk(KERN_WARNING "tapasco device #%03u [%s]: " \
+						fmt "\n", dev_id, __func__, \
+						##__VA_ARGS__)
+
+#define DEVLOG(dev_id, l, msg, ...)
+#define tlkm_device_log(dev_id, level, fmt, ...)
 #endif
 
 #endif /* TLKM_LOGGING_H__ */
