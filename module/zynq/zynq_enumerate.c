@@ -5,17 +5,16 @@
 #include "tlkm_bus.h"
 #include "zynq_enumerate.h"
 #include "zynq_device.h"
-
-#define ZYNQ_NAME			"xlnx,zynq-7000"
+#include "zynq_platform.h"
 
 static const struct of_device_id zynq_ids[] = {
-	{ .compatible = "xlnx,zynq-7000", },
+	{ .compatible = ZYNQ_NAME, },
 	{},
 };
 
 static tlkm_device_t zynq_dev = {
 	.device = LIST_HEAD_INIT(zynq_dev.device),
-	.name = "xlnx,zynq-7000",
+	.name = ZYNQ_NAME,
 	.init = zynq_device_init,
 	.exit = zynq_device_exit,
 };
