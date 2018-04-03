@@ -1,7 +1,6 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
 project(arch-axi4mm)
 set(CMAKE_INSTALL_PREFIX "..")
-set(CMAKE_SKIP_RPATH true)
 
 if (NOT EXISTS "$ENV{TAPASCO_HOME}")
   message(FATAL_ERROR "Please set TAPASCO_HOME environment variable to root directory of Tapasco")
@@ -11,9 +10,6 @@ include ("$ENV{TAPASCO_HOME}/cmake/Tapasco.cmake")
 
 set(SRCDIR "src")
 set(CMNDIR "../common/src")
-set(GCMNDIR "${TAPASCO_HOME}/common")
-set(PLATFORMDIR "${TAPASCO_HOME}/platform")
-set(LIBPLATFORM_STATIC "${TAPASCO_HOME}/platform/lib/${TAPASCO_TARGET}/static/libplatform.a")
 
 set(AXI4MM_SOURCES "${SRCDIR}/tapasco_axi4mm.c"
                    "${SRCDIR}/tapasco_device.c"
@@ -28,18 +24,16 @@ set(COMMON_SOURCES "${CMNDIR}/tapasco_delayed_transfers.c"
                    "${CMNDIR}/tapasco_pemgmt.c"
                    "${CMNDIR}/tapasco_scheduler.c"
                    "${CMNDIR}/tapasco_version.c"
-                   "${GCMNDIR}/src/gen_mem.c"
-                   "${GCMNDIR}/src/gen_queue.c")
+                   "${TAPASCO_COMMON_DIR}/src/gen_mem.c"
+                   "${TAPASCO_COMMON_DIR}/src/gen_queue.c")
 set(TAPASCO_LIBS_DIR "${TAPASCO_HOME}/arch/lib")
 
-include_directories("include" "../common/include" "${PLATFORMDIR}/common/include" "${GCMNDIR}/include")
-link_directories("${PLATFORMDIR}/lib/${TAPASCO_TARGET}")
+include_directories(${TAPASCO_INCDIRS})
+include_directories("include" "../common/include" "${PLATFORMDIR}/common/include" "${TAPASCO_COMMON_DIR}/src/include")
 
-add_definitions(-DUSE_ASSERTIONS)
-
-set_source_files_properties(${AXI4MM_SOURCES} ${COMMON_SOURCES} PROPERTIES COMPILE_FLAGS "-g -O3 -Wall -Werror -std=gnu11")
+set_source_files_properties(${AXI4MM_SOURCES} ${COMMON_SOURCES} PROPERTIES COMPILE_FLAGS ${TAPASCO_CFLAGS})
 add_library(tapasco SHARED ${AXI4MM_SOURCES} ${COMMON_SOURCES})
-add_library(libtapasco-static STATIC ${AXI4MM_SOURCES} ${COMMON_SOURCES} ${LIBPLATFORM_STATIC})
+add_library(libtapasco-static STATIC ${AXI4MM_SOURCES} ${COMMON_SOURCES} ${TAPASCO_PLATFORM_LIB})
 
 target_link_libraries(tapasco platform atomic pthread)
 set_target_properties(libtapasco-static PROPERTIES OUTPUT_NAME tapasco)
@@ -47,8 +41,3 @@ set_target_properties(libtapasco-static PROPERTIES OUTPUT_NAME tapasco)
 install(TARGETS tapasco libtapasco-static
         LIBRARY DESTINATION "lib/${TAPASCO_TARGET}"
         ARCHIVE DESTINATION "lib/${TAPASCO_TARGET}/static")
-
-get_filename_component(LIBSDIR "lib" REALPATH)
-add_custom_command(OUTPUT ${TAPASCO_LIBS_DIR}
-                   COMMAND ln;-fs;${LIBSDIR};${TAPASCO_LIBS_DIR})
-add_custom_target(install_libs ALL DEPENDS tapasco libtapasco-static ${TAPASCO_LIBS_DIR})

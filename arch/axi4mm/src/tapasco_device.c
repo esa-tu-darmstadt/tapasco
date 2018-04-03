@@ -34,7 +34,6 @@
 #include <platform.h>
 #include <platform_errors.h>
 #include <platform_info.h>
-#include <platform_context.h>
 
 /** Internal device struct implementation. */
 struct tapasco_dev_ctx {
