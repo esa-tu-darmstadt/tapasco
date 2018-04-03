@@ -64,6 +64,14 @@ int tlkm_bus_init(void)
 
 void tlkm_bus_exit(void)
 {
+	struct list_head *lh;
+	list_for_each(lh, &_tlkm_bus.devices) {
+		struct tlkm_device *d = container_of(lh, struct tlkm_device,
+				device);
+		LOG(TLKM_LF_BUS, "TaPaSCo device '%s' (%04x:%04x)", d->name,
+				d->vendor_id, d->product_id);
+		tlkm_device_remove_all(d);
+	}
 	tlkm_exit();
 	LOG(TLKM_LF_BUS, "removed TaPaSCo interfaces, bye");
 }

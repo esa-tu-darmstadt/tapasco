@@ -111,3 +111,13 @@ void tlkm_device_destroy(struct tlkm_device *pdev, tlkm_access_t access)
 	}
 	mutex_unlock(&pdev->mtx);
 }
+
+void tlkm_device_remove_all(struct tlkm_device *pdev)
+{
+	if (! pdev) return;
+	mutex_lock(&pdev->mtx);
+	if (pdev->inst) {
+		destroy_device_instance(pdev);
+	}
+	mutex_unlock(&pdev->mtx);
+}

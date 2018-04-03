@@ -40,5 +40,6 @@ typedef struct tlkm_device tlkm_device_t;
 
 int  tlkm_device_create(struct tlkm_device *pdev, tlkm_access_t access);
 void tlkm_device_destroy(struct tlkm_device *pdev, tlkm_access_t access);
+void tlkm_device_remove_all(struct tlkm_device *pdev);
 
 #endif /* TLKM_DEVICE_H__ */
