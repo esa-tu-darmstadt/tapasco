@@ -8,7 +8,7 @@ endif (NOT EXISTS "$ENV{TAPASCO_HOME}")
 include ("$ENV{TAPASCO_HOME}/cmake/Tapasco.cmake")
 
 add_definitions("-DNPERFC")
-set(CMAKE_INSTALL_PREFIX "${TAPASCO_PLATFORM_DIR}")
+set(CMAKE_INSTALL_PREFIX "${TAPASCO_HOME}")
 
 set(SRCDIR "src")
 set(CMNDIR "common")

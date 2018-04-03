@@ -1,13 +1,12 @@
 cmake_minimum_required(VERSION 2.8)
 project(arch-axi4mm)
-set(CMAKE_INSTALL_PREFIX "..")
 
 if (NOT EXISTS "$ENV{TAPASCO_HOME}")
   message(FATAL_ERROR "Please set TAPASCO_HOME environment variable to root directory of Tapasco")
 endif (NOT EXISTS "$ENV{TAPASCO_HOME}")
 
 include ("$ENV{TAPASCO_HOME}/cmake/Tapasco.cmake")
-
+set(CMAKE_INSTALL_PREFIX "${TAPASCO_HOME}/lib")
 set(SRCDIR "src")
 set(CMNDIR "../common/src")
 
@@ -26,7 +25,6 @@ set(COMMON_SOURCES "${CMNDIR}/tapasco_delayed_transfers.c"
                    "${CMNDIR}/tapasco_version.c"
                    "${TAPASCO_COMMON_DIR}/src/gen_mem.c"
                    "${TAPASCO_COMMON_DIR}/src/gen_queue.c")
-set(TAPASCO_LIBS_DIR "${TAPASCO_HOME}/arch/lib")
 
 include_directories(${TAPASCO_INCDIRS})
 include_directories("include" "../common/include" "${PLATFORMDIR}/common/include" "${TAPASCO_COMMON_DIR}/src/include")
