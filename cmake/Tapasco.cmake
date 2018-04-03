@@ -25,7 +25,7 @@ set (CMAKE_SKIP_RPATH true)
 
 # basic directory variables
 set (TAPASCO_HOME "$ENV{TAPASCO_HOME}")
-set (TAPASCO_TLKM_DIR		"${TAPASCO_HOME}/module")
+set (TAPASCO_TLKM_DIR		"${TAPASCO_HOME}/tlkm")
 set (TAPASCO_COMMON_DIR 	"${TAPASCO_HOME}/common")
 set (TAPASCO_PLATFORM_DIR 	"${TAPASCO_HOME}/platform")
 set (TAPASCO_PLATFORM_LIBS_DIR 	"${TAPASCO_PLATFORM_DIR}/lib")
@@ -46,6 +46,7 @@ set (TAPASCO_ARCH_LIB "${TAPASCO_ARCH_LIBS_DIR}/${TAPASCO_TARGET}/static/libtapa
 
 # basic include directories
 set (TAPASCO_INCDIRS
+	"${TAPASCO_TLKM_DIR}"
 	"${TAPASCO_TLKM_DIR}/user"
 	"${TAPASCO_COMMON_DIR}/include"
 	"${TAPASCO_PLATFORM_DIR}/include"

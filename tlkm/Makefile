@@ -11,7 +11,7 @@ obj-m += tlkm.o
 tlkm-objs := tlkm_module.o tlkm/tlkm_logging.o tlkm/tlkm_bus.o tlkm/tlkm.o tlkm/tlkm_ioctl.o tlkm/tlkm_device.o device/tlkm_perfc.o device/tlkm_perfc_miscdev.o device/tlkm_control.o device/tlkm_control_fops.o device/tlkm_device_ioctl.o zynq/zynq_enumerate.o zynq/zynq_device.o zynq/zynq_ioctl.o zynq/zynq_dmamgmt.o zynq/zynq_irq.o
 
 
-CPPFLAGS+=-I$(TAPASCO_HOME)/module -I$(TAPASCO_HOME)/module/device -I$(TAPASCO_HOME)/module/tlkm -I$(TAPASCO_HOME)/module/user -I$(TAPASCO_HOME)/platform/common/include
+CPPFLAGS+=-I$(TAPASCO_HOME)/tlkm -I$(TAPASCO_HOME)/tlkm/device -I$(TAPASCO_HOME)/tlkm/tlkm -I$(TAPASCO_HOME)/tlkm/user -I$(TAPASCO_HOME)/platform/include
 
 .PHONY:	all clean
 
