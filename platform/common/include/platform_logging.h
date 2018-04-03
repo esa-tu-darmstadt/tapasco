@@ -47,15 +47,22 @@ LIBPLATFORM_LOGLEVELS
 } platform_ll_t;
 
 int platform_logging_init(void);
-void platform_logging_exit(void);
+void platform_logging_deinit(void);
 #ifdef NDEBUG
-inline void platform_log(platform_ll_t const level, char *fmt, ...) {}
+static inline void platform_log(platform_ll_t const level, char *fmt, ...) {}
 #else
 void platform_log(platform_ll_t const level, char *fmt, ...);
 #endif
 
-#define ERR(msg, ...)	 platform_log((platform_ll_t)0, "[%s] " msg "\n", __func__, ##__VA_ARGS__)
-#define WRN(msg, ...)	 platform_log((platform_ll_t)1, "[%s] " msg "\n", __func__, ##__VA_ARGS__)
-#define LOG(l, msg, ...) platform_log((platform_ll_t)(l), "[%s] " msg "\n", __func__, ##__VA_ARGS__)
+#define ERR(msg, ...)	 	platform_log((platform_ll_t)0, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
+#define WRN(msg, ...)	 	platform_log((platform_ll_t)1, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
+#define LOG(l, msg, ...) 	platform_log((platform_ll_t)(l), "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
+
+#define DEVERR(dev_id, msg, ...) \
+		platform_log((platform_ll_t)0, "device #%03u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+#define DEVWRN(dev_id, msg, ...) \
+		platform_log((platform_ll_t)1, "device #%03u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+#define DEVLOG(dev_id, l, msg, ...) \
+		platform_log((platform_ll_t)(l), "device #%03u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 
 #endif /* __PLATFORM_LOGGING_H__ */

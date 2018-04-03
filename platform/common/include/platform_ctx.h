@@ -4,6 +4,8 @@
 #include <platform.h>
 
 platform_res_t _platform_init(const char *const version, platform_ctx_t **ctx);
+void platform_deinit(platform_ctx_t *ctx);
+
 platform_res_t platform_enum_devices(platform_ctx_t *ctx, size_t *num_devices,
 		platform_device_info_t **devs);
 platform_res_t platform_create_device(platform_ctx_t *ctx, platform_devctx_t **pdctx,

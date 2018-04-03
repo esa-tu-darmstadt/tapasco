@@ -26,6 +26,11 @@
 
 #define PE_LOCAL_FLAG						2
 
+typedef uint64_t						u64;
+typedef uint32_t						u32;
+typedef int64_t							s64;
+typedef int32_t							s32;
+
 /** Platform result enum type. */
 typedef enum {
 	/** Indicates successful operation. **/

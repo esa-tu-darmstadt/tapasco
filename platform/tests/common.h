@@ -20,8 +20,8 @@
 //! @brief	Common helper functions for Platform API tests.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#ifndef __COMMON_H__
-#define __COMMON_H__
+#ifndef COMMON_H__
+#define COMMON_H__
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,10 +31,9 @@
 static inline int check(platform_res_t res)
 {
 	if (res != PLATFORM_SUCCESS) {
-		fprintf(stderr, "platform-error: %s\n", platform_strerror(res));
-		return 0;
+		fprintf(stderr, "platform-error: %s (%d)\n", platform_strerror(res), res);
 	}
-	return 1;
+	return res;
 }
 
 static inline int clock_period(void)
@@ -42,4 +41,4 @@ static inline int clock_period(void)
 	return getenv("TAPASCO_FREQ") ? (1000 / strtoul(getenv("TAPASCO_FREQ"), NULL, 0)) : 4;
 }
 
-#endif /* __COMMON_H__ */
+#endif /* COMMON_H__ */

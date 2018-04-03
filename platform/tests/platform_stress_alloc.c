@@ -1,7 +1,7 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TPC).
+// This file is part of Tapasco (TaPaSCo).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -40,8 +40,12 @@
 
 static long stop = 0;
 static unsigned long mode = 0;
+static platform_ctx_t *ctx;
+static platform_devctx_t *devctx;
 
-static inline int check_transfer(platform_mem_addr_t const addr, size_t const sz)
+static inline int check_transfer(platform_devctx_t *devctx,
+		platform_mem_addr_t const addr,
+		size_t const sz)
 {
 	int fd, result;
 	size_t rd;
@@ -70,8 +74,8 @@ static inline int check_transfer(platform_mem_addr_t const addr, size_t const sz
 	} while (! stop && rd > 0 && res >= 0);
 	close(fd);
 
-	platform_write_mem(addr, sz, rnddata, PLATFORM_MEM_FLAGS_NONE);
-	platform_read_mem(addr, sz, resdata, PLATFORM_MEM_FLAGS_NONE);
+	platform_write_mem(devctx, addr, sz, rnddata, PLATFORM_MEM_FLAGS_NONE);
+	platform_read_mem(devctx, addr, sz, resdata, PLATFORM_MEM_FLAGS_NONE);
 
 	result = memcmp(resdata, rnddata, sz) == 0;
 
@@ -87,7 +91,7 @@ static void *stress(void *p)
 	platform_res_t res;
 	while (runs && ! stop) {
 		size_t const sz = pow(2, LOWER_BND + rand() % (UPPER_BND - LOWER_BND));
-		res = platform_alloc(sz, &addr, PLATFORM_ALLOC_FLAGS_NONE);
+		res = platform_alloc(devctx, sz, &addr, PLATFORM_ALLOC_FLAGS_NONE);
 		if (! check(res)) {
 			stop = 1;
 			fprintf(stderr, "error during allocation of size %zu bytes: %s\n",
@@ -96,7 +100,7 @@ static void *stress(void *p)
 		}
 		/* if mode > 0, actual data is copied and checked */
 		if (mode) {
-			if (! check_transfer(addr, sz)) {
+			if (! check_transfer(devctx, addr, sz)) {
 				stop = 1;
 				fprintf(stderr, "data corrupted, transfer of %zu bytes failed\n", sz);
 				return NULL;
@@ -104,7 +108,7 @@ static void *stress(void *p)
 		} else {
 			usleep(rand() % 1000); /* just sleep a while */
 		}
-		res = platform_dealloc(addr, PLATFORM_ALLOC_FLAGS_NONE);
+		res = platform_dealloc(devctx, addr, PLATFORM_ALLOC_FLAGS_NONE);
 		if (! check(res)) {
 			stop = 1;
 			fprintf(stderr, "error during release of size %zu bytes: %s\n",
@@ -136,16 +140,22 @@ int main(int argc, char **argv)
 	pthread_t threads[thread_count];
 
 	srand(time(NULL));
-	if (!check(platform_init()))
+	if (!check(platform_init(&ctx)))
 		exit(EXIT_FAILURE);
+	if (!check(platform_create_device(ctx, 0, PLATFORM_EXCLUSIVE_ACCESS, &devctx))) {
+		platform_destroy_device(ctx, 0);
+		platform_deinit(ctx);
+		exit(EXIT_FAILURE);
+	}
 
 	printf("Starting %ld threads with %lu runs each, mode = %lu...\n", thread_count, runs, mode);
 	for (t = 0; t < thread_count; ++t)
 		pthread_create(&threads[t], NULL, stress, (void *)runs);
 	for (t = 0; t < thread_count; ++t)
 		pthread_join(threads[t], NULL);
-
-	platform_deinit();
+	
+	platform_destroy_device(ctx, 0);
+	platform_deinit(ctx);
 
 	if (! stop)
 		printf("Test successful.\n");

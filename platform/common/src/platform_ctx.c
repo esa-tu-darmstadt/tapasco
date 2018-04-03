@@ -12,9 +12,11 @@
 
 struct platform_ctx {
 	int				fd_tlkm;
+#ifndef NPERFC
 	int				fd_perfc;
+#endif
 	size_t				num_devs;
-	platform_device_info_t		*devs;
+	platform_device_info_t		devs[PLATFORM_MAX_DEVS];
 	char				version[TLKM_VERSION_SZ];
 	platform_devctx_t		*devctx[PLATFORM_MAX_DEVS];
 };
@@ -22,10 +24,9 @@ struct platform_ctx {
 static
 int get_tlkm_version(platform_ctx_t *ctx, char *v)
 {
-	struct tlkm_ioctl_version_cmd c;
+	struct tlkm_ioctl_version_cmd c = { .version = "", };
 	if (ioctl(ctx->fd_tlkm, TLKM_IOCTL_VERSION, &c)) {
-		ERR("getting version from device driver failed: %s (%d)",
-				strerror(errno), errno);
+		ERR("getting version from device driver failed: %s (%d)", strerror(errno), errno);
 		return errno;
 	}
 	strncpy(v, c.version, strlen(c.version) + 1);
@@ -39,6 +40,7 @@ int enum_devs(platform_ctx_t *ctx)
 	assert(ctx);
 	assert(ctx->fd_tlkm > 0);
 	struct tlkm_ioctl_enum_devices_cmd c;
+	memset(&c, 0, sizeof(c));
 	if ((r = ioctl(ctx->fd_tlkm, TLKM_IOCTL_ENUM_DEVICES, &c))) {
 		ERR("could not enumerate devices: %s (%d)", strerror(r), r);
 		ctx->num_devs = 0;
@@ -50,7 +52,9 @@ int enum_devs(platform_ctx_t *ctx)
 }
 
 static
-platform_res_t get_dev(platform_ctx_t *ctx, platform_dev_id_t const dev_id, platform_device_info_t *info)
+platform_res_t get_dev(platform_ctx_t *ctx,
+		platform_dev_id_t const dev_id,
+		platform_device_info_t *info)
 {
 	if (dev_id >= ctx->num_devs) {
 		ERR("unknown device #%03u", dev_id);
@@ -70,13 +74,14 @@ platform_res_t init_platform(platform_ctx_t *ctx)
 		r = PERR_TLKM_ERROR;
 		goto err_tlkm;
 	}
-
+#ifndef NPERFC
 	ctx->fd_perfc = open(TLKM_PERFC_FN, O_RDONLY);
 	if (ctx->fd_perfc == -1) {
 		ERR("could not open " TLKM_PERFC_FN ": %s (%d)", strerror(errno), errno);
 		r = PERR_TLKM_ERROR;
 		goto err_perfc;
 	}
+#endif
 
 	if (get_tlkm_version(ctx, ctx->version)) goto err_ioctl;
 	LOG(LPLL_TLKM, "TLKM version: %s", ctx->version);
@@ -98,11 +103,23 @@ platform_res_t init_platform(platform_ctx_t *ctx)
 	return r;
 
 err_ioctl:
+#ifndef NPERFC
 	close(ctx->fd_perfc);
 err_perfc:
+#endif
 	close(ctx->fd_tlkm);
 err_tlkm:
 	return r;
+}
+
+static
+void deinit_platform(platform_ctx_t *ctx)
+{
+#ifndef NPERFC
+	close(ctx->fd_perfc);
+#endif
+	close(ctx->fd_tlkm);
+	LOG(LPLL_INIT, "platform deinited");
 }
 
 platform_res_t _platform_init(const char *const version, platform_ctx_t **ctx)
@@ -111,8 +128,7 @@ platform_res_t _platform_init(const char *const version, platform_ctx_t **ctx)
 	platform_logging_init();
 	LOG(LPLL_INIT, "Platform API Version: %s", platform_version());
 	if (platform_check_version(version) != PLATFORM_SUCCESS) {
-		ERR("Platform API version mismatch: found %s, expected %s",
-				platform_version(), version);
+		ERR("Platform API version mismatch: found %s, expected %s", platform_version(), version);
 		return PERR_VERSION_MISMATCH;
 	}
 
@@ -133,12 +149,20 @@ platform_res_t _platform_init(const char *const version, platform_ctx_t **ctx)
 err_init:
 	free(*ctx);
 err_ctx_alloc:
-	platform_logging_exit();
+	platform_logging_deinit();
 	return r;
 }
 
+void platform_deinit(platform_ctx_t *ctx)
+{
+	deinit_platform(ctx);
+	free(ctx);
+	LOG(LPLL_INIT, "so long & thanks for all the fish, bye");
+}
 
-platform_res_t platform_enum_devs(platform_ctx_t *ctx, size_t *num_devs, platform_device_info_t **devs)
+platform_res_t platform_enum_devs(platform_ctx_t *ctx,
+		size_t *num_devs,
+		platform_device_info_t **devs)
 {
 	*num_devs = ctx->num_devs;
 	*devs = ctx->devs;
@@ -197,7 +221,7 @@ void platform_destroy_device(platform_ctx_t *ctx, platform_dev_id_t const dev_id
 	assert(ctx);
 	assert(ctx->fd_tlkm > 0);
 	assert(dev_id < PLATFORM_MAX_DEVS);
-	platform_devctx_exit(ctx->devctx[dev_id]);
+	platform_devctx_deinit(ctx->devctx[dev_id]);
 	ctx->devctx[dev_id] = NULL;
 	if ((r = ioctl(ctx->fd_tlkm, TLKM_IOCTL_DESTROY_DEVICE, &c))) {
 		ERR("could not destroy device #%03u: %s (%d)", dev_id, strerror(errno), errno);

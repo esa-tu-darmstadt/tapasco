@@ -130,7 +130,7 @@ int platform_logging_init(void)
 	return 1;
 }
 
-void platform_logging_exit(void)
+void platform_logging_deinit(void)
 {
 	struct log_msg_t *lm;
 	exiting = true;

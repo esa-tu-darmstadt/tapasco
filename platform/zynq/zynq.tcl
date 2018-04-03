@@ -1,7 +1,7 @@
 #
-# Copyright (C) 2014 Jens Korinth, TU Darmstadt
+# Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 #
-# This file is part of Tapasco (TPC).
+# This file is part of Tapasco (TaPaSCo).
 #
 # Tapasco is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by

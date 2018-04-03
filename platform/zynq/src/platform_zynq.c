@@ -40,7 +40,7 @@
 #include <platform_logging.h>
 #include <platform_device_operations.h>
 
-typedef struct zynq_platform {
+/*typedef struct zynq_platform {
 	int 		fd_gp0_map;
 	int 		fd_gp1_map;
 	int 		fd_status_map;
@@ -59,7 +59,7 @@ static zynq_platform_t zynq_platform = {
 	.status_map    = NULL,
 	.fd_control    = -1,
 	.ctx           = NULL,
-};
+};*/
 
 platform_res_t zynq_init(platform_devctx_t *devctx)
 {
@@ -67,6 +67,7 @@ platform_res_t zynq_init(platform_devctx_t *devctx)
 	assert(devctx->dev_info.name);
 	if (! strncmp(ZYNQ_NAME, devctx->dev_info.name, strlen(ZYNQ_NAME))) {
 		LOG(LPLL_DEVICE, "device #%03u matches Zynq platform", devctx->dev_id);
+		return PLATFORM_SUCCESS;
 	}
 	LOG(LPLL_DEVICE, "device #%03u does not match Zynq platform", devctx->dev_id);
 	return PERR_INCOMPATIBLE_DEVICE;
@@ -76,7 +77,7 @@ void zynq_exit(platform_devctx_t *devctx)
 {
 }
 
-static platform_res_t init_zynq(zynq_platform_t *p)
+/*static platform_res_t init_zynq(zynq_platform_t *p)
 {
 	platform_res_t result;
 	p->fd_gp0_map = open("/dev/" ZYNQ_PLATFORM_DEVFILENAME "_gp0", O_RDWR);
@@ -383,4 +384,4 @@ static const struct platform_device_operations _zynq_dops = {
 	.write_mem	= zynq_write_mem,
 	.read_ctl	= zynq_read_ctl,
 	.write_ctl	= zynq_write_ctl,
-};
+};*/

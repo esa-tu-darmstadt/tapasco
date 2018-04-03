@@ -33,6 +33,7 @@
 #include <platform_errors.h>
 #include <platform_global.h>
 #include <platform_types.h>
+#include <platform_devctx.h>
 
 /** @defgroup version Version Info
  *  @{
@@ -150,47 +151,71 @@ platform_res_t platform_info(platform_devctx_t const *ctx, platform_info_t *info
  * @param addr Address of memory (out).
  * @return PLATFORM_SUCCESS, if allocation succeeded.
  **/
+static inline
 platform_res_t platform_alloc(platform_devctx_t *ctx,
 		size_t const len,
 		platform_mem_addr_t *addr,
-		platform_alloc_flags_t const flags);
+		platform_alloc_flags_t const flags)
+{
+	assert(ctx);
+	assert(ctx->dops.alloc);
+	return ctx->dops.alloc(ctx, len, addr, flags);
+}
 
 /**
  * Deallocates a block of device memory.
  * @param ctx Platform context
  * @param addr Address of memory.
  **/
+static inline
 platform_res_t platform_dealloc(platform_devctx_t *ctx,
 		platform_mem_addr_t const addr,
-		platform_alloc_flags_t const flags);
+		platform_alloc_flags_t const flags)
+{
+	assert(ctx);
+	assert(ctx->dops.dealloc);
+	return ctx->dops.dealloc(ctx, addr, flags);
+}
 
 /**
  * Reads the device memory at the given address.
  * @param ctx Platform context
  * @param start_addr Device memory space address to start reading from.
- * @param no_of_bytes Number of bytes to read.
+ * @param len Number of bytes to read.
  * @param data Preallocated memory to read into.
  * @return PLATFORM_SUCCESS if read was valid, an error code otherwise.
  **/
+static inline
 platform_res_t platform_read_mem(platform_devctx_t const *ctx,
-		platform_mem_addr_t const start_addr,
-		size_t const no_of_bytes,
+		platform_mem_addr_t const addr,
+		size_t const len,
 		void *data,
-		platform_mem_flags_t const flags);
+		platform_mem_flags_t const flags)
+{
+	assert(ctx);
+	assert(ctx->dops.read_mem);
+	return ctx->dops.read_mem(ctx, addr, len, data, flags);
+}
 
 /**
  * Writes data to device memory at the given address.
  * @param ctx Platform context
  * @param start_addr Device memory space address to start writing to.
- * @param no_of_bytes Number of bytes to write.
+ * @param len Number of bytes to write.
  * @param data Data to write.
  * @return PLATFORM_SUCCESS if write succeeded, an error code otherwise.
  **/
+static inline
 platform_res_t platform_write_mem(platform_devctx_t const *ctx,
-		platform_mem_addr_t const start_addr,
-		size_t const no_of_bytes,
-		void const*data,
-		platform_mem_flags_t const flags);
+		platform_mem_addr_t const addr,
+		size_t const len,
+		void const *data,
+		platform_mem_flags_t const flags)
+{
+	assert(ctx);
+	assert(ctx->dops.write_mem);
+	return ctx->dops.write_mem(ctx, addr, len, data, flags);
+}
 
 /**
  * Reads the device register space at the given address.
@@ -200,11 +225,17 @@ platform_res_t platform_write_mem(platform_devctx_t const *ctx,
  * @param data Preallocated memory to read into.
  * @return PLATFORM_SUCCESS if read was valid, an error code otherwise.
  **/
+static inline
 platform_res_t platform_read_ctl(platform_devctx_t const *ctx,
-		platform_ctl_addr_t const start_addr,
-		size_t const no_of_bytes,
+		platform_ctl_addr_t const addr,
+		size_t const len,
 		void *data,
-		platform_ctl_flags_t const flags);
+		platform_ctl_flags_t const flags)
+{
+	assert(ctx);
+	assert(ctx->dops.read_ctl);
+	return ctx->dops.read_ctl(ctx, addr, len, data, flags);
+}
 
 /**
  * Writes device register space at the given address.
@@ -214,11 +245,17 @@ platform_res_t platform_read_ctl(platform_devctx_t const *ctx,
  * @param data Pointer to block of no_of_bytes bytes of data to write.
  * @return PLATFORM_SUCCESS if write succeeded, an error code otherwise.
  **/
+static inline
 platform_res_t platform_write_ctl(platform_devctx_t const *ctx,
-		platform_ctl_addr_t const start_addr,
-		size_t const no_of_bytes,
-		void const*data,
-		platform_ctl_flags_t const flags);
+		platform_ctl_addr_t const addr,
+		size_t const len,
+		void const *data,
+		platform_ctl_flags_t const flags)
+{
+	assert(ctx);
+	assert(ctx->dops.write_ctl);
+	return ctx->dops.write_ctl(ctx, addr, len, data, flags);
+}
 
 /**
  * Puts the calling thread to sleep until an interrupt is received from
