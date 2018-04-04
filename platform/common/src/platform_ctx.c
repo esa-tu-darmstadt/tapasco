@@ -198,7 +198,6 @@ platform_res_t platform_create_device(platform_ctx_t *ctx,
 	if ((res = platform_devctx_init(ctx, dev_id, mode, &ctx->devctx[dev_id])) != PLATFORM_SUCCESS) {
 		ERR("could not initialize device context for #%03u: %s (%d)",
 				dev_id, platform_strerror(r), r);
-		platform_destroy_device(ctx, dev_id);
 		goto err_pdev;
 	}
 	if (pdctx) *pdctx = ctx->devctx[dev_id];

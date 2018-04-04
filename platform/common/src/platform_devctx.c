@@ -27,7 +27,7 @@ platform_res_t platform_devctx_init(platform_ctx_t *ctx,
 	assert(fn);
 	platform_devctx_t *devctx = (platform_devctx_t *)calloc(sizeof(*devctx), 1);
 	if (! devctx) {
-		ERR("device #%03u: could not allocate memory for device context", dev_id);
+		DEVERR(dev_id, "could not allocate memory for device context");
 		return PERR_OUT_OF_MEMORY;
 	}
 
@@ -37,49 +37,44 @@ platform_res_t platform_devctx_init(platform_ctx_t *ctx,
 	default_dops(&devctx->dops);
 
 	if ((res = platform_device_info(ctx, dev_id, &devctx->dev_info)) != PLATFORM_SUCCESS) {
-		ERR("device #%03u: could not get device information: %s (%d)",
-				dev_id, platform_strerror(res), res);
+		DEVERR(dev_id, "could not get device information: %s (%d)", platform_strerror(res), res);
 		free (devctx);
 		return res;
 	}
 
 	devctx->fd_ctrl = open(control_file(dev_id), O_RDWR);
 	if (devctx->fd_ctrl == -1) {
-		ERR("could not open %s: %s (%d)", fn, strerror(errno), errno);
+		DEVERR(dev_id, "could not open %s: %s (%d)", fn, strerror(errno), errno);
 		res = PERR_OPEN_DEV;
 	}
 	free(fn);
 
 	if ((res = platform_info(devctx, &devctx->info)) != PLATFORM_SUCCESS) {
-		ERR("device #%03u: could not get device info: %s (%d)",
-				dev_id, platform_strerror(res), res);
+		DEVERR(dev_id, "could not get device info: %s (%d)", platform_strerror(res), res);
 		goto err_info;
 	}
-	log_device_info(&devctx->info);
 
 	res = platform_addr_map_init(devctx, &devctx->info, &devctx->addrmap);
 	if (res != PLATFORM_SUCCESS) {
-		ERR("device #%03u: could not initialize platform address map: %s (%d)",
-				dev_id, platform_strerror(res), res);
+		DEVERR(dev_id, "could not initialize platform address map: %s (%d)", platform_strerror(res), res);
 		goto err_addr_map;
 	}
-	LOG(LPLL_INIT, "device #%03u: initialized device address map", dev_id);
+	DEVLOG(dev_id, LPLL_INIT, "device #%03u: initialized device address map");
 
 	res = platform_signaling_init(devctx, &devctx->signaling);
 	if (res != PLATFORM_SUCCESS) {
-		ERR("device #%03u: could not initialize signaling: %s (%d)",
-				dev_id, platform_strerror(res), res);
+		DEVERR(dev_id, "could not initialize signaling: %s (%d)", platform_strerror(res), res);
 		goto err_signaling;
 	}
-	LOG(LPLL_INIT, "device #%03u: initialized device signaling", dev_id);
+	DEVLOG(dev_id, LPLL_INIT, "initialized device signaling");
 
 	if ((res = zynq_init(devctx)) != PLATFORM_SUCCESS) {
-		ERR("found no matching platform definition for device #%03u", dev_id);
+		DEVERR(dev_id, "found no matching platform definition for device #%03u");
 		goto err_platform;
 	}
 
-	*pdctx = devctx;
-	LOG(LPLL_INIT, "device #%03u: context initialization finished", dev_id);
+	if (pdctx) *pdctx = devctx;
+	DEVLOG(dev_id, LPLL_INIT, "context initialization finished");
 	return PLATFORM_SUCCESS;
 
 err_platform:
@@ -96,14 +91,14 @@ void platform_devctx_deinit(platform_devctx_t *devctx)
 {
 	if (devctx) {
 		platform_dev_id_t dev_id = devctx->dev_id;
-		LOG(LPLL_INIT, "device #%03u: destroying platform signaling ...", dev_id);
+		DEVLOG(dev_id, LPLL_INIT, "destroying platform signaling ...");
 		platform_signaling_deinit(devctx->signaling);
-		LOG(LPLL_INIT, "device #%03u: destroying platform address map ...", dev_id);
+		DEVLOG(dev_id, LPLL_INIT, "destroying platform address map ...");
 		platform_addr_map_deinit(devctx, devctx->addrmap);
 		close(devctx->fd_ctrl);
 		devctx->fd_ctrl = -1;
 		devctx->dev_id  = -1;
 		free(devctx);
-		LOG(LPLL_INIT, "device #%03u: context destroyed, have a nice 'un", dev_id);
+		DEVLOG(dev_id, LPLL_INIT, "context destroyed, have a nice 'un");
 	}
 }

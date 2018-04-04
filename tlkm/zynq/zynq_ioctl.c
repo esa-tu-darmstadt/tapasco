@@ -169,8 +169,8 @@ long zynq_ioctl_read(struct tlkm_device_inst *inst, struct tlkm_dev_cmd *cmd)
 	} else if (cmd->dev_addr & ZYNQ_PLATFORM_STATUS_BASE) {
 		ptr = dev->tapasco_status + (cmd->dev_addr - ZYNQ_PLATFORM_STATUS_BASE);
 	}
-	if (ptr && copy_to_user((void __user *)cmd->user_addr, ptr, cmd->length)) {
-		DEVERR(inst->dev_id, "could not copy all bytes to user space");
+	if (ptr && (ret = copy_to_user((void __user *)cmd->user_addr, ptr, cmd->length))) {
+		DEVERR(inst->dev_id, "could not copy all bytes to user space: %ld", ret);
 		ret = -EAGAIN;
 	}
 	return ret;

@@ -6,6 +6,7 @@
 #include "zynq_enumerate.h"
 #include "zynq_device.h"
 #include "zynq_platform.h"
+#include "zynq_ioctl.h"
 
 static const struct of_device_id zynq_ids[] = {
 	{ .compatible = ZYNQ_NAME, },
@@ -14,9 +15,10 @@ static const struct of_device_id zynq_ids[] = {
 
 static tlkm_device_t zynq_dev = {
 	.device = LIST_HEAD_INIT(zynq_dev.device),
-	.name = ZYNQ_NAME,
-	.init = zynq_device_init,
-	.exit = zynq_device_exit,
+	.name   = ZYNQ_NAME,
+	.init   = zynq_device_init,
+	.exit   = zynq_device_exit,
+	.ioctl  = zynq_ioctl,
 };
 
 ssize_t zynq_enumerate()
