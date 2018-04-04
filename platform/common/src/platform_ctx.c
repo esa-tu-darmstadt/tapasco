@@ -160,7 +160,7 @@ void platform_deinit(platform_ctx_t *ctx)
 	LOG(LPLL_INIT, "so long & thanks for all the fish, bye");
 }
 
-platform_res_t platform_enum_devs(platform_ctx_t *ctx,
+platform_res_t platform_enum_devices(platform_ctx_t *ctx,
 		size_t *num_devs,
 		platform_device_info_t **devs)
 {
@@ -196,16 +196,17 @@ platform_res_t platform_create_device(platform_ctx_t *ctx,
 	}
 	LOG(LPLL_TLKM, "created device #%03u, initializing device context ...");
 	if ((res = platform_devctx_init(ctx, dev_id, mode, &ctx->devctx[dev_id])) != PLATFORM_SUCCESS) {
-		ERR("could not initialized device context for #%03u: %s (%d)",
+		ERR("could not initialize device context for #%03u: %s (%d)",
 				dev_id, platform_strerror(r), r);
 		platform_destroy_device(ctx, dev_id);
 		goto err_pdev;
 	}
 	if (pdctx) *pdctx = ctx->devctx[dev_id];
 	LOG(LPLL_DEVICE, "successfully initialized device #%03u", dev_id);
+	return PLATFORM_SUCCESS;
 
 err_pdev:
-	return r;
+	return res;
 }
 
 void platform_destroy_device(platform_ctx_t *ctx, platform_dev_id_t const dev_id)

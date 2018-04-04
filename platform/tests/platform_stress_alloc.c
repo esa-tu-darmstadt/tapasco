@@ -140,10 +140,12 @@ int main(int argc, char **argv)
 	pthread_t threads[thread_count];
 
 	srand(time(NULL));
-	if (!check(platform_init(&ctx)))
+	if (!check(platform_init(&ctx))) {
+		fprintf(stderr, "error during init, exiting");
 		exit(EXIT_FAILURE);
+	}
 	if (!check(platform_create_device(ctx, 0, PLATFORM_EXCLUSIVE_ACCESS, &devctx))) {
-		platform_destroy_device(ctx, 0);
+		fprintf(stderr, "error during init device, exiting");
 		platform_deinit(ctx);
 		exit(EXIT_FAILURE);
 	}

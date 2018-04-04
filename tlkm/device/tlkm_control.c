@@ -89,9 +89,8 @@ err_miscdev:
 void tlkm_control_exit(struct tlkm_control *pctl)
 {
 	if (pctl) {
-		dev_id_t dev_id = pctl->dev_id;
 		exit_miscdev(pctl);
+		LOG(TLKM_LF_CONTROL, "destroyed control for device #%03u", pctl->dev_id);
 		kfree(pctl);
-		LOG(TLKM_LF_CONTROL, "destroyed control for device #%03u", dev_id);
 	}
 }

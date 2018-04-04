@@ -26,6 +26,9 @@ set(CMNSRCS "${CMNDIR}/src/platform_addr_map.c"
             "${GCMNDIR}/src/gen_queue.c")
 set(ZYNQSRCS "zynq/src/platform_zynq.c")
 
+set(TAPASCO_CFLAGS "-Wall -Werror -std=gnu11 -g")
+set(TAPASCO_LDFLAGS "-flto -fno-rtti -static")
+
 link_directories(${TAPASCO_STATICLINKDIRS})
 include_directories(
 	"include"

@@ -136,7 +136,7 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 	return PLATFORM_SUCCESS;
 }
 
-static inline
+inline
 void log_device_info(platform_info_t const *info)
 {
 #ifndef NDEBUG

@@ -13,27 +13,27 @@ static int init_iomapping(void)
 	int retval = 0;
 	_zynq_dev.gp_map[0] = ioremap_nocache(ZYNQ_PLATFORM_GP0_BASE, ZYNQ_PLATFORM_GP0_SIZE);
 	if (IS_ERR(_zynq_dev.gp_map[0])) {
-		ERR("could not ioremap the AXI register space at 0x%08lx-0x%08lx",
-				ZYNQ_PLATFORM_GP0_BASE,
-				ZYNQ_PLATFORM_GP0_BASE + ZYNQ_PLATFORM_GP0_SIZE - 1);
+		ERR("could not ioremap the AXI register space at 0x%08llx-0x%08llx",
+				(u64)ZYNQ_PLATFORM_GP0_BASE,
+				(u64)(ZYNQ_PLATFORM_GP0_BASE + ZYNQ_PLATFORM_GP0_SIZE - 1));
 		retval = PTR_ERR(_zynq_dev.gp_map[0]);
 		goto err_gp0;
 	}
 
 	_zynq_dev.gp_map[1] = ioremap_nocache(ZYNQ_PLATFORM_GP1_BASE, ZYNQ_PLATFORM_GP1_SIZE);
 	if (IS_ERR(_zynq_dev.gp_map[1])) {
-		ERR("could not ioremap the AXI register space at 0x%08lx-0x%08lx",
-				ZYNQ_PLATFORM_GP1_BASE,
-				ZYNQ_PLATFORM_GP1_BASE + ZYNQ_PLATFORM_GP1_SIZE - 1);
+		ERR("could not ioremap the AXI register space at 0x%08llx-0x%08llx",
+				(u64)ZYNQ_PLATFORM_GP1_BASE,
+				(u64)(ZYNQ_PLATFORM_GP1_BASE + ZYNQ_PLATFORM_GP1_SIZE - 1));
 		retval = PTR_ERR(_zynq_dev.gp_map[1]);
 		goto err_gp1;
 	}
 
 	_zynq_dev.tapasco_status = ioremap_nocache(ZYNQ_PLATFORM_STATUS_BASE, ZYNQ_PLATFORM_STATUS_SIZE);
 	if (IS_ERR(_zynq_dev.tapasco_status)) {
-		ERR("could not ioremap the AXI register space at 0x%08lx-0x%08lx",
-				ZYNQ_PLATFORM_STATUS_BASE,
-				ZYNQ_PLATFORM_STATUS_BASE + ZYNQ_PLATFORM_STATUS_SIZE);
+		ERR("could not ioremap the AXI register space at 0x%08llx-0x%08llx",
+				(u64)(ZYNQ_PLATFORM_STATUS_BASE),
+				(u64)(ZYNQ_PLATFORM_STATUS_BASE + ZYNQ_PLATFORM_STATUS_SIZE));
 		retval = PTR_ERR(_zynq_dev.tapasco_status);
 		goto err_tapasco_status;
 	}

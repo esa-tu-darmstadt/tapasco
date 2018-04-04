@@ -8,6 +8,7 @@
 #include <platform_devctx.h>
 #include <platform_types.h>
 #include <platform_logging.h>
+#include <platform_info.h>
 #include <platform_devfiles.h>
 #include <platform_addr_map.h>
 #include <platform_signaling.h>
@@ -33,8 +34,9 @@ platform_res_t platform_devctx_init(platform_ctx_t *ctx,
 	LOG(LPLL_DEVICE, "preparing device #%03u ...", dev_id);
 	devctx->dev_id = dev_id;
 	devctx->mode = mode;
+	default_dops(&devctx->dops);
 
-	if ((res = platform_device_info(ctx, dev_id, &devctx->dev_info))) {
+	if ((res = platform_device_info(ctx, dev_id, &devctx->dev_info)) != PLATFORM_SUCCESS) {
 		ERR("device #%03u: could not get device information: %s (%d)",
 				dev_id, platform_strerror(res), res);
 		free (devctx);
@@ -53,6 +55,7 @@ platform_res_t platform_devctx_init(platform_ctx_t *ctx,
 				dev_id, platform_strerror(res), res);
 		goto err_info;
 	}
+	log_device_info(&devctx->info);
 
 	res = platform_addr_map_init(devctx, &devctx->info, &devctx->addrmap);
 	if (res != PLATFORM_SUCCESS) {

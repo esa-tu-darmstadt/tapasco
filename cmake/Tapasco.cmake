@@ -27,10 +27,9 @@ set (CMAKE_SKIP_RPATH true)
 set (TAPASCO_HOME "$ENV{TAPASCO_HOME}")
 set (TAPASCO_TLKM_DIR		"${TAPASCO_HOME}/tlkm")
 set (TAPASCO_COMMON_DIR 	"${TAPASCO_HOME}/common")
+set (TAPASCO_LIB_DIR	 	"${TAPASCO_HOME}/lib")
 set (TAPASCO_PLATFORM_DIR 	"${TAPASCO_HOME}/platform")
-set (TAPASCO_PLATFORM_LIBS_DIR 	"${TAPASCO_PLATFORM_DIR}/lib")
 set (TAPASCO_ARCH_DIR		"${TAPASCO_HOME}/arch")
-set (TAPASCO_ARCH_LIBS_DIR	"${TAPASCO_ARCH_DIR}/lib")
 
 # set target architecture
 if (NOT EXISTS "$ENV{TAPASCO_TARGET}")
@@ -41,8 +40,8 @@ else (NOT EXISTS "$ENV{TAPASCO_TARGET}")
 endif (NOT EXISTS "$ENV{TAPASCO_TARGET}")
 
 # static libraries
-set (TAPASCO_PLATFORM_LIB "${TAPASCO_PLATFORM_LIBS_DIR}/${TAPASCO_TARGET}/static/libplatform.a")
-set (TAPASCO_ARCH_LIB "${TAPASCO_ARCH_LIBS_DIR}/${TAPASCO_TARGET}/static/libtapasco.a")
+set (TAPASCO_PLATFORM_LIB "${TAPASCO_LIB_DIR}/${TAPASCO_TARGET}/static/libplatform.a")
+set (TAPASCO_ARCH_LIB "${TAPASCO_LIB_DIR}/${TAPASCO_TARGET}/static/libtapasco.a")
 
 # basic include directories
 set (TAPASCO_INCDIRS
@@ -55,14 +54,12 @@ set (TAPASCO_INCDIRS
 
 # directories for static libraries
 set (TAPASCO_STATICLINKDIRS
-	"${TAPASCO_PLATFORM_DIR}/lib/${TAPASCO_TARGET}/static"
-	"${TAPASCO_ARCH_DIR}/lib/${TAPASCO_TARGET}/static"
+	"${TAPASCO_LIB_DIR}/${TAPASCO_TARGET}/static"
 )
 
 # directories for dynamic link libraries
 set (TAPASCO_LINKDIRS
-	"${TAPASCO_PLATFORM_DIR}/lib/${TAPASCO_TARGET}"
-	"${TAPASCO_ARCH_DIR}/lib/${TAPASCO_TARGET}"
+	"${TAPASCO_LIB_DIR}/${TAPASCO_TARGET}"
 )
 
 # default C flags

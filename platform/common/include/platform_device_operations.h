@@ -70,4 +70,15 @@ platform_res_t default_write_ctl(platform_devctx_t const *devctx,
 		void const *data,
 		platform_ctl_flags_t const flags);
 
+static inline
+void default_dops(platform_device_operations_t *dops)
+{
+	dops->alloc     = default_alloc;
+	dops->dealloc   = default_dealloc;
+	dops->read_mem  = default_read_mem;
+	dops->write_mem = default_write_mem;
+	dops->read_ctl  = default_read_ctl;
+	dops->write_ctl = default_write_ctl;
+}
+
 #endif /* PLATFORM_DEVICE_OPERATIONS_H__ */

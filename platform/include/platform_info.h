@@ -57,4 +57,6 @@ size_t platform_info_pe_count(platform_info_t const *info,
 	return ret;
 }
 
+void log_device_info(platform_info_t const *info);
+
 #endif /* PLATFORM_INFO_H__ */

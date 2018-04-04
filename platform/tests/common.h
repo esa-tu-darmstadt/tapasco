@@ -1,7 +1,7 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TPC).
+// This file is part of Tapasco (TaPaSCo).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -33,7 +33,7 @@ static inline int check(platform_res_t res)
 	if (res != PLATFORM_SUCCESS) {
 		fprintf(stderr, "platform-error: %s (%d)\n", platform_strerror(res), res);
 	}
-	return res;
+	return res == PLATFORM_SUCCESS;
 }
 
 static inline int clock_period(void)
