@@ -32,6 +32,10 @@ PREPARE_SD_LOG="$PWD/$LOGDIR/prepare-sd.log"
 EXTRACT_BL_LOG="$PWD/pynq/extract-bl.log"
 EXTRACT_RFS_LOG="$PWD/pynq/extract-rfs.log"
 
+HOSTCFLAGS=-I$OPENSSL/include
+HOSTLDFLAGS="-L$OPENSSL/lib -lcrypto -ldl -lssl"
+HOSTLOADLIBES=$HOSTLDFLAGS
+
 print_usage () {
 	cat << EOF
 Usage: ${0##*/} BOARD VERSION [DEVICE] [DISK SIZE]
@@ -231,7 +235,7 @@ build_u-boot () {
 		esac
 		make -C $DIR/u-boot-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG ||
 			return $(error_ret "$LINENO: could make defconfig $DEFCONFIG")
-		make -C $DIR/u-boot-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm HOSTCFLAGS=-I$OPENSSL/include HOSTLDFLAGS="-L$OPENSSL/lib -lssl -lcrypto -ldl" tools ||
+		make -C $DIR/u-boot-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm tools ||
 			return $(error_ret "$LINENO: could not build u-boot tools")
 	else
 		echo "$DIR/u-boot-xlnx/tools/mkimage already exists, skipping."
@@ -258,7 +262,7 @@ build_ssbl () {
 	if [[ ! -e $DIR/u-boot-xlnx/u-boot ]]; then
 		echo "Building second stage boot loader ..."
 		DTC=$PWD/$DIR/linux-xlnx/scripts/dtc/dtc
-		make -C $DIR/u-boot-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm DTC=$DTC HOSTCFLAGS=-I$OPENSSL/include HOSTLDFLAGS="-L$OPENSSL/lib -lssl -lcrypto -ldl" u-boot ||
+		make -C $DIR/u-boot-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm DTC=$DTC u-boot ||
 			return $(error_ret "$LINENO: could not build u-boot")
 	else
 		echo "$DIR/u-boot-xlnx/u-boot already exists, skipping."
