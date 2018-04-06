@@ -22,6 +22,9 @@
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #include <linux/uaccess.h>
+#include <linux/io.h>
+#include <linux/slab.h>
+#include <linux/gfp.h>
 
 #include "tlkm_logging.h"
 #include "tlkm_device.h"
@@ -155,35 +158,41 @@ long zynq_ioctl_copyfrom_free(struct tlkm_device_inst *inst, struct tlkm_bulk_cm
 }
 
 static inline
-long zynq_ioctl_read(struct tlkm_device_inst *inst, struct tlkm_dev_cmd *cmd)
+long zynq_ioctl_read(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cmd)
 {
 	long ret = -ENXIO;
 	void __iomem *ptr = NULL;
+	void *buf = kzalloc(cmd->length, GFP_ATOMIC);
 	struct zynq_device *dev = (struct zynq_device *)inst->private_data;
 	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "received read of %zu bytes from 0x%08llx",
 			cmd->length, cmd->dev_addr);
-	if (cmd->dev_addr > ZYNQ_PLATFORM_GP1_BASE) {
+	if (cmd->dev_addr >= ZYNQ_PLATFORM_GP1_BASE) {
 		ptr = dev->gp_map[1] + (cmd->dev_addr - ZYNQ_PLATFORM_GP1_BASE);
 	} else if (cmd->dev_addr < ZYNQ_PLATFORM_GP0_HIGH) {
 		ptr = dev->gp_map[0] + (cmd->dev_addr - ZYNQ_PLATFORM_GP0_BASE);
-	} else if (cmd->dev_addr & ZYNQ_PLATFORM_STATUS_BASE) {
+	} else if (cmd->dev_addr >= ZYNQ_PLATFORM_STATUS_BASE &&
+			cmd->dev_addr < ZYNQ_PLATFORM_STATUS_HIGH) {
 		ptr = dev->tapasco_status + (cmd->dev_addr - ZYNQ_PLATFORM_STATUS_BASE);
 	} else {
 		DEVERR(inst->dev_id, "invalid address: 0x%08llx", cmd->dev_addr);
 		return -ENXIO;
 	}
-	if ((ret = copy_to_user((void __user *)cmd->user_addr, ptr, cmd->length))) {
-		DEVERR(inst->dev_id, "could not copy all bytes to user space: %ld", ret);
+	memcpy_fromio(buf, ptr, cmd->length);
+	if ((ret = copy_to_user((u32 __user *)cmd->user_addr, buf, cmd->length))) {
+		DEVERR(inst->dev_id, "could not copy all bytes from 0x%08lx to user space 0x%08lx: %ld",
+				(ulong)buf, (ulong)cmd->user_addr, ret);
 		ret = -EAGAIN;
 	}
+	kfree(buf);
 	return ret;
 }
 
 static inline
-long zynq_ioctl_write(struct tlkm_device_inst *inst, struct tlkm_dev_cmd *cmd)
+long zynq_ioctl_write(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cmd)
 {
 	long ret = -ENXIO;
 	void __iomem *ptr = NULL;
+	void *buf = kzalloc(cmd->length, GFP_ATOMIC);
 	struct zynq_device *dev = (struct zynq_device *)inst->private_data;
 	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "received write of %zu bytes to 0x%08llx",
 			cmd->length, cmd->dev_addr);
@@ -191,34 +200,39 @@ long zynq_ioctl_write(struct tlkm_device_inst *inst, struct tlkm_dev_cmd *cmd)
 		ptr = dev->gp_map[1] + (cmd->dev_addr - ZYNQ_PLATFORM_GP1_BASE);
 	} else if (cmd->dev_addr < ZYNQ_PLATFORM_GP0_HIGH) {
 		ptr = dev->gp_map[0] + (cmd->dev_addr - ZYNQ_PLATFORM_GP0_BASE);
-	} else if (cmd->dev_addr & ZYNQ_PLATFORM_STATUS_BASE) {
+	} else if (cmd->dev_addr >= ZYNQ_PLATFORM_STATUS_BASE &&
+			cmd->dev_addr < ZYNQ_PLATFORM_STATUS_HIGH) {
 		ptr = dev->tapasco_status + (cmd->dev_addr - ZYNQ_PLATFORM_STATUS_BASE);
 	} else {
 		DEVERR(inst->dev_id, "invalid address: 0x%08llx", cmd->dev_addr);
 		return -ENXIO;
 	}
-	if (ptr && copy_from_user(ptr, (void __user *)cmd->user_addr, cmd->length)) {
+	if (ptr && copy_from_user(buf, (void __user *)cmd->user_addr, cmd->length)) {
 		DEVERR(inst->dev_id, "could not copy all bytes from user space");
 		ret = -EAGAIN;
+		goto err;
 	}
+	memcpy_toio(ptr, buf, cmd->length);
+err:
+	kfree(buf);
 	return ret;
 }
 
 long zynq_ioctl(struct tlkm_device_inst *inst, unsigned int ioctl, unsigned long data)
 {
 	int ret = -ENXIO;
-	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "received ioctl: 0x%08x", ioctl);
 #define _TLKM_DEV_IOCTL(NAME, name, id, dt) \
 	if (ioctl == TLKM_DEV_IOCTL_ ## NAME) { \
 		dt d; \
+		DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "received ioctl: 0x%08x", ioctl); \
 		if (copy_from_user(&d, (void __user *)data, sizeof(dt))) { \
 			DEVERR(inst->dev_id, "could not copy ioctl data from user space"); \
-			return -EAGAIN; \
+			return -EFAULT; \
 		} \
 		ret = zynq_ioctl_ ## name(inst, &d); \
 		if (copy_to_user((void __user *)data, &d, sizeof(dt))) { \
 			DEVERR(inst->dev_id, "could not copy ioctl data to user space"); \
-			return -EAGAIN; \
+			return -EFAULT; \
 		} \
 		return ret; \
 	}
