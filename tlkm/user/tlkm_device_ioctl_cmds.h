@@ -48,12 +48,6 @@ struct tlkm_bulk_cmd {
 	struct tlkm_copy_cmd	copy;
 };
 
-struct tlkm_dev_cmd {
-	size_t			length;
-	dev_addr_t		dev_addr;
-	void			*user_addr;
-};
-
 #define TLKM_DEV_IOCTL_FN		"tlkm_%03u"
 
 #ifdef _TLKM_DEV_IOCTL
@@ -68,8 +62,8 @@ struct tlkm_dev_cmd {
 	_TLKM_DEV_IOCTL(COPYFROM,	copyfrom,	0x13,	struct tlkm_copy_cmd) \
 	_TLKM_DEV_IOCTL(ALLOC_COPYTO,	alloc_copyto,	0x20,	struct tlkm_bulk_cmd) \
 	_TLKM_DEV_IOCTL(COPYFROM_FREE,	copyfrom_free,	0x21,	struct tlkm_bulk_cmd) \
-	_TLKM_DEV_IOCTL(READ,		read,		0x30,	struct tlkm_dev_cmd) \
-	_TLKM_DEV_IOCTL(WRITE,		write,		0x31,	struct tlkm_dev_cmd)
+	_TLKM_DEV_IOCTL(READ,		read,		0x30,	struct tlkm_copy_cmd) \
+	_TLKM_DEV_IOCTL(WRITE,		write,		0x31,	struct tlkm_copy_cmd)
 
 enum {
 #define _TLKM_DEV_IOCTL(NAME, name, id, dt) \

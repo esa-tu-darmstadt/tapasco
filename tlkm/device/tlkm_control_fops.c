@@ -16,7 +16,7 @@ ssize_t tlkm_control_fops_read(struct file *fp, char __user *usr, size_t sz, lof
 	u32 out_val = 0;
 	struct tlkm_control *pctl = control_from_file(fp);
 	if (! pctl) {
-		ERR("received invalid file pointer");
+		DEVERR(pctl->dev_id, "received invalid file pointer");
 		return -EFAULT;
 	}
 	do {
@@ -30,11 +30,11 @@ ssize_t tlkm_control_fops_read(struct file *fp, char __user *usr, size_t sz, lof
 		}
 		mutex_unlock(&pctl->out_mutex);
 		if (! out) {
-			LOG(TLKM_LF_CONTROL, "waiting on data for device #%03u ...", pctl->dev_id);
+			DEVLOG(pctl->dev_id, TLKM_LF_CONTROL, "waiting on data ...");
 			wait_event_interruptible(pctl->read_q, pctl->out_w_idx != pctl->out_r_idx);
 			if (signal_pending(current)) return -ERESTARTSYS;
 		} else {
-			LOG(TLKM_LF_CONTROL, "read %zd bytes, out_val = %u", sz, out_val);
+			DEVLOG(pctl->dev_id, TLKM_LF_CONTROL, "read %zd bytes, out_val = %u", sz, out_val);
 			wake_up_interruptible(&pctl->write_q);
 		}
 	} while (! out);
@@ -49,12 +49,12 @@ ssize_t tlkm_control_fops_write(struct file *fp, const char __user *usr, size_t 
 	ssize_t in;
 	struct tlkm_control *pctl = control_from_file(fp);
 	if (! pctl) {
-		ERR("received invalid file pointer");
+		DEVERR(pctl->dev_id, "received invalid file pointer");
 		return -EFAULT;
 	}
 	in = copy_from_user(&in_val, usr, sizeof(in_val));
 	tlkm_perfc_control_written_inc(pctl->dev_id);
-	LOG(TLKM_LF_CONTROL, "device #%03u: received job %u as write", pctl->dev_id, in_val);
+	DEVLOG(pctl->dev_id, TLKM_LF_CONTROL, "received job %u as write", in_val);
 	if (in) return -EFAULT;
 	return tlkm_control_signal_slot_interrupt(pctl, in_val);
 }

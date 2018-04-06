@@ -6,9 +6,11 @@
 #include "tlkm_control_fops.h"
 #include "tlkm_perfc.h"
 #include "tlkm_device_ioctl.h"
+#include "tlkm_device_mmap.h"
 
 static const struct file_operations _tlkm_control_fops = {
 	.unlocked_ioctl = tlkm_device_ioctl,
+	.mmap           = tlkm_device_mmap,
 	.read  		= tlkm_control_fops_read,
 	.write 		= tlkm_control_fops_write,
 };

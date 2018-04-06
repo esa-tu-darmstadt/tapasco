@@ -33,7 +33,6 @@ long tlkm_device_ioctl_info(struct file *fp, unsigned int ioctl,
 	struct tlkm_device_info kinfo;
 	struct tlkm_device *kdev;
 	struct tlkm_control *c = control_from_file(fp);
-	LOG(TLKM_LF_CONTROL, "device #%03u: received info ioctl", c->dev_id);
 	if (! c) {
 		ERR("received invalid file pointer");
 		return -EFAULT;

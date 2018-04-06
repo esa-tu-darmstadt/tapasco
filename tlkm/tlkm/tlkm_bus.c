@@ -85,7 +85,6 @@ size_t tlkm_bus_num_devices(void)
 struct tlkm_device *tlkm_bus_get_device(size_t idx)
 {
 	struct list_head *lh;
-	LOG(TLKM_LF_BUS, "getting device #%zd", idx);
 	lh = _tlkm_bus.devices.next;
 	while (! list_empty(lh) && idx > 0) {
 		lh = lh->next;
