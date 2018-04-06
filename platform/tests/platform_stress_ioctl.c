@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <platform.h>
 
-#define NUM_RUNS				100
+#define NUM_RUNS				1000
 
 static
 void stress(platform_ctx_t *ctx, platform_dev_id_t dev_id)
