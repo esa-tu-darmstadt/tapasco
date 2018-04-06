@@ -168,8 +168,11 @@ long zynq_ioctl_read(struct tlkm_device_inst *inst, struct tlkm_dev_cmd *cmd)
 		ptr = dev->gp_map[0] + (cmd->dev_addr - ZYNQ_PLATFORM_GP0_BASE);
 	} else if (cmd->dev_addr & ZYNQ_PLATFORM_STATUS_BASE) {
 		ptr = dev->tapasco_status + (cmd->dev_addr - ZYNQ_PLATFORM_STATUS_BASE);
+	} else {
+		DEVERR(inst->dev_id, "invalid address: 0x%08llx", cmd->dev_addr);
+		return -ENXIO;
 	}
-	if (ptr && (ret = copy_to_user((void __user *)cmd->user_addr, ptr, cmd->length))) {
+	if ((ret = copy_to_user((void __user *)cmd->user_addr, ptr, cmd->length))) {
 		DEVERR(inst->dev_id, "could not copy all bytes to user space: %ld", ret);
 		ret = -EAGAIN;
 	}
@@ -190,6 +193,9 @@ long zynq_ioctl_write(struct tlkm_device_inst *inst, struct tlkm_dev_cmd *cmd)
 		ptr = dev->gp_map[0] + (cmd->dev_addr - ZYNQ_PLATFORM_GP0_BASE);
 	} else if (cmd->dev_addr & ZYNQ_PLATFORM_STATUS_BASE) {
 		ptr = dev->tapasco_status + (cmd->dev_addr - ZYNQ_PLATFORM_STATUS_BASE);
+	} else {
+		DEVERR(inst->dev_id, "invalid address: 0x%08llx", cmd->dev_addr);
+		return -ENXIO;
 	}
 	if (ptr && copy_from_user(ptr, (void __user *)cmd->user_addr, cmd->length)) {
 		DEVERR(inst->dev_id, "could not copy all bytes from user space");

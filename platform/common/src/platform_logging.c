@@ -147,5 +147,5 @@ void platform_logging_deinit(void)
 }
 #else  // NDEBUG
 int platform_logging_init(void) { return 1; }
-void platform_logging_exit(void) {}
+void platform_logging_deinit(void) {}
 #endif // NDEBUG

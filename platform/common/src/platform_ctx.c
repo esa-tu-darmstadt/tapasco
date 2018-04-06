@@ -158,6 +158,7 @@ void platform_deinit(platform_ctx_t *ctx)
 	deinit_platform(ctx);
 	free(ctx);
 	LOG(LPLL_INIT, "so long & thanks for all the fish, bye");
+	platform_logging_deinit();
 }
 
 platform_res_t platform_enum_devices(platform_ctx_t *ctx,

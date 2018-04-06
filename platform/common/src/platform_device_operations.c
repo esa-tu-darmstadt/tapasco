@@ -50,7 +50,7 @@ platform_res_t default_read_ctl(platform_devctx_t const *devctx,
 			length, (u64)addr, (u64)flags);
 	struct tlkm_copy_cmd cmd = {
 		.length    = length,
-		.user_addr = (void *)data,
+		.user_addr = data,
 		.dev_addr  = addr,
 	};
 	if ((ret = ioctl(devctx->fd_ctrl, TLKM_DEV_IOCTL_READ, &cmd))) {

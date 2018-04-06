@@ -55,6 +55,7 @@ int tlkm_bus_init(void)
 				device);
 		LOG(TLKM_LF_BUS, "TaPaSCo device '%s' (%04x:%04x)", d->name,
 				d->vendor_id, d->product_id);
+		tlkm_device_create(d, TLKM_ACCESS_MONITOR);
 	}
 	if ((ret = tlkm_init())) {
 		ERR("failed to initialize ioctl file: %d", ret);
