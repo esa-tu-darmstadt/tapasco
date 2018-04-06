@@ -17,8 +17,8 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file	platform_zynq.c
-//! @brief	Platform API implementation for Zynq platform based on the
-//!		loadable kernel module. Communicates with the Zynq fabric via 
+//! @brief	Platform API implementation for zynq platform based on the
+//!		loadable kernel module. Communicates with the zynq fabric via
 //!		device driver.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
@@ -59,12 +59,15 @@ void zynq_unmap()
 {
 	if (zynq_platform.gp0_map != MAP_FAILED) {
 		munmap((void *)zynq_platform.gp0_map, ZYNQ_PLATFORM_GP0_SIZE);
+		zynq_platform.gp0_map = MAP_FAILED;
 	}
 	if (zynq_platform.gp1_map != MAP_FAILED) {
 		munmap((void *)zynq_platform.gp1_map, ZYNQ_PLATFORM_GP1_SIZE);
+		zynq_platform.gp1_map = MAP_FAILED;
 	}
 	if (zynq_platform.status_map != MAP_FAILED) {
 		munmap((void *)zynq_platform.status_map, ZYNQ_PLATFORM_STATUS_SIZE);
+		zynq_platform.status_map = MAP_FAILED;
 	}
 	DEVLOG(zynq_platform.devctx->dev_id, LPLL_DEVICE, "all I/O maps unmapped");
 }
@@ -88,7 +91,7 @@ platform_res_t zynq_iomapping()
 	}
 
 	zynq_platform.gp1_map = mmap(NULL,
-			ZYNQ_PLATFORM_GP0_SIZE,
+			ZYNQ_PLATFORM_GP1_SIZE,
 			PROT_READ | PROT_WRITE | PROT_EXEC,
 			MAP_SHARED,
 			zynq_platform.devctx->fd_ctrl,
@@ -120,11 +123,11 @@ platform_res_t zynq_init(platform_devctx_t *devctx)
 	assert(devctx);
 	assert(devctx->dev_info.name);
 	if (! strncmp(ZYNQ_NAME, devctx->dev_info.name, strlen(ZYNQ_NAME))) {
-		DEVLOG(devctx->dev_id, LPLL_DEVICE, "device #%03u matches Zynq platform");
+		DEVLOG(devctx->dev_id, LPLL_DEVICE, "matches zynq platform");
 		zynq_platform.devctx = devctx;
 		return zynq_iomapping();
 	}
-	DEVLOG(devctx->dev_id, LPLL_DEVICE, "does not match Zynq platform");
+	DEVLOG(devctx->dev_id, LPLL_DEVICE, "does not match zynq platform");
 	return PERR_INCOMPATIBLE_DEVICE;
 }
 
@@ -132,7 +135,7 @@ void zynq_exit(platform_devctx_t *devctx)
 {
 	zynq_unmap();
 	zynq_platform.devctx = NULL;
-	DEVLOG(devctx->dev_id, LPLL_DEVICE, "Zynq device released");
+	DEVLOG(devctx->dev_id, LPLL_DEVICE, "zynq device released");
 }
 
 static
@@ -145,12 +148,12 @@ platform_res_t zynq_read_ctl(platform_devctx_t const *ctx,
 	int i;
 	uint32_t *p = (uint32_t *)data;
 	volatile uint32_t *r;
-	LOG(LPLL_CTL, "addr = 0x%08lx, length = %zu",
+	DEVLOG(ctx->dev_id, LPLL_CTL, "addr = 0x%08lx, length = %zu",
 			(unsigned long)addr, length);
 
 #ifndef NDEBUG
 	if (length % 4) {
-		ERR("error: invalid size!");
+		DEVERR(ctx->dev_id, "error: invalid size!");
 		return PERR_CTL_INVALID_SIZE;
 	}
 #endif
@@ -166,7 +169,7 @@ platform_res_t zynq_read_ctl(platform_devctx_t const *ctx,
 		r = (volatile uint32_t *)zynq_platform.status_map + ((addr -
 				ZYNQ_PLATFORM_STATUS_BASE) >> 2);
 	else {
-		ERR("invalid platform address: 0x%08lx", (unsigned long)addr);
+		DEVERR(ctx->dev_id, "invalid platform address: 0x%08lx", (unsigned long)addr);
 		return PERR_CTL_INVALID_ADDRESS;
 	}
 
@@ -185,12 +188,12 @@ platform_res_t zynq_write_ctl(platform_devctx_t const *ctx,
 	int i;
 	uint32_t const *p = (uint32_t const *)data;
 	volatile uint32_t *r;
-	LOG(LPLL_CTL, "addr = 0x%08lx, length = %zu",
+	DEVLOG(ctx->dev_id, LPLL_CTL, "addr = 0x%08lx, length = %zu",
 			(unsigned long)addr, length);
 
 #ifndef NDEBUG
 	if (length % 4) {
-		ERR("invalid size: %zd", length);
+		DEVERR(ctx->dev_id, "invalid size: %zd", length);
 		return PERR_CTL_INVALID_SIZE;
 	}
 #endif
@@ -202,7 +205,7 @@ platform_res_t zynq_write_ctl(platform_devctx_t const *ctx,
 		r = (volatile uint32_t *)zynq_platform.gp1_map +
 				((addr - ZYNQ_PLATFORM_GP1_BASE) >> 2);
 	else {
-		ERR("invalid platform address: 0x%08lx", (unsigned long)addr);
+		DEVERR(ctx->dev_id, "invalid platform address: 0x%08lx", (unsigned long)addr);
 		return PERR_CTL_INVALID_ADDRESS;
 	}
 
