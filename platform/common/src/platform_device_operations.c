@@ -46,15 +46,15 @@ platform_res_t default_read_ctl(platform_devctx_t const *devctx,
 		platform_ctl_flags_t const flags)
 {
 	long ret = 0;
-	DEVLOG(devctx->dev_id, LPLL_TLKM, "reading %zu bytes from 0x%08llx with flags 0x%08llx",
-			length, (u64)addr, (u64)flags);
+	DEVLOG(devctx->dev_id, LPLL_TLKM, "reading %zu bytes from 0x%08llx to 0x%08lx with flags 0x%08llx",
+			length, (u64)addr, (ulong)data, (u64)flags);
 	struct tlkm_copy_cmd cmd = {
 		.length    = length,
 		.user_addr = data,
 		.dev_addr  = addr,
 	};
 	if ((ret = ioctl(devctx->fd_ctrl, TLKM_DEV_IOCTL_READ, &cmd))) {
-		DEVERR(devctx->dev_id, "error writing to 0x%08llx: %s (%d)",
+		DEVERR(devctx->dev_id, "error reading from 0x%08llx: %s (%d)",
 				(u64)addr, strerror(errno), errno);
 		return PERR_TLKM_ERROR;
 	}
@@ -68,8 +68,8 @@ platform_res_t default_write_ctl(platform_devctx_t const *devctx,
 		platform_ctl_flags_t const flags)
 {
 	long ret = 0;
-	DEVLOG(devctx->dev_id, LPLL_TLKM, "writing %zu bytes to 0x%08llx with flags 0x%08llx",
-			length, (u64)addr, (u64)flags);
+	DEVLOG(devctx->dev_id, LPLL_TLKM, "writing %zu bytes from 0x%08lx to 0x%08llx with flags 0x%08llx",
+			length, (ulong)data, (u64)addr, (u64)flags);
 	struct tlkm_copy_cmd cmd = {
 		.length    = length,
 		.user_addr = (void *)data,

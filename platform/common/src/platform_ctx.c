@@ -198,7 +198,7 @@ platform_res_t platform_create_device(platform_ctx_t *ctx,
 	LOG(LPLL_TLKM, "created device #%03u, initializing device context ...");
 	if ((res = platform_devctx_init(ctx, dev_id, mode, &ctx->devctx[dev_id])) != PLATFORM_SUCCESS) {
 		ERR("could not initialize device context for #%03u: %s (%d)",
-				dev_id, platform_strerror(r), r);
+				dev_id, platform_strerror(res), res);
 		goto err_pdev;
 	}
 	if (pdctx) *pdctx = ctx->devctx[dev_id];

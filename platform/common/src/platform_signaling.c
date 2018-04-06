@@ -12,9 +12,10 @@
 #include <fcntl.h>
 
 struct platform_signaling {
-	int		fd_wait;
-	pthread_t 	collector;
-	sem_t 		finished[PLATFORM_NUM_SLOTS];
+	int			fd_wait;
+	platform_dev_id_t	dev_id;
+	pthread_t 		collector;
+	sem_t 			finished[PLATFORM_NUM_SLOTS];
 };
 
 static
@@ -26,9 +27,9 @@ void *platform_signaling_read_waitfile(void *p)
 	assert(a->fd_wait);
 	do {
 		if (read(a->fd_wait, &s, sizeof(s)) == sizeof(s)) {
-			LOG(LPLL_ASYNC, "received finish notification from slot #%u", (unsigned)s);
+			DEVLOG(a->dev_id, LPLL_ASYNC, "received finish notification from slot #%u", (unsigned)s);
 			if (s < PLATFORM_NUM_SLOTS) sem_post(&a->finished[s]);
-			else ERR("invalid slot id received: %u", (unsigned)s);
+			else DEVERR(a->dev_id, "invalid slot id received: %u", (unsigned)s);
 		}
 	} while (1);
 	return NULL;
@@ -38,7 +39,7 @@ platform_res_t platform_signaling_init(platform_devctx_t const *pctx, platform_s
 {
 	*a = (platform_signaling_t *)malloc(sizeof(**a));
 	if (! a) {
-		ERR("could not allocate platform_signaling");
+		DEVERR(pctx->dev_id, "could not allocate platform_signaling");
 		return PERR_OUT_OF_MEMORY;
 	}
 
@@ -47,22 +48,24 @@ platform_res_t platform_signaling_init(platform_devctx_t const *pctx, platform_s
 	}
 
 	(*a)->fd_wait = pctx->fd_ctrl;
+	(*a)->dev_id  = pctx->dev_id;
 	assert((*a)->fd_wait != -1);
 
-	LOG(LPLL_ASYNC, "starting collector thread");
+	DEVLOG(pctx->dev_id, LPLL_ASYNC, "starting collector thread");
 	int x = pthread_create(&(*a)->collector, NULL, platform_signaling_read_waitfile, *a);
 	if (x != 0) {
-		ERR("could not start collector thread: %s (%d)", strerror(errno), errno);
+		DEVERR(pctx->dev_id, "could not start collector thread: %s (%d)", strerror(errno), errno);
 		free(*a);
 		return PERR_PTHREAD_ERROR;
 	}
 
-	LOG(LPLL_ASYNC, "async initialized successfully");
+	DEVLOG(pctx->dev_id, LPLL_ASYNC, "async initialized successfully");
 	return PLATFORM_SUCCESS;
 }
 
 void platform_signaling_deinit(platform_signaling_t *a)
 {
+	platform_dev_id_t const dev_id = a->dev_id;
 	pthread_cancel(a->collector);
 	pthread_join(a->collector, NULL);
 
@@ -72,14 +75,14 @@ void platform_signaling_deinit(platform_signaling_t *a)
 		sem_close(&a->finished[s]);
 	}
 	if (a) free(a);
-	LOG(LPLL_ASYNC, "async deinitialized");
+	DEVLOG(dev_id, LPLL_ASYNC, "async deinitialized");
 }
 
 platform_res_t platform_signaling_wait_for_slot(platform_signaling_t *a, platform_slot_id_t const slot)
 {
-	LOG(LPLL_ASYNC, "waiting for slot #%lu", (unsigned long)slot);
+	DEVLOG(a->dev_id, LPLL_ASYNC, "waiting for slot #%lu", (unsigned long)slot);
 	sem_wait(&a->finished[slot]);
-	LOG(LPLL_ASYNC, "slot #%lu has finished", (unsigned long)slot);
+	DEVLOG(a->dev_id, LPLL_ASYNC, "slot #%lu has finished", (unsigned long)slot);
 	return PLATFORM_SUCCESS;
 }
 

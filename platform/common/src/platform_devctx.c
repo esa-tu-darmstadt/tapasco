@@ -28,10 +28,11 @@ platform_res_t platform_devctx_init(platform_ctx_t *ctx,
 	platform_devctx_t *devctx = (platform_devctx_t *)calloc(sizeof(*devctx), 1);
 	if (! devctx) {
 		DEVERR(dev_id, "could not allocate memory for device context");
+		free(fn);
 		return PERR_OUT_OF_MEMORY;
 	}
 
-	LOG(LPLL_DEVICE, "preparing device #%03u ...", dev_id);
+	DEVLOG(dev_id, LPLL_DEVICE, "preparing device ...");
 	devctx->dev_id = dev_id;
 	devctx->mode = mode;
 	default_dops(&devctx->dops);
@@ -39,13 +40,16 @@ platform_res_t platform_devctx_init(platform_ctx_t *ctx,
 	if ((res = platform_device_info(ctx, dev_id, &devctx->dev_info)) != PLATFORM_SUCCESS) {
 		DEVERR(dev_id, "could not get device information: %s (%d)", platform_strerror(res), res);
 		free (devctx);
+		free(fn);
 		return res;
 	}
 
-	devctx->fd_ctrl = open(control_file(dev_id), O_RDWR);
+	devctx->fd_ctrl = open(fn, O_RDWR);
 	if (devctx->fd_ctrl == -1) {
 		DEVERR(dev_id, "could not open %s: %s (%d)", fn, strerror(errno), errno);
+		free(fn);
 		res = PERR_OPEN_DEV;
+		return res;
 	}
 	free(fn);
 
@@ -59,7 +63,7 @@ platform_res_t platform_devctx_init(platform_ctx_t *ctx,
 		DEVERR(dev_id, "could not initialize platform address map: %s (%d)", platform_strerror(res), res);
 		goto err_addr_map;
 	}
-	DEVLOG(dev_id, LPLL_INIT, "device #%03u: initialized device address map");
+	DEVLOG(dev_id, LPLL_INIT, "initialized device address map");
 
 	res = platform_signaling_init(devctx, &devctx->signaling);
 	if (res != PLATFORM_SUCCESS) {
@@ -69,7 +73,7 @@ platform_res_t platform_devctx_init(platform_ctx_t *ctx,
 	DEVLOG(dev_id, LPLL_INIT, "initialized device signaling");
 
 	if ((res = zynq_init(devctx)) != PLATFORM_SUCCESS) {
-		DEVERR(dev_id, "found no matching platform definition for device #%03u");
+		DEVERR(dev_id, "found no matching platform definition");
 		goto err_platform;
 	}
 
@@ -90,6 +94,7 @@ err_info:
 void platform_devctx_deinit(platform_devctx_t *devctx)
 {
 	if (devctx) {
+		zynq_exit(devctx);
 		platform_dev_id_t dev_id = devctx->dev_id;
 		DEVLOG(dev_id, LPLL_INIT, "destroying platform signaling ...");
 		platform_signaling_deinit(devctx->signaling);
