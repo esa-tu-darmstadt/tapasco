@@ -28,8 +28,9 @@
 #include "tlkm_perfc.h"
 #include "tlkm_perfc_miscdev.h"
 #include "tlkm_logging.h"
+#include "tlkm_device_ioctl_cmds.h"
 
-#ifndef NDEBUG
+#ifndef NPERFC
 #define TLKM_PERFC_MISCDEV_BUFSZ			512
 
 inline static
@@ -76,16 +77,16 @@ int tlkm_perfc_miscdev_init(struct tlkm_device_inst *dev)
 {
 	int ret = 0;
 	char fn[256];
-	snprintf(fn, 256, "/dev/tlkm%03u_perfc", dev->dev_id);
-	LOG(TLKM_LF_PERFC, "setting up performance counter file %s ...", fn);
+	snprintf(fn, 256, TLKM_DEV_PERFC_FN, dev->dev_id);
+	DEVLOG(dev->dev_id, TLKM_LF_PERFC, "setting up performance counter file %s ...", fn);
 	dev->perfc_dev.minor = MISC_DYNAMIC_MINOR;
 	dev->perfc_dev.name  = kstrdup(fn, GFP_KERNEL);
 	dev->perfc_dev.fops  = &tlkm_perfc_miscdev_fops;
 	if ((ret = misc_register(&dev->perfc_dev))) {
-		ERR("could not setup %s: %d", fn, ret);
+		DEVERR(dev->dev_id, "could not setup %s: %d", fn, ret);
 		return ret;
 	}
-	LOG(TLKM_LF_PERFC, "%s is set up", fn);
+	DEVLOG(dev->dev_id, TLKM_LF_PERFC, "%s is set up", fn);
 	return 0;
 }
 
@@ -93,6 +94,6 @@ void tlkm_perfc_miscdev_exit(struct tlkm_device_inst *dev)
 {
 	misc_deregister(&dev->perfc_dev);
 	kfree(dev->perfc_dev.name);
-	LOG(TLKM_LF_PERFC, "removed performance counter miscdev");
+	DEVLOG(dev->dev_id, TLKM_LF_PERFC, "removed performance counter miscdev");
 }
-#endif /* NDEBUG */
+#endif /* NPERFC */

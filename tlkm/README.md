@@ -38,7 +38,7 @@ Directory Structure <a name="dirs"/>
 ```
 /			<- should only contain the top-level module definitions
 /tlkm			<- contains code for top-level device management
-/common			<- contains re-usable shared code and definitions
+/device			<- contains code for handling a device instance
 /user			<- contains headers to be included in user-space progs
 /<PLATFORM>		<- contains platform specific code and enumerators
 ```
@@ -48,7 +48,7 @@ Overview <a name="overview"/>
 
 The base module only initializes `tlkm_bus`. `tlkm_bus` calls a number of device
 enumerators from the `/<PLATFORM>` subdirectory to get a list with names and 
-device ids (see `common/tlkm_devices.h` for the `struct` def). The init and exit
+device ids (see `device/tlkm_devices.h` for the `struct` def). The init and exit
 function pointers link to the platform-specific code for device initialization
 and tear-down. They will be used when user space creates the corresponding
 device to setup the device-specific OS interfaces.
@@ -113,7 +113,7 @@ additionally have a `tlkm_<DEV_ID>_perfc` file giving access to device internal
 performance counters, e.g., the total number of completed jobs, or the number of
 completed jobs per slot.
 
-**Important:** Performance counters are defined in `/common/tlkm_perfc.h` and
+**Important:** Performance counters are defined in `/device/tlkm_perfc.h` and
 should always be the same for all devices. Defining a new performance counter
 there automatically defines `tlkm_perfc_<name>_inc` and `tlkm_perfc_<name>_get`
 functions, which can be used by your driver to access the counters. If you need

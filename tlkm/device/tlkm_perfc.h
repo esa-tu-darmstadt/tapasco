@@ -32,31 +32,34 @@
 #endif
 
 #define TLKM_PERFC_COUNTERS \
-	_PC(control_read) \
-	_PC(control_written) \
-	_PC(control_signaled) \
-	_PC(total_mem) \
-	_PC(dma_transfers) \
-	_PC(dma_bytes)
+	_PC(signals_read) \
+	_PC(signals_written) \
+	_PC(signals_signaled) \
+	_PC(control_ioctls) \
+	_PC(total_alloced_mem) \
+	_PC(total_freed_mem) \
+	_PC(total_usr2dev_transfers) \
+	_PC(total_dev2usr_transfers) \
+	_PC(total_ctl_writes) \
+	_PC(total_ctl_reads)
 
-#ifndef NDEBUG
-#include <linux/types.h>
+#ifndef NPERFC
+	#include <linux/types.h>
 
-#define _PC(name) \
-void tlkm_perfc_ ## name ## _inc(dev_id_t dev_id); \
-int  tlkm_perfc_ ## name ## _get(dev_id_t dev_id);
+	#define _PC(name) \
+	void tlkm_perfc_ ## name ## _inc(dev_id_t dev_id); \
+	void tlkm_perfc_ ## name ## _add(dev_id_t dev_id, int const v); \
+	int  tlkm_perfc_ ## name ## _get(dev_id_t dev_id);
 
-TLKM_PERFC_COUNTERS
-#undef _PC
+	TLKM_PERFC_COUNTERS
+	#undef _PC
+#else /* NPERFC */
+	#define _PC(name) \
+	inline static void tlkm_perfc_ ## name ## _inc(dev_id_t dev_id) {} \
+	inline static void tlkm_perfc_ ## name ## _add(dev_id_t dev_id, int const v) {} \
+	inline static int  tlkm_perfc_ ## name ## _get(dev_id_t dev_id) { return 0; } \
 
-#else /* NDEBUG */
-
-#define _PC(name) \
-inline static void tlkm_perfc_ ## name ## _inc(dev_id_t dev_id) {} \
-inline static int  tlkm_perfc_ ## name ## _get(dev_id_t dev_id) { return 0; } \
-
-TLKM_PERFC_COUNTERS
-#undef _PC
-
-#endif /* NDEBUG */
+	TLKM_PERFC_COUNTERS
+	#undef _PC
+#endif /* NPERFC */
 #endif /* TLKM_PERFC_H__ */

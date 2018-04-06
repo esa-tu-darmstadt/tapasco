@@ -26,7 +26,7 @@
 #include "tlkm_ioctl_cmds.h"
 #include "tlkm_perfc.h"
 
-#ifndef NDEBUG
+#ifndef NPERFC
 
 static
 struct tlkm_perfc_t {
@@ -39,6 +39,11 @@ struct tlkm_perfc_t {
 void tlkm_perfc_ ## name ## _inc(dev_id_t dev_id) \
 { \
 	atomic_inc(&tlkm_perfc.pc_ ## name[dev_id]); \
+} \
+\
+void tlkm_perfc_ ## name ## _add(dev_id_t dev_id, int const v) \
+{ \
+	atomic_add(v, &tlkm_perfc.pc_ ## name[dev_id]); \
 } \
 \
 int tlkm_perfc_ ## name ## _get(dev_id_t dev_id) \

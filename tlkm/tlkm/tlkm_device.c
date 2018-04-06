@@ -3,6 +3,7 @@
 #include "tlkm_logging.h"
 #include "tlkm_device.h"
 #include "tlkm_control.h"
+#include "tlkm_perfc_miscdev.h"
 
 static
 int create_device_instance(struct tlkm_device *pdev, tlkm_access_t access)
@@ -22,8 +23,18 @@ int create_device_instance(struct tlkm_device *pdev, tlkm_access_t access)
 		ERR("could not setup control for device #%03u: %d", pdev->dev_id, ret);
 		goto err_control;
 	}
+
+	if ((ret = tlkm_perfc_miscdev_init(pdev->inst))) {
+		ERR("could not setup performance counter device file for device #%03u: %d",
+				pdev->dev_id, ret);
+		goto err_nperfc;
+	}
+
 	return pdev->init(pdev->inst);
 
+	tlkm_perfc_miscdev_exit(pdev->inst);
+err_nperfc:
+	tlkm_control_exit(pdev->inst->ctrl);
 err_control:
 	kfree(pdev->inst);
 	pdev->inst = NULL;
@@ -35,6 +46,7 @@ void destroy_device_instance(struct tlkm_device *pdev)
 {
 	if (pdev->inst) {
 		pdev->exit(pdev->inst);
+		tlkm_perfc_miscdev_exit(pdev->inst);
 		tlkm_control_exit(pdev->inst->ctrl);
 		kfree(pdev->inst);
 		pdev->inst = NULL;

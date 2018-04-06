@@ -85,22 +85,21 @@ int zynq_device_init(struct tlkm_device_inst *inst)
 		return -EACCES;
 	}
 #endif /* NDEBUG */
-	LOG(TLKM_LF_DEVICE, "initializing zynq device #%03u", inst->dev_id);
+	DEVLOG(inst->dev_id, TLKM_LF_DEVICE, "initializing zynq device");
 	inst->private_data = (void *)&_zynq_dev;
 	_zynq_dev.dev_id = inst->dev_id;
 
 	if ((ret = init_iomapping())) {
-		ERR("could not initialize io-mapping: %d", ret);
+		DEVERR(inst->dev_id, "could not initialize I/O-mapping: %d", ret);
 		goto err_iomapping;
 	}
 
 	if ((ret = zynq_irq_init(&_zynq_dev, inst->ctrl))) {
-		ERR("could not initialize interrupts: %d", ret);
+		DEVERR(inst->dev_id, "could not initialize interrupts: %d", ret);
 		goto err_irq;
 	}
 
-	LOG(TLKM_LF_DEVICE, "zynq device #%03u successfully initialized",
-			_zynq_dev.dev_id);
+	DEVLOG(inst->dev_id, TLKM_LF_DEVICE, "zynq successfully initialized");
 	return 0;
 
 err_irq:
@@ -120,5 +119,5 @@ void zynq_device_exit(struct tlkm_device_inst *inst)
 	zynq_irq_exit(&_zynq_dev);
 	exit_iomapping();
 	inst->private_data = NULL;
-	LOG(TLKM_LF_DEVICE, "zynq device #%03u exited", _zynq_dev.dev_id);
+	DEVLOG(_zynq_dev.dev_id, TLKM_LF_DEVICE, "zynq device exited");
 }

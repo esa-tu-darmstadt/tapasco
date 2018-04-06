@@ -60,6 +60,7 @@ long zynq_ioctl_alloc(struct tlkm_device_inst *inst, struct tlkm_mm_cmd *cmd)
 		DEVWRN(inst->dev_id, "allocation failed");
 		return -ENOMEM;
 	}
+	tlkm_perfc_total_alloced_mem_add(inst->dev_id, cmd->sz);
 	return 0;
 }
 
@@ -70,6 +71,7 @@ long zynq_ioctl_free(struct tlkm_device_inst *inst, struct tlkm_mm_cmd *cmd)
 	if (cmd->dev_addr >= 0) {
 		zynq_dmamgmt_dealloc(cmd->dev_addr);
 		cmd->dev_addr = -1;
+		tlkm_perfc_total_freed_mem_add(inst->dev_id, cmd->sz);
 	}
 	return 0;
 }
@@ -102,6 +104,7 @@ long zynq_ioctl_copyto(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cmd)
 		return -EACCES;
 	}
 	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "copyto finished successfully");
+	tlkm_perfc_total_usr2dev_transfers_add(inst->dev_id, cmd->length);
 	return 0;
 }
 
@@ -121,6 +124,7 @@ long zynq_ioctl_copyfrom(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cm
 		return -EACCES;
 	}
 	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "copyfrom finished successfully");
+	tlkm_perfc_total_dev2usr_transfers_add(inst->dev_id, cmd->length);
 	return 0;
 }
 
@@ -184,6 +188,7 @@ long zynq_ioctl_read(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cmd)
 		ret = -EAGAIN;
 	}
 	kfree(buf);
+	tlkm_perfc_total_ctl_reads_add(inst->dev_id, cmd->length);
 	return ret;
 }
 
@@ -215,6 +220,7 @@ long zynq_ioctl_write(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cmd)
 	memcpy_toio(ptr, buf, cmd->length);
 err:
 	kfree(buf);
+	tlkm_perfc_total_ctl_writes_add(inst->dev_id, cmd->length);
 	return ret;
 }
 

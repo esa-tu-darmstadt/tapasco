@@ -49,6 +49,7 @@ struct tlkm_bulk_cmd {
 };
 
 #define TLKM_DEV_IOCTL_FN		"tlkm_%03u"
+#define TLKM_DEV_PERFC_FN		"tlkm_perfc_%03u"
 
 #ifdef _TLKM_DEV_IOCTL
 	#undef _TLKM_DEV_IOCTL

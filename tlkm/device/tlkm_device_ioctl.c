@@ -55,6 +55,7 @@ long tlkm_device_ioctl_info(struct file *fp, unsigned int ioctl,
 
 long tlkm_device_ioctl(struct file *fp, unsigned int ioctl, unsigned long data)
 {
+	tlkm_perfc_control_ioctls_inc(device_from_file(fp)->dev_id);
 	if (ioctl == TLKM_DEV_IOCTL_INFO) {
 		return tlkm_device_ioctl_info(fp, ioctl, (struct tlkm_device_info __user *)data);
 	} else {

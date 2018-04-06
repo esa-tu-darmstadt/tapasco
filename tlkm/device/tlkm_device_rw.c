@@ -1,5 +1,5 @@
 #include <linux/uaccess.h>
-#include "tlkm_control_fops.h"
+#include "tlkm_device_rw.h"
 #include "tlkm_control.h"
 #include "tlkm_perfc.h"
 #include "tlkm_logging.h"
@@ -10,7 +10,7 @@ inline static struct tlkm_control *control_from_file(struct file *fp)
 	return container_of(m, struct tlkm_control, miscdev);
 }
 
-ssize_t tlkm_control_fops_read(struct file *fp, char __user *usr, size_t sz, loff_t *off)
+ssize_t tlkm_device_read(struct file *fp, char __user *usr, size_t sz, loff_t *off)
 {
 	ssize_t out = 0;
 	u32 out_val = 0;
@@ -26,7 +26,7 @@ ssize_t tlkm_control_fops_read(struct file *fp, char __user *usr, size_t sz, lof
 			out_val = pctl->out_slots[pctl->out_r_idx];
 			pctl->out_r_idx = (pctl->out_r_idx + 1) % TLKM_CONTROL_BUFFER_SZ;
 			--pctl->outstanding;
-			tlkm_perfc_control_read_inc(pctl->dev_id);
+			tlkm_perfc_signals_read_inc(pctl->dev_id);
 		}
 		mutex_unlock(&pctl->out_mutex);
 		if (! out) {
@@ -43,7 +43,7 @@ ssize_t tlkm_control_fops_read(struct file *fp, char __user *usr, size_t sz, lof
 	return sizeof(out_val);
 }
 
-ssize_t tlkm_control_fops_write(struct file *fp, const char __user *usr, size_t sz, loff_t *off)
+ssize_t tlkm_device_write(struct file *fp, const char __user *usr, size_t sz, loff_t *off)
 {
 	u32 in_val = 0;
 	ssize_t in;
@@ -53,7 +53,7 @@ ssize_t tlkm_control_fops_write(struct file *fp, const char __user *usr, size_t 
 		return -EFAULT;
 	}
 	in = copy_from_user(&in_val, usr, sizeof(in_val));
-	tlkm_perfc_control_written_inc(pctl->dev_id);
+	tlkm_perfc_signals_written_inc(pctl->dev_id);
 	DEVLOG(pctl->dev_id, TLKM_LF_CONTROL, "received job %u as write", in_val);
 	if (in) return -EFAULT;
 	return tlkm_control_signal_slot_interrupt(pctl, in_val);
