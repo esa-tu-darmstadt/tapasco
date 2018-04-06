@@ -38,7 +38,7 @@ HOSTLOADLIBES=$HOSTLDFLAGS
 
 print_usage () {
 	cat << EOF
-Usage: ${0##*/} BOARD VERSION [DEVICE] [DISK SIZE]
+Usage: ${0##*/} BOARD VERSION [DISK SIZE] [DEVICE]
 Build a boot image for the given BOARD and VERSION (git tag). If DEVICE is
 given, repartition the device as a bootable SD card (WARNING: all data will
 be lost).
