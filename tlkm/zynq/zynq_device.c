@@ -32,7 +32,7 @@ static int init_iomapping(void)
 	_zynq_dev.tapasco_status = ioremap_nocache(ZYNQ_PLATFORM_STATUS_BASE, ZYNQ_PLATFORM_STATUS_SIZE);
 	if (IS_ERR(_zynq_dev.tapasco_status)) {
 		ERR("could not ioremap the AXI register space at 0x%08llx-0x%08llx",
-				(u64)(ZYNQ_PLATFORM_STATUS_BASE),
+				(u64)ZYNQ_PLATFORM_STATUS_BASE,
 				(u64)(ZYNQ_PLATFORM_STATUS_BASE + ZYNQ_PLATFORM_STATUS_SIZE));
 		retval = PTR_ERR(_zynq_dev.tapasco_status);
 		goto err_tapasco_status;
