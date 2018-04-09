@@ -7,7 +7,7 @@ endif (NOT EXISTS "$ENV{TAPASCO_HOME}")
 
 include ("$ENV{TAPASCO_HOME}/cmake/Tapasco.cmake")
 
-add_definitions("-DNPERFC")
+# add_definitions("-DNPERFC")
 set(CMAKE_INSTALL_PREFIX "${TAPASCO_HOME}")
 
 set(SRCDIR "src")
@@ -25,9 +25,6 @@ set(CMNSRCS "${CMNDIR}/src/platform_addr_map.c"
             "${CMNDIR}/src/platform_version.c"
             "${GCMNDIR}/src/gen_queue.c")
 set(ZYNQSRCS "zynq/src/platform_zynq.c")
-
-set(TAPASCO_CFLAGS "-Wall -Werror -std=gnu11 -g")
-set(TAPASCO_LDFLAGS "-flto -fno-rtti -static")
 
 link_directories(${TAPASCO_STATICLINKDIRS})
 include_directories(

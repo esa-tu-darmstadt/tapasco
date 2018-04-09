@@ -32,7 +32,6 @@
 #include <tapasco_jobs.h>
 #include <tapasco_delayed_transfers.h>
 #include <platform.h>
-#include <platform_context.h>
 
 /** State of PEs, e.g., busy or idle. */
 typedef enum {
@@ -74,29 +73,23 @@ struct tapasco_pemgmt {
 };
 
 static
-void setup_pes_from_status(platform_ctx_t *ctx, tapasco_pemgmt_t *p)
+void setup_pes_from_status(platform_devctx_t *ctx, tapasco_pemgmt_t *p)
 {
-	platform_info_t info;
-	platform_res_t r = platform_info(ctx, &info);
-	if (r != PLATFORM_SUCCESS) {
-		ERR("could not get platform info: %s (%d)",
-				platform_strerror(r), r);
-		return;
-	}
+	assert(ctx->info.magic_id == TAPASCO_MAGIC_ID);
 	for (int i = 0; i < TAPASCO_NUM_SLOTS; ++i) {
-		platform_kernel_id_t const k_id = info.composition.kernel[i];
+		platform_kernel_id_t const k_id = ctx->info.composition.kernel[i];
 		p->pe[i] = k_id ? tapasco_pemgmt_create(k_id, i) : NULL;
 	}
 }
 
-tapasco_res_t tapasco_pemgmt_init(const tapasco_dev_ctx_t *dev_ctx,
-		tapasco_pemgmt_t **pemgmt)
+tapasco_res_t tapasco_pemgmt_init(const tapasco_devctx_t *devctx, tapasco_pemgmt_t **pemgmt)
 {
 	tapasco_res_t res = TAPASCO_SUCCESS;
+	assert(devctx->pdctx);
 	*pemgmt = (tapasco_pemgmt_t *)malloc(sizeof(tapasco_pemgmt_t));
 	if (! pemgmt) return TAPASCO_ERR_OUT_OF_MEMORY;
 	memset(*pemgmt, 0, sizeof(**pemgmt));
-	setup_pes_from_status(tapasco_device_platform(dev_ctx), *pemgmt);
+	setup_pes_from_status(devctx->pdctx, *pemgmt);
 	return res;
 }
 
@@ -107,22 +100,21 @@ void tapasco_pemgmt_deinit(tapasco_pemgmt_t *pemgmt)
 	free(pemgmt);
 }
 
-void tapasco_pemgmt_setup_system(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_pemgmt_t *ctx)
+void tapasco_pemgmt_setup_system(tapasco_devctx_t *devctx, tapasco_pemgmt_t *ctx)
 {
 	assert (ctx);
 	uint32_t d = 1;
 	tapasco_slot_id_t slot_id = 0;
-	platform_ctx_t *pctx = tapasco_device_platform(dev_ctx);
+	platform_devctx_t *pctx = devctx->pdctx;
 	tapasco_pe_t **pemgmt = ctx->pe;
 	while (slot_id < TAPASCO_NUM_SLOTS) {
 		if (*pemgmt) {
 			tapasco_handle_t const ier = tapasco_regs_named_register(
-				dev_ctx, slot_id, TAPASCO_REG_IER);
+				devctx, slot_id, TAPASCO_REG_IER);
 			tapasco_handle_t const gier = tapasco_regs_named_register(
-				dev_ctx, slot_id, TAPASCO_REG_GIER);
+				devctx, slot_id, TAPASCO_REG_GIER);
 			tapasco_handle_t const iar = tapasco_regs_named_register(
-				dev_ctx, slot_id, TAPASCO_REG_IAR);
+				devctx, slot_id, TAPASCO_REG_IAR);
 			// enable IP interrupts
 			LOG(LALL_PEMGMT, "writing GIER at 0x%08lx",
 					(unsigned long)gier);
@@ -174,7 +166,6 @@ tapasco_slot_id_t tapasco_pemgmt_acquire(tapasco_pemgmt_t *ctx,
 inline
 void tapasco_pemgmt_release(tapasco_pemgmt_t *ctx, tapasco_slot_id_t const s_id)
 {
-	assert(ctx);
 	assert(ctx->pe[s_id]);
 	LOG(LALL_PEMGMT, "slotid = %d", s_id);
 	ctx->pe[s_id]->state = TAPASCO_PE_STATE_IDLE;
@@ -190,21 +181,19 @@ size_t tapasco_pemgmt_count(tapasco_pemgmt_t const *ctx,
 	return ret;
 }
 
-size_t tapasco_device_kernel_pe_count(tapasco_dev_ctx_t *dev_ctx,
+size_t tapasco_device_kernel_pe_count(tapasco_devctx_t *devctx,
 		tapasco_kernel_id_t const k_id)
 {
-	return tapasco_pemgmt_count(tapasco_device_pemgmt(dev_ctx), k_id);
+	return tapasco_pemgmt_count(devctx->pemgmt, k_id);
 
 }
 
-tapasco_res_t tapasco_pemgmt_start(tapasco_dev_ctx_t *dev_ctx,
-		tapasco_slot_id_t const slot_id)
+tapasco_res_t tapasco_pemgmt_start(tapasco_devctx_t *devctx, tapasco_slot_id_t const slot_id)
 {
 	uint32_t const start_cmd = 1;
-	platform_ctx_t *pctx = tapasco_device_platform(dev_ctx);
-	tapasco_handle_t ctl = tapasco_regs_named_register(dev_ctx, slot_id, TAPASCO_REG_CTRL);
+	tapasco_handle_t ctl = tapasco_regs_named_register(devctx, slot_id, TAPASCO_REG_CTRL);
 
-	if (platform_write_ctl(pctx,
+	if (platform_write_ctl(devctx->pdctx,
 			ctl,
 			sizeof(start_cmd),
 			&start_cmd,
@@ -214,51 +203,47 @@ tapasco_res_t tapasco_pemgmt_start(tapasco_dev_ctx_t *dev_ctx,
 	return TAPASCO_SUCCESS;
 }
 
-tapasco_res_t tapasco_pemgmt_prepare_slot(tapasco_dev_ctx_t *dev_ctx,
+tapasco_res_t tapasco_pemgmt_prepare_slot(tapasco_devctx_t *devctx,
 		tapasco_job_id_t const j_id,
 		tapasco_slot_id_t const slot_id)
 {
-	tapasco_jobs_t *jobs     = tapasco_device_jobs(dev_ctx);
-	platform_ctx_t *pctx = tapasco_device_platform(dev_ctx);
-	size_t const num_args    = tapasco_jobs_arg_count(jobs, j_id);
-
+	assert(devctx->jobs);
+	size_t const num_args   = tapasco_jobs_arg_count(devctx->jobs, j_id);
 	for (size_t a = 0; a < num_args; ++a) {
 		tapasco_res_t r       = TAPASCO_SUCCESS;
-		tapasco_handle_t h    = tapasco_regs_arg_register(dev_ctx, slot_id, a);
-		tapasco_transfer_t *t = tapasco_jobs_get_arg_transfer(jobs, j_id, a);
+		tapasco_handle_t h    = tapasco_regs_arg_register(devctx, slot_id, a);
+		tapasco_transfer_t *t = tapasco_jobs_get_arg_transfer(devctx->jobs, j_id, a);
 
 		if (t->len > 0) {
 			LOG(LALL_PEMGMT, "job %lu: transferring %zd byte arg #%zd",
 					(unsigned long)j_id, t->len, a);
-			r = tapasco_transfer_to(dev_ctx, j_id, t, slot_id);
+			r = tapasco_transfer_to(devctx, j_id, t, slot_id);
 			if (r != TAPASCO_SUCCESS) { return r; }
 			LOG(LALL_PEMGMT, "job %lu: writing handle to arg #%zd (0x%08x)",
 					(unsigned long)j_id, a, t->handle);
-			if (platform_write_ctl(pctx, h, sizeof(t->handle),
+			if (platform_write_ctl(devctx->pdctx, h, sizeof(t->handle),
 					&t->handle, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS)
 				return TAPASCO_ERR_PLATFORM_FAILURE;
 		} else {
-			tapasco_res_t r = tapasco_write_arg(dev_ctx, jobs, j_id, h, a);
+			tapasco_res_t r = tapasco_write_arg(devctx, devctx->jobs, j_id, h, a);
 			if (r != TAPASCO_SUCCESS) { return r; }
 		}
 	}
 	return TAPASCO_SUCCESS;
 }
 
-tapasco_res_t tapasco_pemgmt_finish_job(tapasco_dev_ctx_t *dev_ctx,
+tapasco_res_t tapasco_pemgmt_finish_job(tapasco_devctx_t *devctx,
 		tapasco_job_id_t const j_id)
 {
 	uint32_t ack_cmd = 1;
 	uint64_t ret = 0;
-	tapasco_jobs_t *jobs = tapasco_device_jobs(dev_ctx);
-	platform_ctx_t *pctx = tapasco_device_platform(dev_ctx);
-	tapasco_pemgmt_t *pemgmt = tapasco_device_pemgmt(dev_ctx);
-	tapasco_slot_id_t const slot_id = tapasco_jobs_get_slot(jobs, j_id);
-	tapasco_handle_t const iar = tapasco_regs_named_register(dev_ctx, slot_id, TAPASCO_REG_IAR);
-	tapasco_handle_t const rh = tapasco_regs_named_register(dev_ctx, slot_id, TAPASCO_REG_RET);
-	size_t const num_args = tapasco_jobs_arg_count(jobs, j_id);
+	tapasco_pemgmt_t *pemgmt = devctx->pemgmt;
+	tapasco_slot_id_t const slot_id = tapasco_jobs_get_slot(devctx->jobs, j_id);
+	tapasco_handle_t const iar = tapasco_regs_named_register(devctx, slot_id, TAPASCO_REG_IAR);
+	tapasco_handle_t const rh = tapasco_regs_named_register(devctx, slot_id, TAPASCO_REG_RET);
+	size_t const num_args = tapasco_jobs_arg_count(devctx->jobs, j_id);
 
-	platform_res_t pr = platform_write_ctl(pctx, iar, sizeof(ack_cmd), &ack_cmd,
+	platform_res_t pr = platform_write_ctl(devctx->pdctx, iar, sizeof(ack_cmd), &ack_cmd,
 			PLATFORM_CTL_FLAGS_NONE);
 
 	// ack the interrupt
@@ -268,7 +253,7 @@ tapasco_res_t tapasco_pemgmt_finish_job(tapasco_dev_ctx_t *dev_ctx,
 		return TAPASCO_ERR_PLATFORM_FAILURE;
 	}
 
-	pr = platform_read_ctl(pctx, rh, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_NONE);
+	pr = platform_read_ctl(devctx->pdctx, rh, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_NONE);
 
 	if (pr != PLATFORM_SUCCESS) {
 		ERR("job #%lu, slot #%lu: could not read return value: %s (%d)",
@@ -276,24 +261,24 @@ tapasco_res_t tapasco_pemgmt_finish_job(tapasco_dev_ctx_t *dev_ctx,
 		return TAPASCO_ERR_PLATFORM_FAILURE;
 	}
 
-	tapasco_jobs_set_return(jobs, j_id, sizeof(ret), &ret);
+	tapasco_jobs_set_return(devctx->jobs, j_id, sizeof(ret), &ret);
 	LOG(LALL_SCHEDULER, "job %lu: read result value 0x%08lx", (ul)j_id, (ul)ret);
 
 	// Read back values from all argument registers
 	for (size_t a = 0; a < num_args; ++a) {
 		tapasco_res_t r       = TAPASCO_SUCCESS;
-		tapasco_handle_t h    = tapasco_regs_arg_register(dev_ctx, slot_id, a);
-		tapasco_transfer_t *t = tapasco_jobs_get_arg_transfer(jobs, j_id, a);
+		tapasco_handle_t h    = tapasco_regs_arg_register(devctx, slot_id, a);
+		tapasco_transfer_t *t = tapasco_jobs_get_arg_transfer(devctx->jobs, j_id, a);
 
-		r = tapasco_read_arg(dev_ctx, jobs, j_id, h, a);
+		r = tapasco_read_arg(devctx, devctx->jobs, j_id, h, a);
 		if (r != TAPASCO_SUCCESS) { return r; }
 		if (t->len > 0) {
-			r = tapasco_transfer_from(dev_ctx, jobs, j_id, t, slot_id);
+			r = tapasco_transfer_from(devctx, devctx->jobs, j_id, t, slot_id);
 			if (r != TAPASCO_SUCCESS) { return r; }
 		}
 	}
 
-	tapasco_jobs_set_state(jobs, j_id, TAPASCO_JOB_STATE_FINISHED);
+	tapasco_jobs_set_state(devctx->jobs, j_id, TAPASCO_JOB_STATE_FINISHED);
 	tapasco_pemgmt_release(pemgmt, slot_id);
 
 	return TAPASCO_SUCCESS;

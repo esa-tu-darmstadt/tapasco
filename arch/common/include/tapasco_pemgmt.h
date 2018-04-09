@@ -36,7 +36,7 @@ typedef struct tapasco_pemgmt tapasco_pemgmt_t;
  * @param pes pointer to internal functions struct pointer.
  * @return TAPASCO_SUCCESS if successful.
  **/
-tapasco_res_t tapasco_pemgmt_init(const tapasco_dev_ctx_t *dev_ctx,
+tapasco_res_t tapasco_pemgmt_init(const tapasco_devctx_t *dev_ctx,
 		tapasco_pemgmt_t **pes);
 
 /**
@@ -51,7 +51,7 @@ void tapasco_pemgmt_deinit(tapasco_pemgmt_t *pes);
  * @param dev_ctx device context.
  * @param ctx functions context.
  **/
-void tapasco_pemgmt_setup_system(tapasco_dev_ctx_t *dev_ctx,
+void tapasco_pemgmt_setup_system(tapasco_devctx_t *dev_ctx,
 		tapasco_pemgmt_t *ctx);
 
 /**
@@ -89,7 +89,7 @@ size_t tapasco_pemgmt_count(tapasco_pemgmt_t const *ctx,
  * @param slot_id id of the slot.
  * @return TAPASCO_SUCCESS if successful, an error code otherwise.
  **/
-tapasco_res_t tapasco_pemgmt_prepare_slot(tapasco_dev_ctx_t *dev_ctx,
+tapasco_res_t tapasco_pemgmt_prepare_slot(tapasco_devctx_t *dev_ctx,
 		tapasco_job_id_t const j_id,
 		tapasco_slot_id_t const slot_id);
 
@@ -98,7 +98,7 @@ tapasco_res_t tapasco_pemgmt_prepare_slot(tapasco_dev_ctx_t *dev_ctx,
  * @param slot_id id of the slot to start.
  * @return TAPASCO_SUCCESS if successful, an error code otherwise.
  **/
-tapasco_res_t tapasco_pemgmt_start(tapasco_dev_ctx_t *dev_ctx,
+tapasco_res_t tapasco_pemgmt_start(tapasco_devctx_t *dev_ctx,
 		tapasco_slot_id_t const slot_id);
 
 /**
@@ -109,7 +109,7 @@ tapasco_res_t tapasco_pemgmt_start(tapasco_dev_ctx_t *dev_ctx,
  * @param j_id job id.
  * @return TAPASCO_SUCCESS if successful, an error code otherwise.
  **/
-tapasco_res_t tapasco_pemgmt_finish_job(tapasco_dev_ctx_t *dev_ctx,
+tapasco_res_t tapasco_pemgmt_finish_job(tapasco_devctx_t *dev_ctx,
 		tapasco_job_id_t const j_id);
 
 #endif /* TAPASCO_PEMGMT_H__ */

@@ -27,8 +27,6 @@
 #include <tapasco_regs.h>
 #include <tapasco_device.h>
 #include <platform.h>
-#include <platform_context.h>
-#include <platform_addr_map.h>
 
 #define FIRST_ARG_OFFSET 					0x20
 #define ARG_OFFSET						0x10
@@ -37,37 +35,21 @@
 #define IAR_OFFSET						0x0c
 #define RET_OFFSET						0x10
 
-static tapasco_handle_t _bases[TAPASCO_NUM_SLOTS] = { 0 };
- 
-
-static inline tapasco_handle_t base_addr(tapasco_dev_ctx_t const *dev_ctx,
-		tapasco_slot_id_t const slot_id)
-{
-	assert(slot_id < TAPASCO_NUM_SLOTS);
-	platform_ctx_t *pctx = tapasco_device_platform(dev_ctx);
-	platform_addr_map_t *am = platform_context_addr_map(pctx);
-	if (! _bases[slot_id]) {
-		platform_addr_map_get_slot_base(am, slot_id, &_bases[slot_id]);
-	}
-	return _bases[slot_id];
-}
-
 tapasco_handle_t tapasco_regs_arg_register(
-		tapasco_dev_ctx_t const *dev_ctx,
+		tapasco_devctx_t const *devctx,
 		tapasco_slot_id_t const slot_id,
 		size_t const arg_idx)
 {
-	tapasco_handle_t base = base_addr(dev_ctx, slot_id);
-	return base
+	return devctx->info.base.arch[slot_id]
 	     + FIRST_ARG_OFFSET
 	     + arg_idx * ARG_OFFSET;
 }
 
-tapasco_handle_t tapasco_regs_named_register(tapasco_dev_ctx_t const *dev_ctx,
+tapasco_handle_t tapasco_regs_named_register(tapasco_devctx_t const *devctx,
 		tapasco_slot_id_t const slot_id,
 		tapasco_reg_t const reg)
 {
-	tapasco_handle_t const base = base_addr(dev_ctx, slot_id);
+	tapasco_handle_t const base = devctx->info.base.arch[slot_id];
 	switch (reg) {
 	case TAPASCO_REG_CTRL:
 		return base;

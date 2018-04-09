@@ -24,7 +24,8 @@ using namespace tapasco;
 
 class TapascoDebugMenu : public MenuScreen {
 public:
-  TapascoDebugMenu() : MenuScreen("Welcome to the interactive TaPaSCo Debugger", vector<string>()) {
+  TapascoDebugMenu() : MenuScreen("Welcome to the interactive TaPaSCo Debugger", vector<string>()),
+      tapasco(true, TAPASCO_MONITOR_ACCESS) {
     bool blue = has_blue_dma();
     options.push_back("Show kernel map of current bitstream");
     screens.push_back(new TapascoStatusScreen(&tapasco));
@@ -70,12 +71,14 @@ protected:
   }
 
   bool has_blue_dma() {
-    platform_info_t info;
-    tapasco.info(&info);
-    uint32_t v;
+    tapasco_devctx_t *d  = tapasco.device();
+    platform_devctx_t *p = tapasco.platform_device();
+    assert(d->info.magic_id == TAPASCO_MAGIC_ID);
+
     for (int c = PLATFORM_COMPONENT_DMA0; c <= PLATFORM_COMPONENT_DMA3; ++c) {
-      if (info.base.platform[c]) {
-        platform_read_ctl(tapasco.platform(), info.base.platform[c] + DMA_ID_REG, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE);
+      if (d->info.base.platform[c]) {
+      	uint32_t v = 0;
+        platform_read_ctl(p, d->info.base.platform[c] + DMA_ID_REG, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE);
 	if (v == BLUE_DMA_ID) return true;
       }
     }

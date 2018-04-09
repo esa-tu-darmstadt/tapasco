@@ -29,13 +29,29 @@
 #include <tapasco_jobs.h>
 #include <platform_types.h>
 
-tapasco_ctx_t       *tapasco_device_context(tapasco_dev_ctx_t const *dev_ctx);
-tapasco_pemgmt_t    *tapasco_device_pemgmt(tapasco_dev_ctx_t const *dev_ctx);
-tapasco_local_mem_t *tapasco_device_local_mem(tapasco_dev_ctx_t const  *dev_ctx);
-tapasco_jobs_t	    *tapasco_device_jobs(tapasco_dev_ctx_t const *dev_ctx);
-platform_ctx_t      *tapasco_device_platform(tapasco_dev_ctx_t const *dev_ctx);
+struct tapasco_devctx {
+	tapasco_dev_id_t 		id;
+	platform_info_t			info;
+	tapasco_pemgmt_t 		*pemgmt;
+	tapasco_jobs_t 			*jobs;
+	tapasco_local_mem_t 		*lmem;
+	platform_ctx_t			*pctx;
+	platform_devctx_t 		*pdctx;
+	void				*private_data;
+};
 
-tapasco_res_t tapasco_device_info(tapasco_dev_ctx_t const *dev_ctx,
-		platform_info_t *info);
+tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx,
+		tapasco_dev_id_t const dev_id,
+		tapasco_devctx_t **pdev_ctx,
+		tapasco_device_create_flag_t const flags);
+void tapasco_destroy_device(tapasco_ctx_t *ctx, tapasco_devctx_t *dev_ctx);
+
+static inline
+uint32_t tapasco_device_func_instance_count(tapasco_devctx_t *dev_ctx,
+		tapasco_kernel_id_t const k_id)
+{
+	assert(dev_ctx);
+	return tapasco_pemgmt_count(dev_ctx->pemgmt, k_id);
+}	
 
 #endif /* TAPASCO_DEVICE_H__ */

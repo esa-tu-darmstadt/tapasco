@@ -31,6 +31,9 @@
 #include <cassert>
 #endif
 #else /* !USE_ASSERTIONS */
+#ifdef assert
+	#undef assert
+#endif
 #define assert(...)
 #endif
 

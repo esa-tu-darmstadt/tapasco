@@ -62,16 +62,16 @@ protected:
     for (int i = 0; i < 128; ++i) {
       if (! avail[i]) continue;
       platform_ctl_addr_t base;
-      platform_address_get_slot_base(tapasco->platform(), i, &base);
-      if (platform_read_ctl(tapasco->platform(), base + 0x20, 4, &cycles[i],
+      platform_address_get_slot_base(tapasco->platform_device(), i, &base);
+      if (platform_read_ctl(tapasco->platform_device(), base + 0x20, 4, &cycles[i],
           PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	cycles[i] = 0xDEADBEEF;
       }
-      if (platform_read_ctl(tapasco->platform(), base + 0x10, 4, &retval[i],
+      if (platform_read_ctl(tapasco->platform_device(), base + 0x10, 4, &retval[i],
           PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	retval[i] = 0xDEADBEEF;
       }
-      if (platform_read_ctl(tapasco->platform(), base + 0x0c, 4, &intrdy[i],
+      if (platform_read_ctl(tapasco->platform_device(), base + 0x0c, 4, &intrdy[i],
           PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	intrdy[i] = 0xDEADBEEF;
       }

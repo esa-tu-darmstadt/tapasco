@@ -67,27 +67,27 @@ protected:
 
   virtual void update() {
     for (uint32_t intc = 0; intc < intc_addr.size(); ++intc) {
-      if (platform_read_ctl(tapasco.platform(), intc_addr[intc], sizeof(intc_isr[intc]),
+      if (platform_read_ctl(tapasco.platform_device(), intc_addr[intc], sizeof(intc_isr[intc]),
           &intc_isr[intc], PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	intc_isr[intc] = 0xDEADBEEF;
       }
     }
     for (slot_t *sp : slots) {
-      if (platform_read_ctl(tapasco.platform(), sp->base_addr + 0x0c, 4, &sp->isr,
+      if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x0c, 4, &sp->isr,
           PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	sp->isr = 0xDEADBEEF;
       }
-      if (platform_read_ctl(tapasco.platform(), sp->base_addr + 0x10, 4, &sp->retval[0],
+      if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x10, 4, &sp->retval[0],
           PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	sp->retval[0] = 0xDEADBEEF;
       }
-      if (platform_read_ctl(tapasco.platform(), sp->base_addr + 0x14, 4, &sp->retval[1],
+      if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x14, 4, &sp->retval[1],
           PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 	sp->retval[1] = 0xDEADBEEF;
       }
       for (int i = 0; i < NUM_ARGS; ++i) {
         for (int j = 0; j < 2; ++j) {
-          if (platform_read_ctl(tapasco.platform(), sp->base_addr + 0x20 + 0x10 * i + 0x04 * j, 4,
+          if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x20 + 0x10 * i + 0x04 * j, 4,
 	      &sp->argval[i * 2 + j], PLATFORM_CTL_FLAGS_NONE) !=
 	      PLATFORM_SUCCESS) {
 	    sp->argval[i * 2 + j] = 0xDEADBEEF;
@@ -160,7 +160,7 @@ private:
       c = getch();
       chr = static_cast<char>(c);
       if (chr == 'y') {
-        platform_read_ctl(tapasco.platform(), addr, sizeof(val), &val, PLATFORM_CTL_FLAGS_NONE);
+        platform_read_ctl(tapasco.platform_device(), addr, sizeof(val), &val, PLATFORM_CTL_FLAGS_NONE);
         mvprintw(rows / 2 + 1, (cols - 25) / 2 + 10, "0x%08x", val);
         mvprintw(rows / 2 + 2, (cols - 25) / 2, "                 ");
       }
@@ -201,7 +201,7 @@ private:
       c = getch();
       char chr = static_cast<char>(c);
       if (chr == 'y')
-        platform_write_ctl(tapasco.platform(), addr, sizeof(val), &val, PLATFORM_CTL_FLAGS_NONE);
+        platform_write_ctl(tapasco.platform_device(), addr, sizeof(val), &val, PLATFORM_CTL_FLAGS_NONE);
     } while (c == ERR);
     clear();
     return ERR;
@@ -246,7 +246,7 @@ private:
       /*char chr = static_cast<char>(c);
       // FIXME reimplement with PAPI 1.5?
       if (chr == 'y')
-        platform_write_ctl_and_wait(tapasco.platform(), addr, sizeof(val), &val, job, PLATFORM_CTL_FLAGS_NONE);*/
+        platform_write_ctl_and_wait(tapasco.platform_device(), addr, sizeof(val), &val, job, PLATFORM_CTL_FLAGS_NONE);*/
     } while (c == ERR);
     clear();
     return ERR;
@@ -255,8 +255,8 @@ private:
   int check_bitstream() {
     uint32_t cnt { 0 };
     platform_ctl_addr_t status;
-    platform_address_get_component_base(tapasco.platform(), PLATFORM_COMPONENT_STATUS, &status);
-    if (platform_read_ctl(tapasco.platform(), status + 0x04, sizeof(cnt), &cnt, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
+    platform_address_get_component_base(tapasco.platform_device(), PLATFORM_COMPONENT_STATUS, &status);
+    if (platform_read_ctl(tapasco.platform_device(), status + 0x04, sizeof(cnt), &cnt, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
       return -1;
     }
     while (cnt > 0) {
@@ -269,20 +269,20 @@ private:
       case 1: isr_addr = PLATFORM_COMPONENT_INTC0; break;
       default: return cnt * -10;
       }
-      platform_address_get_component_base(tapasco.platform(), isr_addr, &intc);
+      platform_address_get_component_base(tapasco.platform_device(), isr_addr, &intc);
       cerr << intc << endl;
       intc_addr.push_back(intc);
       --cnt;
     }
     for (int s = 0; s < 128; ++s) {
       uint32_t id { 0 };
-      if (platform_read_ctl(tapasco.platform(), status + 0x100 + s * 0x10, 4, &id,
+      if (platform_read_ctl(tapasco.platform_device(), status + 0x100 + s * 0x10, 4, &id,
           PLATFORM_CTL_FLAGS_NONE) == PLATFORM_SUCCESS)
 	if (id) {
 	  struct slot_t *sp = new struct slot_t;
 	  sp->slot_id = s;
 	  sp->id = id;
-	  platform_address_get_slot_base(tapasco.platform(), s, &sp->base_addr);
+	  sp->base_addr = tapasco.platform_device()->info.base.arch[s];
 	  slots.push_back(sp);
 	  ++cnt;
 	}

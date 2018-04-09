@@ -16,10 +16,10 @@ set_source_files_properties(${CXX_SOURCES} PROPERTIES COMPILE_FLAGS ${TAPASCO_CX
 set_source_files_properties(${CC_SOURCES} PROPERTIES COMPILE_FLAGS ${TAPASCO_CFLAGS})
 
 link_directories(${TAPASCO_STATICLINKDIRS})
-include_directories(${TAPASCO_INCDIRS} "common/include")
+include_directories(${TAPASCO_INCDIRS} "${TAPASCO_HOME}/arch/common/include")
 
 add_executable (tapasco-debug tapasco_debug.cpp ${TAPASCO_COMMON_DIR}/src/gen_queue.c)
-target_link_libraries (tapasco-debug tapasco platform pthread atomic ncurses)
+target_link_libraries (tapasco-debug m tapasco platform pthread atomic ncurses)
 set_target_properties (tapasco-debug PROPERTIES LINK_FLAGS ${TAPASCO_LDFLAGS})
 
 add_executable (tapasco-benchmark tapasco_benchmark.cpp json11.cpp)

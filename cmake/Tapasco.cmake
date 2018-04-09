@@ -63,9 +63,9 @@ set (TAPASCO_LINKDIRS
 )
 
 # default C flags
-set (TAPASCO_CFLAGS   "-Wall -Werror -g -std=gnu11")
+set (TAPASCO_CFLAGS   "-Wall -Werror -g -std=gnu11 -fPIC")
 # default C++ flags
-set (TAPASCO_CXXFLAGS "-Wall -Werror -g -std=c++11 -Wno-write-strings -fno-rtti")
+set (TAPASCO_CXXFLAGS "-Wall -Werror -g -std=c++11 -fPIC -Wno-write-strings -fno-rtti")
 # default linker flags (activates link-time optimizations)
 set (TAPASCO_LDFLAGS  "-flto -static-libstdc++ -static-libgcc")
 

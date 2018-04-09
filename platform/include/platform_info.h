@@ -23,6 +23,8 @@
 #include <platform_global.h>
 #include <platform_types.h>
 
+#define	TAPASCO_MAGIC_ID			0xe5ae1337
+
 typedef struct platform_info {
 	uint32_t magic_id;
 	uint32_t num_intc;

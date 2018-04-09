@@ -6,13 +6,14 @@ if (NOT EXISTS "$ENV{TAPASCO_HOME}")
 endif (NOT EXISTS "$ENV{TAPASCO_HOME}")
 
 include ("$ENV{TAPASCO_HOME}/cmake/Tapasco.cmake")
-set(CMAKE_INSTALL_PREFIX "${TAPASCO_HOME}/lib")
-set(SRCDIR "src")
-set(CMNDIR "../common/src")
 
-set(AXI4MM_SOURCES "${SRCDIR}/tapasco_device.c"
-                   "${SRCDIR}/tapasco_regs.c")
-set(COMMON_SOURCES "${CMNDIR}/tapasco_delayed_transfers.c"
+set(CMAKE_INSTALL_PREFIX "${TAPASCO_HOME}")
+set(SRCDIR "axi4mm/src")
+set(CMNDIR "common/src")
+
+set(AXI4MM_SOURCES "${SRCDIR}/tapasco_regs.c")
+set(COMMON_SOURCES "${CMNDIR}/tapasco_context.c"
+                   "${CMNDIR}/tapasco_delayed_transfers.c"
                    "${CMNDIR}/tapasco_device.c"
                    "${CMNDIR}/tapasco_errors.c"
                    "${CMNDIR}/tapasco_jobs.c"
@@ -26,7 +27,8 @@ set(COMMON_SOURCES "${CMNDIR}/tapasco_delayed_transfers.c"
                    "${TAPASCO_COMMON_DIR}/src/gen_queue.c")
 
 include_directories(${TAPASCO_INCDIRS})
-include_directories("include" "../common/include" "${PLATFORMDIR}/common/include" "${TAPASCO_COMMON_DIR}/src/include")
+include_directories("include" "common/include" "${TAPASCO_PLATFORM_DIR}/common/include")
+link_directories(${TAPASCO_STATICLINKDIRS})
 
 set_source_files_properties(${AXI4MM_SOURCES} ${COMMON_SOURCES} PROPERTIES COMPILE_FLAGS ${TAPASCO_CFLAGS})
 add_library(tapasco SHARED ${AXI4MM_SOURCES} ${COMMON_SOURCES})

@@ -88,7 +88,7 @@ protected:
   }
 
   virtual void update() {
-    tapasco_local_mem_t *lm = tapasco_device_local_mem(tapasco.device());
+    tapasco_local_mem_t *lm = tapasco.device()->lmem;
     for (auto& m : mem) {
       m->free = tapasco_local_mem_get_free(lm, m->slot);
     }

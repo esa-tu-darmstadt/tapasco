@@ -1,7 +1,7 @@
 //
 // Copyright (C) 2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TAPASCO).
+// This file is part of Tapasco (TaPaSCo).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -27,21 +27,21 @@
 #include <tapasco_device.h>
 #include <platform.h>
 
-tapasco_res_t tapasco_transfer_to(tapasco_dev_ctx_t *dev_ctx,
+tapasco_res_t tapasco_transfer_to(tapasco_devctx_t *devctx,
 		tapasco_job_id_t const j_id,
 		tapasco_transfer_t *t,
 		tapasco_slot_id_t s_id)
 {
 	LOG(LALL_TRANSFERS, "job %lu: executing transfer to with length %zd bytes",
 			(unsigned long)j_id, (unsigned long)t->len);
-	tapasco_res_t res = tapasco_device_alloc(dev_ctx, &t->handle, t->len,
+	tapasco_res_t res = tapasco_device_alloc(devctx, &t->handle, t->len,
 			t->flags, s_id);
 	if (res != TAPASCO_SUCCESS) {
 		ERR("job %lu: memory allocation failed!", (unsigned long)j_id);
 		return res;
 	}
 	if (t->dir_flags & COPY_TO) {
-		res = tapasco_device_copy_to(dev_ctx, t->data, t->handle, t->len,
+		res = tapasco_device_copy_to(devctx, t->data, t->handle, t->len,
 				t->flags, s_id);
 		if (res != TAPASCO_SUCCESS) {
 			ERR("job %lu: transfer failed - %zd bytes -> 0x%08x with flags %lu",
@@ -53,7 +53,7 @@ tapasco_res_t tapasco_transfer_to(tapasco_dev_ctx_t *dev_ctx,
 	return res;
 }
 
-tapasco_res_t tapasco_transfer_from(tapasco_dev_ctx_t *dev_ctx,
+tapasco_res_t tapasco_transfer_from(tapasco_devctx_t *devctx,
 		tapasco_jobs_t *jobs,
 		tapasco_job_id_t const j_id,
 		tapasco_transfer_t *t,
@@ -63,7 +63,7 @@ tapasco_res_t tapasco_transfer_from(tapasco_dev_ctx_t *dev_ctx,
 			(unsigned long)j_id, (unsigned long)t->len);
 	tapasco_res_t res = TAPASCO_SUCCESS;
 	if (t->dir_flags & COPY_FROM) {
-		tapasco_res_t res = tapasco_device_copy_from(dev_ctx, t->handle,
+		tapasco_res_t res = tapasco_device_copy_from(devctx, t->handle,
 				t->data, t->len, t->flags, s_id);
 		if (res != TAPASCO_SUCCESS) {
 			ERR("job %lu: transfer failed - %zd bytes <- 0x%08x with flags %lu",
@@ -72,18 +72,18 @@ tapasco_res_t tapasco_transfer_from(tapasco_dev_ctx_t *dev_ctx,
 					(unsigned long)t->flags);
 		}
 	}
-	tapasco_device_free(dev_ctx, t->handle, t->flags, s_id, t->len);
+	tapasco_device_free(devctx, t->handle, t->flags, s_id, t->len);
 	return res;
 }
 
-tapasco_res_t tapasco_write_arg(tapasco_dev_ctx_t *dev_ctx,
+tapasco_res_t tapasco_write_arg(tapasco_devctx_t *devctx,
 		tapasco_jobs_t *jobs,
 		tapasco_job_id_t const j_id,
 		tapasco_handle_t const h,
 		size_t const a)
 {
 	int const is64 = tapasco_jobs_is_arg_64bit(jobs, j_id, a);
-	platform_ctx_t *pctx = tapasco_device_platform(dev_ctx);
+	platform_devctx_t *pctx = devctx->pdctx;
 	if (is64) {
 		uint64_t v = tapasco_jobs_get_arg64(jobs, j_id, a);
 		LOG(LALL_TRANSFERS, "job %lu: writing 64b arg #%u = 0x%08lx to 0x%08x",
@@ -102,14 +102,14 @@ tapasco_res_t tapasco_write_arg(tapasco_dev_ctx_t *dev_ctx,
 	return TAPASCO_SUCCESS;
 }
 
-tapasco_res_t tapasco_read_arg(tapasco_dev_ctx_t *dev_ctx,
+tapasco_res_t tapasco_read_arg(tapasco_devctx_t *devctx,
 		tapasco_jobs_t *jobs,
 		tapasco_job_id_t const j_id,
 		tapasco_handle_t const h,
 		size_t const a)
 {
 	int const is64 = tapasco_jobs_is_arg_64bit(jobs, j_id, a);
-	platform_ctx_t *pctx = tapasco_device_platform(dev_ctx);
+	platform_devctx_t *pctx = devctx->pdctx;
 	if (is64) {
 		uint64_t v = 0;
 		if (platform_read_ctl(pctx, h, sizeof(v), &v,

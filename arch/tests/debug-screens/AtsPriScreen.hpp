@@ -25,7 +25,7 @@ public:
         tapasco->has_capability(PLATFORM_CAP0_ATSCHECK) != TAPASCO_SUCCESS)
       throw "need both ATS/PRI and ATScheck capabilities!";
     // get ATScheck base address
-    platform_address_get_component_base(tapasco->platform(), PLATFORM_COMPONENT_ATSPRI, &atspri);
+    platform_address_get_component_base(tapasco->platform_device(), PLATFORM_COMPONENT_ATSPRI, &atspri);
     // intialize word manipulators
     for (int i = 0; i < ATS_REGC; ++i)
       _word[i].reset(new WordManipulator(0));
@@ -143,7 +143,7 @@ private:
     _word[_w]->tgl(_b);
     platform_ctl_addr_t h = atspri;
     auto v = _word[_w]->value();
-    if (platform_write_ctl(tapasco.platform(), h + _w * 0x4, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
+    if (platform_write_ctl(tapasco.platform_device(), h + _w * 0x4, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
       _word[_w + 8]->error_on();
     }
     return ERR;
@@ -152,7 +152,7 @@ private:
   int send() {
     uint32_t v { 1 };
     platform_ctl_addr_t h = atspri;
-    if (platform_write_ctl(tapasco.platform(), h + 0x4 * 17, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
+    if (platform_write_ctl(tapasco.platform_device(), h + 0x4 * 17, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
       return 0;
     }
     return ERR;
@@ -161,7 +161,7 @@ private:
   int request() {
     uint32_t v { 0 };
     platform_ctl_addr_t h = atspri;
-    if (platform_write_ctl(tapasco.platform(), h + 0x4 * 16, sizeof(v), &v,
+    if (platform_write_ctl(tapasco.platform_device(), h + 0x4 * 16, sizeof(v), &v,
           PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
       return 0;
     }
@@ -181,7 +181,7 @@ private:
       0x0,
     };
     for (int i = 0; i < ATS_REGC / 2; ++i) {
-      if (platform_write_ctl(tapasco.platform(), h + i * 0x4, sizeof(v[i]), &v[i],
+      if (platform_write_ctl(tapasco.platform_device(), h + i * 0x4, sizeof(v[i]), &v[i],
           PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
         throw "could not write register";
       }
@@ -191,7 +191,7 @@ private:
 
   void updateWord(WordManipulator& w, size_t reg_idx) {
     uint32_t d { 0 };
-    if (platform_read_ctl(tapasco.platform(), atspri + 0x4 * reg_idx, sizeof(d), &d,
+    if (platform_read_ctl(tapasco.platform_device(), atspri + 0x4 * reg_idx, sizeof(d), &d,
         PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
       w.error_on();
     } else {

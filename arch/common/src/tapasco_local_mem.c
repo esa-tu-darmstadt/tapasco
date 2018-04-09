@@ -28,7 +28,6 @@
 #include <tapasco_device.h>
 #include <gen_mem.h>
 #include <platform.h>
-#include <platform_context.h>
 #include <platform_info.h>
 #include <stdlib.h>
 
@@ -43,15 +42,19 @@ struct tapasco_local_mem {
 };
 
 static inline
-size_t get_slot_mem(tapasco_dev_ctx_t const *dev_ctx, tapasco_slot_id_t const slot_id)
+size_t get_slot_mem(tapasco_devctx_t *devctx, tapasco_slot_id_t const slot_id)
 {
-	platform_ctx_t *p = tapasco_device_platform(dev_ctx);
-	platform_info_t info;
-	platform_info(p, &info);
-	return info.composition.memory[slot_id];
+	if (devctx->info.magic_id != TAPASCO_MAGIC_ID) {
+		platform_res_t r = platform_info(devctx->pdctx, &devctx->info);
+		if (r != PLATFORM_SUCCESS) {
+			ERR("failed to get device info: %s (%d)", platform_strerror(r), r);
+			return TAPASCO_ERR_PLATFORM_FAILURE;
+		}
+	}
+	return devctx->info.composition.memory[slot_id];
 }
 
-tapasco_res_t tapasco_local_mem_init(tapasco_dev_ctx_t const *dev_ctx,
+tapasco_res_t tapasco_local_mem_init(tapasco_devctx_t *devctx,
 		tapasco_local_mem_t **lmem)
 {
 	LOG(LALL_MEM, "initialzing ...");
@@ -59,7 +62,7 @@ tapasco_res_t tapasco_local_mem_init(tapasco_dev_ctx_t const *dev_ctx,
 	if (! *lmem) return TAPASCO_ERR_OUT_OF_MEMORY;
 	addr_t base = 0;
 	for (size_t idx = 0; idx < PLATFORM_NUM_SLOTS; ++idx) {
-		size_t const sz = get_slot_mem(dev_ctx, idx);
+		size_t const sz = get_slot_mem(devctx, idx);
 		LOG(LALL_MEM, "memory size for slot_id #%zd: %zd bytes", idx, sz);
 		(*lmem)->lmem[idx] = sz > 0 ? gen_mem_create(base, sz) : NULL;
 		(*lmem)->as[idx].base = base;

@@ -1,29 +1,11 @@
-//
-// Copyright (C) 2015-2018 Jens Korinth, TU Darmstadt
-//
-// This file is part of Tapasco (TAPASCO).
-//
-// Tapasco is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Tapasco is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
-//
 //! @file 	tapasco.hpp
 //! @brief	C++ wrapper class for TAPASCO API: Simplifies calls to
 //!		FPGA and handling of device memory, jobs, etc.
 //! @authors 	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
-//! @version 	1.5
+//! @version 	1.6
 //! @copyright  Copyright 2015-2018 J. Korinth, TU Darmstadt
 //!
-//!		This file is part of Tapasco (TAPASCO).
+//!		This file is part of Tapasco (TaPaSCo).
 //!
 //!  		Tapasco is free software: you can redistribute it
 //!		and/or modify it under the terms of the GNU Lesser General
@@ -52,6 +34,7 @@
 
 extern "C" {
   #include <tapasco.h>
+  #include <tapasco_context.h>
   #include <tapasco_device.h>
   #include <platform.h>
 }
@@ -89,8 +72,10 @@ struct Tapasco {
    * @param initialize initializes TAPASCO during constructor (may throw exception!)
    * @param dev_id device id of this instance (default: 0)
    **/
-  Tapasco(bool const initialize = true, tapasco_dev_id_t const dev_id = 0) {
-    if (initialize) init(dev_id);
+  Tapasco(bool const initialize = true,
+  		tapasco_access_t const access = TAPASCO_EXCLUSIVE_ACCESS,
+  		tapasco_dev_id_t const dev_id = 0) {
+    if (initialize) init(access, dev_id);
   }
 
   /**
@@ -98,7 +83,7 @@ struct Tapasco {
    **/
   virtual ~Tapasco() {
     if (_ok) {
-      tapasco_destroy_device(ctx, dev_ctx);
+      tapasco_destroy_device(ctx, devctx);
       tapasco_deinit(ctx);
     }
   }
@@ -124,28 +109,37 @@ struct Tapasco {
    * @param  dev_id device id
    * @throws tapasco_error, if initialization failed
    **/
-  void init(tapasco_dev_id_t const dev_id)
+  void init(tapasco_access_t const access, tapasco_dev_id_t const dev_id)
   {
     tapasco_res_t r = tapasco_init(&ctx);
     if (r != TAPASCO_SUCCESS) {
       cerr << "ERROR: failed to initialize tapasco system: " << tapasco_strerror(r) << " (" << r << ")" << endl;
       throw tapasco_error(r);
     }
-    if ((r = tapasco_create_device(ctx, dev_id, &dev_ctx, TAPASCO_DEVICE_CREATE_FLAGS_NONE)) != TAPASCO_SUCCESS) {
-      cerr << "ERROR: failed to initialize tapasco device " << dev_id << ": " << tapasco_strerror(r) << " (" << r << ")" << endl;
+
+    tapasco_device_create_flag_t flags = TAPASCO_DEVICE_CREATE_EXCLUSIVE;
+    switch (access) {
+    case TAPASCO_SHARED_ACCESS:  flags = TAPASCO_DEVICE_CREATE_SHARED; break;
+    case TAPASCO_MONITOR_ACCESS: flags = TAPASCO_DEVICE_CREATE_MONITOR; break;
+    default: break;
+    }
+
+    if ((r = tapasco_create_device(ctx, dev_id, &devctx, flags)) != TAPASCO_SUCCESS) {
+      cerr << "ERROR: failed to initialize tapasco device " << dev_id << ": "
+           << tapasco_strerror(r) << " (" << r << ")" << endl;
       throw tapasco_error(r);
     }
-    p_ctx = tapasco_device_platform(dev_ctx);
     _ok = true;
   }
 
   tapasco_res_t info(platform_info_t *info) const {
-    return tapasco_device_info(dev_ctx, info);
+    return tapasco_device_info(devctx, info);
   }
 
-  tapasco_ctx_t *context()    const { return ctx; }
-  tapasco_dev_ctx_t *device() const { return dev_ctx; }
-  platform_ctx_t *platform()  const { return p_ctx; }
+  tapasco_ctx_t *context()             const { return ctx; }
+  tapasco_devctx_t *device()           const { return devctx; }
+  platform_ctx_t *platform()           const { return ctx->pctx; }
+  platform_devctx_t *platform_device() const { return devctx->pdctx; }
 
   /** Returns true, if initialization was successful and device is ready. **/
   bool is_ready() const noexcept { return _ok; }
@@ -162,16 +156,16 @@ struct Tapasco {
   {
     // get a job id
     tapasco_job_id_t j_id = 0;
-    tapasco_res_t res = tapasco_device_acquire_job_id(dev_ctx, &j_id, k_id, TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
+    tapasco_res_t res = tapasco_device_acquire_job_id(devctx, &j_id, k_id, TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
     if (res != TAPASCO_SUCCESS) return res;
 
     if ((res = set_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
-    if ((res = tapasco_device_job_launch(dev_ctx, j_id, TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING)) != TAPASCO_SUCCESS) return res;
-    if ((res = tapasco_device_job_get_return(dev_ctx, j_id, sizeof(ret), &ret)) != TAPASCO_SUCCESS) return res;
+    if ((res = tapasco_device_job_launch(devctx, j_id, TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING)) != TAPASCO_SUCCESS) return res;
+    if ((res = tapasco_device_job_get_return(devctx, j_id, sizeof(ret), &ret)) != TAPASCO_SUCCESS) return res;
     if ((res = get_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
 
     // release job id
-    tapasco_device_release_job_id(dev_ctx, j_id);
+    tapasco_device_release_job_id(devctx, j_id);
     return res;
   }
 
@@ -199,15 +193,15 @@ struct Tapasco {
   {
     // get a job id
     tapasco_job_id_t j_id = 0;
-    tapasco_res_t res = ::tapasco_device_acquire_job_id(dev_ctx, &j_id, k_id, TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
+    tapasco_res_t res = ::tapasco_device_acquire_job_id(devctx, &j_id, k_id, TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
     if (res != TAPASCO_SUCCESS) return res;
 
     if ((res = set_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
-    if ((res = tapasco_device_job_launch(dev_ctx, j_id, TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING)) != TAPASCO_SUCCESS) return res;
+    if ((res = tapasco_device_job_launch(devctx, j_id, TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING)) != TAPASCO_SUCCESS) return res;
     if ((res = get_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
 
     // release job id
-    tapasco_device_release_job_id(dev_ctx, j_id);
+    tapasco_device_release_job_id(devctx, j_id);
     return res;
   }
 
@@ -230,7 +224,7 @@ struct Tapasco {
    **/
   tapasco_res_t wait_for(tapasco_job_id_t const j_id) noexcept
   {
-    return tapasco_device_job_collect(dev_ctx, j_id);
+    return tapasco_device_job_collect(devctx, j_id);
   }
 
   /**
@@ -242,7 +236,7 @@ struct Tapasco {
    **/
   tapasco_res_t alloc(tapasco_handle_t &h, size_t const len, tapasco_device_alloc_flag_t const flags) const noexcept
   {
-    return tapasco_device_alloc(dev_ctx, &h, len, flags);
+    return tapasco_device_alloc(devctx, &h, len, flags);
   }
 
   /**
@@ -251,7 +245,7 @@ struct Tapasco {
    **/
   void free(tapasco_handle_t const handle, tapasco_device_alloc_flag_t const flags) const noexcept
   {
-    tapasco_device_free(dev_ctx, handle, flags);
+    tapasco_device_free(devctx, handle, flags);
   }
 
   /**
@@ -264,7 +258,7 @@ struct Tapasco {
    **/
   tapasco_res_t copy_to(void const *src, tapasco_handle_t dst, size_t len, tapasco_device_copy_flag_t const flags) const noexcept
   {
-    return tapasco_device_copy_to(dev_ctx, src, dst, len, flags);
+    return tapasco_device_copy_to(devctx, src, dst, len, flags);
   }
 
   /**
@@ -277,7 +271,7 @@ struct Tapasco {
    **/
   tapasco_res_t copy_from(tapasco_handle_t src, void *dst, size_t len, tapasco_device_copy_flag_t const flags) const noexcept
   {
-    return tapasco_device_copy_from(dev_ctx, src, dst, len, flags);
+    return tapasco_device_copy_from(devctx, src, dst, len, flags);
   }
 
   /**
@@ -288,7 +282,7 @@ struct Tapasco {
    **/
   size_t kernel_pe_count(tapasco_kernel_id_t const k_id) const noexcept
   {
-    return tapasco_device_kernel_pe_count(dev_ctx, k_id);
+    return tapasco_device_kernel_pe_count(devctx, k_id);
   }
 
   /**
@@ -298,7 +292,7 @@ struct Tapasco {
    **/
   tapasco_res_t has_capability(tapasco_device_capability_t cap) const noexcept
   {
-    return tapasco_device_has_capability(dev_ctx, cap);
+    return tapasco_device_has_capability(devctx, cap);
   }
 
 private:
@@ -310,7 +304,7 @@ private:
     if (sizeof(T) > sizeof(uint64_t))
       return set_args(j_id, arg_idx, &t);
     else
-      return tapasco_device_job_set_arg(dev_ctx, j_id, arg_idx, sizeof(t), &t);
+      return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(t), &t);
   }
 
   /** Sets a single output-only pointer argument (alloc only). **/
@@ -319,8 +313,8 @@ private:
   {
     tapasco_handle_t h { 0 };
     tapasco_res_t r;
-    if ((r = tapasco_device_alloc(dev_ctx, &h, sizeof(*t.value), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
-    return tapasco_device_job_set_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h);
+    if ((r = tapasco_device_alloc(devctx, &h, sizeof(*t.value), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
+    return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(h), &h);
   }
 
   /** Sets a single pointer argument (alloc + copy). **/
@@ -330,9 +324,9 @@ private:
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
     tapasco_handle_t h { 0 };
     tapasco_res_t r;
-    if ((r = tapasco_device_alloc(dev_ctx, &h, sizeof(*t), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
-    if ((r = tapasco_device_copy_to(dev_ctx, t, h, sizeof(*t), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
-    return tapasco_device_job_set_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h);
+    if ((r = tapasco_device_alloc(devctx, &h, sizeof(*t), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
+    if ((r = tapasco_device_copy_to(devctx, t, h, sizeof(*t), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
+    return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(h), &h);
   }
 
   /** Sets a single const pointer argument (alloc + copy). **/
@@ -342,9 +336,9 @@ private:
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
     tapasco_handle_t h { 0 };
     tapasco_res_t r;
-    if ((r = tapasco_device_alloc(dev_ctx, &h, sizeof(*t), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
-    if ((r = tapasco_device_copy_to(dev_ctx, t, h, sizeof(*t), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
-    return tapasco_device_job_set_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h);
+    if ((r = tapasco_device_alloc(devctx, &h, sizeof(*t), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
+    if ((r = tapasco_device_copy_to(devctx, t, h, sizeof(*t), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
+    return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(h), &h);
   }
 
   /** Variadic: recursively sets all given arguments. **/
@@ -375,9 +369,9 @@ private:
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
     tapasco_handle_t h;
     tapasco_res_t r;
-    if ((r = tapasco_device_job_get_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h)) != TAPASCO_SUCCESS) return r;
-    if ((r = tapasco_device_copy_from(dev_ctx, h, (void *)t, sizeof(*t), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
-    tapasco_device_free(dev_ctx, h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+    if ((r = tapasco_device_job_get_arg(devctx, j_id, arg_idx, sizeof(h), &h)) != TAPASCO_SUCCESS) return r;
+    if ((r = tapasco_device_copy_from(devctx, h, (void *)t, sizeof(*t), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
+    tapasco_device_free(devctx, h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
     return TAPASCO_SUCCESS;
   }
 
@@ -388,8 +382,8 @@ private:
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
     tapasco_handle_t h;
     tapasco_res_t r;
-    if ((r = tapasco_device_job_get_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h)) != TAPASCO_SUCCESS) return r;
-    tapasco_device_free(dev_ctx, h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+    if ((r = tapasco_device_job_get_arg(devctx, j_id, arg_idx, sizeof(h), &h)) != TAPASCO_SUCCESS) return r;
+    tapasco_device_free(devctx, h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
     return TAPASCO_SUCCESS;
   }
 
@@ -404,8 +398,7 @@ private:
 
   bool _ok { false };
   tapasco_ctx_t* ctx { nullptr };
-  tapasco_dev_ctx_t* dev_ctx { nullptr };
-  platform_ctx_t *p_ctx { nullptr };
+  tapasco_devctx_t* devctx { nullptr };
 };
 
 } /* namespace tapasco */

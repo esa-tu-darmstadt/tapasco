@@ -36,7 +36,7 @@ typedef struct tapasco_local_mem tapasco_local_mem_t;
  * @param lmem output pointer to initialize
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
-tapasco_res_t tapasco_local_mem_init(tapasco_dev_ctx_t const *dev_ctx,
+tapasco_res_t tapasco_local_mem_init(tapasco_devctx_t *dev_ctx,
 		tapasco_local_mem_t **lmem);
 void tapasco_local_mem_deinit(tapasco_local_mem_t *lmem);
 

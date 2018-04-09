@@ -33,7 +33,7 @@
  * @param j_id job id.
  * @return TAPASCO_SUCCESS, if job could be scheduled and will execute, an error code otherwise.
  **/
-tapasco_res_t tapasco_scheduler_launch(tapasco_dev_ctx_t *dev_ctx, tapasco_job_id_t const j_id);
+tapasco_res_t tapasco_scheduler_launch(tapasco_devctx_t *dev_ctx, tapasco_job_id_t const j_id);
 
 /**
  * Wait for given job and fetch results.
@@ -41,6 +41,6 @@ tapasco_res_t tapasco_scheduler_launch(tapasco_dev_ctx_t *dev_ctx, tapasco_job_i
  * @param j_id job id.
  * @return TAPASCO_SUCCESS, if job could be scheduled and will execute, an error code otherwise.
  **/
-tapasco_res_t tapasco_scheduler_finish_job(tapasco_dev_ctx_t *dev_ctx, tapasco_job_id_t const j_id);
+tapasco_res_t tapasco_scheduler_finish_job(tapasco_devctx_t *dev_ctx, tapasco_job_id_t const j_id);
 
 #endif /* TAPASCO_SCHEDULER_H__ */

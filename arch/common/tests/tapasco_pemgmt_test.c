@@ -59,7 +59,7 @@ tapasco_res_t tapasco_status_set_id(int idx, tapasco_kernel_id_t id) {
 	return TAPASCO_SUCCESS;
 }
 
-tapasco_res_t tapasco_device_platform(tapasco_ctx_t *ctx, tapasco_dev_ctx_t **p)
+tapasco_res_t tapasco_device_platform(tapasco_ctx_t *ctx, tapasco_devctx_t **p)
 {
 	*p = NULL;
 	return TAPASCO_SUCCESS;
