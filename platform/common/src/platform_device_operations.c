@@ -42,7 +42,14 @@ platform_res_t default_read_mem(platform_devctx_t const *devctx,
 		void *data,
 		platform_mem_flags_t const flags)
 {
+	DEVLOG(devctx->dev_id, LPLL_MM, "reading from device at 0x%08lx with flags 0x%08lx", addr, (ulong)flags);
+	struct tlkm_copy_cmd cmd = { .length = length, .dev_addr = addr, .user_addr = data };
+	long ret = ioctl(devctx->fd_ctrl, TLKM_DEV_IOCTL_COPYFROM, &cmd);
+	if (ret) {
+		DEVERR(devctx->dev_id, "error reading device memory: %s (%d)", strerror(errno), errno);
 		return PERR_TLKM_ERROR;
+	}
+	return PLATFORM_SUCCESS;
 }
 
 platform_res_t default_write_mem(platform_devctx_t const *devctx,
@@ -51,7 +58,14 @@ platform_res_t default_write_mem(platform_devctx_t const *devctx,
 		void const *data,
 		platform_mem_flags_t const flags)
 {
+	DEVLOG(devctx->dev_id, LPLL_MM, "writing to device at 0x%08lx with flags 0x%08lx", addr, (ulong)flags);
+	struct tlkm_copy_cmd cmd = { .length = length, .dev_addr = addr, .user_addr = (void *)data };
+	long ret = ioctl(devctx->fd_ctrl, TLKM_DEV_IOCTL_COPYTO, &cmd);
+	if (ret) {
+		DEVERR(devctx->dev_id, "error writing device memory: %s (%d)", strerror(errno), errno);
 		return PERR_TLKM_ERROR;
+	}
+	return PLATFORM_SUCCESS;
 }
 
 platform_res_t default_read_ctl(platform_devctx_t const *devctx,

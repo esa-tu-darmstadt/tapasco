@@ -80,10 +80,10 @@ static inline
 long zynq_ioctl_copyto(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cmd)
 {
 	struct dma_buf_t *dmab;
-	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "copyto: len = %zu, id = %ld, p = 0x%08lx",
-			cmd->length, (long)cmd->dev_addr, (unsigned long) cmd->user_addr);
+	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "copyto: len = %zu, dma = 0x%08lx, p = 0x%08lx",
+			cmd->length, (ulong)cmd->dev_addr, (ulong) cmd->user_addr);
 	// allocate, if necessary
-	if (cmd->dev_addr < 0 || ! (dmab = zynq_dmamgmt_get(cmd->dev_addr))) {
+	if (cmd->dev_addr < 0 || ! (dmab = zynq_dmamgmt_get(zynq_dmamgmt_get_id(cmd->dev_addr)))) {
 		int ret;
 		struct tlkm_mm_cmd mm_cmd = { .sz = cmd->length, };
 		DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "allocating %zu bytes for transfer", cmd->length);
@@ -92,7 +92,7 @@ long zynq_ioctl_copyto(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cmd)
 		if (ret) return ret;
 	}
 	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "cmd->dev_addr = %ld", (long)cmd->dev_addr);
-	dmab = zynq_dmamgmt_get(cmd->dev_addr);
+	dmab = zynq_dmamgmt_get(zynq_dmamgmt_get_id(cmd->dev_addr));
 	if (! dmab || ! dmab->kvirt_addr) {
 		DEVERR(inst->dev_id, "something went wrong in the allocation");
 		return -ENOMEM;
@@ -114,9 +114,9 @@ long zynq_ioctl_copyfrom(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cm
 	struct dma_buf_t *dmab;
 	DEVLOG(inst->dev_id, TLKM_LF_DEVICE, "copyfrom: len = %zu, id = %ld, p = 0x%08lx",
 			cmd->length, (long)cmd->dev_addr, (unsigned long) cmd->user_addr);
-	dmab = zynq_dmamgmt_get(cmd->dev_addr);
+	dmab = zynq_dmamgmt_get(zynq_dmamgmt_get_id(cmd->dev_addr));
 	if (! dmab || ! dmab->kvirt_addr) {
-		DEVERR(inst->dev_id, "could not get dma buffer with id = %ld", (long)cmd->dev_addr);
+		DEVERR(inst->dev_id, "could not get dma buffer with dma = 0x%08lx", (ulong)cmd->dev_addr);
 			return -EINVAL;
 	}
 	if (copy_to_user((void __user *) cmd->user_addr, dmab->kvirt_addr, cmd->length)) {
