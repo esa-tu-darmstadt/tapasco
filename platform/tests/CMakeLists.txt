@@ -20,6 +20,10 @@ add_executable(platform-stress-ioctl platform_stress_ioctl.c ${TAPASCO_PLATFORM_
 set_target_properties(platform-stress-ioctl PROPERTIES LINK_SEARCH_START_STATIC 1 LINK_SEARCH_END_STATIC 1)
 target_link_libraries(platform-stress-ioctl m platform atomic pthread)
 
+add_executable(platform-alloc platform_alloc.c ${TAPASCO_PLATFORM_LIB})
+set_target_properties(platform-alloc PROPERTIES LINK_SEARCH_START_STATIC 1 LINK_SEARCH_END_STATIC 1)
+target_link_libraries(platform-alloc m platform atomic pthread)
+
 add_executable(platform-slots platform_slots.c ${TAPASCO_PLATFORM_LIB})
 target_link_libraries(platform-slots pthread platform)
 
