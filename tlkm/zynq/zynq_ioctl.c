@@ -212,15 +212,16 @@ long zynq_ioctl_write(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cmd)
 		DEVERR(inst->dev_id, "invalid address: 0x%08llx", cmd->dev_addr);
 		return -ENXIO;
 	}
-	if (ptr && copy_from_user(buf, (void __user *)cmd->user_addr, cmd->length)) {
-		DEVERR(inst->dev_id, "could not copy all bytes from user space");
+	if ((ret = copy_from_user(buf, (u32 __user *)cmd->user_addr, cmd->length))) {
+		DEVERR(inst->dev_id, "could not copy all bytes from 0x%08lx to user space 0x%08lx: %ld",
+				(ulong)buf, (ulong)cmd->user_addr, ret);
 		ret = -EAGAIN;
 		goto err;
 	}
 	memcpy_toio(ptr, buf, cmd->length);
+	tlkm_perfc_total_ctl_writes_add(inst->dev_id, cmd->length);
 err:
 	kfree(buf);
-	tlkm_perfc_total_ctl_writes_add(inst->dev_id, cmd->length);
 	return ret;
 }
 

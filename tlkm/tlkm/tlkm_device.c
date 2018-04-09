@@ -118,8 +118,7 @@ void tlkm_device_destroy(struct tlkm_device *pdev, tlkm_access_t access)
 			destroy_device_instance(pdev);
 		}
 	} else {
-		WRN("device #%03u has not yet been created or is already destroyed",
-				pdev->dev_id);
+		WRN("device #%03u has not yet been created or is already destroyed", pdev->dev_id);
 	}
 	mutex_unlock(&pdev->mtx);
 }
