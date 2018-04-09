@@ -11,14 +11,29 @@ platform_res_t default_alloc(platform_devctx_t *devctx,
 		platform_mem_addr_t *addr,
 		platform_alloc_flags_t const flags)
 {
+	DEVLOG(devctx->dev_id, LPLL_MM, "allocating %zu bytes with flags 0x%08lx", len, (ulong)flags);
+	struct tlkm_mm_cmd cmd = { .sz = len, .dev_addr = -1, };
+	long ret = ioctl(devctx->fd_ctrl, TLKM_DEV_IOCTL_ALLOC, &cmd);
+	if (ret) {
+		DEVERR(devctx->dev_id, "error allocating device memory: %s (%d)", strerror(errno), errno);
 		return PERR_TLKM_ERROR;
+	}
+	*addr = cmd.dev_addr;
+	return PLATFORM_SUCCESS;
 }
 
 platform_res_t default_dealloc(platform_devctx_t *devctx,
 		platform_mem_addr_t const addr,
 		platform_alloc_flags_t const flags)
 {
+	DEVLOG(devctx->dev_id, LPLL_MM, "freeing memory at 0x%08lx with flags 0x%08lx", addr, (ulong)flags);
+	struct tlkm_mm_cmd cmd = { .sz = 0, .dev_addr = addr, };
+	long ret = ioctl(devctx->fd_ctrl, TLKM_DEV_IOCTL_FREE, &cmd);
+	if (ret) {
+		DEVERR(devctx->dev_id, "error freeing device memory: %s (%d)", strerror(errno), errno);
 		return PERR_TLKM_ERROR;
+	}
+	return PLATFORM_SUCCESS;
 }
 
 platform_res_t default_read_mem(platform_devctx_t const *devctx,
