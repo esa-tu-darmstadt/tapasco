@@ -1,7 +1,7 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TPC).
+// This file is part of Tapasco (TaPaSCo).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -31,11 +31,11 @@
 #include <platform.h>
 #include "common.h"
 
-#define SLOTS_BASE					(platform_address_get_slot_base(0,0))
+#define COUNTER_ID					14
 
-#define SLOTS_OFFSET					(0x00010000)
-
-#define PLATFORM_SLOTS					128
+static platform_ctx_t *ctx;
+static platform_devctx_t *devctx;
+static platform_info_t info;
 
 struct cfg_t {
 	long all_slots, slot_id, delay, iterations, mt;
@@ -43,26 +43,29 @@ struct cfg_t {
 
 static int call_slot(struct cfg_t const *cfg, short unsigned const slot_id)
 {
-	printf("Calling you a slot #%u ...\n", slot_id);
+	printf("Calling slot #%u ...\n", slot_id);
 	uint32_t cd_loops = cfg->delay <= clock_period() ? 1 : (cfg->delay / clock_period() - 2) >> 1;
-	const uint32_t addr = SLOTS_BASE + slot_id * SLOTS_OFFSET;
+	const uint32_t addr = info.base.arch[slot_id];
 	const uint32_t fire = 1;
 	uint32_t retval = 0;
 	for (long i = 0; i < cfg->iterations; ++i) {
-		if (! check( platform_write_ctl(addr + 0x4, sizeof(fire), &fire, PLATFORM_CTL_FLAGS_NONE) ))
+		if (info.composition.kernel[slot_id] != COUNTER_ID) return 0;
+		if (! check( platform_write_ctl(devctx, addr + 0x4, sizeof(fire), &fire, PLATFORM_CTL_FLAGS_NONE) ))
 			return 1;
-		if (! check( platform_write_ctl(addr + 0x8, sizeof(fire), &fire, PLATFORM_CTL_FLAGS_NONE) ))
+		if (! check( platform_write_ctl(devctx, addr + 0x8, sizeof(fire), &fire, PLATFORM_CTL_FLAGS_NONE) ))
 			return 1;
-		if (! check( platform_write_ctl(addr + 0x20, sizeof(cd_loops), &cd_loops, PLATFORM_CTL_FLAGS_NONE) ))
+		if (! check( platform_write_ctl(devctx, addr + 0x20, sizeof(cd_loops), &cd_loops, PLATFORM_CTL_FLAGS_NONE) ))
 			return 1;
-		if (! check( platform_write_ctl_and_wait(addr, sizeof(fire), &fire, slot_id, PLATFORM_CTL_FLAGS_NONE) ))
+		if (! check( platform_write_ctl(devctx, addr, sizeof(fire), &fire, PLATFORM_CTL_FLAGS_NONE) ))
 			return 1;
-		if (! check( platform_write_ctl(addr + 0xc, sizeof(fire), &fire, PLATFORM_CTL_FLAGS_NONE) ))
+		if (! check( platform_wait_for_slot(devctx, slot_id) ))
 			return 1;
-		if (! check( platform_read_ctl(addr + 0x10, sizeof(retval), &retval, PLATFORM_CTL_FLAGS_NONE) ))
+		if (! check( platform_write_ctl(devctx, addr + 0xc, sizeof(fire), &fire, PLATFORM_CTL_FLAGS_NONE) ))
 			return 1;
-		if (retval != cd_loops) {
-			fprintf(stderr, "ERROR: returned value = %u, expected: %u\n", retval, cd_loops);
+		if (! check( platform_read_ctl(devctx, addr + 0x10, sizeof(retval), &retval, PLATFORM_CTL_FLAGS_NONE) ))
+			return 1;
+		if (retval <= cd_loops) {
+			fprintf(stderr, "ERROR: returned value = %u, expected: >= %u\n", retval, cd_loops);
 			return 1;
 		}
 	}
@@ -120,34 +123,38 @@ int main(int argc, char **argv)
 	printf("Starting: all_slots = %ld, slot_id = %ld, delay = %ld, iterations = %ld\n",
 			cfg.all_slots, cfg.slot_id, cfg.delay, cfg.iterations);
 
-	if ((res = platform_init()) != PLATFORM_SUCCESS) {
-		fprintf(stderr, "Failed to initialize Platform API: %s\n",
-				platform_strerror(res));
+	if ((res = platform_init(&ctx)) != PLATFORM_SUCCESS) {
+		fprintf(stderr, "Failed to initialize Platform API: %s\n", platform_strerror(res));
+		exit(EXIT_FAILURE);
+	} else if ((res = platform_create_device(ctx, 0, PLATFORM_EXCLUSIVE_ACCESS, &devctx)) != PLATFORM_SUCCESS) {
+		fprintf(stderr, "Failed to create Platform device: %s\n", platform_strerror(res));
+		platform_deinit(ctx);
 		exit(EXIT_FAILURE);
 	}
+	platform_info(devctx, &info);
 	if (cfg.all_slots) {
 		if (cfg.mt) {
-			pthread_t t[PLATFORM_SLOTS];
-			long ret[PLATFORM_SLOTS];
-			struct call_t c[PLATFORM_SLOTS];
-			for (int i = 0; i < PLATFORM_SLOTS; ++i) {
+			pthread_t t[PLATFORM_NUM_SLOTS];
+			long ret[PLATFORM_NUM_SLOTS];
+			struct call_t c[PLATFORM_NUM_SLOTS];
+			for (int i = 0; i < PLATFORM_NUM_SLOTS; ++i) {
 				c[i].cfg = &cfg;
 				c[i].slot_id = i;
 				pthread_create(&t[i], NULL, run_call_slot, &c[i]);
 			}
-			for (int i = 0; i < PLATFORM_SLOTS; ++i)
+			for (int i = 0; i < PLATFORM_NUM_SLOTS; ++i)
 				pthread_join(t[i], (void *)&ret[i]);
-			for (int i = 0; i < PLATFORM_SLOTS; ++i)
+			for (int i = 0; i < PLATFORM_NUM_SLOTS; ++i)
 				errs += ret[i];
 		} else {
-			// TODO number of slots can be queried where? TPC?
-			for (unsigned short i = 0; i < PLATFORM_SLOTS; ++i) {
+			for (unsigned short i = 0; i < PLATFORM_NUM_SLOTS; ++i) {
 				errs += call_slot(&cfg, i);
 			}
 		}
 	} else {
 		errs = call_slot(&cfg, cfg.slot_id);
 	}
-	platform_deinit();
+	platform_destroy_device(ctx, 0);
+	platform_deinit(ctx);
 	return errs;
 }

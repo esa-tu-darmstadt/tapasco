@@ -1,7 +1,7 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
-// This file is part of Tapasco (TPC).
+// This file is part of Tapasco (TaPaSCo).
 //
 // Tapasco is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
@@ -17,8 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- *  @file	stress-ioctl.c
- *  @brief	
+ *  @file	iplatform.c
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #include <fcntl.h>
@@ -36,6 +35,8 @@
 #include <sched.h>
 #include <platform.h>
 
+static platform_ctx_t *ctx = NULL;
+static platform_devctx_t *devctx = NULL;
 static long thrdcnt = 0;
 static volatile int stop = 0;
 static volatile int finish = 0;
@@ -65,15 +66,15 @@ static inline void copy_check(size_t const *lp)
 
 	random_fill(data1, sz);
 
-	if (platform_alloc(sz, &addr, PLATFORM_ALLOC_FLAGS_NONE) == PLATFORM_SUCCESS &&
-			platform_write_mem(addr, sz, data1, PLATFORM_MEM_FLAGS_NONE)
+	if (platform_alloc(devctx, sz, &addr, PLATFORM_ALLOC_FLAGS_NONE) == PLATFORM_SUCCESS &&
+			platform_write_mem(devctx, addr, sz, data1, PLATFORM_MEM_FLAGS_NONE)
 			== PLATFORM_SUCCESS) {
 		__atomic_fetch_add(&alloced_bytes, sz, __ATOMIC_SEQ_CST);
 		__atomic_fetch_add(&copyto_bytes, sz, __ATOMIC_SEQ_CST);
-		if (platform_read_mem(addr, sz, data2, PLATFORM_MEM_FLAGS_NONE) == PLATFORM_SUCCESS) {
+		if (platform_read_mem(devctx, addr, sz, data2, PLATFORM_MEM_FLAGS_NONE) == PLATFORM_SUCCESS) {
 			__atomic_fetch_add(&copyfrom_bytes, sz, __ATOMIC_SEQ_CST);
 		} else __atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
-		if (platform_dealloc(addr, PLATFORM_MEM_FLAGS_NONE) == PLATFORM_SUCCESS) {
+		if (platform_dealloc(devctx, addr, PLATFORM_MEM_FLAGS_NONE) == PLATFORM_SUCCESS) {
 			__atomic_fetch_add(&freed_bytes, sz, __ATOMIC_SEQ_CST);
 		} else __atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
 	} else __atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
@@ -89,9 +90,9 @@ static inline void alloc_free(size_t const *lp)
 {
 	size_t sz = lp ? *lp : rand() % (1 << 20) & ~0x3;
 	platform_mem_addr_t addr;
-	if (platform_alloc(sz, &addr, PLATFORM_ALLOC_FLAGS_NONE) == PLATFORM_SUCCESS) {
+	if (platform_alloc(devctx, sz, &addr, PLATFORM_ALLOC_FLAGS_NONE) == PLATFORM_SUCCESS) {
 		__atomic_fetch_add(&alloced_bytes, sz, __ATOMIC_SEQ_CST);
-		if (platform_dealloc(addr, PLATFORM_MEM_FLAGS_NONE) == PLATFORM_SUCCESS)
+		if (platform_dealloc(devctx, addr, PLATFORM_MEM_FLAGS_NONE) == PLATFORM_SUCCESS)
 			__atomic_fetch_add(&freed_bytes, sz, __ATOMIC_SEQ_CST);
 		else
 			__atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
@@ -102,13 +103,13 @@ static inline void platform_write_ctl_speed(void)
 {
 	const uint32_t x = 0xe5ae1337;
 	uint32_t d = 42;
-	if (platform_write_ctl(platform_address_get_slot_base(0, 0) + 0x20,
+	if (platform_write_ctl(devctx, platform_address_get_slot_base(devctx, 0, 0) + 0x20,
 			4, &x, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 		__atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
 	} else {
 		__atomic_fetch_add(&copyto_bytes, 4, __ATOMIC_SEQ_CST);
 	}
-	if (platform_read_ctl(platform_address_get_slot_base(0, 0) + 0x20,
+	if (platform_read_ctl(devctx, platform_address_get_slot_base(devctx, 0, 0) + 0x20,
 			4, &d, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS || d != x) {
 		__atomic_fetch_add(&errors, 1, __ATOMIC_SEQ_CST);
 	} else {
@@ -160,16 +161,21 @@ static int runtest(long const which)
 
 	getmaxyx(stdscr, rows, cols);
 
-	platform_res_t res = platform_init();
+	platform_res_t res = platform_init(&ctx);
 	if (res != PLATFORM_SUCCESS) {
 		exit_ncurses();
-		fprintf(stderr, "Platform init failed: %s", platform_strerror(errno));
+		fprintf(stderr, "Platform init failed: %s\n", platform_strerror(res));
+		exit(EXIT_FAILURE);
+	}
+	if ((res = platform_create_device(ctx, 0, PLATFORM_EXCLUSIVE_ACCESS, &devctx)) != PLATFORM_SUCCESS) {
+		exit_ncurses();
+		fprintf(stderr, "Platform create device failed: %s\n", platform_strerror(res));
+		platform_deinit(ctx);
 		exit(EXIT_FAILURE);
 	}
 
 	clear();
 	mvprintw(rows / 2, (cols - strlen(stre)) / 2, stre);
-
 
 	clock_gettime(CLOCK_MONOTONIC, &tv_begin);
 
@@ -222,7 +228,8 @@ static int runtest(long const which)
 	for (long t = 0; t < thrdcnt; ++t)
 		pthread_join(threads[t], NULL);
 
-	platform_deinit();
+	platform_destroy_device(ctx, 0);
+	platform_deinit(ctx);
 	return errors + terrors;
 }
 
