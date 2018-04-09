@@ -53,13 +53,13 @@ long zynq_ioctl_alloc(struct tlkm_device_inst *inst, struct tlkm_mm_cmd *cmd)
 		return -EINVAL;
 	}
 
-	dma_addr = zynq_dmamgmt_alloc(cmd->sz, &cmd->dev_addr);
-	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "alloc: len = %zu, dma = 0x%08lx, id = %ld",
-			cmd->sz, (unsigned long) dma_addr, (long)cmd->dev_addr);
+	dma_addr = zynq_dmamgmt_alloc(cmd->sz, NULL);
 	if (! dma_addr) {
-		DEVWRN(inst->dev_id, "allocation failed");
+		DEVWRN(inst->dev_id, "allocation failed: len = %zu", cmd->sz);
 		return -ENOMEM;
 	}
+	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "alloc: len = %zu, dma = 0x%08lx", cmd->sz, (unsigned long) dma_addr);
+	cmd->dev_addr = dma_addr;
 	tlkm_perfc_total_alloced_mem_add(inst->dev_id, cmd->sz);
 	return 0;
 }
@@ -67,10 +67,10 @@ long zynq_ioctl_alloc(struct tlkm_device_inst *inst, struct tlkm_mm_cmd *cmd)
 static inline
 long zynq_ioctl_free(struct tlkm_device_inst *inst, struct tlkm_mm_cmd *cmd)
 {
-	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "free: len = %zu, id = %ld", cmd->sz, (long)cmd->dev_addr);
+	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "free: len = %zu, dma = 0x%08lx", cmd->sz, (unsigned long)cmd->dev_addr);
 	if (cmd->dev_addr >= 0) {
-		zynq_dmamgmt_dealloc(cmd->dev_addr);
-		cmd->dev_addr = -1;
+		zynq_dmamgmt_dealloc_dma(cmd->dev_addr);
+		cmd->dev_addr = 0;
 		tlkm_perfc_total_freed_mem_add(inst->dev_id, cmd->sz);
 	}
 	return 0;

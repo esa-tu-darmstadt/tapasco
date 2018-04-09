@@ -69,9 +69,8 @@ void zynq_dmamgmt_exit()
 dma_addr_t zynq_dmamgmt_alloc(size_t const len, handle_t *hid)
 {
 	fsp_idx_t id;
-	LOG(TLKM_LF_DMAMGMT, "len = %zu", len);
 	id = dmabuf_fsp_get(&_dmabuf);
-	LOG(TLKM_LF_DMAMGMT, "id = %u", id);
+	LOG(TLKM_LF_DMAMGMT, "len = %zu, id = %u", len, id);
 	if (id == INVALID_IDX) {
 		WRN("internal pool depleted: could not allocate a buffer!");
 		return 0;
@@ -94,7 +93,6 @@ dma_addr_t zynq_dmamgmt_alloc(size_t const len, handle_t *hid)
 
 int zynq_dmamgmt_dealloc(handle_t const id)
 {
-	LOG(TLKM_LF_DMAMGMT, "id = %lu", (unsigned long)id);
 	if (id < ZYNQ_DMAMGMT_POOLSZ && _dmabuf.elems[id].kvirt_addr) {
 		LOG(TLKM_LF_DMAMGMT, "id = %llu, len = %zd, kvirt_addr = 0x%08lx, dma_addr = 0x%08lx",
 				id, _dmabuf.elems[id].len,

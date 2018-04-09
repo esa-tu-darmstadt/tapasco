@@ -4,6 +4,7 @@
 #include "tlkm_types.h"
 #include "zynq_device.h"
 #include "zynq_irq.h"
+#include "zynq_dmamgmt.h"
 #include "zynq_platform.h"
 
 static struct zynq_device _zynq_dev;
@@ -89,6 +90,11 @@ int zynq_device_init(struct tlkm_device_inst *inst)
 	inst->private_data = (void *)&_zynq_dev;
 	_zynq_dev.dev_id = inst->dev_id;
 
+	if ((ret = zynq_dmamgmt_init())) {
+		DEVERR(inst->dev_id, "could not initialize DMA management: %d", ret);
+		goto err_dmamgmt;
+	}
+
 	if ((ret = init_iomapping())) {
 		DEVERR(inst->dev_id, "could not initialize I/O-mapping: %d", ret);
 		goto err_iomapping;
@@ -105,6 +111,8 @@ int zynq_device_init(struct tlkm_device_inst *inst)
 err_irq:
 	exit_iomapping();
 err_iomapping:
+	zynq_dmamgmt_exit();
+err_dmamgmt:
 	return ret;
 }
 
@@ -119,5 +127,6 @@ void zynq_device_exit(struct tlkm_device_inst *inst)
 	zynq_irq_exit(&_zynq_dev);
 	exit_iomapping();
 	inst->private_data = NULL;
+	zynq_dmamgmt_exit();
 	DEVLOG(_zynq_dev.dev_id, TLKM_LF_DEVICE, "zynq device exited");
 }
