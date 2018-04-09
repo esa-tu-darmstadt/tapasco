@@ -11,8 +11,8 @@
 #
 # By default this script does nothing.
 
-chown -R xilinx:xilinx /linux-xlnx >/dev/null 2>&1
-chown xilinx:xilinx /dev/xdevcfg >/dev/null 2>&1
+chown -R xilinx /linux-xlnx >/dev/null 2>&1
+chown xilinx /dev/xdevcfg >/dev/null 2>&1
 
 dhclient eth0
 ifconfig eth0:0 down
