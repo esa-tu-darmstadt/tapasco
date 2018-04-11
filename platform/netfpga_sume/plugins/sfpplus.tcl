@@ -4,6 +4,7 @@
   if {[tapasco::is_feature_enabled "SFPPLUS"]} {
     proc create_custom_subsystem_network {{args {}}} {
         set disable_pins {"M18" "B31" "J38" "L21"}
+        set disable_pins_voltages {"LVCMOS15" "LVCMOS15" "LVCMOS18" "LVCMOS18"}
         set tx_fault_pins {"M19" "C26" "E39" "J26"}
         set signal_detect_pins {"N18" "L19" "J37" "H36"}
         set rx_pins_p {"B4" "C2" "D4" "E2"}
@@ -158,7 +159,7 @@
           connect_bd_intf_net [get_bd_intf_pins $ip_rx] [get_bd_intf_pins sfpmac_${i}/m_axis_rx]
 
           puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $disable_pins $i] sfp_tx_dis_$i]
-          puts $constraints_file [format {set_property IOSTANDARD LVCMOS15 [get_ports %s]} sfp_tx_dis_$i]
+          puts $constraints_file [format {set_property IOSTANDARD %s [get_ports %s]} [lindex $disable_pins_voltages $i] sfp_tx_dis_$i]
 
           puts $constraints_file [format {set_property LOC %s [get_cells -hier -filter name=~*sfpmac_%d*gthe2_i]} [lindex $locations $i] $i]
 
@@ -172,13 +173,13 @@
           connect_bd_net [get_bd_pins sfpmac_${i}/signal_detect] [get_bd_pins $detect_inverter/Res]
 
           puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $signal_detect_pins $i] sfp_signal_detect_$i]
-          puts $constraints_file [format {set_property IOSTANDARD LVCMOS15 [get_ports %s]} sfp_signal_detect_$i]
+          puts $constraints_file [format {set_property IOSTANDARD %s [get_ports %s]} [lindex $disable_pins_voltages $i] sfp_signal_detect_$i]
 
           create_bd_port -dir I tx_fault_$i
           connect_bd_net [get_bd_pins sfpmac_${i}/tx_fault] [get_bd_pins /tx_fault_$i]
 
           puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $tx_fault_pins $i] tx_fault_$i]
-          puts $constraints_file [format {set_property IOSTANDARD LVCMOS15 [get_ports %s]} tx_fault_$i]
+          puts $constraints_file [format {set_property IOSTANDARD %s [get_ports %s]} [lindex $disable_pins_voltages $i] tx_fault_$i]
 
         }
 
