@@ -131,9 +131,16 @@ platform_res_t platform_create_device(platform_ctx_t *ctx,
 /**
  * Destroy the given device context and release the selected device.
  * @param ctx platform context
- * @param devctx device context to destroy
+ * @param pdctx device context to destroy
  **/
-void platform_destroy_device(platform_ctx_t *ctx, platform_dev_id_t const dev_id);
+void platform_destroy_device(platform_ctx_t *ctx, platform_devctx_t *pdctx);
+
+/**
+ * Destroy the given device context and release the selected device.
+ * @param ctx platform context
+ * @param dev_id device id
+ **/
+void platform_destroy_device_by_id(platform_ctx_t *ctx, platform_dev_id_t const dev_id);
 
 /** Retrieves an info struct from the hardware. **/
 platform_res_t platform_info(platform_devctx_t const *ctx, platform_info_t *info);

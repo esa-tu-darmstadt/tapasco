@@ -12,9 +12,6 @@
 
 struct platform_ctx {
 	int				fd_tlkm;
-#ifndef NPERFC
-	int				fd_perfc;
-#endif
 	size_t				num_devs;
 	platform_device_info_t		devs[PLATFORM_MAX_DEVS];
 	char				version[TLKM_VERSION_SZ];
@@ -74,15 +71,6 @@ platform_res_t init_platform(platform_ctx_t *ctx)
 		r = PERR_TLKM_ERROR;
 		goto err_tlkm;
 	}
-#ifndef NPERFC
-	ctx->fd_perfc = open(TLKM_PERFC_FN, O_RDONLY);
-	if (ctx->fd_perfc == -1) {
-		ERR("could not open " TLKM_PERFC_FN ": %s (%d)", strerror(errno), errno);
-		r = PERR_TLKM_ERROR;
-		goto err_perfc;
-	}
-#endif
-
 	if (get_tlkm_version(ctx, ctx->version)) goto err_ioctl;
 	LOG(LPLL_TLKM, "TLKM version: %s", ctx->version);
 
@@ -103,10 +91,6 @@ platform_res_t init_platform(platform_ctx_t *ctx)
 	return r;
 
 err_ioctl:
-#ifndef NPERFC
-	close(ctx->fd_perfc);
-err_perfc:
-#endif
 	close(ctx->fd_tlkm);
 err_tlkm:
 	return r;
@@ -115,9 +99,6 @@ err_tlkm:
 static
 void deinit_platform(platform_ctx_t *ctx)
 {
-#ifndef NPERFC
-	close(ctx->fd_perfc);
-#endif
 	close(ctx->fd_tlkm);
 	LOG(LPLL_INIT, "platform deinited");
 }
@@ -209,7 +190,7 @@ err_pdev:
 	return res;
 }
 
-void platform_destroy_device(platform_ctx_t *ctx, platform_dev_id_t const dev_id)
+void platform_destroy_device_by_id(platform_ctx_t *ctx, platform_dev_id_t const dev_id)
 {
 	assert(dev_id < PLATFORM_MAX_DEVS);
 	assert(ctx);
@@ -229,4 +210,10 @@ void platform_destroy_device(platform_ctx_t *ctx, platform_dev_id_t const dev_id
 	} else {
 		LOG(LPLL_DEVICE, "device #%03u destroyed", dev_id);
 	}
+}
+
+void platform_destroy_device(platform_ctx_t *ctx, platform_devctx_t *pdctx)
+{
+	assert(pdctx);
+	platform_destroy_device_by_id(ctx, pdctx->dev_id);
 }

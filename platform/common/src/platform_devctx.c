@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -81,6 +82,7 @@ platform_res_t platform_devctx_init(platform_ctx_t *ctx,
 	DEVLOG(dev_id, LPLL_INIT, "context initialization finished");
 	return PLATFORM_SUCCESS;
 
+	zynq_exit(devctx);
 err_platform:
 	platform_signaling_deinit(devctx->signaling);
 err_signaling:
@@ -91,9 +93,31 @@ err_info:
 	return res;
 }
 
+static inline
+void log_perfc(platform_devctx_t *devctx)
+{
+#ifndef NPERFC
+	#define BUFSZ (1 << 12)
+	char *fn = perfc_file(devctx->dev_id);
+	char *buf = (char *)calloc(sizeof(*buf), BUFSZ);
+	FILE *fp = fopen(fn, "r");
+	size_t n = BUFSZ;
+	if (fp) {
+		while (getline(&buf, &n, fp) > 0) {
+			buf[strcspn(buf, "\r\n")] = '\0';
+			DEVLOG(devctx->dev_id, LPLL_DEVICE, "%s", buf);
+		}
+		fclose(fp);
+	}
+	free(buf);
+	free(fn);
+#endif
+}
+
 void platform_devctx_deinit(platform_devctx_t *devctx)
 {
 	if (devctx) {
+		log_perfc(devctx);
 		zynq_exit(devctx);
 		platform_dev_id_t dev_id = devctx->dev_id;
 		DEVLOG(dev_id, LPLL_INIT, "destroying platform signaling ...");
