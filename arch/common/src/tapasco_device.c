@@ -46,17 +46,23 @@ tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx,
 		tapasco_devctx_t **pdevctx,
 		tapasco_device_create_flag_t const flags)
 {
-	tapasco_devctx_t *p = (tapasco_devctx_t *)
-			malloc(sizeof(struct tapasco_devctx));
+	tapasco_devctx_t *p = (tapasco_devctx_t *)malloc(sizeof(struct tapasco_devctx));
 	if (! p) {
 		ERR("could not allocate tapasco device context");
 		return TAPASCO_ERR_OUT_OF_MEMORY;
 	}
 
-	platform_res_t pr = platform_init(&p->pctx);
+	assert(ctx->pctx);
+	platform_access_t access;
+	switch (flags) {
+	case TAPASCO_DEVICE_CREATE_SHARED: 	access = PLATFORM_SHARED_ACCESS; break;
+	case TAPASCO_DEVICE_CREATE_MONITOR: 	access = PLATFORM_MONITOR_ACCESS; break;
+	default: 				access = PLATFORM_EXCLUSIVE_ACCESS; break;
+	}
+
+	platform_res_t pr = platform_create_device(ctx->pctx, dev_id, access, &p->pdctx);
 	if (pr != PLATFORM_SUCCESS) {
-		ERR("platform context init failed, error: %s (%d)",
-				platform_strerror(pr), pr);
+		ERR("creating platform device failed, error: %s (%d)", platform_strerror(pr), pr);
 		return TAPASCO_ERR_PLATFORM_FAILURE;
 	}
 
@@ -78,7 +84,7 @@ void tapasco_destroy_device(tapasco_ctx_t *ctx, tapasco_devctx_t *devctx)
 	tapasco_local_mem_deinit(devctx->lmem);
 	tapasco_jobs_deinit(devctx->jobs);
 	tapasco_pemgmt_deinit(devctx->pemgmt);
-	platform_deinit(devctx->pctx);
+	platform_destroy_device(ctx->pctx, devctx->pdctx);
 	free(devctx);
 }
 

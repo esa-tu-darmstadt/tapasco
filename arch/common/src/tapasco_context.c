@@ -62,7 +62,7 @@ tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **ctx)
 		return TAPASCO_ERR_VERSION_MISMATCH;
 	}
 
-	*ctx = (tapasco_ctx_t *)malloc(sizeof(**ctx));
+	*ctx = (tapasco_ctx_t *)calloc(sizeof(**ctx), 1);
 	tapasco_ctx_t *c = *ctx;
 	if (! c) {
 		ERR("could not allocate tapasco context");
@@ -110,11 +110,9 @@ void tapasco_deinit(tapasco_ctx_t *ctx)
 {
 	LOG(LALL_INIT, "shutting down TaPaSCo");
 	if (ctx) {
-		if (ctx->devinfo) {
-			free(ctx->devinfo);
-		}
 		if (ctx->pctx) {
 			platform_deinit(ctx->pctx);
+			ctx->pctx = NULL;
 		}
 		free(ctx);
 	}
