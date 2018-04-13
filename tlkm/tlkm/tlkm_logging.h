@@ -47,10 +47,10 @@ TLKM_LOGFLAGS
 #undef _LF
 } tlkm_lf_t;
 
-#ifndef NDEBUG
 #define SSTR(V)					#V
 #define STR(V)					SSTR(V)
 
+#ifndef NDEBUG
 extern ulong tlkm_logging_flags;
 
 #define ERR(msg, ...)			tlkm_log(0, msg, ##__VA_ARGS__)
