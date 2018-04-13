@@ -42,7 +42,7 @@ int tlkm_bus_init(void)
 	LOG(TLKM_LF_BUS, "detecting TaPaSCo devices ...");
 	n = tlkm_bus_enumerate();
 	if (n < 0) {
-		ERR("could not detect devices, error: %d", n);
+		ERR("could not detect devices, error: %zd", n);
 		return n;
 	}
 	if (! n) {

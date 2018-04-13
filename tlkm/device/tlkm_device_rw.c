@@ -1,4 +1,5 @@
 #include <linux/uaccess.h>
+#include <linux/sched/signal.h>
 #include "tlkm_device_rw.h"
 #include "tlkm_control.h"
 #include "tlkm_perfc.h"

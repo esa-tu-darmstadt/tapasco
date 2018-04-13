@@ -8,7 +8,7 @@ struct tlkm_bus;
 int tlkm_bus_init(void);
 void tlkm_bus_exit(void);
 
-int tlkm_bus_enumerate(void);
+ssize_t tlkm_bus_enumerate(void);
 
 void tlkm_bus_add_device(struct tlkm_device *pdev);
 void tlkm_bus_del_device(struct tlkm_device *pdev);

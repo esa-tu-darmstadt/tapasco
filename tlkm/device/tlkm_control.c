@@ -1,6 +1,7 @@
 #include <linux/slab.h>
 #include <linux/gfp.h>
 #include <linux/fs.h>
+#include <linux/sched/signal.h>
 #include "tlkm_logging.h"
 #include "tlkm_control.h"
 #include "tlkm_perfc.h"
