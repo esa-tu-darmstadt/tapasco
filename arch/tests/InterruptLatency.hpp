@@ -40,11 +40,11 @@ public:
     if (tapasco.kernel_pe_count(COUNTER_ID) == 0)
       throw "need at least one instance of 'Counter' (14) in bitstream";
     platform_ctl_addr_t status;
-    platform_res_t r = platform_address_get_component_base(tapasco.platform(),
+    platform_res_t r = platform_address_get_component_base(tapasco.platform_device(),
     		PLATFORM_COMPONENT_STATUS,
 		&status);
     if (r != PLATFORM_SUCCESS) throw Tapasco::platform_error(r);
-    platform_read_ctl(tapasco.platform(), status + 0x24, 4, &design_clk, PLATFORM_CTL_FLAGS_NONE);
+    platform_read_ctl(tapasco.platform_device(), status + 0x24, 4, &design_clk, PLATFORM_CTL_FLAGS_NONE);
   }
   virtual ~InterruptLatency() {}
 

@@ -88,7 +88,7 @@ private:
 
   void run2(volatile bool& stop, atomic<uint64_t>& count) {
     tapasco_res_t res;
-    tapasco_dev_ctx_t *dev_ctx = tapasco.device();
+    tapasco_devctx_t *dev_ctx = tapasco.device();
     unsigned long const d = 1U;
     while (! stop) {
       tapasco_job_id_t j_id;
