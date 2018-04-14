@@ -12,6 +12,9 @@
 #include "tlkm_device.h"
 #include "tlkm_bus.h"
 
+#define TLKM_DEV_ID(pdev) \
+	(((struct tlkm_pcie_device *)dev_get_drvdata(&(pdev)->dev))->dev_id)
+
 static size_t num_devices = 0;
 ssize_t pcie_enumerate(void) { return num_devices; }
 
@@ -80,12 +83,14 @@ static int claim_device(struct pci_dev *pdev)
 		goto error_pci_remap;
 	}
 	LOG(TLKM_LF_PCIE, "remapped Bar 0 Address is: %llx", (u64)pci_data->kvirt_addr_bar2);
+
 	tlkm_bus_add_device(&tlkm_pcie_dev);
 	pci_data->dev_id = tlkm_pcie_dev.dev_id;
 	devices[pci_data->dev_id] = tlkm_pcie_dev;
 	tlkm_perfc_link_speed_set(pci_data->dev_id, pci_data->link_speed);
 	tlkm_perfc_link_width_set(pci_data->dev_id, pci_data->link_width);
 	num_devices++;
+
 	return 0;
 
 error_pci_remap:
@@ -114,16 +119,18 @@ static void release_device(struct pci_dev *pdev)
  * */
 static int configure_device(struct pci_dev *pdev)
 {
-	LOG(TLKM_LF_PCIE, "MPS: %d, Maximum Read Requests %d", pcie_get_mps(pdev), pcie_get_readrq(pdev));
+	dev_id_t id = TLKM_DEV_ID(pdev);
+	DEVLOG(id, TLKM_LF_PCIE, "MPS: %d, Maximum Read Requests %d",
+			pcie_get_mps(pdev), pcie_get_readrq(pdev));
 
 	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))) {
-		LOG(TLKM_LF_PCIE, "dma_set_mask: using 64 bit DMA addresses");
+		DEVLOG(id, TLKM_LF_PCIE, "dma_set_mask: using 64 bit DMA addresses");
 		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
 	} else if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(32))) {
-		LOG(TLKM_LF_PCIE, "dma_set_mask: using 32 bit DMA addresses");
+		DEVLOG(id, TLKM_LF_PCIE, "dma_set_mask: using 32 bit DMA addresses");
 		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
 	} else {
-		ERR("no suitable DMA bitmask available");
+		DEVERR(id, "no suitable DMA bitmask available");
 		return -ENODEV;
 	}
 	return 0;
@@ -138,7 +145,9 @@ static int claim_msi(struct pci_dev *pdev)
 {
 	int err = 0, i;
 	struct tlkm_pcie_device *pci_data = (struct tlkm_pcie_device *)dev_get_drvdata(&pdev->dev);
+	dev_id_t id;
 	BUG_ON(! pci_data);
+	id = pci_data->dev_id;
 
 	for (i = 0; i < REQUIRED_INTERRUPTS; i++) {
 		pci_data->irq_mapping[i] = -1;
@@ -161,14 +170,14 @@ static int claim_msi(struct pci_dev *pdev)
 #endif
 
 	if (err <= 0) {
-		ERR("cannot set MSI vector (%d)", err);
+		DEVERR(id, "cannot set MSI vector (%d)", err);
 		return -ENOSPC;
 	} else {
-		WRN("got %d MSI vectors", err);
+		DEVWRN(id, "got %d MSI vectors", err);
 	}
 
 	if ((err = pcie_irqs_init(pdev))) {
-		ERR("failed to register interrupts: %d", err);
+		DEVERR(id, "failed to register interrupts: %d", err);
 		return -ENOSPC;
 	}
 	return 0;
@@ -177,9 +186,12 @@ static int claim_msi(struct pci_dev *pdev)
 static void report_link_status(struct pci_dev *pdev)
 {
 	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *)dev_get_drvdata(&pdev->dev);
+	dev_id_t id;
 	u16 ctrl_reg = 0;
 	double gts = 0.0;
+
 	BUG_ON(! dev);
+	id = dev->dev_id;
 	pcie_capability_read_word(pdev, PCI_EXP_LNKSTA, &ctrl_reg);
 
 	dev->link_width = (ctrl_reg & PCI_EXP_LNKSTA_NLW) >> PCI_EXP_LNKSTA_NLW_SHIFT;
@@ -192,8 +204,8 @@ static void report_link_status(struct pci_dev *pdev)
 	default: 		 	gts = 0.0;	break;
 	}
 
-	LOG(TLKM_LF_PCIE, "PCIe link width: x%d", dev->link_width);
-	LOG(TLKM_LF_PCIE, "PCIe link speed: %1.1f GT/s", gts);
+	DEVLOG(id, TLKM_LF_PCIE, "PCIe link width: x%d", dev->link_width);
+	DEVLOG(id, TLKM_LF_PCIE, "PCIe link speed: %1.1f GT/s", gts);
 }
 
 int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id)
@@ -213,12 +225,12 @@ int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	report_link_status(pdev);
 
 	if (0/*char_dma_register()*/) {
-		LOG(TLKM_LF_PCIE, "could not register dma char device(s)");
+		DEVLOG(TLKM_DEV_ID(pdev), TLKM_LF_PCIE, "could not register dma char device(s)");
 		goto error_cannot_configure;
 	}
 
 	if (0/*char_user_register()*/) {
-		LOG(TLKM_LF_PCIE, "could not register user char device(s)");
+		DEVLOG(TLKM_DEV_ID(pdev), TLKM_LF_PCIE, "could not register user char device(s)");
 		goto error_user_register;
 	}
 
@@ -235,7 +247,7 @@ error_no_device:
 
 void tlkm_pcie_remove(struct pci_dev *pdev)
 {
-	LOG(TLKM_LF_PCIE, "unload pci-device");
+	DEVLOG(TLKM_DEV_ID(pdev), TLKM_LF_PCIE, "unload pcie-device");
 	//char_dma_unregister();
 	//char_user_unregister();
 	pcie_irqs_deinit(pdev);
