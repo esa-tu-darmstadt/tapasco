@@ -26,7 +26,10 @@ tlkm-objs := \
 	zynq/zynq_ioctl.o \
 	zynq/zynq_dmamgmt.o \
 	zynq/zynq_irq.o \
-	zynq/zynq_mmap.o
+	zynq/zynq_mmap.o \
+	pcie/pcie.o \
+	pcie/pcie_device.o \
+	pcie/pcie_irq.o
 
 
 CPPFLAGS+=-I$(TAPASCO_HOME)/tlkm -I$(TAPASCO_HOME)/tlkm/device -I$(TAPASCO_HOME)/tlkm/tlkm -I$(TAPASCO_HOME)/tlkm/user -I$(TAPASCO_HOME)/platform/include

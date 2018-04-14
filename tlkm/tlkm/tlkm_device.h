@@ -1,6 +1,7 @@
 #ifndef TLKM_DEVICE_H__
 #define TLKM_DEVICE_H__
 
+#include <linux/pci.h>
 #include <linux/list.h>
 #include <linux/mutex.h>
 #include <linux/miscdevice.h>

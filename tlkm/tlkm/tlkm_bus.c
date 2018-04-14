@@ -5,6 +5,8 @@
 #include "tlkm_bus.h"
 #include "tlkm_logging.h"
 #include "zynq/zynq_enumerate.h"
+#include "pcie/pcie.h"
+#include "pcie/pcie_device.h"
 
 static
 struct tlkm_bus {
@@ -31,7 +33,7 @@ void tlkm_bus_del_device(struct tlkm_device *pdev)
 
 ssize_t tlkm_bus_enumerate(void)
 {
-	return zynq_enumerate();
+	return zynq_enumerate() + pcie_enumerate();
 }
 
 int tlkm_bus_init(void)
@@ -39,14 +41,21 @@ int tlkm_bus_init(void)
 	int ret = 0;
 	ssize_t n;
 	struct list_head *lh;
+	LOG(TLKM_LF_BUS, "registering drivers ...");
+	if ((ret = pcie_init())) {
+		ERR("error while registering PCIe driver: %d", ret);
+		return ret;
+	}
 	LOG(TLKM_LF_BUS, "detecting TaPaSCo devices ...");
 	n = tlkm_bus_enumerate();
 	if (n < 0) {
 		ERR("could not detect devices, error: %zd", n);
+		pcie_deinit();
 		return n;
 	}
 	if (! n) {
 		ERR("did not find any TaPaSCo devices, cannot proceed");
+		pcie_deinit();
 		return -ENXIO;
 	}
 	LOG(TLKM_LF_BUS, "found %zd TaPaSCo devices", n);
@@ -59,6 +68,7 @@ int tlkm_bus_init(void)
 	}
 	if ((ret = tlkm_init())) {
 		ERR("failed to initialize ioctl file: %d", ret);
+		pcie_deinit();
 	}
 	return ret;
 }
@@ -73,6 +83,7 @@ void tlkm_bus_exit(void)
 				d->vendor_id, d->product_id);
 		tlkm_device_remove_all(d);
 	}
+	pcie_deinit();
 	tlkm_exit();
 	LOG(TLKM_LF_BUS, "removed TaPaSCo interfaces, bye");
 }

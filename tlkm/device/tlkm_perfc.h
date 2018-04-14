@@ -41,7 +41,9 @@
 	_PC(total_usr2dev_transfers) \
 	_PC(total_dev2usr_transfers) \
 	_PC(total_ctl_writes) \
-	_PC(total_ctl_reads)
+	_PC(total_ctl_reads) \
+	_PC(link_width) \
+	_PC(link_speed)
 
 #ifndef NPERFC
 	#include <linux/types.h>
@@ -49,7 +51,8 @@
 	#define _PC(name) \
 	void tlkm_perfc_ ## name ## _inc(dev_id_t dev_id); \
 	void tlkm_perfc_ ## name ## _add(dev_id_t dev_id, int const v); \
-	int  tlkm_perfc_ ## name ## _get(dev_id_t dev_id);
+	int  tlkm_perfc_ ## name ## _get(dev_id_t dev_id); \
+	void tlkm_perfc_ ## name ## _set(dev_id_t dev_id, int const v);
 
 	TLKM_PERFC_COUNTERS
 	#undef _PC
@@ -58,6 +61,7 @@
 	inline static void tlkm_perfc_ ## name ## _inc(dev_id_t dev_id) {} \
 	inline static void tlkm_perfc_ ## name ## _add(dev_id_t dev_id, int const v) {} \
 	inline static int  tlkm_perfc_ ## name ## _get(dev_id_t dev_id) { return 0; } \
+	inline static void tlkm_perfc_ ## name ## _set(dev_id_t dev_id, int const v) {}
 
 	TLKM_PERFC_COUNTERS
 	#undef _PC

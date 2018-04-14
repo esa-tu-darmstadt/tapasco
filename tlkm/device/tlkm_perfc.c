@@ -49,7 +49,13 @@ void tlkm_perfc_ ## name ## _add(dev_id_t dev_id, int const v) \
 int tlkm_perfc_ ## name ## _get(dev_id_t dev_id) \
 { \
 	return atomic_read(&tlkm_perfc.pc_ ## name[dev_id]); \
+} \
+\
+void tlkm_perfc_ ## name ## _set(dev_id_t dev_id, int const v) \
+{ \
+	atomic_set(&tlkm_perfc.pc_ ## name[dev_id], v); \
 }
+
 TLKM_PERFC_COUNTERS
 #undef _PC
 
