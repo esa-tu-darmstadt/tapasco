@@ -1,4 +1,17 @@
 / {
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		reserved: buffer@0 {
+			compatible = "shared-dma-pool";
+			reusable;
+			reg = <0x10000000 0x10000000>;
+			linux,cma-default;
+		};
+	};
+
 	tapasco {
 		compatible = "tapasco";
 		interrupt-parent = <0x3>;
