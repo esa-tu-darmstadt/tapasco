@@ -12,7 +12,7 @@
 static
 int dma_engines_init(struct tlkm_device *dev)
 {
-	int i, ret = 0;
+	int i, ret = 0, irqn = 0;
 	u64 *component;
 	u64 dma_base[TLKM_DEVICE_MAX_DMA_ENGINES] = { 0ULL, };
 	u64 status_base;
@@ -28,6 +28,7 @@ int dma_engines_init(struct tlkm_device *dev)
 	iounmap(component);
 
 	for (i = 0; i < TLKM_DEVICE_MAX_DMA_ENGINES; ++i) {
+		struct dma_operations *o = &dev->inst->dma[i].ops;
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA%d base: 0x%08llx", i, dma_base[i]);
 		if (! dma_base[i]) continue;
 		dma_base[i] += dev->base_offset;
@@ -35,6 +36,16 @@ int dma_engines_init(struct tlkm_device *dev)
 		ret = tlkm_dma_init(&dev->inst->dma[i], dev->dev_id, (void *)dma_base[i], 0); // FIXME irq number?
 		if (ret) {
 			DEVERR(dev->dev_id, "failed to initialize DMA%d: %d", i, ret);
+			goto err_dma_engine;
+		}
+
+		BUG_ON(! o->intr_read);
+		if (o->intr_read && (ret = tlkm_device_request_platform_irq(dev, irqn++, o->intr_read))) {
+			DEVERR(dev->dev_id, "could not register interrupt #%d: %d", irqn, ret);
+			goto err_dma_engine;
+		}
+		if (o->intr_write && o->intr_write != o->intr_read && (ret = tlkm_device_request_platform_irq(dev, irqn++, o->intr_write))) {
+			DEVERR(dev->dev_id, "could not register interrupt #%d: %d", irqn, ret);
 			goto err_dma_engine;
 		}
 	}
@@ -81,15 +92,22 @@ int create_device_instance(struct tlkm_device *pdev, tlkm_access_t access)
 		goto err_nperfc;
 	}
 
+	if ((ret = pdev->init(pdev->inst))) {
+		DEVERR(pdev->dev_id, "failed to initialize private data struct: %d", ret);
+		goto err_priv;
+	}
+
 	if ((ret = dma_engines_init(pdev))) {
 		DEVERR(pdev->dev_id, "could not setup DMA engines for devices: %d", ret);
 		goto err_dma;
 	}
 
-	return pdev->init(pdev->inst);
+	return ret;
 
 	dma_engines_exit(pdev);
 err_dma:
+	pdev->exit(pdev->inst);
+err_priv:
 	tlkm_perfc_miscdev_exit(pdev->inst);
 err_nperfc:
 	tlkm_control_exit(pdev->inst->ctrl);
@@ -103,10 +121,10 @@ static
 void destroy_device_instance(struct tlkm_device *pdev)
 {
 	if (pdev->inst) {
+		pdev->exit(pdev->inst);
 		dma_engines_exit(pdev);
 		tlkm_perfc_miscdev_exit(pdev->inst);
 		tlkm_control_exit(pdev->inst->ctrl);
-		pdev->exit(pdev->inst);
 		kfree(pdev->inst);
 		pdev->inst = NULL;
 	}
