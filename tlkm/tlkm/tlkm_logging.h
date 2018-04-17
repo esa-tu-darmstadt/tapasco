@@ -40,7 +40,8 @@
 	_LF(IRQ       , (1 << 8)) \
 	_LF(ASYNC     , (1 << 9)) \
 	_LF(PERFC     , (1 << 10)) \
-	_LF(PCIE      , (1 << 11))
+	_LF(PCIE      , (1 << 11)) \
+	_LF(DMA       , (1 << 12))
 
 typedef enum {
 #define _LF(name, level) TLKM_LF_##name = level,

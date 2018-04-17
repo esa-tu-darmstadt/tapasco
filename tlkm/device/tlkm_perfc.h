@@ -43,7 +43,9 @@
 	_PC(total_ctl_writes) \
 	_PC(total_ctl_reads) \
 	_PC(link_width) \
-	_PC(link_speed)
+	_PC(link_speed) \
+	_PC(dma_reads) \
+	_PC(dma_writes)
 
 #ifndef NPERFC
 	#include <linux/types.h>

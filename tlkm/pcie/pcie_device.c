@@ -24,10 +24,15 @@ static int  tlkm_pcie_init(struct tlkm_device_inst *d) { return 0; }
 static void tlkm_pcie_exit(struct tlkm_device_inst *d) {}
 
 static struct tlkm_device tlkm_pcie_dev = {
-	.device = LIST_HEAD_INIT(tlkm_pcie_dev.device),
-	.name   = TLKM_PCI_NAME,
-	.init   = tlkm_pcie_init,
-	.exit   = tlkm_pcie_exit,
+	.device 	= LIST_HEAD_INIT(tlkm_pcie_dev.device),
+	.vendor_id 	= XILINX_VENDOR_ID,
+	.product_id 	= XILINX_DEVICE_ID,
+	.status_base	= 0x02800000ULL,
+	.name   	= TLKM_PCI_NAME,
+	.init   	= tlkm_pcie_init,
+	.exit   	= tlkm_pcie_exit,
+	.pirq           = pcie_irqs_request_platform_irq,
+	.rirq 		= pcie_irqs_release_platform_irq,
 };
 
 /**
@@ -73,7 +78,7 @@ static int claim_device(struct pci_dev *pdev)
 	pci_data->phy_len_bar0		= pci_resource_len(pdev, 0);
 	pci_data->phy_flags_bar0	= pci_resource_flags(pdev, 0);
 
-	LOG(TLKM_LF_PCIE, "PCI bar 0: address: %llx length: %llx",
+	LOG(TLKM_LF_PCIE, "PCI bar 0: address= 0x%08llx length: 0x%08llx",
 			pci_data->phy_addr_bar0, pci_data->phy_len_bar0);
 
 	/* map physical address to kernel space */
@@ -82,7 +87,10 @@ static int claim_device(struct pci_dev *pdev)
 		ERR("could not remap bar 0 address to kernel space");
 		goto error_pci_remap;
 	}
-	LOG(TLKM_LF_PCIE, "remapped Bar 0 Address is: %llx", (u64)pci_data->kvirt_addr_bar2);
+	LOG(TLKM_LF_PCIE, "remapped bar 0 address: 0x%08llx", (u64)pci_data->kvirt_addr_bar0);
+
+	tlkm_pcie_dev.base_offset = pci_data->phy_addr_bar0;
+	LOG(TLKM_LF_PCIE, "status core base: 0x%08llx", (u64)tlkm_pcie_dev.status_base);
 
 	tlkm_bus_add_device(&tlkm_pcie_dev);
 	pci_data->dev_id = tlkm_pcie_dev.dev_id;
@@ -173,7 +181,7 @@ static int claim_msi(struct pci_dev *pdev)
 		DEVERR(id, "cannot set MSI vector (%d)", err);
 		return -ENOSPC;
 	} else {
-		DEVWRN(id, "got %d MSI vectors", err);
+		DEVLOG(id, TLKM_LF_IRQ, "got %d MSI vectors", err);
 	}
 
 	if ((err = pcie_irqs_init(pdev))) {
@@ -188,7 +196,7 @@ static void report_link_status(struct pci_dev *pdev)
 	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *)dev_get_drvdata(&pdev->dev);
 	dev_id_t id;
 	u16 ctrl_reg = 0;
-	double gts = 0.0;
+	int gts = 0;
 
 	BUG_ON(! dev);
 	id = dev->dev_id;
@@ -198,14 +206,14 @@ static void report_link_status(struct pci_dev *pdev)
 	dev->link_speed = ctrl_reg & PCI_EXP_LNKSTA_CLS;
 
 	switch (dev->link_speed) {
-	case PCI_EXP_LNKSTA_CLS_8_0GB:	gts = 8.0;	break;
-	case PCI_EXP_LNKSTA_CLS_5_0GB:	gts = 5.0;	break;
-	case PCI_EXP_LNKSTA_CLS_2_5GB:	gts = 2.5;	break;
-	default: 		 	gts = 0.0;	break;
+	case PCI_EXP_LNKSTA_CLS_8_0GB:	gts = 80;	break;
+	case PCI_EXP_LNKSTA_CLS_5_0GB:	gts = 50;	break;
+	case PCI_EXP_LNKSTA_CLS_2_5GB:	gts = 25;	break;
+	default: 		 	gts =  0;	break;
 	}
 
 	DEVLOG(id, TLKM_LF_PCIE, "PCIe link width: x%d", dev->link_width);
-	DEVLOG(id, TLKM_LF_PCIE, "PCIe link speed: %1.1f GT/s", gts);
+	DEVLOG(id, TLKM_LF_PCIE, "PCIe link speed: %d.%d GT/s", gts / 10, gts % 10);
 }
 
 int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id)

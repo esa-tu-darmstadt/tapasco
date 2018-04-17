@@ -37,6 +37,7 @@ int __init tlkm_module_init(void)
 	if ((ret = tlkm_bus_init())) {
 		ERR("failed to initialize TaPaSCo subsystem: %d", ret);
 	}
+	LOG(TLKM_LF_MODULE, "TaPaSCo loadable kernel module is ready");
 	return ret;
 }
 

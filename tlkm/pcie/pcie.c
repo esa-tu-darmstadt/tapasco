@@ -4,9 +4,6 @@
 #include "pcie/pcie.h"
 #include "pcie/pcie_device.h"
 
-#define XILINX_VENDOR_ID   				0x10EE
-#define XILINX_DEVICE_ID   				0x7038
-
 static const struct pci_device_id tlkm_pcie_id[] = {
 	{ PCI_DEVICE( XILINX_VENDOR_ID , XILINX_DEVICE_ID ) },
 	{},

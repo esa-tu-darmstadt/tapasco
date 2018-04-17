@@ -4,6 +4,58 @@
 #include "tlkm_device.h"
 #include "tlkm_control.h"
 #include "tlkm_perfc_miscdev.h"
+#include "platform_components.h"
+
+#define TLKM_STATUS_SZ					0x1000
+#define	TLKM_STATUS_REG_OFFSET				0x1000
+
+static
+int dma_engines_init(struct tlkm_device *dev)
+{
+	int i, ret = 0;
+	u64 *component;
+	u64 dma_base[TLKM_DEVICE_MAX_DMA_ENGINES] = { 0ULL, };
+	u64 status_base;
+	BUG_ON(! dev);
+	status_base = dev->base_offset + dev->status_base + TLKM_STATUS_REG_OFFSET;
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "temporarily mapping 0x%08llx - 0x%08llx ...",
+			status_base, status_base + TLKM_STATUS_SZ);
+	component = (u64 *)ioremap_nocache(status_base, TLKM_STATUS_SZ);
+	if (IS_ERR(component)) {
+		DEVERR(dev->dev_id, "could not map status core registers: %ld", PTR_ERR(component));
+	}
+	memcpy_fromio(dma_base, component + PLATFORM_COMPONENT_DMA0, TLKM_DEVICE_MAX_DMA_ENGINES);
+	iounmap(component);
+
+	for (i = 0; i < TLKM_DEVICE_MAX_DMA_ENGINES; ++i) {
+		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA%d base: 0x%08llx", i, dma_base[i]);
+		if (! dma_base[i]) continue;
+		dma_base[i] += dev->base_offset;
+		BUG_ON(! dev->inst);
+		ret = tlkm_dma_init(&dev->inst->dma[i], dev->dev_id, (void *)dma_base[i], 0); // FIXME irq number?
+		if (ret) {
+			DEVERR(dev->dev_id, "failed to initialize DMA%d: %d", i, ret);
+			goto err_dma_engine;
+		}
+	}
+	return ret;
+
+err_dma_engine:
+	for (; i >= 0; --i)
+		tlkm_dma_exit(&dev->inst->dma[i]);
+	return ret;
+}
+
+static
+void dma_engines_exit(struct tlkm_device *dev)
+{
+	int i;
+	for (i = 0; i < TLKM_DEVICE_MAX_DMA_ENGINES; ++i) {
+		if (dev->inst->dma[i].base) {
+			tlkm_dma_exit(&dev->inst->dma[i]);
+		}
+	}
+}
 
 static
 int create_device_instance(struct tlkm_device *pdev, tlkm_access_t access)
@@ -25,13 +77,19 @@ int create_device_instance(struct tlkm_device *pdev, tlkm_access_t access)
 	}
 
 	if ((ret = tlkm_perfc_miscdev_init(pdev->inst))) {
-		ERR("could not setup performance counter device file for device #%03u: %d",
-				pdev->dev_id, ret);
+		DEVERR(pdev->dev_id, "could not setup performance counter device file: %d", ret);
 		goto err_nperfc;
+	}
+
+	if ((ret = dma_engines_init(pdev))) {
+		DEVERR(pdev->dev_id, "could not setup DMA engines for devices: %d", ret);
+		goto err_dma;
 	}
 
 	return pdev->init(pdev->inst);
 
+	dma_engines_exit(pdev);
+err_dma:
 	tlkm_perfc_miscdev_exit(pdev->inst);
 err_nperfc:
 	tlkm_control_exit(pdev->inst->ctrl);
@@ -45,9 +103,10 @@ static
 void destroy_device_instance(struct tlkm_device *pdev)
 {
 	if (pdev->inst) {
-		pdev->exit(pdev->inst);
+		dma_engines_exit(pdev);
 		tlkm_perfc_miscdev_exit(pdev->inst);
 		tlkm_control_exit(pdev->inst->ctrl);
+		pdev->exit(pdev->inst);
 		kfree(pdev->inst);
 		pdev->inst = NULL;
 	}

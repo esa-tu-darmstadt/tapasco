@@ -44,7 +44,7 @@ namespace eval addressmap {
   }
 
   proc get_known_platform_components {} {
-    set f [open "$::env(TAPASCO_HOME)/platform/common/include/platform_types.h" "r"]
+    set f [open "$::env(TAPASCO_HOME)/platform/common/include/platform_components.h" "r"]
     set fl [split [read $f] "\n"]
     foreach line $fl {
       if {[regexp {.*(PLATFORM_COMPONENT_[^\s,]*)} $line _ name]} {
