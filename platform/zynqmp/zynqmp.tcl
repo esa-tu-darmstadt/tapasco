@@ -292,10 +292,25 @@ source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
     set mem_offsets [list]
     foreach s $mem_slaves n $hp_ports {
       set offset [tapasco::ip::create_axioffset "${n}_offset"]
-      connect_bd_net [get_bd_pins $offset/CLK] $mem_aclk
-      connect_bd_net [get_bd_pins $offset/RST_N] $mem_p_arstn
+      connect_bd_net [get_bd_pins $offset/CLK] $design_aclk
+      connect_bd_net [get_bd_pins $offset/RST_N] $design_p_arstn
       connect_bd_intf_net $s [get_bd_intf_pins $offset/S_AXI]
-      lappend mem_offsets [get_bd_intf_pin $offset/M_AXI]
+      set bic [tapasco::ip::create_axi_ic "${n}_offset_ic" 1 1]
+      connect_bd_intf_net [get_bd_intf_pins $bic/S00_AXI] [get_bd_intf_pin $offset/M_AXI]
+      lappend mem_offsets [get_bd_intf_pin $bic/M00_AXI]
+      connect_bd_net $mem_aclk \
+        [get_bd_pins -of_objects $bic -filter { TYPE == clk && DIR == I && NAME !~ "S00_ACLK"}]
+      connect_bd_net $design_aclk \
+        [get_bd_pins -of_objects $bic -filter { TYPE == clk && DIR == I && NAME =~ "S00_ACLK"}]
+
+      connect_bd_net $mem_ic_arstn \
+        [get_bd_pins -of_objects $bic -filter { TYPE == rst && DIR == I && NAME =~ "ARESETN" }]
+
+      connect_bd_net $mem_p_arstn \
+        [get_bd_pins -of_objects $bic -filter { TYPE == rst && DIR == I && NAME =~ "M00_ARESETN" }]
+
+      connect_bd_net $design_p_arstn \
+        [get_bd_pins -of_objects $bic -filter { TYPE == rst && DIR == I && NAME =~ "S00_ARESETN" }]
     }
 
     # generate PS MPSoC instance. Default values are fine
@@ -348,10 +363,33 @@ source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
     connect_bd_net $mem_aclk [get_bd_pins -of_objects $ps -filter {NAME =~ "s*hp*aclk"}]
 
     # connect clocks
+    # Host side
     connect_bd_net $host_aclk \
-      [get_bd_pins -of_objects [get_bd_cells -filter {NAME !~ "*_offset"}] -filter { TYPE == clk && DIR == I && NAME !~ "s*hp*aclk"}]
+      [get_bd_pins -of_objects $ps -filter { TYPE == clk && DIR == I && NAME !~ "s*hp*aclk"}]
+    connect_bd_net $host_aclk \
+      [get_bd_pins -of_objects [list $gp0_ic_tree $gp1_ic_tree] -filter { TYPE == clk && DIR == I && NAME =~ "s_aclk"}]
+    connect_bd_net $host_aclk \
+      [get_bd_pins -of_objects $gp1_ic_tree -filter { TYPE == clk && DIR == I && NAME =~ "m_aclk"}]
+
     connect_bd_net $host_ic_arstn \
-      [get_bd_pins -of_objects [list $gp0_ic_tree $gp1_ic_tree] -filter { TYPE == rst && DIR == I && NAME =~ *interconnect* }]
+      [get_bd_pins -of_objects [list $gp0_ic_tree $gp1_ic_tree] -filter { TYPE == rst && DIR == I && NAME =~ "s_interconnect*" }]
     connect_bd_net $host_p_arstn \
-      [get_bd_pins -of_objects [list $gp0_ic_tree $gp1_ic_tree] -filter { TYPE == rst && DIR == I && NAME =~ *peripheral* }]
+      [get_bd_pins -of_objects [list $gp0_ic_tree $gp1_ic_tree] -filter { TYPE == rst && DIR == I && NAME =~ "s_peripheral*" }]
+
+    connect_bd_net $host_ic_arstn \
+      [get_bd_pins -of_objects $gp1_ic_tree -filter { TYPE == rst && DIR == I && NAME =~ "m_interconnect*" }]
+    connect_bd_net $host_p_arstn \
+      [get_bd_pins -of_objects $gp1_ic_tree -filter { TYPE == rst && DIR == I && NAME =~ "m_peripheral*" }]
+
+    # Design side
+    connect_bd_net $design_aclk \
+      [get_bd_pins -of_objects [list $gp0_ic_tree] -filter { TYPE == clk && DIR == I && NAME =~ "m_aclk"}]
+
+    connect_bd_net $design_ic_arstn \
+      [get_bd_pins -of_objects $gp0_ic_tree -filter { TYPE == rst && DIR == I && NAME =~ "m_interconnect*" }]
+    connect_bd_net $design_p_arstn \
+      [get_bd_pins -of_objects $gp0_ic_tree -filter { TYPE == rst && DIR == I && NAME =~ "m_peripheral*" }]
+
+      save_bd_design
+
   }
