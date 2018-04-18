@@ -201,8 +201,10 @@ source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
     # create hierarchical ports
     set s_axi [create_bd_intf_pin -mode Slave -vlnv [::tapasco::ip::get_vlnv "aximm_intf"] "S_INTC"]
     set aclk [::tapasco::subsystem::get_port "host" "clk"]
-    set ic_aresetn [::tapasco::subsystem::get_port "host" "rst" "interconnect"]
-    set p_aresetn [::tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
+    set design_aclk [::tapasco::subsystem::get_port "design" "clk"]
+    set ic_aresetn [::tapasco::subsystem::get_port "design" "rst" "interconnect"]
+    set p_aresetn [::tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
+    set h_p_aresetn [::tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
     set irq_out [create_bd_pin -type "intr" -dir O -to [expr "[llength $irqs] - 1"] "irq_0"]
 
     # create interrupt controllers and connect them to GP1
@@ -231,13 +233,17 @@ source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
     }
 
     # connect internal clocks
-    connect_bd_net -net intc_clock_net $aclk [get_bd_pins -of_objects [get_bd_cells] -filter {TYPE == "clk" && DIR == "I"}]
+    connect_bd_net -net intc_clock_net $design_aclk [get_bd_pins -of_objects [get_bd_cells] -filter {TYPE == "clk" && DIR == "I" && NAME !~ "S00_ACLK"}]
+    connect_bd_net $aclk [get_bd_pins -of_objects [get_bd_cells] -filter {TYPE == "clk" && DIR == "I" && NAME == "S00_ACLK"}]
     # connect internal interconnect resets
     set ic_resets [get_bd_pins -of_objects [get_bd_cells -filter {VLNV =~ "*:axi_interconnect:*"}] -filter {NAME == "ARESETN"}]
     connect_bd_net -net intc_ic_reset_net $ic_aresetn $ic_resets
     # connect internal peripheral resets
-    set p_resets [get_bd_pins -of_objects [get_bd_cells] -filter {TYPE == rst && DIR == I && NAME != "ARESETN"}]
+    set p_resets [get_bd_pins -of_objects [get_bd_cells] -filter {TYPE == rst && DIR == I && NAME != "ARESETN" && NAME !~ "S00_ARESETN"}]
     connect_bd_net -net intc_p_reset_net $p_aresetn $p_resets
+
+    set p_resets
+    connect_bd_net $h_p_aresetn [get_bd_pins -of_objects [get_bd_cells] -filter {TYPE == rst && DIR == I && NAME != "ARESETN" && NAME == "S00_ARESETN"}]
 
     # connect S_AXI
     connect_bd_intf_net $s_axi [get_bd_intf_pins -of_objects $intcic -filter {NAME == "S00_AXI"}]
