@@ -311,8 +311,12 @@ source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
       CONFIG.PSU__USE__S_AXI_GP4 {1}  \
       CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ [tapasco::get_design_frequency] \
       CONFIG.PSU__CRL_APB__PL1_REF_CTRL__FREQMHZ {10} \
+      CONFIG.PSU__USE__IRQ0 {1} \
       CONFIG.PSU__USE__IRQ1 {1} \
-      CONFIG.PSU__HIGH_ADDRESS__ENABLE {1}
+      CONFIG.PSU__HIGH_ADDRESS__ENABLE {1} \
+      CONFIG.PSU__USE__M_AXI_GP0 {1} \
+      CONFIG.PSU__USE__M_AXI_GP1 {1} \
+      CONFIG.PSU__USE__M_AXI_GP2 {0}
       ] $ps
     puts "  PS configuration finished"
 
