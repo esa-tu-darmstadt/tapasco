@@ -82,12 +82,11 @@ err_dma_bufs:
 void tlkm_dma_exit(struct dma_engine *dma)
 {
 	int i;
-	dev_id_t dev_id = dma->dev_id;
 	for (i = 0; i < TLKM_DMA_BUFS; ++i)
 		kfree(dma->dma_buf[i]);
 	iounmap(dma->regs);
 	memset(dma, 0, sizeof(*dma));
-	DEVLOG(dev_id, TLKM_LF_DMA, "deinitialized DMA engine");
+	DEVLOG(dma->dev_id, TLKM_LF_DMA, "deinitialized DMA engine");
 }
 
 ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void __user *usr_addr, size_t len)

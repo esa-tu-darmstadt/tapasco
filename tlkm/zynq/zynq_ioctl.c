@@ -31,16 +31,17 @@
 #include "tlkm_device_ioctl_cmds.h"
 #include "zynq_device.h"
 #include "zynq_dmamgmt.h"
+#include "zynq_platform.h"
 
 static inline
-long zynq_ioctl_info(struct tlkm_device_inst *inst, struct tlkm_device_info *info)
+long zynq_ioctl_info(struct tlkm_device *inst, struct tlkm_device_info *info)
 {
 	DEVERR(inst->dev_id, "should never be called");
 	return -EFAULT;
 }
 
 static inline
-long zynq_ioctl_alloc(struct tlkm_device_inst *inst, struct tlkm_mm_cmd *cmd)
+long zynq_ioctl_alloc(struct tlkm_device *inst, struct tlkm_mm_cmd *cmd)
 {
 	struct dma_buf_t *dmab;
 	dma_addr_t dma_addr;
@@ -65,7 +66,7 @@ long zynq_ioctl_alloc(struct tlkm_device_inst *inst, struct tlkm_mm_cmd *cmd)
 }
 
 static inline
-long zynq_ioctl_free(struct tlkm_device_inst *inst, struct tlkm_mm_cmd *cmd)
+long zynq_ioctl_free(struct tlkm_device *inst, struct tlkm_mm_cmd *cmd)
 {
 	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "free: len = %zu, dma = 0x%08lx", cmd->sz, (unsigned long)cmd->dev_addr);
 	if (cmd->dev_addr >= 0) {
@@ -77,7 +78,7 @@ long zynq_ioctl_free(struct tlkm_device_inst *inst, struct tlkm_mm_cmd *cmd)
 }
 
 static inline
-long zynq_ioctl_copyto(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cmd)
+long zynq_ioctl_copyto(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
 {
 	struct dma_buf_t *dmab;
 	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "copyto: len = %zu, dma = 0x%08lx, p = 0x%08lx",
@@ -109,7 +110,7 @@ long zynq_ioctl_copyto(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cmd)
 }
 
 static inline
-long zynq_ioctl_copyfrom(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cmd)
+long zynq_ioctl_copyfrom(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
 {
 	struct dma_buf_t *dmab;
 	DEVLOG(inst->dev_id, TLKM_LF_DEVICE, "copyfrom: len = %zu, id = %ld, p = 0x%08lx",
@@ -129,7 +130,7 @@ long zynq_ioctl_copyfrom(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cm
 }
 
 static inline
-long zynq_ioctl_alloc_copyto(struct tlkm_device_inst *inst, struct tlkm_bulk_cmd *cmd)
+long zynq_ioctl_alloc_copyto(struct tlkm_device *inst, struct tlkm_bulk_cmd *cmd)
 {
 	long ret = 0;
 	if ((ret = zynq_ioctl_alloc(inst, &cmd->mm))) {
@@ -145,7 +146,7 @@ long zynq_ioctl_alloc_copyto(struct tlkm_device_inst *inst, struct tlkm_bulk_cmd
 }
 
 static inline
-long zynq_ioctl_copyfrom_free(struct tlkm_device_inst *inst, struct tlkm_bulk_cmd *cmd)
+long zynq_ioctl_copyfrom_free(struct tlkm_device *inst, struct tlkm_bulk_cmd *cmd)
 {
 	long ret = 0;
 	if ((ret = zynq_ioctl_copyfrom(inst, &cmd->copy))) {
@@ -162,7 +163,7 @@ long zynq_ioctl_copyfrom_free(struct tlkm_device_inst *inst, struct tlkm_bulk_cm
 }
 
 static inline
-long zynq_ioctl_read(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cmd)
+long zynq_ioctl_read(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
 {
 	long ret = -ENXIO;
 	void __iomem *ptr = NULL;
@@ -193,7 +194,7 @@ long zynq_ioctl_read(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cmd)
 }
 
 static inline
-long zynq_ioctl_write(struct tlkm_device_inst *inst, struct tlkm_copy_cmd *cmd)
+long zynq_ioctl_write(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
 {
 	long ret = -ENXIO;
 	void __iomem *ptr = NULL;
@@ -225,7 +226,7 @@ err:
 	return ret;
 }
 
-long zynq_ioctl(struct tlkm_device_inst *inst, unsigned int ioctl, unsigned long data)
+long zynq_ioctl(struct tlkm_device *inst, unsigned int ioctl, unsigned long data)
 {
 	int ret = -ENXIO;
 #define _TLKM_DEV_IOCTL(NAME, name, id, dt) \

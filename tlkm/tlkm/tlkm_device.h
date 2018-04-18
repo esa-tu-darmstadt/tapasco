@@ -8,6 +8,7 @@
 #include "tlkm_types.h"
 #include "tlkm_perfc.h"
 #include "tlkm_access.h"
+#include "tlkm_status.h"
 #include "dma/tlkm_dma.h"
 
 #define TLKM_DEVICE_NAME_LEN				30
@@ -15,49 +16,41 @@
 
 struct tlkm_device;
 
-struct tlkm_device_inst {
-	dev_id_t 		dev_id;
-	size_t			ref_cnt[TLKM_ACCESS_TYPES];
-	struct tlkm_control	*ctrl;
-	struct dma_engine	dma[TLKM_DEVICE_MAX_DMA_ENGINES];
-#ifndef NPERFC
-	struct miscdevice	perfc_dev;
-#endif
-	void 			*private_data;
-};
-
-
 typedef irqreturn_t (*intr_handler_f)(int, void*);
 
-typedef int  (*tlkm_device_init_f)(struct tlkm_device_inst *);
-typedef void (*tlkm_device_exit_f)(struct tlkm_device_inst *);
-typedef long (*tlkm_device_ioctl_f)(struct tlkm_device_inst *, unsigned int ioctl, unsigned long data);
-typedef int  (*tlkm_device_mmap_f)(struct tlkm_device_inst *, struct vm_area_struct *vm);
-typedef int  (*tlkm_device_pirq_f)(struct tlkm_device *, int irq_no, intr_handler_f h);
-typedef void (*tlkm_device_rirq_f)(struct tlkm_device *, int irq_no);
+typedef long (*tlkm_device_ioctl_f)(struct tlkm_device *, unsigned int ioctl, unsigned long data);
+typedef int  (*tlkm_device_mmap_f) (struct tlkm_device *, struct vm_area_struct *vm);
+typedef int  (*tlkm_device_pirq_f) (struct tlkm_device *, int irq_no, intr_handler_f h);
+typedef void (*tlkm_device_rirq_f) (struct tlkm_device *, int irq_no);
 
 struct tlkm_device {
 	struct list_head 	device; 	/* this device in tlkm_bus */
 	struct mutex 		mtx;
-	dev_id_t		dev_id;
+	struct tlkm_class	*cls;		/* class of the device */
+	dev_id_t		dev_id;		/* id of the device in tlkm_bus */
 	char 			name[TLKM_DEVICE_NAME_LEN];
 	int 			vendor_id;
 	int 			product_id;
-	tlkm_device_init_f 	init;
-	tlkm_device_exit_f 	exit;
-	tlkm_device_ioctl_f	ioctl;
-	tlkm_device_mmap_f	mmap;
+	dev_addr_t		base_offset;	/* physical base offset of bitstream */
+
+	tlkm_device_ioctl_f	ioctl;		/* ioctl implementation */
+	tlkm_device_mmap_f	mmap;		/* mmap implementation */
 	tlkm_device_pirq_f	pirq;		/* request platform IRQ */
 	tlkm_device_rirq_f	rirq;		/* release platform IRQ */
-	dev_addr_t		base_offset;	/* physical base offset of bitstream */
-	dev_addr_t		status_base;	/* physical offset of status core in bitstream */
-	size_t			numpirqs;	/* number of available platform interrupts */
-	struct tlkm_device_inst *inst;
-};
-typedef struct tlkm_device tlkm_device_t;
 
-int  tlkm_device_create(struct tlkm_device *pdev, tlkm_access_t access);
-void tlkm_device_destroy(struct tlkm_device *pdev, tlkm_access_t access);
+	size_t			ref_cnt[TLKM_ACCESS_TYPES];
+	struct tlkm_status	status;		/* address map information */
+	struct tlkm_control	*ctrl;		/* main device file */
+	struct dma_engine	dma[TLKM_DEVICE_MAX_DMA_ENGINES];
+#ifndef NPERFC
+	struct miscdevice	perfc_dev;	/* performance counter device */
+#endif
+	void 			*private_data;	/* implementation-specific data */
+};
+
+int  tlkm_device_init(struct tlkm_device *pdev);
+int  tlkm_device_acquire(struct tlkm_device *pdev, tlkm_access_t access);
+void tlkm_device_release(struct tlkm_device *pdev, tlkm_access_t access);
 void tlkm_device_remove_all(struct tlkm_device *pdev);
 
 static inline

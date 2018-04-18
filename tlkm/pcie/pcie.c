@@ -17,7 +17,7 @@ static struct pci_driver tlkm_pcie_driver = {
 	.remove			= tlkm_pcie_remove,
 };
 
-int pcie_init()
+int pcie_init(struct tlkm_class *cls)
 {
 	int err = 0;
 	LOG(TLKM_LF_PCIE, "registering TLKM PCIe driver ...");
@@ -27,7 +27,7 @@ int pcie_init()
 	return 0;
 }
 
-void pcie_deinit()
+void pcie_exit(struct tlkm_class *cls)
 {
 	pci_unregister_driver(&tlkm_pcie_driver);
 	LOG(TLKM_LF_PCIE, "deregistered TLKM PCIe driver");

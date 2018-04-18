@@ -18,13 +18,12 @@
 //
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-//#include <linux/version.h>
 #include <linux/interrupt.h>
-//#include <linux/module.h>
 #include <linux/io.h>
 #include <linux/sched.h>
 #include "tlkm_logging.h"
 #include "zynq_irq.h"
+#include "zynq_platform.h"
 
 #define ZYNQ_IRQ_BASE_IRQ					45
 #define ZYNQ_MAX_NUM_INTCS					4	

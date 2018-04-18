@@ -31,25 +31,24 @@
 int  tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id);
 void tlkm_pcie_remove(struct pci_dev *pdev);
 
+int  pcie_device_create(struct tlkm_device *dev);
+void pcie_device_destroy(struct tlkm_device *dev);
+
 /* struct to hold data related to the pcie device */
 struct tlkm_pcie_device {
-	dev_id_t		dev_id;
+	struct tlkm_device	*parent;
 	struct pci_dev 		*pdev;
 	u64 			phy_addr_bar0;
 	u64 			phy_len_bar0;
 	u64 			phy_flags_bar0;
-	u64 			phy_addr_bar2;
-	u64 			phy_len_bar2;
-	u64 			phy_flags_bar2;
-	int 			irq_mapping[REQUIRED_INTERRUPTS];
 	void 			*kvirt_addr_bar0;
-	void 			*kvirt_addr_bar2;
+	int 			irq_mapping[REQUIRED_INTERRUPTS];
 	int			link_width;
 	int			link_speed;
 	struct work_struct	irq_work[TLKM_SLOT_INTERRUPTS];
-	struct tlkm_control 	*ctrl;
 };
 
 ssize_t pcie_enumerate(void);
+ssize_t pcie_device_probe(struct tlkm_class *cls);
 
 #endif // PCIE_DEVICE_H__

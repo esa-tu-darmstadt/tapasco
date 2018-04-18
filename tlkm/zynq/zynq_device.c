@@ -1,13 +1,21 @@
+#include <linux/of.h>
 #include <linux/fs.h>
 #include <linux/io.h>
 #include "tlkm_logging.h"
 #include "tlkm_types.h"
+#include "tlkm_bus.h"
+#include "zynq.h"
 #include "zynq_device.h"
 #include "zynq_irq.h"
 #include "zynq_dmamgmt.h"
 #include "zynq_platform.h"
 
-static struct zynq_device _zynq_dev;
+static const struct of_device_id zynq_ids[] = {
+	{ .compatible = ZYNQ_NAME, },
+	{},
+};
+
+static struct zynq_device _zynq_dev;		// there is at most one Zynq
 
 static int init_iomapping(void)
 {
@@ -77,7 +85,7 @@ static void exit_iomapping(void)
 	DEVLOG(_zynq_dev.dev_id, TLKM_LF_DEVICE, "released all I/O maps");
 }
 
-int zynq_device_init(struct tlkm_device_inst *inst)
+int zynq_device_init(struct tlkm_device *inst)
 {
 	int ret = 0;
 #ifndef NDEBUG
@@ -87,8 +95,7 @@ int zynq_device_init(struct tlkm_device_inst *inst)
 	}
 #endif /* NDEBUG */
 	DEVLOG(inst->dev_id, TLKM_LF_DEVICE, "initializing zynq device");
-	inst->private_data = (void *)&_zynq_dev;
-	_zynq_dev.dev_id = inst->dev_id;
+	inst->private_data = &_zynq_dev;
 
 	if ((ret = zynq_dmamgmt_init())) {
 		DEVERR(inst->dev_id, "could not initialize DMA management: %d", ret);
@@ -116,7 +123,7 @@ err_dmamgmt:
 	return ret;
 }
 
-void zynq_device_exit(struct tlkm_device_inst *inst)
+void zynq_device_exit(struct tlkm_device *inst)
 {
 #ifndef NDEBUG
 	if (! inst) {
@@ -129,4 +136,18 @@ void zynq_device_exit(struct tlkm_device_inst *inst)
 	inst->private_data = NULL;
 	zynq_dmamgmt_exit();
 	DEVLOG(_zynq_dev.dev_id, TLKM_LF_DEVICE, "zynq device exited");
+}
+
+int zynq_device_probe(struct tlkm_class *cls)
+{
+	struct tlkm_device *inst;
+	LOG(TLKM_LF_DEVICE, "searching for Xilinx Zynq-7000 series devices ...");
+	if (of_find_matching_node(NULL, zynq_ids)) {
+		LOG(TLKM_LF_DEVICE, "found Xilinx Zynq-7000");
+		inst = tlkm_bus_new_device(cls, ZYNQ_CLASS_NAME, 0, 0);
+		BUG_ON(! inst);
+		return 1;
+	}
+	LOG(TLKM_LF_DEVICE, "no Xilinx Zynq-7000 series device found");
+	return 0;
 }

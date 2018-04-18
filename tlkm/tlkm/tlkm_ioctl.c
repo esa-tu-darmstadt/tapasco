@@ -81,7 +81,7 @@ long tlkm_ioctl_create_device(struct file *fp, unsigned int ioctl,
 		return -EACCES;
 	}
 	LOG(TLKM_LF_IOCTL, "create device #%03u command received", kc.dev_id);
-	return tlkm_bus_create_device(kc.dev_id, kc.access);
+	return tlkm_device_acquire(tlkm_bus_get_device(kc.dev_id), kc.access);
 }
 
 static
@@ -94,7 +94,7 @@ long tlkm_ioctl_destroy_device(struct file *fp, unsigned int ioctl,
 		return -EACCES;
 	}
 	LOG(TLKM_LF_IOCTL, "destroy device #%03u command received", kc.dev_id);
-	tlkm_bus_destroy_device(kc.dev_id, kc.access);
+	tlkm_device_release(tlkm_bus_get_device(kc.dev_id), kc.access);
 	return 0;
 }
 

@@ -13,27 +13,10 @@
 #include "tlkm_bus.h"
 
 #define TLKM_DEV_ID(pdev) \
-	(((struct tlkm_pcie_device *)dev_get_drvdata(&(pdev)->dev))->dev_id)
+	(((struct tlkm_pcie_device *)dev_get_drvdata(&(pdev)->dev))->parent->dev_id)
 
 static size_t num_devices = 0;
 ssize_t pcie_enumerate(void) { return num_devices; }
-
-static struct tlkm_device devices[PLATFORM_MAX_DEVS];
-
-static int  tlkm_pcie_init(struct tlkm_device_inst *d) { return 0; }
-static void tlkm_pcie_exit(struct tlkm_device_inst *d) {}
-
-static struct tlkm_device tlkm_pcie_dev = {
-	.device 	= LIST_HEAD_INIT(tlkm_pcie_dev.device),
-	.vendor_id 	= XILINX_VENDOR_ID,
-	.product_id 	= XILINX_DEVICE_ID,
-	.status_base	= 0x02800000ULL,
-	.name   	= TLKM_PCI_NAME,
-	.init   	= tlkm_pcie_init,
-	.exit   	= tlkm_pcie_exit,
-	.pirq           = pcie_irqs_request_platform_irq,
-	.rirq 		= pcie_irqs_release_platform_irq,
-};
 
 /**
  * @brief Enables pcie-device and claims/remaps neccessary bar resources
@@ -44,11 +27,15 @@ static int claim_device(struct pci_dev *pdev)
 {
 	int err = 0;
 	struct tlkm_pcie_device *pci_data;
+	struct tlkm_device *dev = tlkm_bus_new_device((struct tlkm_class *)&pcie_cls,
+			TLKM_PCI_NAME,
+			XILINX_VENDOR_ID,
+			XILINX_DEVICE_ID);
 
 	/* wake up the pci device */
 	err = pci_enable_device(pdev);
 	if (err) {
-		WRN("failed to enable PCIe-device: %d", err);
+		DEVWRN(dev->dev_id, "failed to enable PCIe-device: %d", err);
 		goto error_pci_en;
 	}
 
@@ -58,19 +45,13 @@ static int claim_device(struct pci_dev *pdev)
 	/* setup BAR memory regions */
 	err = pci_request_regions(pdev, TLKM_PCI_NAME);
 	if (err) {
-		WRN("failed to setup bar regions for pci device %d", err);
+		DEVWRN(dev->dev_id, "failed to setup bar regions for pci device %d", err);
 		goto error_pci_req;
 	}
 
-	pci_data = (struct tlkm_pcie_device *)dev_get_drvdata(&pdev->dev);
-	if (! pci_data) {
-		pci_data = (struct tlkm_pcie_device *)kzalloc(sizeof(*pci_data), GFP_KERNEL);
-		if (! pci_data) {
-			ERR("could not allocate private PCI data struct");
-			goto error_pci_req;
-		}
-		dev_set_drvdata(&pdev->dev, pci_data);
-	}
+	pci_data = (struct tlkm_pcie_device *)dev->private_data;
+	BUG_ON(! pci_data);
+	dev_set_drvdata(&pdev->dev, pci_data);
 
 	/* read out pci bar 0 settings */
 	pci_data->pdev			= pdev;
@@ -89,14 +70,11 @@ static int claim_device(struct pci_dev *pdev)
 	}
 	LOG(TLKM_LF_PCIE, "remapped bar 0 address: 0x%08llx", (u64)pci_data->kvirt_addr_bar0);
 
-	tlkm_pcie_dev.base_offset = pci_data->phy_addr_bar0;
-	LOG(TLKM_LF_PCIE, "status core base: 0x%08llx", (u64)tlkm_pcie_dev.status_base);
+	dev->base_offset = pci_data->phy_addr_bar0;
+	LOG(TLKM_LF_PCIE, "status core base: 0x%08llx", (u64)pcie_cls.status_base);
 
-	tlkm_bus_add_device(&tlkm_pcie_dev);
-	pci_data->dev_id = tlkm_pcie_dev.dev_id;
-	devices[pci_data->dev_id] = tlkm_pcie_dev;
-	tlkm_perfc_link_speed_set(pci_data->dev_id, pci_data->link_speed);
-	tlkm_perfc_link_width_set(pci_data->dev_id, pci_data->link_width);
+	tlkm_perfc_link_speed_set(dev->dev_id, pci_data->link_speed);
+	tlkm_perfc_link_width_set(dev->dev_id, pci_data->link_width);
 	num_devices++;
 
 	return 0;
@@ -155,7 +133,7 @@ static int claim_msi(struct pci_dev *pdev)
 	struct tlkm_pcie_device *pci_data = (struct tlkm_pcie_device *)dev_get_drvdata(&pdev->dev);
 	dev_id_t id;
 	BUG_ON(! pci_data);
-	id = pci_data->dev_id;
+	id = TLKM_DEV_ID(pdev);
 
 	for (i = 0; i < REQUIRED_INTERRUPTS; i++) {
 		pci_data->irq_mapping[i] = -1;
@@ -199,7 +177,7 @@ static void report_link_status(struct pci_dev *pdev)
 	int gts = 0;
 
 	BUG_ON(! dev);
-	id = dev->dev_id;
+	id = TLKM_DEV_ID(pdev);
 	pcie_capability_read_word(pdev, PCI_EXP_LNKSTA, &ctrl_reg);
 
 	dev->link_width = (ctrl_reg & PCI_EXP_LNKSTA_NLW) >> PCI_EXP_LNKSTA_NLW_SHIFT;
@@ -231,22 +209,8 @@ int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	}
 
 	report_link_status(pdev);
-
-	if (0/*char_dma_register()*/) {
-		DEVLOG(TLKM_DEV_ID(pdev), TLKM_LF_PCIE, "could not register dma char device(s)");
-		goto error_cannot_configure;
-	}
-
-	if (0/*char_user_register()*/) {
-		DEVLOG(TLKM_DEV_ID(pdev), TLKM_LF_PCIE, "could not register user char device(s)");
-		goto error_user_register;
-	}
-
 	return 0;
 
-	//char_user_unregister();
-error_user_register:
-	//char_dma_unregister();
 error_cannot_configure:
 	release_device(pdev);
 error_no_device:
@@ -256,8 +220,6 @@ error_no_device:
 void tlkm_pcie_remove(struct pci_dev *pdev)
 {
 	DEVLOG(TLKM_DEV_ID(pdev), TLKM_LF_PCIE, "unload pcie-device");
-	//char_dma_unregister();
-	//char_user_unregister();
 	pcie_irqs_deinit(pdev);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
 	pci_disable_msix(pdev);
@@ -265,4 +227,24 @@ void tlkm_pcie_remove(struct pci_dev *pdev)
 	pci_free_irq_vectors(pdev);
 #endif
 	release_device(pdev);
+}
+
+
+int pcie_device_create(struct tlkm_device *dev)
+{
+	struct tlkm_pcie_device *pdev;
+	BUG_ON(! dev);
+	pdev = (struct tlkm_pcie_device *)kzalloc(sizeof(*pdev), GFP_KERNEL);
+	pdev->parent = dev;
+	dev->private_data = pdev;
+	return 0;
+}
+
+void pcie_device_destroy(struct tlkm_device *dev)
+{
+	BUG_ON(! dev);
+	if (dev->private_data) {
+		kfree(dev->private_data);
+		dev->private_data = NULL;
+	}
 }

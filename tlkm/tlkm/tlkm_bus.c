@@ -1,12 +1,19 @@
 #include <linux/list.h>
+#include <linux/slab.h>
+#include <linux/gfp.h>
+#include <linux/string.h>
+#include <linux/mutex.h>
 #include <linux/perf_event.h>
 #include "tlkm_bus.h"
+#include "tlkm_class.h"
 #include "tlkm.h"
 #include "tlkm_bus.h"
 #include "tlkm_logging.h"
-#include "zynq/zynq_enumerate.h"
 #include "pcie/pcie.h"
+#include "zynq/zynq.h"
 #include "pcie/pcie_device.h"
+
+static DEFINE_MUTEX(_tlkm_bus_mtx);
 
 static
 struct tlkm_bus {
@@ -17,58 +24,92 @@ struct tlkm_bus {
 	.num_devs = 0,
 };
 
+static struct tlkm_class *const _tlkm_class[] = {
+	(struct tlkm_class *)&zynq_cls,
+	(struct tlkm_class *)&pcie_cls,
+};
+
+static
 void tlkm_bus_add_device(struct tlkm_device *pdev)
 {
+	mutex_lock(&_tlkm_bus_mtx);
 	list_add(&pdev->device, &_tlkm_bus.devices);
 	pdev->dev_id = _tlkm_bus.num_devs++;
+	mutex_unlock(&_tlkm_bus_mtx);
 	LOG(TLKM_LF_BUS, "added device '%s' to bus", pdev->name);
 }
 
+static
 void tlkm_bus_del_device(struct tlkm_device *pdev)
 {
+	mutex_lock(&_tlkm_bus_mtx);
 	list_del(&_tlkm_bus.devices);
 	--_tlkm_bus.num_devs;
+	mutex_unlock(&_tlkm_bus_mtx);
 	LOG(TLKM_LF_BUS, "removed device '%s' from bus", pdev->name);
+}
+
+struct tlkm_device *tlkm_bus_new_device(struct tlkm_class *cls, const char *name, int vendor_id, int product_id)
+{
+	int ret = 0;
+	struct tlkm_device *dev = (struct tlkm_device *)kzalloc(sizeof(*dev), GFP_KERNEL);
+	if (dev) {
+		strncpy(dev->name, name, sizeof(dev->name));
+		dev->vendor_id = vendor_id;
+		dev->product_id = product_id;
+		dev->cls = cls;
+		tlkm_bus_add_device(dev);
+		if ((ret = tlkm_device_init(dev))) {
+			DEVERR(dev->dev_id, "could not initialize device: %d", ret);
+			tlkm_bus_delete_device(dev);
+			return NULL;
+		}
+		mutex_init(&dev->mtx);
+		return dev;
+	}
+	ERR("could not allocate new tlkm_device");
+	return NULL;
+}
+
+void tlkm_bus_delete_device(struct tlkm_device *dev)
+{
+	if (dev) {
+		tlkm_bus_del_device(dev);
+		kfree(dev);
+	}
 }
 
 ssize_t tlkm_bus_enumerate(void)
 {
-	return zynq_enumerate() + pcie_enumerate();
+	int i;
+	ssize_t ret = 0;
+	for (i = 0; i < sizeof(_tlkm_class)/sizeof(*_tlkm_class); ++i) {
+		ssize_t r = _tlkm_class[i]->probe(_tlkm_class[i]);
+		if (r < 0)
+			ERR("error occurred while probing class '%s': %zd", _tlkm_class[i]->name, r);
+		else
+			ret += r;
+	}
+	return ret;
 }
 
 int tlkm_bus_init(void)
 {
 	int ret = 0;
 	ssize_t n;
-	struct list_head *lh;
-	LOG(TLKM_LF_BUS, "registering drivers ...");
-	if ((ret = pcie_init())) {
-		ERR("error while registering PCIe driver: %d", ret);
-		return ret;
-	}
 	LOG(TLKM_LF_BUS, "detecting TaPaSCo devices ...");
 	n = tlkm_bus_enumerate();
 	if (n < 0) {
 		ERR("could not detect devices, error: %zd", n);
-		pcie_deinit();
 		return n;
 	}
 	if (! n) {
 		ERR("did not find any TaPaSCo devices, cannot proceed");
-		pcie_deinit();
 		return -ENXIO;
 	}
 	LOG(TLKM_LF_BUS, "found %zd TaPaSCo devices", n);
-	list_for_each(lh, &_tlkm_bus.devices) {
-		struct tlkm_device *d = container_of(lh, struct tlkm_device,
-				device);
-		LOG(TLKM_LF_BUS, "TaPaSCo device '%s' (%04x:%04x)", d->name,
-				d->vendor_id, d->product_id);
-		tlkm_device_create(d, TLKM_ACCESS_MONITOR);
-	}
 	if ((ret = tlkm_init())) {
-		ERR("failed to initialize ioctl file: %d", ret);
-		pcie_deinit();
+		ERR("failed to initialize main ioctl file: %d", ret);
 	}
 	return ret;
 }
@@ -76,14 +117,17 @@ int tlkm_bus_init(void)
 void tlkm_bus_exit(void)
 {
 	struct list_head *lh;
-	list_for_each(lh, &_tlkm_bus.devices) {
-		struct tlkm_device *d = container_of(lh, struct tlkm_device,
-				device);
+	struct list_head *tmp;
+	int i;
+	list_for_each_safe(lh, tmp, &_tlkm_bus.devices) {
+		struct tlkm_device *d = container_of(lh, struct tlkm_device, device);
 		LOG(TLKM_LF_BUS, "TaPaSCo device '%s' (%04x:%04x)", d->name,
 				d->vendor_id, d->product_id);
-		tlkm_device_remove_all(d);
+		if (d->cls->destroy)
+			d->cls->destroy(d);
 	}
-	pcie_deinit();
+	for (i = 0; i < sizeof(_tlkm_class)/sizeof(*_tlkm_class); ++i)
+		_tlkm_class[i]->remove(_tlkm_class[i]);
 	tlkm_exit();
 	LOG(TLKM_LF_BUS, "removed TaPaSCo interfaces, bye");
 }

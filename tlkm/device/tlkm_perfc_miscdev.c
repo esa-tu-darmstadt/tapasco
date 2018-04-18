@@ -37,8 +37,8 @@ inline static
 dev_id_t get_dev_id_from_file(struct file *file)
 {
 	struct miscdevice *dev = (struct miscdevice *)file->private_data;
-	struct tlkm_device_inst *inst = container_of(dev,
-			struct tlkm_device_inst, perfc_dev);
+	struct tlkm_device *inst = container_of(dev,
+			struct tlkm_device, perfc_dev);
 	return inst->dev_id;
 }
 
@@ -73,7 +73,7 @@ const struct file_operations tlkm_perfc_miscdev_fops = {
 	.read  = tlkm_perfc_miscdev_read,
 };
 
-int tlkm_perfc_miscdev_init(struct tlkm_device_inst *dev)
+int tlkm_perfc_miscdev_init(struct tlkm_device *dev)
 {
 	int ret = 0;
 	char fn[256];
@@ -90,7 +90,7 @@ int tlkm_perfc_miscdev_init(struct tlkm_device_inst *dev)
 	return 0;
 }
 
-void tlkm_perfc_miscdev_exit(struct tlkm_device_inst *dev)
+void tlkm_perfc_miscdev_exit(struct tlkm_device *dev)
 {
 	misc_deregister(&dev->perfc_dev);
 	kfree(dev->perfc_dev.name);

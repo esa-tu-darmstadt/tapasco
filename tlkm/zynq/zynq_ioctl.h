@@ -3,6 +3,6 @@
 
 #include "tlkm_device.h"
 
-long zynq_ioctl(struct tlkm_device_inst *inst, unsigned ioctl, unsigned long data);
+long zynq_ioctl(struct tlkm_device *inst, unsigned ioctl, unsigned long data);
 
 #endif /* ZYNQ_IOCTL_H__ */

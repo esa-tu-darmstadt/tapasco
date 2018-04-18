@@ -3,7 +3,7 @@
 #include "zynq_mmap.h"
 #include "zynq_platform.h"
 
-int zynq_mmap(struct tlkm_device_inst *dp, struct vm_area_struct *vm)
+int zynq_mmap(struct tlkm_device *dp, struct vm_area_struct *vm)
 {
 	ssize_t const sz = vm->vm_end - vm->vm_start;
 	ulong const off = vm->vm_pgoff << PAGE_SHIFT;

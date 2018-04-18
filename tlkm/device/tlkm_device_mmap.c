@@ -18,5 +18,5 @@ int tlkm_device_mmap(struct file *fp, struct vm_area_struct *vm)
 	if (! mmap_f) {
 		DEVWRN(d->dev_id, "device has no mmap() implementation, register accesses are likely  slow!");
 	}
-	return mmap_f ? mmap_f(d->inst, vm) : -ENXIO;
+	return mmap_f ? mmap_f(d, vm) : -ENXIO;
 }

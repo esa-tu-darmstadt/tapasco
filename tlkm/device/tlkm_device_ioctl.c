@@ -21,12 +21,6 @@ struct tlkm_device *device_from_file(struct file *fp)
 	return tlkm_bus_get_device(c->dev_id);
 }
 
-static
-struct tlkm_device_inst *device_inst_from_file(struct file *fp)
-{
-	return device_from_file(fp)->inst;
-}
-
 long tlkm_device_ioctl_info(struct file *fp, unsigned int ioctl,
 		struct tlkm_device_info __user *info)
 {
@@ -61,6 +55,6 @@ long tlkm_device_ioctl(struct file *fp, unsigned int ioctl, unsigned long data)
 	} else {
 		tlkm_device_ioctl_f ioctl_f = device_from_file(fp)->ioctl;
 		BUG_ON(!ioctl_f);
-		return ioctl_f(device_inst_from_file(fp), ioctl, data);
+		return ioctl_f(device_from_file(fp), ioctl, data);
 	}
 }
