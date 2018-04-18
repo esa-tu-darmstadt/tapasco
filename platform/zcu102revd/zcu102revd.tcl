@@ -17,8 +17,6 @@
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-enable_beta_device "*xczu9eg*"
-
 namespace eval platform {
   set platform_dirname "zcu102revd"
 

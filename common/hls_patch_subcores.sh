@@ -23,4 +23,3 @@
 # @authors	J. Korinth (jk@esa.cs.tu-darmstadt.de
 #
 sed -i 's/\(ipx::save_core.*\)$/if {[llength [glob -nocomplain subcore\/*]] > 0} {\n  set subcore_grp [ipx::add_file_group "subcore" $core]\n  foreach f [glob -nocomplain subcore\/*] { ipx::add_file $f $subcore_grp }\n}\n\1/g' run_ippack.tcl
-sed -i '1s/^/enable_beta_device *\n/' run_ippack.tcl

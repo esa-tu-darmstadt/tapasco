@@ -21,8 +21,6 @@
 # @authors	J. Korinth (jk@esa.cs.tu-darmstadt.de
 #
 
-enable_beta_device *
-
 # source base lib
 source -notrace "$::env(TAPASCO_HOME)/common/common.tcl"
 
