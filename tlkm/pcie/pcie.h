@@ -6,6 +6,7 @@
 #include "pcie/pcie_irq.h"
 
 #define TLKM_PCI_NAME					"tlkm"
+#define TLKM_CLS_NAME					"pcie"
 #define XILINX_VENDOR_ID   				0x10EE
 #define XILINX_DEVICE_ID   				0x7038
 
@@ -14,7 +15,7 @@ void pcie_exit(struct tlkm_class *cls);
 
 static const
 struct tlkm_class pcie_cls = {
-	.name 			= TLKM_PCI_NAME,
+	.name 			= TLKM_CLS_NAME,
 	.create			= pcie_device_create,
 	.destroy		= pcie_device_destroy,
 	.probe			= pcie_init,

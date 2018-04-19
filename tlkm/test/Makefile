@@ -1,4 +1,4 @@
-CFLAGS+=-Wall -Werror -I$(TAPASCO_HOME)/module/user
+CFLAGS+=-Wall -Werror -I$(TAPASCO_HOME)/tlkm/user
 LDFLAGS+=-lc
 
 %.o: %.c

@@ -53,7 +53,7 @@ long tlkm_device_ioctl(struct file *fp, unsigned int ioctl, unsigned long data)
 	if (ioctl == TLKM_DEV_IOCTL_INFO) {
 		return tlkm_device_ioctl_info(fp, ioctl, (struct tlkm_device_info __user *)data);
 	} else {
-		tlkm_device_ioctl_f ioctl_f = device_from_file(fp)->ioctl;
+		tlkm_device_ioctl_f ioctl_f = device_from_file(fp)->cls->ioctl;
 		BUG_ON(!ioctl_f);
 		return ioctl_f(device_from_file(fp), ioctl, data);
 	}

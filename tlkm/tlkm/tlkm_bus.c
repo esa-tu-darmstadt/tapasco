@@ -20,7 +20,6 @@ struct tlkm_bus {
 	struct list_head devices;
 	size_t num_devs;
 } _tlkm_bus = {
-	.devices = LIST_HEAD_INIT(_tlkm_bus.devices),
 	.num_devs = 0,
 };
 
@@ -33,28 +32,27 @@ static
 void tlkm_bus_add_device(struct tlkm_device *pdev)
 {
 	mutex_lock(&_tlkm_bus_mtx);
-	list_add(&pdev->device, &_tlkm_bus.devices);
+	list_add_tail(&pdev->device, &_tlkm_bus.devices);
 	pdev->dev_id = _tlkm_bus.num_devs++;
 	mutex_unlock(&_tlkm_bus_mtx);
-	LOG(TLKM_LF_BUS, "added device '%s' to bus", pdev->name);
+	LOG(TLKM_LF_BUS, "added '%s' device to bus", pdev->cls->name);
 }
 
 static
 void tlkm_bus_del_device(struct tlkm_device *pdev)
 {
 	mutex_lock(&_tlkm_bus_mtx);
-	list_del(&_tlkm_bus.devices);
+	list_del(&pdev->device);
 	--_tlkm_bus.num_devs;
 	mutex_unlock(&_tlkm_bus_mtx);
-	LOG(TLKM_LF_BUS, "removed device '%s' from bus", pdev->name);
+	LOG(TLKM_LF_BUS, "removed '%s' device from bus", pdev->cls->name);
 }
 
-struct tlkm_device *tlkm_bus_new_device(struct tlkm_class *cls, const char *name, int vendor_id, int product_id, void *data)
+struct tlkm_device *tlkm_bus_new_device(struct tlkm_class *cls, int vendor_id, int product_id, void *data)
 {
 	int ret = 0;
 	struct tlkm_device *dev = (struct tlkm_device *)kzalloc(sizeof(*dev), GFP_KERNEL);
 	if (dev) {
-		strncpy(dev->name, name, sizeof(dev->name));
 		dev->vendor_id = vendor_id;
 		dev->product_id = product_id;
 		dev->cls = cls;
@@ -65,6 +63,7 @@ struct tlkm_device *tlkm_bus_new_device(struct tlkm_class *cls, const char *name
 			kfree(dev);
 			return NULL;
 		}
+		snprintf(dev->name, TLKM_DEVICE_NAME_LEN, "%s_%03u", cls->name, dev->dev_id);
 		mutex_init(&dev->mtx);
 		return dev;
 	} else {
@@ -82,30 +81,23 @@ void tlkm_bus_delete_device(struct tlkm_device *dev)
 	}
 }
 
-ssize_t tlkm_bus_enumerate(void)
+void tlkm_bus_enumerate(void)
 {
-	int i;
-	ssize_t ret = 0;
+	int i, r;
 	for (i = 0; i < sizeof(_tlkm_class)/sizeof(*_tlkm_class); ++i) {
-		ssize_t r = _tlkm_class[i]->probe(_tlkm_class[i]);
-		if (r < 0)
-			ERR("error occurred while probing class '%s': %zd", _tlkm_class[i]->name, r);
-		else
-			ret += r;
+		if ((r = _tlkm_class[i]->probe(_tlkm_class[i])))
+			ERR("error occurred while probing class '%s': %d", _tlkm_class[i]->name, r);
 	}
-	return ret;
 }
 
 int tlkm_bus_init(void)
 {
 	int ret = 0;
 	ssize_t n;
+	INIT_LIST_HEAD(&_tlkm_bus.devices);
 	LOG(TLKM_LF_BUS, "detecting TaPaSCo devices ...");
-	n = tlkm_bus_enumerate();
-	if (n < 0) {
-		ERR("could not detect devices, error: %zd", n);
-		return n;
-	}
+	tlkm_bus_enumerate();
+	n = tlkm_bus_num_devices();
 	if (! n) {
 		ERR("did not find any TaPaSCo devices, cannot proceed");
 		ret = -ENXIO;
@@ -128,16 +120,19 @@ void tlkm_bus_exit(void)
 	struct list_head *lh;
 	struct list_head *tmp;
 	int i;
-	list_for_each_safe(lh, tmp, &_tlkm_bus.devices) {
-		struct tlkm_device *d = container_of(lh, struct tlkm_device, device);
-		LOG(TLKM_LF_BUS, "TaPaSCo device '%s' (%04x:%04x)", d->name,
-				d->vendor_id, d->product_id);
-		if (d->cls->destroy)
-			d->cls->destroy(d);
-	}
-	for (i = 0; i < sizeof(_tlkm_class)/sizeof(*_tlkm_class); ++i)
-		_tlkm_class[i]->remove(_tlkm_class[i]);
+	LOG(TLKM_LF_BUS, "removing ioctl file ...");
 	tlkm_exit();
+	LOG(TLKM_LF_BUS, "removing devices ...");
+	list_for_each_safe(lh, tmp, &_tlkm_bus.devices) {
+		struct tlkm_device *d = list_entry(lh, struct tlkm_device, device);
+		LOG(TLKM_LF_BUS, "TaPaSCo device #%03u '%s' (%04x:%04x)", d->dev_id, d->name, d->vendor_id, d->product_id);
+		tlkm_bus_delete_device(d);
+	}
+	LOG(TLKM_LF_BUS, "removing classes ...");
+	for (i = 0; i < sizeof(_tlkm_class)/sizeof(*_tlkm_class); ++i) {
+		LOG(TLKM_LF_BUS, "removing class %s", _tlkm_class[i]->name);
+		_tlkm_class[i]->remove(_tlkm_class[i]);
+	}
 	LOG(TLKM_LF_BUS, "removed TaPaSCo interfaces, bye");
 }
 

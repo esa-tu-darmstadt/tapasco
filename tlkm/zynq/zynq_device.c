@@ -144,9 +144,8 @@ int zynq_device_probe(struct tlkm_class *cls)
 	LOG(TLKM_LF_DEVICE, "searching for Xilinx Zynq-7000 series devices ...");
 	if (of_find_matching_node(NULL, zynq_ids)) {
 		LOG(TLKM_LF_DEVICE, "found Xilinx Zynq-7000");
-		inst = tlkm_bus_new_device(cls, ZYNQ_CLASS_NAME, 0, 0, NULL);
+		inst = tlkm_bus_new_device(cls, 0, 0, NULL);
 		BUG_ON(! inst);
-		return 1;
 	}
 	LOG(TLKM_LF_DEVICE, "no Xilinx Zynq-7000 series device found");
 	return 0;

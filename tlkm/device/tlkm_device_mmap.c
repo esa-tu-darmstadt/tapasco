@@ -14,7 +14,7 @@ struct tlkm_device *device_from_file(struct file *fp)
 int tlkm_device_mmap(struct file *fp, struct vm_area_struct *vm)
 {
 	struct tlkm_device *d = device_from_file(fp);
-	tlkm_device_mmap_f mmap_f = d->mmap;
+	tlkm_device_mmap_f mmap_f = d->cls->mmap;
 	if (! mmap_f) {
 		DEVWRN(d->dev_id, "device has no mmap() implementation, register accesses are likely  slow!");
 	}

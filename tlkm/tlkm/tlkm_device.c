@@ -56,25 +56,44 @@ int dma_engines_init(struct tlkm_device *dev)
 	return ret;
 
 err_dma_engine:
-	for (; i >= 0; --i)
+	for (; i >= 0; --i) {
+		if (dev->dma[i].ops.intr_write && dev->dma[i].ops.intr_write != dev->dma[i].ops.intr_read)
+			tlkm_device_release_platform_irq(dev, --irqn);
+		if (dev->dma[i].ops.intr_read)
+			tlkm_device_release_platform_irq(dev, --irqn);
 		tlkm_dma_exit(&dev->dma[i]);
+	}
+	BUG_ON(irqn);
 	return ret;
 }
 
 static
 void dma_engines_exit(struct tlkm_device *dev)
 {
-	int i;
+	int i, irqn = 0;
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "releasing DMA engines ...");
 	for (i = 0; i < TLKM_DEVICE_MAX_DMA_ENGINES; ++i) {
+		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d @ 0x%08llx", i, (u64)dev->dma[i].base);
 		if (dev->dma[i].base) {
+			if (dev->dma[i].ops.intr_read)
+				tlkm_device_release_platform_irq(dev, irqn++);
+			if (dev->dma[i].ops.intr_write && dev->dma[i].ops.intr_write != dev->dma[i].ops.intr_read)
+				tlkm_device_release_platform_irq(dev, irqn++);
 			tlkm_dma_exit(&dev->dma[i]);
 		}
 	}
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA engines destroyed");
 }
 
 int tlkm_device_init(struct tlkm_device *dev, void *data)
 {
 	int ret = 0;
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup performance counter file ...");
+	if ((ret = tlkm_perfc_miscdev_init(dev))) {
+		DEVERR(dev->dev_id, "could not setup performance counter device file: %d", ret);
+		goto err_nperfc;
+	}
+
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "initializing device ...");
 	if ((ret = dev->cls->create(dev, data))) {
 		DEVERR(dev->dev_id, "failed to initialize private data struct: %d", ret);
@@ -85,12 +104,6 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 	if ((ret = tlkm_control_init(dev->dev_id, &dev->ctrl))) {
 		DEVERR(dev->dev_id, "could not setup control: %d", ret);
 		goto err_control;
-	}
-
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup performance counter file ...");
-	if ((ret = tlkm_perfc_miscdev_init(dev))) {
-		DEVERR(dev->dev_id, "could not setup performance counter device file: %d", ret);
-		goto err_nperfc;
 	}
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "reading address map ...");
@@ -112,12 +125,12 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 err_dma:
 	tlkm_status_exit(&dev->status, dev);
 err_status:
-	tlkm_perfc_miscdev_exit(dev);
-err_nperfc:
 	tlkm_control_exit(dev->ctrl);
 err_control:
 	dev->cls->destroy(dev);
 err_priv:
+	tlkm_perfc_miscdev_exit(dev);
+err_nperfc:
 	return ret;
 }
 
@@ -126,9 +139,9 @@ void tlkm_device_exit(struct tlkm_device *dev)
 	if (dev) {
 		dma_engines_exit(dev);
 		tlkm_status_exit(&dev->status, dev);
-		tlkm_perfc_miscdev_exit(dev);
 		tlkm_control_exit(dev->ctrl);
 		dev->cls->destroy(dev);
+		tlkm_perfc_miscdev_exit(dev);
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "destroyed");
 	}
 }

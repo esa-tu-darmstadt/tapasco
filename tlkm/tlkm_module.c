@@ -56,7 +56,6 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("J. Korinth <jk@esa.cs.tu-darmstadt.de>");
 MODULE_AUTHOR("J. Hofmann <jah@esa.cs.tu-darmstadt.de>");
 MODULE_AUTHOR("D. de la Chevallerie <dc@esa.cs.tu-darmstadt.de>");
-MODULE_DESCRIPTION("Unified device driver for TaPaSCo - the Task Parallel "
-		"System Composer.");
+MODULE_DESCRIPTION("Unified device driver for TaPaSCo - the Task Parallel System Composer.");
 MODULE_VERSION(TLKM_VERSION);
 MODULE_ALIAS("tapasco");

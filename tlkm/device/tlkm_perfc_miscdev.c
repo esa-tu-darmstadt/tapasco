@@ -94,6 +94,7 @@ void tlkm_perfc_miscdev_exit(struct tlkm_device *dev)
 {
 	kfree(dev->perfc_dev.name);
 	misc_deregister(&dev->perfc_dev);
+	memset(&dev->perfc_dev, 0, sizeof(dev->perfc_dev));
 	DEVLOG(dev->dev_id, TLKM_LF_PERFC, "removed performance counter miscdev");
 }
 #endif /* NPERFC */

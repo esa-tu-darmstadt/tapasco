@@ -2,16 +2,18 @@
 #define TLKM_CLASS_H__
 
 #include <linux/interrupt.h>
-#include "tlkm_device.h"
+#include "tlkm_types.h"
 
 #define TLKM_CLASS_NAME_LEN				32
+
+struct tlkm_device;
+struct tlkm_class;
 
 typedef int (*tlkm_class_create_f)(struct tlkm_device *, void *data);
 typedef void(*tlkm_class_destroy_f)(struct tlkm_device *);
 typedef int (*tlkm_class_probe_f)(struct tlkm_class *);
 typedef void(*tlkm_class_remove_f)(struct tlkm_class *);
 
-struct tlkm_device;
 
 typedef long (*tlkm_device_ioctl_f)(struct tlkm_device *, unsigned int ioctl, unsigned long data);
 typedef int  (*tlkm_device_mmap_f) (struct tlkm_device *, struct vm_area_struct *vm);

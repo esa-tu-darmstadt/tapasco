@@ -124,6 +124,6 @@ void pcie_irqs_release_platform_irq(struct tlkm_device *dev, int irq_no)
 		return;
 	}
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "freeing platform interrupt #%d with mapping %d", irq_no, pdev->irq_mapping[irq_no]);
-	free_irq(pdev->irq_mapping[irq_no], pdev);
+	free_irq(pdev->irq_mapping[irq_no], pdev->pdev);
 	pdev->irq_mapping[irq_no] = -1;
 }

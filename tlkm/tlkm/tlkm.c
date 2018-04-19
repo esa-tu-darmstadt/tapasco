@@ -8,6 +8,7 @@
 
 static struct {
 	struct miscdevice	miscdev;
+	int			is_setup;
 } _tlkm;
 
 static const struct file_operations _tlkm_fops = {
@@ -21,11 +22,13 @@ int tlkm_init(void)
 	_tlkm.miscdev.minor = MISC_DYNAMIC_MINOR;
 	_tlkm.miscdev.name  = TLKM_IOCTL_FN;
 	_tlkm.miscdev.fops  = &_tlkm_fops;
+	_tlkm.is_setup	    = 1;
 	return misc_register(&_tlkm.miscdev);
 }
 
 void tlkm_exit(void)
 {
-	misc_deregister(&_tlkm.miscdev);
+	if (_tlkm.is_setup)
+		misc_deregister(&_tlkm.miscdev);
 	LOG(TLKM_LF_MODULE, "removed ioctl file " TLKM_IOCTL_FN);
 }

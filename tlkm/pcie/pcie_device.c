@@ -15,9 +15,6 @@
 #define TLKM_DEV_ID(pdev) \
 	(((struct tlkm_pcie_device *)dev_get_drvdata(&(pdev)->dev))->parent->dev_id)
 
-static size_t num_devices = 0;
-ssize_t pcie_enumerate(void) { return num_devices; }
-
 /**
  * @brief Enables pcie-device and claims/remaps neccessary bar resources
  * @param pdev Pointer to pci-device, which should be allocated
@@ -68,10 +65,6 @@ static int claim_device(struct tlkm_pcie_device *pdev)
 	pdev->parent->base_offset = pdev->phy_addr_bar0;
 	DEVLOG(did, TLKM_LF_PCIE, "status core base: 0x%08llx => 0x%08llx",
 		(u64)pcie_cls.status_base, (u64)pcie_cls.status_base + pdev->parent->base_offset);
-
-	tlkm_perfc_link_speed_set(did, pdev->link_speed);
-	tlkm_perfc_link_width_set(did, pdev->link_width);
-	num_devices++;
 
 	return 0;
 
@@ -174,7 +167,6 @@ static void release_msi(struct tlkm_pcie_device *pdev)
 static void report_link_status(struct tlkm_pcie_device *pdev)
 {
 	struct pci_dev *dev = pdev->pdev;
-	dev_id_t did = pdev->parent->dev_id;
 	u16 ctrl_reg = 0;
 	int gts = 0;
 
@@ -190,8 +182,11 @@ static void report_link_status(struct tlkm_pcie_device *pdev)
 	default: 		 	gts =  0;	break;
 	}
 
-	DEVLOG(did, TLKM_LF_PCIE, "PCIe link width: x%d", pdev->link_width);
-	DEVLOG(did, TLKM_LF_PCIE, "PCIe link speed: %d.%d GT/s", gts / 10, gts % 10);
+	DEVLOG(pdev->parent->dev_id, TLKM_LF_PCIE, "PCIe link width: x%d", pdev->link_width);
+	DEVLOG(pdev->parent->dev_id, TLKM_LF_PCIE, "PCIe link speed: %d.%d GT/s", gts / 10, gts % 10);
+
+	tlkm_perfc_link_speed_set(pdev->parent->dev_id, pdev->link_speed);
+	tlkm_perfc_link_width_set(pdev->parent->dev_id, pdev->link_width);
 }
 
 int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id)
@@ -199,7 +194,6 @@ int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	struct tlkm_device *dev;
 	LOG(TLKM_LF_PCIE, "found TaPaSCo PCIe device, registering ...");
 	dev = tlkm_bus_new_device((struct tlkm_class *)&pcie_cls,
-			TLKM_PCI_NAME,
 			XILINX_VENDOR_ID,
 			XILINX_DEVICE_ID,
 			pdev);
@@ -212,12 +206,7 @@ int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 void tlkm_pcie_remove(struct pci_dev *pdev)
 {
-	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *)dev_get_drvdata(&pdev->dev);
-	BUG_ON(! dev);
-	DEVLOG(TLKM_DEV_ID(pdev), TLKM_LF_PCIE, "unload PCIedevice");
-	tlkm_bus_delete_device(dev->parent);
 }
-
 
 int pcie_device_create(struct tlkm_device *dev, void *data)
 {
