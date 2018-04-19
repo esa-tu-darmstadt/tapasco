@@ -40,15 +40,19 @@ int dma_engines_init(struct tlkm_device *dev)
 		}
 
 		BUG_ON(! o->intr_read);
+		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d: registering read interrupt", i);
 		if (o->intr_read && (ret = tlkm_device_request_platform_irq(dev, irqn++, o->intr_read))) {
 			DEVERR(dev->dev_id, "could not register interrupt #%d: %d", irqn, ret);
 			goto err_dma_engine;
 		}
+		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d: registering write interrupt", i);
 		if (o->intr_write && o->intr_write != o->intr_read && (ret = tlkm_device_request_platform_irq(dev, irqn++, o->intr_write))) {
 			DEVERR(dev->dev_id, "could not register interrupt #%d: %d", irqn, ret);
 			goto err_dma_engine;
 		}
+		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d: done", i);
 	}
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA initialization complete");
 	return ret;
 
 err_dma_engine:
@@ -68,29 +72,34 @@ void dma_engines_exit(struct tlkm_device *dev)
 	}
 }
 
-int tlkm_device_init(struct tlkm_device *dev)
+int tlkm_device_init(struct tlkm_device *dev, void *data)
 {
 	int ret = 0;
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "initializing device ...");
+	if ((ret = dev->cls->create(dev, data))) {
+		DEVERR(dev->dev_id, "failed to initialize private data struct: %d", ret);
+		goto err_priv;
+	}
+
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup device control  ...");
 	if ((ret = tlkm_control_init(dev->dev_id, &dev->ctrl))) {
 		DEVERR(dev->dev_id, "could not setup control: %d", ret);
 		goto err_control;
 	}
 
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup performance counter file ...");
 	if ((ret = tlkm_perfc_miscdev_init(dev))) {
 		DEVERR(dev->dev_id, "could not setup performance counter device file: %d", ret);
 		goto err_nperfc;
 	}
 
-	if ((ret = dev->cls->create(dev))) {
-		DEVERR(dev->dev_id, "failed to initialize private data struct: %d", ret);
-		goto err_priv;
-	}
-
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "reading address map ...");
 	if ((ret = tlkm_status_init(&dev->status, dev, dev->base_offset + dev->cls->status_base))) {
 		DEVERR(dev->dev_id, "coudl not initialize address map: %d", ret);
 		goto err_status;
 	}
 
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup DMA engines ...");
 	if ((ret = dma_engines_init(dev))) {
 		DEVERR(dev->dev_id, "could not setup DMA engines for devices: %d", ret);
 		goto err_dma;
@@ -103,61 +112,25 @@ int tlkm_device_init(struct tlkm_device *dev)
 err_dma:
 	tlkm_status_exit(&dev->status, dev);
 err_status:
-	dev->cls->destroy(dev);
-err_priv:
 	tlkm_perfc_miscdev_exit(dev);
 err_nperfc:
 	tlkm_control_exit(dev->ctrl);
 err_control:
-	return ret;
-}
-
-static
-int create_device_instance(struct tlkm_device *pdev, tlkm_access_t access)
-{
-	int ret = 0;
-
-	if ((ret = tlkm_control_init(pdev->dev_id, &pdev->ctrl))) {
-		ERR("could not setup control for device #%03u: %d", pdev->dev_id, ret);
-		goto err_control;
-	}
-
-	if ((ret = tlkm_perfc_miscdev_init(pdev))) {
-		DEVERR(pdev->dev_id, "could not setup performance counter device file: %d", ret);
-		goto err_nperfc;
-	}
-
-	if ((ret = pdev->cls->create(pdev))) {
-		DEVERR(pdev->dev_id, "failed to initialize private data struct: %d", ret);
-		goto err_priv;
-	}
-
-	if ((ret = dma_engines_init(pdev))) {
-		DEVERR(pdev->dev_id, "could not setup DMA engines for devices: %d", ret);
-		goto err_dma;
-	}
-
-	return ret;
-
-	dma_engines_exit(pdev);
-err_dma:
-	pdev->cls->destroy(pdev);
+	dev->cls->destroy(dev);
 err_priv:
-	tlkm_perfc_miscdev_exit(pdev);
-err_nperfc:
-	tlkm_control_exit(pdev->ctrl);
-err_control:
 	return ret;
 }
 
-static
-void destroy_device_instance(struct tlkm_device *pdev)
+void tlkm_device_exit(struct tlkm_device *dev)
 {
-	pdev->cls->destroy(pdev);
-	dma_engines_exit(pdev);
-	tlkm_perfc_miscdev_exit(pdev);
-	tlkm_control_exit(pdev->ctrl);
-	kfree(pdev);
+	if (dev) {
+		dma_engines_exit(dev);
+		tlkm_status_exit(&dev->status, dev);
+		tlkm_perfc_miscdev_exit(dev);
+		tlkm_control_exit(dev->ctrl);
+		dev->cls->destroy(dev);
+		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "destroyed");
+	}
 }
 
 int tlkm_device_acquire(struct tlkm_device *pdev, tlkm_access_t access)

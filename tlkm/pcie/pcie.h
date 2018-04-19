@@ -3,6 +3,7 @@
 
 #include "tlkm_class.h"
 #include "pcie/pcie_device.h"
+#include "pcie/pcie_irq.h"
 
 #define TLKM_PCI_NAME					"tlkm"
 #define XILINX_VENDOR_ID   				0x10EE
@@ -18,8 +19,10 @@ struct tlkm_class pcie_cls = {
 	.destroy		= pcie_device_destroy,
 	.probe			= pcie_init,
 	.remove			= pcie_exit,
-	.status_base		= 0x02800000ULL,
+	.pirq			= pcie_irqs_request_platform_irq,
+	.rirq			= pcie_irqs_release_platform_irq,
 	.npirqs			= 4,
+	.status_base		= 0x02800000ULL,
 	.private_data		= NULL,
 };
 

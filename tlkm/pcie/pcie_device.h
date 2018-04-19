@@ -31,7 +31,7 @@
 int  tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id);
 void tlkm_pcie_remove(struct pci_dev *pdev);
 
-int  pcie_device_create(struct tlkm_device *dev);
+int  pcie_device_create(struct tlkm_device *dev, void *data);
 void pcie_device_destroy(struct tlkm_device *dev);
 
 /* struct to hold data related to the pcie device */

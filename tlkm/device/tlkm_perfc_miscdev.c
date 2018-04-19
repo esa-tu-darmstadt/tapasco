@@ -59,10 +59,10 @@ ssize_t tlkm_perfc_miscdev_read(struct file *file, char __user *usr, size_t sz,
 			TLKM_VERSION);
 	sl = strlen(tmp) + 1;
 	if (sl - *loff > 0) {
-	  ssize_t rl = strlen(&tmp[*loff]) + 1;
-	  *loff += rl - copy_to_user(usr, tmp, strlen(&tmp[*loff]) + 1);
-	  LOG(TLKM_LF_PERFC, "new loff: %lld", *loff);
-	  return rl;
+		ssize_t rl = strlen(&tmp[*loff]) + 1;
+		*loff += rl - copy_to_user(usr, tmp, strlen(&tmp[*loff]) + 1);
+		LOG(TLKM_LF_PERFC, "new loff: %lld", *loff);
+		return rl;
 	}
 	return 0;
 }
@@ -92,8 +92,8 @@ int tlkm_perfc_miscdev_init(struct tlkm_device *dev)
 
 void tlkm_perfc_miscdev_exit(struct tlkm_device *dev)
 {
-	misc_deregister(&dev->perfc_dev);
 	kfree(dev->perfc_dev.name);
+	misc_deregister(&dev->perfc_dev);
 	DEVLOG(dev->dev_id, TLKM_LF_PERFC, "removed performance counter miscdev");
 }
 #endif /* NPERFC */

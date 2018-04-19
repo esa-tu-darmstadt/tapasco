@@ -49,7 +49,7 @@ void tlkm_bus_del_device(struct tlkm_device *pdev)
 	LOG(TLKM_LF_BUS, "removed device '%s' from bus", pdev->name);
 }
 
-struct tlkm_device *tlkm_bus_new_device(struct tlkm_class *cls, const char *name, int vendor_id, int product_id)
+struct tlkm_device *tlkm_bus_new_device(struct tlkm_class *cls, const char *name, int vendor_id, int product_id, void *data)
 {
 	int ret = 0;
 	struct tlkm_device *dev = (struct tlkm_device *)kzalloc(sizeof(*dev), GFP_KERNEL);
@@ -59,21 +59,24 @@ struct tlkm_device *tlkm_bus_new_device(struct tlkm_class *cls, const char *name
 		dev->product_id = product_id;
 		dev->cls = cls;
 		tlkm_bus_add_device(dev);
-		if ((ret = tlkm_device_init(dev))) {
+		if ((ret = tlkm_device_init(dev, data))) {
 			DEVERR(dev->dev_id, "could not initialize device: %d", ret);
-			tlkm_bus_delete_device(dev);
+			tlkm_bus_del_device(dev);
+			kfree(dev);
 			return NULL;
 		}
 		mutex_init(&dev->mtx);
 		return dev;
+	} else {
+		ERR("could not allocate new tlkm_device");
+		return NULL;
 	}
-	ERR("could not allocate new tlkm_device");
-	return NULL;
 }
 
 void tlkm_bus_delete_device(struct tlkm_device *dev)
 {
 	if (dev) {
+		tlkm_device_exit(dev);
 		tlkm_bus_del_device(dev);
 		kfree(dev);
 	}
@@ -105,12 +108,18 @@ int tlkm_bus_init(void)
 	}
 	if (! n) {
 		ERR("did not find any TaPaSCo devices, cannot proceed");
-		return -ENXIO;
+		ret = -ENXIO;
+		goto err;
 	}
 	LOG(TLKM_LF_BUS, "found %zd TaPaSCo devices", n);
 	if ((ret = tlkm_init())) {
 		ERR("failed to initialize main ioctl file: %d", ret);
+		goto err;
 	}
+	return ret;
+
+err:
+	tlkm_bus_exit();
 	return ret;
 }
 

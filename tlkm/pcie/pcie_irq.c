@@ -29,31 +29,31 @@ irqreturn_t tlkm_pcie_slot_irq_ ## nr(int irq, void *dev_id) 		\
 TLKM_PCIE_SLOT_INTERRUPTS
 #undef _INTR
 
-int pcie_irqs_init(struct pci_dev *pdev)
+int pcie_irqs_init(struct tlkm_device *dev)
 {
+	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
 #define _INTR(nr) + 1
 	size_t const n = 0 TLKM_PCIE_SLOT_INTERRUPTS;
 #undef _INTR
-	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *)dev_get_drvdata(&pdev->dev);
 	int ret = 0, irqn, err[n];
 	BUG_ON(! dev);
-	DEVLOG(dev->parent->dev_id, TLKM_LF_PCIE, "registering %zu interrupts ...", n);
+	DEVLOG(dev->dev_id, TLKM_LF_PCIE, "registering %zu interrupts ...", n);
 #define _INTR(nr) \
 	irqn = nr + TLKM_PLATFORM_INTERRUPTS; \
-	if ((err[nr] = request_irq(pci_irq_vector(pdev, irqn), \
+	if ((err[nr] = request_irq(pci_irq_vector(pdev->pdev, irqn), \
 			tlkm_pcie_slot_irq_ ## nr, \
 			IRQF_EARLY_RESUME, \
 			TLKM_PCI_NAME, \
-			pdev))) { \
-		DEVERR(dev->parent->dev_id, "could not request interrupt %d: %d", irqn, err[nr]); \
+			pdev->pdev))) { \
+		DEVERR(dev->dev_id, "could not request interrupt %d: %d", irqn, err[nr]); \
 		goto irq_error; \
 	} else { \
-		dev->irq_mapping[irqn] = pci_irq_vector(pdev, irqn); \
-		DEVLOG(dev->parent->dev_id, TLKM_LF_PCIE, "created mapping from interrupt %d -> %d", irqn, dev->irq_mapping[irqn]); \
-		DEVLOG(dev->parent->dev_id, TLKM_LF_PCIE, "interrupt line %d/%d assigned with return value %d", \
-				irqn, pci_irq_vector(pdev, irqn), err[nr]); \
-		INIT_WORK(&dev->irq_work[nr], tlkm_pcie_slot_irq_work_ ## nr); \
-		atomic_long_set(&dev->irq_work[nr].data, (long)dev); \
+		pdev->irq_mapping[irqn] = pci_irq_vector(pdev->pdev, irqn); \
+		DEVLOG(dev->dev_id, TLKM_LF_PCIE, "created mapping from interrupt %d -> %d", irqn, pdev->irq_mapping[irqn]); \
+		DEVLOG(dev->dev_id, TLKM_LF_PCIE, "interrupt line %d/%d assigned with return value %d", \
+				irqn, pci_irq_vector(pdev->pdev, irqn), err[nr]); \
+		INIT_WORK(&pdev->irq_work[nr], tlkm_pcie_slot_irq_work_ ## nr); \
+		atomic_long_set(&pdev->irq_work[nr].data, (long)pdev->pdev); \
 	}
 	TLKM_PCIE_SLOT_INTERRUPTS
 #undef _INTR
@@ -63,8 +63,8 @@ irq_error:
 #define _INTR(nr) \
 	irqn = nr + TLKM_PLATFORM_INTERRUPTS; \
 	if (! err[nr]) { \
-		free_irq(dev->irq_mapping[irqn], pdev); \
-		dev->irq_mapping[irqn] = -1; \
+		free_irq(pdev->irq_mapping[irqn], pdev->pdev); \
+		pdev->irq_mapping[irqn] = -1; \
 	} else { \
 		ret = err[nr]; \
 	}
@@ -73,25 +73,20 @@ irq_error:
 	return ret;
 }
 
-void pcie_irqs_deinit(struct pci_dev *pdev)
+void pcie_irqs_exit(struct tlkm_device *dev)
 {
-	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *)dev_get_drvdata(&pdev->dev);
+	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
 	int irqn;
-	BUG_ON(! dev);
 #define _INTR(nr) \
 	irqn = nr + TLKM_PLATFORM_INTERRUPTS; \
-	if (dev->irq_mapping[irqn] != -1) { \
-		DEVLOG(dev->parent->dev_id, TLKM_LF_PCIE, "freeing interrupt %d with mappping %d", irqn, dev->irq_mapping[irqn]); \
-		free_irq(dev->irq_mapping[irqn], pdev); \
-		dev->irq_mapping[irqn] = -1; \
+	if (pdev->irq_mapping[irqn] != -1) { \
+		DEVLOG(dev->dev_id, TLKM_LF_PCIE, "freeing interrupt %d with mappping %d", irqn, pdev->irq_mapping[irqn]); \
+		free_irq(pdev->irq_mapping[irqn], pdev->pdev); \
+		pdev->irq_mapping[irqn] = -1; \
 	}
 	TLKM_PCIE_SLOT_INTERRUPTS
 #undef _INTR
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
-	pci_disable_msix(pdev);
-#else
-	pci_free_irq_vectors(pdev);
-#endif
+	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "interrupts deactivated");
 }
 
 int pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no, irqreturn_t (*intr_handler)(int, void *))

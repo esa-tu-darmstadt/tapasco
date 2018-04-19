@@ -137,8 +137,8 @@
 	_INTR(126)	\
 	_INTR(127)
 
-int  pcie_irqs_init(struct pci_dev *pdev);
-void pcie_irqs_deinit(struct pci_dev *pdev);
+int  pcie_irqs_init(struct tlkm_device *dev);
+void pcie_irqs_exit(struct tlkm_device *dev);
 int  pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no, intr_handler_f);
 void pcie_irqs_release_platform_irq(struct tlkm_device *dev, int irq_no);
 

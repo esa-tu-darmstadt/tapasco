@@ -70,6 +70,7 @@ int tlkm_dma_init(struct dma_engine *dma, dev_id_t dev_id, void *base, int irq_n
 	dma->irq_no = irq_no;
 	atomic64_set(&dma->rq_processed, 0);
 	atomic64_set(&dma->wq_processed, 0);
+	DEVLOG(dev_id, TLKM_LF_DMA, "DMA engine initialized");
 	return 0;
 
 err_dma_bufs:

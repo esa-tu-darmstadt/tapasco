@@ -12,7 +12,7 @@ struct zynq_device {
 	void __iomem		*tapasco_status;
 };
 
-int  zynq_device_init(struct tlkm_device *dev);
+int  zynq_device_init(struct tlkm_device *dev, void *data);
 void zynq_device_exit(struct tlkm_device *dev);
 
 int zynq_device_probe(struct tlkm_class *cls);

@@ -28,7 +28,6 @@ export MANPATH=$MANPATH:$TAPASCO_HOME/man
 export MYVIVADO=$MYVIVADO:$TAPASCO_HOME/common
 export XILINX_PATH=$XILINX_PATH:$TAPASCO_HOME/common
 if [[ -n $LIBMPFR ]]; then
-	export LD_PRELOAD=$LIBMPFR
 	echo "LD_PRELOAD=$LIBMPFR"
 else
 	echo "WARNING: awk in modern Linux is incompatible with Vivado's old libmpfr.so" >&2
