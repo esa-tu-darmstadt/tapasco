@@ -3,8 +3,9 @@
 
 #include "tlkm_class.h"
 #include "zynq_device.h"
-
-#define ZYNQ_CLASS_NAME					"zynq"
+#include "zynq_platform.h"
+#include "zynq_ioctl.h"
+#include "zynq_mmap.h"
 
 static inline void zynq_remove(struct tlkm_class *cls) {}
 
@@ -15,6 +16,8 @@ struct tlkm_class zynq_cls = {
 	.destroy		= zynq_device_exit,
 	.probe			= zynq_device_probe,
 	.remove			= zynq_remove,
+	.ioctl			= zynq_ioctl,
+	.mmap			= zynq_mmap,
 	.status_base		= 0x77770000ULL,
 	.npirqs			= 0,
 	.private_data		= NULL,

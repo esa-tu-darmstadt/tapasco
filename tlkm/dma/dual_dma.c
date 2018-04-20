@@ -1,5 +1,6 @@
 //
 // Copyright (C) 2014 David de la Chevallerie, TU Darmstadt
+// Copyright (C) 2018 Jens Korinth, TU Darmstadt
 //
 // This file is part of Tapasco (TPC).
 //
@@ -36,7 +37,6 @@
 irqreturn_t dual_dma_intr_handler_dma(int irq, void * dev_id)
 {
 	struct dma_engine *dma = (struct dma_engine *)dev_id;
-	BUG_ON(dma->irq_no != irq);
 	*(u32 *)(dma->regs + REG_CMD) = CMD_ACK;
 	mutex_unlock(&dma->regs_mutex);
 	atomic64_inc(&dma->wq_processed);
@@ -46,16 +46,15 @@ irqreturn_t dual_dma_intr_handler_dma(int irq, void * dev_id)
 
 ssize_t dual_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_addr_t dev_addr, size_t len)
 {
-	u64 usr = (u64)usr_addr;
-	LOG(TLKM_LF_DMA, "dev_addr = 0x%08llx, usr_addr = 0x%08llx, len: %zu bytes", (u64)dev_addr, (u64)usr_addr, len);
+	LOG(TLKM_LF_DMA, "dev_addr = 0x%px, usr_addr = 0x%px, len: %zu bytes", (void *)dev_addr, usr_addr, len);
 	if(mutex_lock_interruptible(&dma->regs_mutex)) {
 		WRN("got killed while aquiring the mutex");
 		return len;
 	}
 
 	*(u32 *)(dma->regs + REG_FPGA_ADDR_LOW)		= (u32)dev_addr;
-	*(u32 *)(dma->regs + REG_HOST_ADDR_LOW)		= (u32)usr;
-	*(u32 *)(dma->regs + REG_HOST_ADDR_HIGH)	= (u32)(usr >> 32);
+	*(u32 *)(dma->regs + REG_HOST_ADDR_LOW)		= (u32)usr_addr;
+	*(u32 *)(dma->regs + REG_HOST_ADDR_HIGH)	= sizeof(usr_addr) > 4 ? (u32)((uintptr_t)usr_addr >> 32) : 0;
 	*(u32 *)(dma->regs + REG_BTT)			= (u32)len;
 	wmb();
 	*(u32 *)(dma->regs + REG_CMD)			= CMD_READ;
@@ -64,15 +63,14 @@ ssize_t dual_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_ad
 
 ssize_t dual_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void __user *usr_addr, size_t len)
 {
-	u64 usr = (u64)usr_addr;
-	LOG(TLKM_LF_DMA, "dev_addr = 0x%08llx, usr_addr = 0x%08llx, len: %zu bytes", (u64)dev_addr, (u64)usr_addr, len);
+	LOG(TLKM_LF_DMA, "dev_addr = 0x%px, usr_addr = 0x%px, len: %zu bytes", (void *)dev_addr, usr_addr, len);
 	if(mutex_lock_interruptible(&dma->regs_mutex)) {
 		WRN("got killed while aquiring the mutex");
 		return len;
 	}
 
-	*(u32 *)(dma->regs + REG_HOST_ADDR_LOW) 	= (u32)usr;
-	*(u32 *)(dma->regs + REG_HOST_ADDR_HIGH) 	= (u32)(usr >> 32);
+	*(u32 *)(dma->regs + REG_HOST_ADDR_LOW) 	= (u32)usr_addr;
+	*(u32 *)(dma->regs + REG_HOST_ADDR_HIGH)	= sizeof(usr_addr) > 4 ? (u32)((uintptr_t)usr_addr >> 32) : 0;
 	*(u32 *)(dma->regs + REG_FPGA_ADDR_LOW) 	= (u32)dev_addr;
 	*(u32 *)(dma->regs + REG_BTT)			= (u32)len;
 	wmb();

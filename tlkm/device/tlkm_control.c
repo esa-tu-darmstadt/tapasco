@@ -1,7 +1,12 @@
 #include <linux/slab.h>
 #include <linux/gfp.h>
 #include <linux/fs.h>
-#include <linux/sched/signal.h>
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,11,0)
+	#include <linux/sched.h>
+#else
+	#include <linux/sched/signal.h>
+#endif
 #include "tlkm_logging.h"
 #include "tlkm_control.h"
 #include "tlkm_perfc.h"
@@ -37,6 +42,7 @@ static void exit_miscdev(struct tlkm_control *pctl)
 
 ssize_t tlkm_control_signal_slot_interrupt(struct tlkm_control *pctl, const u32 s_id)
 {
+	BUG_ON(! pctl);
 	mutex_lock(&pctl->out_mutex);
 	while (pctl->outstanding > TLKM_CONTROL_BUFFER_SZ - 2) {
 		DEVWRN(pctl->dev_id, "buffer thrashing, throttling write ...");

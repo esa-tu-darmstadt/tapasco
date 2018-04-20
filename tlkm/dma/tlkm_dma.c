@@ -1,5 +1,7 @@
 #include <linux/gfp.h>
 #include <linux/uaccess.h>
+#include <linux/slab.h>
+#include <linux/io.h>
 #include "tlkm_dma.h"
 #include "tlkm_logging.h"
 #include "blue_dma.h"
@@ -23,18 +25,18 @@ static const struct dma_operations dma_ops[] = {
 	},
 };
 
-int tlkm_dma_init(struct dma_engine *dma, dev_id_t dev_id, void *base, int irq_no)
+int tlkm_dma_init(struct dma_engine *dma, dev_id_t dev_id, u64 dbase)
 {
 	uint64_t id;
 	int i, ret = 0;
+	void *base = (void *)((uintptr_t)dbase);
 	BUG_ON(! dma);
-	DEVLOG(dev_id, TLKM_LF_DMA, "initializing DMA engine 0x%08llx (#%d) ...", (u64)base, irq_no);
+	DEVLOG(dev_id, TLKM_LF_DMA, "initializing DMA engine @ 0x%px ...", base);
 
-	DEVLOG(dev_id, TLKM_LF_DMA, "I/O remapping 0x%08llx - 0x%08llx...", (u64)base, (u64)base + DMA_SZ - 1);
+	DEVLOG(dev_id, TLKM_LF_DMA, "I/O remapping 0x%px - 0x%px...", base, base + DMA_SZ - 1);
 	dma->regs = ioremap_nocache((resource_size_t)base, DMA_SZ);
 	if (IS_ERR(dma->regs)) {
-		DEVERR(dev_id, "failed to map 0x%08llx - 0x%08llx: %ld",
-				(u64)base, (u64)base + DMA_SZ - 1, PTR_ERR(dma->regs));
+		DEVERR(dev_id, "failed to map 0x%px - 0x%px: %ld", base, base + DMA_SZ - 1, PTR_ERR(dma->regs));
 		return PTR_ERR(dma->regs);
 	}
 
@@ -67,7 +69,6 @@ int tlkm_dma_init(struct dma_engine *dma, dev_id_t dev_id, void *base, int irq_n
 	mutex_init(&dma->wq_mutex);
 	dma->dev_id = dev_id;
 	dma->base = base;
-	dma->irq_no = irq_no;
 	atomic64_set(&dma->rq_processed, 0);
 	atomic64_set(&dma->wq_processed, 0);
 	DEVLOG(dev_id, TLKM_LF_DMA, "DMA engine initialized");
@@ -95,8 +96,8 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void
 	size_t cpy_sz = len;
 	ssize_t t_id;
 	while (len > 0) {
-		DEVLOG(dma->dev_id, TLKM_LF_DMA, "outstanding bytes: %zd - usr_addr = 0x%08llx, dev_addr = 0x%08llx",
-				len, (u64)usr_addr, (u64)dev_addr);
+		DEVLOG(dma->dev_id, TLKM_LF_DMA, "outstanding bytes: %zd - usr_addr = 0x%px, dev_addr = 0x%px",
+				len, usr_addr, (void *)dev_addr);
 		cpy_sz = len < TLKM_DMA_BUF_SZ ? len : TLKM_DMA_BUF_SZ;
 		if (copy_from_user(dma->dma_buf[0], usr_addr, cpy_sz)) {
 			DEVERR(dma->dev_id, "could not copy data from user");
@@ -120,8 +121,8 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_ad
 	size_t cpy_sz = len;
 	ssize_t t_id;
 	while (len > 0) {
-		DEVLOG(dma->dev_id, TLKM_LF_DMA, "outstanding bytes: %zd - usr_addr = 0x%08llx, dev_addr = 0x%08llx",
-				len, (u64)usr_addr, (u64)dev_addr);
+		DEVLOG(dma->dev_id, TLKM_LF_DMA, "outstanding bytes: %zd - usr_addr = 0x%px, dev_addr = 0x%px",
+				len, usr_addr, (void *)dev_addr);
 		cpy_sz = len < TLKM_DMA_BUF_SZ ? len : TLKM_DMA_BUF_SZ;
 		t_id = dma->ops.copy_from(dma, dma->dma_buf[1], dev_addr, cpy_sz);
 		if (wait_event_interruptible(dma->rq, atomic64_read(&dma->rq_processed) > t_id)) {

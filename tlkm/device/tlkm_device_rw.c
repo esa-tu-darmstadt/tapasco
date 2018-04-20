@@ -1,5 +1,10 @@
 #include <linux/uaccess.h>
-#include <linux/sched/signal.h>
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,11,0)
+	#include <linux/sched.h>
+#else
+	#include <linux/sched/signal.h>
+#endif
 #include "tlkm_device_rw.h"
 #include "tlkm_control.h"
 #include "tlkm_perfc.h"

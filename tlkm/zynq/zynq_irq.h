@@ -26,7 +26,7 @@
 #include "tlkm_control.h"
 #include "zynq_device.h"
 
-int  zynq_irq_init(struct zynq_device *zynq_dev, struct tlkm_control *ctrl);
+int  zynq_irq_init(struct zynq_device *zynq_dev);
 void zynq_irq_exit(struct zynq_device *zynq_dev);
 
 #endif /* ZYNQ_IRQ_H__ */

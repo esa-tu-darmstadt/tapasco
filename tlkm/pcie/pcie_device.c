@@ -60,7 +60,7 @@ static int claim_device(struct tlkm_pcie_device *pdev)
 		DEVERR(did, "could not remap bar 0 address to kernel space");
 		goto error_pci_remap;
 	}
-	DEVLOG(did, TLKM_LF_PCIE, "remapped bar 0 address: 0x%08llx", (u64)pdev->kvirt_addr_bar0);
+	DEVLOG(did, TLKM_LF_PCIE, "remapped bar 0 address: 0x%px", pdev->kvirt_addr_bar0);
 
 	pdev->parent->base_offset = pdev->phy_addr_bar0;
 	DEVLOG(did, TLKM_LF_PCIE, "status core base: 0x%08llx => 0x%08llx",

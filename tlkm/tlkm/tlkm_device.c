@@ -33,7 +33,7 @@ int dma_engines_init(struct tlkm_device *dev)
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA%d base: 0x%08llx", i, dma_base[i]);
 		if (! dma_base[i]) continue;
 		dma_base[i] += dev->base_offset;
-		ret = tlkm_dma_init(&dev->dma[i], dev->dev_id, (void *)dma_base[i], 0); // FIXME irq number?
+		ret = tlkm_dma_init(&dev->dma[i], dev->dev_id, dma_base[i]);
 		if (ret) {
 			DEVERR(dev->dev_id, "failed to initialize DMA%d: %d", i, ret);
 			goto err_dma_engine;
@@ -73,7 +73,7 @@ void dma_engines_exit(struct tlkm_device *dev)
 	int i, irqn = 0;
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "releasing DMA engines ...");
 	for (i = 0; i < TLKM_DEVICE_MAX_DMA_ENGINES; ++i) {
-		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d @ 0x%08llx", i, (u64)dev->dma[i].base);
+		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d @ 0x%px", i, (void *)dev->dma[i].base);
 		if (dev->dma[i].base) {
 			if (dev->dma[i].ops.intr_read)
 				tlkm_device_release_platform_irq(dev, irqn++);
@@ -108,7 +108,7 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "reading address map ...");
 	if ((ret = tlkm_status_init(&dev->status, dev, dev->base_offset + dev->cls->status_base))) {
-		DEVERR(dev->dev_id, "coudl not initialize address map: %d", ret);
+		DEVERR(dev->dev_id, "could not initialize address map: %d", ret);
 		goto err_status;
 	}
 
@@ -188,7 +188,7 @@ void tlkm_device_release(struct tlkm_device *pdev, tlkm_access_t access)
 	for (a = (tlkm_access_t)0; a < TLKM_ACCESS_TYPES; ++a) {
 		total_refs += pdev->ref_cnt[a];
 	}
-	if (total_refs > 1) {
+	if (total_refs > 0) {
 		DEVLOG(pdev->dev_id, TLKM_LF_DEVICE, "ref_cnt is %zu", total_refs);
 		--pdev->ref_cnt[access];
 	} else {

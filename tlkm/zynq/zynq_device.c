@@ -21,49 +21,49 @@ static int init_iomapping(void)
 {
 	int retval = 0;
 	u32 magic_id = 0;
-	DEVLOG(_zynq_dev.dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%08llx-0x%08llx for GP0",
-			(u64)ZYNQ_PLATFORM_GP0_BASE,
-			(u64)(ZYNQ_PLATFORM_GP0_BASE + ZYNQ_PLATFORM_GP0_SIZE - 1));
+	DEVLOG(_zynq_dev.dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%px-0x%px for GP0",
+			(void *)ZYNQ_PLATFORM_GP0_BASE,
+			(void *)(ZYNQ_PLATFORM_GP0_BASE + ZYNQ_PLATFORM_GP0_SIZE - 1));
 	_zynq_dev.gp_map[0] = ioremap_nocache(ZYNQ_PLATFORM_GP0_BASE, ZYNQ_PLATFORM_GP0_SIZE);
 	if (!_zynq_dev.gp_map[0] || IS_ERR(_zynq_dev.gp_map[0])) {
 		DEVERR(_zynq_dev.dev_id,
-				"could not ioremap the AXI register space at 0x%08llx-0x%08llx",
-				(u64)ZYNQ_PLATFORM_GP0_BASE,
-				(u64)(ZYNQ_PLATFORM_GP0_BASE + ZYNQ_PLATFORM_GP0_SIZE - 1));
+				"could not ioremap the AXI register space at 0x%px-0x%px",
+				(void *)ZYNQ_PLATFORM_GP0_BASE,
+				(void *)(ZYNQ_PLATFORM_GP0_BASE + ZYNQ_PLATFORM_GP0_SIZE - 1));
 		retval = PTR_ERR(_zynq_dev.gp_map[0]);
 		goto err_gp0;
 	}
 
-	DEVLOG(_zynq_dev.dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%08llx-0x%08llx for GP1",
-			(u64)ZYNQ_PLATFORM_GP1_BASE,
-			(u64)(ZYNQ_PLATFORM_GP1_BASE + ZYNQ_PLATFORM_GP1_SIZE - 1));
+	DEVLOG(_zynq_dev.dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%px-0x%px for GP1",
+			(void *)ZYNQ_PLATFORM_GP1_BASE,
+			(void *)(ZYNQ_PLATFORM_GP1_BASE + ZYNQ_PLATFORM_GP1_SIZE - 1));
 	_zynq_dev.gp_map[1] = ioremap_nocache(ZYNQ_PLATFORM_GP1_BASE, ZYNQ_PLATFORM_GP1_SIZE);
 	if (!_zynq_dev.gp_map[1] || IS_ERR(_zynq_dev.gp_map[1])) {
 		DEVERR(_zynq_dev.dev_id,
-				"could not ioremap the AXI register space at 0x%08llx-0x%08llx",
-				(u64)ZYNQ_PLATFORM_GP1_BASE,
-				(u64)(ZYNQ_PLATFORM_GP1_BASE + ZYNQ_PLATFORM_GP1_SIZE - 1));
+				"could not ioremap the AXI register space at 0x%px-0x%px",
+				(void *)ZYNQ_PLATFORM_GP1_BASE,
+				(void *)(ZYNQ_PLATFORM_GP1_BASE + ZYNQ_PLATFORM_GP1_SIZE - 1));
 		retval = PTR_ERR(_zynq_dev.gp_map[1]);
 		goto err_gp1;
 	}
 
-	DEVLOG(_zynq_dev.dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%08llx-0x%08llx for ST",
-			(u64)ZYNQ_PLATFORM_STATUS_BASE,
-			(u64)(ZYNQ_PLATFORM_STATUS_BASE + ZYNQ_PLATFORM_STATUS_SIZE - 1));
+	DEVLOG(_zynq_dev.dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%px-0x%px for ST",
+			(void *)ZYNQ_PLATFORM_STATUS_BASE,
+			(void *)(ZYNQ_PLATFORM_STATUS_BASE + ZYNQ_PLATFORM_STATUS_SIZE - 1));
 	_zynq_dev.tapasco_status = ioremap_nocache(ZYNQ_PLATFORM_STATUS_BASE, ZYNQ_PLATFORM_STATUS_SIZE);
 	if (!_zynq_dev.tapasco_status || IS_ERR(_zynq_dev.tapasco_status)) {
 		DEVERR(_zynq_dev.dev_id,
-				"could not ioremap the AXI register space at 0x%08llx-0x%08llx",
-				(u64)ZYNQ_PLATFORM_STATUS_BASE,
-				(u64)(ZYNQ_PLATFORM_STATUS_BASE + ZYNQ_PLATFORM_STATUS_SIZE));
+				"could not ioremap the AXI register space at 0x%px-0x%px",
+				(void *)ZYNQ_PLATFORM_STATUS_BASE,
+				(void *)(ZYNQ_PLATFORM_STATUS_BASE + ZYNQ_PLATFORM_STATUS_SIZE));
 		retval = PTR_ERR(_zynq_dev.tapasco_status);
 		goto err_tapasco_status;
 	}
 	magic_id = ioread32(_zynq_dev.tapasco_status);
 	DEVLOG(_zynq_dev.dev_id, TLKM_LF_DEVICE,  "magic_id = 0x%08lx", (ulong)magic_id);
 	DEVLOG(_zynq_dev.dev_id, TLKM_LF_DEVICE,
-			"I/O mapped all registers successfully: GP0 = 0x%08lx, GP1 = 0x%08lx, ST=0x%08lx",
-			(ulong)_zynq_dev.gp_map[0], (ulong)_zynq_dev.gp_map[1], (ulong)_zynq_dev.tapasco_status);
+			"I/O mapped all registers successfully: GP0 = 0x%px, GP1 = 0x%08lx, ST=0x%08lx",
+			_zynq_dev.gp_map[0], (ulong)_zynq_dev.gp_map[1], (ulong)_zynq_dev.tapasco_status);
 	return retval;
 
 err_tapasco_status:
@@ -107,7 +107,7 @@ int zynq_device_init(struct tlkm_device *inst, void *data)
 		goto err_iomapping;
 	}
 
-	if ((ret = zynq_irq_init(&_zynq_dev, inst->ctrl))) {
+	if ((ret = zynq_irq_init(&_zynq_dev))) {
 		DEVERR(inst->dev_id, "could not initialize interrupts: %d", ret);
 		goto err_irq;
 	}
@@ -146,7 +146,8 @@ int zynq_device_probe(struct tlkm_class *cls)
 		LOG(TLKM_LF_DEVICE, "found Xilinx Zynq-7000");
 		inst = tlkm_bus_new_device(cls, 0, 0, NULL);
 		BUG_ON(! inst);
+	} else {
+		LOG(TLKM_LF_DEVICE, "no Xilinx Zynq-7000 series device found");
 	}
-	LOG(TLKM_LF_DEVICE, "no Xilinx Zynq-7000 series device found");
 	return 0;
 }

@@ -3,9 +3,9 @@
 
 #include <linux/atomic.h>
 #include <linux/wait.h>
-#include <linux/wait.h>
 #include <linux/mutex.h>
 #include <linux/interrupt.h>
+#include <linux/version.h>
 #include "tlkm_types.h"
 
 struct dma_engine;
@@ -31,21 +31,20 @@ struct dma_operations {
 struct dma_engine {
 	dev_id_t			dev_id;
 	void				*base;
-	int 				irq_no;
 	void __iomem			*regs;
 	struct mutex			regs_mutex;
 	struct dma_operations		ops;
 	dma_used_t			dma_used;
-	struct wait_queue_head		rq;
+	wait_queue_head_t		rq;
 	struct mutex			rq_mutex;
 	atomic64_t 			rq_processed;
-	struct wait_queue_head		wq;
+	wait_queue_head_t		wq;
 	struct mutex			wq_mutex;
 	atomic64_t 			wq_processed;
 	void 				*dma_buf[TLKM_DMA_BUFS];
 };
 
-int  tlkm_dma_init(struct dma_engine *dma, dev_id_t const dev_id, void *base, int irq_no);
+int  tlkm_dma_init(struct dma_engine *dma, dev_id_t const dev_id, u64 base);
 void tlkm_dma_exit(struct dma_engine *dma);
 
 ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void __user *usr_addr, size_t len);

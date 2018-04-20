@@ -16,10 +16,6 @@ static int test_dev_ioctl(dev_id_t dev_id)
 	char dfn[30] = "";
 	snprintf(dfn, 30, "%s_%03u", DEV_FN, dev_id);
 
-	//printf("ready to open %s?", dfn);
-	//getchar();
-	usleep(100000);
-
 	int dfd = open(dfn, O_RDWR);
 	if (dfd == -1) {
 		return errno;

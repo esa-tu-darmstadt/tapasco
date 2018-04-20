@@ -26,6 +26,7 @@
 #include <platform_global.h>
 
 #define ZYNQ_NAME			"xlnx,zynq-7000"
+#define ZYNQ_CLASS_NAME			"zynq"
 
 #define ZYNQ_PLATFORM_STATUS_BASE	0x77770000
 #define ZYNQ_PLATFORM_STATUS_SIZE	0x00002000

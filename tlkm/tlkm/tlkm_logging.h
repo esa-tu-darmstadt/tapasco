@@ -88,18 +88,18 @@ extern ulong tlkm_logging_flags;
 #define tlkm_device_log(dev_id, level, fmt, ...) do { \
 		switch ((int)level) { \
 		case 0: \
-			printk(KERN_ERR "tapasco device #%03u [%s]: " \
+			printk(KERN_ERR "tapasco device #%02u [%s]: " \
 					fmt "\n", dev_id, __func__, \
 					##__VA_ARGS__); \
 			break; \
 		case 1: \
-			printk(KERN_WARNING "tapasco device #%03u [%s]: " \
+			printk(KERN_WARNING "tapasco device #%02u [%s]: " \
 					fmt "\n", dev_id, __func__, \
 					##__VA_ARGS__); \
 			break; \
 		default: \
 			if (tlkm_logging_flags & level) \
-				printk(KERN_NOTICE "tapasco device #%03u [%s]: " \
+				printk(KERN_NOTICE "tapasco device #%02u [%s]: " \
 						fmt "\n", dev_id, __func__, \
 						##__VA_ARGS__); \
 			break; \
@@ -119,11 +119,11 @@ extern ulong tlkm_logging_flags;
 #define LOG(l, msg, ...)
 #define tlkm_log(level, fmt, ...)
 
-#define DEVERR(dev_id, fmt, ...)	printk(KERN_ERR "tapasco device #%03u [%s]: " \
+#define DEVERR(dev_id, fmt, ...)	printk(KERN_ERR "tapasco device #%02u [%s]: " \
 						fmt "\n", dev_id, __func__, \
 						##__VA_ARGS__)
 
-#define DEVWRN(dev_id, fmt, ...)	printk(KERN_WARNING "tapasco device #%03u [%s]: " \
+#define DEVWRN(dev_id, fmt, ...)	printk(KERN_WARNING "tapasco device #%02u [%s]: " \
 						fmt "\n", dev_id, __func__, \
 						##__VA_ARGS__)
 

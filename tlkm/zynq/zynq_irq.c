@@ -55,27 +55,30 @@ typedef struct {
 #endif
 
 static struct {
-	struct tlkm_control *ctrl;
 #define		_INTC(N) intc_t intc_ ## N;
 	INTERRUPT_CONTROLLERS
 #undef _INTC
 } zynq_irq;
 
 #define		_INTC(N) \
+static void zynq_irq_func_ ## N(struct work_struct *work); \
+\
+static DECLARE_WORK(zynq_irq_work_ ## N, zynq_irq_func_ ## N); \
+\
 static void zynq_irq_func_ ## N(struct work_struct *work) \
 { \
 	u32 s_off = (N * 32U); \
 	u32 status = zynq_irq.intc_ ## N.status; \
-	LOG(TLKM_LF_IRQ, "status = 0x%08x, intcn = %d", status, N); \
+	struct tlkm_control *ctrl = (struct tlkm_control *)atomic_long_read(&work->data); \
+	LOG(TLKM_LF_IRQ, "intcn = %d, status = 0x%08x", N, status); \
+	BUG_ON(! ctrl); \
 	while (status > 0) { \
 		if (status & 1) { \
-			tlkm_control_signal_slot_interrupt(zynq_irq.ctrl, s_off++); \
+			tlkm_control_signal_slot_interrupt(ctrl, s_off++); \
 		} \
 		status >>= 1; \
 	} \
 } \
-\
-static DECLARE_WORK(zynq_irq_work_ ## N, zynq_irq_func_ ## N); \
 \
 static irqreturn_t zynq_irq_handler_ ## N(int irq, void *dev_id) \
 { \
@@ -86,6 +89,7 @@ static irqreturn_t zynq_irq_handler_ ## N(int irq, void *dev_id) \
 	LOG(TLKM_LF_IRQ, "intcn = %d, status = 0x%08x", N, status); \
 	iowrite32(status, intc + (0x0c >> 2)); \
 	zynq_irq.intc_ ## N.status |= status; \
+	atomic_long_set(&zynq_irq_work_ ## N.data, (long)zynq_dev->parent->ctrl); \
 	schedule_work(&zynq_irq_work_ ## N); \
 	return IRQ_HANDLED; \
 }
@@ -103,12 +107,11 @@ void zynq_init_intc(struct zynq_device *zynq_dev, u32 const base)
 }
 
 
-int zynq_irq_init(struct zynq_device *zynq_dev, struct tlkm_control *ctrl)
+int zynq_irq_init(struct zynq_device *zynq_dev)
 {
 	int retval = 0, irqn = 0;
 	u32 *status = (u32 *)zynq_dev->tapasco_status;
 	u32 base;
-	zynq_irq.ctrl = ctrl;
 
 #define	_INTC(N)	\
 	base = ioread32(status + (0x1010 >> 2) + N * 2); \
