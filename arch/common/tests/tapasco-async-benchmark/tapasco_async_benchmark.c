@@ -54,6 +54,6 @@ int main(int argc, char *argv[])
 	printf("all threads joined.\n");
 
 	tapasco_async_deinit(a);
-	tapasco_logging_exit();
+	tapasco_logging_deinit();
 }
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

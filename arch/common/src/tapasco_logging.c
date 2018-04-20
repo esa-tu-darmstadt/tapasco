@@ -132,7 +132,7 @@ int tapasco_logging_init(void)
 	return 1;
 }
 
-void tapasco_logging_exit(void)
+void tapasco_logging_deinit(void)
 {
 	struct log_msg_t *lm;
 	exiting = true;
@@ -149,5 +149,5 @@ void tapasco_logging_exit(void)
 }
 #else  // NDEBUG
 int tapasco_logging_init(void) { return 1; }
-void tapasco_logging_exit(void) {}
+void tapasco_logging_deinit(void) {}
 #endif // NDEBUG

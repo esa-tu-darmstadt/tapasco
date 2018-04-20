@@ -45,7 +45,7 @@ LIBTAPASCO_LOGLEVELS
 } tapasco_ll_t;
 
 int tapasco_logging_init(void);
-void tapasco_logging_exit(void);
+void tapasco_logging_deinit(void);
 #ifdef NDEBUG
 inline void tapasco_log(tapasco_ll_t const level, char *fmt, ...) {}
 #else

@@ -25,6 +25,11 @@
 #include <iostream>
 #include "debug-screens/TapascoDebugMenu.hpp"
 
+extern "C" {
+void tapasco_logging_deinit(void);
+void platform_logging_deinit(void);
+}
+
 static void init_ncurses()
 {
   initscr();
@@ -65,4 +70,7 @@ int main(int argc, char *argv[])
     cerr << "ERROR" << endl;
     throw;
   }
+
+  tapasco_logging_deinit();
+  platform_logging_deinit();
 }

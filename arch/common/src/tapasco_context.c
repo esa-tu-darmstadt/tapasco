@@ -37,7 +37,7 @@ static
 void _flush_logs_on_sigint(int sig)
 {
 	LOG(LALL_INIT, "caught SIGINT, flushing logs and leaving the sinking ship");
-	tapasco_logging_exit();
+	tapasco_logging_deinit();
 	platform_logging_deinit();
 	exit(sig);
 }
@@ -117,5 +117,5 @@ void tapasco_deinit(tapasco_ctx_t *ctx)
 		free(ctx);
 	}
 	LOG(LALL_INIT, "all's well that ends well, bye");
-	tapasco_logging_exit();
+	tapasco_logging_deinit();
 }

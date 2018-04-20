@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
 
 	free(_rnd_data);
 	printf("Finished the test.\n");
-	tapasco_logging_exit();
+	tapasco_logging_deinit();
 	return EXIT_SUCCESS;
 
 err_invalid_argument:
@@ -214,7 +214,7 @@ err_random_data:
 	fprintf(stderr, "Could not prepare random data: %s\n",
 			strerror(errno));
 err:
-	tapasco_logging_exit();
+	tapasco_logging_deinit();
 	exit(EXIT_FAILURE);
 }
 /* main @} */
