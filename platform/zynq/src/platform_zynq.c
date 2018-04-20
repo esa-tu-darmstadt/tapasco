@@ -122,7 +122,7 @@ platform_res_t zynq_init(platform_devctx_t *devctx)
 {
 	assert(devctx);
 	assert(devctx->dev_info.name);
-	if (! strncmp(ZYNQ_NAME, devctx->dev_info.name, strlen(ZYNQ_NAME))) {
+	if (! strncmp(ZYNQ_CLASS_NAME, devctx->dev_info.name, strlen(ZYNQ_CLASS_NAME))) {
 		DEVLOG(devctx->dev_id, LPLL_DEVICE, "matches zynq platform");
 		zynq_platform.devctx = devctx;
 		return zynq_iomapping();
