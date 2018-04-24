@@ -118,6 +118,26 @@ namespace eval ::tapasco::ip {
     return $ps
   }
 
+  # Instantiates a Zynq-Ultra Scale + Processing System IP core.
+  # @param name Name of the instance (default: ps7).
+  # @param preset Name of board preset to apply (default: ::tapasco::get_board_preset).
+  # @param freq_mhz FCLK_0 frequency in MHz (default: ::tapasco::get_design_frequency).
+  # @return bd_cell of the instance.
+  proc create_ultra_ps {{name ultra_ps} {preset [::tapasco::get_board_preset]} {freq_mhz [::tapasco::get_design_frequency]}} {
+    variable stdcomps
+    puts "Creating Zynq-US+ series IP core ..."
+    puts "  VLNV: [dict get $stdcomps ultra_ps vlnv]"
+    puts "  Preset: $preset"
+
+    set ps [create_bd_cell -type ip -vlnv [dict get $stdcomps ultra_ps vlnv] $name]
+    if {$preset != {} && $preset != ""} {
+      apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e -config {make_external "FIXED_IO, DDR" apply_board_preset "1" Master "Disable" Slave "Disable" } $ps
+    } {
+      apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e -config {make_external "FIXED_IO, DDR" Master "Disable" Slave "Disable" } $ps
+    }
+    return $ps
+  }
+
   # Instantiates a Zynq-7000 Processing System IP BFM simulation core.
   # @param name Name of the instance (default: ps7).
   # @param preset Name of board preset to apply (default: ::tapasco::get_board_preset).
@@ -221,7 +241,7 @@ namespace eval ::tapasco::ip {
   # @param name Name of the instance.
   proc create_oled_ctrl {name} {
     variable stdcomps
-    set composition [get_composition]
+    set composition [tapasco::get_composition]
     set pecount 0
     dict for {k v} $composition {
       set c [dict get $composition $k count]

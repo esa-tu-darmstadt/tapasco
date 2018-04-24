@@ -322,12 +322,30 @@ namespace eval arch {
 
     set i 0
     set j 0
-    set left [llength $ips]
-    set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "[llength $ips] > 32 ? 32 : [llength $ips]"]]
+    set num_slaves [llength [tapasco::get_aximm_interfaces $ips "Slave"]]
+    set left $num_slaves
+    puts "  total number of slave interfaces: $num_slaves"
+    set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "$num_slaves > 32 ? 32 : $num_slaves"]]
     lappend arch_irq_concats $cc
+    set zero [tapasco::ip::create_constant "zero" 1 0]
     foreach ip [lsort $ips] {
       foreach pin [get_bd_pins -of $ip -filter { TYPE == intr }] {
         connect_bd_net $pin [get_bd_pins -of $cc -filter "NAME == In$i"]
+        incr i
+        incr left -1
+        if {$i > 31} {
+          set i 0
+          incr j
+          if { $left > 0 } {
+            set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "$left > 32 ? 32 : $left"]]
+            lappend arch_irq_concats $cc
+          }
+        }
+      }
+      set num_slaves [llength [tapasco::get_aximm_interfaces $ip "Slave"]]
+      puts "    number of slave interfaces on $ip: $num_slaves"
+      for {set tieoff 1} {$tieoff < $num_slaves} {incr tieoff} {
+        connect_bd_net [get_bd_pins -of $zero] [get_bd_pins -of $cc -filter "NAME == In$i"]
         incr i
         incr left -1
         if {$i > 31} {
@@ -386,6 +404,11 @@ namespace eval arch {
     # create instances of target IP
     set kernels [tapasco::get_composition]
     set insts [arch_create_instances $kernels]
+
+    set no_inst 0
+    for {set i 0} {$i < [llength [dict keys $kernels]]} {incr i} { set no_inst [expr "$no_inst + [dict get $kernels $i count]"] }
+    arch_connect_interrupts $insts
+
     arch_check_instance_count $kernels
     set arch_mem_ics [arch_create_mem_interconnects $kernels $mgroups]
 
@@ -395,10 +418,6 @@ namespace eval arch {
     # connect AXI infrastructure
     arch_connect_host $arch_host_ics $insts
     arch_connect_mem $arch_mem_ics $insts
-
-    set no_inst 0
-    for {set i 0} {$i < [llength [dict keys $kernels]]} {incr i} { set no_inst [expr "$no_inst + [dict get $kernels $i count]"] }
-    arch_connect_interrupts $insts
 
     arch_connect_clocks
     arch_connect_resets

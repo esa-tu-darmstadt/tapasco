@@ -74,9 +74,9 @@ irqreturn_t dual_dma_intr_handler_dma(int irq, void * dev_id)
  * @param device_base_addr Address of dma engine registers
  * @return none
  * */
-void dual_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr)
+void dual_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle, uint64_t btt, void * device_base_addr)
 {
-	fflink_info("dev_buf %lX dma_handle %lX \nsize %d dev_base %lX\n", (unsigned long) device_buffer, (unsigned long) host_handle, btt, (unsigned long) device_base_addr);
+	fflink_info("dev_buf %lX dma_handle %lX \nsize %lld dev_base %lX\n", (unsigned long) device_buffer, (unsigned long) host_handle, btt, (unsigned long) device_base_addr);
 	if(mutex_lock_interruptible(&dma_regs_mutex))
 		fflink_warn("got killed while aquiring the mutex\n");
 
@@ -103,9 +103,9 @@ void dual_dma_transmit_from_device(void * device_buffer, dma_addr_t host_handle,
  * @param device_base_addr Address of dma engine registers
  * @return none
  * */
-void dual_dma_transmit_to_device(void * device_buffer, dma_addr_t host_handle, int btt, void * device_base_addr)
+void dual_dma_transmit_to_device(void * device_buffer, dma_addr_t host_handle, uint64_t btt, void * device_base_addr)
 {
-	fflink_info("dev_buf %lX dma_handle %lX \nsize %d dev_base %lX\n", (unsigned long) device_buffer, (unsigned long) host_handle, btt, (unsigned long) device_base_addr);
+	fflink_info("dev_buf %lX dma_handle %lX \nsize %lld dev_base %lX\n", (unsigned long) device_buffer, (unsigned long) host_handle, btt, (unsigned long) device_base_addr);
 	if(mutex_lock_interruptible(&dma_regs_mutex))
 		fflink_warn("got killed while aquiring the mutex\n");
 

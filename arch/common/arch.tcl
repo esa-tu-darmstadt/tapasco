@@ -1,6 +1,10 @@
 namespace eval arch {
   namespace export create
   namespace export get_address_map
+
+  proc next_valid_address {addr range} {
+    return [expr (($addr / $range) + ($addr % $range > 0 ? 1 : 0)) * $range]
+  }
   
   # Returns the address map of the current composition.
   # Format: <INTF> -> <BASE ADDR> <RANGE> <KIND>
@@ -22,6 +26,7 @@ namespace eval arch {
         } else {
           set intf [get_bd_intf_pins -of_objects $seg]
           set range [get_property RANGE $seg]
+          set offset [next_valid_address $offset $range]
           ::platform::addressmap::add_processing_element [llength [dict keys $ret]] $offset
           dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind register"
           incr offset $range

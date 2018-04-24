@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 BOARD=${1:-zedboard}
 VERSION=${2:-2016.4}
 IMGSIZE=${3:-8192}
@@ -7,15 +7,19 @@ DIR="$BOARD/$VERSION"
 LOGDIR="$DIR/logs"
 CROSS_COMPILE=${CROSS_COMPILE:=arm-linux-gnueabihf-}
 ROOTFS_IMG="$PWD/rootfs.img"
-PYNQ_VERSION="pynq_z1_image_2017_02_10"
+PYNQ_VERSION="pynq_z1_v2.1"
 PYNQ_IMAGE="$PWD/pynq/$PYNQ_VERSION.zip"
-PYNQ_IMAGE_URL="https://s3-us-west-2.amazonaws.com/digilent/Products/PYNQ/$PYNQ_VERSION.zip"
+PYNQ_IMAGE_URL="http://files.digilent.com/Products/PYNQ/$PYNQ_VERSION.img.zip"
 UDEV_RULES="$TAPASCO_HOME/platform/zynq/module/99-tapasco.rules"
 OUTPUT_IMAGE="$DIR/${BOARD}_${VERSION}.img"
+OPENSSL_URL="https://www.openssl.org/source/old/1.0.2/openssl-1.0.2n.tar.gz"
+OPENSSL="$PWD/oldopenssl"
+OPENSSL_TAR="$OPENSSL/openssl.tar.gz"
 ### LOGFILES ###################################################################
 FETCH_LINUX_LOG="$PWD/$LOGDIR/fetch-linux.log"
 FETCH_UBOOT_LOG="$PWD/$LOGDIR/fetch-uboot.log"
 FETCH_PYNQ_IMG_LOG="$PWD/pynq/fetch-pynq-img.log"
+FETCH_OPENSSL_LOG="$PWD/$LOGDIR/fetch-openssl.log"
 BUILD_LINUX_LOG="$PWD/$LOGDIR/build-linux.log"
 BUILD_UBOOT_LOG="$PWD/$LOGDIR/build-uboot.log"
 BUILD_SSBL_LOG="$PWD/$LOGDIR/build-ssbl.log"
@@ -28,9 +32,13 @@ PREPARE_SD_LOG="$PWD/$LOGDIR/prepare-sd.log"
 EXTRACT_BL_LOG="$PWD/pynq/extract-bl.log"
 EXTRACT_RFS_LOG="$PWD/pynq/extract-rfs.log"
 
+HOSTCFLAGS=-I$OPENSSL/include
+HOSTLDFLAGS="-L$OPENSSL/lib -lcrypto -ldl -lssl"
+HOSTLOADLIBES=$HOSTLDFLAGS
+
 print_usage () {
 	cat << EOF
-Usage: ${0##*/} BOARD VERSION [DEVICE] [DISK SIZE]
+Usage: ${0##*/} BOARD VERSION [DISK SIZE] [DEVICE]
 Build a boot image for the given BOARD and VERSION (git tag). If DEVICE is
 given, repartition the device as a bootable SD card (WARNING: all data will
 be lost).
@@ -122,6 +130,16 @@ fetch_u-boot () {
 	fi
 }
 
+fetch_openssl () {
+	if [[ ! -f $OPENSSL_TAR ]]; then
+		echo "Fetching ancient OpenSSL 1.0.2 for U-Boot ..."
+		mkdir -p $OPENSSL || return $(error_ret "$LINENO: could not create $OPENSSL")
+		curl -s $OPENSSL_URL -o $OPENSSL_TAR ||
+			return $(error_ret "$LINENO: could not fetch $OPENSSL_URL")
+		cd $OPENSSL && tar xvzf $OPENSSL_TAR
+	fi
+}
+
 fetch_pynq_image () {
 	IMG=${PYNQ_VERSION}.img
 	BD=`dirname $PYNQ_IMAGE`
@@ -186,7 +204,19 @@ extract_pynq_rootfs () {
 	fi
 }
 
+build_openssl () {
+	if [[ ! -f $OPENSSL/lib/libssl.a ]]; then
+		$(cd $OPENSSL/openssl-1.0.2n &&
+			./config --prefix=$OPENSSL &&
+			make -j &&
+			make install) || return $(error_ret "$LINENO: could not build OpenSSL")
+	else
+		echo "$OPENSSL/libssl.a already exists, skipping"
+	fi
+}
+
 build_u-boot () {
+	build_openssl
 	if [[ ! -e $DIR/u-boot-xlnx/tools/mkimage ]]; then
 		echo "Building u-boot $VERSION ..."
 		case $BOARD in
@@ -277,7 +307,7 @@ set board_preset {}
 if {[dict exists \$platform "BoardPreset"]} {
 	set board_preset [dict get \$platform "BoardPreset"]
 }
-set ps [tapasco::createZynqPS "ps7" \$board_preset 100]
+set ps [tapasco::ip::create_ps "ps7" \$board_preset 100]
 # activate ACP, HP0, HP2 and GP0/1 (+ FCLK1 @10MHz)
 set_property -dict [list \
 	CONFIG.PCW_USE_M_AXI_GP0 			{1} \
@@ -522,7 +552,7 @@ mkdir -p $LOGDIR 2> /dev/null
 mkdir -p `dirname $PYNQ_IMAGE` 2> /dev/null
 echo "And so it begins ..."
 ################################################################################
-echo "Fetching Linux kernel, U-Boot sources and PyNQ default image ..."
+echo "Fetching Linux kernel, U-Boot sources, PyNQ default image and OpenSSL ..."
 mkdir -p `dirname $FETCH_PYNQ_IMG_LOG` &> /dev/null
 fetch_linux &> $FETCH_LINUX_LOG &
 FETCH_LINUX_OK=$!
@@ -530,10 +560,13 @@ fetch_u-boot &> $FETCH_UBOOT_LOG &
 FETCH_UBOOT_OK=$!
 fetch_pynq_image &> $FETCH_PYNQ_IMG_LOG &
 FETCH_PYNQ_OK=$!
+fetch_openssl &> $FETCH_OPENSSL_LOG &
+FETCH_OPENSSL_OK=$!
 
-wait $FETCH_LINUX_OK || error_exit "Fetching Linux failed, check log: $FETCH_LINUX_LOG"
-wait $FETCH_UBOOT_OK || error_exit "Fetching U-Boot failed, check logs: $FETCH_UBOOT_LOG"
-wait $FETCH_PYNQ_OK  || error_exit "Fetching PyNQ failed, check log: $FETCH_PYNQ_IMG_LOG"
+wait $FETCH_LINUX_OK   || error_exit "Fetching Linux failed, check log: $FETCH_LINUX_LOG"
+wait $FETCH_UBOOT_OK   || error_exit "Fetching U-Boot failed, check logs: $FETCH_UBOOT_LOG"
+wait $FETCH_PYNQ_OK    || error_exit "Fetching PyNQ failed, check log: $FETCH_PYNQ_IMG_LOG"
+wait $FETCH_OPENSSL_OK || error_exit "Fetching OpenSSL failed, check log: $FETCH_OPENSSL_LOG"
 
 ################################################################################
 echo "Ok, got the sources, will build now ..."
@@ -560,7 +593,8 @@ wait $BUILD_SSBL_OK || error_exit "Building U-Boot SSBL failed, check log: $BUIL
 if [[ $BOARD != "pynq" ]]; then
 	echo "Build FSBL (output in $BUILD_FSBL_LOG) ..."
 	build_fsbl &> $BUILD_FSBL_LOG &
-	wait || error_exit "Building FSBL failed, check log: $BUILD_FSBL_LOG"
+	BUILD_FSBL_OK=$!
+	wait $BUILD_FSBL_OK || error_exit "Building FSBL failed, check log: $BUILD_FSBL_LOG"
 
 	echo "Building devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
 

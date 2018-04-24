@@ -91,32 +91,18 @@
     set dma_irq_read [create_bd_pin -type "intr" -dir I "dma_irq_read"]
     set dma_irq_write [create_bd_pin -type "intr" -dir I "dma_irq_write"]
 
-    set msix_fail [create_bd_pin -dir "I" "msix_fail"]
-    set msix_sent [create_bd_pin -dir "I" "msix_sent"]
-    set msix_enable [create_bd_pin -from 3 -to 0 -dir "I" "msix_enable"]
-    set msix_mask [create_bd_pin -from 3 -to 0 -dir "I" "msix_mask"]
-    set msix_data [create_bd_pin -from 31 -to 0 -dir "O" "msix_data"]
-    set msix_addr [create_bd_pin -from 63 -to 0 -dir "O" "msix_addr"]
-    set msix_int [create_bd_pin -dir "O" "msix_int"]
     set m_axi [create_bd_intf_pin -mode Master -vlnv [tapasco::ip::get_vlnv "aximm_intf"] "M_MSIX"]
 
     set num_irqs_threadpools [::tapasco::get_platform_num_slots]
     set num_irqs [expr $num_irqs_threadpools + 4]
 
-    set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 6]
+    set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 8]
 
     # create MSIX interrupt controller
     set msix_intr_ctrl [tapasco::ip::create_msix_intr_ctrl "msix_intr_ctrl"]
     connect_bd_net [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "dout"}] [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "interrupt"}]
 
     connect_bd_intf_net [get_bd_intf_pins -of_objects $msix_intr_ctrl -filter {NAME == "M_AXI"}] $m_axi
-    connect_bd_net [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_address"}] $msix_addr
-    connect_bd_net [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_data"}] $msix_data
-    connect_bd_net [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_int"}] $msix_int
-    connect_bd_net $msix_sent [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_sent"}]
-    connect_bd_net $msix_fail [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_fail"}]
-    connect_bd_net $msix_enable [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_enable"}]
-    connect_bd_net $msix_mask [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "cfg_interrupt_msix_mask"}]
 
     connect_bd_net $dma_irq_read [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
     connect_bd_net $dma_irq_write [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
@@ -125,8 +111,8 @@
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In2"}]
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In3"}]
 
-    for {set i 0} {$i < 1} {incr i} {
-      set port [create_bd_pin -from 63 -to 0 -dir I -type intr "intr_$i"]
+    for {set i 0} {$i < 4} {incr i} {
+      set port [create_bd_pin -from 31 -to 0 -dir I -type intr "intr_$i"]
       connect_bd_net $port [get_bd_pin $irq_concat_ss/[format "In%d" [expr "$i + 4"]]]
     }
 

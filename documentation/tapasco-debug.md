@@ -16,6 +16,7 @@ the current screen, or the application when you're already in the main menu.
   1.  [Kernel Map Screen](#kernel-map)
   2.  [Interrupt Stress Test Screen](#intc-test)
   3.  [Register Monitor Screen](#monitor)
+  4.  [Local Memories Monitor Screen](#localmem)
 
 Kernel Map Screen <a name="kernel-map"/>
 -----------------
@@ -91,3 +92,26 @@ or to rule out cache-related problems. In this screen, you can also
 
 `w`: _Poke and wait_ - specific function to start a PE manually and await its
      interrupt; can be useful to test execution and interrupt handling.
+
+Local Memory Monitor Screen <a name="localmem"/>
+---------------------------
+
+### Requirements
+
+Bitstream must have local memories enabled and at least one local memory bank
+must be available.
+
+### General Function
+
+Shows the available local memory banks in the currently loaded bitstream and
+their current usage. Primary utility of this screen is to dump local memories to
+binary files and copy local binary files to the banks.
+
+### Interactions
+
+`up/down arrow`: Select a memory bank.
+
+`left arrow`: _Load_ binary data from a file into the currently selected bank.
+
+`right arrow`: _Save_ binary data from the currently selected bank to a file.
+

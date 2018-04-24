@@ -18,6 +18,10 @@
 //
 /**
  *  @file	tapasco_jobs.c
+<<<<<<< HEAD
+=======
+ *  @brief
+>>>>>>> a5afcae8dc21deee7562f55079fc1e8d36f78c2f
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #include <stdlib.h>

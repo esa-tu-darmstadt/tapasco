@@ -129,20 +129,20 @@ static ssize_t dma_write(struct file *, const char __user *, size_t count, loff_
 
 /******************************************************************************/
 /* helper functions called for sys-calls */
-static unsigned int dma_cache_fit(unsigned int btt);
+static int64_t dma_cache_fit(int64_t btt);
 static int dma_alloc_pbufs(void** p, dma_addr_t *handle, gfp_t zone, int direction);
 static void dma_free_pbufs(void *p, dma_addr_t handle, int direction);
-static void transmit_to_user(void *, void *, dma_addr_t, int);
-static void transmit_from_user(void *, void *, dma_addr_t, int);
+static void transmit_to_user(void *, void *, dma_addr_t, int64_t);
+static void transmit_from_user(void *, void *, dma_addr_t, int64_t);
 
 /******************************************************************************/
 /* overload function to exchange bounce-/double-buffering */
 
-static int read_with_bounce(int count, char __user *buf, void * mem_addr, struct priv_data_struct *p);
-static inline int read_device(int count, char __user *buf, void * mem_addr, struct priv_data_struct *p);
+static int read_with_bounce(int64_t count, char __user *buf, void * mem_addr, struct priv_data_struct *p);
+static inline int read_device(int64_t count, char __user *buf, void * mem_addr, struct priv_data_struct *p);
 
-static int write_with_bounce(int count, const char __user *buf, void * mem_addr, struct priv_data_struct *p);
-static inline int write_device(int count, const char __user *buf, void * mem_addr, struct priv_data_struct *p);
+static int write_with_bounce(int64_t count, const char __user *buf, void * mem_addr, struct priv_data_struct *p);
+static inline int write_device(int64_t count, const char __user *buf, void * mem_addr, struct priv_data_struct *p);
 
 /******************************************************************************/
 

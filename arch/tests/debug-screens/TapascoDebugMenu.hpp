@@ -71,10 +71,13 @@ protected:
   }
 
   bool has_blue_dma() {
-    tapasco_devctx_t *d  = tapasco.device();
-    platform_devctx_t *p = tapasco.platform_device();
-    assert(d->info.magic_id == TAPASCO_MAGIC_ID);
-
+#if defined(__i386__) || defined (__x86_64__) || defined(__amd64__)
+    // x86 platforms might have PCIe devices, so blue monitors are useful regardless of whether BlueDMA is present
+    return true;
+#else
+    platform_info_t info;
+    tapasco.info(&info);
+    uint32_t v;
     for (int c = PLATFORM_COMPONENT_DMA0; c <= PLATFORM_COMPONENT_DMA3; ++c) {
       if (d->info.base.platform[c]) {
       	uint32_t v = 0;
@@ -83,6 +86,7 @@ protected:
       }
     }
     return false;
+#endif
   }
 
 private:
