@@ -241,7 +241,7 @@ namespace eval ::tapasco::ip {
   # @param name Name of the instance.
   proc create_oled_ctrl {name} {
     variable stdcomps
-    set composition [::tapasco::get_composition]
+    set composition [tapasco::get_composition]
     set pecount 0
     dict for {k v} $composition {
       set c [dict get $composition $k count]
