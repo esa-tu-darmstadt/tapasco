@@ -169,7 +169,6 @@ long zynq_ioctl_read(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
 	void __iomem *ptr = NULL;
 	void *buf = kzalloc(cmd->length, GFP_ATOMIC);
 	struct zynq_device *dev = (struct zynq_device *)inst->private_data;
-	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "received read of %zu bytes from %pad", cmd->length, &cmd->dev_addr);
 	if (cmd->dev_addr >= ZYNQ_PLATFORM_GP1_BASE) {
 		ptr = dev->gp_map[1] + (cmd->dev_addr - ZYNQ_PLATFORM_GP1_BASE);
 	} else if (cmd->dev_addr < ZYNQ_PLATFORM_GP0_HIGH) {
@@ -199,8 +198,6 @@ long zynq_ioctl_write(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
 	void __iomem *ptr = NULL;
 	void *buf = kzalloc(cmd->length, GFP_ATOMIC);
 	struct zynq_device *dev = (struct zynq_device *)inst->private_data;
-	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "received write of %zu bytes to %pad",
-			cmd->length, &cmd->dev_addr);
 	if (cmd->dev_addr > ZYNQ_PLATFORM_GP1_BASE) {
 		ptr = dev->gp_map[1] + (cmd->dev_addr - ZYNQ_PLATFORM_GP1_BASE);
 	} else if (cmd->dev_addr < ZYNQ_PLATFORM_GP0_HIGH) {
@@ -231,7 +228,6 @@ long zynq_ioctl(struct tlkm_device *inst, unsigned int ioctl, unsigned long data
 #define _TLKM_DEV_IOCTL(NAME, name, id, dt) \
 	if (ioctl == TLKM_DEV_IOCTL_ ## NAME) { \
 		dt d; \
-		DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "received ioctl: 0x%08x", ioctl); \
 		if (copy_from_user(&d, (void __user *)data, sizeof(dt))) { \
 			DEVERR(inst->dev_id, "could not copy ioctl data from user space"); \
 			return -EFAULT; \
