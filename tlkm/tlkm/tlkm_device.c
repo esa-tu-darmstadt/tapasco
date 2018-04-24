@@ -94,16 +94,16 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 		goto err_nperfc;
 	}
 
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "initializing device ...");
-	if ((ret = dev->cls->create(dev, data))) {
-		DEVERR(dev->dev_id, "failed to initialize private data struct: %d", ret);
-		goto err_priv;
-	}
-
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup device control  ...");
 	if ((ret = tlkm_control_init(dev->dev_id, &dev->ctrl))) {
 		DEVERR(dev->dev_id, "could not setup control: %d", ret);
 		goto err_control;
+	}
+
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "initializing device ...");
+	if ((ret = dev->cls->create(dev, data))) {
+		DEVERR(dev->dev_id, "failed to initialize private data struct: %d", ret);
+		goto err_priv;
 	}
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "reading address map ...");
@@ -124,10 +124,10 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 	dma_engines_exit(dev);
 err_dma:
 	tlkm_status_exit(&dev->status, dev);
-err_status:
-	tlkm_control_exit(dev->ctrl);
 err_control:
 	dev->cls->destroy(dev);
+err_status:
+	tlkm_control_exit(dev->ctrl);
 err_priv:
 	tlkm_perfc_miscdev_exit(dev);
 err_nperfc:
@@ -139,8 +139,8 @@ void tlkm_device_exit(struct tlkm_device *dev)
 	if (dev) {
 		dma_engines_exit(dev);
 		tlkm_status_exit(&dev->status, dev);
-		tlkm_control_exit(dev->ctrl);
 		dev->cls->destroy(dev);
+		tlkm_control_exit(dev->ctrl);
 		tlkm_perfc_miscdev_exit(dev);
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "destroyed");
 	}

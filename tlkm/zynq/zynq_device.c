@@ -96,6 +96,7 @@ int zynq_device_init(struct tlkm_device *inst, void *data)
 #endif /* NDEBUG */
 	DEVLOG(inst->dev_id, TLKM_LF_DEVICE, "initializing zynq device");
 	inst->private_data = &_zynq_dev;
+	_zynq_dev.parent   = inst;
 
 	if ((ret = zynq_dmamgmt_init())) {
 		DEVERR(inst->dev_id, "could not initialize DMA management: %d", ret);
