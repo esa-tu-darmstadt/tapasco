@@ -24,8 +24,8 @@ set_property IOSTANDARD DIFF_SSTL15 [get_ports {clk_ref_clk_p}]
 set_property PACKAGE_PIN H19 [get_ports {clk_ref_clk_p}]
 
 # reset - Btn0
-set_property PACKAGE_PIN AR13 [get_ports sys_rst]
-set_property IOSTANDARD LVCMOS15 [get_ports sys_rst]
+set_property PACKAGE_PIN AR13 [get_ports sys_rst_0]
+set_property IOSTANDARD LVCMOS15 [get_ports sys_rst_0]
 
 # Timing Constraints
 create_clock -period 4.288 [get_nets sys_clk_clk_p]
