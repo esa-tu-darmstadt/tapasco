@@ -330,7 +330,8 @@ namespace eval ::platform {
 
     # connect interrupts
     set irq_cc [tapasco::ip::create_xlconcat "irq_cc" 2]
-    set_property -dict [list "IN_WIDTH0" 8 "IN_WIDTH1" 8] $irq_cc
+    set_property -dict [list CONFIG.IN0_WIDTH.VALUE_SRC USER CONFIG.IN1_WIDTH.VALUE_SRC USER] $irq_cc
+    set_property -dict [list IN_WIDTH0 {8} IN_WIDTH1 {8}] $irq_cc
     connect_bd_net $pirq_0 [get_bd_pins "$irq_cc/In0"]
     connect_bd_net $irq_0 [get_bd_pins "$irq_cc/In1"]
     connect_bd_net [get_bd_pins -of_objects $irq_cc -filter { DIR == O }] [get_bd_pins "$ps/IRQ_F2P"]
