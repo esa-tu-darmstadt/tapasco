@@ -455,7 +455,7 @@ namespace eval tapasco {
       if {$bit < 0 || $bit > 31} { error "Invalid bit index: $bit" }
       set flag [expr "(1 << $bit)"]
     } else {
-      set caps_file [open "$::env(TAPASCO_HOME)/platform/common/include/platform_caps.h" "r"]
+      set caps_file [open "$::env(TAPASCO_HOME)/platform/include/platform_caps.h" "r"]
       set caps_cnts [split [read $caps_file] "\n"]
       close $caps_file
 
@@ -480,7 +480,7 @@ namespace eval tapasco {
   }
 
   proc get_platform_num_slots {} {
-    set f [open "$::env(TAPASCO_HOME)/platform/common/include/platform_global.h" "r"]
+    set f [open "$::env(TAPASCO_HOME)/platform/include/platform_global.h" "r"]
     set fl [split [read $f] "\n"]
     foreach line $fl {
       if {[regexp {define\s*PLATFORM_NUM_SLOTS\s*(\d+)} $line _ ret]} {

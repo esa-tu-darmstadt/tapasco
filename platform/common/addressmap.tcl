@@ -36,7 +36,7 @@ namespace eval addressmap {
   }
 
   proc get_num_slots {} {
-    set f [open "$::env(TAPASCO_HOME)/platform/common/include/platform_global.h" "r"]
+    set f [open "$::env(TAPASCO_HOME)/platform/include/platform_global.h" "r"]
     set c [read $f]
     close $f
     regexp {define\s+PLATFORM_NUM_SLOTS\s+(\d+)} $c _ num_slots
@@ -44,7 +44,7 @@ namespace eval addressmap {
   }
 
   proc get_known_platform_components {} {
-    set f [open "$::env(TAPASCO_HOME)/platform/common/include/platform_components.h" "r"]
+    set f [open "$::env(TAPASCO_HOME)/platform/include/platform_components.h" "r"]
     set fl [split [read $f] "\n"]
     foreach line $fl {
       if {[regexp {.*(PLATFORM_COMPONENT_[^\s,]*)} $line _ name]} {
