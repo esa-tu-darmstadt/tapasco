@@ -43,7 +43,7 @@ namespace eval ::tapasco::ip {
   # @param name Name of the instance.
   # @param output_width Bit width of the counter.
   # @return bd_cell of the instance.
-  proc create_bin_cnt {name width} {
+  proc create_bincnt {name width} {
     variable stdcomps
     puts "Creating $width-bits binary counter ..."
     puts "  VLNV: [dict get $stdcomps bincnt vlnv]"
