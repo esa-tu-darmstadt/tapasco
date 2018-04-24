@@ -154,7 +154,7 @@ int main(int argc, char **argv)
 	} else {
 		errs = call_slot(&cfg, cfg.slot_id);
 	}
-	platform_destroy_device(ctx, 0);
+	platform_destroy_device_by_id(ctx, 0);
 	platform_deinit(ctx);
 	return errs;
 }
