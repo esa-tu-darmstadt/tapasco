@@ -41,7 +41,6 @@ package object tapasco {
   lazy val PLATFORM_NUM_SLOTS: Int = {
     val f = Paths.get(sys.env("TAPASCO_HOME"))
       .resolve("platform")
-      .resolve("common")
       .resolve("include")
       .resolve("platform_global.h")
     assert (f.toFile.exists, s"$f does not exist")
