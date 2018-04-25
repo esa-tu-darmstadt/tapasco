@@ -53,7 +53,7 @@ ssize_t dual_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_ad
 	}
 
 	*(u32 *)(dma->regs + REG_FPGA_ADDR_LOW)		= (u32)dev_addr;
-	*(u32 *)(dma->regs + REG_HOST_ADDR_LOW)		= (u32)usr_addr;
+	*(u32 *)(dma->regs + REG_HOST_ADDR_LOW)		= (u32)((uintptr_t)usr_addr);
 	*(u32 *)(dma->regs + REG_HOST_ADDR_HIGH)	= sizeof(usr_addr) > 4 ? (u32)((uintptr_t)usr_addr >> 32) : 0;
 	*(u32 *)(dma->regs + REG_BTT)			= (u32)len;
 	wmb();
@@ -69,7 +69,7 @@ ssize_t dual_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void
 		return len;
 	}
 
-	*(u32 *)(dma->regs + REG_HOST_ADDR_LOW) 	= (u32)usr_addr;
+	*(u32 *)(dma->regs + REG_HOST_ADDR_LOW) 	= (u32)((uintptr_t)usr_addr);
 	*(u32 *)(dma->regs + REG_HOST_ADDR_HIGH)	= sizeof(usr_addr) > 4 ? (u32)((uintptr_t)usr_addr >> 32) : 0;
 	*(u32 *)(dma->regs + REG_FPGA_ADDR_LOW) 	= (u32)dev_addr;
 	*(u32 *)(dma->regs + REG_BTT)			= (u32)len;
