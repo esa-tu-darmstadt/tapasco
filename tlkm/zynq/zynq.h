@@ -9,6 +9,9 @@
 
 static inline void zynq_remove(struct tlkm_class *cls) {}
 
+// FIXME implement rirq
+// FIXME implement pirq
+
 static const
 struct tlkm_class zynq_cls = {
 	.name 			= ZYNQ_CLASS_NAME,
@@ -19,7 +22,10 @@ struct tlkm_class zynq_cls = {
 	.ioctl			= zynq_ioctl,
 	.mmap			= zynq_mmap,
 	.status_base		= 0x77770000ULL,
-	.npirqs			= 0,
+	.npirqs			= 8,
+	.platform		= INIT_PLATFORM(0x77770000, 0x000020000,  /* status */
+	                                        0x43000000, 0x020000000,  /* arch */
+						0x81000000, 0x020000000), /* plat */
 	.private_data		= NULL,
 };
 

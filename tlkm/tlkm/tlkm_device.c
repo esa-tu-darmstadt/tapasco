@@ -31,7 +31,7 @@ int dma_engines_init(struct tlkm_device *dev)
 	for (i = 0; i < TLKM_DEVICE_MAX_DMA_ENGINES; ++i) {
 		struct dma_operations *o = &dev->dma[i].ops;
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA%d base: 0x%08llx", i, dma_base[i]);
-		if (! dma_base[i]) continue;
+		if (! dma_base[i] || dma_base[i] >= (uintptr_t)-1) continue;
 		dma_base[i] += dev->base_offset;
 		ret = tlkm_dma_init(&dev->dma[i], dev->dev_id, dma_base[i]);
 		if (ret) {
@@ -100,6 +100,12 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 		goto err_control;
 	}
 
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup I/O remap regions ...");
+	if ((ret = tlkm_platform_mmap_init(dev, &dev->mmap))) {
+		DEVERR(dev->dev_id, "could not map I/O regions: %d", ret);
+		goto err_ioremap;
+	}
+
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "initializing device ...");
 	if ((ret = dev->cls->create(dev, data))) {
 		DEVERR(dev->dev_id, "failed to initialize private data struct: %d", ret);
@@ -127,6 +133,8 @@ err_dma:
 err_control:
 	dev->cls->destroy(dev);
 err_status:
+	tlkm_platform_mmap_exit(dev, &dev->mmap);
+err_ioremap:
 	tlkm_control_exit(dev->ctrl);
 err_priv:
 	tlkm_perfc_miscdev_exit(dev);
@@ -140,6 +148,7 @@ void tlkm_device_exit(struct tlkm_device *dev)
 		dma_engines_exit(dev);
 		tlkm_status_exit(&dev->status, dev);
 		dev->cls->destroy(dev);
+		tlkm_platform_mmap_exit(dev, &dev->mmap);
 		tlkm_control_exit(dev->ctrl);
 		tlkm_perfc_miscdev_exit(dev);
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "destroyed");

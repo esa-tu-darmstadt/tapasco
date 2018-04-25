@@ -13,6 +13,9 @@
 int  pcie_init(struct tlkm_class *cls);
 void pcie_exit(struct tlkm_class *cls);
 
+// FIXME implement ioctl_f
+// FIXME implement mmap_f
+
 static const
 struct tlkm_class pcie_cls = {
 	.name 			= TLKM_CLS_NAME,
@@ -24,6 +27,9 @@ struct tlkm_class pcie_cls = {
 	.rirq			= pcie_irqs_release_platform_irq,
 	.npirqs			= 4,
 	.status_base		= 0x02800000ULL,
+	.platform		= INIT_PLATFORM(0x02800000ULL, 0x00002000,  /* status */
+						0x02000000ULL, 0x02000000,  /* arch */
+						0x03000000ULL, 0x02000000), /* platf */
 	.private_data		= NULL,
 };
 

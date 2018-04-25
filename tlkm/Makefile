@@ -16,6 +16,7 @@ tlkm-objs := \
 	tlkm/tlkm_ioctl.o \
 	tlkm/tlkm_device.o \
 	tlkm/tlkm_status.o \
+	tlkm/tlkm_platform.o \
 	device/tlkm_perfc.o \
 	device/tlkm_perfc_miscdev.o \
 	device/tlkm_control.o \

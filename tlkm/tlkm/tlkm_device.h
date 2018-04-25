@@ -17,6 +17,8 @@
 #define TLKM_DEVICE_NAME_LEN				30
 #define TLKM_DEVICE_MAX_DMA_ENGINES			4
 
+struct platform_mmap;
+
 struct tlkm_device {
 	struct list_head 	device; 	/* this device in tlkm_bus */
 	struct mutex 		mtx;
@@ -27,6 +29,7 @@ struct tlkm_device {
 	int 			vendor_id;
 	int 			product_id;
 	dev_addr_t		base_offset;	/* physical base offset of bitstream */
+	struct platform_mmap 	mmap;		/* I/O remaps of register spaces */
 	struct tlkm_status	status;		/* address map information */
 	struct tlkm_control	*ctrl;		/* main device file */
 	struct dma_engine	dma[TLKM_DEVICE_MAX_DMA_ENGINES];
