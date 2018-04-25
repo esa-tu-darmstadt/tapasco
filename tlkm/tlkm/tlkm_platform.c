@@ -1,7 +1,11 @@
 #include <linux/io.h>
+#include <linux/slab.h>
+#include <linux/slab.h>
+#include <linux/uaccess.h>
 #include "tlkm_device.h"
 #include "tlkm_platform.h"
 #include "tlkm_logging.h"
+#include "user/tlkm_device_ioctl_cmds.h"
 
 int tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap)
 {
@@ -66,4 +70,62 @@ void tlkm_platform_mmap_exit(struct tlkm_device *dev, struct platform_mmap *mmap
 	iounmap(mmap->arch);
 	mmap->arch = NULL;
 	DEVLOG(dev->dev_id, TLKM_LF_PLATFORM, "unmapped all I/O regions of '%s'", dev->name);
+}
+
+static inline
+void __iomem *addr2map(struct tlkm_device *dev, dev_addr_t const addr)
+{
+	struct platform *p = &dev->cls->platform;
+	void __iomem *ptr = NULL;
+	BUG_ON(! p);
+	if (IS_BETWEEN(addr, p->arch.base, p->arch.high)) {
+		ptr = dev->mmap.arch + (addr - p->arch.base);
+	} else if (IS_BETWEEN(addr, p->plat.base, p->plat.high)) {
+		ptr = dev->mmap.plat + (addr - p->plat.base);
+	} else if (IS_BETWEEN(addr, p->status.base, p->status.high)) {
+		ptr = dev->mmap.status + (addr - p->status.base);
+	}
+	return ptr;
+}
+
+long tlkm_platform_read(struct tlkm_device *dev, struct tlkm_copy_cmd *cmd)
+{
+	long ret = -ENXIO;
+	void __iomem *ptr = NULL;
+	void *buf = kzalloc(cmd->length, GFP_ATOMIC);
+	if (! (ptr = addr2map(dev, cmd->dev_addr))) {
+		DEVERR(dev->dev_id, "invalid address: %pad", &cmd->dev_addr);
+		return -ENXIO;
+	}
+	memcpy_fromio(buf, ptr, cmd->length);
+	if ((ret = copy_to_user((u32 __user *)cmd->user_addr, buf, cmd->length))) {
+		DEVERR(dev->dev_id, "could not copy all bytes from 0x%px to user space 0x%px: %ld",
+				buf, cmd->user_addr, ret);
+		ret = -EAGAIN;
+	}
+	kfree(buf);
+	tlkm_perfc_total_ctl_reads_add(dev->dev_id, cmd->length);
+	return ret;
+}
+
+long tlkm_platform_write(struct tlkm_device *dev, struct tlkm_copy_cmd *cmd)
+{
+	long ret = -ENXIO;
+	void __iomem *ptr = NULL;
+	void *buf = kzalloc(cmd->length, GFP_ATOMIC);
+	if (! (ptr = addr2map(dev, cmd->dev_addr))) {
+		DEVERR(dev->dev_id, "invalid address: %pad", &cmd->dev_addr);
+		return -ENXIO;
+	}
+	if ((ret = copy_from_user(buf, (u32 __user *)cmd->user_addr, cmd->length))) {
+		DEVERR(dev->dev_id, "could not copy all bytes from 0x%px to user space 0x%px: %ld",
+				buf, cmd->user_addr, ret);
+		ret = -EAGAIN;
+		goto err;
+	}
+	memcpy_toio(ptr, buf, cmd->length);
+	tlkm_perfc_total_ctl_writes_add(dev->dev_id, cmd->length);
+err:
+	kfree(buf);
+	return ret;
 }

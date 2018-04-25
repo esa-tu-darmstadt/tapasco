@@ -25,7 +25,10 @@
 
 #include <platform_global.h>
 
+#define IS_BETWEEN(a, l, h) (((a) >= (l) && (a) < (h)))
+
 struct tlkm_device;
+struct tlkm_copy_cmd;
 
 struct platform_regspace {
 	uintptr_t			base;
@@ -61,4 +64,6 @@ struct platform_mmap {
 int  tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap);
 void tlkm_platform_mmap_exit(struct tlkm_device *dev, struct platform_mmap *mmap);
 
+long tlkm_platform_read(struct tlkm_device *dev, struct tlkm_copy_cmd *cmd);
+long tlkm_platform_write(struct tlkm_device *dev, struct tlkm_copy_cmd *cmd);
 #endif /* TLKM_PLATFORM_H__ */
