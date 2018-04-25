@@ -84,7 +84,7 @@ static irqreturn_t zynq_irq_handler_ ## N(int irq, void *dev_id) \
 { \
 	u32 status; \
 	struct zynq_device *zynq_dev = (struct zynq_device *)dev_id; \
-	u32 *intc = (u32 *)zynq_dev->gp_map[1] + zynq_irq.intc_ ## N.base; \
+	u32 *intc = (u32 *)zynq_dev->parent->mmap.plat + zynq_irq.intc_ ## N.base; \
 	status = ioread32(intc); \
 	LOG(TLKM_LF_IRQ, "intcn = %d, status = 0x%08x, intc = 0x%px", N, status, intc); \
 	iowrite32(status, intc + (0x0c >> 2)); \
@@ -99,7 +99,7 @@ INTERRUPT_CONTROLLERS
 static
 void zynq_init_intc(struct zynq_device *zynq_dev, u32 const base)
 {
-	u32 *intc = (u32 *)zynq_dev->gp_map[1] + base;
+	u32 *intc = (u32 *)zynq_dev->parent->mmap.plat + base;
 	iowrite32((u32)-1, intc + (0x08 >> 2));
 	iowrite32((u32) 3, intc + (0x1c >> 2));
 	ioread32(intc);
@@ -109,14 +109,13 @@ void zynq_init_intc(struct zynq_device *zynq_dev, u32 const base)
 int zynq_irq_init(struct zynq_device *zynq_dev)
 {
 	int retval = 0, irqn = 0, rirq = 0;
-	u32 *status = (u32 *)zynq_dev->tapasco_status;
 	u32 base;
 
 #define	_INTC(N)	\
 	rirq = ZYNQ_IRQ_BASE_IRQ + zynq_dev->parent->cls->npirqs + irqn; \
-	base = ioread32(status + (0x1010 >> 2) + N * 2); \
+	base = ioread32(zynq_dev->parent->mmap.status + (0x1010 >> 2) + N * 2); \
 	if (base) { \
-		zynq_irq.intc_ ## N.base = (base - ZYNQ_PLATFORM_GP1_BASE) >> 2; \
+		zynq_irq.intc_ ## N.base = (base - zynq_dev->parent->cls->platform.plat.base) >> 2; \
 		zynq_irq.intc_ ## N.status = 0; \
 		if (zynq_irq.intc_ ## N.base) { \
 			LOG(TLKM_LF_IRQ, "controller for IRQ #%d at 0x%08x", \

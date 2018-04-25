@@ -165,61 +165,13 @@ long zynq_ioctl_copyfrom_free(struct tlkm_device *inst, struct tlkm_bulk_cmd *cm
 static inline
 long zynq_ioctl_read(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
 {
-	long ret = -ENXIO;
-	void __iomem *ptr = NULL;
-	void *buf = kzalloc(cmd->length, GFP_ATOMIC);
-	struct zynq_device *dev = (struct zynq_device *)inst->private_data;
-	if (cmd->dev_addr >= ZYNQ_PLATFORM_GP1_BASE) {
-		ptr = dev->gp_map[1] + (cmd->dev_addr - ZYNQ_PLATFORM_GP1_BASE);
-	} else if (cmd->dev_addr < ZYNQ_PLATFORM_GP0_HIGH) {
-		ptr = dev->gp_map[0] + (cmd->dev_addr - ZYNQ_PLATFORM_GP0_BASE);
-	} else if (cmd->dev_addr >= ZYNQ_PLATFORM_STATUS_BASE &&
-			cmd->dev_addr < ZYNQ_PLATFORM_STATUS_HIGH) {
-		ptr = dev->tapasco_status + (cmd->dev_addr - ZYNQ_PLATFORM_STATUS_BASE);
-	} else {
-		DEVERR(inst->dev_id, "invalid address: %pad", &cmd->dev_addr);
-		return -ENXIO;
-	}
-	memcpy_fromio(buf, ptr, cmd->length);
-	if ((ret = copy_to_user((u32 __user *)cmd->user_addr, buf, cmd->length))) {
-		DEVERR(inst->dev_id, "could not copy all bytes from 0x%px to user space 0x%px: %ld",
-				buf, cmd->user_addr, ret);
-		ret = -EAGAIN;
-	}
-	kfree(buf);
-	tlkm_perfc_total_ctl_reads_add(inst->dev_id, cmd->length);
-	return ret;
+	return tlkm_platform_read(inst, cmd);
 }
 
 static inline
 long zynq_ioctl_write(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
 {
-	long ret = -ENXIO;
-	void __iomem *ptr = NULL;
-	void *buf = kzalloc(cmd->length, GFP_ATOMIC);
-	struct zynq_device *dev = (struct zynq_device *)inst->private_data;
-	if (cmd->dev_addr > ZYNQ_PLATFORM_GP1_BASE) {
-		ptr = dev->gp_map[1] + (cmd->dev_addr - ZYNQ_PLATFORM_GP1_BASE);
-	} else if (cmd->dev_addr < ZYNQ_PLATFORM_GP0_HIGH) {
-		ptr = dev->gp_map[0] + (cmd->dev_addr - ZYNQ_PLATFORM_GP0_BASE);
-	} else if (cmd->dev_addr >= ZYNQ_PLATFORM_STATUS_BASE &&
-			cmd->dev_addr < ZYNQ_PLATFORM_STATUS_HIGH) {
-		ptr = dev->tapasco_status + (cmd->dev_addr - ZYNQ_PLATFORM_STATUS_BASE);
-	} else {
-		DEVERR(inst->dev_id, "invalid address: %pad", &cmd->dev_addr);
-		return -ENXIO;
-	}
-	if ((ret = copy_from_user(buf, (u32 __user *)cmd->user_addr, cmd->length))) {
-		DEVERR(inst->dev_id, "could not copy all bytes from 0x%px to user space 0x%px: %ld",
-				buf, cmd->user_addr, ret);
-		ret = -EAGAIN;
-		goto err;
-	}
-	memcpy_toio(ptr, buf, cmd->length);
-	tlkm_perfc_total_ctl_writes_add(inst->dev_id, cmd->length);
-err:
-	kfree(buf);
-	return ret;
+	return tlkm_platform_write(inst, cmd);
 }
 
 long zynq_ioctl(struct tlkm_device *inst, unsigned int ioctl, unsigned long data)
