@@ -26,7 +26,6 @@ struct tlkm_class pcie_cls = {
 	.pirq			= pcie_irqs_request_platform_irq,
 	.rirq			= pcie_irqs_release_platform_irq,
 	.npirqs			= 4,
-	.status_base		= 0x02800000ULL,
 	.platform		= INIT_PLATFORM(0x02800000ULL, 0x00002000,  /* status */
 						0x02000000ULL, 0x02000000,  /* arch */
 						0x03000000ULL, 0x02000000), /* platf */

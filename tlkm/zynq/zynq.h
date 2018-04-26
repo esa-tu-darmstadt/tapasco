@@ -21,7 +21,6 @@ struct tlkm_class zynq_cls = {
 	.ioctl			= zynq_ioctl,
 	.pirq			= zynq_irq_request_platform_irq,
 	.rirq			= zynq_irq_release_platform_irq,
-	.status_base		= 0x77770000ULL,
 	.npirqs			= 8,
 	.platform		= INIT_PLATFORM(0x77770000, 0x00002000,  /* status */
 	                                        0x43000000, 0x02000000,  /* arch */

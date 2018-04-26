@@ -18,7 +18,7 @@ int dma_engines_init(struct tlkm_device *dev)
 	u64 dma_base[TLKM_DEVICE_MAX_DMA_ENGINES] = { 0ULL, };
 	u64 status_base;
 	BUG_ON(! dev);
-	status_base = dev->base_offset + dev->cls->status_base + TLKM_STATUS_REG_OFFSET;
+	status_base = dev->base_offset + dev->cls->platform.status.base + TLKM_STATUS_REG_OFFSET;
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "temporarily mapping 0x%08llx - 0x%08llx ...",
 			status_base, status_base + TLKM_STATUS_SZ);
 	component = (u64 *)ioremap_nocache(status_base, TLKM_STATUS_SZ);
@@ -113,7 +113,7 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 	}
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "reading address map ...");
-	if ((ret = tlkm_status_init(&dev->status, dev, dev->base_offset + dev->cls->status_base))) {
+	if ((ret = tlkm_status_init(&dev->status, dev, dev->base_offset + dev->cls->platform.status.base))) {
 		DEVERR(dev->dev_id, "could not initialize address map: %d", ret);
 		goto err_status;
 	}

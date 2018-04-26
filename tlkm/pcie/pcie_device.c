@@ -64,7 +64,7 @@ static int claim_device(struct tlkm_pcie_device *pdev)
 
 	pdev->parent->base_offset = pdev->phy_addr_bar0;
 	DEVLOG(did, TLKM_LF_PCIE, "status core base: 0x%08llx => 0x%08llx",
-		(u64)pcie_cls.status_base, (u64)pcie_cls.status_base + pdev->parent->base_offset);
+		(u64)pcie_cls.platform.status.base, (u64)pcie_cls.platform.status.base + pdev->parent->base_offset);
 
 	return 0;
 

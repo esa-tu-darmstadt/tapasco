@@ -29,8 +29,6 @@ struct tlkm_class {
 	tlkm_device_ioctl_f		ioctl;		/* ioctl implementation */
 	tlkm_device_pirq_f		pirq;		/* request platform IRQ */
 	tlkm_device_rirq_f		rirq;		/* release platform IRQ */
-	// FIXME remove status_base once platform struct is integrated
-	dev_addr_t			status_base;	/* physical offset of status core in bitstream */
 	size_t				npirqs;		/* number of platform interrupts */
 	struct platform			platform;	/* register space definitions */
 	void				*private_data;
