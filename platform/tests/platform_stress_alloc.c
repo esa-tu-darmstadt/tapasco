@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 	for (t = 0; t < thread_count; ++t)
 		pthread_join(threads[t], NULL);
 	
-	platform_destroy_device(ctx, 0);
+	platform_destroy_device_by_id(ctx, 0);
 	platform_deinit(ctx);
 
 	if (! stop)
