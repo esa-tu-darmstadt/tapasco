@@ -33,7 +33,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
-#include <zynq/zynq_platform.h>
+#include <zynq/zynq.h>
 #include <tlkm_device_ioctl_cmds.h>
 #include <platform.h>
 #include <platform_errors.h>
@@ -41,32 +41,32 @@
 #include <platform_device_operations.h>
 
 typedef struct zynq_platform {
-	volatile void		*gp0_map;
-	volatile void		*gp1_map;
-	volatile void		*status_map;
-	platform_devctx_t	*devctx;
+	volatile void			*arch_map;
+	volatile void			*plat_map;
+	volatile void			*status_map;
+	platform_devctx_t		*devctx;
 } zynq_platform_t;
 
 static zynq_platform_t zynq_platform = {
-	.gp0_map       		= MAP_FAILED,
-	.gp1_map       		= MAP_FAILED,
-	.status_map    		= MAP_FAILED,
-	.devctx        		= NULL,
+	.arch_map       		= MAP_FAILED,
+	.plat_map       		= MAP_FAILED,
+	.status_map    			= MAP_FAILED,
+	.devctx        			= NULL,
 };
 
 static
 void zynq_unmap()
 {
-	if (zynq_platform.gp0_map != MAP_FAILED) {
-		munmap((void *)zynq_platform.gp0_map, ZYNQ_PLATFORM_GP0_SIZE);
-		zynq_platform.gp0_map = MAP_FAILED;
+	if (zynq_platform.arch_map != MAP_FAILED) {
+		munmap((void *)zynq_platform.arch_map, zynq_def.arch.size);
+		zynq_platform.arch_map = MAP_FAILED;
 	}
-	if (zynq_platform.gp1_map != MAP_FAILED) {
-		munmap((void *)zynq_platform.gp1_map, ZYNQ_PLATFORM_GP1_SIZE);
-		zynq_platform.gp1_map = MAP_FAILED;
+	if (zynq_platform.plat_map != MAP_FAILED) {
+		munmap((void *)zynq_platform.plat_map, zynq_def.plat.size);
+		zynq_platform.plat_map = MAP_FAILED;
 	}
 	if (zynq_platform.status_map != MAP_FAILED) {
-		munmap((void *)zynq_platform.status_map, ZYNQ_PLATFORM_STATUS_SIZE);
+		munmap((void *)zynq_platform.status_map, zynq_def.status.size);
 		zynq_platform.status_map = MAP_FAILED;
 	}
 	DEVLOG(zynq_platform.devctx->dev_id, LPLL_DEVICE, "all I/O maps unmapped");
@@ -77,26 +77,26 @@ platform_res_t zynq_iomapping()
 {
 	assert(zynq_platform.devctx);
 	assert(zynq_platform.devctx->fd_ctrl);
-	zynq_platform.gp0_map = mmap(NULL,
-			ZYNQ_PLATFORM_GP0_SIZE,
+	zynq_platform.arch_map = mmap(NULL,
+			zynq_def.arch.size,
 			PROT_READ | PROT_WRITE | PROT_EXEC,
 			MAP_SHARED,
 			zynq_platform.devctx->fd_ctrl,
-			ZYNQ_PLATFORM_GP0_BASE);
-	if (zynq_platform.gp0_map == MAP_FAILED) {
+			zynq_def.arch.base);
+	if (zynq_platform.arch_map == MAP_FAILED) {
 		DEVERR(zynq_platform.devctx->dev_id, "could not map GP0: %s (%d)",
 				strerror(errno), errno);
 		zynq_unmap();
 		return PERR_MMAP_DEV;
 	}
 
-	zynq_platform.gp1_map = mmap(NULL,
-			ZYNQ_PLATFORM_GP1_SIZE,
+	zynq_platform.plat_map = mmap(NULL,
+			zynq_def.plat.size,
 			PROT_READ | PROT_WRITE | PROT_EXEC,
 			MAP_SHARED,
 			zynq_platform.devctx->fd_ctrl,
-			ZYNQ_PLATFORM_GP1_BASE);
-	if (zynq_platform.gp1_map == MAP_FAILED) {
+			zynq_def.plat.base);
+	if (zynq_platform.plat_map == MAP_FAILED) {
 		DEVERR(zynq_platform.devctx->dev_id, "could not map GP1: %s (%d)",
 				strerror(errno), errno);
 		zynq_unmap();
@@ -104,11 +104,11 @@ platform_res_t zynq_iomapping()
 	}
 
 	zynq_platform.status_map = mmap(NULL,
-			ZYNQ_PLATFORM_STATUS_SIZE,
+			zynq_def.status.size,
 			PROT_READ | PROT_WRITE | PROT_EXEC,
 			MAP_SHARED,
 			zynq_platform.devctx->fd_ctrl,
-			ZYNQ_PLATFORM_STATUS_BASE);
+			zynq_def.status.base);
 	if (zynq_platform.status_map == MAP_FAILED) {
 		DEVERR(zynq_platform.devctx->dev_id, "could not map status core: %s (%d)",
 				strerror(errno), errno);
@@ -116,26 +116,6 @@ platform_res_t zynq_iomapping()
 		return PERR_MMAP_DEV;
 	}
 	return PLATFORM_SUCCESS;
-}
-
-platform_res_t zynq_init(platform_devctx_t *devctx)
-{
-	assert(devctx);
-	assert(devctx->dev_info.name);
-	if (! strncmp(ZYNQ_CLASS_NAME, devctx->dev_info.name, strlen(ZYNQ_CLASS_NAME))) {
-		DEVLOG(devctx->dev_id, LPLL_DEVICE, "matches zynq platform");
-		zynq_platform.devctx = devctx;
-		return zynq_iomapping();
-	}
-	DEVLOG(devctx->dev_id, LPLL_DEVICE, "does not match zynq platform");
-	return PERR_INCOMPATIBLE_DEVICE;
-}
-
-void zynq_exit(platform_devctx_t *devctx)
-{
-	zynq_unmap();
-	zynq_platform.devctx = NULL;
-	DEVLOG(devctx->dev_id, LPLL_DEVICE, "zynq device released");
 }
 
 static
@@ -158,16 +138,13 @@ platform_res_t zynq_read_ctl(platform_devctx_t const *ctx,
 	}
 #endif
 
-	if (ISBETWEEN(addr, ZYNQ_PLATFORM_GP0_BASE, ZYNQ_PLATFORM_GP0_HIGH))
-		r = (volatile uint32_t *)zynq_platform.gp0_map +
-				((addr - ZYNQ_PLATFORM_GP0_BASE) >> 2);
-	else if (ISBETWEEN(addr, ZYNQ_PLATFORM_GP1_BASE, ZYNQ_PLATFORM_GP1_HIGH))
-		r = (volatile uint32_t *)zynq_platform.gp1_map +
-				((addr - ZYNQ_PLATFORM_GP1_BASE) >> 2);
-	else if (ISBETWEEN(addr, ZYNQ_PLATFORM_STATUS_BASE,
-			ZYNQ_PLATFORM_STATUS_HIGH))
-		r = (volatile uint32_t *)zynq_platform.status_map + ((addr -
-				ZYNQ_PLATFORM_STATUS_BASE) >> 2);
+	if (IS_BETWEEN(addr, zynq_def.arch.base, zynq_def.arch.high))
+		r = (volatile uint32_t *)zynq_platform.arch_map + ((addr - zynq_def.arch.base) >> 2);
+	else if (IS_BETWEEN(addr, zynq_def.plat.base, zynq_def.plat.high))
+		r = (volatile uint32_t *)zynq_platform.plat_map + ((addr - zynq_def.plat.base) >> 2);
+	else if (IS_BETWEEN(addr, zynq_def.status.base,
+			zynq_def.status.high))
+		r = (volatile uint32_t *)zynq_platform.status_map + ((addr - zynq_def.status.base) >> 2);
 	else {
 		DEVERR(ctx->dev_id, "invalid platform address: 0x%08lx", (unsigned long)addr);
 		return PERR_CTL_INVALID_ADDRESS;
@@ -179,6 +156,7 @@ platform_res_t zynq_read_ctl(platform_devctx_t const *ctx,
 	return PLATFORM_SUCCESS;
 }
 
+static
 platform_res_t zynq_write_ctl(platform_devctx_t const *ctx,
 		platform_ctl_addr_t const addr,
 		size_t const length,
@@ -198,12 +176,10 @@ platform_res_t zynq_write_ctl(platform_devctx_t const *ctx,
 	}
 #endif
 
-	if (ISBETWEEN(addr, ZYNQ_PLATFORM_GP0_BASE, ZYNQ_PLATFORM_GP0_HIGH))
-		r = (volatile uint32_t *)zynq_platform.gp0_map +
-				((addr - ZYNQ_PLATFORM_GP0_BASE) >> 2);
-	else if (ISBETWEEN(addr, ZYNQ_PLATFORM_GP1_BASE, ZYNQ_PLATFORM_GP1_HIGH))
-		r = (volatile uint32_t *)zynq_platform.gp1_map +
-				((addr - ZYNQ_PLATFORM_GP1_BASE) >> 2);
+	if (IS_BETWEEN(addr, zynq_def.arch.base, zynq_def.arch.high))
+		r = (volatile uint32_t *)zynq_platform.arch_map + ((addr - zynq_def.arch.base) >> 2);
+	else if (IS_BETWEEN(addr, zynq_def.plat.base, zynq_def.plat.high))
+		r = (volatile uint32_t *)zynq_platform.plat_map + ((addr - zynq_def.plat.base) >> 2);
 	else {
 		DEVERR(ctx->dev_id, "invalid platform address: 0x%08lx", (unsigned long)addr);
 		return PERR_CTL_INVALID_ADDRESS;
@@ -215,11 +191,24 @@ platform_res_t zynq_write_ctl(platform_devctx_t const *ctx,
 	return PLATFORM_SUCCESS;
 }
 
-static const struct platform_device_operations _zynq_dops = {
-	.alloc		= default_alloc,
-	.dealloc	= default_dealloc,
-	.read_mem	= default_read_mem,
-	.write_mem	= default_write_mem,
-	.read_ctl	= zynq_read_ctl,
-	.write_ctl	= zynq_write_ctl,
-};
+platform_res_t zynq_init(platform_devctx_t *devctx)
+{
+	assert(devctx);
+	assert(devctx->dev_info.name);
+	if (! strncmp(ZYNQ_CLASS_NAME, devctx->dev_info.name, strlen(ZYNQ_CLASS_NAME))) {
+		DEVLOG(devctx->dev_id, LPLL_DEVICE, "matches zynq platform");
+		zynq_platform.devctx = devctx;
+		devctx->dops.read_ctl	= zynq_read_ctl;
+		devctx->dops.write_ctl	= zynq_write_ctl;
+		return zynq_iomapping();
+	}
+	DEVLOG(devctx->dev_id, LPLL_DEVICE, "does not match zynq platform");
+	return PERR_INCOMPATIBLE_DEVICE;
+}
+
+void zynq_exit(platform_devctx_t *devctx)
+{
+	zynq_unmap();
+	zynq_platform.devctx = NULL;
+	DEVLOG(devctx->dev_id, LPLL_DEVICE, "zynq device released");
+}
