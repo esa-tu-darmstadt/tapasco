@@ -24,7 +24,7 @@
 #include <platform_logging.h>
 #include <platform_addr_map.h>
 #include <platform.h>
-#include <zynq/zynq_platform.h>
+#include <zynq/zynq.h>
 
 #define PLATFORM_STATUS_REGISTERS \
 	_X(REG_MAGIC_ID ,		0x0000 ,	magic_id) \
@@ -65,7 +65,7 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 {
 	platform_res_t r;
 	platform_dev_id_t dev_id = p->dev_id;
-	platform_ctl_addr_t status = ZYNQ_PLATFORM_STATUS_BASE;
+	platform_ctl_addr_t status = zynq_def.status.base;
 #ifdef _X
 	#undef _X
 #endif
