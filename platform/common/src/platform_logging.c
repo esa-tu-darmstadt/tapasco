@@ -108,6 +108,7 @@ int platform_logging_init(void)
 {
 	static int is_initialized = 0;
 	if (! is_initialized) {
+		is_initialized = 1;
 		char const *dbg = getenv("LIBPLATFORM_DEBUG");
 		char const *lgf = getenv("LIBPLATFORM_LOGFILE");
 		libplatform_logging_level = dbg ? (strtoul(dbg, NULL, 0) | 0x1) : ULONG_MAX;
@@ -136,10 +137,11 @@ void platform_logging_deinit(void)
 	exiting = true;
 	if (log_thread) pthread_join(log_thread, NULL);
 	gq_destroy(log_q);
+	log_q = NULL;
 	while ((lm = (struct log_msg_t *) gs_pop(&log_s)))
 		free(lm);
 
-	if (libplatform_logging_file != stderr) {
+	if (libplatform_logging_file != NULL && libplatform_logging_file != stderr) {
 		fflush(libplatform_logging_file);
 		fclose(libplatform_logging_file);
 	}
