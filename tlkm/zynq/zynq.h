@@ -1,13 +1,23 @@
 #ifndef ZYNQ_H__
 #define ZYNQ_H__
 
+#include "tlkm_platform.h"
+
+#define ZYNQ_NAME			"xlnx,zynq-7000"
+#define ZYNQ_CLASS_NAME			"zynq"
+
+#define ZYNQ_DEF 			INIT_PLATFORM(0x77770000, 0x00002000,  /* status */ \
+	                                              0x43000000, 0x02000000,  /* arch */ \
+		                                      0x81000000, 0x02000000)  /* plat */
+
+static const
+struct platform zynq_def = ZYNQ_DEF;
+
+#ifdef __KERNEL__
 #include "tlkm_class.h"
 #include "zynq_device.h"
 #include "zynq_ioctl.h"
 #include "zynq_irq.h"
-
-#define ZYNQ_NAME			"xlnx,zynq-7000"
-#define ZYNQ_CLASS_NAME			"zynq"
 
 static inline void zynq_remove(struct tlkm_class *cls) {}
 
@@ -22,10 +32,9 @@ struct tlkm_class zynq_cls = {
 	.pirq			= zynq_irq_request_platform_irq,
 	.rirq			= zynq_irq_release_platform_irq,
 	.npirqs			= 8,
-	.platform		= INIT_PLATFORM(0x77770000, 0x00002000,  /* status */
-	                                        0x43000000, 0x02000000,  /* arch */
-						0x81000000, 0x02000000), /* plat */
+	.platform		= ZYNQ_DEF,
 	.private_data		= NULL,
 };
+#endif /* __KERNEL__ */
 
 #endif /* ZYNQ_H__ */

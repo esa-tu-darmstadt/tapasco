@@ -27,8 +27,10 @@
 
 #define IS_BETWEEN(a, l, h) (((a) >= (l) && (a) < (h)))
 
-struct tlkm_device;
-struct tlkm_copy_cmd;
+#ifndef __KERNEL__
+#include <stdint.h>
+#define __iomem
+#endif
 
 struct platform_regspace {
 	uintptr_t			base;
@@ -55,11 +57,15 @@ struct platform {
 		.plat   = INIT_REGSPACE((plat_base), (plat_size)), \
 	}
 
+#ifdef __KERNEL__
 struct platform_mmap {
 	void __iomem			*status;
 	void __iomem			*arch;
 	void __iomem			*plat;
 };
+
+struct tlkm_device;
+struct tlkm_copy_cmd;
 
 int  tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap);
 void tlkm_platform_mmap_exit(struct tlkm_device *dev, struct platform_mmap *mmap);
@@ -68,5 +74,6 @@ long tlkm_platform_read(struct tlkm_device *dev, struct tlkm_copy_cmd *cmd);
 long tlkm_platform_write(struct tlkm_device *dev, struct tlkm_copy_cmd *cmd);
 
 void __iomem *addr2map(struct tlkm_device *dev, dev_addr_t const addr);
+#endif /* __KERNEL__ */
 
 #endif /* TLKM_PLATFORM_H__ */
