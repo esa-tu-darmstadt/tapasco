@@ -169,6 +169,7 @@ struct gq_t *gq_init(void)
  **/
 void gq_destroy(struct gq_t *q)
 {
+	if (! q) return;
 	while(gq_dequeue(q));
 	struct gq_tagged_ptr tmp = atomic_load(&q->head);
 	free(tmp.ptr);
