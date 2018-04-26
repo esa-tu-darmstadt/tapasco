@@ -39,7 +39,7 @@ int pcie_irqs_init(struct tlkm_device *dev)
 	BUG_ON(! dev);
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registering %zu interrupts ...", n);
 #define _INTR(nr) \
-	irqn = nr + TLKM_PLATFORM_INTERRUPTS; \
+	irqn = nr + pcie_cls.npirqs; \
 	if ((err[nr] = request_irq(pci_irq_vector(pdev->pdev, irqn), \
 			tlkm_pcie_slot_irq_ ## nr, \
 			IRQF_EARLY_RESUME, \
@@ -61,7 +61,7 @@ int pcie_irqs_init(struct tlkm_device *dev)
 
 irq_error:
 #define _INTR(nr) \
-	irqn = nr + TLKM_PLATFORM_INTERRUPTS; \
+	irqn = nr + pcie_cls.npirqs; \
 	if (! err[nr]) { \
 		free_irq(pdev->irq_mapping[irqn], pdev->pdev); \
 		pdev->irq_mapping[irqn] = -1; \
@@ -78,7 +78,7 @@ void pcie_irqs_exit(struct tlkm_device *dev)
 	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
 	int irqn;
 #define _INTR(nr) \
-	irqn = nr + TLKM_PLATFORM_INTERRUPTS; \
+	irqn = nr + pcie_cls.npirqs; \
 	if (pdev->irq_mapping[irqn] != -1) { \
 		DEVLOG(dev->dev_id, TLKM_LF_IRQ, "freeing interrupt %d with mappping %d", irqn, pdev->irq_mapping[irqn]); \
 		free_irq(pdev->irq_mapping[irqn], pdev->pdev); \
@@ -95,7 +95,7 @@ int pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no, irqretur
 	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
 	BUG_ON(! pdev);
 	if (irq_no >= dev->cls->npirqs) {
-		DEVERR(dev->dev_id, "invalid platform interrupt number: %d (must be < %d)", irq_no, dev->cls->npirqs);
+		DEVERR(dev->dev_id, "invalid platform interrupt number: %d (must be < %zd)", irq_no, dev->cls->npirqs);
 		return -ENXIO;
 	}
 
@@ -120,7 +120,7 @@ void pcie_irqs_release_platform_irq(struct tlkm_device *dev, int irq_no)
 {
 	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
 	if (irq_no >= dev->cls->npirqs) {
-		DEVERR(dev->dev_id, "invalid platform interrupt number: %d (must be < %d)", irq_no, TLKM_PLATFORM_INTERRUPTS);
+		DEVERR(dev->dev_id, "invalid platform interrupt number: %d (must be < %zd)", irq_no, pcie_cls.npirqs);
 		return;
 	}
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "freeing platform interrupt #%d with mapping %d", irq_no, pdev->irq_mapping[irq_no]);
