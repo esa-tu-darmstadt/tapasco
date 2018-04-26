@@ -27,7 +27,7 @@
 #include <platform_errors.h>
 #include <platform_logging.h>
 #include <platform_addr_map.h>
-#include <zynq/zynq_platform.h>
+#include <zynq/zynq.h>
 #include <assert.h>
 
 struct platform_addr_map {
@@ -87,7 +87,7 @@ platform_res_t platform_addr_map_get_component_base(
 		platform_ctl_addr_t *addr)
 {
 	if (comp_id == PLATFORM_COMPONENT_STATUS) {
-		*addr = ZYNQ_PLATFORM_STATUS_BASE;
+		*addr = zynq_def.status.base;
 		return PLATFORM_SUCCESS;
 	}
 #ifndef NDEBUG
