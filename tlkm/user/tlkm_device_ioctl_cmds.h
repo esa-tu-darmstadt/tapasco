@@ -48,8 +48,8 @@ struct tlkm_bulk_cmd {
 	struct tlkm_copy_cmd	copy;
 };
 
-#define TLKM_DEV_IOCTL_FN		"tlkm_%03u"
-#define TLKM_DEV_PERFC_FN		"tlkm_perfc_%03u"
+#define TLKM_DEV_IOCTL_FN		"tlkm_%02u"
+#define TLKM_DEV_PERFC_FN		"tlkm_perfc_%02u"
 
 #ifdef _TLKM_DEV_IOCTL
 	#undef _TLKM_DEV_IOCTL
