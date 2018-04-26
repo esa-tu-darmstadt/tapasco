@@ -59,10 +59,10 @@ void platform_log(platform_ll_t const level, char *fmt, ...);
 #define LOG(l, msg, ...) 	platform_log((platform_ll_t)(l), "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
 
 #define DEVERR(dev_id, msg, ...) \
-		platform_log((platform_ll_t)0, "device #%03u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+		platform_log((platform_ll_t)0, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 #define DEVWRN(dev_id, msg, ...) \
-		platform_log((platform_ll_t)1, "device #%03u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+		platform_log((platform_ll_t)1, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 #define DEVLOG(dev_id, l, msg, ...) \
-		platform_log((platform_ll_t)(l), "device #%03u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+		platform_log((platform_ll_t)(l), "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 
 #endif /* __PLATFORM_LOGGING_H__ */
