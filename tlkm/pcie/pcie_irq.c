@@ -37,7 +37,7 @@ int pcie_irqs_init(struct tlkm_device *dev)
 #undef _INTR
 	int ret = 0, irqn, err[n];
 	BUG_ON(! dev);
-	DEVLOG(dev->dev_id, TLKM_LF_PCIE, "registering %zu interrupts ...", n);
+	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registering %zu interrupts ...", n);
 #define _INTR(nr) \
 	irqn = nr + TLKM_PLATFORM_INTERRUPTS; \
 	if ((err[nr] = request_irq(pci_irq_vector(pdev->pdev, irqn), \
@@ -49,8 +49,8 @@ int pcie_irqs_init(struct tlkm_device *dev)
 		goto irq_error; \
 	} else { \
 		pdev->irq_mapping[irqn] = pci_irq_vector(pdev->pdev, irqn); \
-		DEVLOG(dev->dev_id, TLKM_LF_PCIE, "created mapping from interrupt %d -> %d", irqn, pdev->irq_mapping[irqn]); \
-		DEVLOG(dev->dev_id, TLKM_LF_PCIE, "interrupt line %d/%d assigned with return value %d", \
+		DEVLOG(dev->dev_id, TLKM_LF_IRQ, "created mapping from interrupt %d -> %d", irqn, pdev->irq_mapping[irqn]); \
+		DEVLOG(dev->dev_id, TLKM_LF_IRQ, "interrupt line %d/%d assigned with return value %d", \
 				irqn, pci_irq_vector(pdev->pdev, irqn), err[nr]); \
 		INIT_WORK(&pdev->irq_work[nr], tlkm_pcie_slot_irq_work_ ## nr); \
 		atomic_long_set(&pdev->irq_work[nr].data, (long)pdev->pdev); \
@@ -80,7 +80,7 @@ void pcie_irqs_exit(struct tlkm_device *dev)
 #define _INTR(nr) \
 	irqn = nr + TLKM_PLATFORM_INTERRUPTS; \
 	if (pdev->irq_mapping[irqn] != -1) { \
-		DEVLOG(dev->dev_id, TLKM_LF_PCIE, "freeing interrupt %d with mappping %d", irqn, pdev->irq_mapping[irqn]); \
+		DEVLOG(dev->dev_id, TLKM_LF_IRQ, "freeing interrupt %d with mappping %d", irqn, pdev->irq_mapping[irqn]); \
 		free_irq(pdev->irq_mapping[irqn], pdev->pdev); \
 		pdev->irq_mapping[irqn] = -1; \
 	}
@@ -94,8 +94,8 @@ int pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no, irqretur
 	int err = 0;
 	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
 	BUG_ON(! pdev);
-	if (irq_no >= TLKM_PLATFORM_INTERRUPTS) {
-		DEVERR(dev->dev_id, "invalid platform interrupt number: %d (must be < %d)", irq_no, TLKM_PLATFORM_INTERRUPTS);
+	if (irq_no >= dev->cls->npirqs) {
+		DEVERR(dev->dev_id, "invalid platform interrupt number: %d (must be < %d)", irq_no, dev->cls->npirqs);
 		return -ENXIO;
 	}
 
@@ -110,8 +110,8 @@ int pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no, irqretur
 		return err;
 	}
 	pdev->irq_mapping[irq_no] = pci_irq_vector(pdev->pdev, irq_no);
-	DEVLOG(dev->dev_id, TLKM_LF_PCIE, "created mapping from interrupt %d -> %d", irq_no, pdev->irq_mapping[irq_no]);
-	DEVLOG(dev->dev_id, TLKM_LF_PCIE, "interrupt line %d/%d assigned with return value %d",
+	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "created mapping from interrupt %d -> %d", irq_no, pdev->irq_mapping[irq_no]);
+	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "interrupt line %d/%d assigned with return value %d",
 			irq_no, pci_irq_vector(pdev->pdev, irq_no), err);
 	return err;
 }
@@ -119,7 +119,7 @@ int pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no, irqretur
 void pcie_irqs_release_platform_irq(struct tlkm_device *dev, int irq_no)
 {
 	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
-	if (irq_no >= TLKM_PLATFORM_INTERRUPTS) {
+	if (irq_no >= dev->cls->npirqs) {
 		DEVERR(dev->dev_id, "invalid platform interrupt number: %d (must be < %d)", irq_no, TLKM_PLATFORM_INTERRUPTS);
 		return;
 	}
