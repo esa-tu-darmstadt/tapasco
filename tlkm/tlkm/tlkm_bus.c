@@ -63,7 +63,7 @@ struct tlkm_device *tlkm_bus_new_device(struct tlkm_class *cls, int vendor_id, i
 			kfree(dev);
 			return NULL;
 		}
-		snprintf(dev->name, TLKM_DEVICE_NAME_LEN, "%s_%03u", cls->name, dev->dev_id);
+		snprintf(dev->name, TLKM_DEVICE_NAME_LEN, "%s_%02u", cls->name, dev->dev_id);
 		mutex_init(&dev->mtx);
 		return dev;
 	} else {
@@ -125,7 +125,7 @@ void tlkm_bus_exit(void)
 	LOG(TLKM_LF_BUS, "removing devices ...");
 	list_for_each_safe(lh, tmp, &_tlkm_bus.devices) {
 		struct tlkm_device *d = list_entry(lh, struct tlkm_device, device);
-		LOG(TLKM_LF_BUS, "TaPaSCo device #%03u '%s' (%04x:%04x)", d->dev_id, d->name, d->vendor_id, d->product_id);
+		LOG(TLKM_LF_BUS, "TaPaSCo device #%02u '%s' (%04x:%04x)", d->dev_id, d->name, d->vendor_id, d->product_id);
 		tlkm_bus_delete_device(d);
 	}
 	LOG(TLKM_LF_BUS, "removing classes ...");

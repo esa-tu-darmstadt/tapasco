@@ -17,7 +17,6 @@ typedef void(*tlkm_class_remove_f)(struct tlkm_class *);
 
 
 typedef long (*tlkm_device_ioctl_f)(struct tlkm_device *, unsigned int ioctl, unsigned long data);
-typedef int  (*tlkm_device_mmap_f) (struct tlkm_device *, struct vm_area_struct *vm);
 typedef int  (*tlkm_device_pirq_f) (struct tlkm_device *, int irq_no, irq_handler_t h);
 typedef void (*tlkm_device_rirq_f) (struct tlkm_device *, int irq_no);
 
@@ -28,7 +27,6 @@ struct tlkm_class {
 	tlkm_class_probe_f		probe;
 	tlkm_class_remove_f		remove;
 	tlkm_device_ioctl_f		ioctl;		/* ioctl implementation */
-	tlkm_device_mmap_f		mmap;		/* mmap implementation */
 	tlkm_device_pirq_f		pirq;		/* request platform IRQ */
 	tlkm_device_rirq_f		rirq;		/* release platform IRQ */
 	// FIXME remove status_base once platform struct is integrated

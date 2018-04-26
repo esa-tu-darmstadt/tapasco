@@ -72,7 +72,7 @@ void tlkm_platform_mmap_exit(struct tlkm_device *dev, struct platform_mmap *mmap
 	DEVLOG(dev->dev_id, TLKM_LF_PLATFORM, "unmapped all I/O regions of '%s'", dev->name);
 }
 
-static inline
+inline
 void __iomem *addr2map(struct tlkm_device *dev, dev_addr_t const addr)
 {
 	struct platform *p = &dev->cls->platform;

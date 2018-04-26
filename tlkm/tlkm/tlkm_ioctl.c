@@ -80,7 +80,7 @@ long tlkm_ioctl_create_device(struct file *fp, unsigned int ioctl,
 		ERR("could not copy create device command from user space");
 		return -EACCES;
 	}
-	LOG(TLKM_LF_IOCTL, "create device #%03u command received", kc.dev_id);
+	LOG(TLKM_LF_IOCTL, "create device #%02u command received", kc.dev_id);
 	return tlkm_device_acquire(tlkm_bus_get_device(kc.dev_id), kc.access);
 }
 
@@ -93,7 +93,7 @@ long tlkm_ioctl_destroy_device(struct file *fp, unsigned int ioctl,
 		ERR("could not copy destroy device command from user space");
 		return -EACCES;
 	}
-	LOG(TLKM_LF_IOCTL, "destroy device #%03u command received", kc.dev_id);
+	LOG(TLKM_LF_IOCTL, "destroy device #%02u command received", kc.dev_id);
 	tlkm_device_release(tlkm_bus_get_device(kc.dev_id), kc.access);
 	return 0;
 }

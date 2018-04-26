@@ -23,7 +23,6 @@
 #include <linux/sched.h>
 #include "tlkm_logging.h"
 #include "zynq_irq.h"
-#include "zynq_platform.h"
 
 #define ZYNQ_IRQ_BASE_IRQ					45
 #define ZYNQ_MAX_NUM_INTCS					4	

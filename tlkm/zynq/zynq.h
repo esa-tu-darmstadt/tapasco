@@ -3,15 +3,13 @@
 
 #include "tlkm_class.h"
 #include "zynq_device.h"
-#include "zynq_platform.h"
 #include "zynq_ioctl.h"
-#include "zynq_mmap.h"
 #include "zynq_irq.h"
 
-static inline void zynq_remove(struct tlkm_class *cls) {}
+#define ZYNQ_NAME			"xlnx,zynq-7000"
+#define ZYNQ_CLASS_NAME			"zynq"
 
-// FIXME implement rirq
-// FIXME implement pirq
+static inline void zynq_remove(struct tlkm_class *cls) {}
 
 static const
 struct tlkm_class zynq_cls = {
@@ -21,7 +19,6 @@ struct tlkm_class zynq_cls = {
 	.probe			= zynq_device_probe,
 	.remove			= zynq_remove,
 	.ioctl			= zynq_ioctl,
-	.mmap			= zynq_mmap,
 	.pirq			= zynq_irq_request_platform_irq,
 	.rirq			= zynq_irq_release_platform_irq,
 	.status_base		= 0x77770000ULL,

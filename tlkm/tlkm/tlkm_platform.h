@@ -66,4 +66,7 @@ void tlkm_platform_mmap_exit(struct tlkm_device *dev, struct platform_mmap *mmap
 
 long tlkm_platform_read(struct tlkm_device *dev, struct tlkm_copy_cmd *cmd);
 long tlkm_platform_write(struct tlkm_device *dev, struct tlkm_copy_cmd *cmd);
+
+void __iomem *addr2map(struct tlkm_device *dev, dev_addr_t const addr);
+
 #endif /* TLKM_PLATFORM_H__ */

@@ -31,7 +31,6 @@
 #include "tlkm_device_ioctl_cmds.h"
 #include "zynq_device.h"
 #include "zynq_dmamgmt.h"
-#include "zynq_platform.h"
 
 static inline
 long zynq_ioctl_info(struct tlkm_device *inst, struct tlkm_device_info *info)

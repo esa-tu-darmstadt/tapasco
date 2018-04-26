@@ -8,7 +8,6 @@
 #include "zynq_device.h"
 #include "zynq_irq.h"
 #include "zynq_dmamgmt.h"
-#include "zynq_platform.h"
 
 static const struct of_device_id zynq_ids[] = {
 	{ .compatible = ZYNQ_NAME, },

@@ -14,7 +14,7 @@ static int test_dev_ioctl(dev_id_t dev_id)
 	int r = 0;
 	struct tlkm_device_info info;
 	char dfn[30] = "";
-	snprintf(dfn, 30, "%s_%03u", DEV_FN, dev_id);
+	snprintf(dfn, 30, "%s_%02u", DEV_FN, dev_id);
 
 	int dfd = open(dfn, O_RDWR);
 	if (dfd == -1) {

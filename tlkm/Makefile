@@ -27,7 +27,6 @@ tlkm-objs := \
 	zynq/zynq_ioctl.o \
 	zynq/zynq_dmamgmt.o \
 	zynq/zynq_irq.o \
-	zynq/zynq_mmap.o \
 	pcie/pcie.o \
 	pcie/pcie_device.o \
 	pcie/pcie_irq.o \

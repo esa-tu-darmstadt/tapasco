@@ -13,10 +13,23 @@ struct tlkm_device *device_from_file(struct file *fp)
 
 int tlkm_device_mmap(struct file *fp, struct vm_area_struct *vm)
 {
-	struct tlkm_device *d = device_from_file(fp);
-	tlkm_device_mmap_f mmap_f = d->cls->mmap;
-	if (! mmap_f) {
-		DEVWRN(d->dev_id, "device has no mmap() implementation, register accesses are likely  slow!");
+	struct tlkm_device *dp = device_from_file(fp);
+	ssize_t const sz = vm->vm_end - vm->vm_start;
+	ulong const off = vm->vm_pgoff << PAGE_SHIFT;
+	void __iomem *kptr = addr2map(dp, off);
+	DEVLOG(dp->dev_id, TLKM_LF_CONTROL, "received mmap: offset = 0x%08lx", off);
+	if (! kptr) {
+		DEVERR(dp->dev_id, "invalid address: 0x%08lx", off);
+		return -ENXIO;
 	}
-	return mmap_f ? mmap_f(d, vm) : -ENXIO;
+
+	DEVLOG(dp->dev_id, TLKM_LF_CONTROL,
+			"mapping %zu bytes, from 0x%08lx-0x%08lx", sz, vm->vm_start, vm->vm_end);
+	vm->vm_page_prot = pgprot_noncached(vm->vm_page_prot);
+	if (io_remap_pfn_range(vm, vm->vm_start, off >> PAGE_SHIFT, sz, vm->vm_page_prot)) {
+		DEVWRN(dp->dev_id, "io_remap_pfn_range failed!");
+		return -EAGAIN;
+	}
+	DEVLOG(dp->dev_id, TLKM_LF_CONTROL, "register space mapping successful");
+	return 0;
 }
