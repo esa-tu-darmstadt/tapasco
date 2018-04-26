@@ -110,6 +110,7 @@ int tapasco_logging_init(void)
 {
 	static int is_initialized = 0;
 	if (! is_initialized) {
+		is_initialized = 1;
 		char const *dbg = getenv("LIBTAPASCO_DEBUG");
 		char const *lgf = getenv("LIBTAPASCO_LOGFILE");
 		libtapasco_logging_level = dbg ? (strtoul(dbg, NULL, 0) | 0x1) : ULONG_MAX;
@@ -138,10 +139,11 @@ void tapasco_logging_deinit(void)
 	exiting = true;
 	if (log_thread) pthread_join(log_thread, NULL);
 	gq_destroy(log_q);
+	log_q = NULL;
 	while ((lm = (struct log_msg_t *) gs_pop(&log_s)))
 		free(lm);
 
-	if (libtapasco_logging_file != stderr) {
+	if (libtapasco_logging_file != NULL && libtapasco_logging_file != stderr) {
 		fflush(libtapasco_logging_file);
 		fclose(libtapasco_logging_file);
 	}
