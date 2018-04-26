@@ -165,7 +165,7 @@ int zynq_irq_request_platform_irq(struct tlkm_device *dev, int irq_no, irq_handl
 	int err = 0;
 	struct zynq_device *zdev = (struct zynq_device *)dev->private_data;
 	if (irq_no >= dev->cls->npirqs) {
-		DEVERR(dev->dev_id, "invalid platform interrupt number: %d (must be < %d",
+		DEVERR(dev->dev_id, "invalid platform interrupt number: %d (must be < %zd",
 				irq_no, dev->cls->npirqs);
 		return -ENXIO;
 	}
@@ -182,7 +182,7 @@ void zynq_irq_release_platform_irq(struct tlkm_device *dev, int irq_no)
 {
 	struct zynq_device *zdev = (struct zynq_device *)dev->private_data;
 	if (irq_no >= dev->cls->npirqs) {
-		DEVERR(dev->dev_id, "invalid platform interrupt number: %d (must be < %d)", irq_no, dev->cls->npirqs);
+		DEVERR(dev->dev_id, "invalid platform interrupt number: %d (must be < %zd)", irq_no, dev->cls->npirqs);
 		return;
 	}
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "freeing platform interrupt #%d with mapping %d", irq_no, ZYNQ_IRQ_BASE_IRQ + irq_no);
