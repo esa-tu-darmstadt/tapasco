@@ -20,6 +20,7 @@
 #define PCIE_DEVICE_H__
 
 #include <linux/workqueue.h>
+#include <linux/version.h>
 #include "tlkm_types.h"
 #include "platform_global.h"
 
@@ -46,9 +47,19 @@ struct tlkm_pcie_device {
 	int			link_width;
 	int			link_speed;
 	struct work_struct	irq_work[TLKM_SLOT_INTERRUPTS];
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
+	struct msix_entry 	msix_entries[REQUIRED_INTERRUPTS];
+#endif
 };
 
 ssize_t pcie_enumerate(void);
 ssize_t pcie_device_probe(struct tlkm_class *cls);
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
+static inline
+u32 pci_irq_vector(struct pci_dev *pdev, int c) {
+	return ((struct tlkm_pcie_device *)dev_get_drvdata(&pdev->dev))->msix_entries[c].vector;
+}
+#endif
 
 #endif // PCIE_DEVICE_H__
