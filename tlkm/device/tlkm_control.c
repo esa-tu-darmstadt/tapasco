@@ -13,6 +13,7 @@
 #include "tlkm_device_rw.h"
 #include "tlkm_device_ioctl.h"
 #include "tlkm_device_mmap.h"
+#include "user/tlkm_device_ioctl_cmds.h"
 
 static const struct file_operations _tlkm_control_fops = {
 	.unlocked_ioctl = tlkm_device_ioctl,
@@ -24,7 +25,7 @@ static const struct file_operations _tlkm_control_fops = {
 static int init_miscdev(struct tlkm_control *pctl)
 {
 	char fn[16];
-	snprintf(fn, 16, "tlkm_%03u", pctl->dev_id);
+	snprintf(fn, 16, TLKM_DEV_IOCTL_FN, pctl->dev_id);
 	DEVLOG(pctl->dev_id, TLKM_LF_CONTROL, "creating miscdevice %s", fn);
 	pctl->miscdev.minor = MISC_DYNAMIC_MINOR;
 	pctl->miscdev.name  = kstrdup(fn, GFP_KERNEL);
