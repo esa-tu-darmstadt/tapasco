@@ -77,11 +77,10 @@ protected:
 #else
     platform_info_t info;
     tapasco.info(&info);
-    uint32_t v;
     for (int c = PLATFORM_COMPONENT_DMA0; c <= PLATFORM_COMPONENT_DMA3; ++c) {
-      if (d->info.base.platform[c]) {
+      if (info.base.platform[c]) {
       	uint32_t v = 0;
-        platform_read_ctl(p, d->info.base.platform[c] + DMA_ID_REG, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE);
+        platform_read_ctl(tapasco.platform_device(), info.base.platform[c] + DMA_ID_REG, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE);
 	if (v == BLUE_DMA_ID) return true;
       }
     }
