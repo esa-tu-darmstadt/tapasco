@@ -46,7 +46,7 @@
 
 typedef struct {
 	u32 base;
-	u32 status;
+	atomic_long_t status;
 } intc_t;
 
 #ifdef _INTC
@@ -68,13 +68,14 @@ static DECLARE_WORK(zynq_irq_work_ ## N, zynq_irq_func_ ## N); \
 static void zynq_irq_func_ ## N(struct work_struct *work) \
 { \
 	u32 s_off = (N * 32U); \
-	u32 status = zynq_irq.intc_ ## N.status; \
+	ulong status = (ulong)atomic_long_xchg(&zynq_irq.intc_ ## N.status, 0); \
 	struct tlkm_control *ctrl = zynq_irq.ctrl; \
-	LOG(TLKM_LF_IRQ, "intcn = %d, status = 0x%08x, ctrl = 0x%px", N, status, ctrl); \
+	LOG(TLKM_LF_IRQ, "intcn = %d, status = 0x%08lx, ctrl = 0x%px", N, status, ctrl); \
 	while (ctrl && status > 0) { \
 		if (status & 1) { \
-			tlkm_control_signal_slot_interrupt(ctrl, s_off++); \
+			tlkm_control_signal_slot_interrupt(ctrl, s_off); \
 		} \
+		s_off++; \
 		status >>= 1; \
 	} \
 } \
@@ -87,7 +88,7 @@ static irqreturn_t zynq_irq_handler_ ## N(int irq, void *dev_id) \
 	status = ioread32(intc); \
 	LOG(TLKM_LF_IRQ, "intcn = %d, status = 0x%08x, intc = 0x%px", N, status, intc); \
 	iowrite32(status, intc + (0x0c >> 2)); \
-	zynq_irq.intc_ ## N.status |= status; \
+	atomic_fetch_or(status, &zynq_irq.intc_ ## N.status); \
 	schedule_work(&zynq_irq_work_ ## N); \
 	return IRQ_HANDLED; \
 }
@@ -115,7 +116,7 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 	base = ioread32(zynq_dev->parent->mmap.status + 0x1010 + (N * 8)); \
 	if (base) { \
 		zynq_irq.intc_ ## N.base = (base - zynq_dev->parent->cls->platform.plat.base) >> 2; \
-		zynq_irq.intc_ ## N.status = 0; \
+		atomic_long_set(&zynq_irq.intc_ ## N.status, 0); \
 		if (zynq_irq.intc_ ## N.base) { \
 			LOG(TLKM_LF_IRQ, "controller for IRQ #%d at 0x%08x", \
 					rirq, zynq_irq.intc_ ## N.base << 2); \
