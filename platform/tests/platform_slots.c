@@ -27,11 +27,14 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
+#include <signal.h>
 
 #include <platform.h>
 #include "common.h"
 
 #define COUNTER_ID					14
+
+extern void platform_logging_deinit(void);
 
 static platform_ctx_t *ctx;
 static platform_devctx_t *devctx;
@@ -93,6 +96,22 @@ static void print_usage_and_exit(void)
 	exit(EXIT_FAILURE);
 }
 
+static
+void _flush_logs_on_sigint(int sig)
+{
+	platform_logging_deinit();
+	exit(sig);
+}
+
+static
+int _install_sigint_handler()
+{
+	struct sigaction act;
+	memset(&act, '\0', sizeof(act));
+	act.sa_handler = &_flush_logs_on_sigint;
+	return sigaction(SIGINT, &act, NULL) + sigaction(SIGABRT, &act, NULL);
+}
+
 int main(int argc, char **argv)
 {
 	struct cfg_t cfg;
@@ -120,6 +139,7 @@ int main(int argc, char **argv)
 
 	cfg.mt = cfg.all_slots && argc > 4;
 
+	_install_sigint_handler();
 	printf("Starting: all_slots = %ld, slot_id = %ld, delay = %ld, iterations = %ld\n",
 			cfg.all_slots, cfg.slot_id, cfg.delay, cfg.iterations);
 
