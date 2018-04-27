@@ -52,7 +52,7 @@ static inline void random_fill(void *p, size_t const len)
 {
 	FILE *fd = fopen("/dev/urandom", "r");
 	assert(fd);
-	fread(p, 1, len, fd);
+	if (fread(p, 1, len, fd)) ;
 	fclose(fd);
 }
 
