@@ -4,6 +4,7 @@
 #include <linux/io.h>
 #include "tlkm_dma.h"
 #include "tlkm_logging.h"
+#include "tlkm_perfc.h"
 #include "blue_dma.h"
 #include "dual_dma.h"
 
@@ -113,6 +114,7 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void
 			len		-= cpy_sz;
 		}
 	}
+	tlkm_perfc_dma_writes_add(dma->dev_id, len);
 	return len;
 }
 
@@ -137,5 +139,6 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_ad
 			return -EAGAIN;
 		}
 	}
+	tlkm_perfc_dma_reads_add(dma->dev_id, len);
 	return len;
 }
