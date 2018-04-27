@@ -63,7 +63,7 @@ typedef struct tapasco_transfer tapasco_transfer_t;
 typedef struct tapasco_jobs tapasco_jobs_t;
 
 /** Initializes the internal jobs struct. */
-tapasco_res_t tapasco_jobs_init(tapasco_jobs_t **jobs);
+tapasco_res_t tapasco_jobs_init(tapasco_dev_id_t dev_id, tapasco_jobs_t **jobs);
 
 /** Releases internal jobs struct and associated memory. */
 void tapasco_jobs_deinit(tapasco_jobs_t *jobs);

@@ -27,22 +27,31 @@
 #include <tapasco_regs.h>
 #include <tapasco_device.h>
 #include <tapasco_logging.h>
+#include <tapasco_perfc.h>
 #include <platform.h>
 
 tapasco_res_t tapasco_scheduler_launch(tapasco_devctx_t *devctx, tapasco_job_id_t const j_id)
 {
+	static tapasco_slot_id_t _slot_high_watermark = 0;
 	assert(devctx->jobs);
 	tapasco_kernel_id_t const k_id = tapasco_jobs_get_kernel_id(devctx->jobs, j_id);
 	tapasco_slot_id_t slot_id;
 
 	LOG(LALL_SCHEDULER, "job %lu: launching for kernel %lu, acquiring PE ... ", (ul)j_id, (ul)k_id);
 
-	while ((slot_id = tapasco_pemgmt_acquire(devctx->pemgmt, k_id)) >= TAPASCO_NUM_SLOTS)
+	while ((slot_id = tapasco_pemgmt_acquire(devctx->pemgmt, k_id)) >= TAPASCO_NUM_SLOTS) {
+		tapasco_perfc_wait_for_pe_inc(devctx->id);
 		usleep(250);
+	}
 
 	LOG(LALL_SCHEDULER, "job %lu: got PE %lu", (ul)j_id, (ul)slot_id);
 
 	assert(slot_id >= 0 && slot_id < TAPASCO_NUM_SLOTS);
+
+	if (slot_id > _slot_high_watermark) {
+		_slot_high_watermark = slot_id;
+		tapasco_perfc_pe_high_watermark_set(devctx->id, _slot_high_watermark);
+	}
 
 	tapasco_jobs_set_state(devctx->jobs, j_id, TAPASCO_JOB_STATE_SCHEDULED);
 

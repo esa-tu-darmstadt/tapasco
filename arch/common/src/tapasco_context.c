@@ -30,15 +30,18 @@
 #include <tapasco_types.h>
 #include <tapasco_context.h>
 
-extern
-void platform_logging_deinit(void);
+//extern
+//void platform_logging_deinit(void);
+static
+tapasco_ctx_t *_emergency_ctx = NULL;
 
 static
 void _flush_logs_on_sigint(int sig)
 {
 	LOG(LALL_INIT, "caught SIGINT, flushing logs and leaving the sinking ship");
-	tapasco_logging_deinit();
-	platform_logging_deinit();
+	tapasco_deinit(_emergency_ctx);
+	//tapasco_logging_deinit();
+	//platform_logging_deinit();
 	exit(sig);
 }
 
@@ -62,7 +65,7 @@ tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **ctx)
 		return TAPASCO_ERR_VERSION_MISMATCH;
 	}
 
-	*ctx = (tapasco_ctx_t *)calloc(sizeof(**ctx), 1);
+	_emergency_ctx = *ctx = (tapasco_ctx_t *)calloc(sizeof(**ctx), 1);
 	tapasco_ctx_t *c = *ctx;
 	if (! c) {
 		ERR("could not allocate tapasco context");
@@ -110,6 +113,12 @@ void tapasco_deinit(tapasco_ctx_t *ctx)
 {
 	LOG(LALL_INIT, "shutting down TaPaSCo");
 	if (ctx) {
+		for (size_t d = 0; d < PLATFORM_MAX_DEVS; ++d) {
+			if (ctx->devs[d]) {
+				tapasco_destroy_device(ctx, ctx->devs[d]);
+				ctx->devs[d] = NULL;
+			}
+		}
 		if (ctx->pctx) {
 			platform_deinit(ctx->pctx);
 			ctx->pctx = NULL;

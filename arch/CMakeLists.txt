@@ -23,6 +23,7 @@ set(COMMON_SOURCES "${CMNDIR}/tapasco_context.c"
                    "${CMNDIR}/tapasco_pemgmt.c"
                    "${CMNDIR}/tapasco_scheduler.c"
                    "${CMNDIR}/tapasco_version.c"
+                   "${CMNDIR}/tapasco_perfc.c"
                    "${TAPASCO_COMMON_DIR}/src/gen_mem.c"
                    "${TAPASCO_COMMON_DIR}/src/gen_queue.c")
 

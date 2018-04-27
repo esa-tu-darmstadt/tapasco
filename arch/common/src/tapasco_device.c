@@ -29,6 +29,7 @@
 #include <tapasco_scheduler.h>
 #include <tapasco_logging.h>
 #include <tapasco_local_mem.h>
+#include <tapasco_perfc.h>
 #include <platform.h>
 #include <platform_errors.h>
 #include <platform_info.h>
@@ -46,7 +47,7 @@ tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx,
 		tapasco_devctx_t **pdevctx,
 		tapasco_device_create_flag_t const flags)
 {
-	tapasco_devctx_t *p = (tapasco_devctx_t *)malloc(sizeof(struct tapasco_devctx));
+	tapasco_devctx_t *p = (tapasco_devctx_t *)calloc(sizeof(struct tapasco_devctx), 1);
 	if (! p) {
 		ERR("could not allocate tapasco device context");
 		return TAPASCO_ERR_OUT_OF_MEMORY;
@@ -67,12 +68,13 @@ tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx,
 	}
 
 	tapasco_res_t res = tapasco_pemgmt_init(p, &p->pemgmt);
-	res = res == TAPASCO_SUCCESS ? tapasco_jobs_init(&p->jobs) : res;
+	res = res == TAPASCO_SUCCESS ? tapasco_jobs_init(dev_id, &p->jobs) : res;
 	res = res == TAPASCO_SUCCESS ? tapasco_local_mem_init(p, &p->lmem) : res;
 	if (res != TAPASCO_SUCCESS) return res;
 	p->pctx = ctx->pctx;
 	p->id = dev_id;
 	*pdevctx = p;
+	ctx->devs[dev_id] = p;
 	setup_system(p);
 
 	LOG(LALL_DEVICE, "device %d created successfully", dev_id);
@@ -81,6 +83,11 @@ tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx,
 
 void tapasco_destroy_device(tapasco_ctx_t *ctx, tapasco_devctx_t *devctx)
 {
+#ifndef NPERFC
+	fprintf(stderr, "tapasco device #%02u performance counters:\n%s",
+			devctx->id, tapasco_perfc_tostring(devctx->id));
+#endif /* NPERFC */
+	ctx->devs[devctx->id] = NULL;
 	tapasco_local_mem_deinit(devctx->lmem);
 	tapasco_jobs_deinit(devctx->jobs);
 	tapasco_pemgmt_deinit(devctx->pemgmt);

@@ -18,16 +18,13 @@
 //
 /**
  *  @file	tapasco_jobs.c
-<<<<<<< HEAD
-=======
- *  @brief
->>>>>>> a5afcae8dc21deee7562f55079fc1e8d36f78c2f
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <tapasco_jobs.h>
+#include <tapasco_perfc.h>
 #include <gen_fixed_size_pool.h>
 
 #define JOB_ID_OFFSET					1000
@@ -73,13 +70,16 @@ inline static void init_job(tapasco_job_t *job, int i)
 MAKE_FIXED_SIZE_POOL(tapasco_jobs, TAPASCO_JOBS_Q_SZ, tapasco_job_t, init_job)
 
 struct tapasco_jobs {
+	tapasco_dev_id_t dev_id;
+	tapasco_job_id_t job_id_high_watermark;
 	struct tapasco_jobs_fsp_t q;
 };
 
-tapasco_res_t tapasco_jobs_init(tapasco_jobs_t **jobs)
+tapasco_res_t tapasco_jobs_init(tapasco_dev_id_t dev_id, tapasco_jobs_t **jobs)
 {
-	*jobs = (tapasco_jobs_t *)malloc(sizeof(tapasco_jobs_t));
+	*jobs = (tapasco_jobs_t *)calloc(sizeof(tapasco_jobs_t), 1);
 	if (! jobs) return TAPASCO_ERR_OUT_OF_MEMORY;
+	(*jobs)->dev_id = dev_id;
 	tapasco_jobs_fsp_init(&(*jobs)->q);
 	return TAPASCO_SUCCESS;
 }
@@ -309,9 +309,16 @@ tapasco_job_id_t tapasco_jobs_acquire(tapasco_jobs_t *jobs)
 {
 	assert(jobs);
 	tapasco_job_id_t j_id = tapasco_jobs_fsp_get(&jobs->q);
-	if (j_id != INVALID_IDX)
+	if (j_id != INVALID_IDX) {
 		jobs->q.elems[j_id].state = TAPASCO_JOB_STATE_REQUESTED;
-	return j_id != INVALID_IDX ? jobs->q.elems[j_id].id : 0;
+		j_id = jobs->q.elems[j_id].id;
+		if (j_id > jobs->job_id_high_watermark) {
+			jobs->job_id_high_watermark = j_id;
+			tapasco_perfc_job_id_high_watermark_set(jobs->dev_id, j_id);
+		}
+		return j_id;
+	}
+	return 0;
 }
 
 inline
