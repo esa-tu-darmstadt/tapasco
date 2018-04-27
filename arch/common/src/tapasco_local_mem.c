@@ -58,7 +58,7 @@ tapasco_res_t tapasco_local_mem_init(tapasco_devctx_t *devctx,
 		tapasco_local_mem_t **lmem)
 {
 	LOG(LALL_MEM, "initialzing ...");
-	*lmem = (tapasco_local_mem_t *)malloc(sizeof(tapasco_local_mem_t));
+	*lmem = (tapasco_local_mem_t *)calloc(sizeof(tapasco_local_mem_t), 1);
 	if (! *lmem) return TAPASCO_ERR_OUT_OF_MEMORY;
 	addr_t base = 0;
 	for (size_t idx = 0; idx < PLATFORM_NUM_SLOTS; ++idx) {

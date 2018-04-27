@@ -53,7 +53,7 @@ static
 tapasco_pe_t *tapasco_pemgmt_create(tapasco_kernel_id_t const k_id,
 		tapasco_slot_id_t const slot_id)
 {
-	tapasco_pe_t *f = (tapasco_pe_t *)malloc(sizeof(tapasco_pe_t));
+	tapasco_pe_t *f = (tapasco_pe_t *)calloc(sizeof(tapasco_pe_t), 1);
 	f->id = k_id;
 	f->slot_id = slot_id;
 	f->state = TAPASCO_PE_STATE_IDLE;
@@ -86,7 +86,7 @@ tapasco_res_t tapasco_pemgmt_init(const tapasco_devctx_t *devctx, tapasco_pemgmt
 {
 	tapasco_res_t res = TAPASCO_SUCCESS;
 	assert(devctx->pdctx);
-	*pemgmt = (tapasco_pemgmt_t *)malloc(sizeof(tapasco_pemgmt_t));
+	*pemgmt = (tapasco_pemgmt_t *)calloc(sizeof(tapasco_pemgmt_t), 1);
 	if (! pemgmt) return TAPASCO_ERR_OUT_OF_MEMORY;
 	memset(*pemgmt, 0, sizeof(**pemgmt));
 	setup_pes_from_status(devctx->pdctx, *pemgmt);
@@ -116,18 +116,15 @@ void tapasco_pemgmt_setup_system(tapasco_devctx_t *devctx, tapasco_pemgmt_t *ctx
 			tapasco_handle_t const iar = tapasco_regs_named_register(
 				devctx, slot_id, TAPASCO_REG_IAR);
 			// enable IP interrupts
-			LOG(LALL_PEMGMT, "writing GIER at 0x%08lx",
-					(unsigned long)gier);
+			LOG(LALL_PEMGMT, "writing GIER at 0x%08lx", (unsigned long)gier);
 			platform_write_ctl(pctx, gier, sizeof(d), &d,
 				PLATFORM_CTL_FLAGS_NONE);		// GIER
 			// enable ap_done interrupt generation
-			LOG(LALL_PEMGMT, "writing IER at 0x%08lx",
-					(unsigned long)ier);
+			LOG(LALL_PEMGMT, "writing IER at 0x%08lx", (unsigned long)ier);
 			platform_write_ctl(pctx, ier, sizeof(d), &d,
 				PLATFORM_CTL_FLAGS_NONE); 		// IPIER
 			// ack all existing interrupts
-			LOG(LALL_PEMGMT, "writing IAR at 0x%08lx",
-					(unsigned long)iar);
+			LOG(LALL_PEMGMT, "writing IAR at 0x%08lx", (unsigned long)iar);
 			platform_read_ctl(pctx, iar, sizeof(d), &d, 
 				PLATFORM_CTL_FLAGS_NONE);               // IAR
 			platform_write_ctl(pctx, iar, sizeof(d), &d,
@@ -151,21 +148,22 @@ int reserve_pe(tapasco_pe_t *pe, tapasco_kernel_id_t const k_id)
 tapasco_slot_id_t tapasco_pemgmt_acquire(tapasco_pemgmt_t *ctx,
 		tapasco_kernel_id_t const k_id)
 {
+	tapasco_slot_id_t slot = (tapasco_slot_id_t)-1;
 	tapasco_pe_t **pemgmt = ctx->pe;
 	int len = TAPASCO_NUM_SLOTS;
-	while (len && *pemgmt && ! reserve_pe(*pemgmt, k_id) && (*pemgmt)->id) {
+	while (len && *pemgmt && ! reserve_pe(*pemgmt, k_id)) {
 		--len;
 		++pemgmt;
 	}
-	LOG(LALL_PEMGMT, "k_id = %d, slotid = %d",
-			k_id, len > 0 && pemgmt &&
-			*pemgmt ? (*pemgmt)->slot_id : -1);
-	return len > 0 && *pemgmt ? (*pemgmt)->slot_id : -1;
+	slot = len > 0 && *pemgmt ? (*pemgmt)->slot_id : (tapasco_slot_id_t)-1;
+	LOG(LALL_PEMGMT, "k_id = %d, slotid = %d", k_id, slot);
+	return slot;
 }
 
 inline
 void tapasco_pemgmt_release(tapasco_pemgmt_t *ctx, tapasco_slot_id_t const s_id)
 {
+	assert(s_id >= 0 && s_id < TAPASCO_NUM_SLOTS);
 	assert(ctx->pe[s_id]);
 	LOG(LALL_PEMGMT, "slotid = %d", s_id);
 	ctx->pe[s_id]->state = TAPASCO_PE_STATE_IDLE;

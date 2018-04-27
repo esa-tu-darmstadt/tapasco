@@ -57,7 +57,7 @@ struct log_msg_t {
 static inline struct log_msg_t *get_msg()
 {
 	struct log_msg_t *msg = (struct log_msg_t *) gs_pop(&log_s);
-	if (! msg) msg = malloc(sizeof(*msg));
+	if (! msg) msg = calloc(sizeof(*msg), 1);
 	assert(msg);
 	return msg;
 }
@@ -123,7 +123,7 @@ int tapasco_logging_init(void)
 		log_q = gq_init();
 		assert(log_q || "could not allocate log queue: out-of-memory");
 		for (int i = 0; i < LOG_MSG_S_SZ; ++i) {
-			void *msg = malloc(sizeof(struct log_msg_t));
+			void *msg = calloc(sizeof(struct log_msg_t), 1);
 			assert (msg);
 			gs_push(&log_s, msg);
 		}
