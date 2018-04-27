@@ -31,7 +31,7 @@
 #include "tlkm_device_ioctl_cmds.h"
 
 #ifndef NPERFC
-#define TLKM_PERFC_MISCDEV_BUFSZ			512
+#define TLKM_PERFC_MISCDEV_BUFSZ			768
 
 inline static
 dev_id_t get_dev_id_from_file(struct file *file)
