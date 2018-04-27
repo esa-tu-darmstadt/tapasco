@@ -15,6 +15,7 @@
 #include <platform_signaling.h>
 #include <platform_device_operations.h>
 #include <platform_zynq.h>
+#include <platform_perfc.h>
 
 platform_res_t platform_devctx_init(platform_ctx_t *ctx,
 		platform_dev_id_t const dev_id,
@@ -97,6 +98,8 @@ static inline
 void log_perfc(platform_devctx_t *devctx)
 {
 #ifndef NPERFC
+	fprintf(stderr, "platform device #%02u performance counters:\n%s",
+			devctx->dev_id, platform_perfc_tostring(devctx->dev_id));
 	#define BUFSZ (1 << 12)
 	char *fn = perfc_file(devctx->dev_id);
 	char *buf = (char *)calloc(sizeof(*buf), BUFSZ);

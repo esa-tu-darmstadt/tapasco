@@ -23,6 +23,7 @@ set(CMNSRCS "${CMNDIR}/src/platform_addr_map.c"
             "${CMNDIR}/src/platform_info.c"
 	    "${CMNDIR}/src/platform_logging.c"
             "${CMNDIR}/src/platform_version.c"
+            "${CMNDIR}/src/platform_perfc.c"
             "${GCMNDIR}/src/gen_queue.c")
 set(ZYNQSRCS "zynq/src/platform_zynq.c")
 

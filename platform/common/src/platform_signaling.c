@@ -3,6 +3,7 @@
 #include <platform_devctx.h>
 #include <platform_errors.h>
 #include <platform_logging.h>
+#include <platform_perfc.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <errno.h>
@@ -30,6 +31,7 @@ void *platform_signaling_read_waitfile(void *p)
 		memset(s, (platform_slot_id_t)-1, sizeof(*s));
 		if ((read_sz = read(a->fd_wait, &s, sizeof(s))) > 0) {
 			read_cnt = read_sz / sizeof(*s);
+			platform_perfc_signals_received_inc(a->dev_id);
 			for (; read_cnt > 0; --read_cnt) {
 				DEVLOG(a->dev_id, LPLL_ASYNC, "received finish for slot %u", (unsigned)s[read_cnt - 1]);
 				if (s[read_cnt] < PLATFORM_NUM_SLOTS) sem_post(&a->finished[s[read_cnt - 1]]);
