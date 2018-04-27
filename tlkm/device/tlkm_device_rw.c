@@ -10,6 +10,8 @@
 #include "tlkm_perfc.h"
 #include "tlkm_logging.h"
 
+#define TLKM_CONTROL_MAX_READS				128
+
 inline static struct tlkm_control *control_from_file(struct file *fp)
 {
 	struct miscdevice *m = (struct miscdevice *)fp->private_data;
@@ -19,7 +21,8 @@ inline static struct tlkm_control *control_from_file(struct file *fp)
 ssize_t tlkm_device_read(struct file *fp, char __user *usr, size_t sz, loff_t *off)
 {
 	ssize_t out = 0;
-	u32 out_val = 0;
+	u32 out_val[TLKM_CONTROL_MAX_READS];
+	size_t out_sz;
 	struct tlkm_control *pctl = control_from_file(fp);
 	if (! pctl) {
 		DEVERR(pctl->dev_id, "received invalid file pointer");
@@ -27,12 +30,29 @@ ssize_t tlkm_device_read(struct file *fp, char __user *usr, size_t sz, loff_t *o
 	}
 	do {
 		mutex_lock(&pctl->out_mutex);
+		out_sz = pctl->out_w_idx >= pctl->out_r_idx ?
+				pctl->out_w_idx - pctl->out_r_idx :
+				TLKM_CONTROL_BUFFER_SZ - pctl->out_r_idx;
+		if (out_sz * sizeof(*(pctl->out_slots)) > sz) {
+			out_sz = sz / sizeof(*(pctl->out_slots));
+			tlkm_perfc_limited_by_read_sz_inc(pctl->dev_id);
+		}
+		if (out_sz > TLKM_CONTROL_MAX_READS) {
+			out_sz = TLKM_CONTROL_MAX_READS;
+			tlkm_perfc_limited_by_outbuf_sz_inc(pctl->dev_id);
+		}
 		out = pctl->out_w_idx != pctl->out_r_idx;
 		if (out) {
-			out_val = pctl->out_slots[pctl->out_r_idx];
-			pctl->out_r_idx = (pctl->out_r_idx + 1) % TLKM_CONTROL_BUFFER_SZ;
-			--pctl->outstanding;
-			tlkm_perfc_signals_read_inc(pctl->dev_id);
+			ssize_t i, j;
+			if (pctl->out_w_idx < pctl->out_r_idx)	tlkm_perfc_indices_reversed_inc(pctl->dev_id);
+			else 					tlkm_perfc_indices_in_order_inc(pctl->dev_id);
+			for (i = 0, j = pctl->out_r_idx; i < out_sz; ++i, ++j) {
+				out_val[i] = pctl->out_slots[j];
+			}
+			pctl->out_r_idx = (pctl->out_r_idx + out_sz) % TLKM_CONTROL_BUFFER_SZ;
+			pctl->outstanding -= out_sz;
+			tlkm_perfc_signals_read_add(pctl->dev_id, out_sz);
+			tlkm_perfc_outstanding_set(pctl->dev_id, pctl->outstanding);
 		}
 		mutex_unlock(&pctl->out_mutex);
 		if (! out) {
@@ -40,13 +60,13 @@ ssize_t tlkm_device_read(struct file *fp, char __user *usr, size_t sz, loff_t *o
 			wait_event_interruptible(pctl->read_q, pctl->out_w_idx != pctl->out_r_idx);
 			if (signal_pending(current)) return -ERESTARTSYS;
 		} else {
-			DEVLOG(pctl->dev_id, TLKM_LF_CONTROL, "read %zd bytes, out_val = %u", sz, out_val);
+			DEVLOG(pctl->dev_id, TLKM_LF_CONTROL, "read %zd bytes", out_sz * sizeof(u32));
 			wake_up_interruptible(&pctl->write_q);
 		}
 	} while (! out);
-	out = copy_to_user(usr, &out_val, sizeof(out_val));
+	out = copy_to_user(usr, out_val, out_sz * sizeof(*(pctl->out_slots)));
 	if (out) return -EFAULT;
-	return sizeof(out_val);
+	return out_sz * sizeof(*(pctl->out_slots));
 }
 
 ssize_t tlkm_device_write(struct file *fp, const char __user *usr, size_t sz, loff_t *off)
