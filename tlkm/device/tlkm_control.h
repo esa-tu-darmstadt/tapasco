@@ -14,11 +14,11 @@ struct tlkm_control {
 	struct miscdevice 	miscdev;
 	wait_queue_head_t	read_q;
 	wait_queue_head_t	write_q;
-	u32			out_slots[TLKM_CONTROL_BUFFER_SZ];
-	u32			out_r_idx;
-	u32			out_w_idx;
+	volatile u32		out_slots[TLKM_CONTROL_BUFFER_SZ];
+	volatile u32		out_r_idx;
+	volatile u32		out_w_idx;
 	struct mutex		out_mutex;
-	u32			outstanding;
+	volatile u32		outstanding;
 };
 
 ssize_t tlkm_control_signal_slot_interrupt(struct tlkm_control *pctl, const u32 s_id);

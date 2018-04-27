@@ -59,6 +59,7 @@ ssize_t tlkm_control_signal_slot_interrupt(struct tlkm_control *pctl, const u32 
 	pctl->out_w_idx = (pctl->out_w_idx + 1) % TLKM_CONTROL_BUFFER_SZ;
 	++pctl->outstanding;
 	tlkm_perfc_signals_signaled_inc(pctl->dev_id);
+	tlkm_perfc_outstanding_set(pctl->dev_id, pctl->outstanding);
 #ifndef NDEBUG
 	if (pctl->outstanding >= TLKM_CONTROL_BUFFER_SZ)
 		DEVWRN(pctl->dev_id, "buffer size exceeded! expect missing data!");

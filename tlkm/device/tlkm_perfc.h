@@ -45,7 +45,12 @@
 	_PC(link_width) \
 	_PC(link_speed) \
 	_PC(dma_reads) \
-	_PC(dma_writes)
+	_PC(dma_writes) \
+	_PC(outstanding) \
+	_PC(limited_by_read_sz) \
+	_PC(limited_by_outbuf_sz) \
+	_PC(indices_in_order) \
+	_PC(indices_reversed)
 
 #ifndef NPERFC
 	#include <linux/types.h>
