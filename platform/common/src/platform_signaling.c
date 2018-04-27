@@ -21,15 +21,20 @@ struct platform_signaling {
 static
 void *platform_signaling_read_waitfile(void *p)
 {
-	platform_slot_id_t s = 0;
+	ssize_t read_sz, read_cnt;
+	platform_slot_id_t s[PLATFORM_NUM_SLOTS];
 	assert(p);
 	platform_signaling_t *a = (platform_signaling_t *)p;
 	assert(a->fd_wait);
 	do {
-		if (read(a->fd_wait, &s, sizeof(s)) == sizeof(s)) {
-			DEVLOG(a->dev_id, LPLL_ASYNC, "received finish notification from slot #%u", (unsigned)s);
-			if (s < PLATFORM_NUM_SLOTS) sem_post(&a->finished[s]);
-			else DEVERR(a->dev_id, "invalid slot id received: %u", (unsigned)s);
+		memset(s, (platform_slot_id_t)-1, sizeof(*s));
+		if ((read_sz = read(a->fd_wait, &s, sizeof(s))) > 0) {
+			read_cnt = read_sz / sizeof(*s);
+			for (; read_cnt > 0; --read_cnt) {
+				DEVLOG(a->dev_id, LPLL_ASYNC, "received finish for slot %u", (unsigned)s[read_cnt - 1]);
+				if (s[read_cnt] < PLATFORM_NUM_SLOTS) sem_post(&a->finished[s[read_cnt - 1]]);
+				else DEVERR(a->dev_id, "invalid slot id received: %u", (unsigned)s[read_cnt - 1]);
+			}
 		}
 	} while (1);
 	return NULL;
