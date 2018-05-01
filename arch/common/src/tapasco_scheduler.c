@@ -39,10 +39,12 @@ tapasco_res_t tapasco_scheduler_launch(tapasco_devctx_t *devctx, tapasco_job_id_
 
 	LOG(LALL_SCHEDULER, "job %lu: launching for kernel %lu, acquiring PE ... ", (ul)j_id, (ul)k_id);
 
+	tapasco_perfc_job_ids_requested_inc(devctx->id);
 	while ((slot_id = tapasco_pemgmt_acquire(devctx->pemgmt, k_id)) >= TAPASCO_NUM_SLOTS) {
 		tapasco_perfc_wait_for_pe_inc(devctx->id);
 		usleep(250);
 	}
+	tapasco_perfc_job_ids_received_inc(devctx->id);
 
 	LOG(LALL_SCHEDULER, "job %lu: got PE %lu", (ul)j_id, (ul)slot_id);
 
@@ -74,6 +76,7 @@ tapasco_res_t tapasco_scheduler_launch(tapasco_devctx_t *devctx, tapasco_job_id_
 		return r;
 	}
 
+	tapasco_perfc_jobs_launched_inc(devctx->id);
 	return TAPASCO_SUCCESS;
 }
 
@@ -89,7 +92,9 @@ tapasco_res_t tapasco_scheduler_finish_job(tapasco_devctx_t *devctx,
 {
 	tapasco_slot_id_t slot_id = tapasco_jobs_get_slot(devctx->jobs, j_id);
 	LOG(LALL_SCHEDULER, "job %lu:  waiting for slot #%lu ...", (ul)j_id, (ul)slot_id);
+	tapasco_perfc_waiting_for_job_set(devctx->id, j_id);
 	platform_res_t pr = platform_wait_for_slot(devctx->pdctx, slot_id);
+	tapasco_perfc_waiting_for_job_set(devctx->id, 0);
 
 	if (pr != PLATFORM_SUCCESS) {
 		ERR("waiting for job #%lu failed: %s (%d)", (ul)j_id, platform_strerror(pr), pr);
@@ -97,6 +102,7 @@ tapasco_res_t tapasco_scheduler_finish_job(tapasco_devctx_t *devctx,
 	}
 
 	LOG(LALL_SCHEDULER, "job %lu: returned successfully from waiting", (ul)j_id);
+	tapasco_perfc_jobs_completed_inc(devctx->id);
 
 	return tapasco_pemgmt_finish_job(devctx, j_id);
 }
