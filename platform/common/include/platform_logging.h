@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
+// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
 // This file is part of Tapasco (TPC).
 //
@@ -24,8 +24,8 @@
 //!		are always activated.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#ifndef __PLATFORM_LOGGING_H__
-#define __PLATFORM_LOGGING_H__
+#ifndef PLATFORM_LOGGING_H__
+#define PLATFORM_LOGGING_H__
 
 #define LIBPLATFORM_LOGLEVELS \
 	_LPLL(TLKM,	(1 << 1)) \
@@ -48,21 +48,34 @@ LIBPLATFORM_LOGLEVELS
 
 int platform_logging_init(void);
 void platform_logging_deinit(void);
-#ifdef NDEBUG
-static inline void platform_log(platform_ll_t const level, char *fmt, ...) {}
-#else
-void platform_log(platform_ll_t const level, char *fmt, ...);
-#endif
 
-#define ERR(msg, ...)	 	platform_log((platform_ll_t)0, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
-#define WRN(msg, ...)	 	platform_log((platform_ll_t)1, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
 #define LOG(l, msg, ...) 	platform_log((platform_ll_t)(l), "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
-
-#define DEVERR(dev_id, msg, ...) \
-		platform_log((platform_ll_t)0, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
-#define DEVWRN(dev_id, msg, ...) \
-		platform_log((platform_ll_t)1, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 #define DEVLOG(dev_id, l, msg, ...) \
 		platform_log((platform_ll_t)(l), "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 
-#endif /* __PLATFORM_LOGGING_H__ */
+#ifdef NDEBUG
+	#include <stdio.h>
+
+	#define ERR(msg, ...)		fprintf(stderr, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
+	#define WRN(msg, ...)		fprintf(stderr, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
+
+	#define DEVERR(dev_id, msg, ...) \
+			fprintf(stderr, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+	#define DEVWRN(dev_id, l, msg, ...) \
+			fprintf(stderr, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+
+	static inline void platform_log(platform_ll_t const level, char *fmt, ...) {}
+#else /* !NDEBUG */
+
+	#define ERR(msg, ...)	 	platform_log((platform_ll_t)0, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
+	#define WRN(msg, ...)	 	platform_log((platform_ll_t)1, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
+
+	#define DEVERR(dev_id, msg, ...) \
+			platform_log((platform_ll_t)0, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+	#define DEVWRN(dev_id, msg, ...) \
+			platform_log((platform_ll_t)1, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+
+	void platform_log(platform_ll_t const level, char *fmt, ...);
+#endif
+
+#endif /* PLATFORM_LOGGING_H__ */
