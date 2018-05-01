@@ -21,6 +21,7 @@
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #include <stdio.h>
+#include <stdatomic.h>
 #include <string.h>
 #include <assert.h>
 #include <tapasco_pemgmt.h>
@@ -31,6 +32,7 @@
 #include <tapasco_global.h>
 #include <tapasco_jobs.h>
 #include <tapasco_delayed_transfers.h>
+#include <tapasco_perfc.h>
 #include <platform.h>
 
 /** State of PEs, e.g., busy or idle. */
@@ -43,9 +45,9 @@ typedef enum {
 
 /** Represents a processing element on the device. */
 struct tapasco_pe {
-	tapasco_kernel_id_t id;
-	tapasco_slot_id_t slot_id;
-	tapasco_pe_state_t state;
+	tapasco_kernel_id_t 			id;
+	tapasco_slot_id_t 			slot_id;
+	_Atomic tapasco_pe_state_t 		state;
 };
 typedef struct tapasco_pe tapasco_pe_t;
 
@@ -69,7 +71,8 @@ void tapasco_pemgmt_destroy(tapasco_pe_t *f)
 /******************************************************************************/
 
 struct tapasco_pemgmt {
-	tapasco_pe_t *pe[TAPASCO_NUM_SLOTS];
+	tapasco_dev_id_t			dev_id;
+	tapasco_pe_t 				*pe[TAPASCO_NUM_SLOTS];
 };
 
 static
@@ -90,6 +93,7 @@ tapasco_res_t tapasco_pemgmt_init(const tapasco_devctx_t *devctx, tapasco_pemgmt
 	if (! pemgmt) return TAPASCO_ERR_OUT_OF_MEMORY;
 	memset(*pemgmt, 0, sizeof(**pemgmt));
 	setup_pes_from_status(devctx->pdctx, *pemgmt);
+	(*pemgmt)->dev_id = devctx->id;
 	return res;
 }
 
@@ -138,11 +142,17 @@ void tapasco_pemgmt_setup_system(tapasco_devctx_t *devctx, tapasco_pemgmt_t *ctx
 }
 
 inline static
-int reserve_pe(tapasco_pe_t *pe, tapasco_kernel_id_t const k_id)
+int reserve_pe(tapasco_dev_id_t const dev_id, tapasco_pe_t *pe, tapasco_kernel_id_t const k_id)
 {
 	assert(pe != NULL);
-	return pe->id == k_id && __sync_bool_compare_and_swap(&pe->state,
-			TAPASCO_PE_STATE_IDLE, TAPASCO_PE_STATE_BUSY);
+	const tapasco_pe_state_t old_state = TAPASCO_PE_STATE_IDLE;
+	if (pe->id != k_id) {
+	  tapasco_perfc_reserve_pe_wrong_kernel_inc(dev_id);
+	} else if (! atomic_compare_exchange_strong(&pe->state, &old_state, TAPASCO_PE_STATE_BUSY)) {
+	  tapasco_perfc_reserve_pe_wrong_state_inc(dev_id);
+	  return 0;
+	}
+	return 1;
 }
 
 tapasco_slot_id_t tapasco_pemgmt_acquire(tapasco_pemgmt_t *ctx,
@@ -151,12 +161,13 @@ tapasco_slot_id_t tapasco_pemgmt_acquire(tapasco_pemgmt_t *ctx,
 	tapasco_slot_id_t slot = (tapasco_slot_id_t)-1;
 	tapasco_pe_t **pemgmt = ctx->pe;
 	int len = TAPASCO_NUM_SLOTS;
-	while (len && *pemgmt && ! reserve_pe(*pemgmt, k_id)) {
+	while (len && *pemgmt && ! reserve_pe(ctx->dev_id, *pemgmt, k_id)) {
 		--len;
 		++pemgmt;
 	}
 	slot = len > 0 && *pemgmt ? (*pemgmt)->slot_id : (tapasco_slot_id_t)-1;
 	LOG(LALL_PEMGMT, "k_id = %d, slotid = %d", k_id, slot);
+	if (slot != (tapasco_slot_id_t)-1) tapasco_perfc_pe_acquired_inc(ctx->dev_id);
 	return slot;
 }
 
@@ -166,7 +177,8 @@ void tapasco_pemgmt_release(tapasco_pemgmt_t *ctx, tapasco_slot_id_t const s_id)
 	assert(s_id >= 0 && s_id < TAPASCO_NUM_SLOTS);
 	assert(ctx->pe[s_id]);
 	LOG(LALL_PEMGMT, "slotid = %d", s_id);
-	ctx->pe[s_id]->state = TAPASCO_PE_STATE_IDLE;
+	tapasco_perfc_pe_released_inc(ctx->dev_id);
+	atomic_store(&ctx->pe[s_id]->state, TAPASCO_PE_STATE_IDLE);
 }
 
 inline
