@@ -46,13 +46,13 @@ struct cfg_t {
 
 static int call_slot(struct cfg_t const *cfg, short unsigned const slot_id)
 {
+	if (info.composition.kernel[slot_id] != COUNTER_ID) return 0;
 	printf("Calling slot #%u ...\n", slot_id);
 	uint32_t cd_loops = cfg->delay <= clock_period() ? 1 : (cfg->delay / clock_period() - 2) >> 1;
 	const uint32_t addr = info.base.arch[slot_id];
 	const uint32_t fire = 1;
 	uint32_t retval = 0;
 	for (long i = 0; i < cfg->iterations; ++i) {
-		if (info.composition.kernel[slot_id] != COUNTER_ID) return 0;
 		if (! check( platform_write_ctl(devctx, addr + 0x4, sizeof(fire), &fire, PLATFORM_CTL_FLAGS_NONE) ))
 			return 1;
 		if (! check( platform_write_ctl(devctx, addr + 0x8, sizeof(fire), &fire, PLATFORM_CTL_FLAGS_NONE) ))
