@@ -43,6 +43,7 @@ static void exit_miscdev(struct tlkm_control *pctl)
 
 ssize_t tlkm_control_signal_slot_interrupt(struct tlkm_control *pctl, const u32 s_id)
 {
+	static long max_outstanding = 0;
 	BUG_ON(! pctl);
 	mutex_lock(&pctl->out_mutex);
 	while (pctl->outstanding > TLKM_CONTROL_BUFFER_SZ - 2) {
@@ -60,6 +61,10 @@ ssize_t tlkm_control_signal_slot_interrupt(struct tlkm_control *pctl, const u32 
 	++pctl->outstanding;
 	tlkm_perfc_signals_signaled_inc(pctl->dev_id);
 	tlkm_perfc_outstanding_set(pctl->dev_id, pctl->outstanding);
+	if (pctl->outstanding > max_outstanding) {
+		max_outstanding = pctl->outstanding;
+		tlkm_perfc_outstanding_high_watermark_set(pctl->dev_id, max_outstanding);
+	}
 #ifndef NDEBUG
 	if (pctl->outstanding >= TLKM_CONTROL_BUFFER_SZ)
 		DEVWRN(pctl->dev_id, "buffer size exceeded! expect missing data!");
