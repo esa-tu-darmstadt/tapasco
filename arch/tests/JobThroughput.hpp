@@ -12,6 +12,7 @@
 
 #include <atomic>
 #include <future>
+#include <mutex>
 #include <vector>
 #include <ncurses.h>
 #include <tapasco.hpp>
@@ -37,14 +38,14 @@ public:
   double operator()(size_t const num_threads) {
     CumulativeAverage<double> cavg { 0 };
     jobs.store(0U);
-    bool stop = false;
     int x, y;
+    stop = false;
     getyx(stdscr, y, x);
     vector<future<void> > threads;
     auto const t_start = high_resolution_clock::now();
-    //for (size_t t = 0; t < num_threads; ++t)
-      threads.push_back(async(launch::async, [&]() { collect(stop, jobs); }));
-      threads.push_back(async(launch::async, [&]() { run2(stop, jobs); }));
+    threads.push_back(async(launch::async, [&]() { collect(); }));
+    for (size_t t = 0; t < num_threads; ++t)
+      threads.push_back(async(launch::async, [&]() { run2(); }));
     auto c = getch();
     do {
       move(y, 0);
@@ -65,7 +66,7 @@ public:
     } while(getch() == ERR && (fabs(cavg.delta()) > 10.0 || cavg.size() < 5));
     stop = true;
     for (auto &f : threads)
-      f.get();
+      f.wait();
 
     move(y, 0);
     clrtoeol();
@@ -77,16 +78,16 @@ public:
   }
 
 private:
-  void run(volatile bool& stop, atomic<uint64_t>& count) {
+  void run(void) {
     tapasco_res_t res;
     while (! stop) {
       if ((res = tapasco.launch_no_return(COUNTER_ID, 1U)) != TAPASCO_SUCCESS)
         throw Tapasco::tapasco_error(res);
-      count++;
+      jobs++;
     }
   }
 
-  void run2(volatile bool& stop, atomic<uint64_t>& count) {
+  void run2() {
     tapasco_res_t res;
     tapasco_devctx_t *dev_ctx = tapasco.device();
     unsigned long const d = 1U;
@@ -101,20 +102,23 @@ private:
     }
   }
 
-  void collect(volatile bool& stop, atomic<uint64_t>& count) {
+  void collect(void) {
     tapasco_job_id_t j_id;
+    tapasco_res_t res;
     while (! stop) {
       while ((j_id = (tapasco_job_id_t)gq_dequeue(q))) {
-        job = j_id;
-        tapasco.wait_for(j_id);
+        if ((res = tapasco.wait_for(j_id)) != TAPASCO_SUCCESS) {
+          throw Tapasco::tapasco_error(res);
+	}
 	tapasco_device_release_job_id(tapasco.device(), j_id);
-	count++;
+	++jobs;
       }
     }
   }
 
   gq_t *q;
   Tapasco& tapasco;
+  atomic<bool> stop { false };
   atomic<uint64_t> jobs { 0 };
   atomic<tapasco_job_id_t> job { 0 };
 };
