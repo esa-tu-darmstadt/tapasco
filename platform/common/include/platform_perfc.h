@@ -32,7 +32,11 @@
 #endif
 
 #define PLATFORM_PERFC_COUNTERS \
-	_PC(signals_received)
+	_PC(signals_received) \
+	_PC(waiting_for_slot) \
+	_PC(slot_interrupts_active) \
+	_PC(sem_wait_error) \
+	_PC(sem_post_error)
 
 #ifndef NPERFC
 	const char *platform_perfc_tostring(platform_dev_id_t const dev_id);

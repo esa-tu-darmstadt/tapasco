@@ -13,11 +13,17 @@
 #include <fcntl.h>
 
 struct platform_signaling {
-	int			fd_wait;
-	platform_dev_id_t	dev_id;
-	pthread_t 		collector;
-	sem_t 			finished[PLATFORM_NUM_SLOTS];
+	int					fd_wait;
+	platform_dev_id_t			dev_id;
+	pthread_t 				collector;
+	sem_t 					finished[PLATFORM_NUM_SLOTS];
+	platform_signal_received_f		cb;
 };
+
+void platform_signaling_signal_received(platform_signaling_t *s, platform_signal_received_f callback)
+{
+	s->cb = callback;
+}
 
 static
 void *platform_signaling_read_waitfile(void *p)
@@ -28,15 +34,23 @@ void *platform_signaling_read_waitfile(void *p)
 	platform_signaling_t *a = (platform_signaling_t *)p;
 	assert(a->fd_wait);
 	do {
-		memset(s, (platform_slot_id_t)-1, sizeof(*s));
+		memset(s, 0xFF, sizeof(s)); // poison the array
 		if ((read_sz = read(a->fd_wait, &s, sizeof(s))) > 0) {
 			read_cnt = read_sz / sizeof(*s);
-			platform_perfc_signals_received_inc(a->dev_id);
-			for (; read_cnt > 0; --read_cnt) {
-				DEVLOG(a->dev_id, LPLL_ASYNC, "received finish for slot %u", (unsigned)s[read_cnt - 1]);
-				if (s[read_cnt] < PLATFORM_NUM_SLOTS) sem_post(&a->finished[s[read_cnt - 1]]);
-				else DEVERR(a->dev_id, "invalid slot id received: %u", (unsigned)s[read_cnt - 1]);
+			platform_perfc_signals_received_add(a->dev_id, read_cnt);
+			if (read_cnt && a->cb) a->cb(read_cnt, s);
+			for (--read_cnt; read_cnt >= 0; --read_cnt) {
+				const platform_slot_id_t slot = s[read_cnt];
+				DEVLOG(a->dev_id, LPLL_ASYNC, "received finish for slot %u", slot);
+				if (slot < PLATFORM_NUM_SLOTS) {
+					while (sem_post(&a->finished[slot]))
+						platform_perfc_sem_post_error_inc(a->dev_id);
+				} else {
+					DEVERR(a->dev_id, "invalid slot id received: %u", slot);
+				}
 			}
+		} else {
+			DEVERR(a->dev_id, "error during read: %s", strerror(errno));
 		}
 	} while (1);
 	return NULL;
@@ -44,7 +58,7 @@ void *platform_signaling_read_waitfile(void *p)
 
 platform_res_t platform_signaling_init(platform_devctx_t const *pctx, platform_signaling_t **a)
 {
-	*a = (platform_signaling_t *)malloc(sizeof(**a));
+	*a = (platform_signaling_t *)calloc(sizeof(**a), 1);
 	if (! a) {
 		DEVERR(pctx->dev_id, "could not allocate platform_signaling");
 		return PERR_OUT_OF_MEMORY;
@@ -66,7 +80,7 @@ platform_res_t platform_signaling_init(platform_devctx_t const *pctx, platform_s
 		return PERR_PTHREAD_ERROR;
 	}
 
-	DEVLOG(pctx->dev_id, LPLL_ASYNC, "async initialized successfully");
+	DEVLOG(pctx->dev_id, LPLL_ASYNC, "signaling initialized successfully");
 	return PLATFORM_SUCCESS;
 }
 
@@ -88,7 +102,10 @@ void platform_signaling_deinit(platform_signaling_t *a)
 platform_res_t platform_signaling_wait_for_slot(platform_signaling_t *a, platform_slot_id_t const slot)
 {
 	DEVLOG(a->dev_id, LPLL_ASYNC, "waiting for slot #%lu", (unsigned long)slot);
-	sem_wait(&a->finished[slot]);
+	platform_perfc_waiting_for_slot_set(a->dev_id, slot);
+	while (sem_wait(&a->finished[slot]))
+		platform_perfc_sem_wait_error_inc(a->dev_id);
+	platform_perfc_waiting_for_slot_set(a->dev_id, 0);
 	DEVLOG(a->dev_id, LPLL_ASYNC, "slot #%lu has finished", (unsigned long)slot);
 	return PLATFORM_SUCCESS;
 }
