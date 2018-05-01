@@ -65,10 +65,7 @@ if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit ]]
 then
 	echo "bitstream = $BITSTREAM"
 
-	# unload driver, if reload_driver was set
-	if [ $RELOADD -gt 0 ]; then
-		sudo rmmod $DRIVER
-	fi
+	(lsmod | grep $DRIVER > /dev/null) && sudo rmmod $DRIVER 2> /dev/null
 
 	# program the device
 	cat $BITSTREAM > /dev/xdevcfg
@@ -81,11 +78,8 @@ then
 	fi
 	echo "bitstream programmed successfully!"
 
-	# reload driver?
-	if [ $RELOADD -gt 0 ]; then
-		sudo insmod $DRIVERPATH/${DRIVER}.ko
-	fi
-
+	# load driver
+	sudo insmod $DRIVERPATH/${DRIVER}.ko
 else
 	show_usage
 	exit 1
