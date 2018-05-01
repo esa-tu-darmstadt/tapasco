@@ -2,6 +2,11 @@ ifndef TAPASCO_HOME
 $(error "environment variable TAPASCO_HOME is not set - did you source TaPaSCo's setup.sh?")
 endif
 
+ifdef NPERFC
+$(info "environment variable NPERFC is set, building with -DNPERFC")
+KCPPFLAGS += -DNPERFC
+endif
+
 LINUX_HOME ?= /lib/modules/$(shell uname -r)/build
 ifeq ($(ARCH), arm)
 CROSS_COMPILE ?= arm-linux-gnueabihf-
@@ -45,6 +50,9 @@ all:
 
 release:
 	make KCPPFLAGS+="$(CPPFLAGS) -DNDEBUG -O3" -C $(LINUX_HOME) M=$(PWD) modules
+
+release-nperfc:
+	make KCPPFLAGS+="$(CPPFLAGS) -DNPERFC -DNDEBUG -O3" -C $(LINUX_HOME) M=$(PWD) modules
 
 clean:
 	make -C $(LINUX_HOME) M=$(PWD) clean

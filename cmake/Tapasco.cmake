@@ -39,6 +39,14 @@ else (NOT EXISTS "$ENV{TAPASCO_TARGET}")
   set (TAPASCO_TARGET "$ENV{TAPASCO_TARGET}")
 endif (NOT EXISTS "$ENV{TAPASCO_TARGET}")
 
+# global env var NPERFC to deactivate performance counters
+if (DEFINED "$ENV{NPERFC}")
+  message(STATUS "NPERFC environment variable is NOT set")
+else (DEFINED "$ENV{NPERFC}")
+  message(STATUS "NPERFC environment variable is set, building with -DNPERFC")
+  add_definitions(-DNPERFC)
+endif (DEFINED "$ENV{NPERFC}")
+
 # static libraries
 set (TAPASCO_PLATFORM_LIB "${TAPASCO_LIB_DIR}/${TAPASCO_TARGET}/static/libplatform.a")
 set (TAPASCO_ARCH_LIB "${TAPASCO_LIB_DIR}/${TAPASCO_TARGET}/static/libtapasco.a")
