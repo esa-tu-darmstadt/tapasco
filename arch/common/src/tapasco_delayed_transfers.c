@@ -41,11 +41,11 @@ tapasco_res_t tapasco_transfer_to(tapasco_devctx_t *devctx,
 		return res;
 	}
 	if (t->dir_flags & COPY_TO) {
-		res = tapasco_device_copy_to(devctx, t->data, t->handle, t->len,
-				t->flags, s_id);
+		res = tapasco_device_copy_to(devctx, t->data, t->handle, t->len, t->flags, s_id);
 		if (res != TAPASCO_SUCCESS) {
-			ERR("job %lu: transfer failed - %zd bytes -> 0x%08x with flags %lu",
-					(unsigned long)j_id, t->len,
+			ERR("job %lu: transfer failed - %zd bytes -> 0x%08lx with flags %lu",
+					(unsigned long)j_id,
+					t->len,
 					(unsigned long)t->handle,
 					(unsigned long)t->flags);
 		}
@@ -66,8 +66,9 @@ tapasco_res_t tapasco_transfer_from(tapasco_devctx_t *devctx,
 		tapasco_res_t res = tapasco_device_copy_from(devctx, t->handle,
 				t->data, t->len, t->flags, s_id);
 		if (res != TAPASCO_SUCCESS) {
-			ERR("job %lu: transfer failed - %zd bytes <- 0x%08x with flags %lu",
-					(unsigned long)j_id, t->len,
+			ERR("job %lu: transfer failed - %zd bytes <- 0x%08lx with flags %lu",
+					(unsigned long)j_id,
+					t->len,
 					(unsigned long)t->handle,
 					(unsigned long)t->flags);
 		}
