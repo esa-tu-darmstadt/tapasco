@@ -47,10 +47,13 @@
 	_PC(dma_reads) \
 	_PC(dma_writes) \
 	_PC(outstanding) \
+	_PC(outstanding_high_watermark) \
 	_PC(limited_by_read_sz) \
 	_PC(limited_by_outbuf_sz) \
 	_PC(indices_in_order) \
-	_PC(indices_reversed)
+	_PC(indices_reversed) \
+	_PC(irq_error_already_pending) \
+	_PC(total_irqs)
 
 #ifndef NPERFC
 	#include <linux/types.h>

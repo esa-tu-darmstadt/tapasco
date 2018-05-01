@@ -22,6 +22,7 @@
 #include <linux/io.h>
 #include <linux/sched.h>
 #include "tlkm_logging.h"
+#include "tlkm_slots.h"
 #include "zynq_irq.h"
 
 #define ZYNQ_IRQ_BASE_IRQ					45
@@ -35,8 +36,8 @@
 
 #define _INTC(N) 1 +
 #if (INTERRUPT_CONTROLLERS 0 != ZYNQ_MAX_NUM_INTCS)
-#error "when changing maximum number of interrupt controllers, you must change " \
-		"both the INTERRUPT_CONTROLLERS and ZYNQ_MAX_NUM_INTCS macros"
+	#error "when changing maximum number of interrupt controllers, you must change " \
+			"both the INTERRUPT_CONTROLLERS and ZYNQ_MAX_NUM_INTCS macros"
 #endif
 #undef _INTC
 
@@ -46,53 +47,56 @@
 
 typedef struct {
 	u32 base;
-	atomic_long_t status;
 } intc_t;
-
-#ifdef _INTC
-	#undef _INTC
-#endif
 
 static struct {
 	struct tlkm_control *ctrl;
-#define		_INTC(N) intc_t intc_ ## N;
+	#define	_INTC(N) intc_t intc_ ## N;
 	INTERRUPT_CONTROLLERS
-#undef _INTC
+	#undef _INTC
 } zynq_irq;
 
-#define		_INTC(N) \
-static void zynq_irq_func_ ## N(struct work_struct *work); \
-\
-static DECLARE_WORK(zynq_irq_work_ ## N, zynq_irq_func_ ## N); \
-\
-static void zynq_irq_func_ ## N(struct work_struct *work) \
+// one work struct per slot: ack's that slot's interrupt only
+static struct work_struct zynq_irq_work_slot[PLATFORM_NUM_SLOTS];
+
+#define _SLOT(N)	\
+static void zynq_irq_work_slot_ ## N ## _func(struct work_struct *work) \
 { \
-	u32 s_off = (N * 32U); \
-	ulong status = (ulong)atomic_long_xchg(&zynq_irq.intc_ ## N.status, 0); \
-	struct tlkm_control *ctrl = zynq_irq.ctrl; \
-	LOG(TLKM_LF_IRQ, "intcn = %d, status = 0x%08lx, ctrl = 0x%px", N, status, ctrl); \
-	while (ctrl && status > 0) { \
-		if (status & 1) { \
-			tlkm_control_signal_slot_interrupt(ctrl, s_off); \
-		} \
-		s_off++; \
-		status >>= 1; \
-	} \
-} \
-\
+	LOG(TLKM_LF_IRQ, "slot interrupt #%d", N); \
+	tlkm_control_signal_slot_interrupt(zynq_irq.ctrl, N); \
+}
+TLKM_SLOTS
+#undef _SLOT
+
+static
+void init_work_structs(void)
+{
+	#define _SLOT(N) INIT_WORK(&zynq_irq_work_slot[N], zynq_irq_work_slot_ ## N ## _func);
+	TLKM_SLOTS
+	#undef _SLOT
+}
+
+#define	_INTC(N) \
 static irqreturn_t zynq_irq_handler_ ## N(int irq, void *dev_id) \
 { \
 	u32 status; \
 	struct zynq_device *zynq_dev = (struct zynq_device *)dev_id; \
 	u32 *intc = (u32 *)zynq_dev->parent->mmap.plat + zynq_irq.intc_ ## N.base; \
-	status = ioread32(intc); \
-	LOG(TLKM_LF_IRQ, "intcn = %d, status = 0x%08x, intc = 0x%px", N, status, intc); \
-	iowrite32(status, intc + (0x0c >> 2)); \
-	atomic_fetch_or(status, &zynq_irq.intc_ ## N.status); \
-	schedule_work(&zynq_irq_work_ ## N); \
+	while ((status = ioread32(intc))) { \
+		u32 s_off = (N * 32U); \
+		iowrite32(status, intc + (0x0c >> 2)); \
+		do { \
+			if (status & 1) { \
+				if (! schedule_work(&zynq_irq_work_slot[s_off])) \
+					tlkm_perfc_irq_error_already_pending_inc(zynq_dev->parent->dev_id); \
+				tlkm_perfc_total_irqs_inc(zynq_dev->parent->dev_id); \
+			} \
+			++s_off; \
+			status >>= 1; \
+		} while (status); \
+	} \
 	return IRQ_HANDLED; \
 }
-
 INTERRUPT_CONTROLLERS
 #undef _INTC
 
@@ -105,18 +109,18 @@ void zynq_init_intc(struct zynq_device *zynq_dev, u32 const base)
 	ioread32(intc);
 }
 
-
 int zynq_irq_init(struct zynq_device *zynq_dev)
 {
 	int retval = 0, irqn = 0, rirq = 0;
 	u32 base;
+
+	init_work_structs();
 
 #define	_INTC(N)	\
 	rirq = ZYNQ_IRQ_BASE_IRQ + zynq_dev->parent->cls->npirqs + irqn; \
 	base = ioread32(zynq_dev->parent->mmap.status + 0x1010 + (N * 8)); \
 	if (base) { \
 		zynq_irq.intc_ ## N.base = (base - zynq_dev->parent->cls->platform.plat.base) >> 2; \
-		atomic_long_set(&zynq_irq.intc_ ## N.status, 0); \
 		if (zynq_irq.intc_ ## N.base) { \
 			LOG(TLKM_LF_IRQ, "controller for IRQ #%d at 0x%08x", \
 					rirq, zynq_irq.intc_ ## N.base << 2); \
@@ -125,7 +129,7 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 		LOG(TLKM_LF_IRQ, "registering IRQ #%d", rirq); \
 		retval = request_irq(rirq, \
 				zynq_irq_handler_ ## N, \
-				IRQF_TRIGGER_NONE | IRQF_ONESHOT, \
+				IRQF_EARLY_RESUME, \
 				"tapasco_zynq_" STR(N), \
 				zynq_dev); \
 		++irqn; \
@@ -134,7 +138,6 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 			goto err; \
 		} \
 	}
-
 	INTERRUPT_CONTROLLERS
 #undef _X
 	zynq_irq.ctrl = zynq_dev->parent->ctrl;
