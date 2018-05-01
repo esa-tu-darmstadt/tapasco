@@ -1,3 +1,4 @@
+#include <linux/uaccess.h>
 #include "tlkm_logging.h"
 #include "tlkm_device.h"
 #include "dma/tlkm_dma.h"
