@@ -80,19 +80,17 @@ void init_work_structs(void)
 static irqreturn_t zynq_irq_handler_ ## N(int irq, void *dev_id) \
 { \
 	u32 status; \
+	static const u32 s_off = (N * 32U); \
 	struct zynq_device *zynq_dev = (struct zynq_device *)dev_id; \
 	u32 *intc = (u32 *)zynq_dev->parent->mmap.plat + zynq_irq.intc_ ## N.base; \
 	while ((status = ioread32(intc))) { \
-		u32 s_off = (N * 32U); \
 		iowrite32(status, intc + (0x0c >> 2)); \
 		do { \
-			if (status & 1) { \
-				if (! schedule_work(&zynq_irq_work_slot[s_off])) \
-					tlkm_perfc_irq_error_already_pending_inc(zynq_dev->parent->dev_id); \
-				tlkm_perfc_total_irqs_inc(zynq_dev->parent->dev_id); \
-			} \
-			++s_off; \
-			status >>= 1; \
+			const u32 slot = __builtin_ffs(status) - 1; \
+			if (! schedule_work(&zynq_irq_work_slot[s_off + slot])) \
+				tlkm_perfc_irq_error_already_pending_inc(zynq_dev->parent->dev_id); \
+			tlkm_perfc_total_irqs_inc(zynq_dev->parent->dev_id); \
+			status ^= (1U << slot); \
 		} while (status); \
 	} \
 	return IRQ_HANDLED; \
