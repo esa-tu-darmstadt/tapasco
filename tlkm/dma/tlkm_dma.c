@@ -11,7 +11,7 @@
 #define REG_ID 						0x18
 #define DMA_SZ						0x10000
 
-static const struct dma_operations dma_ops[] = {
+static const struct dma_operations tlkm_dma_ops[] = {
 	[DMA_USED_DUAL] = {
 		.intr_read	= dual_dma_intr_handler_dma, // Dual DMA can not read and write in parallel
 		.intr_write	= dual_dma_intr_handler_dma,
@@ -62,7 +62,7 @@ int tlkm_dma_init(struct dma_engine *dma, dev_id_t dev_id, u64 dbase)
 		dma->dma_used = DMA_USED_DUAL;
 		DEVLOG(dev_id, TLKM_LF_DMA, "detected DualDMA");
 	}
-	dma->ops = dma_ops[dma->dma_used];
+	dma->ops = tlkm_dma_ops[dma->dma_used];
 	init_waitqueue_head(&dma->rq);
 	init_waitqueue_head(&dma->wq);
 	mutex_init(&dma->regs_mutex);
