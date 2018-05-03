@@ -47,9 +47,9 @@ LIBPLATFORM_LOGLEVELS
 int platform_logging_init(void);
 void platform_logging_exit(void);
 #ifdef NDEBUG
-inline void platform_log(platform_ll_t const level, char *fmt, ...) {}
+inline void platform_log(platform_ll_t const level, const char *fmt, ...) {}
 #else
-void platform_log(platform_ll_t const level, char *fmt, ...);
+void platform_log(platform_ll_t const level, const char *fmt, ...);
 #endif
 
 #define ERR(msg, ...)	 platform_log((platform_ll_t)0, "[%s] " msg "\n", __func__, ##__VA_ARGS__)
