@@ -59,6 +59,7 @@ extern "C" {
 #include <stdexcept>
 #include <future>
 #include <cstdint>
+#include <iostream>
 
 using namespace std;
 
