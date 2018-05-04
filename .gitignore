@@ -44,5 +44,3 @@ bin/tapasco
 bin/tapasco-logviewer
 bin/tapasco-reportviewer
 /tapasco-status-cache/
-build_shared/
-build_static/
