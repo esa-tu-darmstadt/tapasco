@@ -1,33 +1,14 @@
-cmake_minimum_required (VERSION 2.8)
-include(ExternalProject)
 project (tapasco-debug)
-set(ADD_CCFLAGS "-g -Wall -Werror -std=gnu11 -fdiagnostics-color=auto")
-set(ADD_CXXFLAGS "-g -Wall -Werror -std=c++11 -fno-rtti -fdiagnostics-color=auto")
-set(ADD_LDFLAGS "-flto -static-libstdc++ -static-libgcc")
 
-if ("$ENV{TAPASCO_HOME}" STREQUAL "")
-  message(FATAL_ERROR "Please set env var TAPASCO_HOME to root directory of Tapasco.")
-endif ("$ENV{TAPASCO_HOME}" STREQUAL "")
+set (CMAKE_INSTALL_PREFIX "${TAPASCO_HOME}")
 
-include ("$ENV{TAPASCO_HOME}/cmake/Tapasco.cmake")
-set (CMAKE_INSTALL_PREFIX "${TAPASCO_HOME}/bin")
+add_executable (tapasco-debug tapasco_debug.cpp ${CMNDIR}/src/gen_queue.c)
+target_include_directories(tapasco-debug PRIVATE ${CMNDIR}/include)
+target_link_libraries (tapasco-debug tapasco platform pthread atomic ncurses -static-libstdc++ -static-libgcc)
 
-set(CXX_SOURCES tapasco_benchmark.cpp tapasco_debug.cpp json11.cpp)
-set(CC_SOURCES ${TAPASCO_HOME}/common/src/gen_queue.c)
-
-set_source_files_properties(${CXX_SOURCES} PROPERTIES COMPILE_FLAGS ${ADD_CXXFLAGS})
-set_source_files_properties(${CC_SOURCES} PROPERTIES COMPILE_FLAGS ${ADD_CCFLAGS})
-
-link_directories(${TAPASCO_HOME}/arch/lib/${TAPASCO_TARGET}/static  ${TAPASCO_HOME}/platform/lib/${TAPASCO_TARGET}/static)
-include_directories(${TAPASCO_HOME}/common/include ${TAPASCO_HOME}/arch/common/include ${TAPASCO_HOME}/platform/common/include)
-
-add_executable (tapasco-debug tapasco_debug.cpp ${TAPASCO_HOME}/common/src/gen_queue.c)
-target_link_libraries (tapasco-debug tapasco platform pthread atomic ncurses)
-set_target_properties (tapasco-debug PROPERTIES LINK_FLAGS ${ADD_LDFLAGS})
-
-add_executable (tapasco-benchmark tapasco_benchmark.cpp json11.cpp)
-target_link_libraries (tapasco-benchmark tapasco platform pthread atomic ncurses)
-set_target_properties (tapasco-benchmark PROPERTIES LINK_FLAGS ${ADD_LDFLAGS})
+add_executable (tapasco-benchmark tapasco_benchmark.cpp json11.cpp  ${CMNDIR}/src/gen_queue.c)
+target_include_directories(tapasco-benchmark PRIVATE ${CMNDIR}/include)
+target_link_libraries (tapasco-benchmark tapasco platform pthread atomic ncurses -static-libstdc++ -static-libgcc)
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/json11.cpp ${CMAKE_CURRENT_SOURCE_DIR}/json11.hpp
   COMMAND rm -rf json11
@@ -36,4 +17,6 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/json11.cpp ${CMAKE_CURRENT
   )
 
 install (TARGETS tapasco-debug tapasco-benchmark
-	 RUNTIME DESTINATION ${TAPASCO_HOME}/bin)
+        ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
