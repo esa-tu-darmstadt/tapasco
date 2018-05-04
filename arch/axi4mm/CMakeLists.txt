@@ -21,7 +21,7 @@ set(COMMON_SOURCES "${PCMNDIR}/tapasco_delayed_transfers.c"
 
 add_library(tapasco ${AXI4MM_SOURCES} ${COMMON_SOURCES})
 
-target_include_directories(tapasco PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../common/include> PRIVATE ${CMNDIR}/include)
+target_include_directories(tapasco PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../common/include>" PRIVATE ${CMNDIR}/include)
 
 add_definitions(-DUSE_ASSERTIONS)
 
