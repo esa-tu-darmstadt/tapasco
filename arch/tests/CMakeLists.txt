@@ -23,7 +23,11 @@ target_link_libraries (tapasco-debug m tapasco platform pthread atomic ncurses)
 set_target_properties (tapasco-debug PROPERTIES LINK_FLAGS ${TAPASCO_LDFLAGS})
 
 add_executable (tapasco-benchmark tapasco_benchmark.cpp json11.cpp)
-target_link_libraries (tapasco-benchmark tapasco platform pthread atomic ncurses)
+target_link_libraries (tapasco-benchmark pthread atomic ncurses)
+set_target_properties (tapasco-benchmark PROPERTIES LINK_SEARCH_START_STATIC 1)
+set_target_properties (tapasco-benchmark PROPERTIES LINK_SEARCH_END_STATIC 1)
+set (CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+target_link_libraries (tapasco-benchmark tapasco platform)
 set_target_properties (tapasco-benchmark PROPERTIES LINK_FLAGS ${TAPASCO_LDFLAGS})
 
 add_executable (tapasco-jobs jobs/Jobs.cpp)
