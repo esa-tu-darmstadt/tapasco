@@ -26,19 +26,23 @@ set(CMNSRCS "${CMNDIR}/src/platform_addr_map.c"
             "${CMNDIR}/src/platform_perfc.c"
             "${GCMNDIR}/src/gen_queue.c")
 set(ZYNQSRCS "zynq/src/platform_zynq.c")
+set(PCIESRCS "pcie/src/platform_pcie.c")
+
+set(SRCS ${CMNSRCS} ${ZYNQSRCS} ${PCIESRCS})
 
 link_directories(${TAPASCO_STATICLINKDIRS})
 include_directories(
 	"include"
 	"common/include"
 	"zynq/src"
+	"pcie/src"
 	${TAPASCO_INCDIRS}
 )
 
-set_source_files_properties(${CMNSRCS} ${ZYNQSRCS} PROPERTIES COMPILE_FLAGS ${TAPASCO_CFLAGS})
+set_source_files_properties(${SRCS} PROPERTIES COMPILE_FLAGS ${TAPASCO_CFLAGS})
 
-add_library(platform SHARED ${CMNSRCS} ${ZYNQSRCS})
-add_library(platform-static STATIC ${CMNSRCS} ${ZYNQSRCS})
+add_library(platform SHARED ${SRCS})
+add_library(platform-static STATIC ${SRCS})
 set_target_properties(platform PROPERTIES LINKER_FLAGS ${TAPASCO_LDFLAGS})
 set_target_properties(platform-static PROPERTIES OUTPUT_NAME platform)
 set_target_properties(platform-static PROPERTIES LINKER_FLAGS ${TAPASCO_LDFLAGS})

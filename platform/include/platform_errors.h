@@ -55,7 +55,8 @@
 	_X(PERR_TLKM_ERROR             , -29      , "tlkm error") \
 	_X(PERR_NO_SUCH_DEVICE         , -30      , "no such device") \
 	_X(PERR_INCOMPATIBLE_DEVICE    , -31      , "incompatible device") \
-	_X(PERR_SENTINEL               , -32      , "--- no error, just end of list ---")
+	_X(PERR_UNKNOWN_DEVICE         , -32      , "unknown device type") \
+	_X(PERR_SENTINEL               , -33      , "--- no error, just end of list ---")
 
 #ifdef _X
 	#undef _X

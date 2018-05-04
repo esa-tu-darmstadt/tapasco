@@ -27,6 +27,7 @@
 #include <assert.h>
 #include <platform_types.h>
 #include <platform_device_operations.h>
+#include <tlkm_platform.h>
 
 typedef struct platform_addr_map platform_addr_map_t;
 typedef struct platform_signaling platform_signaling_t;
@@ -40,6 +41,7 @@ struct platform_devctx {
 	platform_addr_map_t 			*addrmap;
 	platform_signaling_t 			*signaling;
 	platform_device_operations_t		dops;
+	struct platform				platform;
 	void					*private_data;
 };
 

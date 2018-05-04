@@ -65,7 +65,7 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 {
 	platform_res_t r;
 	platform_dev_id_t dev_id = p->dev_id;
-	platform_ctl_addr_t status = zynq_def.status.base;
+	platform_ctl_addr_t status = p->platform.status.base;
 #ifdef _X
 	#undef _X
 #endif
@@ -73,7 +73,7 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 	r = platform_read_ctl(p, status + _name, sizeof(info->_field), \
 			&(info->_field), PLATFORM_CTL_FLAGS_NONE); \
 	if (r != PLATFORM_SUCCESS) { \
-		DEVERR(dev_id, "could not read _name: %s (" PRIres ")", platform_strerror(r), r); \
+		DEVERR(dev_id, "could not read " STRINGIFY(_name) ": %s (" PRIres ")", platform_strerror(r), r); \
 		return r; \
 	} \
 	DEVLOG(dev_id, LPLL_STATUS, "read " STRINGIFY(_name) ": %#08x", info->_field);

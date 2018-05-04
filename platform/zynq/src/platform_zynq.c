@@ -198,6 +198,7 @@ platform_res_t zynq_init(platform_devctx_t *devctx)
 	if (! strncmp(ZYNQ_CLASS_NAME, devctx->dev_info.name, strlen(ZYNQ_CLASS_NAME))) {
 		DEVLOG(devctx->dev_id, LPLL_DEVICE, "matches zynq platform");
 		zynq_platform.devctx = devctx;
+		devctx->platform        = zynq_def;
 		devctx->dops.read_ctl	= zynq_read_ctl;
 		devctx->dops.write_ctl	= zynq_write_ctl;
 		return zynq_iomapping();
@@ -206,7 +207,7 @@ platform_res_t zynq_init(platform_devctx_t *devctx)
 	return PERR_INCOMPATIBLE_DEVICE;
 }
 
-void zynq_exit(platform_devctx_t *devctx)
+void zynq_deinit(platform_devctx_t *devctx)
 {
 	zynq_unmap();
 	zynq_platform.devctx = NULL;

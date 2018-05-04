@@ -15,83 +15,32 @@
 #include <platform_signaling.h>
 #include <platform_device_operations.h>
 #include <platform_zynq.h>
+#include <platform_pcie.h>
 #include <platform_perfc.h>
+#include <zynq/zynq.h>
+#include <pcie/pcie.h>
 
-platform_res_t platform_devctx_init(platform_ctx_t *ctx,
-		platform_dev_id_t const dev_id,
-		platform_access_t const mode,
-		platform_devctx_t **pdctx)
+static
+platform_res_t platform_specific_init(platform_devctx_t *devctx)
 {
-	platform_res_t res = PLATFORM_SUCCESS;
-	char *fn = control_file(dev_id);
-	assert(ctx);
-	assert(pdctx);
-	assert(fn);
-	platform_devctx_t *devctx = (platform_devctx_t *)calloc(sizeof(*devctx), 1);
-	if (! devctx) {
-		DEVERR(dev_id, "could not allocate memory for device context");
-		free(fn);
-		return PERR_OUT_OF_MEMORY;
+	if (! strncmp(PCIE_CLS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
+		return pcie_init(devctx);
+	} else if (! strncmp(ZYNQ_CLASS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
+		return zynq_init(devctx);
+	} else {
+		DEVERR(devctx->dev_id, "unknown device type: '%s'", devctx->dev_info.name);
+		return PERR_UNKNOWN_DEVICE;
 	}
+}
 
-	DEVLOG(dev_id, LPLL_DEVICE, "preparing device ...");
-	devctx->dev_id = dev_id;
-	devctx->mode = mode;
-	default_dops(&devctx->dops);
-
-	if ((res = platform_device_info(ctx, dev_id, &devctx->dev_info)) != PLATFORM_SUCCESS) {
-		DEVERR(dev_id, "could not get device information: %s (" PRIres ")", platform_strerror(res), res);
-		free (devctx);
-		free(fn);
-		return res;
-	}
-
-	devctx->fd_ctrl = open(fn, O_RDWR);
-	if (devctx->fd_ctrl == -1) {
-		DEVERR(dev_id, "could not open %s: %s (%d)", fn, strerror(errno), errno);
-		free(fn);
-		res = PERR_OPEN_DEV;
-		return res;
-	}
-	free(fn);
-
-	if ((res = platform_info(devctx, &devctx->info)) != PLATFORM_SUCCESS) {
-		DEVERR(dev_id, "could not get device info: %s (" PRIres ")", platform_strerror(res), res);
-		goto err_info;
-	}
-
-	res = platform_addr_map_init(devctx, &devctx->info, &devctx->addrmap);
-	if (res != PLATFORM_SUCCESS) {
-		DEVERR(dev_id, "could not initialize platform address map: %s (" PRIres ")", platform_strerror(res), res);
-		goto err_addr_map;
-	}
-	DEVLOG(dev_id, LPLL_INIT, "initialized device address map");
-
-	res = platform_signaling_init(devctx, &devctx->signaling);
-	if (res != PLATFORM_SUCCESS) {
-		DEVERR(dev_id, "could not initialize signaling: %s (" PRIres ")", platform_strerror(res), res);
-		goto err_signaling;
-	}
-	DEVLOG(dev_id, LPLL_INIT, "initialized device signaling");
-
-	if ((res = zynq_init(devctx)) != PLATFORM_SUCCESS) {
-		DEVERR(dev_id, "found no matching platform definition");
-		goto err_platform;
-	}
-
-	if (pdctx) *pdctx = devctx;
-	DEVLOG(dev_id, LPLL_INIT, "context initialization finished");
-	return PLATFORM_SUCCESS;
-
-	zynq_exit(devctx);
-err_platform:
-	platform_signaling_deinit(devctx->signaling);
-err_signaling:
-	platform_addr_map_deinit(devctx, devctx->addrmap);
-err_addr_map:
-err_info:
-	close(devctx->fd_ctrl);
-	return res;
+static
+void platform_specific_deinit(platform_devctx_t *devctx)
+{
+	if (! strncmp(PCIE_CLS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
+		pcie_deinit(devctx);
+	} else if (! strncmp(ZYNQ_CLASS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
+		zynq_deinit(devctx);
+	} 
 }
 
 static inline
@@ -127,11 +76,89 @@ void log_perfc(platform_devctx_t *devctx)
 #endif
 }
 
+platform_res_t platform_devctx_init(platform_ctx_t *ctx,
+		platform_dev_id_t const dev_id,
+		platform_access_t const mode,
+		platform_devctx_t **pdctx)
+{
+	platform_res_t res = PLATFORM_SUCCESS;
+	char *fn = control_file(dev_id);
+	assert(ctx);
+	assert(pdctx);
+	assert(fn);
+	platform_devctx_t *devctx = (platform_devctx_t *)calloc(sizeof(*devctx), 1);
+	if (! devctx) {
+		DEVERR(dev_id, "could not allocate memory for device context");
+		free(fn);
+		return PERR_OUT_OF_MEMORY;
+	}
+
+	DEVLOG(dev_id, LPLL_DEVICE, "preparing device ...");
+	devctx->dev_id = dev_id;
+	devctx->mode = mode;
+	default_dops(&devctx->dops);
+
+	if ((res = platform_device_info(ctx, dev_id, &devctx->dev_info)) != PLATFORM_SUCCESS) {
+		DEVERR(dev_id, "could not get device information: %s (" PRIres ")", platform_strerror(res), res);
+		free (devctx);
+		free(fn);
+		return res;
+	}
+	DEVLOG(dev_id, LPLL_DEVICE, "device: %s", devctx->dev_info.name);
+
+	devctx->fd_ctrl = open(fn, O_RDWR);
+	if (devctx->fd_ctrl == -1) {
+		DEVERR(dev_id, "could not open %s: %s (%d)", fn, strerror(errno), errno);
+		free(fn);
+		res = PERR_OPEN_DEV;
+		return res;
+	}
+	free(fn);
+
+	if ((res = platform_specific_init(devctx)) != PLATFORM_SUCCESS) {
+		DEVERR(dev_id, "found no matching platform definition");
+		goto err_spec;
+	}
+
+	if ((res = platform_info(devctx, &devctx->info)) != PLATFORM_SUCCESS) {
+		DEVERR(dev_id, "could not get device info: %s (" PRIres ")", platform_strerror(res), res);
+		goto err_info;
+	}
+
+	res = platform_addr_map_init(devctx, &devctx->info, &devctx->addrmap);
+	if (res != PLATFORM_SUCCESS) {
+		DEVERR(dev_id, "could not initialize platform address map: %s (" PRIres ")", platform_strerror(res), res);
+		goto err_addr_map;
+	}
+	DEVLOG(dev_id, LPLL_INIT, "initialized device address map");
+
+	res = platform_signaling_init(devctx, &devctx->signaling);
+	if (res != PLATFORM_SUCCESS) {
+		DEVERR(dev_id, "could not initialize signaling: %s (" PRIres ")", platform_strerror(res), res);
+		goto err_signaling;
+	}
+	DEVLOG(dev_id, LPLL_INIT, "initialized device signaling");
+
+	if (pdctx) *pdctx = devctx;
+	DEVLOG(dev_id, LPLL_INIT, "context initialization finished");
+	return PLATFORM_SUCCESS;
+
+	platform_signaling_deinit(devctx->signaling);
+err_signaling:
+	platform_addr_map_deinit(devctx, devctx->addrmap);
+err_addr_map:
+err_info:
+	platform_specific_deinit(devctx);
+err_spec:
+	close(devctx->fd_ctrl);
+	return res;
+}
+
 void platform_devctx_deinit(platform_devctx_t *devctx)
 {
 	if (devctx) {
 		log_perfc(devctx);
-		zynq_exit(devctx);
+		platform_specific_deinit(devctx);
 		platform_dev_id_t dev_id = devctx->dev_id;
 		DEVLOG(dev_id, LPLL_INIT, "destroying platform signaling ...");
 		platform_signaling_deinit(devctx->signaling);
