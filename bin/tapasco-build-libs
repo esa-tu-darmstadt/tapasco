@@ -8,6 +8,7 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', help='build mode (default: %(default)s)', default='release', choices=['clean', 'release', 'debug', 'driver_debug'])
 parser.add_argument('--rebuild', help='force rebuild libs (default: %(default)s)', action='store_true')
+parser.add_argument('--shared', help='build shared library instead of static', action='store_true')
 args = parser.parse_args()
 
 clean        = args.mode == 'clean'
@@ -28,17 +29,11 @@ if not 'TAPASCO_PLATFORM' in os.environ:
 print('Platform: ' + os.environ['TAPASCO_PLATFORM'])
 
 moddir = os.environ['TAPASCO_HOME'] + '/platform/' + os.environ['TAPASCO_PLATFORM'] + '/module'
-pdir   = os.environ['TAPASCO_HOME'] + '/platform/' + os.environ['TAPASCO_PLATFORM'] + '/build'
 
-bdir_shared   = os.environ['TAPASCO_HOME'] + '/build_shared'
-bdir_static   = os.environ['TAPASCO_HOME'] + '/build_static'
+bdir   = os.environ['TAPASCO_HOME'] + '/build'
 
 if clean or args.rebuild:
-	subprocess.call(['rm -rf ' + bdir_shared], shell=True)
-	subprocess.call(['rm -rf ' + bdir_static], shell=True)
-	subprocess.call(['rm -rf ' + pdir], shell=True)
-	subprocess.call(['rm -rf ' + adir], shell=True)
-	subprocess.call(['rm -rf ' + tdir], shell=True)
+	subprocess.call(['rm -rf ' + bdir], shell=True)
 	subprocess.call(['cd ' + moddir + ' && make clean'], shell=True)
 
 if not clean:
@@ -54,11 +49,14 @@ if not clean:
 		subprocess.call(['cd ' + moddir + ' && make ' + ('DEBUG_VERBOSE=y ' if driver_debug else ' ')], shell=True)
 	else:
 		subprocess.call(['cd ' + moddir + ' && make ' + ('' if driver_debug else 'release ')], shell=True)
-	subprocess.call(['mkdir -p ' + bdir_shared + ' && cd ' + bdir_shared + ' && cmake '
-						+ ('-DCMAKE_BUILD_TYPE=Debug' if debug else '-DCMAKE_BUILD_TYPE=Release')
-						+ '-DPLATFORM:STRING={} -DBUILD_SHARED_LIBS:BOOL=ON .. \
-						&& make && make DESTDIR={}/install install'.format(os.environ['TAPASCO_PLATFORM'], bdir_shared)], shell=True)
-	subprocess.call(['mkdir -p ' + bdir_static + ' && cd ' + bdir_static + ' && cmake '
-						+ ('-DCMAKE_BUILD_TYPE=Debug' if debug else '-DCMAKE_BUILD_TYPE=Release')
-						+ '-DPLATFORM:STRING={} -DBUILD_SHARED_LIBS:BOOL=OFF .. \
-						&& make && make DESTDIR={}/install install'.format(os.environ['TAPASCO_PLATFORM'], bdir_static)], shell=True)
+	if args.shared:
+		libtype = "ON"
+	else:
+		libtype = "OFF"
+	buildtype = "Release"
+	if args.mode == 'debug' or args.mode == 'driver_debug':
+		buildtype = "Debug"
+	subprocess.call(['mkdir -p ' + bdir + ' && cd ' + bdir + ' && cmake '
+		+ ' -DCMAKE_BUILD_TYPE={} '.format(buildtype)
+		+ ' -DPLATFORM:STRING={} -DBUILD_SHARED_LIBS:BOOL={} .. \
+		&& make && make DESTDIR={}/install install'.format(os.environ['TAPASCO_PLATFORM'], libtype, bdir)], shell=True)
