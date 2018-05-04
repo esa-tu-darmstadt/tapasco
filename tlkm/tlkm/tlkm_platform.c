@@ -13,34 +13,40 @@ int tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap)
 	u32 magic_id = 0;
 	struct platform *p = &dev->cls->platform;
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%px-0x%px for architecture",
-			(void *)p->arch.base, (void *)p->arch.high);
-	mmap->arch = ioremap_nocache(p->arch.base, p->arch.size);
+			(void *)(dev->base_offset + p->arch.base),
+			(void *)(dev->base_offset + p->arch.high));
+	mmap->arch = ioremap_nocache(dev->base_offset + p->arch.base, p->arch.size);
 	if (! mmap->arch) {
 		DEVERR(dev->dev_id,
 				"could not ioremap the AXI register space at 0x%px-0x%px",
-				(void *)p->arch.base, (void *)p->arch.high);
+				(void *)(dev->base_offset + p->arch.base),
+				(void *)(dev->base_offset + p->arch.high));
 		retval = -ENOSPC;
 		goto err_arch;
 	}
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%px-0x%px for platform",
-			(void *)p->plat.base, (void *)p->plat.high);
-	mmap->plat = ioremap_nocache(p->plat.base, p->plat.size);
+			(void *)(dev->base_offset + p->plat.base),
+			(void *)(dev->base_offset + p->plat.high));
+	mmap->plat = ioremap_nocache(dev->base_offset + p->plat.base, p->plat.size);
 	if (! mmap->plat) {
 		DEVERR(dev->dev_id,
 				"could not ioremap the AXI register space at 0x%px-0x%px",
-				(void *)p->plat.base, (void *)p->plat.high);
+				(void *)(dev->base_offset + p->plat.base),
+				(void *)(dev->base_offset + p->plat.high));
 		retval = -ENOSPC;
 		goto err_plat;
 	}
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%px-0x%px for status",
-			(void *)p->status.base, (void *)p->status.high);
-	mmap->status = ioremap_nocache(p->status.base, p->status.size);
+			(void *)(dev->base_offset + p->status.base),
+			(void *)(dev->base_offset + p->status.high));
+	mmap->status = ioremap_nocache(dev->base_offset + p->status.base, p->status.size);
 	if (! mmap->status) {
 		DEVERR(dev->dev_id,
 				"could not ioremap the AXI register space at 0x%px-0x%px",
-				(void *)p->status.base, (void *)p->status.high);
+				(void *)(dev->base_offset + p->status.base),
+				(void *)(dev->base_offset + p->status.high));
 		retval = -ENOSPC;
 		goto err_status;
 	}

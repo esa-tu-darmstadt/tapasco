@@ -100,16 +100,16 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 		goto err_control;
 	}
 
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup I/O remap regions ...");
-	if ((ret = tlkm_platform_mmap_init(dev, &dev->mmap))) {
-		DEVERR(dev->dev_id, "could not map I/O regions: %d", ret);
-		goto err_ioremap;
-	}
-
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "initializing device ...");
 	if ((ret = dev->cls->create(dev, data))) {
 		DEVERR(dev->dev_id, "failed to initialize private data struct: %d", ret);
 		goto err_priv;
+	}
+
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup I/O remap regions ...");
+	if ((ret = tlkm_platform_mmap_init(dev, &dev->mmap))) {
+		DEVERR(dev->dev_id, "could not map I/O regions: %d", ret);
+		goto err_ioremap;
 	}
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "reading address map ...");
