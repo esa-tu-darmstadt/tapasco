@@ -87,8 +87,7 @@ protected:
       while (! *stop) {
         (*c)++;
 	// up to 50ms delay
-	tapasco_res_t r = tapasco->launch_no_return(14, static_cast<uint32_t>(rand() % 5000000));
-	//tapasco_res_t r = tapasco->launch_no_return(14, static_cast<uint32_t>(1));
+	tapasco_res_t r = tapasco->launch(14, static_cast<uint32_t>(rand() % 5000000))();
 	if (r != TAPASCO_SUCCESS)
 	  throw Tapasco::tapasco_error(r);
       }
