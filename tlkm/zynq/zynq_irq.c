@@ -87,7 +87,8 @@ static irqreturn_t zynq_irq_handler_ ## N(int irq, void *dev_id) \
 		iowrite32(status, intc + (0x0c >> 2)); \
 		do { \
 			const u32 slot = __builtin_ffs(status) - 1; \
-			if (! schedule_work(&zynq_irq_work_slot[s_off + slot])) \
+			const int ok   = schedule_work(&zynq_irq_work_slot[s_off + slot]); \
+			if (! ok) \
 				tlkm_perfc_irq_error_already_pending_inc(zynq_dev->parent->dev_id); \
 			tlkm_perfc_total_irqs_inc(zynq_dev->parent->dev_id); \
 			status ^= (1U << slot); \
