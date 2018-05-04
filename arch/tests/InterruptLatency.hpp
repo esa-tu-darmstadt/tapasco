@@ -90,7 +90,7 @@ private:
       auto tstart = high_resolution_clock::now();
       // if 0, use 1us - 100ms interval (clock period is 10ns)
       uint32_t cc = clock_cycles > 0 ? clock_cycles : (rand() % (10000000 - 100) + 100);
-      if ((res = tapasco.launch_no_return(COUNTER_ID, cc)) != TAPASCO_SUCCESS)
+      if ((res = tapasco.launch(COUNTER_ID, cc)()) != TAPASCO_SUCCESS)
         throw Tapasco::tapasco_error(res);
       microseconds const d = duration_cast<microseconds>(high_resolution_clock::now() - tstart);
       cavg.update(d.count() - cc / design_clk);

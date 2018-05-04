@@ -22,7 +22,6 @@
 //!		License along with Tapasco.  If not, see
 //!		<http://www.gnu.org/licenses/>.
 //!
-//! TODO enable delayed transfers with new C API?
 #ifndef TAPASCO_HPP__
 #define TAPASCO_HPP__
 
@@ -43,10 +42,12 @@ extern "C" {
 #include <future>
 #include <cstdint>
 #include <iostream>
+#include <functional>
 
 using namespace std;
 
 namespace tapasco {
+using job_future = std::function<tapasco_res_t (void)>;
 
 /**
  * Type annotation for TAPASCO launch argument pointers: output only, i.e., only copy
@@ -57,7 +58,33 @@ namespace tapasco {
  **/
 template<typename T>
 struct OutOnly final {
-  OutOnly(T*  value) : value(value) {
+  OutOnly(T* value) : value(value) {
+    static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
+  }
+  T* value;
+};
+
+/**
+ * Type annotation for Tapasco launch argument pointers: If the first argument
+ * supplied to launch is wrapped in this type, it is assumed to be the function
+ * return value residing in the return register and its value will be copied
+ * from the return value register to the pointee after execution finishes.
+ **/
+template<typename T>
+struct RetVal final {
+  RetVal(T* value) : value(value) {
+    static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
+  }
+  T* value;
+};
+
+/**
+ * Type annotation for Tapasco launch argument pointers: If possible, data
+ * should be placed in PE-local memory (faster access).
+ **/
+template<typename T>
+struct Local final {
+  Local(T* value) : value(value) {
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
   }
   T* value;
@@ -133,99 +160,40 @@ struct Tapasco {
     _ok = true;
   }
 
-  tapasco_res_t info(platform_info_t *info) const {
+  tapasco_res_t info(platform_info_t *info) const noexcept {
     return tapasco_device_info(devctx, info);
   }
 
-  tapasco_ctx_t *context()             const { return ctx; }
-  tapasco_devctx_t *device()           const { return devctx; }
-  platform_ctx_t *platform()           const { return ctx->pctx; }
-  platform_devctx_t *platform_device() const { return devctx->pdctx; }
+  tapasco_ctx_t *context()             const noexcept { return ctx; }
+  tapasco_devctx_t *device()           const noexcept { return devctx; }
+  platform_ctx_t *platform()           const noexcept { return ctx->pctx; }
+  platform_devctx_t *platform_device() const noexcept { return devctx->pdctx; }
 
   /** Returns true, if initialization was successful and device is ready. **/
   bool is_ready() const noexcept { return _ok; }
 
-  /**
-   * Launches a job on the device and returns the result.
-   * @param k_id Kernel ID.
-   * @param ret Reference to return value (output).
-   * @param args... Parameters for launch.
-   * @return TAPASCO_SUCCESS if launch completed successfully, an error code otherwise.
-   **/
   template<typename R, typename... Targs>
-  tapasco_res_t launch(tapasco_kernel_id_t const k_id, R& ret, Targs... args) const noexcept
+  std::function<tapasco_res_t (void)> launch(tapasco_kernel_id_t const k_id, tapasco_job_id_t& j_id,
+      RetVal<R>& ret, Targs... args) noexcept
   {
-    // get a job id
-    tapasco_job_id_t j_id = 0;
-    tapasco_res_t res = tapasco_device_acquire_job_id(devctx, &j_id, k_id, TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
-    if (res != TAPASCO_SUCCESS) return res;
-
-    if ((res = set_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
-    if ((res = tapasco_device_job_launch(devctx, j_id, TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING)) != TAPASCO_SUCCESS) return res;
-    if ((res = tapasco_device_job_get_return(devctx, j_id, sizeof(ret), &ret)) != TAPASCO_SUCCESS) return res;
-    if ((res = get_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
-
-    // release job id
-    tapasco_device_release_job_id(devctx, j_id);
-    return res;
+    tapasco_res_t res { TAPASCO_SUCCESS };
+    auto mkerr = [](tapasco_res_t r) { return [r]() { return r; }; };
+    if ((res = tapasco_device_acquire_job_id(devctx, &j_id, k_id, TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING)) != TAPASCO_SUCCESS) return mkerr(res);
+    if ((res = set_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return mkerr(res);
+    if ((res = tapasco_device_job_launch(devctx, j_id, TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING)) != TAPASCO_SUCCESS) return mkerr(res);
+    return [this, j_id, &ret, &args...]() { return collect<R, Targs...>(j_id, ret, args...); };
   }
 
-  /**
-   * Launches a job on the device and returns a future to the result.
-   * @param k_id Kernel ID.
-   * @param ret Reference to return value (output).
-   * @param args... Parameters for launch.
-   * @return future with value TAPASCO_SUCCESS if launch completed successfully, an error code otherwise.
-   **/
-  template<typename R, typename... Targs>
-  future<tapasco_res_t> async_launch(tapasco_kernel_id_t const k_id, R& ret, Targs... args) const noexcept
-  {
-    return async(std::launch::async, [=, &ret]{ return launch(k_id, ret, args...); });
-  }
-
-  /**
-   * Launches a job on the device without return value.
-   * @param k_id Kernel ID.
-   * @param args... Parameters for launch.
-   * @return TAPASCO_SUCCESS if launch completed successfully, an error code otherwise.
-   **/
   template<typename... Targs>
-  tapasco_res_t launch_no_return(tapasco_kernel_id_t const k_id, Targs... args) const noexcept
+  job_future launch(tapasco_kernel_id_t const k_id, Targs... args) noexcept
   {
-    // get a job id
-    tapasco_job_id_t j_id = 0;
-    tapasco_res_t res = ::tapasco_device_acquire_job_id(devctx, &j_id, k_id, TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
-    if (res != TAPASCO_SUCCESS) return res;
-
-    if ((res = set_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
-    if ((res = tapasco_device_job_launch(devctx, j_id, TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING)) != TAPASCO_SUCCESS) return res;
-    if ((res = get_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
-
-    // release job id
-    tapasco_device_release_job_id(devctx, j_id);
-    return res;
-  }
-
-  /**
-   * Launches a job on the device without return value and returns a future to the result.
-   * @param k_id Kernel ID.
-   * @param args... Parameters for launch.
-   * @return future with value TAPASCO_SUCCESS if launch completed successfully, an error code otherwise.
-   **/
-  template<typename... Targs>
-  future<tapasco_res_t> async_launch_no_return(tapasco_kernel_id_t const k_id, Targs... args) const noexcept
-  {
-    return async(std::launch::async, [=]{ return launch_no_return(k_id, args...); });
-  }
-
-  /**
-   * Waits for a job to finish.
-   * @param j_id job id
-   * @return TAPASCO_SUCCESS, if successful, an error code otherwise.
-   **/
-  tapasco_res_t wait_for(tapasco_job_id_t const j_id) noexcept
-  {
-    return tapasco_device_job_collect(devctx, j_id);
+    tapasco_job_id_t j_id { 0 };
+    tapasco_res_t res { TAPASCO_SUCCESS };
+    auto mkerr = [](tapasco_res_t r) { return [r]() { return r; }; };
+    if ((res = tapasco_device_acquire_job_id(devctx, &j_id, k_id, TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING)) != TAPASCO_SUCCESS) return mkerr(res);
+    if ((res = set_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return mkerr(res);
+    if ((res = tapasco_device_job_launch(devctx, j_id, TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING)) != TAPASCO_SUCCESS) return mkerr(res);
+    return [this, j_id, &args...]() { return collect<Targs...>(j_id, args...); };
   }
 
   /**
@@ -297,105 +265,156 @@ struct Tapasco {
   }
 
 private:
+  /* @{ Collector methods: bottom half of job launch. */
+  /** Waits for the job, fetches data from registers and releases the job (w/return). */
+  template<typename R, typename... Targs>
+  tapasco_res_t collect(const tapasco_job_id_t j_id, RetVal<R>& ret, Targs... args) noexcept
+  {
+    tapasco_res_t res { TAPASCO_SUCCESS };
+    if ((res = tapasco_device_job_collect(devctx, j_id)) != TAPASCO_SUCCESS) return res;
+    if ((res = tapasco_device_job_get_return(devctx, j_id, sizeof(ret), &ret)) != TAPASCO_SUCCESS) return res;
+    if ((res = get_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
+    tapasco_device_release_job_id(devctx, j_id);
+    return res;
+  }
+
+  /** Waits for the job, fetches data from registers and releases the job (no return). */
+  template<typename... Targs>
+  tapasco_res_t collect(const tapasco_job_id_t j_id, Targs... args) noexcept
+  {
+    tapasco_res_t res { TAPASCO_SUCCESS };
+    if ((res = tapasco_device_job_collect(devctx, j_id)) != TAPASCO_SUCCESS) return res;
+    if ((res = get_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
+    tapasco_device_release_job_id(devctx, j_id);
+    return res;
+  }
+  /* Collector methods: bottom half of job launch. @} */
+
+  /* @{ Setters for register values */
   /** Sets a single value argument. **/
   template<typename T>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t const arg_idx, T const t) const noexcept
+  tapasco_res_t set_arg(tapasco_job_id_t const j_id, size_t const arg_idx, T const t) noexcept
   {
     // only 32/64bit values can be passed directly (i.e., via register)
     if (sizeof(T) > sizeof(uint64_t))
-      return set_args(j_id, arg_idx, &t);
+      return set_arg(j_id, arg_idx, &t);
     else
       return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(t), &t);
   }
 
+  /** Sets local memory flag for transfer. */
+  template<typename T>
+  tapasco_res_t set_arg(
+      tapasco_job_id_t const j_id,
+      size_t const arg_idx,
+      Local<T> t,
+      const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
+      const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
+    ) noexcept
+  {
+    return set_arg(j_id, arg_idx, t.value, flags | TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL, copy_flags);
+  }
+
   /** Sets a single output-only pointer argument (alloc only). **/
   template<typename T>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t const arg_idx, OutOnly<T> t) const noexcept
+  tapasco_res_t set_arg(
+      tapasco_job_id_t const j_id,
+      size_t const arg_idx,
+      OutOnly<T> t,
+      const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
+      const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
+    ) noexcept
   {
-    tapasco_handle_t h { 0 };
-    tapasco_res_t r;
-    if ((r = tapasco_device_alloc(devctx, &h, sizeof(*t.value), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
-    return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(h), &h);
+    return set_arg(j_id, arg_idx, t.value, flags, TAPASCO_COPY_DIRECTION_FROM);
   }
 
   /** Sets a single pointer argument (alloc + copy). **/
   template<typename T>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t const arg_idx, T* t) const noexcept
+  tapasco_res_t set_arg(
+      tapasco_job_id_t const j_id,
+      size_t const arg_idx,
+      T* t,
+      const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
+      const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
+    ) noexcept
   {
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
-    tapasco_handle_t h { 0 };
-    tapasco_res_t r;
-    if ((r = tapasco_device_alloc(devctx, &h, sizeof(*t), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
-    if ((r = tapasco_device_copy_to(devctx, t, h, sizeof(*t), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
-    return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(h), &h);
+    return tapasco_device_job_set_arg_transfer(devctx, j_id, arg_idx, sizeof(*t), t, flags, copy_flags);
   }
 
   /** Sets a single const pointer argument (alloc + copy). **/
   template<typename T>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t const arg_idx, const T* t) const noexcept
+  tapasco_res_t set_arg(
+      tapasco_job_id_t const j_id,
+      size_t const arg_idx,
+      const T* t,
+      const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
+      const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_TO
+    ) noexcept
   {
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
-    tapasco_handle_t h { 0 };
-    tapasco_res_t r;
-    if ((r = tapasco_device_alloc(devctx, &h, sizeof(*t), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
-    if ((r = tapasco_device_copy_to(devctx, t, h, sizeof(*t), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
-    return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(h), &h);
+    return tapasco_device_job_set_arg_transfer(devctx, j_id, arg_idx, sizeof(*t), (void *)t, flags, TAPASCO_COPY_DIRECTION_TO);
+  }
+
+  template<typename T>
+  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t arg_idx, T t) noexcept
+  {
+    return set_arg(j_id, arg_idx, t);
   }
 
   /** Variadic: recursively sets all given arguments. **/
   template<typename T, typename... Targs>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t arg_idx, T t, Targs... args) const noexcept
+  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t arg_idx, T t, Targs... args) noexcept
   {
     tapasco_res_t r;
-    if ((r = set_args(j_id, arg_idx, t)) != TAPASCO_SUCCESS) return r;
+    if ((r = set_arg(j_id, arg_idx, t)) != TAPASCO_SUCCESS) return r;
     return set_args(j_id, arg_idx + 1, args...);
   }
+  /* Setters for register values @} */
 
+  /* @{ Getters for register values */
   /** Gets a single value argument. **/
   template<typename T>
-  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T const t) const noexcept {
+  tapasco_res_t get_arg(tapasco_job_id_t const j_id, size_t const arg_idx, T const t) noexcept {
     return TAPASCO_SUCCESS;
   }
 
   /** Gets a single output-only argument (copy + dealloc). **/
   template<typename T>
-  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, OutOnly<T> t) const noexcept {
-    return get_args(j_id, arg_idx, t.value);
+  tapasco_res_t get_arg(tapasco_job_id_t const j_id, size_t const arg_idx, OutOnly<T> t) noexcept {
+    return TAPASCO_SUCCESS;
+  }
+
+  template<typename T>
+  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, Local<T> t) noexcept {
+    return TAPASCO_SUCCESS;
   }
 
   /** Gets a single pointer argument (copy + dealloc). **/
   template<typename T>
-  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T* t) const noexcept
+  tapasco_res_t get_arg(tapasco_job_id_t const j_id, size_t const arg_idx, T* t) noexcept
   {
-    static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
-    tapasco_handle_t h;
-    tapasco_res_t r;
-    if ((r = tapasco_device_job_get_arg(devctx, j_id, arg_idx, sizeof(h), &h)) != TAPASCO_SUCCESS) return r;
-    if ((r = tapasco_device_copy_from(devctx, h, (void *)t, sizeof(*t), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
-    tapasco_device_free(devctx, h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+    if (sizeof(*t) <= 8) {
+      return tapasco_device_job_get_arg(devctx, j_id, arg_idx, sizeof(*t), t);
+    }
     return TAPASCO_SUCCESS;
   }
 
-  /** Gets a single const pointer argument (dealloc only). **/
   template<typename T>
-  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T const* t) const noexcept
+  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T t) noexcept
   {
-    static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
-    tapasco_handle_t h;
-    tapasco_res_t r;
-    if ((r = tapasco_device_job_get_arg(devctx, j_id, arg_idx, sizeof(h), &h)) != TAPASCO_SUCCESS) return r;
-    tapasco_device_free(devctx, h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
-    return TAPASCO_SUCCESS;
+    return get_arg(j_id, arg_idx, t);
   }
 
   /** Variadic: recursively gets all given arguments. **/
   template<typename T, typename... Targs>
-  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T t, Targs... args) const noexcept
+  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T t, Targs... args) noexcept
   {
     tapasco_res_t r;
-    if ((r = get_args(j_id, arg_idx, t)) != TAPASCO_SUCCESS) return r;
+    if ((r = get_arg(j_id, arg_idx, t)) != TAPASCO_SUCCESS) return r;
     return get_args(j_id, arg_idx + 1, args...);
   }
+  /* Getters for register values @} */
 
   bool _ok { false };
   tapasco_ctx_t* ctx { nullptr };
@@ -405,3 +424,4 @@ private:
 } /* namespace tapasco */
 
 #endif /* TAPASCO_HPP__ */
+/* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

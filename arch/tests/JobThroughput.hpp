@@ -81,36 +81,34 @@ private:
   void run(void) {
     tapasco_res_t res;
     while (! stop) {
-      if ((res = tapasco.launch_no_return(COUNTER_ID, 1U)) != TAPASCO_SUCCESS)
+      if ((res = tapasco.launch(COUNTER_ID, 1U)()) != TAPASCO_SUCCESS)
         throw Tapasco::tapasco_error(res);
       jobs++;
     }
   }
 
   void run2() {
-    tapasco_res_t res;
-    tapasco_devctx_t *dev_ctx = tapasco.device();
-    unsigned long const d = 1U;
     while (! stop) {
-      tapasco_job_id_t j_id;
-      res = tapasco_device_acquire_job_id(dev_ctx, &j_id, COUNTER_ID, TAPASCO_DEVICE_ACQUIRE_JOB_ID_FLAGS_NONE);
-      if (res != TAPASCO_SUCCESS) throw Tapasco::tapasco_error(res);
-      res = tapasco_device_job_set_arg(dev_ctx, j_id, 0, sizeof(d), &d);
-      if (res != TAPASCO_SUCCESS) throw Tapasco::tapasco_error(res);
-      tapasco_device_job_launch(dev_ctx, j_id, TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING);
-      gq_enqueue(q, (void *)j_id);
+      job_future *p = new job_future { tapasco.launch(COUNTER_ID, 0) };
+      gq_enqueue(q, p);
     }
   }
 
+  void run3() {
+    tapasco_job_id_t j_id { 0 };
+    uint32_t r { 0 };
+    RetVal<uint32_t> ret { &r };
+    tapasco.launch(COUNTER_ID, j_id, ret, 0)();
+  }
+
   void collect(void) {
-    tapasco_job_id_t j_id;
-    tapasco_res_t res;
+    job_future *jf { nullptr };
     while (! stop) {
-      while ((j_id = (tapasco_job_id_t)gq_dequeue(q))) {
-        if ((res = tapasco.wait_for(j_id)) != TAPASCO_SUCCESS) {
+      tapasco_res_t res { TAPASCO_SUCCESS };
+      while ((jf = (job_future *)gq_dequeue(q))) {
+        if ((res = (*jf)()) != TAPASCO_SUCCESS) {
           throw Tapasco::tapasco_error(res);
 	}
-	tapasco_device_release_job_id(tapasco.device(), j_id);
 	++jobs;
       }
     }
