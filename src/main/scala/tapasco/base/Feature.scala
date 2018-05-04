@@ -15,7 +15,7 @@
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
-//
+//props
 /**
  * @file    Feature.scala
  * @brief   TPC Architecture / Platform features.
@@ -23,18 +23,52 @@
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
 
-sealed case class Feature(val name: String, val props: Map[String, String]) {
-  def unapply: Option[(String, Map[String, String])] = Some((name, props))
+sealed case class Feature(val name: String, val props: Feature.FMap) {
+  def unapply: Option[(String, Feature.FMap)] = Some((name, props))
 }
 
 object Feature {
-  def apply(name: String, props: Map[String, String]): Feature = {
-    val lp = props map { case (k, v) => k.toLowerCase -> v }
+  def apply(name: String, props: FMap): Feature = {
+    val lp = props.value map { case (k, v) => k.toLowerCase -> v }
     new Feature(
       name,
-      if (lp.get("enabled").nonEmpty) lp else lp + ("enabled" -> "true")
+      if (lp.get("enabled").nonEmpty) FMap(lp) else FMap(lp + ("enabled" -> FString("true")))
     )
   }
 
-  def unapply(f: Feature): Option[(String, Map[String, String])] = f.unapply
+  def unapply(f: Feature): Option[(String, FMap)] = f.unapply
+
+  sealed trait FValue {
+    def value: Any
+    def toTCL: String
+    def toJson: String
+  }
+
+  case class FMap(in : Map[String, FValue]) extends FValue{
+    override def value: Map[String, FValue]  = in
+    override def toTCL:  String = {
+      val map = for{(k, v) <- in} yield s""""$k " ${v.toTCL}"""
+        "{" + map + "}"
+    }
+    override def toJson: String = {
+      val map = for{(k, v) <- in} yield s"$k : ${v.toJson}"
+      "{\n" + map + "}\n"
+    }
+  }
+  case class FList(in: List[FValue]) extends FValue{
+    override def value: List[FValue] = in
+    override def toTCL:  String = {
+      val list = for{j <- in}yield s"${j.toTCL}"
+      "{" + list +"}"
+    }
+    override def toJson: String = {
+      val list = for{j <- in}yield s"${j.toJson}, "
+        "[" + list + "]"
+    }
+  }
+  case class FString(in : String) extends FValue{
+    override def value:  String = in
+    override def toTCL:  String = s""""$in""""
+    override def toJson: String = in + ", "
+  }
 }
