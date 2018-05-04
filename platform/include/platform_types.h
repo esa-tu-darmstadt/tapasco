@@ -40,6 +40,7 @@ typedef enum {
 
 /** Public result type. */
 typedef ssize_t platform_res_t;
+#define PRIres							"%zd"
 
 /** Platform context: opaque forward declaration. */
 typedef struct platform_ctx platform_ctx_t;
@@ -49,18 +50,26 @@ typedef struct platform_devctx platform_devctx_t;
 
 /** Platform device id type. */
 typedef uint32_t platform_dev_id_t;
+#define PRIdev							"%02u"
 
 /** Device register space address type (opaque). **/
 typedef uint32_t platform_ctl_addr_t;
+#define PRIctl							"%#08x"
 
 /** Device memory space address type (opaque). **/
 typedef uint32_t platform_mem_addr_t;
+#define PRImem							"%#08x"
 
 /** Identifies a slot in the design, i.e., a Function. **/
 typedef uint32_t platform_slot_id_t;
+#define PRIslot							"%03u"
 
 /** Type used to identify kernels. **/
 typedef uint32_t platform_kernel_id_t;
+#define PRIkernel						"%u"
+
+#define CSTflags						unsigned long
+#define PRIflags						"%#08lx"
 
 /**
  * Device access types:

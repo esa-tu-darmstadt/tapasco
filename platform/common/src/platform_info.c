@@ -73,30 +73,26 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 	r = platform_read_ctl(p, status + _name, sizeof(info->_field), \
 			&(info->_field), PLATFORM_CTL_FLAGS_NONE); \
 	if (r != PLATFORM_SUCCESS) { \
-		ERR("device #%03u: could not read _name: %s (%d)", dev_id, platform_strerror(r), r); \
+		DEVERR(dev_id, "could not read _name: %s (" PRIres ")", platform_strerror(r), r); \
 		return r; \
 	} \
-	LOG(LPLL_STATUS, "device #%03u: read " STRINGIFY(_name) ": 0x%08x", dev_id, info->_field);
+	DEVLOG(dev_id, LPLL_STATUS, "read " STRINGIFY(_name) ": %#08x", info->_field);
 	PLATFORM_STATUS_REGISTERS
 #undef _X
 	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
 		platform_ctl_addr_t const rk = status + REG_KERNEL_ID_START + s * REG_SLOT_OFFSET;
 		r = platform_read_ctl(p, rk, sizeof(uint32_t), &(info->composition.kernel[s]), 0);
 		if (r != PLATFORM_SUCCESS) {
-			ERR("device #%03u: could not read kernel id at slot %lu: %s (%d)",
-					dev_id,
-					(unsigned long)s,
-					platform_strerror(r), r);
+			DEVERR(dev_id, "could not read kernel id at slot " PRIslot ": %s (" PRIres ")",
+					s, platform_strerror(r), r);
 			return r;
 		}
 		platform_ctl_addr_t const rm = status + REG_LOCAL_MEM_START + s * REG_SLOT_OFFSET;
 		r = platform_read_ctl(p, rm, sizeof(info->composition.memory[s]),
 				&(info->composition.memory[s]), PLATFORM_CTL_FLAGS_NONE);
 		if (r != PLATFORM_SUCCESS) {
-			ERR("device #%03u: could not read memory at slot %lu: %s (%d)",
-					dev_id,
-					(unsigned long)s,
-					platform_strerror(r), r);
+			DEVERR(dev_id, "could not read memory at slot " PRIslot ": %s (" PRIres ")",
+					s, platform_strerror(r), r);
 			return r;
 		}
 
@@ -109,26 +105,21 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 					&(info->base.platform[s]),
 					PLATFORM_CTL_FLAGS_NONE);
 			if (r != PLATFORM_SUCCESS) {
-				ERR("device #%03u: could not read platform base %lu: %s (%d)",
-						dev_id,
-						(unsigned long)s,
-						platform_strerror(r), r);
+				DEVERR(dev_id, "could not read platform base " PRIslot ": %s (" PRIres ")",
+						s, platform_strerror(r), r);
 				return r;
 			} 
 
 			platform_ctl_addr_t const ab = status + REG_ARCH_BASE_START + s * sizeof(uint64_t);
 			r = platform_read_ctl(p, ab, sizeof(info->base.arch[s]), &(info->base.arch[s]), 0);
 			if (r != PLATFORM_SUCCESS) {
-				ERR("device #%03u: could not read platform base %lu: %s (%d)",
-						dev_id,
-						(unsigned long)s,
-						platform_strerror(r), r);
+				DEVERR(dev_id, "could not read platform base " PRIslot ": %s (" PRIres ")",
+						s, platform_strerror(r), r);
 				return r;
 			} 
 		} else {
-			ERR("device #%03u: loaded bitstream does not support dynamic address map - "
-			    "please use a libplatform version < 1.5 with this bitstream",
-			    dev_id);
+			DEVERR(dev_id, "loaded bitstream does not support dynamic address map - "
+			    "please use a libplatform version < 1.5 with this bitstream");
 			return PERR_INCOMPATIBLE_BITSTREAM;
 		}
 
@@ -144,28 +135,20 @@ void log_device_info(platform_info_t const *info)
 	#undef _X
 #endif
 #define _X(name, value, field) \
-	LOG(LPLL_STATUS, "" STRINGIFY(field) " = 0x%08lx", (unsigned long)info->field);
+	LOG(LPLL_STATUS, "" STRINGIFY(field) " = %#08lx", (unsigned long)info->field);
 	PLATFORM_STATUS_REGISTERS
 #undef _X
 	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
 		if (info->composition.kernel[s])
-			LOG(LPLL_STATUS, "slot #%lu: kernel id 0x%08x (%u)",
-					(unsigned long)s,
-					(unsigned)info->composition.kernel[s],
-					(unsigned long)info->composition.kernel[s]);
+			LOG(LPLL_STATUS, "slot #" PRIslot ": kernel id %#08x (" PRIkernel ")",
+					s, (unsigned)info->composition.kernel[s], info->composition.kernel[s]);
 		if (info->composition.memory[s])
-			LOG(LPLL_STATUS, "slot #%lu: memory    0x%08x (%u)",
-					(unsigned long)s,
-					(unsigned)info->composition.memory[s],
-					(unsigned long)info->composition.memory[s]);
+			LOG(LPLL_STATUS, "slot #" PRIslot ": memory    %#08x (%zu)",
+					s, (unsigned)info->composition.memory[s], (size_t)info->composition.memory[s]);
 		if (info->base.platform[s])
-			LOG(LPLL_STATUS, "platform base #%lu: 0x%08lx",
-					(unsigned long)s,
-					(unsigned long)info->base.platform[s]);
+			LOG(LPLL_STATUS, "platform base #" PRIslot ": %#08lx", s, (unsigned long)info->base.platform[s]);
 		if (info->base.arch[s])
-			LOG(LPLL_STATUS, "arch     base #%lu: 0x%08lx",
-					(unsigned long)s,
-					(unsigned long)info->base.arch[s]);
+			LOG(LPLL_STATUS, "arch     base #" PRIslot ": %#08lx", s, (unsigned long)info->base.arch[s]);
 	}
 #endif
 }
@@ -178,10 +161,10 @@ platform_res_t platform_info(platform_devctx_t const *ctx, platform_info_t *info
 	assert(info);
 	assert(dev_id < PLATFORM_MAX_DEVS);
 	if (! _info[dev_id].magic_id) {
-		LOG(LPLL_STATUS, "device #%03u: reading device info ..." , dev_id);
+		DEVLOG(dev_id, LPLL_STATUS, "reading device info ...");
 		r = read_info_from_status_core(ctx, &_info[dev_id]);
 		if (r == PLATFORM_SUCCESS) {
-			LOG(LPLL_STATUS, "device #%03u: read device info successfully", dev_id);
+			DEVLOG(dev_id, LPLL_STATUS, "read device info successfully");
 			log_device_info(&_info[dev_id]);
 		}
 	}

@@ -40,7 +40,7 @@ platform_res_t platform_devctx_init(platform_ctx_t *ctx,
 	default_dops(&devctx->dops);
 
 	if ((res = platform_device_info(ctx, dev_id, &devctx->dev_info)) != PLATFORM_SUCCESS) {
-		DEVERR(dev_id, "could not get device information: %s (%d)", platform_strerror(res), res);
+		DEVERR(dev_id, "could not get device information: %s (" PRIres ")", platform_strerror(res), res);
 		free (devctx);
 		free(fn);
 		return res;
@@ -56,20 +56,20 @@ platform_res_t platform_devctx_init(platform_ctx_t *ctx,
 	free(fn);
 
 	if ((res = platform_info(devctx, &devctx->info)) != PLATFORM_SUCCESS) {
-		DEVERR(dev_id, "could not get device info: %s (%d)", platform_strerror(res), res);
+		DEVERR(dev_id, "could not get device info: %s (" PRIres ")", platform_strerror(res), res);
 		goto err_info;
 	}
 
 	res = platform_addr_map_init(devctx, &devctx->info, &devctx->addrmap);
 	if (res != PLATFORM_SUCCESS) {
-		DEVERR(dev_id, "could not initialize platform address map: %s (%d)", platform_strerror(res), res);
+		DEVERR(dev_id, "could not initialize platform address map: %s (" PRIres ")", platform_strerror(res), res);
 		goto err_addr_map;
 	}
 	DEVLOG(dev_id, LPLL_INIT, "initialized device address map");
 
 	res = platform_signaling_init(devctx, &devctx->signaling);
 	if (res != PLATFORM_SUCCESS) {
-		DEVERR(dev_id, "could not initialize signaling: %s (%d)", platform_strerror(res), res);
+		DEVERR(dev_id, "could not initialize signaling: %s (" PRIres ")", platform_strerror(res), res);
 		goto err_signaling;
 	}
 	DEVLOG(dev_id, LPLL_INIT, "initialized device signaling");
@@ -108,7 +108,7 @@ void log_perfc(platform_devctx_t *devctx)
 	}
 	platform_perfc_slot_interrupts_active_set(devctx->dev_id, slots_active);
 #ifndef NPERFC
-	fprintf(stderr, "platform device #%02u performance counters:\n%s",
+	fprintf(stderr, "platform device #" PRIdev_id " performance counters:\n%s",
 			devctx->dev_id, platform_perfc_tostring(devctx->dev_id));
 	#define BUFSZ (1 << 12)
 	char *fn = perfc_file(devctx->dev_id);

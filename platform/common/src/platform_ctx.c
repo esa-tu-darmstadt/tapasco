@@ -54,7 +54,7 @@ platform_res_t get_dev(platform_ctx_t *ctx,
 		platform_device_info_t *info)
 {
 	if (dev_id >= ctx->num_devs) {
-		ERR("unknown device #%02u", dev_id);
+		ERR("unknown device #" PRIdev, dev_id);
 		return PERR_NO_SUCH_DEVICE;
 	}
 	memcpy(info, &ctx->devs[dev_id], sizeof(*info));
@@ -77,7 +77,7 @@ platform_res_t init_platform(platform_ctx_t *ctx)
 	if (enum_devs(ctx)) goto err_ioctl;
 	LOG(LPLL_TLKM, "found %zu TaPaSCo devices:", ctx->num_devs);
 	for (size_t i = 0; i < ctx->num_devs; ++i) {
-		LOG(LPLL_TLKM, "  device #%02u: %s (%04x:%04x)", i, ctx->devs[i].name,
+		LOG(LPLL_TLKM, "  device #" PRIdev ": %s (%04x:%04x)", i, ctx->devs[i].name,
 				ctx->devs[i].vendor_id, ctx->devs[i].product_id);
 	}
 
@@ -121,7 +121,7 @@ platform_res_t _platform_init(const char *const version, platform_ctx_t **ctx)
 	}
 
 	if ((r = init_platform(*ctx)) != PLATFORM_SUCCESS) {
-		ERR("failed to initialize platform: %s (%d)", platform_strerror(r), r);
+		ERR("failed to initialize platform: %s (" PRIres ")", platform_strerror(r), r);
 		goto err_init;
 	}
 
@@ -173,17 +173,17 @@ platform_res_t platform_create_device(platform_ctx_t *ctx,
 		.access = mode,
 	};
 	if ((r = ioctl(ctx->fd_tlkm, TLKM_IOCTL_CREATE_DEVICE, &c))) {
-		ERR("could not create device #%02u: %s (%d)", dev_id, strerror(errno), errno);
+		ERR("could not create device #" PRIdev ": %s (%d)", dev_id, strerror(errno), errno);
 		return PERR_TLKM_ERROR;
 	}
-	LOG(LPLL_TLKM, "created device #%02u, initializing device context ...");
+	LOG(LPLL_TLKM, "created device #" PRIdev ", initializing device context ...");
 	if ((res = platform_devctx_init(ctx, dev_id, mode, &ctx->devctx[dev_id])) != PLATFORM_SUCCESS) {
-		ERR("could not initialize device context for #%02u: %s (%d)",
+		ERR("could not initialize device context for #" PRIdev ": %s (" PRIres ")",
 				dev_id, platform_strerror(res), res);
 		goto err_pdev;
 	}
 	if (pdctx) *pdctx = ctx->devctx[dev_id];
-	LOG(LPLL_DEVICE, "successfully initialized device #%02u", dev_id);
+	LOG(LPLL_DEVICE, "successfully initialized device #" PRIdev, dev_id);
 	return PLATFORM_SUCCESS;
 
 err_pdev:
@@ -206,9 +206,9 @@ void platform_destroy_device_by_id(platform_ctx_t *ctx, platform_dev_id_t const 
 	platform_devctx_deinit(ctx->devctx[dev_id]);
 	ctx->devctx[dev_id] = NULL;
 	if ((r = ioctl(ctx->fd_tlkm, TLKM_IOCTL_DESTROY_DEVICE, &c))) {
-		ERR("could not destroy device #%02u: %s (%d)", dev_id, strerror(errno), errno);
+		ERR("could not destroy device #" PRIdev ": %s (%d)", dev_id, strerror(errno), errno);
 	} else {
-		LOG(LPLL_DEVICE, "device #%02u destroyed", dev_id);
+		LOG(LPLL_DEVICE, "device #" PRIdev " destroyed", dev_id);
 	}
 }
 

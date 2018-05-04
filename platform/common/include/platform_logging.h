@@ -27,6 +27,8 @@
 #ifndef PLATFORM_LOGGING_H__
 #define PLATFORM_LOGGING_H__
 
+#include <platform_types.h>
+
 #define LIBPLATFORM_LOGLEVELS \
 	_LPLL(TLKM,	(1 << 1)) \
 	_LPLL(DEVICE,	(1 << 2)) \
@@ -49,9 +51,11 @@ LIBPLATFORM_LOGLEVELS
 int platform_logging_init(void);
 void platform_logging_deinit(void);
 
+#define DEV_PREFIX		"device #" PRIdev
+
 #define LOG(l, msg, ...) 	platform_log((platform_ll_t)(l), "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
 #define DEVLOG(dev_id, l, msg, ...) \
-		platform_log((platform_ll_t)(l), "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+		platform_log((platform_ll_t)(l), DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 
 #ifdef NDEBUG
 	#include <stdio.h>
@@ -60,9 +64,9 @@ void platform_logging_deinit(void);
 	#define WRN(msg, ...)		fprintf(stderr, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
 
 	#define DEVERR(dev_id, msg, ...) \
-			fprintf(stderr, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+			fprintf(stderr, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 	#define DEVWRN(dev_id, l, msg, ...) \
-			fprintf(stderr, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+			fprintf(stderr, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 
 	static inline void platform_log(platform_ll_t const level, char *fmt, ...) {}
 #else /* !NDEBUG */
@@ -71,9 +75,9 @@ void platform_logging_deinit(void);
 	#define WRN(msg, ...)	 	platform_log((platform_ll_t)1, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
 
 	#define DEVERR(dev_id, msg, ...) \
-			platform_log((platform_ll_t)0, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+			platform_log((platform_ll_t)0, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 	#define DEVWRN(dev_id, msg, ...) \
-			platform_log((platform_ll_t)1, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+			platform_log((platform_ll_t)1, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 
 	void platform_log(platform_ll_t const level, char *fmt, ...);
 #endif
