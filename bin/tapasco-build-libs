@@ -5,6 +5,10 @@ import subprocess
 from   socket import gethostname
 import os
 
+tools        = ['tapasco-debug', 'tapasco-benchmark']
+default_cmd  = 'mkdir -p {0} && cd {0} && cmake {1} .. && make -j install'
+tlkm_cmd     = 'cd {0} && make -j {1}'
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', help='build mode (default: %(default)s)', default='release', choices=['clean', 'release', 'debug', 'driver_debug'])
 parser.add_argument('--rebuild', help='force rebuild libs (default: %(default)s)', action='store_true')
@@ -13,20 +17,24 @@ args = parser.parse_args()
 clean        = args.mode == 'clean'
 debug        = args.mode == 'debug' or args.mode == 'driver_debug'
 driver_debug = args.mode == 'driver_debug'
+debug_flags  = '' if debug else '-DCMAKE_BUILD_TYPE=Release'
 
 print 'Build mode: ' + args.mode
 
-mdir   = os.environ['TAPASCO_HOME'] + '/tlkm'
-pdir   = os.environ['TAPASCO_HOME'] + '/platform/build'
-adir   = os.environ['TAPASCO_HOME'] + '/arch/build'
-tdir   = os.environ['TAPASCO_HOME'] + '/arch/tests/build'
+mdir = '%s/bin'			% os.environ['TAPASCO_HOME']
+mdir = '%s/tlkm'		% os.environ['TAPASCO_HOME']
+pdir = '%s/platform/build'	% os.environ['TAPASCO_HOME']
+adir = '%s/arch/build'		% os.environ['TAPASCO_HOME']
+tdir = '%s/arch/tests/build'	% os.environ['TAPASCO_HOME']
+ldir = '%s/lib'			% os.environ['TAPASCO_HOME']
 
 if clean or args.rebuild:
-	subprocess.call(['rm -rf ' + pdir], shell=True)
-	subprocess.call(['rm -rf ' + adir], shell=True)
-	subprocess.call(['rm -rf ' + tdir], shell=True)
-	subprocess.call(['rm -rf $TAPASCO/home/arch/lib $TAPASCO_HOME/platform/lib'], shell=True)
-	subprocess.call(['cd ' + mdir + ' && make clean'], shell=True)
+	subprocess.call(['rm -rf %s' % pdir], shell=True)
+	subprocess.call(['rm -rf %s' % adir], shell=True)
+	subprocess.call(['rm -rf %s' % tdir], shell=True)
+	subprocess.call(['rm -rf %s' % ldir], shell=True)
+	subprocess.call(['rm -f %s' % ' '.join(["%s" % tool for tool in tools])], shell=True);
+	subprocess.call(['cd %s && make clean' % mdir], shell=True)
 
 if not clean:
 	if debug:
@@ -36,7 +44,8 @@ if not clean:
 
 	if 'LINUX_HOME' in os.environ:
 		subprocess.call(['make -C ' + os.environ['LINUX_HOME'] + ' scripts'], shell=True)
-	subprocess.call(['cd ' + mdir + ' && make -j ' + ('' if driver_debug else 'release ')], shell=True)
-	subprocess.call(['mkdir -p ' + pdir + ' && cd ' + pdir + ' && cmake ' + ('' if debug else '-DCMAKE_BUILD_TYPE=Release') + ' .. && make -j install'], shell=True)
-	subprocess.call(['mkdir -p ' + adir + ' && cd ' + adir + ' && cmake ' + ('' if debug else '-DCMAKE_BUILD_TYPE=Release') + ' .. && make -j install'], shell=True)
-	subprocess.call(['mkdir -p ' + tdir + ' && cd ' + tdir + ' && cmake ' + ('' if debug else '-DCMAKE_BUILD_TYPE=Release') + ' .. && make -j install'], shell=True)
+	
+	subprocess.call([tlkm_cmd.format(mdir, '' if driver_debug else 'release')], shell=True)
+	cmd = ' && '.join([default_cmd.format(d, debug_flags) for d in [pdir, adir, tdir]])
+	print(cmd)
+	subprocess.call([cmd], shell=True)
