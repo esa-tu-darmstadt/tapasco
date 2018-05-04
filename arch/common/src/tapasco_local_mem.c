@@ -37,8 +37,9 @@ typedef struct {
 } address_space_t;
 
 struct tapasco_local_mem {
-	address_space_t as[PLATFORM_NUM_SLOTS];
-	block_t *lmem[PLATFORM_NUM_SLOTS];
+	tapasco_dev_id_t 				dev_id;
+	address_space_t 				as[PLATFORM_NUM_SLOTS];
+	block_t 					*lmem[PLATFORM_NUM_SLOTS];
 };
 
 static inline
@@ -47,7 +48,7 @@ size_t get_slot_mem(tapasco_devctx_t *devctx, tapasco_slot_id_t const slot_id)
 	if (devctx->info.magic_id != TAPASCO_MAGIC_ID) {
 		platform_res_t r = platform_info(devctx->pdctx, &devctx->info);
 		if (r != PLATFORM_SUCCESS) {
-			ERR("failed to get device info: %s (%d)", platform_strerror(r), r);
+			DEVERR(devctx->id, "failed to get device info: %s (" PRIres ")", platform_strerror(r), r);
 			return TAPASCO_ERR_PLATFORM_FAILURE;
 		}
 	}
@@ -57,13 +58,14 @@ size_t get_slot_mem(tapasco_devctx_t *devctx, tapasco_slot_id_t const slot_id)
 tapasco_res_t tapasco_local_mem_init(tapasco_devctx_t *devctx,
 		tapasco_local_mem_t **lmem)
 {
-	LOG(LALL_MEM, "initialzing ...");
+	LOG(LALL_MEM, "initializing ...");
 	*lmem = (tapasco_local_mem_t *)calloc(sizeof(tapasco_local_mem_t), 1);
 	if (! *lmem) return TAPASCO_ERR_OUT_OF_MEMORY;
+	(*lmem)->dev_id = devctx->id;
 	addr_t base = 0;
-	for (size_t idx = 0; idx < PLATFORM_NUM_SLOTS; ++idx) {
+	for (tapasco_slot_id_t idx = 0; idx < TAPASCO_NUM_SLOTS; ++idx) {
 		size_t const sz = get_slot_mem(devctx, idx);
-		LOG(LALL_MEM, "memory size for slot_id #%zd: %zd bytes", idx, sz);
+		DEVLOG(devctx->id, LALL_MEM, "memory size for slot_id #" PRIslot ": %zd bytes", idx, sz);
 		(*lmem)->lmem[idx] = sz > 0 ? gen_mem_create(base, sz) : NULL;
 		(*lmem)->as[idx].base = base;
 		(*lmem)->as[idx].high = base + sz;
@@ -75,8 +77,9 @@ tapasco_res_t tapasco_local_mem_init(tapasco_devctx_t *devctx,
 
 void tapasco_local_mem_deinit(tapasco_local_mem_t *lmem)
 {
+	const tapasco_dev_id_t d = lmem->dev_id;
 	free(lmem);
-	LOG(LALL_MEM, "destroyed");
+	DEVLOG(d, LALL_MEM, "destroyed");
 }
 
 tapasco_res_t tapasco_local_mem_alloc(tapasco_local_mem_t *lmem,
@@ -89,16 +92,16 @@ tapasco_res_t tapasco_local_mem_alloc(tapasco_local_mem_t *lmem,
 		*h = gen_mem_malloc(&lmem->lmem[slot_id], sz);
 		++slot_id;
 	}
-	LOG(LALL_MEM, "request to allocate %zd bytes for slot_id #%d -> 0x%08lx",
-			sz, slot_id, (unsigned long)*h);
+	DEVLOG(lmem->dev_id, LALL_MEM, "request to allocate %zd bytes for slot_id #" PRIslot "-> " PRIhandle,
+			sz, slot_id, *h);
 	return *h != INVALID_ADDRESS ? TAPASCO_SUCCESS : TAPASCO_ERR_OUT_OF_MEMORY;
 }
 
 void tapasco_local_mem_dealloc(tapasco_local_mem_t *lmem,
 		tapasco_slot_id_t slot_id, tapasco_handle_t h, size_t sz)
 {
-	LOG(LALL_MEM, "request to free %zd bytes at slot_id #%d:0x%08lx",
-			sz, slot_id, (unsigned long)h);
+	DEVLOG(lmem->dev_id, LALL_MEM, "request to free %zd bytes at slot_id #" PRIslot ": " PRIhandle,
+			sz, slot_id, h);
 	++slot_id;
 	while (lmem->lmem[slot_id] && h > lmem->as[slot_id].high) slot_id++;
 	if (lmem->lmem[slot_id]) gen_mem_free(&lmem->lmem[slot_id], h, sz);
@@ -124,10 +127,9 @@ tapasco_handle_t tapasco_local_mem_get_slot_and_base(tapasco_local_mem_t *lmem,
 		addr_t const elem)
 {
 	while (elem > lmem->as[*slot_id].high) {
-		LOG(LALL_MEM, "local mem high address of slot_id #%zd (0x%08lx)"
-				" < elem address (0x%08lx)",
-				*slot_id, (unsigned long)*slot_id,
-				(unsigned long)elem);
+		DEVLOG(lmem->dev_id, LALL_MEM,
+				"local mem high address of slot_id #" PRIslot " (0x%08lx) < elem address (0x%08lx)",
+				*slot_id, (unsigned long)*slot_id, (unsigned long)elem);
 		++(*slot_id);
 	}
 	return lmem->as[*slot_id].base;

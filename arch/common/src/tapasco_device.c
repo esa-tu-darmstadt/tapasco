@@ -63,7 +63,7 @@ tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx,
 
 	platform_res_t pr = platform_create_device(ctx->pctx, dev_id, access, &p->pdctx);
 	if (pr != PLATFORM_SUCCESS) {
-		ERR("creating platform device failed, error: %s (%d)", platform_strerror(pr), pr);
+		ERR("creating platform device failed, error: %s (" PRIres ")", platform_strerror(pr), pr);
 		return TAPASCO_ERR_PLATFORM_FAILURE;
 	}
 
@@ -77,14 +77,14 @@ tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx,
 	ctx->devs[dev_id] = p;
 	setup_system(p);
 
-	LOG(LALL_DEVICE, "device %d created successfully", dev_id);
+	LOG(LALL_DEVICE, "device " PRIdev " created successfully", dev_id);
 	return TAPASCO_SUCCESS;
 }
 
 void tapasco_destroy_device(tapasco_ctx_t *ctx, tapasco_devctx_t *devctx)
 {
 #ifndef NPERFC
-	fprintf(stderr, "tapasco device #%02u performance counters:\n%s",
+	fprintf(stderr, "tapasco device #" PRIdev " performance counters:\n%s",
 			devctx->id, tapasco_perfc_tostring(devctx->id));
 #endif /* NPERFC */
 	ctx->devs[devctx->id] = NULL;
@@ -183,7 +183,7 @@ tapasco_res_t tapasco_device_has_capability(tapasco_devctx_t *devctx,
 	if (devctx->info.magic_id != TAPASCO_MAGIC_ID) {
 		platform_res_t r = platform_info(devctx->pdctx, &devctx->info);
 		if (r != PLATFORM_SUCCESS) {
-			ERR("failed to get device info: %s (%d)", platform_strerror(r), r);
+			DEVERR(devctx->id, "failed to get device info: %s (" PRIres ")", platform_strerror(r), r);
 			return TAPASCO_ERR_PLATFORM_FAILURE;
 		}
 	}
@@ -195,7 +195,7 @@ tapasco_res_t tapasco_device_info(tapasco_devctx_t *devctx, platform_info_t *inf
 	if (devctx->info.magic_id != TAPASCO_MAGIC_ID) {
 		platform_res_t r = platform_info(devctx->pdctx, &devctx->info);
 		if (r != PLATFORM_SUCCESS) {
-			ERR("failed to get device info: %s (%d)", platform_strerror(r), r);
+			DEVERR(devctx->id, "failed to get device info: %s (" PRIres ")", platform_strerror(r), r);
 			return TAPASCO_ERR_PLATFORM_FAILURE;
 		}
 	}

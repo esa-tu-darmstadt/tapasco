@@ -27,6 +27,8 @@
 #ifndef TAPASCO_LOGGING_H__
 #define TAPASCO_LOGGING_H__
 
+#include <inttypes.h>
+
 #define LIBTAPASCO_LOGLEVELS \
 	_LALL(INIT,		(1 << 1)) \
 	_LALL(DEVICE,		(1 << 2)) \
@@ -47,10 +49,14 @@ LIBTAPASCO_LOGLEVELS
 int tapasco_logging_init(void);
 void tapasco_logging_deinit(void);
 
+#ifndef DEV_PREFIX
+	#define DEV_PREFIX		"device #" PRIdev
+#endif
+
 #define LOG(l, msg, ...)	\
 		tapasco_log(l, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
 #define DEVLOG(l, dev_id, msg, ...)	\
-		tapasco_log(l, "device %02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+		tapasco_log(l, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 
 #ifdef NDEBUG
 	#include <stdio.h>
@@ -59,9 +65,9 @@ void tapasco_logging_deinit(void);
 	#define WRN(msg, ...)		fprintf(stderr, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
 
 	#define DEVERR(dev_id, msg, ...) \
-			fprintf(stderr, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+			fprintf(stderr, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 	#define DEVWRN(dev_id, l, msg, ...) \
-			fprintf(stderr, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+			fprintf(stderr, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 
 	static inline void tapasco_log(tapasco_ll_t const level, char *fmt, ...) {}
 #else /* !NDEBUG */
@@ -69,9 +75,9 @@ void tapasco_logging_deinit(void);
 	#define WRN(msg, ...)		tapasco_log(1, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
 
 	#define DEVERR(dev_id, msg, ...) \
-			tapasco_log((tapasco_ll_t)0, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+			tapasco_log((tapasco_ll_t)0, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 	#define DEVWRN(dev_id, msg, ...) \
-			tapasco_log((platform_ll_t)1, "device #%02u [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+			tapasco_log((platform_ll_t)1, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 
 	void tapasco_log(tapasco_ll_t const level, char *fmt, ...);
 #endif

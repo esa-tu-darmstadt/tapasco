@@ -30,8 +30,6 @@
 #include <tapasco_types.h>
 #include <tapasco_context.h>
 
-//extern
-//void platform_logging_deinit(void);
 static
 tapasco_ctx_t *_emergency_ctx = NULL;
 
@@ -40,8 +38,6 @@ void _flush_logs_on_sigint(int sig)
 {
 	LOG(LALL_INIT, "caught SIGINT, flushing logs and leaving the sinking ship");
 	tapasco_deinit(_emergency_ctx);
-	//tapasco_logging_deinit();
-	//platform_logging_deinit();
 	exit(sig);
 }
 
@@ -80,14 +76,14 @@ tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **ctx)
 	}
 
 	if ((res = platform_init(&c->pctx)) != PLATFORM_SUCCESS) {
-		ERR("could not initialize platform: %s (%d)", platform_strerror(res), res);
+		ERR("could not initialize platform: %s (" PRIres ")", platform_strerror(res), res);
 		r = TAPASCO_ERR_PLATFORM_FAILURE;
 		goto err_platform;
 	}
 	LOG(LALL_INIT, "initialized platform");
 
 	if ((res = platform_enum_devices(c->pctx, &c->num_devices, &c->devinfo)) != PLATFORM_SUCCESS) {
-		ERR("could not enumerate devices: %s (%d)", platform_strerror(res), res);
+		ERR("could not enumerate devices: %s (" PRIres ")", platform_strerror(res), res);
 		r = TAPASCO_ERR_PLATFORM_FAILURE;
 		goto err_enum_devices;
 	}

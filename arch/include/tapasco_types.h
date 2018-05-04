@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <platform_types.h>
 #include <platform_caps.h>
 
@@ -39,7 +40,7 @@ typedef enum {
 } tapasco_binary_res_t;
 
 /** Public result type. */
-typedef ssize_t tapasco_res_t;
+typedef platform_res_t tapasco_res_t;
 
 /** TaPaSCo context; opaque forward decl. **/
 typedef struct tapasco_ctx tapasco_ctx_t;
@@ -48,19 +49,21 @@ typedef struct tapasco_ctx tapasco_ctx_t;
 typedef struct tapasco_devctx tapasco_devctx_t;
 
 /** Unique identifier for FPGA device (currently only one). **/
-typedef uint32_t tapasco_dev_id_t;
+typedef platform_dev_id_t tapasco_dev_id_t;
 
 /** Unique identifier for a kernel; can be instantiated in multiple PEs. */
-typedef uint32_t tapasco_kernel_id_t;
+typedef platform_kernel_id_t tapasco_kernel_id_t;
 
 /** Virtual slot identifier. */
-typedef uint32_t tapasco_slot_id_t;
+typedef platform_slot_id_t tapasco_slot_id_t;
 
 /** Identifies jobs, i.e,, sets of arguments for a kernel execution. **/
-typedef uintptr_t tapasco_job_id_t;
+typedef ul tapasco_job_id_t;
+#define PRIjob						"%lu"
 
 /** Device memory location handle (opaque). **/
-typedef uint32_t tapasco_handle_t;
+typedef ul tapasco_handle_t;
+#define PRIhandle					"%lu"
 
 /** default value for no flags **/
 #define NONE						0
