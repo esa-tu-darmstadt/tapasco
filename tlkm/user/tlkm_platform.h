@@ -23,6 +23,7 @@
 #ifndef TLKM_PLATFORM_H__
 #define TLKM_PLATFORM_H__
 
+#include <tlkm_types.h>
 #include <platform_global.h>
 
 #define IS_BETWEEN(a, l, h) (((a) >= (l) && (a) < (h)))
