@@ -112,9 +112,9 @@ tapasco_res_t tapasco_pemgmt_init(const tapasco_devctx_t *devctx, tapasco_pemgmt
 	assert(devctx->pdctx);
 	*pemgmt = (tapasco_pemgmt_t *)calloc(sizeof(tapasco_pemgmt_t), 1);
 	if (! pemgmt) return TAPASCO_ERR_OUT_OF_MEMORY;
-	setup_pes_from_status(devctx->pdctx, *pemgmt);
 	(*pemgmt)->dev_id = devctx->id;
 	(*pemgmt)->kidmap = kh_init(kidmap);
+	setup_pes_from_status(devctx->pdctx, *pemgmt);
 	return res;
 }
 
@@ -171,7 +171,9 @@ void tapasco_pemgmt_setup_system(tapasco_devctx_t *devctx, tapasco_pemgmt_t *ctx
 tapasco_slot_id_t tapasco_pemgmt_acquire_pe(tapasco_pemgmt_t *ctx,
 		tapasco_kernel_id_t const k_id)
 {
-	const midx_t bucket_idx = kh_val(ctx->kidmap, k_id);
+	const khiter_t k = kh_get(kidmap, ctx->kidmap, k_id);
+	assert(k != kh_end(ctx->kidmap));
+	const midx_t bucket_idx = kh_val(ctx->kidmap, k);
 	while (sem_wait(&ctx->kernel[bucket_idx].sem)) ;
 	tapasco_pe_t *pe = (tapasco_pe_t *)gs_pop(&ctx->kernel[bucket_idx].pe_stk);
 	LOG(LALL_PEMGMT, "k_id = %d, slot_id = %d", k_id, pe->slot_id);
@@ -181,13 +183,15 @@ tapasco_slot_id_t tapasco_pemgmt_acquire_pe(tapasco_pemgmt_t *ctx,
 
 void tapasco_pemgmt_release_pe(tapasco_pemgmt_t *ctx, tapasco_slot_id_t const s_id)
 {
-	const midx_t bucket_idx = kh_val(ctx->kidmap, ctx->pe[s_id]->slot_id);
 	assert(s_id >= 0 && s_id < TAPASCO_NUM_SLOTS);
 	assert(ctx->pe[s_id]);
+	const khiter_t k = kh_get(kidmap, ctx->kidmap, ctx->pe[s_id]->id);
+	assert(k != kh_end(ctx->kidmap));
+	const midx_t bucket_idx = kh_val(ctx->kidmap, k);
 	LOG(LALL_PEMGMT, "slot_id = %d", s_id);
 	tapasco_perfc_pe_released_inc(ctx->dev_id);
 	gs_push(&ctx->kernel[bucket_idx].pe_stk, ctx->pe[s_id]);
-	sem_post(&ctx->kernel[bucket_idx].sem);
+	while (sem_post(&ctx->kernel[bucket_idx].sem)) ;
 }
 
 size_t tapasco_pemgmt_count(tapasco_pemgmt_t const *ctx, tapasco_kernel_id_t const k_id)
