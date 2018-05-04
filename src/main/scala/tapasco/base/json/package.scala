@@ -174,27 +174,85 @@ package object json {
     (JsPath \ "AverageClockCycles").readNullable[Int]
   ) (Core.apply _)
   implicit val coreWrites: Writes[Core] = (
-    (JsPath \ "DescPath").write[Path].transform((js: JsObject) => js - "DescPath") ~
-    (JsPath \ "ZipFile").write[Path] ~
-    (JsPath \ "Name").write[String] ~
-    (JsPath \ "Id").write[Int] ~
-    (JsPath \ "Version").write[String] ~
-    (JsPath \ "Target").write[TargetDesc] ~
-    (JsPath \ "Description").writeNullable[String] ~
-    (JsPath \ "AverageClockCycles").writeNullable[Int]
-  ) (unlift(Core.unapply _))
+      (JsPath \ "DescPath").write[Path].transform((js: JsObject) => js - "DescPath") ~
+      (JsPath \ "ZipFile").write[Path] ~
+      (JsPath \ "Name").write[String] ~
+      (JsPath \ "Id").write[Int] ~
+      (JsPath \ "Version").write[String] ~
+      (JsPath \ "Target").write[TargetDesc] ~
+      (JsPath \ "Description").writeNullable[String] ~
+      (JsPath \ "AverageClockCycles").writeNullable[Int]
+    ) (unlift(Core.unapply _))
   /* Core @} */
 
   /* @{ Features */
   implicit val readsFeature: Reads[Feature] = (
     (JsPath \ "Feature").read[String] ~
-    (JsPath \ "Properties").read[Map[String, String]]
+    (JsPath \ "Properties").read[Feature.FMap]
   ) (Feature.apply _)
+
+  implicit lazy val readsFeatureMap: Reads[Feature.FMap] = new Reads[Feature.FMap]{
+    def reads(json: JsValue): JsResult[Feature.FMap] =  {
+      val temp = json.validate[Map[String, Feature.FValue]]
+
+      val result: JsResult[Feature.FMap] = temp.asEither match {
+        case Right(s) => new JsSuccess[Feature.FMap](Feature.FMap(s.toMap))
+        case Left(e)  => new JsError(e)
+      }
+      result
+    }
+  }
+
+  implicit val readsFeatureList: Reads[Feature.FList] = new Reads[Feature.FList]{
+    def reads(json: JsValue): JsResult[Feature.FList] = {
+      val temp = json.validate[Seq[Feature.FValue]]
+
+      val result: JsResult[Feature.FList] = temp.asEither match {
+        case Right(s) => new JsSuccess[Feature.FList](Feature.FList(s.toList))
+        case Left(e)  => new JsError(e)
+      }
+      result
+    }
+  }
+
+  implicit val readsFeatureString: Reads[Feature.FString] = new Reads[Feature.FString]{
+    def reads(json: JsValue): JsResult[Feature.FString] ={
+      val temp = json match {
+        case s: JsString  => s.validate[String]
+        case i: JsNumber  => i.validate[Double]
+        case b: JsBoolean => b.validate[Boolean]
+        // case n: JsNull    => new JsSuccess[String]("null")
+      }
+
+      val result = temp.asEither match{
+        case Right(s) => new JsSuccess[Feature.FString](Feature.FString(s"${s}"))
+        case Left(e)  => new JsError(e)
+      }
+
+      result
+    }
+  }
+
+  implicit val readsFeatureValue: Reads[Feature.FValue] = new Reads[Feature.FValue]{
+    def reads(json: JsValue): JsResult[Feature.FValue] = {
+      val temp: JsResult[Feature.FValue] = json match {
+        case m: JsObject => m.validate[Feature.FMap]
+        case l: JsArray  => l.validate[Feature.FList]
+        case x: JsValue  => x.validate[Feature.FString]
+      }
+      temp
+    }
+  }
+
 
   implicit val writesFeature: Writes[Feature] = (
     (JsPath \ "Feature").write[String] ~
-    (JsPath \ "Properties").write[Map[String, String]]
+    (JsPath \ "Properties").write[Feature.FMap]
   ) (unlift(Feature.unapply _))
+
+  implicit lazy val writesFeatureMap: Writes[Feature.FMap] = new Writes[Feature.FMap]{
+    def writes(myMap: Feature.FMap) = Json.parse(myMap.toJson)
+  }
   /* Features @} */
 
   /* @{ Kernel.Argument */
