@@ -36,5 +36,5 @@ else
 	echo "If you run into problems (awk: symbols not found), please install libmpfr."
 fi
 
-export Tapasco_DIR=${TAPASCO_HOME}/build_static/arch/axi4mm/
-export TapascoPlatform_DIR=${TAPASCO_HOME}/build_static/platform/
+export Tapasco_DIR=${TAPASCO_HOME}/build/arch/axi4mm/
+export TapascoPlatform_DIR=${TAPASCO_HOME}/build/platform/
