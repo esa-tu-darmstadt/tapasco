@@ -1,12 +1,12 @@
-cmake_minimum_required (VERSION 2.7)
+cmake_minimum_required(VERSION 3.0)
 project (benchmark-alloc-dealloc)
-set (CMAKE_INSTALL_PREFIX "..")
-include (../examples.cmake)
+
+find_package(TapascoPlatform REQUIRED)
+find_package(Tapasco REQUIRED)
 
 add_executable (benchmark-alloc-dealloc benchmark-alloc-dealloc.c)
 target_link_libraries (benchmark-alloc-dealloc m rt pthread tapasco platform)
-set_target_properties (benchmark-alloc-dealloc PROPERTIES COMPILE_FLAGS "-g -Wall -Werror -std=gnu99")
 
 install (TARGETS benchmark-alloc-dealloc
-         RUNTIME DESTINATION bin/${ARCH})
+         RUNTIME DESTINATION bin/)
 

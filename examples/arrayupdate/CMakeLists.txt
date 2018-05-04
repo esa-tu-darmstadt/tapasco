@@ -1,4 +1,8 @@
-project(arrayupdate)
+cmake_minimum_required(VERSION 3.0)
+project (arrayupdate)
+
+find_package(TapascoPlatform REQUIRED)
+find_package(Tapasco REQUIRED)
 
 add_executable(arrayupdate arrayupdate-example.c ../../kernel/arrayupdate/arrayupdate.c)
 

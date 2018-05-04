@@ -1,4 +1,8 @@
-project(benchmark-latency)
+cmake_minimum_required(VERSION 3.0)
+project (benchmark-latency)
+
+find_package(TapascoPlatform REQUIRED)
+find_package(Tapasco REQUIRED)
 
 add_executable(benchmark-latency benchmark-latency.c)
 target_link_libraries(benchmark-latency rt pthread tapasco platform atomic)

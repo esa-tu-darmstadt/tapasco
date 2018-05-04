@@ -35,3 +35,6 @@ else
 	echo "This can be fixed by pre-loading a new libmpfr.so, but none was found in /usr/lib." >&2
 	echo "If you run into problems (awk: symbols not found), please install libmpfr."
 fi
+
+export Tapasco_DIR=${TAPASCO_HOME}/build_static/arch/axi4mm/
+export TapascoPlatform_DIR=${TAPASCO_HOME}/build_static/platform/
