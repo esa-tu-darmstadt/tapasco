@@ -40,7 +40,7 @@ object JobExamples {
                               "Vivado",
                               Some(Seq("axi4mm")),
                               Some(Seq("pynq", "zedboard")),
-                              Some(Seq(Feature("LED", Map("enabled" -> "true")))),
+                              Some(Seq(Feature("LED", Feature.FMap(Map("enabled" -> Feature.FString("true")))))),
                               Some("r"))
   val coreStatisticsJob = CoreStatisticsJob(Some("somePrefix_"),
                                             Some(Seq("axi4mm")),
@@ -53,7 +53,7 @@ object JobExamples {
                                          Some(Paths.get("nonstandard/base/path")),
                                          Some(Seq("axi4mm")),
                                          Some(Seq("pynq", "vc709")),
-                                         Some(Seq(Feature("LED", Map("enabled" -> "true")))),
+                                         Some(Seq(Feature("LED", Feature.FMap(Map("enabled" -> Feature.FString("true")))))),
                                          Some("r"))
   val hlsJob = HighLevelSynthesisJob("VivadoHLS",
                                      Some(Seq("axi4mm")),
