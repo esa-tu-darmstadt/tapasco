@@ -134,6 +134,7 @@ int main(int argc, const char *argv[]) {
     } else platform = getenv("TAPASCO_PLATFORM");
 
     // measure for chunk sizes 2^10 (1KiB) - 2^31 (2GB) bytes
+    clear();
     for (int i = 10; mode & MEASURE_TRANSFER_SPEED && i < 32; ++i) {
       ts.chunk_sz = 1 << i;
       ts.speed_r  = tp(ts.chunk_sz, TransferSpeed::OP_COPYFROM);
@@ -152,6 +153,7 @@ int main(int argc, const char *argv[]) {
 
     // measure average job roundtrip latency for clock cycles counts
     // between 2^0 and 2^31
+    clear();
     for (size_t i = 0; mode & MEASURE_INTERRUPT_LATENCY && i < 32; ++i) {
       ls.cycle_count = 1UL << i;
       ls.latency_us  = il.atcycles(ls.cycle_count, 10, &ls.min_latency_us, &ls.max_latency_us);
@@ -160,6 +162,7 @@ int main(int argc, const char *argv[]) {
       latency.push_back(json);
     }
 
+    clear();
     if (mode & MEASURE_JOB_THROUGHPUT) {
       size_t i = 1;
       double prev = -1;
@@ -212,6 +215,10 @@ int main(int argc, const char *argv[]) {
   } catch (const char *msg) {
     endwin();
     cerr << "ERROR: " << msg << endl;
+    exit(1);
+  } catch (std::runtime_error& err) {
+    endwin();
+    cerr << "ERROR: " << err.what() << endl;
     exit(1);
   } catch (...) {
     endwin();
