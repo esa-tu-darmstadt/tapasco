@@ -18,17 +18,15 @@ include(${PLATFORM}/platform.cmake)
 
 add_library(platform ${SRCS})
 
-SET(BUILD_SHARED_LIBS ON)
-
-target_include_directories(platform PUBLIC ${EXTRA_INCLUDES_PUBLIC} PRIVATE "${PLATFORM_COMMON_SRC}/include" "${CMNDIR}/include" ${EXTRA_INCLUDES_PRIVATE})
+target_include_directories(platform PUBLIC ${EXTRA_INCLUDES_PUBLIC} $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORM_COMMON_SRC}/include> $<INSTALL_INTERFACE:${PLATFORM_COMMON_SRC}/include> PRIVATE "${CMNDIR}/include" ${EXTRA_INCLUDES_PRIVATE})
 
 target_link_libraries(platform pthread atomic)
 
-install(TARGETS platform EXPORT TapascoPlatform
+install(TARGETS platform EXPORT TapascoPlatformConfig
         ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-install(EXPORT TapascoPlatform DESTINATION share/Tapasco/cmake)
+install(EXPORT TapascoPlatformConfig DESTINATION share/Tapasco/cmake)
 
-export(TARGETS platform FILE TapascoPlatform.cmake)
+export(TARGETS platform FILE TapascoPlatformConfig.cmake)

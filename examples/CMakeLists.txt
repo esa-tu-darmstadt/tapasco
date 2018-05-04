@@ -16,17 +16,20 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0)
 project(examples)
-set (CMAKE_INSTALL_PREFIX "bin")
-include (examples.cmake)
 
-add_subdirectory(arrayinit)
-add_subdirectory(arraysum)
-add_subdirectory(arrayupdate)
-add_subdirectory(basic_test)
-add_subdirectory(benchmark-alloc-free)
-add_subdirectory(benchmark-cd)
-add_subdirectory(benchmark-latency)
-add_subdirectory(benchmark-mem)
+find_package(TapascoPlatform REQUIRED)
+find_package(Tapasco REQUIRED)
+
+set(CMAKE_INSTALL_PREFIX .)
+
+#add_subdirectory(arrayinit)
+#add_subdirectory(arraysum)
+#add_subdirectory(arrayupdate)
+#add_subdirectory(basic_test)
+#add_subdirectory(benchmark-alloc-free)
+#add_subdirectory(benchmark-cd)
+#add_subdirectory(benchmark-latency)
+#add_subdirectory(benchmark-mem)
 add_subdirectory(memcheck)
