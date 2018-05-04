@@ -1,4 +1,8 @@
+cmake_minimum_required(VERSION 3.0)
 project (benchmark-mem)
+
+find_package(TapascoPlatform REQUIRED)
+find_package(Tapasco REQUIRED)
 
 add_executable (benchmark-mem benchmark-mem.c)
 target_link_libraries (benchmark-mem m rt pthread tapasco platform)

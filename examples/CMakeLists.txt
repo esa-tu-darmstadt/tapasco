@@ -19,11 +19,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(examples)
 
-find_package(TapascoPlatform REQUIRED)
-find_package(Tapasco REQUIRED)
-
-set(CMAKE_INSTALL_PREFIX .)
-
 #add_subdirectory(arrayinit)
 #add_subdirectory(arraysum)
 #add_subdirectory(arrayupdate)

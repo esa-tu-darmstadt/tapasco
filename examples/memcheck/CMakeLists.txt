@@ -1,10 +1,14 @@
+cmake_minimum_required(VERSION 3.0)
 project (memcheck)
+
+find_package(TapascoPlatform REQUIRED)
+find_package(Tapasco REQUIRED)
 
 add_executable(memcheck memcheck.c)
 target_link_libraries(memcheck tapasco pthread platform)
 
 add_executable(memcheck-mt memcheck-mt.c)
-target_link_libraries(memcheck-mt pthread tapasco platform pthread)
+target_link_libraries(memcheck-mt pthread tapasco platform)
 
 install(TARGETS memcheck memcheck-mt
         ARCHIVE  DESTINATION bin/

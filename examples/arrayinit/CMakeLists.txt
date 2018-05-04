@@ -1,4 +1,8 @@
-project(arrayinit)
+cmake_minimum_required(VERSION 3.0)
+project (arrayinit)
+
+find_package(TapascoPlatform REQUIRED)
+find_package(Tapasco REQUIRED)
 
 include_directories(../../kernel/arrayinit)
 
