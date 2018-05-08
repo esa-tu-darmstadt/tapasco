@@ -128,27 +128,27 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 }
 
 inline
-void log_device_info(platform_info_t const *info)
+void log_device_info(platform_dev_id_t const dev_id, platform_info_t const *info)
 {
 #ifndef NDEBUG
 #ifdef _X
 	#undef _X
 #endif
 #define _X(name, value, field) \
-	LOG(LPLL_STATUS, "" STRINGIFY(field) " = %#08lx", (unsigned long)info->field);
+	DEVLOG(dev_id, LPLL_STATUS, "" STRINGIFY(field) " = %#08lx (%u)", (unsigned long)info->field, (unsigned long)info->field);
 	PLATFORM_STATUS_REGISTERS
 #undef _X
 	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
 		if (info->composition.kernel[s])
-			LOG(LPLL_STATUS, "slot #" PRIslot ": kernel id %#08x (" PRIkernel ")",
+			DEVLOG(dev_id, LPLL_STATUS, "slot #" PRIslot ": k %#08x (" PRIkernel ")",
 					s, (unsigned)info->composition.kernel[s], info->composition.kernel[s]);
 		if (info->composition.memory[s])
-			LOG(LPLL_STATUS, "slot #" PRIslot ": memory    %#08x (%zu)",
+			DEVLOG(dev_id, LPLL_STATUS, "slot #" PRIslot ": m %#08x (%zu)",
 					s, (unsigned)info->composition.memory[s], (size_t)info->composition.memory[s]);
 		if (info->base.platform[s])
-			LOG(LPLL_STATUS, "platform base #" PRIslot ": %#08lx", s, (unsigned long)info->base.platform[s]);
+			DEVLOG(dev_id, LPLL_STATUS, "plat #" PRIslot ":   " PRIctl, s, info->base.platform[s]);
 		if (info->base.arch[s])
-			LOG(LPLL_STATUS, "arch     base #" PRIslot ": %#08lx", s, (unsigned long)info->base.arch[s]);
+			DEVLOG(dev_id, LPLL_STATUS, "arch #" PRIslot ":   " PRIctl, s, info->base.arch[s]);
 	}
 #endif
 }
@@ -165,7 +165,7 @@ platform_res_t platform_info(platform_devctx_t const *ctx, platform_info_t *info
 		r = read_info_from_status_core(ctx, &_info[dev_id]);
 		if (r == PLATFORM_SUCCESS) {
 			DEVLOG(dev_id, LPLL_STATUS, "read device info successfully");
-			log_device_info(&_info[dev_id]);
+			log_device_info(dev_id, &_info[dev_id]);
 		}
 	}
 	if (r == PLATFORM_SUCCESS) {
