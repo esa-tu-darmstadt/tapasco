@@ -129,8 +129,8 @@ platform_res_t pcie_read_ctl(platform_devctx_t const *ctx,
 		platform_ctl_flags_t const flags)
 {	
 	int i;
-	uintptr_t *p = (uintptr_t *)data;
-	volatile uintptr_t *r;
+	uint32_t *p = (uint32_t *)data;
+	volatile uint32_t *r;
 	DEVLOG(ctx->dev_id, LPLL_CTL, "addr = " PRIctl ", length = %zu", addr, length);
 
 #ifndef NDEBUG
@@ -141,19 +141,17 @@ platform_res_t pcie_read_ctl(platform_devctx_t const *ctx,
 #endif
 
 	if (IS_BETWEEN(addr, pcie_def.arch.base, pcie_def.arch.high))
-		r = (volatile uintptr_t *)pcie_platform.arch_map + ((addr - pcie_def.arch.base) / sizeof(*p));
+		r = (volatile uint32_t *)pcie_platform.arch_map + ((addr - pcie_def.arch.base) >> 2);
 	else if (IS_BETWEEN(addr, pcie_def.plat.base, pcie_def.plat.high))
-		r = (volatile uintptr_t *)pcie_platform.plat_map + ((addr - pcie_def.plat.base) / sizeof(*p));
+		r = (volatile uint32_t *)pcie_platform.plat_map + ((addr - pcie_def.plat.base) >> 2);
 	else if (IS_BETWEEN(addr, pcie_def.status.base, pcie_def.status.high))
-		r = (volatile uintptr_t *)pcie_platform.status_map + ((addr - pcie_def.status.base) / sizeof(*p));
+		r = (volatile uint32_t *)pcie_platform.status_map + ((addr - pcie_def.status.base) >> 2);
 	else {
 		DEVERR(ctx->dev_id, "invalid platform address: " PRIctl, addr);
 		return PERR_CTL_INVALID_ADDRESS;
 	}
 
-	const size_t num_transfers = (length / sizeof(*p)) + (length % sizeof(*p) ? 1 : 0);
-
-	for (i = 0; i < num_transfers; ++i, ++p, ++r)
+	for (i = 0; i < (length >> 2); ++i, ++p, ++r)
 		*p = *r;
 
 	return PLATFORM_SUCCESS;
@@ -169,8 +167,7 @@ platform_res_t pcie_write_ctl(platform_devctx_t const *ctx,
 	int i;
 	uint32_t const *p = (uint32_t const *)data;
 	volatile uint32_t *r;
-	DEVLOG(ctx->dev_id, LPLL_CTL, "addr = 0x%08lx, length = %zu",
-			(unsigned long)addr, length);
+	DEVLOG(ctx->dev_id, LPLL_CTL, "addr = " PRIctl ", length = %zu", addr, length);
 
 #ifndef NDEBUG
 	if (length % 4) {
