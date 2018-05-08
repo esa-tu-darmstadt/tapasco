@@ -49,7 +49,6 @@ int pcie_irqs_init(struct tlkm_device *dev)
 		goto irq_error; \
 	} else { \
 		pdev->irq_mapping[irqn] = pci_irq_vector(pdev->pdev, irqn); \
-		DEVLOG(dev->dev_id, TLKM_LF_IRQ, "created mapping from interrupt %d -> %d", irqn, pdev->irq_mapping[irqn]); \
 		DEVLOG(dev->dev_id, TLKM_LF_IRQ, "interrupt line %d/%d assigned with return value %d", \
 				irqn, pci_irq_vector(pdev->pdev, irqn), err[nr]); \
 		INIT_WORK(&pdev->irq_work[nr], tlkm_pcie_slot_irq_work_ ## nr); \

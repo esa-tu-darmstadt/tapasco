@@ -50,6 +50,7 @@ int tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap)
 		retval = -ENOSPC;
 		goto err_status;
 	}
+
 	magic_id = ioread32(mmap->status);
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "magic_id = 0x%08lx", (ulong)magic_id);
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
