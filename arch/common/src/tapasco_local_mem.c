@@ -58,7 +58,7 @@ size_t get_slot_mem(tapasco_devctx_t *devctx, tapasco_slot_id_t const slot_id)
 tapasco_res_t tapasco_local_mem_init(tapasco_devctx_t *devctx,
 		tapasco_local_mem_t **lmem)
 {
-	LOG(LALL_MEM, "initializing ...");
+	DEVLOG(devctx->id, LALL_MEM, "initializing ...");
 	*lmem = (tapasco_local_mem_t *)calloc(sizeof(tapasco_local_mem_t), 1);
 	if (! *lmem) return TAPASCO_ERR_OUT_OF_MEMORY;
 	(*lmem)->dev_id = devctx->id;

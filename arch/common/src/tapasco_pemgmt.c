@@ -99,11 +99,12 @@ void setup_pes_from_status(platform_devctx_t *ctx, tapasco_pemgmt_t *p)
 				kbucket++;
 			}
 			bucket_idx = kh_val(p->kidmap, k);
-			DEVLOG(ctx->dev_id, LALL_PEMGMT, "k_id " PRIkernel " -> %u", k_id, bucket_idx);
+			DEVLOG(ctx->dev_id, LALL_PEMGMT, "k_id " PRIkernel " -> kind #%u", k_id, bucket_idx);
 			gs_push(&p->kernel[bucket_idx].pe_stk, p->pe[slot]);
 			sem_post(&p->kernel[bucket_idx].sem);
 		}
 	}
+	DEVLOG(ctx->dev_id, LALL_PEMGMT, "initialized %d kind%s of PEs", kbucket, kbucket > 1 ? "s" : "");
 }
 
 tapasco_res_t tapasco_pemgmt_init(const tapasco_devctx_t *devctx, tapasco_pemgmt_t **pemgmt)
@@ -151,11 +152,11 @@ void tapasco_pemgmt_setup_system(tapasco_devctx_t *devctx, tapasco_pemgmt_t *ctx
 			platform_write_ctl(pctx, gier, sizeof(d), &d,
 				PLATFORM_CTL_FLAGS_NONE);		// GIER
 			// enable ap_done interrupt generation
-			LOG(LALL_PEMGMT, "writing IER at " PRIhandle, ier);
+			LOG(LALL_PEMGMT, "writing IER  at " PRIhandle, ier);
 			platform_write_ctl(pctx, ier, sizeof(d), &d,
 				PLATFORM_CTL_FLAGS_NONE); 		// IPIER
 			// ack all existing interrupts
-			LOG(LALL_PEMGMT, "writing IAR at " PRIhandle, iar);
+			LOG(LALL_PEMGMT, "writing IAR  at " PRIhandle, iar);
 			platform_read_ctl(pctx, iar, sizeof(d), &d, 
 				PLATFORM_CTL_FLAGS_NONE);               // IAR
 			platform_write_ctl(pctx, iar, sizeof(d), &d,
