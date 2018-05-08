@@ -22,7 +22,9 @@ irqreturn_t tlkm_pcie_slot_irq_ ## nr(int irq, void *dev_id) 		\
 	struct pci_dev *pdev = (struct pci_dev *)dev_id; \
 	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *) dev_get_drvdata(&pdev->dev); \
 	BUG_ON(! dev); \
-	schedule_work(&dev->irq_work[nr]); \
+	if (! schedule_work(&dev->irq_work[nr])) \
+		tlkm_perfc_irq_error_already_pending_inc(dev->parent->dev_id); \
+	tlkm_perfc_total_irqs_inc(dev->parent->dev_id); \
 	return IRQ_HANDLED; \
 }
 
