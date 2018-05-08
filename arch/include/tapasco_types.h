@@ -63,7 +63,7 @@ typedef ul tapasco_job_id_t;
 
 /** Device memory location handle (opaque). **/
 typedef ul tapasco_handle_t;
-#define PRIhandle					"%lu"
+#define PRIhandle					"%#08lx"
 
 /** default value for no flags **/
 #define NONE						0
