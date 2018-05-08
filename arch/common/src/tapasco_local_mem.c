@@ -81,11 +81,10 @@ tapasco_res_t tapasco_local_mem_alloc(tapasco_local_mem_t *lmem,
 		tapasco_handle_t *h)
 {
 	*h = INVALID_ADDRESS;
-	++slot_id;
-	while (*h == INVALID_ADDRESS && lmem->lmem[slot_id]) {
-		*h = gen_mem_malloc(&lmem->lmem[slot_id], sz);
+	do {
 		++slot_id;
-	}
+		*h = gen_mem_malloc(&lmem->lmem[slot_id], sz);
+	} while (*h == INVALID_ADDRESS && lmem->lmem[slot_id]);
 	LOG(LALL_MEM, "request to allocate %zd bytes for slot_id #%d -> 0x%08lx",
 			sz, slot_id, (unsigned long)*h);
 	return *h != INVALID_ADDRESS ? TAPASCO_SUCCESS : TAPASCO_ERR_OUT_OF_MEMORY;
@@ -120,7 +119,7 @@ tapasco_handle_t tapasco_local_mem_get_slot_and_base(tapasco_local_mem_t *lmem,
 		tapasco_slot_id_t *slot_id,
 		addr_t const elem)
 {
-	while (elem > lmem->as[*slot_id].high) {
+	while (! lmem->lmem[*slot_id] || elem > lmem->as[*slot_id].high) {
 		LOG(LALL_MEM, "local mem high address of slot_id #%zd (0x%08lx)"
 				" < elem address (0x%08lx)",
 				*slot_id, (unsigned long)*slot_id,
