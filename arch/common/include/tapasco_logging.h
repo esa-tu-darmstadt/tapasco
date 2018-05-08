@@ -55,7 +55,7 @@ void tapasco_logging_deinit(void);
 
 #define LOG(l, msg, ...)	\
 		tapasco_log(l, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
-#define DEVLOG(l, dev_id, msg, ...)	\
+#define DEVLOG(dev_id, l, msg, ...)	\
 		tapasco_log(l, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 
 #ifdef NDEBUG
