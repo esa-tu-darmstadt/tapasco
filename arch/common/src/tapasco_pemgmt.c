@@ -123,8 +123,8 @@ void tapasco_pemgmt_deinit(tapasco_pemgmt_t *pemgmt)
 {
 	for (khiter_t k = kh_begin(pemgmt->kidmap); k != kh_end(pemgmt->kidmap); ++k) {
 		midx_t bucket_idx = kh_val(pemgmt->kidmap, k);
-		while (gs_pop(&pemgmt->kernel[bucket_idx].pe_stk)) ;
 		sem_close(&pemgmt->kernel[bucket_idx].sem);
+		while (gs_pop(&pemgmt->kernel[bucket_idx].pe_stk)) ;
 	}
 	kh_destroy(kidmap, pemgmt->kidmap);
 	for (int i = 0; i < TAPASCO_NUM_SLOTS; ++i)
