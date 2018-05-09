@@ -37,14 +37,14 @@ public:
   static tapasco_kernel_id_t const COUNTER_ID = 14;
 
   InterruptLatency(Tapasco& tapasco) : tapasco(tapasco) {
+    tapasco_res_t r;
+    platform_info_t info;
     if (tapasco.kernel_pe_count(COUNTER_ID) == 0)
       throw "need at least one instance of 'Counter' (14) in bitstream";
-    platform_ctl_addr_t status;
-    platform_res_t r = platform_address_get_component_base(tapasco.platform_device(),
-    		PLATFORM_COMPONENT_STATUS,
-		&status);
+    if ((r = tapasco.info(&info)) != TAPASCO_SUCCESS)
+      throw new Tapasco::tapasco_error(r);
     if (r != PLATFORM_SUCCESS) throw Tapasco::platform_error(r);
-    platform_read_ctl(tapasco.platform_device(), status + 0x24, 4, &design_clk, PLATFORM_CTL_FLAGS_NONE);
+    design_clk = info.clock.design;
   }
   virtual ~InterruptLatency() {}
 
@@ -54,7 +54,7 @@ public:
 
   double atcycles(uint32_t const clock_cycles, size_t const min_runs = 100, double *min = NULL, double *max = NULL) {
     CumulativeAverage<double> cavg { 0 };
-    bool stop = false;
+    atomic<bool> stop { false };
     int x, y, maxx, maxy;
     getyx(stdscr, y, x);
     getmaxyx(stdscr, maxy, maxx);
@@ -84,9 +84,9 @@ public:
   }
 
 private:
-  void trigger(volatile bool& stop, uint32_t const clock_cycles, CumulativeAverage<double>& cavg) {
+  void trigger(volatile atomic<bool>& stop, uint32_t const clock_cycles, CumulativeAverage<double>& cavg) {
     tapasco_res_t res;
-    while (! stop) {
+    while (! stop.load()) {
       auto tstart = high_resolution_clock::now();
       // if 0, use 1us - 100ms interval (clock period is 10ns)
       uint32_t cc = clock_cycles > 0 ? clock_cycles : (rand() % (10000000 - 100) + 100);

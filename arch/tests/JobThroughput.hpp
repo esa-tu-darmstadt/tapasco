@@ -94,13 +94,6 @@ private:
     }
   }
 
-  void run3() {
-    tapasco_job_id_t j_id { 0 };
-    uint32_t r { 0 };
-    RetVal<uint32_t> ret { &r };
-    tapasco.launch(COUNTER_ID, j_id, ret, 0)();
-  }
-
   void collect(void) {
     job_future *jf { nullptr };
     while (! stop) {
@@ -109,6 +102,7 @@ private:
         if ((res = (*jf)()) != TAPASCO_SUCCESS) {
           throw Tapasco::tapasco_error(res);
 	}
+	delete jf;
 	++jobs;
       }
     }
