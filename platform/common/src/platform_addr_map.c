@@ -86,10 +86,6 @@ platform_res_t platform_addr_map_get_component_base(
 		platform_component_t const comp_id,
 		platform_ctl_addr_t *addr)
 {
-	if (comp_id == PLATFORM_COMPONENT_STATUS) {
-		*addr = zynq_def.status.base;
-		return PLATFORM_SUCCESS;
-	}
 #ifndef NDEBUG
 	if (comp_id < 0 || comp_id >= PLATFORM_NUM_SLOTS) {
 		DEVERR(am->dev_id, "invalid comp_id %d: must be >= 0 and <= %d",
@@ -107,8 +103,12 @@ platform_res_t platform_addr_map_get_component_base(
 
 inline
 platform_res_t platform_address_get_component_base(platform_devctx_t const *ctx,
-		platform_component_t const ent,
+		platform_component_t const comp_id,
 		platform_ctl_addr_t *addr)
 {
-	return platform_addr_map_get_component_base(ctx->addrmap, ent, addr);
+	if (comp_id == PLATFORM_COMPONENT_STATUS) {
+		*addr = ctx->platform.status.base;
+		return PLATFORM_SUCCESS;
+	}
+	return platform_addr_map_get_component_base(ctx->addrmap, comp_id, addr);
 }
