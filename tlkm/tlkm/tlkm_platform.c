@@ -99,11 +99,12 @@ long tlkm_platform_read(struct tlkm_device *dev, struct tlkm_copy_cmd *cmd)
 {
 	long ret = -ENXIO;
 	void __iomem *ptr = NULL;
-	void *buf = kzalloc(cmd->length, GFP_ATOMIC);
+	void *buf = NULL;
 	if (! (ptr = addr2map(dev, cmd->dev_addr))) {
 		DEVERR(dev->dev_id, "invalid address: %pad", &cmd->dev_addr);
 		return -ENXIO;
 	}
+	buf = kzalloc(cmd->length, GFP_ATOMIC);
 	memcpy_fromio(buf, ptr, cmd->length);
 	if ((ret = copy_to_user((u32 __user *)cmd->user_addr, buf, cmd->length))) {
 		DEVERR(dev->dev_id, "could not copy all bytes from 0x%px to user space 0x%px: %ld",
@@ -119,11 +120,12 @@ long tlkm_platform_write(struct tlkm_device *dev, struct tlkm_copy_cmd *cmd)
 {
 	long ret = -ENXIO;
 	void __iomem *ptr = NULL;
-	void *buf = kzalloc(cmd->length, GFP_ATOMIC);
+	void *buf = NULL;
 	if (! (ptr = addr2map(dev, cmd->dev_addr))) {
 		DEVERR(dev->dev_id, "invalid address: %pad", &cmd->dev_addr);
 		return -ENXIO;
 	}
+	buf = kzalloc(cmd->length, GFP_ATOMIC);
 	if ((ret = copy_from_user(buf, (u32 __user *)cmd->user_addr, cmd->length))) {
 		DEVERR(dev->dev_id, "could not copy all bytes from 0x%px to user space 0x%px: %ld",
 				buf, cmd->user_addr, ret);
