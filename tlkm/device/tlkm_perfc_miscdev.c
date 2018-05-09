@@ -53,15 +53,12 @@ ssize_t tlkm_perfc_miscdev_read(struct file *file, char __user *usr, size_t sz,
 #undef _PC
 	char tmp[TLKM_PERFC_MISCDEV_BUFSZ];
 #define _PC(name) (unsigned long int)tlkm_perfc_ ## name ## _get(dev_id),
-	LOG(TLKM_LF_PERFC, "reading %zu bytes at off %lld "
-			"from performance counters ...", sz, loff ? *loff : -1);
 	snprintf(tmp, TLKM_PERFC_MISCDEV_BUFSZ, fmt, TLKM_PERFC_COUNTERS
 			TLKM_VERSION);
 	sl = strlen(tmp) + 1;
 	if (sl - *loff > 0) {
 		ssize_t rl = strlen(&tmp[*loff]) + 1;
 		*loff += rl - copy_to_user(usr, tmp, strlen(&tmp[*loff]) + 1);
-		LOG(TLKM_LF_PERFC, "new loff: %lld", *loff);
 		return rl;
 	}
 	return 0;
