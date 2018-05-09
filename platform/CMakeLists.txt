@@ -24,7 +24,8 @@ set(CMNSRCS "${CMNDIR}/src/platform_addr_map.c"
 	    "${CMNDIR}/src/platform_logging.c"
             "${CMNDIR}/src/platform_version.c"
             "${CMNDIR}/src/platform_perfc.c"
-            "${GCMNDIR}/src/gen_queue.c")
+            "${GCMNDIR}/src/gen_queue.c"
+            "${GCMNDIR}/src/gen_mem.c")
 set(ZYNQSRCS "zynq/src/platform_zynq.c")
 set(PCIESRCS "pcie/src/platform_pcie.c")
 
