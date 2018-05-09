@@ -26,18 +26,6 @@ long pcie_ioctl_free(struct tlkm_device *inst, struct tlkm_mm_cmd *cmd)
 }
 
 static inline
-long pcie_ioctl_copyto(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
-{
-	return tlkm_dma_copy_to(&inst->dma[0], cmd->dev_addr, cmd->user_addr, cmd->length);
-}
-
-static inline
-long pcie_ioctl_copyfrom(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
-{	
-	return tlkm_dma_copy_from(&inst->dma[0], cmd->user_addr, cmd->dev_addr, cmd->length);
-}
-
-static inline
 long pcie_ioctl_alloc_copyto(struct tlkm_device *inst, struct tlkm_bulk_cmd *cmd)
 {
 	DEVERR(inst->dev_id, "should never be called");
@@ -49,6 +37,38 @@ long pcie_ioctl_copyfrom_free(struct tlkm_device *inst, struct tlkm_bulk_cmd *cm
 {
 	DEVERR(inst->dev_id, "should never be called");
 	return -EFAULT;
+}
+
+static inline
+long pcie_ioctl_copyto(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
+{
+	ssize_t r;
+	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "copyto: len = %zu, dma = %pad, p = 0x%px",
+			cmd->length, &cmd->dev_addr, cmd->user_addr);
+	r = tlkm_dma_copy_to(&inst->dma[0], cmd->dev_addr, cmd->user_addr, cmd->length);
+	if (! r) {
+		tlkm_perfc_total_usr2dev_transfers_add(inst->dev_id, r);
+	} else {
+		DEVERR(inst->dev_id, "could not copy %zu bytes 0x%px -> 0x%px: %zd",
+				cmd->length, (void *)cmd->user_addr, (void *)cmd->dev_addr, r);
+	}
+	return r;
+}
+
+static inline
+long pcie_ioctl_copyfrom(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
+{
+	ssize_t r;
+	DEVLOG(inst->dev_id, TLKM_LF_DEVICE, "copyfrom: len = %zu, dma = %pad, p = 0x%px",
+			cmd->length, &cmd->dev_addr, cmd->user_addr);
+	r = tlkm_dma_copy_from(&inst->dma[0], cmd->user_addr, cmd->dev_addr, cmd->length);
+	if (! r) {
+		tlkm_perfc_total_dev2usr_transfers_add(inst->dev_id, r);
+	} else {
+		DEVERR(inst->dev_id, "could not copy %zu bytes 0x%px -> 0x%px: %zd",
+				cmd->length, (void *)cmd->user_addr, (void *)cmd->dev_addr, r);
+	}
+	return r;
 }
 
 static inline
