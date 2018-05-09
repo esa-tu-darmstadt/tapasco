@@ -5,9 +5,11 @@
  **/
 #include "gen_mem.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
+#include <assert.h>
 
 #define MAX_ALLOCS				100000
 #define MAX_SIZE				(1024 * 1024)

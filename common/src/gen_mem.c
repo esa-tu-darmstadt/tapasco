@@ -81,10 +81,10 @@ addr_t gen_mem_malloc(block_t **root, size_t const length)
 	return base;
 }
 
-void gen_mem_free(block_t **root, addr_t const p, size_t const length)
+void gen_mem_free(block_t **root, addr_t const p, size_t const l)
 {
 	assert(root || "argument to gen_mem_free may not be NULL");
-	GEN_MEM_LOG("freeing 0x%08lx - 0x%08lx\n", (unsigned long)p, p + length);
+	GEN_MEM_LOG("freeing 0x%08lx - 0x%08lx\n", (unsigned long)p, p + l);
 	block_t *prv = *root, *nxt = *root;
 	while (nxt != NULL && nxt->base + nxt->range <= p) {
 		prv = nxt;
@@ -92,6 +92,7 @@ void gen_mem_free(block_t **root, addr_t const p, size_t const length)
 	}
 	GEN_MEM_LOG("prv: 0x%08lx - 0x%08lx\n", (unsigned long)prv->base, prv->base + prv->range);
 	GEN_MEM_LOG("nxt: 0x%08lx - 0x%08lx\n", (unsigned long)nxt->base, nxt->base + nxt->range);
+	size_t const length = nxt->range;
 	if (prv->base + prv->range == p) {
 		prv->range += length;
 		if (prv->next && prv->base + prv->range == prv->next->base) {

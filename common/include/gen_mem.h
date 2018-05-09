@@ -26,6 +26,9 @@
 #ifndef GEN_MEM_H__
 #define GEN_MEM_H__
 
+#include <stdint.h>
+#include <unistd.h>
+
 typedef uint32_t addr_t;
 
 #define INVALID_ADDRESS 			((addr_t)(-1))
