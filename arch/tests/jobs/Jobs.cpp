@@ -69,7 +69,7 @@ void collector_thread(Jobs& j) {
   while (! j.stop) {
     while ((j_id = (tapasco_job_id_t)gq_dequeue(j.q))) {
       j.slots.push_back(tapasco_jobs_get_slot(j.tapasco.device()->jobs, j_id));
-      if ((res = j.tapasco.wait_for(j_id)) != TAPASCO_SUCCESS) {
+      if ((res = tapasco_device_job_collect(j.tapasco.device(), j_id)) != TAPASCO_SUCCESS) {
         stringstream ss;
 	ss << "waiting for " << j_id << " failed: " << j_id << endl;
         j.errors.push_back(ss.str());
