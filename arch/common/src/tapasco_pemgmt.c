@@ -148,15 +148,15 @@ void tapasco_pemgmt_setup_system(tapasco_devctx_t *devctx, tapasco_pemgmt_t *ctx
 			tapasco_handle_t const iar = tapasco_regs_named_register(
 				devctx, slot_id, TAPASCO_REG_IAR);
 			// enable IP interrupts
-			LOG(LALL_PEMGMT, "writing GIER at " PRIhandle, gier);
+			DEVLOG(devctx->id, LALL_PEMGMT, "writing GIER at " PRIhandle, gier);
 			platform_write_ctl(pctx, gier, sizeof(d), &d,
 				PLATFORM_CTL_FLAGS_NONE);		// GIER
 			// enable ap_done interrupt generation
-			LOG(LALL_PEMGMT, "writing IER  at " PRIhandle, ier);
+			DEVLOG(devctx->id, LALL_PEMGMT, "writing IER  at " PRIhandle, ier);
 			platform_write_ctl(pctx, ier, sizeof(d), &d,
 				PLATFORM_CTL_FLAGS_NONE); 		// IPIER
 			// ack all existing interrupts
-			LOG(LALL_PEMGMT, "writing IAR  at " PRIhandle, iar);
+			DEVLOG(devctx->id, LALL_PEMGMT, "writing IAR  at " PRIhandle, iar);
 			platform_read_ctl(pctx, iar, sizeof(d), &d, 
 				PLATFORM_CTL_FLAGS_NONE);               // IAR
 			platform_write_ctl(pctx, iar, sizeof(d), &d,
@@ -177,7 +177,7 @@ tapasco_slot_id_t tapasco_pemgmt_acquire_pe(tapasco_pemgmt_t *ctx,
 	const midx_t bucket_idx = kh_val(ctx->kidmap, k);
 	while (sem_wait(&ctx->kernel[bucket_idx].sem)) ;
 	tapasco_pe_t *pe = (tapasco_pe_t *)gs_pop(&ctx->kernel[bucket_idx].pe_stk);
-	LOG(LALL_PEMGMT, "k_id = " PRIkernel ", slot_id = " PRIslot, k_id, pe->slot_id);
+	DEVLOG(ctx->dev_id, LALL_PEMGMT, "k_id = " PRIkernel ", slot_id = " PRIslot, k_id, pe->slot_id);
 	tapasco_perfc_pe_acquired_inc(ctx->dev_id);
 	return pe->slot_id;
 }
@@ -189,7 +189,7 @@ void tapasco_pemgmt_release_pe(tapasco_pemgmt_t *ctx, tapasco_slot_id_t const s_
 	const khiter_t k = kh_get(kidmap, ctx->kidmap, ctx->pe[s_id]->id);
 	assert(k != kh_end(ctx->kidmap));
 	const midx_t bucket_idx = kh_val(ctx->kidmap, k);
-	LOG(LALL_PEMGMT, "slot_id = " PRIslot, s_id);
+	DEVLOG(ctx->dev_id, LALL_PEMGMT, "slot_id = " PRIslot, s_id);
 	tapasco_perfc_pe_released_inc(ctx->dev_id);
 	gs_push(&ctx->kernel[bucket_idx].pe_stk, ctx->pe[s_id]);
 	while (sem_post(&ctx->kernel[bucket_idx].sem)) ;
@@ -220,9 +220,9 @@ tapasco_res_t tapasco_pemgmt_prepare_pe(tapasco_devctx_t *devctx,
 		tapasco_transfer_t *t = tapasco_jobs_get_arg_transfer(devctx->jobs, j_id, a);
 
 		if (t->len > 0) {
-			LOG(LALL_PEMGMT, "job " PRIjob ": transferring %zd byte arg #%zd", j_id, t->len, a);
+			DEVLOG(devctx->id, LALL_PEMGMT, "job " PRIjob ": transferring %zd byte arg #%zd", j_id, t->len, a);
 			if ((r = tapasco_transfer_to(devctx, j_id, t, slot_id)) != TAPASCO_SUCCESS) { return r; }
-			LOG(LALL_PEMGMT, "job " PRIjob ": writing handle to arg #%zd (" PRIhandle ")", j_id, a, t->handle);
+			DEVLOG(devctx->id, LALL_PEMGMT, "job " PRIjob ": writing handle to arg #%zd (" PRIhandle ")", j_id, a, t->handle);
 			if (platform_write_ctl(devctx->pdctx, h, sizeof(t->handle),
 					&t->handle, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
 				return TAPASCO_ERR_PLATFORM_FAILURE;
@@ -279,7 +279,7 @@ tapasco_res_t tapasco_pemgmt_finish_pe(tapasco_devctx_t *devctx, tapasco_job_id_
 	}
 
 	tapasco_jobs_set_return(devctx->jobs, j_id, sizeof(ret), &ret);
-	LOG(LALL_SCHEDULER, "job #" PRIjob ": read result value 0x%08llx", j_id, ret);
+	DEVLOG(devctx->id, LALL_PEMGMT, "job #" PRIjob ": read result value 0x%08llx", j_id, ret);
 
 	// Read back values from all argument registers
 	for (size_t a = 0; a < num_args; ++a) {
