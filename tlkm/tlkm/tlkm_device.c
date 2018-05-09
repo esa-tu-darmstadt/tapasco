@@ -41,12 +41,13 @@ int dma_engines_init(struct tlkm_device *dev)
 
 		BUG_ON(! o->intr_read);
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d: registering read interrupt", i);
-		if (o->intr_read && (ret = tlkm_device_request_platform_irq(dev, irqn++, o->intr_read))) {
+		if (o->intr_read && (ret = tlkm_device_request_platform_irq(dev, irqn++, o->intr_read, &dev->dma[i]))) {
 			DEVERR(dev->dev_id, "could not register interrupt #%d: %d", irqn, ret);
 			goto err_dma_engine;
 		}
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d: registering write interrupt", i);
-		if (o->intr_write && o->intr_write != o->intr_read && (ret = tlkm_device_request_platform_irq(dev, irqn++, o->intr_write))) {
+		if (o->intr_write && o->intr_write != o->intr_read && (ret = tlkm_device_request_platform_irq(
+				dev, irqn++, o->intr_write, &dev->dma[i]))) {
 			DEVERR(dev->dev_id, "could not register interrupt #%d: %d", irqn, ret);
 			goto err_dma_engine;
 		}

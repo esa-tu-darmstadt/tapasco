@@ -163,17 +163,16 @@ void zynq_irq_exit(struct zynq_device *zynq_dev)
 	}
 }
 
-int zynq_irq_request_platform_irq(struct tlkm_device *dev, int irq_no, irq_handler_t h)
+int zynq_irq_request_platform_irq(struct tlkm_device *dev, int irq_no, irq_handler_t h, void *data)
 {
 	int err = 0;
-	struct zynq_device *zdev = (struct zynq_device *)dev->private_data;
 	if (irq_no >= dev->cls->npirqs) {
 		DEVERR(dev->dev_id, "invalid platform interrupt number: %d (must be < %zd",
 				irq_no, dev->cls->npirqs);
 		return -ENXIO;
 	}
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "requesting platform irq #%d", irq_no);
-	if ((err = request_irq(ZYNQ_IRQ_BASE_IRQ + irq_no, h, IRQF_EARLY_RESUME, "tapasco_zynq_platform", zdev))) {
+	if ((err = request_irq(ZYNQ_IRQ_BASE_IRQ + irq_no, h, IRQF_EARLY_RESUME, "tapasco_zynq_platform", data))) {
 		DEVERR(dev->dev_id, "could not request interrupt #%d: %d", ZYNQ_IRQ_BASE_IRQ + irq_no, err);
 		return err;
 	}

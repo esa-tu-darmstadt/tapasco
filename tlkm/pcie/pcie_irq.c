@@ -12,7 +12,7 @@
 #define _INTR(nr) 					\
 void tlkm_pcie_slot_irq_work_ ## nr(struct work_struct *work) \
 { \
-	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *)atomic_long_read(&work->data); \
+	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *)container_of(work, struct tlkm_pcie_device, irq_work[nr]); \
 	BUG_ON(! dev->parent->ctrl); \
 	tlkm_control_signal_slot_interrupt(dev->parent->ctrl, nr); \
 } \
@@ -54,7 +54,6 @@ int pcie_irqs_init(struct tlkm_device *dev)
 		DEVLOG(dev->dev_id, TLKM_LF_IRQ, "interrupt line %d/%d assigned with return value %d", \
 				irqn, pci_irq_vector(pdev->pdev, irqn), err[nr]); \
 		INIT_WORK(&pdev->irq_work[nr], tlkm_pcie_slot_irq_work_ ## nr); \
-		atomic_long_set(&pdev->irq_work[nr].data, (long)pdev->pdev); \
 	}
 	TLKM_PCIE_SLOT_INTERRUPTS
 #undef _INTR
@@ -90,7 +89,7 @@ void pcie_irqs_exit(struct tlkm_device *dev)
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "interrupts deactivated");
 }
 
-int pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no, irqreturn_t (*intr_handler)(int, void *))
+int pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no, irq_handler_t intr_handler, void *data)
 {
 	int err = 0;
 	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
@@ -106,11 +105,12 @@ int pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no, irqretur
 			intr_handler,
 			IRQF_EARLY_RESUME,
 			TLKM_PCI_NAME,
-			pdev->pdev))) {
+			data))) {
 		DEVERR(dev->dev_id, "could not request interrupt #%d: %d", irq_no, err);
 		return err;
 	}
 	pdev->irq_mapping[irq_no] = pci_irq_vector(pdev->pdev, irq_no);
+	pdev->irq_data[irq_no] = data;
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "created mapping from interrupt %d -> %d", irq_no, pdev->irq_mapping[irq_no]);
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "interrupt line %d/%d assigned with return value %d",
 			irq_no, pci_irq_vector(pdev->pdev, irq_no), err);
@@ -125,6 +125,9 @@ void pcie_irqs_release_platform_irq(struct tlkm_device *dev, int irq_no)
 		return;
 	}
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "freeing platform interrupt #%d with mapping %d", irq_no, pdev->irq_mapping[irq_no]);
-	free_irq(pdev->irq_mapping[irq_no], pdev->pdev);
-	pdev->irq_mapping[irq_no] = -1;
+	if (pdev->irq_mapping[irq_no] != -1) {
+		free_irq(pdev->irq_mapping[irq_no], pdev->irq_data[irq_no]);
+		pdev->irq_mapping[irq_no] = -1;
+		pdev->irq_data[irq_no] = NULL;
+	}
 }
