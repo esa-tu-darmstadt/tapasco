@@ -52,7 +52,7 @@ int tlkm_dma_init(struct dma_engine *dma, dev_id_t dev_id, u64 dbase)
 
 	DEVLOG(dev_id, TLKM_LF_DMA, "detecting DMA engine type ...");
 	id = *(u64 *)(dma->regs + REG_ID);
-	if ((id & 0xFFFFFFFF) == 0xE5A0023) {
+	if ((id & 0xFFFFFFFF) == BLUE_DMA_ID) {
 		dma->dma_used = DMA_USED_BLUE;
 		DEVLOG(dev_id, TLKM_LF_DMA, "detected BlueDMA");
 		DEVLOG(dev_id, TLKM_LF_DMA, "PCIe beats per burst: %u", (uint8_t)(id >> 32));
@@ -70,7 +70,9 @@ int tlkm_dma_init(struct dma_engine *dma, dev_id_t dev_id, u64 dbase)
 	mutex_init(&dma->wq_mutex);
 	dma->dev_id = dev_id;
 	dma->base = base;
+	atomic64_set(&dma->rq_enqueued, 0);
 	atomic64_set(&dma->rq_processed, 0);
+	atomic64_set(&dma->wq_enqueued, 0);
 	atomic64_set(&dma->wq_processed, 0);
 	DEVLOG(dev_id, TLKM_LF_DMA, "DMA engine initialized");
 	return 0;
@@ -105,7 +107,7 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void
 			return -EAGAIN;
 		} else {
 			t_id = dma->ops.copy_to(dma, dev_addr, dma->dma_buf[0], cpy_sz);
-			if (wait_event_interruptible(dma->rq, atomic64_read(&dma->wq_processed) > t_id)) {
+			if (wait_event_interruptible(dma->wq, atomic64_read(&dma->wq_processed) >= t_id)) {
 				WRN("got killed while hanging in waiting queue");
 				return -EACCES;
 			}
@@ -127,7 +129,7 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_ad
 				len, usr_addr, (void *)dev_addr);
 		cpy_sz = len < TLKM_DMA_BUF_SZ ? len : TLKM_DMA_BUF_SZ;
 		t_id = dma->ops.copy_from(dma, dma->dma_buf[1], dev_addr, cpy_sz);
-		if (wait_event_interruptible(dma->rq, atomic64_read(&dma->rq_processed) > t_id)) {
+		if (wait_event_interruptible(dma->rq, atomic64_read(&dma->rq_processed) >= t_id)) {
 			DEVWRN(dma->dev_id, "got killed while hanging in waiting queue");
 			return -EACCES;
 		}

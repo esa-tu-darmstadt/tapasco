@@ -37,9 +37,11 @@ struct dma_engine {
 	dma_used_t			dma_used;
 	wait_queue_head_t		rq;
 	struct mutex			rq_mutex;
+	atomic64_t 			rq_enqueued;
 	atomic64_t 			rq_processed;
 	wait_queue_head_t		wq;
 	struct mutex			wq_mutex;
+	atomic64_t 			wq_enqueued;
 	atomic64_t 			wq_processed;
 	void 				*dma_buf[TLKM_DMA_BUFS];
 };

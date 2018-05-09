@@ -19,6 +19,7 @@
 #include <linux/sched.h>
 #include "tlkm_dma.h"
 #include "tlkm_logging.h"
+#include "tlkm_perfc.h"
 
 /* Register Map and commands */
 #define REG_HOST_ADDR 			0x00 	/* slv_reg0 = PCIe addr */
@@ -33,7 +34,8 @@ irqreturn_t blue_dma_intr_handler_read(int irq, void * dev_id)
 {
 	struct dma_engine *dma = (struct dma_engine *)dev_id;
 	atomic64_inc(&dma->rq_processed);
-	wake_up_interruptible_sync(&dma->rq);
+	tlkm_perfc_dma_reads_inc(dma->dev_id);
+	wake_up_interruptible(&dma->rq);
 	return IRQ_HANDLED;
 }
 
@@ -41,13 +43,14 @@ irqreturn_t blue_dma_intr_handler_write(int irq, void * dev_id)
 {
 	struct dma_engine *dma = (struct dma_engine *)dev_id;
 	atomic64_inc(&dma->wq_processed);
-	wake_up_interruptible_sync(&dma->wq);
+	tlkm_perfc_dma_writes_inc(dma->dev_id);
+	wake_up_interruptible(&dma->wq);
 	return IRQ_HANDLED;
 }
 
 ssize_t blue_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_addr_t dev_addr, size_t len)
 {
-	LOG(TLKM_LF_DMA, "dev_addr = 0x%px, usr_addr = 0x%px, len: %zu bytes", (void *)dev_addr, usr_addr, len);
+	DEVLOG(dma->dev_id, TLKM_LF_DMA, "dev_addr = 0x%px, usr_addr = 0x%px, len: %zu bytes", (void *)dev_addr, usr_addr, len);
 	if(mutex_lock_interruptible(&dma->regs_mutex)) {
 		WRN("got killed while aquiring the mutex");
 		return len;
@@ -59,12 +62,12 @@ ssize_t blue_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_ad
 	wmb();
 	*(u64 *)(dma->regs + REG_CMD)			= CMD_READ;
 	mutex_unlock(&dma->regs_mutex);
-	return atomic64_read(&dma->rq_processed) + 1;
+	return atomic64_inc_return(&dma->rq_enqueued);
 }
 
 ssize_t blue_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void __user *usr_addr, size_t len)
 {
-	LOG(TLKM_LF_DMA, "dev_addr = 0x%px, usr_addr = 0x%px, len: %zu bytes", (void *)dev_addr, usr_addr, len);
+	DEVLOG(dma->dev_id, TLKM_LF_DMA, "dev_addr = 0x%px, usr_addr = 0x%px, len: %zu bytes", (void *)dev_addr, usr_addr, len);
 	if(mutex_lock_interruptible(&dma->regs_mutex)) {
 		WRN("got killed while aquiring the mutex");
 		return len;
@@ -76,5 +79,5 @@ ssize_t blue_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void
 	wmb();
 	*(u64 *)(dma->regs + REG_CMD)			= CMD_WRITE;
 	mutex_unlock(&dma->regs_mutex);
-	return atomic64_read(&dma->wq_processed) + 1;
+	return atomic64_inc_return(&dma->wq_enqueued);
 }

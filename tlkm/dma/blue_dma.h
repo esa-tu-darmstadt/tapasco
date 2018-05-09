@@ -23,6 +23,7 @@
 #include "tlkm_dma.h"
 #include "tlkm_types.h"
 
+#define BLUE_DMA_ID				 0xE5A0023
 irqreturn_t blue_dma_intr_handler_read(int irq, void * dev_id);
 irqreturn_t blue_dma_intr_handler_write(int irq, void * dev_id);
 ssize_t blue_dma_copy_from(struct dma_engine *dma, void *krn_addr, dev_addr_t dev_addr, size_t len);

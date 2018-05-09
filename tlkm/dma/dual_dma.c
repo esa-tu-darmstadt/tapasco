@@ -40,6 +40,7 @@ irqreturn_t dual_dma_intr_handler_dma(int irq, void * dev_id)
 	*(u32 *)(dma->regs + REG_CMD) = CMD_ACK;
 	mutex_unlock(&dma->regs_mutex);
 	atomic64_inc(&dma->wq_processed);
+	atomic64_inc(&dma->rq_processed);
 	wake_up_interruptible(&dma->wq);
 	return IRQ_HANDLED;
 }
@@ -58,7 +59,7 @@ ssize_t dual_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_ad
 	*(u32 *)(dma->regs + REG_BTT)			= (u32)len;
 	wmb();
 	*(u32 *)(dma->regs + REG_CMD)			= CMD_READ;
-	return atomic64_read(&dma->rq_processed) + 1;
+	return atomic64_inc_return(&dma->rq_enqueued);
 }
 
 ssize_t dual_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void __user *usr_addr, size_t len)
@@ -75,5 +76,5 @@ ssize_t dual_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void
 	*(u32 *)(dma->regs + REG_BTT)			= (u32)len;
 	wmb();
 	*(u32 *)(dma->regs + REG_CMD)			= CMD_WRITE;
-	return atomic64_read(&dma->wq_processed) + 1;
+	return atomic64_inc_return(&dma->wq_enqueued);
 }
