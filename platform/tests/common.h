@@ -31,7 +31,7 @@
 static inline int check(platform_res_t res)
 {
 	if (res != PLATFORM_SUCCESS) {
-		fprintf(stderr, "platform-error: %s (%d)\n", platform_strerror(res), res);
+		fprintf(stderr, "platform-error: %s (" PRIres ")\n", platform_strerror(res), res);
 	}
 	return res == PLATFORM_SUCCESS;
 }

@@ -22,13 +22,13 @@ int main(int argc, char *argv[])
 	platform_device_info_t *devs;
 	platform_res_t res = platform_init(&ctx);
 	if (res != PLATFORM_SUCCESS) {
-		fprintf(stderr, "could not initialize platform: %s (%d)", platform_strerror(res), res);
+		fprintf(stderr, "could not initialize platform: %s (" PRIres ")", platform_strerror(res), res);
 		exit(EXIT_FAILURE);
 	}
 
 	platform_enum_devices(ctx, &num_devs, &devs);
-	for (size_t i = 0; i < num_devs; ++i) {
-		printf("Stressing device #%03u ...\n", i);
+	for (platform_dev_id_t i = 0; i < num_devs; ++i) {
+		printf("Stressing device #" PRIdev " ...\n", i);
 		stress(ctx, i);
 	}
 	platform_deinit(ctx);
