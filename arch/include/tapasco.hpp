@@ -58,10 +58,10 @@ using job_future = std::function<tapasco_res_t (void)>;
  **/
 template<typename T>
 struct OutOnly final {
-  OutOnly(T* value) : value(value) {
+  OutOnly(T& value) : value(value) {
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
   }
-  T* value;
+  T& value;
 };
 
 /**
@@ -72,10 +72,10 @@ struct OutOnly final {
  **/
 template<typename T>
 struct RetVal final {
-  RetVal(T* value) : value(value) {
+  RetVal(T& value) : value(value) {
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
   }
-  T* value;
+  T& value;
 };
 
 /**
@@ -84,10 +84,10 @@ struct RetVal final {
  **/
 template<typename T>
 struct Local final {
-  Local(T* value) : value(value) {
+  Local(T& value) : value(value) {
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
   }
-  T* value;
+  T& value;
 };
 
 /**
@@ -173,7 +173,7 @@ struct Tapasco {
   bool is_ready() const noexcept { return _ok; }
 
   template<typename R, typename... Targs>
-  std::function<tapasco_res_t (void)> launch(tapasco_kernel_id_t const k_id, tapasco_job_id_t& j_id,
+  job_future launch(tapasco_kernel_id_t const k_id, tapasco_job_id_t& j_id,
       RetVal<R>& ret, Targs... args) noexcept
   {
     tapasco_res_t res { TAPASCO_SUCCESS };
