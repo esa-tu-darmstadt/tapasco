@@ -125,9 +125,20 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 		goto err_dma;
 	}
 
+	if (dev->cls->init_subsystems) {
+		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setting up device-specific subsystems ...");
+		if ((ret = dev->cls->init_subsystems(dev, data))) {
+			DEVERR(dev->dev_id, "could not setup device-specific subsystems: %d", ret);
+			goto err_sub;
+		}
+	}
+
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "device setup complete");
 	return ret;
 
+	if (dev->cls->exit_subsystems)
+		dev->cls->exit_subsystems(dev);
+err_sub:
 	dma_engines_exit(dev);
 err_dma:
 	tlkm_status_exit(&dev->status, dev);
@@ -146,6 +157,8 @@ err_nperfc:
 void tlkm_device_exit(struct tlkm_device *dev)
 {
 	if (dev) {
+		if (dev->cls->exit_subsystems)
+			dev->cls->exit_subsystems(dev);
 		dma_engines_exit(dev);
 		tlkm_status_exit(&dev->status, dev);
 		dev->cls->destroy(dev);

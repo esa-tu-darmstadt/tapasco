@@ -12,6 +12,8 @@ struct tlkm_class;
 
 typedef int (*tlkm_class_create_f)(struct tlkm_device *, void *data);
 typedef void(*tlkm_class_destroy_f)(struct tlkm_device *);
+typedef int (*tlkm_class_init_subsystems_f)(struct tlkm_device *, void *data);
+typedef void(*tlkm_class_exit_subsystems_f)(struct tlkm_device *);
 typedef int (*tlkm_class_probe_f)(struct tlkm_class *);
 typedef void(*tlkm_class_remove_f)(struct tlkm_class *);
 
@@ -24,6 +26,8 @@ struct tlkm_class {
 	char 				name[TLKM_CLASS_NAME_LEN];
 	tlkm_class_create_f		create;
 	tlkm_class_destroy_f		destroy;
+	tlkm_class_init_subsystems_f	init_subsystems;
+	tlkm_class_exit_subsystems_f	exit_subsystems;
 	tlkm_class_probe_f		probe;
 	tlkm_class_remove_f		remove;
 	tlkm_device_ioctl_f		ioctl;		/* ioctl implementation */

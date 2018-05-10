@@ -237,16 +237,9 @@ int pcie_device_create(struct tlkm_device *dev, void *data)
 		DEVERR(dev->dev_id, "failed to configure device: %d", ret);
 		goto err_configure;
 	}
-	DEVLOG(dev->dev_id, TLKM_LF_PCIE, "claiming MSI-X interrupts ...");
-	if ((ret = claim_msi(pdev))) {
-		DEVERR(dev->dev_id, "failed to claim MSI-X interrupts: %d", ret);
-		goto err_configure;
-	}
-
 	report_link_status(pdev);
 	return 0;
 
-	release_msi(pdev);
 err_configure:
 	release_device(pdev);
 err_no_device:
@@ -268,4 +261,23 @@ void pcie_device_destroy(struct tlkm_device *dev)
 	} else {
 		WRN("called with NULL device!");
 	}
+}
+
+int pcie_device_init_subsystems(struct tlkm_device *dev, void *data)
+{
+	int ret = 0;
+	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
+	DEVLOG(dev->dev_id, TLKM_LF_PCIE, "claiming MSI-X interrupts ...");
+	if ((ret = claim_msi(pdev))) {
+		DEVERR(dev->dev_id, "failed to claim MSI-X interrupts: %d", ret);
+	}
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "successfully initialized subsystems");
+	return ret;
+}
+
+void pcie_device_exit_subsystems(struct tlkm_device *dev)
+{
+	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
+	release_msi(pdev);
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "exited subsystems");
 }
