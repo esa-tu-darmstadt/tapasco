@@ -238,7 +238,7 @@ platform_res_t pcie_init(platform_devctx_t *devctx)
 		pthread_mutex_init(&pp->mem_mtx, NULL);
 		*pp			= INIT_PCIE_PLATFORM;
 		pp->devctx		= devctx;
-		pp->mem 		= gen_mem_create(0, PCIE_MEM_SZ);
+		pp->mem 		= gen_mem_create(0, (size_t)PCIE_MEM_SZ);
 		devctx->private_data	= pp;
 		devctx->platform        = pcie_def;
 		devctx->dops.alloc      = pcie_alloc;
