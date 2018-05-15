@@ -38,37 +38,43 @@ object Feature {
 
   def unapply(f: Feature): Option[(String, FMap)] = f.unapply
 
+
+  // Internel Classes for Structure
   sealed trait FValue {
     def value: Any
     def toTCL: String
     def toJson: String
   }
 
+  // Corresponding to Json Object
   case class FMap(in : Map[String, FValue]) extends FValue{
     override def value: Map[String, FValue]  = in
     override def toTCL:  String = {
-      val map = for{(k, v) <- in} yield s""""$k " ${v.toTCL}"""
-        "{" + map + "}"
+      val map = for{(k, v) <- in} yield s""""$k" ${v.toTCL}"""
+        map.fold("{")(_ ++ " " ++ _) + "}"
     }
     override def toJson: String = {
-      val map = for{(k, v) <- in} yield s"$k : ${v.toJson}"
-      "{\n" + map + "}\n"
+      val map = for{(k, v) <- in} yield s""""$k" : ${v.toJson}"""
+       "{"+ map.fold("")(_ ++ ", " ++_ ).drop(1) + "}"
     }
   }
+
+  // Corresponding to Json Array
   case class FList(in: List[FValue]) extends FValue{
     override def value: List[FValue] = in
     override def toTCL:  String = {
       val list = for{j <- in}yield s"${j.toTCL}"
-      "{" + list +"}"
+      list.fold("{")(_ ++ " " ++ _) + "}"
     }
     override def toJson: String = {
-      val list = for{j <- in}yield s"${j.toJson}, "
-        "[" + list + "]"
+      val list = for{j <- in}yield s"""${j.toJson}"""
+      "["+ list.fold("")(_ ++ ", " ++ _).drop(1) + "]"
     }
   }
+  // Corresponding to any other Json Value
   case class FString(in : String) extends FValue{
     override def value:  String = in
     override def toTCL:  String = s""""$in""""
-    override def toJson: String = in + ", "
+    override def toJson: String = s""""$in""""
   }
 }
