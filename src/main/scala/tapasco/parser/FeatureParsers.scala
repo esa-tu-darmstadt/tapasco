@@ -18,21 +18,17 @@
 //
 package de.tu_darmstadt.cs.esa.tapasco.parser
 import  de.tu_darmstadt.cs.esa.tapasco.base.Feature
+import  de.tu_darmstadt.cs.esa.tapasco.base.Feature._
 import  fastparse.all._
-import  java.nio.file._
-import  scala.io.Source
 
 private object FeatureParsers {
   import BasicParsers._
   def feature: Parser[Feature] =
     (qstring.opaque("feature name").! ~ ws ~/
-     (fconfigFile | fprops)).map(p => Feature(p._1, p._2))
-
-  val fprops: Parser[Feature.FMap] =
-    fMap
-
- def fconfigFile:Parser[Feature.FMap] =
-   "configFile" ~ ws ~ featureAssign ~/ path.opaque("path to .json file with Feature") map loadFeatureFromFile _
+     featureBegin ~ ws ~/
+     (featureKeyValue ~ ws).rep ~ ws ~/
+     featureEnd ~ ws)
+        .map(p => Feature(p._1, FMap(p._2.toMap)))
 
   def features: Parser[(String, Seq[Feature])] =
     longOption("features", "Features") ~ ws ~/ seqOne(feature)
@@ -48,40 +44,16 @@ private object FeatureParsers {
     CharIn(featureEndChars).opaque(s"end of feature mark, one of '$featureEndChars'")
   def featureAssign: Parser[Unit] = "->" | "=" | ":=" | ":"
 
-  val featureKey: Parser[String] =
+  def featureKey: Parser[String] =
     (quotedString | string(featureAssigns ++ featureMarks))
       .opaque("feature key name")
 
-  val featureVal: Parser[Feature.FValue] =
-    (fString | fMap | fList)
-      .opaque("feature value for given key (May be a simple value, an object or a List of Objects)")
+  def featureVal: Parser[FString] =
+    (quotedString | string(featureAssigns ++ featureMarks))
+      .opaque("feature value for given key")map(a => FString(a))
 
-  val featureKeyValue: Parser[(String, Feature.FValue)] =
+  def featureKeyValue: Parser[(String, FString)] =
     featureKey ~ ws ~/
     featureAssign.opaque("feature assignment operator, one of '->', '=', ':=' or ':'") ~ ws ~/
     featureVal ~ ws
-
-  val fString: Parser[Feature.FString] =
-      (quotedString | string(featureAssigns ++ featureMarks))
-         .map (s =>Feature.FString(s))
-
-  val fList:Parser[Feature.FList] =
-      ("[" ~ ws ~/
-      (featureVal ~ sep).rep ~ ws ~/
-      "]" ~ ws)
-         .map(p => Feature.FList(p.toList))
-
-  val fMap: Parser[Feature.FMap] =
-      ("{" ~ ws ~/
-      (featureKeyValue ~ ws).rep ~ ws ~/
-      "}" ~ ws)
-         .map(p => Feature.FMap(p.toMap))
-
-
-  def loadFeatureFromFile(from: Path): Feature.FMap = {
-    CommandLineParser.check(fprops.parse(Source.fromFile(from.toString).getLines.mkString)) match {
-      case Right(s) => s
-      case Left(e)  => throw e
-    }
-  }
 }
