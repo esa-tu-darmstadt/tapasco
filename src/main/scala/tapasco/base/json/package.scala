@@ -26,6 +26,7 @@ import  play.api.libs.json.Reads._
 import  play.api.libs.json.Writes._
 import  play.api.libs.functional.syntax._
 import  java.nio.file._
+import  scala.io.Source
 import  java.time.format.DateTimeFormatter, java.time.LocalDateTime
 
 /**
@@ -186,15 +187,31 @@ package object json {
   /* Core @} */
 
   /* @{ Features */
-  implicit val readsFeature: Reads[Feature] = (
+    implicit val readsFeature: Reads[Feature] = (
     (JsPath \ "Feature").read[String] ~
-    (JsPath \ "Properties").read[Feature.FMap]
+    (JsPath \ "Properties").read[Feature.FMap].orElse(readsFeatureFromFile)
   ) (Feature.apply _)
+
+lazy val readsFeatureFromFile: Reads[Feature.FMap] = new Reads[Feature.FMap]{
+  def reads(json: JsValue): JsResult[Feature.FMap] = {
+    val temp = (json\"ConfigFile").validate[Path]
+
+    temp.asEither match {
+      case Right(s) => readMapFromFile(s)
+      case Left(e)  => new JsError(e)
+    }
+  }
+}
+
+// Read a Feature Config from an External Json File
+def readMapFromFile(p: Path): JsResult[Feature.FMap] ={
+  val tmp = Source.fromFile(p.toString).getLines.mkString
+  Json.parse(tmp).validate[Feature.FMap]
+}
 
   implicit lazy val readsFeatureMap: Reads[Feature.FMap] = new Reads[Feature.FMap]{
     def reads(json: JsValue): JsResult[Feature.FMap] =  {
       val temp = json.validate[Map[String, Feature.FValue]]
-
       val result: JsResult[Feature.FMap] = temp.asEither match {
         case Right(s) => new JsSuccess[Feature.FMap](Feature.FMap(s.toMap))
         case Left(e)  => new JsError(e)
@@ -215,13 +232,14 @@ package object json {
     }
   }
 
+  // All non Object or Arrays are Strings for our Implementation
   implicit val readsFeatureString: Reads[Feature.FString] = new Reads[Feature.FString]{
     def reads(json: JsValue): JsResult[Feature.FString] ={
       val temp = json match {
         case s: JsString  => s.validate[String]
         case i: JsNumber  => i.validate[Double]
         case b: JsBoolean => b.validate[Boolean]
-        // case n: JsNull    => new JsSuccess[String]("null")
+        case _            => new JsSuccess[String]("null")
       }
 
       val result = temp.asEither match{
@@ -249,7 +267,7 @@ package object json {
     (JsPath \ "Feature").write[String] ~
     (JsPath \ "Properties").write[Feature.FMap]
   ) (unlift(Feature.unapply _))
-
+  //Converts the FMap to a JsonObject
   implicit lazy val writesFeatureMap: Writes[Feature.FMap] = new Writes[Feature.FMap]{
     def writes(myMap: Feature.FMap) = Json.parse(myMap.toJson)
   }
