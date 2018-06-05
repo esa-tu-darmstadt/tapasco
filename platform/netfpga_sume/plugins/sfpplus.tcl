@@ -54,17 +54,17 @@
         puts $constraints_file_late {set_false_path -from [get_clocks gt_refclk_clk_p] -to [get_clocks -filter name=~*sfpmac_*gthe2_i/TXOUTCLK]}
 
         puts $constraints_file {# Main I2C Bus - 100KHz - SUME}
-        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports iic_scl_io]}
-        puts $constraints_file {set_property SLEW SLOW [get_ports iic_scl_io]}
-        puts $constraints_file {set_property DRIVE 16 [get_ports iic_scl_io]}
-        puts $constraints_file {set_property PULLUP true [get_ports iic_scl_io]}
-        puts $constraints_file {set_property PACKAGE_PIN AK24 [get_ports iic_scl_io]}
+        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports IIC_0_scl_io]}
+        puts $constraints_file {set_property SLEW SLOW [get_ports IIC_0_scl_io]}
+        puts $constraints_file {set_property DRIVE 16 [get_ports IIC_0_scl_io]}
+        puts $constraints_file {set_property PULLUP true [get_ports IIC_0_scl_io]}
+        puts $constraints_file {set_property PACKAGE_PIN AK24 [get_ports IIC_0_scl_io]}
 
-        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports iic_sda_io]}
-        puts $constraints_file {set_property SLEW SLOW [get_ports iic_sda_io]}
-        puts $constraints_file {set_property DRIVE 16 [get_ports iic_sda_io]}
-        puts $constraints_file {set_property PULLUP true [get_ports iic_sda_io]}
-        puts $constraints_file {set_property PACKAGE_PIN AK25 [get_ports iic_sda_io]}
+        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports IIC_0_sda_io]}
+        puts $constraints_file {set_property SLEW SLOW [get_ports IIC_0_sda_io]}
+        puts $constraints_file {set_property DRIVE 16 [get_ports IIC_0_sda_io]}
+        puts $constraints_file {set_property PULLUP true [get_ports IIC_0_sda_io]}
+        puts $constraints_file {set_property PACKAGE_PIN AK25 [get_ports IIC_0_sda_io]}
 
         puts $constraints_file {# i2c_reset[0] - i2c_mux reset - high active}
         puts $constraints_file {# i2c_reset[1] - si5324 reset - high active}
@@ -95,9 +95,9 @@
           puts "Attaching SFP port $i to Stream $ip"
 
           set ip_rx [format "%s_rx" $ip]
+          set ip_tx [format "%s_tx" $ip]
           set ip_rx_clk [format "%s_rx_aclk" $ip]
           set ip_rx_rst_n [format "%s_rx_aresetn" $ip]
-          set ip_tx [format "%s_tx" $ip]
           set ip_tx_clk [format "%s_tx_aclk" $ip]
           set ip_tx_rst_n [format "%s_tx_aresetn" $ip]
 
@@ -138,15 +138,17 @@
 
           connect_bd_net [get_bd_pins sfpmac_${i}/dclk] $slow_clk
 
+
           disconnect_bd_net [get_bd_nets -of_objects [get_bd_pins $ip_rx_rst_n]] [get_bd_pins $ip_rx_rst_n]
           disconnect_bd_net [get_bd_nets -of_objects [get_bd_pins $ip_tx_rst_n]] [get_bd_pins $ip_tx_rst_n]
           connect_bd_net [get_bd_pins $rst_inv/Res] [get_bd_pins $ip_rx_rst_n]
           connect_bd_net [get_bd_pins $rst_inv/Res] [get_bd_pins $ip_tx_rst_n]
 
-          disconnect_bd_net [get_bd_nets -of_objects [get_bd_pins $ip_rx_clk]] [get_bd_pins $ip_rx_clk]
           disconnect_bd_net [get_bd_nets -of_objects [get_bd_pins $ip_tx_clk]] [get_bd_pins $ip_tx_clk]
+          disconnect_bd_net [get_bd_nets -of_objects [get_bd_pins $ip_rx_clk]] [get_bd_pins $ip_rx_clk]
           connect_bd_net [get_bd_pins sfpmac_0/coreclk_out] [get_bd_pins $ip_tx_clk]
           connect_bd_net [get_bd_pins sfpmac_0/coreclk_out] [get_bd_pins $ip_rx_clk]
+
 
           connect_bd_net [get_bd_pins sfpmac_${i}/s_axi_aclk] $slow_clk
 
