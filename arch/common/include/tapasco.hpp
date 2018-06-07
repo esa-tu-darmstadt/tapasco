@@ -60,6 +60,7 @@ extern "C" {
 #include <future>
 #include <cstdint>
 #include <iostream>
+#include <array>
 
 using namespace std;
 
@@ -324,6 +325,16 @@ private:
     return tapasco_device_job_set_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h);
   }
 
+  /** Sets a std::array output-only argument (alloc only). **/
+  template<typename T, std::size_t N>
+  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t const arg_idx, OutOnly<std::array<T, N>> t) const noexcept
+  {
+    tapasco_handle_t h { 0 };
+    tapasco_res_t r;
+    if ((r = tapasco_device_alloc(dev_ctx, &h, N * sizeof(T), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
+    return tapasco_device_job_set_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h);
+  }
+
   /** Sets a single pointer argument (alloc + copy). **/
   template<typename T>
   tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t const arg_idx, T* t) const noexcept
@@ -333,6 +344,17 @@ private:
     tapasco_res_t r;
     if ((r = tapasco_device_alloc(dev_ctx, &h, sizeof(*t), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
     if ((r = tapasco_device_copy_to(dev_ctx, t, h, sizeof(*t), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
+    return tapasco_device_job_set_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h);
+  }
+
+  /** Sets a std::array argument (alloc + copy). **/
+  template<typename T, std::size_t N>
+  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t const arg_idx, std::array<T, N> &t) const noexcept
+  {
+    tapasco_handle_t h { 0 };
+    tapasco_res_t r;
+    if ((r = tapasco_device_alloc(dev_ctx, &h, N * sizeof(T), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
+    if ((r = tapasco_device_copy_to(dev_ctx, t.data(), h, N, TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
     return tapasco_device_job_set_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h);
   }
 
@@ -367,6 +389,23 @@ private:
   template<typename T>
   tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, OutOnly<T> t) const noexcept {
     return get_args(j_id, arg_idx, t.value);
+  }
+
+  /** Gets a output-only std::array from the device (copy + dealloc). **/
+  template<typename T, std::size_t N>
+  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, std::array<T, N> &t) const noexcept {
+    tapasco_handle_t h;
+    tapasco_res_t r;
+    if ((r = tapasco_device_job_get_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h)) != TAPASCO_SUCCESS) return r;
+    if ((r = tapasco_device_copy_from(dev_ctx, h, (void *)t.data(), N * sizeof(T), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
+    tapasco_device_free(dev_ctx, h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+    return TAPASCO_SUCCESS;
+  }
+
+  /** Gets a std::array from the device (copy + dealloc). **/
+  template<typename T, std::size_t N>
+  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, OutOnly<std::array<T, N>> t) const noexcept {
+    return get_args(j_id, arg_idx, *t.value);
   }
 
   /** Gets a single pointer argument (copy + dealloc). **/
