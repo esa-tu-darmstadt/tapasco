@@ -1,58 +1,32 @@
-cmake_minimum_required(VERSION 2.8)
-project(platform)
+project(platform VERSION 1.0 LANGUAGES C CXX)
 
-if (NOT EXISTS "$ENV{TAPASCO_HOME}")
-  message(FATAL_ERROR "Please set TAPASCO_HOME environment variable to root directory of Tapasco")
-endif (NOT EXISTS "$ENV{TAPASCO_HOME}")
+SET(PLATFORM "pcie" CACHE STRING "Please select the target platform.")
 
-include ("$ENV{TAPASCO_HOME}/cmake/Tapasco.cmake")
+SET(PLATFORM_COMMON_SRC "common")
 
-# add_definitions("-DNPERFC")
-set(CMAKE_INSTALL_PREFIX "${TAPASCO_HOME}")
+SET(SRCS "${PLATFORM_COMMON_SRC}/src/platform_logging.c"
+         "${PLATFORM_COMMON_SRC}/src/platform_errors.c"
+          "${CMNDIR}/src/gen_queue.c"
+          "${PLATFORM_COMMON_SRC}/src/platform_version.c"
+          "${PLATFORM_COMMON_SRC}/src/platform_addr_map.c"
+          "${PLATFORM_COMMON_SRC}/src/platform_context.c"
+          "${PLATFORM_COMMON_SRC}/src/platform_info.c"
+          "${PLATFORM_COMMON_SRC}/src/platform_async.c"
+    )
 
-set(SRCDIR "src")
-set(CMNDIR "common")
-set(GCMNDIR "${TAPASCO_HOME}/common")
-set(TLKMDIR "${TAPASCO_HOME}/module")
-set(CMNSRCS "${CMNDIR}/src/platform_addr_map.c"
-            "${CMNDIR}/src/platform_signaling.c"
-            "${CMNDIR}/src/platform_ctx.c"
-            "${CMNDIR}/src/platform_devctx.c"
-            "${CMNDIR}/src/platform_device_operations.c"
-            "${CMNDIR}/src/platform_errors.c"
-            "${CMNDIR}/src/platform_info.c"
-	    "${CMNDIR}/src/platform_logging.c"
-            "${CMNDIR}/src/platform_version.c"
-            "${CMNDIR}/src/platform_perfc.c"
-            "${GCMNDIR}/src/gen_queue.c"
-            "${GCMNDIR}/src/gen_mem.c")
-set(ZYNQSRCS "zynq/src/platform_zynq.c")
-set(PCIESRCS "pcie/src/platform_pcie.c")
+include(${PLATFORM}/platform.cmake)
 
-set(SRCS ${CMNSRCS} ${ZYNQSRCS} ${PCIESRCS})
+add_library(platform ${SRCS})
 
-link_directories(${TAPASCO_STATICLINKDIRS})
-include_directories(
-	"include"
-	"common/include"
-	"zynq/src"
-	"pcie/src"
-	${TAPASCO_INCDIRS}
-)
+target_include_directories(platform PUBLIC ${EXTRA_INCLUDES_PUBLIC} $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${PLATFORM_COMMON_SRC}/include> $<INSTALL_INTERFACE:${PLATFORM_COMMON_SRC}/include> PRIVATE "${CMNDIR}/include" ${EXTRA_INCLUDES_PRIVATE})
 
-set_source_files_properties(${SRCS} PROPERTIES COMPILE_FLAGS ${TAPASCO_CFLAGS})
+target_link_libraries(platform pthread atomic)
 
-add_library(platform SHARED ${SRCS})
-add_library(platform-static STATIC ${SRCS})
-set_target_properties(platform PROPERTIES LINKER_FLAGS ${TAPASCO_LDFLAGS})
-set_target_properties(platform-static PROPERTIES OUTPUT_NAME platform)
-set_target_properties(platform-static PROPERTIES LINKER_FLAGS ${TAPASCO_LDFLAGS})
+install(TARGETS platform EXPORT TapascoPlatformConfig
+        ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY  DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-if ("armv71" STREQUAL ${TAPASCO_TARGET})
-	target_link_libraries(platform atomic)
-	target_link_libraries(platform-static atomic)
-endif ()
+install(EXPORT TapascoPlatformConfig DESTINATION share/Tapasco/cmake)
 
-install(TARGETS platform platform-static
-        LIBRARY DESTINATION "lib/${TAPASCO_TARGET}"
-        ARCHIVE DESTINATION "lib/${TAPASCO_TARGET}/static")
+export(TARGETS platform FILE TapascoPlatformConfig.cmake)

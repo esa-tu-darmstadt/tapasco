@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2014 Jens Korinth, TU Darmstadt
+# Copyright (C) 2014 David de la Chevallerie, TU Darmstadt
 #
 # This file is part of Tapasco (TPC).
 #
@@ -16,14 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-set(ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 
-if ("$ENV{TAPASCO_HOME}" STREQUAL "")
-  message(FATAL_ERROR "Please set env var TAPASCO_HOME to root directory of Tapasco.")
-endif ("$ENV{TAPASCO_HOME}" STREQUAL "")
-set(TAPASCO_HOME "$ENV{TAPASCO_HOME}")
 
-# link_directories(${TAPASCO_HOME}/arch/lib/${ARCH}/static ${TAPASCO_HOME}/platform/lib/${ARCH}/static)
-link_directories(${TAPASCO_HOME}/arch/lib/${ARCH}  ${TAPASCO_HOME}/platform/lib/${ARCH})
-
-include_directories(${TAPASCO_HOME}/arch/common/include ${TAPASCO_HOME}/platform/common/include)
+proc generate {drv_handle} {
+	xdefine_include_file $drv_handle "xparameters.h" "dual_dma" "NUM_INSTANCES" "DEVICE_ID"  "C_S_AXI_BASEADDR" "C_S_AXI_HIGHADDR"
+}

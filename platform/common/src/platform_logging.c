@@ -62,7 +62,7 @@ static inline struct log_msg_t *get_msg()
 	return msg;
 }
 
-void platform_log(platform_ll_t const level, char *fmt, ...)
+void platform_log(platform_ll_t const level, const char *fmt, ...)
 {
 	if (!level || (level & libplatform_logging_level)) {
 		struct log_msg_t *lm = get_msg();
@@ -79,7 +79,7 @@ void platform_log(platform_ll_t const level, char *fmt, ...)
 
 static inline void handle_msg(struct log_msg_t *m)
 {
-	fprintf(libplatform_logging_file ? libplatform_logging_file : stderr, 
+	fprintf(libplatform_logging_file ? libplatform_logging_file : stderr,
 		m->lvl ? (m->lvl ^ 1 ?
 			"%lld\t%d\t[libplatform - info]\t%s" :
 			"%lld\t%d\t[libplatform - warning]\t%s") :

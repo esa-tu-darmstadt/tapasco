@@ -87,9 +87,7 @@ tapasco_res_t tapasco_local_mem_alloc(tapasco_local_mem_t *lmem,
 		tapasco_handle_t *h)
 {
 	*h = INVALID_ADDRESS;
-	++slot_id;
-	while (*h == INVALID_ADDRESS && lmem->lmem[slot_id]) {
-		*h = gen_mem_malloc(&lmem->lmem[slot_id], sz);
+	do {
 		++slot_id;
 	}
 	DEVLOG(lmem->dev_id, LALL_MEM, "request to allocate %zd bytes for slot_id #" PRIslot "-> " PRIhandle,
