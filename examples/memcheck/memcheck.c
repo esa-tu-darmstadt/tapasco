@@ -31,7 +31,7 @@
 #include <tapasco.h>
 
 static tapasco_ctx_t *ctx;
-static tapasco_dev_ctx_t *dev;
+static tapasco_devctx_t *dev;
 
 static void check(int const result) {
 	if (! result) {

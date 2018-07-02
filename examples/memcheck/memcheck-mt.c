@@ -35,7 +35,7 @@
 #define DEFAULT_RUNS					(1000)
 
 static tapasco_ctx_t *ctx;
-static tapasco_dev_ctx_t *dev;
+static tapasco_devctx_t *dev;
 static long int errs;
 static long int runs;
 static size_t const arr_szs[] = { 1, 2, 8, 10, 16, 1024, 2048, 4096, 8192, 16384 };
