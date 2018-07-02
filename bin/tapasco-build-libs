@@ -6,7 +6,7 @@ from   socket import gethostname
 import os
 
 tools        = ['tapasco-debug', 'tapasco-benchmark']
-default_cmd  = 'mkdir -p {0} && cd {0} && cmake {1} .. && make -j install'
+default_cmd  = 'mkdir -p {0} && cd {0} && cmake {1} .. && make -j install DESTDIR={0}/install'
 tlkm_cmd     = 'cd {0} && make -j {1}'
 
 parser = argparse.ArgumentParser()
@@ -20,6 +20,8 @@ debug        = args.mode == 'debug' or args.mode == 'driver_debug'
 driver_debug = args.mode == 'driver_debug'
 debug_flags  = '' if debug else '-DCMAKE_BUILD_TYPE=Release'
 
+shared_flags = '-DBUILD_SHARED_LIBS:BOOL={}'.format('ON' if args.shared else 'OFF')
+
 print 'Build mode: ' + args.mode
 
 mdir = '%s/bin'			% os.environ['TAPASCO_HOME']
@@ -28,13 +30,10 @@ pdir = '%s/platform/build'	% os.environ['TAPASCO_HOME']
 adir = '%s/arch/build'		% os.environ['TAPASCO_HOME']
 tdir = '%s/arch/tests/build'	% os.environ['TAPASCO_HOME']
 ldir = '%s/lib'			% os.environ['TAPASCO_HOME']
+bdir   = os.environ['TAPASCO_HOME'] + '/build'
 
 if clean or args.rebuild:
-	subprocess.call(['rm -rf %s' % pdir], shell=True)
-	subprocess.call(['rm -rf %s' % adir], shell=True)
-	subprocess.call(['rm -rf %s' % tdir], shell=True)
-	subprocess.call(['rm -rf %s' % ldir], shell=True)
-	subprocess.call(['rm -f %s' % ' '.join(["%s" % tool for tool in tools])], shell=True);
+	subprocess.call(['rm -rf %s' % bdir], shell=True)
 	subprocess.call(['cd %s && make clean' % mdir], shell=True)
 
 if not clean:
@@ -47,6 +46,6 @@ if not clean:
 		subprocess.call(['make -C ' + os.environ['LINUX_HOME'] + ' scripts'], shell=True)
 	
 	subprocess.call([tlkm_cmd.format(mdir, '' if driver_debug else 'release')], shell=True)
-	cmd = ' && '.join([default_cmd.format(d, debug_flags) for d in [pdir, adir, tdir]])
+	cmd = default_cmd.format(bdir, " ".join([debug_flags, shared_flags]))
 	print(cmd)
 	subprocess.call([cmd], shell=True)

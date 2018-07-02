@@ -45,3 +45,4 @@ bin/tapasco-logviewer
 bin/tapasco-reportviewer
 /tapasco-status-cache/
 /lib/
+.cache.mk

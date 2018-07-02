@@ -1,11 +1,5 @@
-set(BUDDYDIR "${PLATFORM}/src/buddy_allocator")
+set(PLATFORM "${CMAKE_CURRENT_LIST_DIR}")
 
-add_definitions(-DPLATFORM_API_TAPASCO_STATUS_BASE=0x800000)
+LIST(APPEND SRCS  "${PLATFORM}/src/platform_pcie.c")
 
-LIST(APPEND SRCS  "${PLATFORM}/src/platform_pcie.cpp"
-                  "${BUDDYDIR}/buddy_allocator.cpp"
-	              "${BUDDYDIR}/buddy_tree.cpp"
-	              "${BUDDYDIR}/logger.cpp")
-
-SET(EXTRA_INCLUDES_PUBLIC "")
-SET(EXTRA_INCLUDES_PRIVATE "${PLATFORM}/module/include" "${BUDDYDIR}")
+LIST(APPEND EXTRA_INCLUDES_PRIVATE "${PLATFORM}/src")

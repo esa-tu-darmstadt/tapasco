@@ -335,8 +335,8 @@ private:
   {
     tapasco_handle_t h { 0 };
     tapasco_res_t r;
-    if ((r = tapasco_device_alloc(dev_ctx, &h, N * sizeof(T), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
-    return tapasco_device_job_set_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h);
+    if ((r = tapasco_device_alloc(devctx, &h, N * sizeof(T), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
+    return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(h), &h);
   }
 
   /** Sets a single pointer argument (alloc + copy). **/
@@ -359,9 +359,9 @@ private:
   {
     tapasco_handle_t h { 0 };
     tapasco_res_t r;
-    if ((r = tapasco_device_alloc(dev_ctx, &h, N * sizeof(T), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
-    if ((r = tapasco_device_copy_to(dev_ctx, t.data(), h, N * sizeof(T), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
-    return tapasco_device_job_set_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h);
+    if ((r = tapasco_device_alloc(devctx, &h, N * sizeof(T), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
+    if ((r = tapasco_device_copy_to(devctx, t.data(), h, N * sizeof(T), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
+    return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(h), &h);
   }
 
   /** Sets a const std::array argument (alloc + copy). **/
@@ -370,9 +370,9 @@ private:
   {
     tapasco_handle_t h { 0 };
     tapasco_res_t r;
-    if ((r = tapasco_device_alloc(dev_ctx, &h, N * sizeof(T), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
-    if ((r = tapasco_device_copy_to(dev_ctx, t.data(), h, N * sizeof(T), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
-    return tapasco_device_job_set_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h);
+    if ((r = tapasco_device_alloc(devctx, &h, N * sizeof(T), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
+    if ((r = tapasco_device_copy_to(devctx, t.data(), h, N * sizeof(T), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
+    return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(h), &h);
   }
 
   /** Sets a single const pointer argument (alloc + copy). **/
@@ -428,9 +428,9 @@ private:
   tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, std::array<T, N> &t) const noexcept {
     tapasco_handle_t h;
     tapasco_res_t r;
-    if ((r = tapasco_device_job_get_arg(dev_ctx, j_id, arg_idx, sizeof(h), &h)) != TAPASCO_SUCCESS) return r;
-    if ((r = tapasco_device_copy_from(dev_ctx, h, (void *)t.data(), N * sizeof(T), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
-    tapasco_device_free(dev_ctx, h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+    if ((r = tapasco_device_job_get_arg(devctx, j_id, arg_idx, sizeof(h), &h)) != TAPASCO_SUCCESS) return r;
+    if ((r = tapasco_device_copy_from(devctx, h, (void *)t.data(), N * sizeof(T), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
+    tapasco_device_free(devctx, h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
     return TAPASCO_SUCCESS;
   }
 
