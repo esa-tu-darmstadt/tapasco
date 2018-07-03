@@ -79,7 +79,7 @@ void platform_logging_deinit(void);
 	#define DEVWRN(dev_id, msg, ...) \
 			platform_log((platform_ll_t)1, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 
-	void platform_log(platform_ll_t const level, char *fmt, ...);
+	void platform_log(platform_ll_t const level, const char *fmt, ...);
 #endif
 
 #endif /* PLATFORM_LOGGING_H__ */
