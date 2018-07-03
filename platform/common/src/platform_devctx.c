@@ -49,11 +49,13 @@ void log_perfc(platform_devctx_t *devctx)
 	u32 status;
 	size_t slots_active = 0;
 	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
-		platform_ctl_addr_t sb;
-		platform_addr_map_get_slot_base(devctx->addrmap, s, &sb);
-		sb += 0xc;
-		platform_read_ctl(devctx, sb, sizeof(status), &status, 0);
-		if (sb) ++slots_active;
+        if (devctx->info.composition.kernel[s]) {
+    		platform_ctl_addr_t sb;
+		    platform_addr_map_get_slot_base(devctx->addrmap, s, &sb);
+	    	sb += 0xc;
+    		platform_read_ctl(devctx, sb, sizeof(status), &status, 0);
+		    if (sb) ++slots_active;
+        }
 	}
 	platform_perfc_slot_interrupts_active_set(devctx->dev_id, slots_active);
 #ifndef NPERFC
