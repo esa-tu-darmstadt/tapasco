@@ -119,18 +119,18 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 		goto err_status;
 	}
 
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup DMA engines ...");
-	if ((ret = dma_engines_init(dev))) {
-		DEVERR(dev->dev_id, "could not setup DMA engines for devices: %d", ret);
-		goto err_dma;
-	}
-
 	if (dev->cls->init_subsystems) {
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setting up device-specific subsystems ...");
 		if ((ret = dev->cls->init_subsystems(dev, data))) {
 			DEVERR(dev->dev_id, "could not setup device-specific subsystems: %d", ret);
 			goto err_sub;
 		}
+	}
+
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup DMA engines ...");
+	if ((ret = dma_engines_init(dev))) {
+		DEVERR(dev->dev_id, "could not setup DMA engines for devices: %d", ret);
+		goto err_dma;
 	}
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "device setup complete");
