@@ -24,8 +24,8 @@
 # Pathes '*_path' have to be adapted to specific location
 
 # init paths
-DRIVER=ffLink
-DRIVERPATH="$TAPASCO_HOME/platform/pcie/module"
+DRIVER=tlkm
+DRIVERPATH="$TAPASCO_HOME/tlkm/"
 BITLOAD_SCRIPT="$TAPASCO_HOME/platform/pcie/module/program_pcie.tcl"
 LOG_ID=$DRIVER"|""pci"
 
@@ -121,7 +121,7 @@ then
 	# reload driver?
 	if [ $RELOADD -gt 0 ]; then
 		sudo insmod $DRIVERPATH/${DRIVER}.ko
-		sudo chown $USER /dev/FFLINK*
+		sudo chown $USER /dev/tlkm*
 	fi
 
 	# output tail of dmesg in verbose mode
