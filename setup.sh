@@ -17,7 +17,7 @@ else
 	export TAPASCO_HOME=$PWD
 fi
 echo "TAPASCO_HOME=$TAPASCO_HOME"
-export PATH=$TAPASCO_HOME/bin:$PATH
+export PATH=$TAPASCO_HOME/bin:$TAPASCO_HOME/build/install/usr/local/bin/:$PATH
 export MANPATH=$MANPATH:$TAPASCO_HOME/man
 export MYVIVADO=$MYVIVADO:$TAPASCO_HOME/common
 export XILINX_PATH=$XILINX_PATH:$TAPASCO_HOME/common
