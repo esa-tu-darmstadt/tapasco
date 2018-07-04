@@ -29,6 +29,8 @@
 
 #include <inttypes.h>
 
+#include <log.h>
+
 #define LIBTAPASCO_LOGLEVELS \
 	_LALL(INIT,		(1 << 1)) \
 	_LALL(DEVICE,		(1 << 2)) \
@@ -53,13 +55,11 @@ void tapasco_logging_deinit(void);
 	#define DEV_PREFIX		"device #" PRIdev
 #endif
 
-#define LOG(l, msg, ...)	\
-		tapasco_log(l, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
-#define DEVLOG(dev_id, l, msg, ...)	\
-		tapasco_log(l, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
-
 #ifdef NDEBUG
 	#include <stdio.h>
+
+	#define LOG(l, msg, ...) {}
+	#define DEVLOG(dev_id, l, msg, ...)	{}
 
 	#define ERR(msg, ...)		fprintf(stderr, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
 	#define WRN(msg, ...)		fprintf(stderr, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
@@ -68,18 +68,18 @@ void tapasco_logging_deinit(void);
 			fprintf(stderr, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 	#define DEVWRN(dev_id, l, msg, ...) \
 			fprintf(stderr, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
-
-	static inline void tapasco_log(tapasco_ll_t const level, char *fmt, ...) {}
 #else /* !NDEBUG */
-	#define ERR(msg, ...)		tapasco_log(0, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
-	#define WRN(msg, ...)		tapasco_log(1, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
+	#define LOG(l, msg, ...) log_error("[%s]: " msg "\n", __func__, ##__VA_ARGS__)
+
+	#define DEVLOG(dev_id, l, msg, ...)	log_info(DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+
+	#define ERR(msg, ...)	log_error("[%s]: " msg "\n", __func__, ##__VA_ARGS__)
+	#define WRN(msg, ...)	log_warn("[%s]: " msg "\n", __func__, ##__VA_ARGS__)
 
 	#define DEVERR(dev_id, msg, ...) \
-			tapasco_log((tapasco_ll_t)0, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+			log_error(DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 	#define DEVWRN(dev_id, msg, ...) \
-			tapasco_log((platform_ll_t)1, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
-
-	void tapasco_log(tapasco_ll_t const level, char *fmt, ...);
+			log_warn(DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 #endif
 
 #endif /* TAPASCO_LOGGING_H__ */
