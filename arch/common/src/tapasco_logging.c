@@ -23,5 +23,49 @@
 
 #include "tapasco_logging.h"
 
+#ifdef NDEBUG
 int tapasco_logging_init(void) { return 1; }
 void tapasco_logging_deinit(void) {}
+#else
+
+#include <stdlib.h>
+
+static FILE *logfile = 0;
+
+int tapasco_logging_init(void)
+{
+	static int is_initialized = 0;
+	if (! is_initialized) {
+		is_initialized = 1;
+		char const *dbg = getenv("LIBTAPASCO_DEBUG");
+
+		if(dbg ? (strtoul(dbg, NULL, 0) | 0x1) == 0 : 0) {
+			log_set_quiet(0);
+		}
+
+		char const *lgf = getenv("LIBTAPASCO_LOGFILE");
+		logfile = lgf ? fopen(lgf, "w+") : stderr;
+
+		if (! logfile) {
+			logfile = stderr;
+			WRN("could not open logfile '%s'!\n", lgf);
+		}
+
+		log_set_fp(logfile);
+
+	}
+	return 1;
+}
+
+void tapasco_logging_deinit(void)
+{
+	log_set_fp(NULL);
+
+	if (logfile != NULL && logfile != stderr) {
+		fflush(logfile);
+		fclose(logfile);
+	}
+	logfile = NULL;
+}
+
+#endif
