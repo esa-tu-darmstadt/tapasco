@@ -21,7 +21,7 @@
 //!             Holds references to device contexts as well as any Architecture-
 //! 		specific global data.
 //! @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
-//! 
+//!
 #include <signal.h>
 #include <string.h>
 #include <errno.h>
@@ -32,23 +32,6 @@
 
 static
 tapasco_ctx_t *_emergency_ctx = NULL;
-
-static
-void _flush_logs_on_sigint(int sig)
-{
-	LOG(LALL_INIT, "caught SIGINT, flushing logs and leaving the sinking ship");
-	tapasco_deinit(_emergency_ctx);
-	exit(sig);
-}
-
-static
-int _tapasco_install_sigint_handler()
-{
-	struct sigaction act;
-	memset(&act, '\0', sizeof(act));
-	act.sa_handler = &_flush_logs_on_sigint;
-	return sigaction(SIGINT, &act, NULL) + sigaction(SIGABRT, &act, NULL);
-}
 
 tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **ctx)
 {
@@ -66,13 +49,6 @@ tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **ctx)
 	if (! c) {
 		ERR("could not allocate tapasco context");
 		return TAPASCO_ERR_OUT_OF_MEMORY;
-	}
-
-	// install signal handler
-	if (_tapasco_install_sigint_handler()) {
-		ERR("could not install signal handler: %s", strerror(errno));
-		free(*ctx);
-		return TAPASCO_ERR_UNKNOWN_ERROR;
 	}
 
 	if ((res = platform_init(&c->pctx)) != PLATFORM_SUCCESS) {
