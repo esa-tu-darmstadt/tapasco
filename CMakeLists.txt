@@ -15,6 +15,7 @@ add_definitions(-DNPERFC)
 add_definitions(-DLOG_USE_COLOR)
 add_definitions(-Wall)
 add_definitions(-Werror)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__MY_FILE__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'")
 
 add_subdirectory(tlkm)
 add_subdirectory(platform)
