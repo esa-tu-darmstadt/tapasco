@@ -28,6 +28,7 @@
 #define PLATFORM_LOGGING_H__
 
 #include <platform_types.h>
+#include <log.h>
 
 #define LIBPLATFORM_LOGLEVELS \
 	_LPLL(TLKM,	(1 << 1)) \
@@ -53,12 +54,11 @@ void platform_logging_deinit(void);
 
 #define DEV_PREFIX		"device #" PRIdev
 
-#define LOG(l, msg, ...) 	platform_log((platform_ll_t)(l), "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
-#define DEVLOG(dev_id, l, msg, ...) \
-		platform_log((platform_ll_t)(l), DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
-
 #ifdef NDEBUG
 	#include <stdio.h>
+
+	#define LOG(l, msg, ...) {}
+	#define DEVLOG(dev_id, l, msg, ...)	{}
 
 	#define ERR(msg, ...)		fprintf(stderr, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
 	#define WRN(msg, ...)		fprintf(stderr, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
@@ -67,19 +67,18 @@ void platform_logging_deinit(void);
 			fprintf(stderr, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 	#define DEVWRN(dev_id, l, msg, ...) \
 			fprintf(stderr, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
-
-	static inline void platform_log(platform_ll_t const level, char *fmt, ...) {}
 #else /* !NDEBUG */
+	#define LOG(l, msg, ...) log_error("[%s]: " msg "\n", __func__, ##__VA_ARGS__)
 
-	#define ERR(msg, ...)	 	platform_log((platform_ll_t)0, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
-	#define WRN(msg, ...)	 	platform_log((platform_ll_t)1, "[%s]: " msg "\n", __func__, ##__VA_ARGS__)
+	#define DEVLOG(dev_id, l, msg, ...)	log_info(DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+
+	#define ERR(msg, ...)	log_error("[%s]: " msg "\n", __func__, ##__VA_ARGS__)
+	#define WRN(msg, ...)	log_warn("[%s]: " msg "\n", __func__, ##__VA_ARGS__)
 
 	#define DEVERR(dev_id, msg, ...) \
-			platform_log((platform_ll_t)0, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+			log_error(DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 	#define DEVWRN(dev_id, msg, ...) \
-			platform_log((platform_ll_t)1, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
-
-	void platform_log(platform_ll_t const level, const char *fmt, ...);
+			log_warn(DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 #endif
 
 #endif /* PLATFORM_LOGGING_H__ */
