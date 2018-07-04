@@ -24,7 +24,11 @@
 @@HEADER@@
 
 # if set, co-simulation will be performed
-set do_cosim @@COSIMULATION_FLAG@@
+# This flag is hardcoded to 0 for now until Vivado fixes 
+# cosimulation for current linux distributions
+# If you want to get back to default behaviour please 
+# replace the 0 with: @@COSIMULATION_FLAG@@
+set do_cosim 0
 
 # create project
 open_project @@PROJECT@@
