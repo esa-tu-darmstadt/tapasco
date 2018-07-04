@@ -37,21 +37,19 @@ int tapasco_logging_init(void)
 	static int is_initialized = 0;
 	if (! is_initialized) {
 		is_initialized = 1;
-		char const *dbg = getenv("LIBTAPASCO_DEBUG");
-
-		if(dbg ? (strtoul(dbg, NULL, 0) | 0x1) == 0 : 0) {
-			log_set_quiet(0);
-		}
 
 		char const *lgf = getenv("LIBTAPASCO_LOGFILE");
 		logfile = lgf ? fopen(lgf, "w+") : stderr;
 
 		if (! logfile) {
-			logfile = stderr;
+			logfile = 0;
 			WRN("could not open logfile '%s'!\n", lgf);
 		}
 
-		log_set_fp(logfile);
+		if(logfile) {
+			log_set_quiet(1);
+			log_set_fp(logfile);
+		}
 
 	}
 	return 1;
