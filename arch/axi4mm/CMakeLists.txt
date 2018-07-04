@@ -9,7 +9,7 @@ set(COMMON_SOURCES "${PCMNDIR}/tapasco_context.c"
                    "${PCMNDIR}/tapasco_device.c"
                    "${PCMNDIR}/tapasco_errors.c"
                    "${PCMNDIR}/tapasco_jobs.c"
-	               "${PCMNDIR}/tapasco_logging.c"
+	                 "${PCMNDIR}/tapasco_logging.c"
                    "${PCMNDIR}/tapasco_local_mem.c"
                    "${PCMNDIR}/tapasco_memory.c"
                    "${PCMNDIR}/tapasco_pemgmt.c"
@@ -17,7 +17,8 @@ set(COMMON_SOURCES "${PCMNDIR}/tapasco_context.c"
                    "${PCMNDIR}/tapasco_version.c"
                    "${PCMNDIR}/tapasco_perfc.c"
                    "${CMNDIR}/src/gen_mem.c"
-                   "${CMNDIR}/src/gen_queue.c")
+                   "${CMNDIR}/src/gen_queue.c"
+                   "${CMNDIR}/src/log.c")
 
 add_library(tapasco ${AXI4MM_SOURCES} ${COMMON_SOURCES})
 
