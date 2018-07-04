@@ -70,7 +70,7 @@ void platform_logging_deinit(void);
 #else /* !NDEBUG */
 #define LOG(l, msg, ...) log_error("[%s]: " msg, __func__, ##__VA_ARGS__)
 
-#define DEVLOG(dev_id, l, msg, ...)	log_info(DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
+#define DEVLOG(dev_id, l, msg, ...)	log_info(DEV_PREFIX " [%s]: " msg, dev_id, __func__, ##__VA_ARGS__)
 
 #define ERR(msg, ...)	log_error("[%s]: " msg, __func__, ##__VA_ARGS__)
 #define WRN(msg, ...)	log_warn("[%s]: " msg, __func__, ##__VA_ARGS__)
