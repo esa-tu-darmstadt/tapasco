@@ -39,7 +39,7 @@ int tapasco_logging_init(void)
 		is_initialized = 1;
 
 		char const *lgf = getenv("LIBTAPASCO_LOGFILE");
-		logfile = lgf ? fopen(lgf, "w+") : stderr;
+		logfile = lgf ? fopen(lgf, "w+") : 0;
 
 		if (! logfile) {
 			logfile = 0;
