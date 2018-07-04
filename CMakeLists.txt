@@ -12,9 +12,8 @@ set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_C_STANDARD 11)
 
 add_definitions(-DNPERFC)
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
+add_definitions(-Wall)
+add_definitions(-Werror)
 
 add_subdirectory(tlkm)
 add_subdirectory(platform)
