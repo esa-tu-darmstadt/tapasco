@@ -69,7 +69,7 @@ void tapasco_logging_deinit(void);
 #define DEVWRN(dev_id, l, msg, ...) \
 			fprintf(stderr, DEV_PREFIX " [%s]: " msg "\n", dev_id, __func__, ##__VA_ARGS__)
 #else /* !NDEBUG */
-#define LOG(l, msg, ...) log_error("[%s]: " msg, __func__, ##__VA_ARGS__)
+#define LOG(l, msg, ...) log_info("[%s]: " msg, __func__, ##__VA_ARGS__)
 
 #define DEVLOG(dev_id, l, msg, ...)	log_info(DEV_PREFIX " [%s]: " msg, dev_id, __func__, ##__VA_ARGS__)
 
