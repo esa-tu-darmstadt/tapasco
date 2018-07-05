@@ -289,7 +289,7 @@ int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct device *dev, void** 
 	*buffer = kmalloc(size, GFP_DMA32);
 	if (*buffer) {
 		memset(*buffer, 0, size);
-		*handle = dma_map_single(dev, *buffer, size, direction == PCI_DMA_FROMDEVICE ? FROM_DEV : TO_DEV);
+		*handle = dma_map_single(dev, *buffer, size, direction == FROM_DEV ? PCI_DMA_FROMDEVICE : PCI_DMA_TODEVICE);
 		if (dma_mapping_error(&((struct tlkm_pcie_device *)dev)->pdev->dev, *handle)) {
 			DEVERR(dev_id, "DMA Mapping error");
 			err = -EFAULT;
@@ -309,7 +309,7 @@ void pcie_device_tlkm_dma_free_buffer(dev_id_t dev_id, struct device *dev, void*
 	dma_addr_t *handle = (dma_addr_t*)*dev_handle;
 	DEVLOG(dev_id, TLKM_LF_DEVICE, "Freeing %ld bytes at kernel address %p/device address %llx", size, *buffer, *handle);
 	if (*handle) {
-		dma_unmap_single(dev, *handle, size, direction == PCI_DMA_FROMDEVICE ? FROM_DEV : TO_DEV);
+		dma_unmap_single(dev, *handle, size, direction == FROM_DEV ? PCI_DMA_FROMDEVICE : PCI_DMA_TODEVICE);
 	}
 	if (*buffer) {
 		kfree(*buffer);
