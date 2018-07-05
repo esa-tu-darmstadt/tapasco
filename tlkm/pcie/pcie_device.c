@@ -281,3 +281,37 @@ void pcie_device_exit_subsystems(struct tlkm_device *dev)
 	release_msi(pdev);
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "exited subsystems");
 }
+
+int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size)
+{
+	dma_addr_t *handle = (dma_addr_t*)*dev_handle;
+	int err = 0;
+	*buffer = kmalloc(size, GFP_DMA32);
+	if (*buffer) {
+		memset(*buffer, 0, size);
+		*handle = dma_map_single(dev, *buffer, size, direction == PCI_DMA_FROMDEVICE ? FROM_DEV : TO_DEV);
+		if (dma_mapping_error(&((struct tlkm_pcie_device *)dev)->pdev->dev, *handle)) {
+			DEVERR(dev_id, "DMA Mapping error");
+			err = -EFAULT;
+		}
+	} else {
+		DEVERR(dev_id, "Couldn't retrieve enough memory");
+		err = -EFAULT;
+	}
+
+	DEVLOG(dev_id, TLKM_LF_DEVICE, "Allocated %d bytes at kernel address %lx/device address %lx", size, *buffer, *handle);
+
+	return err;
+}
+
+void pcie_device_tlkm_dma_free_buffer(dev_id_t dev_id, struct device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size)
+{
+	dma_addr_t *handle = (dma_addr_t*)*dev_handle;
+	DEVLOG(dev_id, TLKM_LF_DEVICE, "Freeing %d bytes at kernel address %lx/device address %lx", size, *buffer, *handle);
+	if (*handle) {
+		dma_unmap_single(dev, *handle, size, direction == PCI_DMA_FROMDEVICE ? FROM_DEV : TO_DEV);
+	}
+	if (*buffer) {
+		kfree(*buffer);
+	}
+}

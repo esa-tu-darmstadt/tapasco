@@ -7,29 +7,35 @@
 #include "tlkm_perfc.h"
 #include "blue_dma.h"
 #include "dual_dma.h"
+#include "pcie/pcie_device.h"
 
 #define REG_ID 						0x18
 #define DMA_SZ						0x10000
 
 static const struct dma_operations tlkm_dma_ops[] = {
 	[DMA_USED_DUAL] = {
-		.intr_read	= dual_dma_intr_handler_dma, // Dual DMA can not read and write in parallel
-		.intr_write	= dual_dma_intr_handler_dma,
-		.copy_from	= dual_dma_copy_from,
-		.copy_to	= dual_dma_copy_to,
+		.intr_read		 = dual_dma_intr_handler_dma, // Dual DMA can not read and write in parallel
+		.intr_write		 = dual_dma_intr_handler_dma,
+		.copy_from		 = dual_dma_copy_from,
+		.copy_to	     = dual_dma_copy_to,
+		.allocate_buffer = pcie_device_dma_allocate_buffer,
+		.free_buffer 	 = pcie_device_tlkm_dma_free_buffer,
 	},
 	[DMA_USED_BLUE] = {
 		.intr_read	= blue_dma_intr_handler_read,
 		.intr_write	= blue_dma_intr_handler_write,
 		.copy_from	= blue_dma_copy_from,
 		.copy_to	= blue_dma_copy_to,
+		.allocate_buffer = pcie_device_dma_allocate_buffer,
+		.free_buffer 	 = pcie_device_tlkm_dma_free_buffer,
 	},
 };
 
-int tlkm_dma_init(struct dma_engine *dma, dev_id_t dev_id, u64 dbase)
+int tlkm_dma_init(struct dma_engine *dma, struct tlkm_device *dev, u64 dbase)
 {
+	dev_id_t dev_id = dev->dev_id;
 	uint64_t id;
-	int i, ret = 0;
+	int ret = 0;
 	void *base = (void *)((uintptr_t)dbase);
 	BUG_ON(! dma);
 	DEVLOG(dev_id, TLKM_LF_DMA, "initializing DMA engine @ 0x%px ...", base);
@@ -39,15 +45,6 @@ int tlkm_dma_init(struct dma_engine *dma, dev_id_t dev_id, u64 dbase)
 	if (IS_ERR(dma->regs)) {
 		DEVERR(dev_id, "failed to map 0x%px - 0x%px: %ld", base, base + DMA_SZ - 1, PTR_ERR(dma->regs));
 		return PTR_ERR(dma->regs);
-	}
-
-	DEVLOG(dev_id, TLKM_LF_DMA, "allocating DMA buffers of %zd bytes ...", TLKM_DMA_BUF_SZ);
-	for (i = 0; i < TLKM_DMA_BUFS; ++i) {
-		dma->dma_buf[i] = kzalloc(TLKM_DMA_BUF_SZ, GFP_KERNEL | GFP_DMA);
-		if (IS_ERR(dma->dma_buf[i])) {
-			ret = PTR_ERR(dma->dma_buf[i]);
-			goto err_dma_bufs;
-		}
 	}
 
 	DEVLOG(dev_id, TLKM_LF_DMA, "detecting DMA engine type ...");
@@ -63,6 +60,21 @@ int tlkm_dma_init(struct dma_engine *dma, dev_id_t dev_id, u64 dbase)
 		DEVLOG(dev_id, TLKM_LF_DMA, "detected DualDMA");
 	}
 	dma->ops = tlkm_dma_ops[dma->dma_used];
+
+	DEVLOG(dev_id, TLKM_LF_DMA, "allocating DMA buffers of %zd bytes ...", TLKM_DMA_BUF_SZ);
+
+	ret = dma->ops.allocate_buffer(dev->dev_id, &((struct tlkm_pcie_device *)dev)->pdev->dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
+	if (ret) {
+		ret = PTR_ERR(dma->dma_buf_read);
+		goto err_dma_bufs_read;
+	}
+
+	ret = dma->ops.allocate_buffer(dev->dev_id, &((struct tlkm_pcie_device *)dev)->pdev->dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
+	if (ret) {
+		ret = PTR_ERR(dma->dma_buf_write);
+		goto err_dma_bufs_write;
+	}
+
 	init_waitqueue_head(&dma->rq);
 	init_waitqueue_head(&dma->wq);
 	mutex_init(&dma->regs_mutex);
@@ -77,18 +89,18 @@ int tlkm_dma_init(struct dma_engine *dma, dev_id_t dev_id, u64 dbase)
 	DEVLOG(dev_id, TLKM_LF_DMA, "DMA engine initialized");
 	return 0;
 
-err_dma_bufs:
-	for (; i >= 0; --i)
-		kfree(dma->dma_buf[i]);
+err_dma_bufs_write:
+	dma->ops.free_buffer(dev->dev_id, &((struct tlkm_pcie_device *)dev)->pdev->dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
+err_dma_bufs_read:
+	dma->ops.free_buffer(dev->dev_id, &((struct tlkm_pcie_device *)dev)->pdev->dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
 	iounmap(dma->regs);
 	return ret;
 }
 
-void tlkm_dma_exit(struct dma_engine *dma)
+void tlkm_dma_exit(struct tlkm_device *dev, struct dma_engine *dma)
 {
-	int i;
-	for (i = 0; i < TLKM_DMA_BUFS; ++i)
-		kfree(dma->dma_buf[i]);
+	dma->ops.free_buffer(dev->dev_id, &((struct tlkm_pcie_device *)dev)->pdev->dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
+	dma->ops.free_buffer(dev->dev_id, &((struct tlkm_pcie_device *)dev)->pdev->dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
 	iounmap(dma->regs);
 	memset(dma, 0, sizeof(*dma));
 	DEVLOG(dma->dev_id, TLKM_LF_DMA, "deinitialized DMA engine");
@@ -100,13 +112,13 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void
 	ssize_t t_id;
 	while (len > 0) {
 		DEVLOG(dma->dev_id, TLKM_LF_DMA, "outstanding bytes: %zd - usr_addr = 0x%px, dev_addr = 0x%px",
-				len, usr_addr, (void *)dev_addr);
+		       len, usr_addr, (void *)dev_addr);
 		cpy_sz = len < TLKM_DMA_BUF_SZ ? len : TLKM_DMA_BUF_SZ;
-		if (copy_from_user(dma->dma_buf[0], usr_addr, cpy_sz)) {
+		if (copy_from_user(dma->dma_buf_write, usr_addr, cpy_sz)) {
 			DEVERR(dma->dev_id, "could not copy data from user");
 			return -EAGAIN;
 		} else {
-			t_id = dma->ops.copy_to(dma, dev_addr, dma->dma_buf[0], cpy_sz);
+			t_id = dma->ops.copy_to(dma, dev_addr, dma->dma_buf_write_dev, cpy_sz);
 			if (wait_event_interruptible(dma->wq, atomic64_read(&dma->wq_processed) >= t_id)) {
 				WRN("got killed while hanging in waiting queue");
 				return -EACCES;
@@ -126,9 +138,9 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_ad
 	ssize_t t_id;
 	while (len > 0) {
 		DEVLOG(dma->dev_id, TLKM_LF_DMA, "outstanding bytes: %zd - usr_addr = 0x%px, dev_addr = 0x%px",
-				len, usr_addr, (void *)dev_addr);
+		       len, usr_addr, (void *)dev_addr);
 		cpy_sz = len < TLKM_DMA_BUF_SZ ? len : TLKM_DMA_BUF_SZ;
-		t_id = dma->ops.copy_from(dma, dma->dma_buf[1], dev_addr, cpy_sz);
+		t_id = dma->ops.copy_from(dma, dma->dma_buf_read_dev, dev_addr, cpy_sz);
 		if (wait_event_interruptible(dma->rq, atomic64_read(&dma->rq_processed) >= t_id)) {
 			DEVWRN(dma->dev_id, "got killed while hanging in waiting queue");
 			return -EACCES;
@@ -136,7 +148,7 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_ad
 		usr_addr	+= cpy_sz;
 		dev_addr	+= cpy_sz;
 		len		-= cpy_sz;
-		if (copy_to_user(usr_addr, dma->dma_buf[1], cpy_sz)) {
+		if (copy_to_user(usr_addr, dma->dma_buf_read, cpy_sz)) {
 			DEVERR(dma->dev_id, "could not copy data from user");
 			return -EAGAIN;
 		}

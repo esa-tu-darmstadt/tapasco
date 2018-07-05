@@ -33,7 +33,7 @@ int dma_engines_init(struct tlkm_device *dev)
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA%d base: 0x%08llx", i, dma_base[i]);
 		if (! dma_base[i] || dma_base[i] >= (uintptr_t)-1) continue;
 		dma_base[i] += dev->base_offset;
-		ret = tlkm_dma_init(&dev->dma[i], dev->dev_id, dma_base[i]);
+		ret = tlkm_dma_init(&dev->dma[i], dev, dma_base[i]);
 		if (ret) {
 			DEVERR(dev->dev_id, "failed to initialize DMA%d: %d", i, ret);
 			goto err_dma_engine;
@@ -62,7 +62,7 @@ err_dma_engine:
 			tlkm_device_release_platform_irq(dev, --irqn);
 		if (dev->dma[i].ops.intr_read)
 			tlkm_device_release_platform_irq(dev, --irqn);
-		tlkm_dma_exit(&dev->dma[i]);
+		tlkm_dma_exit(dev, &dev->dma[i]);
 	}
 	BUG_ON(irqn);
 	return ret;
@@ -80,7 +80,7 @@ void dma_engines_exit(struct tlkm_device *dev)
 				tlkm_device_release_platform_irq(dev, irqn++);
 			if (dev->dma[i].ops.intr_write && dev->dma[i].ops.intr_write != dev->dma[i].ops.intr_read)
 				tlkm_device_release_platform_irq(dev, irqn++);
-			tlkm_dma_exit(&dev->dma[i]);
+			tlkm_dma_exit(dev, &dev->dma[i]);
 		}
 	}
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA engines destroyed");

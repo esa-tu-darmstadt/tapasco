@@ -23,6 +23,7 @@
 #include <linux/version.h>
 #include "tlkm_types.h"
 #include "platform_global.h"
+#include "dma/tlkm_dma.h"
 
 #define TLKM_PLATFORM_INTERRUPTS		4
 #define TLKM_SLOT_INTERRUPTS			PLATFORM_NUM_SLOTS
@@ -36,6 +37,9 @@ int  pcie_device_create(struct tlkm_device *dev, void *data);
 void pcie_device_destroy(struct tlkm_device *dev);
 int  pcie_device_init_subsystems(struct tlkm_device *dev, void *data);
 void pcie_device_exit_subsystems(struct tlkm_device *dev);
+
+int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
+void pcie_device_tlkm_dma_free_buffer(dev_id_t dev_id, struct device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
 
 /* struct to hold data related to the pcie device */
 struct tlkm_pcie_device {
