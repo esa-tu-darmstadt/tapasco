@@ -299,7 +299,7 @@ int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct device *dev, void** 
 		err = -EFAULT;
 	}
 
-	DEVLOG(dev_id, TLKM_LF_DEVICE, "Allocated %d bytes at kernel address %lx/device address %lx", size, *buffer, *handle);
+	DEVLOG(dev_id, TLKM_LF_DEVICE, "Allocated %ld bytes at kernel address %p/device address %llx", size, *buffer, *handle);
 
 	return err;
 }
@@ -307,7 +307,7 @@ int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct device *dev, void** 
 void pcie_device_tlkm_dma_free_buffer(dev_id_t dev_id, struct device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size)
 {
 	dma_addr_t *handle = (dma_addr_t*)*dev_handle;
-	DEVLOG(dev_id, TLKM_LF_DEVICE, "Freeing %d bytes at kernel address %lx/device address %lx", size, *buffer, *handle);
+	DEVLOG(dev_id, TLKM_LF_DEVICE, "Freeing %ld bytes at kernel address %p/device address %llx", size, *buffer, *handle);
 	if (*handle) {
 		dma_unmap_single(dev, *handle, size, direction == PCI_DMA_FROMDEVICE ? FROM_DEV : TO_DEV);
 	}
