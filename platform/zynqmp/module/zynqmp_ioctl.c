@@ -86,6 +86,7 @@ static inline int zynqmp_ioctl_cmd_copyto(struct zynqmp_ioctl_cmd_t *cmd)
 	// allocate, if necessary
 	if (cmd->id < 0 || ! (dmab = zynqmp_dmamgmt_get(zynqmp_ioctl.mdev.this_device, cmd->id))) {
 		int ret;
+		cmd->id = -1;
 		LOG(ZYNQ_LL_IOCTL, "allocating %zu bytes for transfer", cmd->length);
 		ret = zynqmp_ioctl_cmd_alloc(cmd);
 		if (ret) return ret;

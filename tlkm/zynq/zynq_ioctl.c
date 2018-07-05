@@ -70,7 +70,7 @@ long zynq_ioctl_free(struct tlkm_device *inst, struct tlkm_mm_cmd *cmd)
 	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "free: len = %zu, dma = %pad", cmd->sz, &cmd->dev_addr);
 	if (cmd->dev_addr >= 0) {
 		zynq_dmamgmt_dealloc_dma(cmd->dev_addr);
-		cmd->dev_addr = 0;
+		cmd->dev_addr = -1;
 		tlkm_perfc_total_freed_mem_add(inst->dev_id, cmd->sz);
 	}
 	return 0;
@@ -86,6 +86,7 @@ long zynq_ioctl_copyto(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
 	if (cmd->dev_addr < 0 || ! (dmab = zynq_dmamgmt_get(zynq_dmamgmt_get_id(cmd->dev_addr)))) {
 		int ret;
 		struct tlkm_mm_cmd mm_cmd = { .sz = cmd->length, };
+		mm_cmd.dev_addr = -1;
 		DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "allocating %zu bytes for transfer", cmd->length);
 		ret = zynq_ioctl_alloc(inst, &mm_cmd);
 		cmd->dev_addr = mm_cmd.dev_addr;
