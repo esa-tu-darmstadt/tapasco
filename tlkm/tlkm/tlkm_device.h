@@ -13,7 +13,6 @@
 #include "dma/tlkm_dma.h"
 #include "tlkm_class.h"
 
-
 #define TLKM_DEVICE_NAME_LEN				30
 #define TLKM_DEVICE_MAX_DMA_ENGINES			4
 

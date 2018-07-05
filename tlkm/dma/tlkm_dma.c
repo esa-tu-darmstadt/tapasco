@@ -19,7 +19,7 @@ static const struct dma_operations tlkm_dma_ops[] = {
 		.copy_from		 = dual_dma_copy_from,
 		.copy_to	     = dual_dma_copy_to,
 		.allocate_buffer = pcie_device_dma_allocate_buffer,
-		.free_buffer 	 = pcie_device_tlkm_dma_free_buffer,
+		.free_buffer 	 = pcie_device_dma_free_buffer,
 	},
 	[DMA_USED_BLUE] = {
 		.intr_read	= blue_dma_intr_handler_read,
@@ -27,7 +27,7 @@ static const struct dma_operations tlkm_dma_ops[] = {
 		.copy_from	= blue_dma_copy_from,
 		.copy_to	= blue_dma_copy_to,
 		.allocate_buffer = pcie_device_dma_allocate_buffer,
-		.free_buffer 	 = pcie_device_tlkm_dma_free_buffer,
+		.free_buffer 	 = pcie_device_dma_free_buffer,
 	},
 };
 
@@ -63,13 +63,13 @@ int tlkm_dma_init(struct dma_engine *dma, struct tlkm_device *dev, u64 dbase)
 
 	DEVLOG(dev_id, TLKM_LF_DMA, "allocating DMA buffers of %zd bytes ...", TLKM_DMA_BUF_SZ);
 
-	ret = dma->ops.allocate_buffer(dev->dev_id, &((struct tlkm_pcie_device *)dev)->pdev->dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
+	ret = dma->ops.allocate_buffer(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
 	if (ret) {
 		ret = PTR_ERR(dma->dma_buf_read);
 		goto err_dma_bufs_read;
 	}
 
-	ret = dma->ops.allocate_buffer(dev->dev_id, &((struct tlkm_pcie_device *)dev)->pdev->dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
+	ret = dma->ops.allocate_buffer(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
 	if (ret) {
 		ret = PTR_ERR(dma->dma_buf_write);
 		goto err_dma_bufs_write;
@@ -90,17 +90,17 @@ int tlkm_dma_init(struct dma_engine *dma, struct tlkm_device *dev, u64 dbase)
 	return 0;
 
 err_dma_bufs_write:
-	dma->ops.free_buffer(dev->dev_id, &((struct tlkm_pcie_device *)dev)->pdev->dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
+	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
 err_dma_bufs_read:
-	dma->ops.free_buffer(dev->dev_id, &((struct tlkm_pcie_device *)dev)->pdev->dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
+	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
 	iounmap(dma->regs);
 	return ret;
 }
 
 void tlkm_dma_exit(struct tlkm_device *dev, struct dma_engine *dma)
 {
-	dma->ops.free_buffer(dev->dev_id, &((struct tlkm_pcie_device *)dev)->pdev->dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
-	dma->ops.free_buffer(dev->dev_id, &((struct tlkm_pcie_device *)dev)->pdev->dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
+	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
+	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
 	iounmap(dma->regs);
 	memset(dma, 0, sizeof(*dma));
 	DEVLOG(dma->dev_id, TLKM_LF_DMA, "deinitialized DMA engine");

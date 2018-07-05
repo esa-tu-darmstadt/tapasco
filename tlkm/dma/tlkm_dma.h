@@ -9,6 +9,8 @@
 #include "tlkm_types.h"
 
 struct dma_engine;
+struct tlkm_device;
+
 typedef irqreturn_t (*dma_intr_handler)(int , void *);
 typedef ssize_t (*dma_copy_to_func_t)(struct dma_engine *, dev_addr_t, const void *, size_t);
 typedef ssize_t (*dma_copy_from_func_t)(struct dma_engine *, void *, dev_addr_t, size_t);
@@ -18,8 +20,8 @@ typedef enum {
     FROM_DEV
 } dma_direction_t;
 
-typedef int (*dma_allocate_buffer_func_t)(dev_id_t dev_id, struct device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
-typedef void (*dma_free_buffer_func_t)(dev_id_t dev_id, struct device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
+typedef int (*dma_allocate_buffer_func_t)(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
+typedef void (*dma_free_buffer_func_t)(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
 
 typedef enum {
     DMA_USED_DUAL =                 0,
@@ -59,8 +61,6 @@ struct dma_engine {
     void                *dma_buf_write;
     void                *dma_buf_write_dev;
 };
-
-#include "tlkm_device.h"
 
 int  tlkm_dma_init(struct dma_engine *dma, struct tlkm_device *dev, u64 base);
 void tlkm_dma_exit(struct tlkm_device *dev, struct dma_engine *dma);
