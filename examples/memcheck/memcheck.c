@@ -36,6 +36,8 @@ static tapasco_devctx_t *dev;
 static void check(int const result) {
 	if (! result) {
 		fprintf(stderr, "fatal error: %s\n", strerror(errno));
+		tapasco_destroy_device(ctx, dev);
+		tapasco_deinit(ctx);
 		exit(errno);
 	}
 }
@@ -43,6 +45,8 @@ static void check(int const result) {
 static void check_fpga(tapasco_res_t const result) {
 	if (result != TAPASCO_SUCCESS) {
 		fprintf(stderr, "fpga fatal error: %s\n", tapasco_strerror(result));
+		tapasco_destroy_device(ctx, dev);
+		tapasco_deinit(ctx);
 		exit(result);
 	}
 }
@@ -86,7 +90,6 @@ int main(int argc, char **argv) {
 		tapasco_handle_t h;
 		tapasco_device_alloc(dev, &h, arr_szs[s] * sizeof(int), 0);
 		printf("handle = 0x%08lx\n", (unsigned long)h);
-		check((unsigned long)h);
 
 		// copy data to and back
 		printf("sizeof(arr) %zd, sizeof(rarr) %zd\n", sizeof(arr), sizeof(rarr));
