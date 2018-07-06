@@ -47,16 +47,16 @@ irqreturn_t dual_dma_intr_handler_dma(int irq, void * dev_id)
 
 ssize_t dual_dma_copy_from(struct dma_engine *dma, void *dma_handle, dev_addr_t dev_addr, size_t len)
 {
-	dma_addr_t *handle = (dma_addr_t*)dma_handle;
-	DEVLOG(dma->dev_id, TLKM_LF_DMA, "dev_addr = 0x%px, dma_handle = 0x%llx, len: %zu bytes", (void *)dev_addr, *handle, len);
+	dma_addr_t handle = (dma_addr_t)dma_handle;
+	DEVLOG(dma->dev_id, TLKM_LF_DMA, "dev_addr = 0x%px, dma_handle = 0x%llx, len: %zu bytes", (void *)dev_addr, handle, len);
 	if(mutex_lock_interruptible(&dma->regs_mutex)) {
 		WRN("got killed while aquiring the mutex");
 		return len;
 	}
 
 	*(u32 *)(dma->regs + REG_FPGA_ADDR_LOW)		= (u32)dev_addr;
-	*(u32 *)(dma->regs + REG_HOST_ADDR_LOW)		= (u32)(*handle);
-	*(u32 *)(dma->regs + REG_HOST_ADDR_HIGH)	= sizeof(*handle) > 4 ? (u32)(*handle >> 32) : 0;
+	*(u32 *)(dma->regs + REG_HOST_ADDR_LOW)		= (u32)(handle);
+	*(u32 *)(dma->regs + REG_HOST_ADDR_HIGH)	= sizeof(handle) > 4 ? (u32)(handle >> 32) : 0;
 	*(u32 *)(dma->regs + REG_BTT)			= (u32)len;
 	wmb();
 	*(u32 *)(dma->regs + REG_CMD)			= CMD_READ;
@@ -65,15 +65,15 @@ ssize_t dual_dma_copy_from(struct dma_engine *dma, void *dma_handle, dev_addr_t 
 
 ssize_t dual_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void *dma_handle, size_t len)
 {
-	dma_addr_t *handle = (dma_addr_t*)dma_handle;
-	DEVLOG(dma->dev_id, TLKM_LF_DMA, "dev_addr = 0x%px, dma_handle = 0x%llx, len: %zu bytes", (void *)dev_addr, *handle, len);
+	dma_addr_t handle = (dma_addr_t)dma_handle;
+	DEVLOG(dma->dev_id, TLKM_LF_DMA, "dev_addr = 0x%px, dma_handle = 0x%llx, len: %zu bytes", (void *)dev_addr, handle, len);
 	if(mutex_lock_interruptible(&dma->regs_mutex)) {
 		WRN("got killed while aquiring the mutex");
 		return len;
 	}
 
-	*(u32 *)(dma->regs + REG_HOST_ADDR_LOW) 	= (u32)(*handle);
-	*(u32 *)(dma->regs + REG_HOST_ADDR_HIGH)	= sizeof(*handle) > 4 ? (u32)(*handle >> 32) : 0;
+	*(u32 *)(dma->regs + REG_HOST_ADDR_LOW) 	= (u32)(handle);
+	*(u32 *)(dma->regs + REG_HOST_ADDR_HIGH)	= sizeof(handle) > 4 ? (u32)(handle >> 32) : 0;
 	*(u32 *)(dma->regs + REG_FPGA_ADDR_LOW) 	= (u32)dev_addr;
 	*(u32 *)(dma->regs + REG_BTT)			= (u32)len;
 	wmb();

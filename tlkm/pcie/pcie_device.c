@@ -322,3 +322,19 @@ void pcie_device_dma_free_buffer(dev_id_t dev_id, struct tlkm_device *dev, void*
 		*buffer = 0;
 	}
 }
+
+inline int pcie_device_dma_sync_buffer_cpu(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size) {
+	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
+	dma_addr_t *handle = (dma_addr_t*)dev_handle;
+	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapping buffer %llx for cpu", *handle);
+	dma_sync_single_for_cpu(&pdev->pdev->dev, *handle, size, direction == FROM_DEV ? DMA_FROM_DEVICE : DMA_TO_DEVICE);
+	return 0;
+}
+
+inline int pcie_device_dma_sync_buffer_dev(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size) {
+	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
+	dma_addr_t *handle = (dma_addr_t*)dev_handle;
+	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapping buffer %llx for device", *handle);
+	dma_sync_single_for_device(&pdev->pdev->dev, *handle, size, direction == FROM_DEV ? DMA_FROM_DEVICE : DMA_TO_DEVICE);
+	return 0;
+}

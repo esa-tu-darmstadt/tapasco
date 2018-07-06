@@ -20,6 +20,8 @@ static const struct dma_operations tlkm_dma_ops[] = {
 		.copy_to	     = dual_dma_copy_to,
 		.allocate_buffer = pcie_device_dma_allocate_buffer,
 		.free_buffer 	 = pcie_device_dma_free_buffer,
+		.buffer_cpu      = pcie_device_dma_sync_buffer_cpu,
+		.buffer_dev      = pcie_device_dma_sync_buffer_dev,
 	},
 	[DMA_USED_BLUE] = {
 		.intr_read	= blue_dma_intr_handler_read,
@@ -28,10 +30,12 @@ static const struct dma_operations tlkm_dma_ops[] = {
 		.copy_to	= blue_dma_copy_to,
 		.allocate_buffer = pcie_device_dma_allocate_buffer,
 		.free_buffer 	 = pcie_device_dma_free_buffer,
+		.buffer_cpu      = pcie_device_dma_sync_buffer_cpu,
+		.buffer_dev      = pcie_device_dma_sync_buffer_dev,
 	},
 };
 
-int tlkm_dma_init(struct dma_engine *dma, struct tlkm_device *dev, u64 dbase)
+int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 {
 	dev_id_t dev_id = dev->dev_id;
 	uint64_t id;
@@ -82,6 +86,7 @@ int tlkm_dma_init(struct dma_engine *dma, struct tlkm_device *dev, u64 dbase)
 	mutex_init(&dma->wq_mutex);
 	dma->dev_id = dev_id;
 	dma->base = base;
+	dma->dev = dev;
 	atomic64_set(&dma->rq_enqueued, 0);
 	atomic64_set(&dma->rq_processed, 0);
 	atomic64_set(&dma->wq_enqueued, 0);
@@ -97,8 +102,9 @@ err_dma_bufs_read:
 	return ret;
 }
 
-void tlkm_dma_exit(struct tlkm_device *dev, struct dma_engine *dma)
+void tlkm_dma_exit(struct dma_engine *dma)
 {
+	struct tlkm_device *dev = dma->dev;
 	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
 	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
 	iounmap(dma->regs);
@@ -108,16 +114,19 @@ void tlkm_dma_exit(struct tlkm_device *dev, struct dma_engine *dma)
 
 ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void __user *usr_addr, size_t len)
 {
+	struct tlkm_device *dev = dma->dev;
 	size_t cpy_sz = len;
 	ssize_t t_id;
 	while (len > 0) {
 		DEVLOG(dma->dev_id, TLKM_LF_DMA, "outstanding bytes: %zd - usr_addr = 0x%px, dev_addr = 0x%px",
 		       len, usr_addr, (void *)dev_addr);
 		cpy_sz = len < TLKM_DMA_BUF_SZ ? len : TLKM_DMA_BUF_SZ;
+		dma->ops.buffer_cpu(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, cpy_sz);
 		if (copy_from_user(dma->dma_buf_write, usr_addr, cpy_sz)) {
 			DEVERR(dma->dev_id, "could not copy data from user");
 			return -EAGAIN;
 		} else {
+			dma->ops.buffer_dev(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, cpy_sz);
 			t_id = dma->ops.copy_to(dma, dev_addr, dma->dma_buf_write_dev, cpy_sz);
 			if (wait_event_interruptible(dma->wq, atomic64_read(&dma->wq_processed) >= t_id)) {
 				WRN("got killed while hanging in waiting queue");
@@ -134,12 +143,14 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void
 
 ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_addr_t dev_addr, size_t len)
 {
+	struct tlkm_device *dev = dma->dev;
 	size_t cpy_sz = len;
 	ssize_t t_id;
 	while (len > 0) {
 		DEVLOG(dma->dev_id, TLKM_LF_DMA, "outstanding bytes: %zd - usr_addr = 0x%px, dev_addr = 0x%px",
 		       len, usr_addr, (void *)dev_addr);
 		cpy_sz = len < TLKM_DMA_BUF_SZ ? len : TLKM_DMA_BUF_SZ;
+		dma->ops.buffer_dev(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, cpy_sz);
 		t_id = dma->ops.copy_from(dma, dma->dma_buf_read_dev, dev_addr, cpy_sz);
 		if (wait_event_interruptible(dma->rq, atomic64_read(&dma->rq_processed) >= t_id)) {
 			DEVWRN(dma->dev_id, "got killed while hanging in waiting queue");
@@ -148,6 +159,7 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_ad
 		usr_addr	+= cpy_sz;
 		dev_addr	+= cpy_sz;
 		len		-= cpy_sz;
+		dma->ops.buffer_cpu(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, cpy_sz);
 		if (copy_to_user(usr_addr, dma->dma_buf_read, cpy_sz)) {
 			DEVERR(dma->dev_id, "could not copy data from user");
 			return -EAGAIN;

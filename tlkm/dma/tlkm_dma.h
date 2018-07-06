@@ -23,6 +23,9 @@ typedef enum {
 typedef int (*dma_allocate_buffer_func_t)(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
 typedef void (*dma_free_buffer_func_t)(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
 
+typedef int (*dma_buffer_cpu_func_t)(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
+typedef int (*dma_buffer_dev_func_t)(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
+
 typedef enum {
     DMA_USED_DUAL =                 0,
     DMA_USED_BLUE,
@@ -31,8 +34,8 @@ typedef enum {
 struct dma_operations {
     dma_allocate_buffer_func_t allocate_buffer;
     dma_free_buffer_func_t     free_buffer;
-    //dma_buffer_cpu_func_t      buffer_cpu;
-    //dma_buffer_dev_func_t      buffer_dev;
+    dma_buffer_cpu_func_t      buffer_cpu;
+    dma_buffer_dev_func_t      buffer_dev;
     dma_copy_to_func_t         copy_to;
     dma_copy_from_func_t       copy_from;
     dma_intr_handler           intr_read;
@@ -60,10 +63,11 @@ struct dma_engine {
     void                *dma_buf_read_dev;
     void                *dma_buf_write;
     void                *dma_buf_write_dev;
+    struct tlkm_device  *dev;
 };
 
-int  tlkm_dma_init(struct dma_engine *dma, struct tlkm_device *dev, u64 base);
-void tlkm_dma_exit(struct tlkm_device *dev, struct dma_engine *dma);
+int  tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 base);
+void tlkm_dma_exit(struct dma_engine *dma);
 
 ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void __user *usr_addr, size_t len);
 ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_addr_t dev_addr, size_t len);

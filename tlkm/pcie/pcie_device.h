@@ -41,6 +41,9 @@ void pcie_device_exit_subsystems(struct tlkm_device *dev);
 int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
 void pcie_device_dma_free_buffer(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
 
+int pcie_device_dma_sync_buffer_cpu(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
+int pcie_device_dma_sync_buffer_dev(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
+
 /* struct to hold data related to the pcie device */
 struct tlkm_pcie_device {
 	struct tlkm_device	*parent;
