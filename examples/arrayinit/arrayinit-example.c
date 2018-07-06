@@ -28,13 +28,12 @@
 #include <unistd.h>
 #include <tapasco.h>
 #include <assert.h>
-#include "arrayinit.h"
 
 #define SZ							256
 #define RUNS							25
 
 static tapasco_ctx_t *ctx;
-static tapasco_dev_ctx_t *dev;
+static tapasco_devctx_t *dev;
 
 static void check(int const result)
 {
@@ -78,8 +77,8 @@ int main(int argc, char **argv)
 	check_tapasco(tapasco_init(&ctx));
 	check_tapasco(tapasco_create_device(ctx, 0, &dev, 0));
 	// check arrayinit instance count
-	printf("instance count: %d\n", tapasco_device_func_instance_count(dev, 11));
-	assert(tapasco_device_func_instance_count(dev, 11));
+	printf("instance count: %d\n", tapasco_device_kernel_pe_count(dev, 11));
+	assert(tapasco_device_kernel_pe_count(dev, 11));
 
 	// init whole array to subsequent numbers
 	int *arr = (int *)malloc(SZ * RUNS * sizeof(int));
@@ -93,7 +92,8 @@ int main(int argc, char **argv)
 		check(h != 0);
 
 		// get a job id and set argument to handle
-		tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev, 11,
+		tapasco_job_id_t j_id;
+		tapasco_device_acquire_job_id(dev, &j_id, 11,
 				TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
 		check(j_id > 0);
 		check_tapasco(tapasco_device_job_set_arg(dev, j_id, 0, sizeof(h), &h));

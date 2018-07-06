@@ -28,13 +28,12 @@
 #include <unistd.h>
 #include <tapasco.h>
 #include <assert.h>
-#include "arrayupdate.h"
 
 #define SZ							256
 #define RUNS							25
 
 static tapasco_ctx_t *ctx;
-static tapasco_dev_ctx_t *dev;
+static tapasco_devctx_t *dev;
 
 static void check(int const result)
 {
@@ -58,6 +57,12 @@ static void init_array(int *arr, size_t sz)
 		arr[i] = i + 1;
 }
 
+void arrayupdate(int arr[SZ])
+{
+        for (size_t i; i < SZ; i ++)
+                arr[i] += 42;
+}
+
 static unsigned int check_arrays(int *arr, int *golden_arr, size_t sz)
 {
 	unsigned int errs = 0;
@@ -78,8 +83,8 @@ int main(int argc, char **argv) {
 	check_tapasco(tapasco_init(&ctx));
 	check_tapasco(tapasco_create_device(ctx, 0, &dev, 0));
 	// check arrayupdate instance count
-	printf("instance count: %d\n", tapasco_device_func_instance_count(dev, 12));
-	assert(tapasco_device_func_instance_count(dev, 12));
+	printf("instance count: %d\n", tapasco_device_kernel_pe_count(dev, 9));
+	assert(tapasco_device_kernel_pe_count(dev, 9));
 
 	// init whole array to subsequent numbers
 	int *arr = (int *)malloc(SZ * RUNS * sizeof(int));
@@ -102,7 +107,8 @@ int main(int argc, char **argv) {
 				SZ * sizeof(int), TAPASCO_DEVICE_COPY_BLOCKING));
 
 		// get a job id and set argument to handle
-		tapasco_job_id_t j_id = tapasco_device_acquire_job_id(dev, 12, 
+		tapasco_job_id_t j_id;
+		tapasco_device_acquire_job_id(dev, &j_id, 9, 
 				TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
 		check(j_id > 0);
 		check_tapasco(tapasco_device_job_set_arg(dev, j_id, 0, sizeof(h), &h));
