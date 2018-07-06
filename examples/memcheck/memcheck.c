@@ -61,7 +61,7 @@ int compare_arrays(int const *arr, int const *rarr, size_t const sz) {
 	for (size_t i = 0; i < sz; ++i) {
 		if (rarr[i] != arr[i]) {
 			fprintf(stderr, "wrong data: arr[%zd] = %d != %d = rarr[%zd]\n",
-					i, arr[i], rarr[i], i);
+			        i, arr[i], rarr[i], i);
 			++errs;
 		}
 	}
@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
 
 	for (int s = 0; s < sizeof(arr_szs) / sizeof(*arr_szs) && errs == 0; ++s) {
 		printf("Checking array size %zd (%zd byte) ...\n",
-				arr_szs[s], arr_szs[s] * sizeof(int));
+		       arr_szs[s], arr_szs[s] * sizeof(int));
 		// allocate and fill array
 		int *arr = (int *)malloc(arr_szs[s] * sizeof(int));
 		check(arr != NULL);
@@ -99,14 +99,14 @@ int main(int argc, char **argv) {
 		tapasco_device_free(dev, h, 0);
 
 		int merr = compare_arrays(arr, rarr, arr_szs[s]);
-		errs =+ merr;
+		errs = + merr;
 
 		if (! merr)
 			printf("Array size %zd (%zd byte) ok!\n",
-					arr_szs[s], arr_szs[s] * sizeof(int));
+			       arr_szs[s], arr_szs[s] * sizeof(int));
 		else
 			fprintf(stderr, "FAILURE: array size %zd (%zd byte) not ok.\n",
-					arr_szs[s], arr_szs[s] * sizeof(int));
+			        arr_szs[s], arr_szs[s] * sizeof(int));
 
 		free(arr);
 		free(rarr);

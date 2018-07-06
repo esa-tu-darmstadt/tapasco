@@ -19,9 +19,9 @@
 cmake_minimum_required(VERSION 3.0)
 project(examples)
 
-#add_subdirectory(arrayinit)
-#add_subdirectory(arraysum)
-#add_subdirectory(arrayupdate)
+add_subdirectory(arrayinit)
+add_subdirectory(arraysum)
+add_subdirectory(arrayupdate)
 #add_subdirectory(basic_test)
 #add_subdirectory(benchmark-alloc-free)
 #add_subdirectory(benchmark-cd)

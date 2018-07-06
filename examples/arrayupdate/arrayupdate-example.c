@@ -39,6 +39,8 @@ static void check(int const result)
 {
 	if (! result) {
 		fprintf(stderr, "fatal error: %s\n", strerror(errno));
+		tapasco_destroy_device(ctx, dev);
+		tapasco_deinit(ctx);
 		exit(errno);
 	}
 }
@@ -47,6 +49,8 @@ static void check_tapasco(tapasco_res_t const result)
 {
 	if (result != TAPASCO_SUCCESS) {
 		fprintf(stderr, "tapasco fatal error: %s\n", tapasco_strerror(result));
+		tapasco_destroy_device(ctx, dev);
+		tapasco_deinit(ctx);
 		exit(result);
 	}
 }
@@ -59,8 +63,8 @@ static void init_array(int *arr, size_t sz)
 
 void arrayupdate(int arr[SZ])
 {
-        for (size_t i; i < SZ; i ++)
-                arr[i] += 42;
+	for (size_t i; i < SZ; i ++)
+		arr[i] += 42;
 }
 
 static unsigned int check_arrays(int *arr, int *golden_arr, size_t sz)
@@ -69,7 +73,7 @@ static unsigned int check_arrays(int *arr, int *golden_arr, size_t sz)
 	for (size_t i = 0; i < sz; ++i) {
 		if (arr[i] != golden_arr[i]) {
 			fprintf(stderr, "wrong data at %zd: %d, should be %d\n",
-					i, arr[i], golden_arr[i]);
+			        i, arr[i], golden_arr[i]);
 			++errs;
 		}
 	}
@@ -100,37 +104,37 @@ int main(int argc, char **argv) {
 
 		// allocate mem on device and copy array part
 		tapasco_handle_t h;
-		check_tapasco(tapasco_device_alloc(dev, &h, SZ * sizeof(int), 
-				TAPASCO_DEVICE_COPY_BLOCKING));
-		check(h != 0);
+		check_tapasco(tapasco_device_alloc(dev, &h, SZ * sizeof(int),
+		                                   TAPASCO_DEVICE_COPY_BLOCKING));
+
 		check_tapasco(tapasco_device_copy_to(dev, &arr[SZ * run], h,
-				SZ * sizeof(int), TAPASCO_DEVICE_COPY_BLOCKING));
+		                                     SZ * sizeof(int), TAPASCO_DEVICE_COPY_BLOCKING));
 
 		// get a job id and set argument to handle
 		tapasco_job_id_t j_id;
-		tapasco_device_acquire_job_id(dev, &j_id, 9, 
-				TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
+		tapasco_device_acquire_job_id(dev, &j_id, 9,
+		                              TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
 		check(j_id > 0);
 		check_tapasco(tapasco_device_job_set_arg(dev, j_id, 0, sizeof(h), &h));
 
 		// shoot me to the moon!
 		check_tapasco(tapasco_device_job_launch(dev, j_id,
-				TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING));
+		                                        TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING));
 
 		// get the result
 		int32_t r = 0;
 		check_tapasco(tapasco_device_job_get_return(dev, j_id, sizeof(r), &r));
 		check_tapasco(tapasco_device_copy_from(dev, h, &arr[SZ * run],
-				SZ * sizeof(int), TAPASCO_DEVICE_COPY_BLOCKING));
+		                                       SZ * sizeof(int), TAPASCO_DEVICE_COPY_BLOCKING));
 		printf("TPC output for run %d: %d\n", run, r);
 		unsigned int errs = check_arrays(&arr[SZ * run],
-				&golden_arr[SZ * run], SZ);
+		                                 &golden_arr[SZ * run], SZ);
 		printf("\nRUN %d %s\n", run, errs == 0 ?  "OK" : "NOT OK");
 		tapasco_device_free(dev, h, 0);
 		tapasco_device_release_job_id(dev, j_id);
 	}
 
-	if (! errs) 
+	if (! errs)
 		printf("SUCCESS\n");
 	else
 		fprintf(stderr, "FAILURE\n");
