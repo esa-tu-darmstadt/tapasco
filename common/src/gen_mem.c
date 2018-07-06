@@ -35,6 +35,14 @@
 #define GEN_MEM_LOG(...)
 #endif
 
+#define GEN_MEM_ALIGNMENT 64
+
+int roundUp(int numToRound, int multiple)
+{
+    assert(multiple && ((multiple & (multiple - 1)) == 0));
+    return (numToRound + multiple - 1) & -multiple;
+}
+
 block_t *gen_mem_create(addr_t const base, size_t const range)
 {
 	assert(base % sizeof(addr_t) == 0 || "base address in gen_mem_create must be aligned with word size");
@@ -59,10 +67,11 @@ addr_t gen_mem_next_base(block_t *root)
 	return nxt->base;
 }
 
-addr_t gen_mem_malloc(block_t **root, size_t const length)
+addr_t gen_mem_malloc(block_t **root, size_t const l)
 {
 	assert(root || "argument to gen_mem_malloc may not be NULL");
-	assert(length > 0 || "length must be > 0");
+	assert(l > 0 || "length must be > 0");
+	size_t const length = roundUp(l, GEN_MEM_ALIGNMENT);
 	block_t *prv = *root, *nxt = *root;
 	while (nxt != NULL && nxt->range < length) {
 		prv = nxt;
@@ -84,7 +93,7 @@ addr_t gen_mem_malloc(block_t **root, size_t const length)
 void gen_mem_free(block_t **root, addr_t const p, size_t const l)
 {
 	assert(root || "argument to gen_mem_free may not be NULL");
-	GEN_MEM_LOG("freeing 0x%08lx - 0x%08lx\n", (unsigned long)p, p + l);
+	GEN_MEM_LOG("freeing 0x%08lx - 0x%08lx\n", (unsigned long)p, p + roundUp(l, GEN_MEM_ALIGNMENT));
 	block_t *prv = *root, *nxt = *root;
 	while (nxt != NULL && nxt->base + nxt->range <= p) {
 		prv = nxt;
