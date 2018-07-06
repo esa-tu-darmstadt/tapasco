@@ -40,7 +40,7 @@ void platform_specific_deinit(platform_devctx_t *devctx)
 		pcie_deinit(devctx);
 	} else if (! strncmp(ZYNQ_CLASS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
 		zynq_deinit(devctx);
-	} 
+	}
 }
 
 static inline
@@ -161,15 +161,14 @@ void platform_devctx_deinit(platform_devctx_t *devctx)
 	if (devctx) {
 		log_perfc(devctx);
 		platform_specific_deinit(devctx);
-		platform_dev_id_t dev_id = devctx->dev_id;
-		DEVLOG(dev_id, LPLL_INIT, "destroying platform signaling ...");
+		DEVLOG(devctx->dev_id, LPLL_INIT, "destroying platform signaling ...");
 		platform_signaling_deinit(devctx->signaling);
-		DEVLOG(dev_id, LPLL_INIT, "destroying platform address map ...");
+		DEVLOG(devctx->dev_id, LPLL_INIT, "destroying platform address map ...");
 		platform_addr_map_deinit(devctx, devctx->addrmap);
 		close(devctx->fd_ctrl);
 		devctx->fd_ctrl = -1;
 		devctx->dev_id  = -1;
 		free(devctx);
-		DEVLOG(dev_id, LPLL_INIT, "context destroyed, have a nice 'un");
+		DEVLOG(devctx->dev_id, LPLL_INIT, "context destroyed, have a nice 'un");
 	}
 }

@@ -86,7 +86,6 @@ platform_res_t platform_signaling_init(platform_devctx_t const *pctx, platform_s
 
 void platform_signaling_deinit(platform_signaling_t *a)
 {
-	platform_dev_id_t const dev_id = a->dev_id;
 	pthread_cancel(a->collector);
 	pthread_join(a->collector, NULL);
 
@@ -96,7 +95,7 @@ void platform_signaling_deinit(platform_signaling_t *a)
 		sem_close(&a->finished[s]);
 	}
 	if (a) free(a);
-	DEVLOG(dev_id, LPLL_ASYNC, "async deinitialized");
+	DEVLOG(a->dev_id, LPLL_ASYNC, "async deinitialized");
 }
 
 platform_res_t platform_signaling_wait_for_slot(platform_signaling_t *a, platform_slot_id_t const slot)
