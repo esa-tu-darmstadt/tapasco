@@ -59,8 +59,10 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 		DEVLOG(dev_id, TLKM_LF_DMA, "PCIe beats per burst: %u", (uint8_t)(id >> 32));
 		DEVLOG(dev_id, TLKM_LF_DMA, "FPGA beats per burst: %u", (uint8_t)(id >> 40));
 		DEVLOG(dev_id, TLKM_LF_DMA, "smallest alignment: %u", (uint8_t)(id >> 48));
+		dma->alignment = (uint8_t)(id >> 48);
 	} else {
 		dma->dma_used = DMA_USED_DUAL;
+		dma->alignment = 64;
 		DEVLOG(dev_id, TLKM_LF_DMA, "detected DualDMA");
 	}
 	dma->ops = tlkm_dma_ops[dma->dma_used];
@@ -120,6 +122,10 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void
 	while (len > 0) {
 		DEVLOG(dma->dev_id, TLKM_LF_DMA, "outstanding bytes: %zd - usr_addr = 0x%px, dev_addr = 0x%px",
 		       len, usr_addr, (void *)dev_addr);
+		if ((dev_addr % dma->alignment) != 0) {
+			DEVERR(dma->dev_id, "Transfer is not properly aligned for dma engine. All transfers have to be aligned to %d bytes.", dma->alignment);
+			return -EAGAIN;
+		}
 		cpy_sz = len < TLKM_DMA_BUF_SZ ? len : TLKM_DMA_BUF_SZ;
 		dma->ops.buffer_cpu(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, cpy_sz);
 		if (copy_from_user(dma->dma_buf_write, usr_addr, cpy_sz)) {
@@ -149,6 +155,10 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_ad
 	while (len > 0) {
 		DEVLOG(dma->dev_id, TLKM_LF_DMA, "outstanding bytes: %zd - usr_addr = 0x%px, dev_addr = 0x%px",
 		       len, usr_addr, (void *)dev_addr);
+		if ((dev_addr % dma->alignment) != 0) {
+			DEVERR(dma->dev_id, "Transfer is not properly aligned for dma engine. All transfers have to be aligned to %d bytes.", dma->alignment);
+			return -EAGAIN;
+		}
 		cpy_sz = len < TLKM_DMA_BUF_SZ ? len : TLKM_DMA_BUF_SZ;
 		dma->ops.buffer_dev(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, cpy_sz);
 		t_id = dma->ops.copy_from(dma, dma->dma_buf_read_dev, dev_addr, cpy_sz);
@@ -156,14 +166,14 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_ad
 			DEVWRN(dma->dev_id, "got killed while hanging in waiting queue");
 			return -EACCES;
 		}
+		dma->ops.buffer_cpu(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, cpy_sz);
+		if (copy_to_user(usr_addr, dma->dma_buf_read, cpy_sz)) {
+			DEVERR(dma->dev_id, "could not copy data to user");
+			return -EAGAIN;
+		}
 		usr_addr	+= cpy_sz;
 		dev_addr	+= cpy_sz;
 		len		-= cpy_sz;
-		dma->ops.buffer_cpu(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, cpy_sz);
-		if (copy_to_user(usr_addr, dma->dma_buf_read, cpy_sz)) {
-			DEVERR(dma->dev_id, "could not copy data from user");
-			return -EAGAIN;
-		}
 	}
 	tlkm_perfc_dma_reads_add(dma->dev_id, len);
 	return len;

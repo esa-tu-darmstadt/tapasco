@@ -64,6 +64,7 @@ struct dma_engine {
     void                *dma_buf_write;
     void                *dma_buf_write_dev;
     struct tlkm_device  *dev;
+    int alignment;
 };
 
 int  tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 base);
