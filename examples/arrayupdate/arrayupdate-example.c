@@ -63,7 +63,7 @@ static void init_array(int *arr, size_t sz)
 
 void arrayupdate(int arr[SZ])
 {
-	for (size_t i; i < SZ; i ++)
+	for (size_t i = 0; i < SZ; i ++)
 		arr[i] += 42;
 }
 

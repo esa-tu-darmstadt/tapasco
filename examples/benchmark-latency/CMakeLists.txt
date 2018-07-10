@@ -16,6 +16,6 @@ set_tapasco_defaults(benchmark-latency++)
 target_link_libraries(benchmark-latency++ m pthread  atomic tapasco platform atomic)
 
 install(TARGETS benchmark-latency
-        ARCHIVE  DESTINATION bin/
-        LIBRARY  DESTINATION bin/
-        RUNTIME  DESTINATION bin/)
+        ARCHIVE  DESTINATION share/Tapasco/bin/
+        LIBRARY  DESTINATION share/Tapasco/bin/
+        RUNTIME  DESTINATION share/Tapasco/bin/)

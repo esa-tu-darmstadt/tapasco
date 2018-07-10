@@ -16,7 +16,7 @@ set_tapasco_defaults(benchmark-mem++)
 target_link_libraries (benchmark-mem++ m rt pthread tapasco platform)
 
 install (TARGETS benchmark-mem benchmark-mem++
-        ARCHIVE  DESTINATION bin/
-        LIBRARY  DESTINATION bin/
-        RUNTIME  DESTINATION bin/)
+        ARCHIVE  DESTINATION share/Tapasco/bin/
+        LIBRARY  DESTINATION share/Tapasco/bin/
+        RUNTIME  DESTINATION share/Tapasco/bin/)
 

@@ -63,5 +63,3 @@ install(TARGETS tapasco EXPORT TapascoConfig
 install(EXPORT TapascoConfig DESTINATION share/Tapasco/cmake)
 
 export(TARGETS tapasco FILE TapascoConfig.cmake)
-
-add_subdirectory(tests)

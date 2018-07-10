@@ -12,7 +12,7 @@ set_tapasco_defaults(arrayupdate)
 target_link_libraries(arrayupdate tapasco pthread platform tlkm)
 
 install(TARGETS arrayupdate
-        ARCHIVE  DESTINATION bin/
-        LIBRARY  DESTINATION bin/
-        RUNTIME  DESTINATION bin/)
+        ARCHIVE  DESTINATION share/Tapasco/bin/
+        LIBRARY  DESTINATION share/Tapasco/bin/
+        RUNTIME  DESTINATION share/Tapasco/bin/)
 

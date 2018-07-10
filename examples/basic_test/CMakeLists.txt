@@ -12,6 +12,6 @@ set_tapasco_defaults(basic_test)
 target_link_libraries(basic_test rt pthread tapasco platform atomic)
 
 install(TARGETS basic_test
-        ARCHIVE  DESTINATION bin/
-        LIBRARY  DESTINATION bin/
-        RUNTIME  DESTINATION bin/)
+        ARCHIVE  DESTINATION share/Tapasco/bin/
+        LIBRARY  DESTINATION share/Tapasco/bin/
+        RUNTIME  DESTINATION share/Tapasco/bin/)

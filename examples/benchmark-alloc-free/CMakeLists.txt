@@ -12,5 +12,5 @@ set_tapasco_defaults(benchmark-alloc-dealloc)
 target_link_libraries (benchmark-alloc-dealloc m rt pthread tapasco platform)
 
 install (TARGETS benchmark-alloc-dealloc
-         RUNTIME DESTINATION bin/)
+         RUNTIME DESTINATION share/Tapasco/bin/)
 

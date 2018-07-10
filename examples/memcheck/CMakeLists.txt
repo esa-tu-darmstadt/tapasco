@@ -16,7 +16,7 @@ set_tapasco_defaults(memcheck-mt)
 target_link_libraries(memcheck-mt PRIVATE tapasco tlkm platform tapasco-common)
 
 install(TARGETS memcheck memcheck-mt
-        ARCHIVE  DESTINATION bin/
-        LIBRARY  DESTINATION bin/
-        RUNTIME  DESTINATION bin/)
+        ARCHIVE  DESTINATION share/Tapasco/bin/
+        LIBRARY  DESTINATION share/Tapasco/bin/
+        RUNTIME  DESTINATION share/Tapasco/bin/)
 

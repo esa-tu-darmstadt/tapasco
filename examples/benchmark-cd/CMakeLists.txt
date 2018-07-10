@@ -12,4 +12,4 @@ set_tapasco_defaults(benchmark-cd)
 target_link_libraries(benchmark-cd rt pthread tapasco platform)
 
 install(TARGETS benchmark-cd
-        RUNTIME DESTINATION bin/)
+        RUNTIME DESTINATION share/Tapasco/bin/)
