@@ -1,4 +1,4 @@
 SET(PLATFORM "${CMAKE_CURRENT_LIST_DIR}")
 
-LIST(APPEND SRCS "${PLATFORM}/src/platform_zynq.c")
-LIST(APPEND EXTRA_INCLUDES_PRIVATE "${PLATFORM}/src/")
+target_sources(platform PRIVATE "${PLATFORM}/src/platform_zynq.c")
+LIST(APPEND EXTRA_INCLUDES_PRIVATE "${PLATFORM}/include/")

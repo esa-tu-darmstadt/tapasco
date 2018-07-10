@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.0)
 project (arrayupdate)
 
 find_package(TapascoTLKM REQUIRED)
+find_package(TapascoCommon REQUIRED)
 find_package(TapascoPlatform REQUIRED)
 find_package(Tapasco REQUIRED)
 

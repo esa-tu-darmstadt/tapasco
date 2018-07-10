@@ -22,6 +22,7 @@ export MANPATH=$MANPATH:$TAPASCO_HOME/man
 export MYVIVADO=$MYVIVADO:$TAPASCO_HOME/common
 export XILINX_PATH=$XILINX_PATH:$TAPASCO_HOME/common
 
-export Tapasco_DIR=${TAPASCO_HOME}/build/arch/axi4mm/
-export TapascoPlatform_DIR=${TAPASCO_HOME}/build/platform/
-export TapascoTLKM_DIR=${TAPASCO_HOME}/build/tlkm/
+export Tapasco_DIR=${TAPASCO_HOME}/build/install/usr/local/share/Tapasco/cmake/
+export TapascoPlatform_DIR=${TAPASCO_HOME}/build/install/usr/local/share/Tapasco/cmake/
+export TapascoCommon_DIR=${TAPASCO_HOME}/build/install/usr/local/share/Tapasco/cmake/
+export TapascoTLKM_DIR=${TAPASCO_HOME}/build/install/usr/local/share/Tapasco/cmake/

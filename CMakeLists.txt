@@ -18,6 +18,6 @@ add_definitions(-Werror)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__MY_FILE__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'")
 
 add_subdirectory(tlkm)
+add_subdirectory(common)
 add_subdirectory(platform)
-add_subdirectory(arch/axi4mm)
-add_subdirectory(arch/tests)
+add_subdirectory(arch)
