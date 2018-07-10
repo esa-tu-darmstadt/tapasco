@@ -90,7 +90,7 @@ typedef struct {
 
 ISR read_isr_register(Tapasco &tapasco) {
 	uint32_t ret = 0xFFAAFFAA;
-	platform_read_ctl(tapasco.platform(), isr_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_read_ctl(tapasco.platform_device(), isr_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 	ISR t;
 	t.tx_half = getVal(ret, 7);
 	t.not_addressed = getVal(ret, 6);
@@ -105,14 +105,14 @@ ISR read_isr_register(Tapasco &tapasco) {
 
 void reset_isr_register(Tapasco &tapasco) {
 	uint32_t ret = 0xFFAAFFAA;
-	platform_read_ctl(tapasco.platform(), isr_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_read_ctl(tapasco.platform_device(), isr_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 	ret = 0;
-	platform_write_ctl(tapasco.platform(), isr_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), isr_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 }
 
 Status read_status_register(Tapasco &tapasco) {
 	uint32_t ret = 0xFFAAFFAA;
-	platform_read_ctl(tapasco.platform(), status_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_read_ctl(tapasco.platform_device(), status_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 	Status t;
 	t.tx_empty = getVal(ret, 7);
 	t.rx_empty = getVal(ret, 6);
@@ -127,63 +127,63 @@ Status read_status_register(Tapasco &tapasco) {
 
 void enableDevice(Tapasco &tapasco) {
 	uint32_t ret = 0;
-	platform_read_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_read_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 	setVal(ret, 0, 1);
-	platform_write_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 }
 
 void disableDevice(Tapasco &tapasco) {
 	uint32_t ret = 0;
-	platform_read_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_read_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 	setVal(ret, 0, 0);
-	platform_write_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 }
 
 void startTransfer(Tapasco &tapasco) {
 	uint32_t ret = 0;
-	platform_read_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_read_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 	setVal(ret, 2, 1);
-	platform_write_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 }
 
 void endTransfer(Tapasco &tapasco) {
 	uint32_t ret = 0;
-	platform_read_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_read_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 	setVal(ret, 2, 0);
-	platform_write_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 }
 
 void enableGeneralCall(Tapasco &tapasco) {
 	uint32_t ret = 0;
-	platform_read_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_read_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 	setVal(ret, 6, 1);
-	platform_write_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 }
 
 void disableGeneralCall(Tapasco &tapasco) {
 	uint32_t ret = 0;
-	platform_read_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_read_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 	setVal(ret, 6, 0);
-	platform_write_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 }
 
 void resetTXFIFO(Tapasco &tapasco) {
 	uint32_t ret = 0;
-	platform_read_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_read_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 	setVal(ret, 1, 1);
-	platform_write_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 }
 
 void disableTXFIFOReset(Tapasco &tapasco) {
 	uint32_t ret = 0;
-	platform_read_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_read_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 	setVal(ret, 1, 0);
-	platform_write_ctl(tapasco.platform(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), control_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 }
 
 void setFIFOPIRQ(Tapasco &tapasco, uint8_t v) {
 	uint32_t ret = v;
-	platform_write_ctl(tapasco.platform(), rx_fifo_pirq, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), rx_fifo_pirq, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 }
 
 void enqueueWord(Tapasco &tapasco, uint8_t v, bool start, bool stop) {
@@ -191,12 +191,12 @@ void enqueueWord(Tapasco &tapasco, uint8_t v, bool start, bool stop) {
 	setVal(f, 8, start);
 	setVal(f, 9, stop);
 	std::cout << "Enqueue " << std::hex << f << std::dec << std::endl;
-	platform_write_ctl(tapasco.platform(), fifo_tx_register, sizeof(f), &f, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), fifo_tx_register, sizeof(f), &f, PLATFORM_CTL_FLAGS_RAW);
 }
 
 uint8_t readWord(Tapasco &tapasco) {
 	uint32_t f = 0xFF;
-	platform_read_ctl(tapasco.platform(), fifo_rx_register, sizeof(f), &f, PLATFORM_CTL_FLAGS_RAW);
+	platform_read_ctl(tapasco.platform_device(), fifo_rx_register, sizeof(f), &f, PLATFORM_CTL_FLAGS_RAW);
 	return f;
 }
 
@@ -225,7 +225,7 @@ void printISR(ISR t) {
 }
 
 void resetDevice(Tapasco &tapasco) {
-	platform_write_ctl(tapasco.platform(), reset_register, sizeof(reset_key), &reset_key, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), reset_register, sizeof(reset_key), &reset_key, PLATFORM_CTL_FLAGS_RAW);
 }
 
 bool writeRegister(Tapasco &tapasco, uint8_t addr, uint8_t *data, uint16_t words) {
@@ -360,23 +360,23 @@ bool setSwitchPosition(Tapasco &tapasco, uint8_t position) {
 
 void resetSwitch(Tapasco &tapasco) {
 	uint32_t ret = 1;
-	platform_write_ctl(tapasco.platform(), gpo_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), gpo_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 	ret = 0;
 	usleep(100000);
-	platform_write_ctl(tapasco.platform(), gpo_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), gpo_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 }
 
 void resetClock(Tapasco &tapasco) {
 	uint32_t ret = 2;
-	platform_write_ctl(tapasco.platform(), gpo_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), gpo_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 	ret = 0;
 	usleep(1000000);
-	platform_write_ctl(tapasco.platform(), gpo_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), gpo_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 }
 
 void releaseResetAll(Tapasco &tapasco) {
 	uint32_t ret = 0x00;
-	platform_write_ctl(tapasco.platform(), gpo_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
+	platform_write_ctl(tapasco.platform_device(), gpo_register, sizeof(ret), &ret, PLATFORM_CTL_FLAGS_RAW);
 }
 
 int main(int argc, char **argv) {
