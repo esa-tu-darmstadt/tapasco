@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
+include($ENV{TAPASCO_HOME}/cmake/Tapasco.cmake)
 project(examples)
 
 add_subdirectory(arrayinit)

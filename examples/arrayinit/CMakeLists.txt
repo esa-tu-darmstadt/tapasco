@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
+include($ENV{TAPASCO_HOME}/cmake/Tapasco.cmake)
 project (arrayinit)
 
 find_package(TapascoTLKM REQUIRED)
@@ -7,6 +8,7 @@ find_package(TapascoPlatform REQUIRED)
 find_package(Tapasco REQUIRED)
 
 add_executable(arrayinit arrayinit-example.c)
+set_tapasco_defaults(arrayinit)
 target_link_libraries(arrayinit tapasco pthread platform tlkm)
 
 install(TARGETS arrayinit

@@ -81,7 +81,7 @@ int main(int argc, char **argv)
 	check_tapasco(tapasco_init(&ctx));
 	check_tapasco(tapasco_create_device(ctx, 0, &dev, 0));
 	// check arrayinit instance count
-	printf("instance count: %d\n", tapasco_device_kernel_pe_count(dev, 11));
+	printf("instance count: %ld\n", tapasco_device_kernel_pe_count(dev, 11));
 	assert(tapasco_device_kernel_pe_count(dev, 11));
 
 	// init whole array to subsequent numbers

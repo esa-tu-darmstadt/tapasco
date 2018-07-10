@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
+include($ENV{TAPASCO_HOME}/cmake/Tapasco.cmake)
 project(tapasco-common VERSION 1.0 LANGUAGES C CXX)
 
 add_library(tapasco-common
@@ -17,6 +19,8 @@ set_property(TARGET tapasco-common PROPERTY PUBLIC_HEADER
             include/gen_stack.h
             include/log.h
 )
+
+set_tapasco_defaults(tapasco-common)
 
 install(TARGETS tapasco-common
         EXPORT TapascoCommonConfig

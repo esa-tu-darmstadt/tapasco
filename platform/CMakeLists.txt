@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
+include($ENV{TAPASCO_HOME}/cmake/Tapasco.cmake)
 project(platform VERSION 1.0 LANGUAGES C CXX)
 
 add_library(platform "common/src/platform_addr_map.c"
@@ -14,6 +16,11 @@ add_library(platform "common/src/platform_addr_map.c"
 
 include(pcie/platform.cmake)
 include(zynq/platform.cmake)
+
+target_compile_definitions(platform PRIVATE -DNPERFC)
+target_compile_definitions(platform PRIVATE -DLOG_USE_COLOR)
+
+set_tapasco_defaults(platform)
 
 set_property(TARGET platform PROPERTY PUBLIC_HEADER
                               include/platform_caps.h

@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
+include($ENV{TAPASCO_HOME}/cmake/Tapasco.cmake)
 project(arch-axi4mm VERSION 1.0 LANGUAGES C CXX)
 
 set(PCMNDIR "common/src")
@@ -42,7 +44,12 @@ set_property(TARGET tapasco PROPERTY PUBLIC_HEADER include/tapasco_errors.h
                                                   common/include/tapasco_perfc.h
                                                   common/include/tapasco_regs.h
                                                   common/include/tapasco_scheduler.h)
-add_definitions(-DUSE_ASSERTIONS)
+
+target_compile_definitions(tapasco PRIVATE -DUSE_ASSERTIONS)
+target_compile_definitions(tapasco PRIVATE -DLOG_USE_COLOR)
+target_compile_definitions(tapasco PRIVATE -DNPERFC)
+
+set_tapasco_defaults(tapasco)
 
 target_link_libraries(tapasco PUBLIC tlkm platform tapasco-common PRIVATE atomic pthread)
 

@@ -1,90 +1,27 @@
-#
-# Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
-#
-# This file is part of Tapasco (TaPaSCo).
-#
-# Tapasco is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# Tapasco is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
-#
-if (NOT EXISTS "$ENV{TAPASCO_HOME}")
-  message (FATAL_ERROR "Please set TAPASCO_HOME environment variable to root directory of Tapasco")
-endif (NOT EXISTS "$ENV{TAPASCO_HOME}")
+cmake_policy(SET CMP0069 NEW)
 
-# don't link with full path
-set (CMAKE_SKIP_RPATH true)
+function(set_tapasco_defaults target_name)
+    target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall>
+                                           $<$<CXX_COMPILER_ID:GNU>:-Werror>)
+    set_target_properties(${target_name} PROPERTIES CMAKE_DEBUG_POSTFIX d)
+    set_target_properties(${target_name} PROPERTIES CMAKE_CXX_STANDARD 11)
+    set_target_properties(${target_name} PROPERTIES CMAKE_C_STANDARD 11)
 
-# basic directory variables
-set (TAPASCO_HOME "$ENV{TAPASCO_HOME}")
-set (TAPASCO_TLKM_DIR		"${TAPASCO_HOME}/tlkm")
-set (TAPASCO_COMMON_DIR 	"${TAPASCO_HOME}/common")
-set (TAPASCO_LIB_DIR	 	"${TAPASCO_HOME}/lib")
-set (TAPASCO_PLATFORM_DIR 	"${TAPASCO_HOME}/platform")
-set (TAPASCO_ARCH_DIR		"${TAPASCO_HOME}/arch")
-
-# set target architecture
-if (NOT EXISTS "$ENV{TAPASCO_TARGET}")
-  message (STATUS "TAPASCO_TARGET environment variable not set, using ${CMAKE_SYSTEM_PROCESSOR}")
-  set (TAPASCO_TARGET "${CMAKE_SYSTEM_PROCESSOR}")
-else (NOT EXISTS "$ENV{TAPASCO_TARGET}")
-  set (TAPASCO_TARGET "$ENV{TAPASCO_TARGET}")
-endif (NOT EXISTS "$ENV{TAPASCO_TARGET}")
-
-# global env var NPERFC to deactivate performance counters
-if (DEFINED "$ENV{NPERFC}")
-  message(STATUS "NPERFC environment variable is NOT set")
-else (DEFINED "$ENV{NPERFC}")
-  message(STATUS "NPERFC environment variable is set, building with -DNPERFC")
-  add_definitions(-DNPERFC)
-endif (DEFINED "$ENV{NPERFC}")
-
-# static libraries
-set (TAPASCO_PLATFORM_LIB "${TAPASCO_LIB_DIR}/${TAPASCO_TARGET}/static/libplatform.a")
-set (TAPASCO_ARCH_LIB "${TAPASCO_LIB_DIR}/${TAPASCO_TARGET}/static/libtapasco.a")
-
-# basic include directories
-set (TAPASCO_INCDIRS
-	"${TAPASCO_TLKM_DIR}"
-	"${TAPASCO_TLKM_DIR}/user"
-	"${TAPASCO_COMMON_DIR}/include"
-	"${TAPASCO_PLATFORM_DIR}/include"
-	"${TAPASCO_ARCH_DIR}/include"
-)
-
-# directories for static libraries
-set (TAPASCO_STATICLINKDIRS
-	"${TAPASCO_LIB_DIR}/${TAPASCO_TARGET}/static"
-)
-
-# directories for dynamic link libraries
-set (TAPASCO_LINKDIRS
-	"${TAPASCO_LIB_DIR}/${TAPASCO_TARGET}"
-)
-
-# default C flags
-set (TAPASCO_CFLAGS   "-Wall -Werror -g -std=gnu11 -fPIC")
-# default C++ flags
-set (TAPASCO_CXXFLAGS "-Wall -Werror -g -std=c++11 -fPIC -Wno-write-strings -fno-rtti")
-# default linker flags (activates link-time optimizations)
-set (TAPASCO_LDFLAGS  "-flto -static-libstdc++ -static-libgcc")
-
-# used to analyze the code using clang instead of actually building
-if (${ANALYZE})
-  message ("Static analysis pass, skipping build.")
-  set (TAPASCO_ANALYZE_ONLY true)
-  find_path (CLANG_PATH "clang")
-  set (CMAKE_C_COMPILER "clang")
-  set (CMAKE_CXX_COMPILER "clang")
-  set (TAPASCO_ANALYSIS_FLAGS "--analyze -Wall -Werror")
-  set (CMAKE_CXX_FLAGS "--stdlib=libc++")
-  add_definitions (${TAPASCO_ANALYSIS_FLAGS})
-endif (${ANALYZE})
+    if(${CMAKE_VERSION} VERSION_LESS "3.9.0")
+        message("-- Using IPO through fallback! Use Cmake version >= 3.9.0 if possible")
+        set_target_properties(${target_name} PROPERTIES CMAKE_AR "gcc-ar")
+        set_target_properties(${target_name} PROPERTIES CMAKE_RANLIB  "gcc-ranlib")
+        target_compile_options(${target_name} PUBLIC $<$<CXX_COMPILER_ID:GNU>:-flto>
+                                           $<$<CXX_COMPILER_ID:GNU>:-fno-fat-lto-objects>
+                                           $<$<CXX_COMPILER_ID:GNU>:-Werror>)
+    else()
+        include(CheckIPOSupported)
+        check_ipo_supported(RESULT ipo_supported)
+        if(ipo_supported)
+            message("-- IPO is supported!")
+            set_target_properties(${target_name} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+        else()
+            message(WARNING "IPO is not supported!")
+        endif()
+    endif()
+endfunction(set_tapasco_defaults)
