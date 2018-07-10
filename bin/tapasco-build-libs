@@ -13,6 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--mode', help='build mode (default: %(default)s)', default='release', choices=['clean', 'release', 'debug', 'driver_debug'])
 parser.add_argument('--rebuild', help='force rebuild libs (default: %(default)s)', action='store_true')
 parser.add_argument('--shared', help='build shared library instead of static', action='store_true')
+parser.add_argument('--package', help='build installation packages', action='store_true')
 args = parser.parse_args()
 
 clean        = args.mode == 'clean'
@@ -47,5 +48,6 @@ if not clean:
 
 	subprocess.call([tlkm_cmd.format(mdir, '' if driver_debug else 'release')], shell=True)
 	cmd = default_cmd.format(bdir, " ".join([debug_flags, shared_flags]))
-	print(cmd)
 	subprocess.call([cmd], shell=True)
+	if args.package:
+		subprocess.call("cd {0} && make -j package".format(bdir), shell=True)
