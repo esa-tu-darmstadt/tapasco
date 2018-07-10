@@ -2,10 +2,12 @@ cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
 include($ENV{TAPASCO_HOME}/cmake/Tapasco.cmake NO_POLICY_SCOPE)
 project (tapasco-debug)
 
+if(NOT TARGET tapasco)
 find_package(TapascoTLKM REQUIRED)
 find_package(TapascoCommon REQUIRED)
 find_package(TapascoPlatform REQUIRED)
 find_package(Tapasco REQUIRED)
+endif(NOT TARGET tapasco)
 
 add_executable(tapasco-debug tapasco_debug.cpp)
 set_tapasco_defaults(tapasco-debug)
