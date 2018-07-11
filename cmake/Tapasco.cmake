@@ -14,12 +14,6 @@ function(set_tapasco_defaults target_name)
     target_compile_definitions(${target_name} PRIVATE -DLOG_USE_COLOR)
 
     if(${CMAKE_VERSION} VERSION_LESS "3.9.0")
-        message("-- Using IPO through fallback! Use CMake version >= 3.9.0 if possible")
-        set_target_properties(${target_name} PROPERTIES CMAKE_AR "gcc-ar")
-        set_target_properties(${target_name} PROPERTIES CMAKE_RANLIB  "gcc-ranlib")
-        target_compile_options(${target_name} PUBLIC $<$<CXX_COMPILER_ID:GNU>:-flto>
-                                           $<$<CXX_COMPILER_ID:GNU>:-fno-fat-lto-objects>
-                                           $<$<CXX_COMPILER_ID:GNU>:-Werror>)
     else()
         include(CheckIPOSupported)
         check_ipo_supported(RESULT ipo_supported)
