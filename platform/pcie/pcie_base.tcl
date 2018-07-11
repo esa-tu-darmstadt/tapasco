@@ -51,6 +51,11 @@
     set max64 [expr "1 << 64"]
     if {$pe_base == ""} { set pe_base [get_pe_base_address] }
     set peam [::arch::get_address_map $pe_base]
+    set extra_masters_t [tapasco::call_plugins "post-address-map"]
+    set extra_masters [dict create ]
+    foreach {key value} $extra_masters_t {
+        dict set extra_masters $key $value
+    }
     puts "Computing addresses for masters ..."
     foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
       switch -glob [get_property NAME $m] {
@@ -59,8 +64,20 @@
         "M_MSIX"    { foreach {base stride range comp} [list 0          0       $max64 "PLATFORM_COMPONENT_MSIX0"] {} }
         "M_TAPASCO" { foreach {base stride range comp} [list 0x02800000 0       0      "PLATFORM_COMPONENT_STATUS"] {} }
         "M_HOST"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
+        "M_MEM_0"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_ARCH"    { set base "skip" }
-        default     { foreach {base stride range comp} [list 0 0 0 ""]                     {} }
+        default     { if { [dict exists $extra_masters [get_property NAME $m]] } {
+                          set l [dict get $extra_masters [get_property NAME $m]]
+                          set base [lindex $l 0]
+                          set stride [lindex $l 1]
+                          set range [lindex $l 2]
+                          set comp [lindex $l 3]
+                          puts "Special address for [get_property NAME $m] base: $base stride: $stride range: $range comp: $comp"
+                        } else {
+                            error "No address defined for [get_property NAME $m], please make sure to define one in post-address-map plugin"
+                        }
+                    }
+
       }
       if {$base != "skip"} { set peam [addressmap::assign_address $peam $m $base $stride $range $comp] }
     }

@@ -225,10 +225,23 @@
         connect_bd_net [get_bd_pins host/host_clk] [get_bd_pins host/out_ic/[format "M%02d_ACLK" $num_mi_old]]
         connect_bd_net [get_bd_pins host/host_peripheral_aresetn] [get_bd_pins host/out_ic/[format "M%02d_ARESETN" $num_mi_old]]
 
-
         current_bd_instance -quiet $inst
 
         puts "SFP connections completed"
       return {}
     }
 }
+
+namespace eval sfpplus {
+  namespace export addressmap
+
+  proc addressmap {args} {
+    if {[tapasco::is_feature_enabled "SFPPLUS"]} {
+        set args [lappend args "M_SI5324" [list 0x22ff000 0 0 ""]]
+        puts $args
+    }
+    return $args
+  }
+}
+
+tapasco::register_plugin "platform::sfpplus::addressmap" "post-address-map"
