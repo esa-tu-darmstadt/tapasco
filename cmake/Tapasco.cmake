@@ -11,6 +11,8 @@ function(set_tapasco_defaults target_name)
     set_target_properties(${target_name} PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
     set_target_properties(${target_name} PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON)
 
+    target_compile_definitions(${target_name} PRIVATE -DLOG_USE_COLOR)
+
     if(${CMAKE_VERSION} VERSION_LESS "3.9.0")
         message("-- Using IPO through fallback! Use CMake version >= 3.9.0 if possible")
         set_target_properties(${target_name} PROPERTIES CMAKE_AR "gcc-ar")
