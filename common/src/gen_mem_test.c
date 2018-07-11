@@ -16,8 +16,8 @@
 
 void print_block(block_t *b) {
 	if (b) {
-		printf("block @ 0x%08lx - 0x%08lx\n", (unsigned long)b->base,
-				b->base + b->range);
+		printf("block @ 0x%x - 0x%x\n", (b->base),
+				(addr_t)(b->base + b->range));
 		print_block(b->next);
 	} else printf("\n");
 }
