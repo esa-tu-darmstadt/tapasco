@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
 include($ENV{TAPASCO_HOME}/cmake/Tapasco.cmake NO_POLICY_SCOPE)
-project(tapasco-common VERSION 1.0 LANGUAGES C CXX)
+project(tapasco-common VERSION 1.0 LANGUAGES C)
 
 add_library(tapasco-common
                 src/gen_mem.c

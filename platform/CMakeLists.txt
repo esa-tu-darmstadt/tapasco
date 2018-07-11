@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
 include($ENV{TAPASCO_HOME}/cmake/Tapasco.cmake NO_POLICY_SCOPE)
-project(platform VERSION 1.0 LANGUAGES C CXX)
+project(platform VERSION 1.0 LANGUAGES C)
 
 add_library(platform "common/src/platform_addr_map.c"
           "common/src/platform_devctx.c"

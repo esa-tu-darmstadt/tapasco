@@ -5,9 +5,11 @@ endif()
 function(set_tapasco_defaults target_name)
     target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall>
                                            $<$<CXX_COMPILER_ID:GNU>:-Werror>)
-    set_target_properties(${target_name} PROPERTIES CMAKE_DEBUG_POSTFIX d)
-    set_target_properties(${target_name} PROPERTIES CMAKE_CXX_STANDARD 11)
-    set_target_properties(${target_name} PROPERTIES CMAKE_C_STANDARD 11)
+    target_compile_options(${target_name} PRIVATE $<$<C_COMPILER_ID:GNU>:-Wall>
+                                       $<$<C_COMPILER_ID:GNU>:-Werror>)
+    set_target_properties(${target_name} PROPERTIES DEBUG_POSTFIX d)
+    set_target_properties(${target_name} PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
+    set_target_properties(${target_name} PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON)
 
     if(${CMAKE_VERSION} VERSION_LESS "3.9.0")
         message("-- Using IPO through fallback! Use CMake version >= 3.9.0 if possible")
