@@ -1,41 +1,41 @@
-//! @file 	tapasco.hpp
-//! @brief	C++ wrapper class for TAPASCO API: Simplifies calls to
-//!		FPGA and handling of device memory, jobs, etc.
-//! @authors 	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
-//! @version 	1.6
+//! @file   tapasco.hpp
+//! @brief  C++ wrapper class for TAPASCO API: Simplifies calls to
+//!   FPGA and handling of device memory, jobs, etc.
+//! @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+//! @version  1.6
 //! @copyright  Copyright 2015-2018 J. Korinth, TU Darmstadt
 //!
-//!		This file is part of Tapasco (TaPaSCo).
+//!   This file is part of Tapasco (TaPaSCo).
 //!
-//!  		Tapasco is free software: you can redistribute it
-//!		and/or modify it under the terms of the GNU Lesser General
-//!		Public License as published by the Free Software Foundation,
-//!		either version 3 of the License, or (at your option) any later
-//!		version.
+//!     Tapasco is free software: you can redistribute it
+//!   and/or modify it under the terms of the GNU Lesser General
+//!   Public License as published by the Free Software Foundation,
+//!   either version 3 of the License, or (at your option) any later
+//!   version.
 //!
-//!  		Tapasco is distributed in the hope that it will be
-//!		useful, but WITHOUT ANY WARRANTY; without even the implied
-//!		warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-//!		See the GNU Lesser General Public License for more details.
+//!     Tapasco is distributed in the hope that it will be
+//!   useful, but WITHOUT ANY WARRANTY; without even the implied
+//!   warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+//!   See the GNU Lesser General Public License for more details.
 //!
-//!  		You should have received a copy of the GNU Lesser General Public
-//!		License along with Tapasco.  If not, see
-//!		<http://www.gnu.org/licenses/>.
+//!     You should have received a copy of the GNU Lesser General Public
+//!   License along with Tapasco.  If not, see
+//!   <http://www.gnu.org/licenses/>.
 //!
 #ifndef TAPASCO_HPP__
 #define TAPASCO_HPP__
 
 #ifndef __clang__
 #if __GNUC__ && __GNUC__< 5
-  #error "g++ 5.x.x or newer required (C++11 features)"
+#error "g++ 5.x.x or newer required (C++11 features)"
 #endif
 #endif
 
 extern "C" {
-  #include <tapasco.h>
-  #include <tapasco_context.h>
-  #include <tapasco_device.h>
-  #include <platform.h>
+#include <tapasco.h>
+#include <tapasco_context.h>
+#include <tapasco_device.h>
+#include <platform.h>
 }
 #include <type_traits>
 #include <stdexcept>
@@ -102,8 +102,8 @@ struct Tapasco {
    * @param dev_id device id of this instance (default: 0)
    **/
   Tapasco(bool const initialize = true,
-  		tapasco_access_t const access = TAPASCO_EXCLUSIVE_ACCESS,
-  		tapasco_dev_id_t const dev_id = 0) {
+          tapasco_access_t const access = TAPASCO_EXCLUSIVE_ACCESS,
+          tapasco_dev_id_t const dev_id = 0) {
     if (initialize) init(access, dev_id);
   }
 
@@ -175,7 +175,7 @@ struct Tapasco {
 
   template<typename R, typename... Targs>
   job_future launch(tapasco_kernel_id_t const k_id, tapasco_job_id_t& j_id,
-      RetVal<R>& ret, Targs... args) noexcept
+                    RetVal<R>& ret, Targs... args) noexcept
   {
     tapasco_res_t res { TAPASCO_SUCCESS };
     auto mkerr = [](tapasco_res_t r) { return [r]() { return r; }; };
@@ -306,12 +306,12 @@ private:
   /** Sets local memory flag for transfer. */
   template<typename T>
   tapasco_res_t set_arg(
-      tapasco_job_id_t const j_id,
-      size_t const arg_idx,
-      Local<T> t,
-      const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
-      const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
-    ) noexcept
+    tapasco_job_id_t const j_id,
+    size_t const arg_idx,
+    Local<T> t,
+    const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
+    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
+  ) noexcept
   {
     return set_arg(j_id, arg_idx, t.value, flags | TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL, copy_flags);
   }
@@ -319,35 +319,25 @@ private:
   /** Sets a single output-only pointer argument (alloc only). **/
   template<typename T>
   tapasco_res_t set_arg(
-      tapasco_job_id_t const j_id,
-      size_t const arg_idx,
-      OutOnly<T> t,
-      const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
-      const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
-    ) noexcept
+    tapasco_job_id_t const j_id,
+    size_t const arg_idx,
+    OutOnly<T> t,
+    const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
+    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
+  ) noexcept
   {
     return set_arg(j_id, arg_idx, t.value, flags, TAPASCO_COPY_DIRECTION_FROM);
-  }
-
-  /** Sets a std::array output-only argument (alloc only). **/
-  template<typename T, std::size_t N>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t const arg_idx, OutOnly<std::array<T, N>> t) const noexcept
-  {
-    tapasco_handle_t h { 0 };
-    tapasco_res_t r;
-    if ((r = tapasco_device_alloc(devctx, &h, N * sizeof(T), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
-    return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(h), &h);
   }
 
   /** Sets a single pointer argument (alloc + copy). **/
   template<typename T>
   tapasco_res_t set_arg(
-      tapasco_job_id_t const j_id,
-      size_t const arg_idx,
-      T* t,
-      const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
-      const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
-    ) noexcept
+    tapasco_job_id_t const j_id,
+    size_t const arg_idx,
+    T* t,
+    const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
+    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
+  ) noexcept
   {
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
     return tapasco_device_job_set_arg_transfer(devctx, j_id, arg_idx, sizeof(*t), t, flags, copy_flags);
@@ -355,35 +345,49 @@ private:
 
   /** Sets a std::array argument (alloc + copy). **/
   template<typename T, std::size_t N>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t const arg_idx, std::array<T, N> &t) const noexcept
+  tapasco_res_t set_arg(
+    tapasco_job_id_t const j_id,
+    size_t const arg_idx,
+    std::array<T, N> &t,
+    const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
+    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH) noexcept
   {
-    tapasco_handle_t h { 0 };
-    tapasco_res_t r;
-    if ((r = tapasco_device_alloc(devctx, &h, N * sizeof(T), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
-    if ((r = tapasco_device_copy_to(devctx, t.data(), h, N * sizeof(T), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
-    return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(h), &h);
+    return tapasco_device_job_set_arg_transfer(devctx, j_id, arg_idx, N * sizeof(T), (void*)t.data(), flags, copy_flags);
   }
 
   /** Sets a const std::array argument (alloc + copy). **/
   template<typename T, std::size_t N>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t const arg_idx, const std::array<T, N> &t) const noexcept
+  tapasco_res_t set_arg(
+    tapasco_job_id_t const j_id,
+    size_t const arg_idx,
+    const std::array<T, N> &t ,
+    const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
+    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH) noexcept
   {
-    tapasco_handle_t h { 0 };
-    tapasco_res_t r;
-    if ((r = tapasco_device_alloc(devctx, &h, N * sizeof(T), TAPASCO_DEVICE_ALLOC_FLAGS_NONE)) != TAPASCO_SUCCESS) return r;
-    if ((r = tapasco_device_copy_to(devctx, t.data(), h, N * sizeof(T), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
-    return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(h), &h);
+    return set_arg(j_id, arg_idx, t, flags, TAPASCO_COPY_DIRECTION_TO);
+  }
+
+  /** Sets a std::array output-only argument (alloc only). **/
+  template<typename T, std::size_t N>
+  tapasco_res_t set_arg(
+    tapasco_job_id_t const j_id,
+    size_t const arg_idx,
+    OutOnly<std::array<T, N>> &t,
+    const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
+    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_FROM) noexcept
+  {
+    return set_arg(j_id, arg_idx, t.value, flags, TAPASCO_COPY_DIRECTION_FROM);
   }
 
   /** Sets a single const pointer argument (alloc + copy). **/
   template<typename T>
   tapasco_res_t set_arg(
-      tapasco_job_id_t const j_id,
-      size_t const arg_idx,
-      const T* t,
-      const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
-      const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_TO
-    ) noexcept
+    tapasco_job_id_t const j_id,
+    size_t const arg_idx,
+    const T* t,
+    const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
+    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_TO
+  ) noexcept
   {
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
     return tapasco_device_job_set_arg_transfer(devctx, j_id, arg_idx, sizeof(*t), (void *)t, flags, TAPASCO_COPY_DIRECTION_TO);
@@ -425,7 +429,7 @@ private:
 
   /** Gets a output-only std::array from the device (copy + dealloc). **/
   template<typename T, std::size_t N>
-  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, std::array<T, N> &t) const noexcept {
+  tapasco_res_t get_arg(tapasco_job_id_t const j_id, size_t const arg_idx, std::array<T, N> &t) noexcept {
     tapasco_handle_t h;
     tapasco_res_t r;
     if ((r = tapasco_device_job_get_arg(devctx, j_id, arg_idx, sizeof(h), &h)) != TAPASCO_SUCCESS) return r;
@@ -436,8 +440,8 @@ private:
 
   /** Gets a std::array from the device (copy + dealloc). **/
   template<typename T, std::size_t N>
-  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, OutOnly<std::array<T, N>> t) const noexcept {
-    return get_args(j_id, arg_idx, *t.value);
+  tapasco_res_t get_arg(tapasco_job_id_t const j_id, size_t const arg_idx, OutOnly<std::array<T, N>> &t) noexcept {
+    return get_arg(j_id, arg_idx, t.value);
   }
 
   /** Gets a single pointer argument (copy + dealloc). **/
