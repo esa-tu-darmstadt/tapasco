@@ -50,7 +50,7 @@ void setVal(uint32_t &v, uint32_t n, uint32_t x) {
 	v ^= (-x ^ v) & (1 << n);
 }
 
-const uint64_t iic_base = 0x00400000;
+const uint64_t iic_base = 0x22ff000;
 const uint64_t control_register = iic_base + 0x100;
 const uint64_t status_register = iic_base + 0x104;
 const uint64_t rx_fifo_pirq = iic_base + 0x120;
