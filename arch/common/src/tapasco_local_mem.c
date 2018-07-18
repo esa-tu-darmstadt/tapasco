@@ -56,7 +56,7 @@ size_t get_slot_mem(tapasco_devctx_t *devctx, tapasco_slot_id_t const slot_id)
 }
 
 tapasco_res_t tapasco_local_mem_init(tapasco_devctx_t *devctx,
-		tapasco_local_mem_t **lmem)
+                                     tapasco_local_mem_t **lmem)
 {
 	DEVLOG(devctx->id, LALL_MEM, "initializing ...");
 	*lmem = (tapasco_local_mem_t *)calloc(sizeof(tapasco_local_mem_t), 1);
@@ -82,25 +82,25 @@ void tapasco_local_mem_deinit(tapasco_local_mem_t *lmem)
 }
 
 tapasco_res_t tapasco_local_mem_alloc(tapasco_local_mem_t *lmem,
-		tapasco_slot_id_t slot_id, size_t const sz,
-		tapasco_handle_t *h)
+                                      tapasco_slot_id_t slot_id, size_t const sz,
+                                      tapasco_handle_t *h)
 {
 	*h = INVALID_ADDRESS;
-    do {
+	do {
 		++slot_id;
 		*h = gen_mem_malloc(&lmem->lmem[slot_id], sz);
 	} while (*h == INVALID_ADDRESS && lmem->lmem[slot_id]);
 
 	DEVLOG(lmem->dev_id, LALL_MEM, "request to allocate %zd bytes for slot_id #" PRIslot "-> " PRIhandle,
-			sz, slot_id, *h);
+	       sz, slot_id, *h);
 	return *h != INVALID_ADDRESS ? TAPASCO_SUCCESS : TAPASCO_ERR_OUT_OF_MEMORY;
 }
 
 void tapasco_local_mem_dealloc(tapasco_local_mem_t *lmem,
-		tapasco_slot_id_t slot_id, tapasco_handle_t h, size_t sz)
+                               tapasco_slot_id_t slot_id, tapasco_handle_t h, size_t sz)
 {
 	DEVLOG(lmem->dev_id, LALL_MEM, "request to free %zd bytes at slot_id #" PRIslot ": " PRIhandle,
-			sz, slot_id, h);
+	       sz, slot_id, h);
 	++slot_id;
 	while (lmem->lmem[slot_id] && h > lmem->as[slot_id].high) slot_id++;
 	if (lmem->lmem[slot_id]) gen_mem_free(&lmem->lmem[slot_id], h, sz);
@@ -108,28 +108,28 @@ void tapasco_local_mem_dealloc(tapasco_local_mem_t *lmem,
 
 inline
 size_t tapasco_local_mem_get_size(tapasco_local_mem_t *lmem,
-		tapasco_slot_id_t const slot_id)
+                                  tapasco_slot_id_t const slot_id)
 {
 	return lmem->as[slot_id].high - lmem->as[slot_id].base;
 }
 
 inline
 size_t tapasco_local_mem_get_free(tapasco_local_mem_t *lmem,
-		tapasco_slot_id_t const slot_id)
+                                  tapasco_slot_id_t const slot_id)
 {
 	return lmem->as[slot_id].high - gen_mem_next_base(lmem->lmem[slot_id]);
 }
 
 inline
 tapasco_handle_t tapasco_local_mem_get_slot_and_base(tapasco_local_mem_t *lmem,
-		tapasco_slot_id_t *slot_id,
-		addr_t const elem)
+        tapasco_slot_id_t *slot_id,
+        addr_t const elem)
 {
 	while (! lmem->lmem[*slot_id] || elem > lmem->as[*slot_id].high) {
-		DEVLOG(lmem->dev_id, LALL_MEM,
-				"local mem high address of slot_id #" PRIslot " (0x%08lx) < elem address (0x%08lx)",
-				*slot_id, (unsigned long)*slot_id, (unsigned long)elem);
 		++(*slot_id);
 	}
+	DEVLOG(lmem->dev_id, LALL_MEM,
+	       "local mem high address of slot_id #" PRIslot " (0x%08lx) < elem address (0x%08lx)",
+	       *slot_id, (unsigned long)*slot_id, (unsigned long)elem);
 	return lmem->as[*slot_id].base;
 }
