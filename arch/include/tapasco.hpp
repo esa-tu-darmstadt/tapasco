@@ -43,7 +43,6 @@ extern "C" {
 #include <cstdint>
 #include <iostream>
 #include <functional>
-#include <array>
 
 using namespace std;
 
@@ -53,9 +52,6 @@ using job_future = std::function<tapasco_res_t (void)>;
 /**
  * Type annotation for TAPASCO launch argument pointers: output only, i.e., only copy
  * from device to host after execution, don't copy from host to device prior.
- * The other two possibilities (input-only, in-and-out/reference) can be expressed
- * via the type system (const vs. non-const), but this use pattern requires a
- * wrapping into an new type (could later be replaced by an annotation).
  **/
 template<typename T>
 struct OutOnly final {
@@ -64,6 +60,31 @@ struct OutOnly final {
   }
   T& value;
 };
+
+template<typename T>
+OutOnly<T> makeOutOnly(T &t) {
+  return OutOnly<T>(t);
+}
+
+/**
+ * Type annotation for TAPASCO launch argument pointers: input only, i.e., only copy
+ * from host to device before execution.
+ * This behaviour might be realised using const vs non-const types
+ * but the behaviour of const was not not as clear to a user as it should be which leads to
+ * unwanted transfers.
+ **/
+template<typename T>
+struct InOnly final {
+  InOnly(T& value) : value(value) {
+    static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
+  }
+  T& value;
+};
+
+template<typename T>
+InOnly<T> makeInOnly(T &t) {
+  return InOnly<T>(t);
+}
 
 /**
  * Type annotation for Tapasco launch argument pointers: If the first argument
@@ -90,6 +111,29 @@ struct Local final {
   }
   T& value;
 };
+
+template<typename T>
+Local<T> makeLocal(T &t) {
+  return Local<T>(t);
+}
+
+/**
+ * Wrapped pointer type that can be used to transfer memory areas from and to a device.
+**/
+template<typename T>
+struct WrappedPointer final {
+  WrappedPointer(T* value, size_t sz) : value(value), sz(sz) {
+    static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
+    std::cout << "Got value " << value << " and size " << sz << std::endl;
+  }
+  T* value;
+  size_t sz;
+};
+
+template<typename T>
+WrappedPointer<T> makeWrappedPointer(T *t, size_t sz) {
+  return WrappedPointer<T>(t, sz);
+}
 
 /**
  * C++ Wrapper class for TaPaSCo API. Currently wraps a single device.
@@ -294,39 +338,14 @@ private:
   /* @{ Setters for register values */
   /** Sets a single value argument. **/
   template<typename T>
-  tapasco_res_t set_arg(tapasco_job_id_t const j_id, size_t const arg_idx, T const t) noexcept
+  tapasco_res_t set_arg(tapasco_job_id_t const j_id, size_t const arg_idx, T t) noexcept
   {
+    std::cout << __FILE__ << " " << __LINE__ << " j_id: " << j_id << " arg_idx: " << arg_idx << std::endl;
     // only 32/64bit values can be passed directly (i.e., via register)
     if (sizeof(T) > sizeof(uint64_t))
       return set_arg(j_id, arg_idx, &t);
     else
       return tapasco_device_job_set_arg(devctx, j_id, arg_idx, sizeof(t), &t);
-  }
-
-  /** Sets local memory flag for transfer. */
-  template<typename T>
-  tapasco_res_t set_arg(
-    tapasco_job_id_t const j_id,
-    size_t const arg_idx,
-    Local<T> t,
-    const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
-    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
-  ) noexcept
-  {
-    return set_arg(j_id, arg_idx, t.value, TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL, copy_flags);
-  }
-
-  /** Sets a single output-only pointer argument (alloc only). **/
-  template<typename T>
-  tapasco_res_t set_arg(
-    tapasco_job_id_t const j_id,
-    size_t const arg_idx,
-    OutOnly<T> t,
-    const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
-    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
-  ) noexcept
-  {
-    return set_arg(j_id, arg_idx, t.value, flags, TAPASCO_COPY_DIRECTION_FROM);
   }
 
   /** Sets a single pointer argument (alloc + copy). **/
@@ -339,57 +358,77 @@ private:
     const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
   ) noexcept
   {
-    static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
-    return tapasco_device_job_set_arg_transfer(devctx, j_id, arg_idx, sizeof(*t), t, flags, copy_flags);
+    WrappedPointer<T> w = WrappedPointer<T>(t, sizeof(*t));
+    return set_arg(j_id, arg_idx, w, flags, copy_flags);
   }
 
-  /** Sets a std::array argument (alloc + copy). **/
-  template<typename T, std::size_t N>
-  tapasco_res_t set_arg(
-    tapasco_job_id_t const j_id,
-    size_t const arg_idx,
-    std::array<T, N> &t,
-    const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
-    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH) noexcept
-  {
-    return tapasco_device_job_set_arg_transfer(devctx, j_id, arg_idx, N * sizeof(T), (void*)t.data(), flags, copy_flags);
-  }
-
-  /** Sets a const std::array argument (alloc + copy). **/
-  template<typename T, std::size_t N>
-  tapasco_res_t set_arg(
-    tapasco_job_id_t const j_id,
-    size_t const arg_idx,
-    const std::array<T, N> &t,
-    const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
-    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH) noexcept
-  {
-    return set_arg(j_id, arg_idx, t, flags, TAPASCO_COPY_DIRECTION_TO);
-  }
-
-  /** Sets a single const pointer argument (alloc + copy). **/
+  /** Sets local memory flag for transfer. */
   template<typename T>
   tapasco_res_t set_arg(
     tapasco_job_id_t const j_id,
     size_t const arg_idx,
-    const T* t,
+    Local<T> t,
     const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
-    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_TO
+    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
   ) noexcept
   {
+    std::cout << __FILE__ << " " << __LINE__ << " j_id: " << j_id << " arg_idx: " << arg_idx << std::endl;
+    return set_arg(j_id, arg_idx, t.value, TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL, copy_flags);
+  }
+
+
+  /** Sets a single output-only pointer argument (alloc only). **/
+  template<typename T>
+  tapasco_res_t set_arg(
+    tapasco_job_id_t const j_id,
+    size_t const arg_idx,
+    OutOnly<T> t,
+    const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
+    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
+  ) noexcept
+  {
+    std::cout << __FILE__ << " " << __LINE__ << " j_id: " << j_id << " arg_idx: " << arg_idx << std::endl;
+    return set_arg(j_id, arg_idx, t.value, flags, TAPASCO_COPY_DIRECTION_FROM);
+  }
+
+  /** Sets a single output-only pointer argument (alloc only). **/
+  template<typename T>
+  tapasco_res_t set_arg(
+    tapasco_job_id_t const j_id,
+    size_t const arg_idx,
+    InOnly<T> t,
+    const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
+    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
+  ) noexcept
+  {
+    std::cout << __FILE__ << " " << __LINE__ << " j_id: " << j_id << " arg_idx: " << arg_idx << std::endl;
+    return set_arg(j_id, arg_idx, t.value, flags, TAPASCO_COPY_DIRECTION_TO);
+  }
+
+  /** Sets a single pointer argument (alloc + copy). **/
+  template<typename T>
+  tapasco_res_t set_arg(
+    tapasco_job_id_t const j_id,
+    size_t const arg_idx,
+    WrappedPointer<T> t,
+    const tapasco_device_alloc_flag_t flags = TAPASCO_DEVICE_ALLOC_FLAGS_NONE,
+    const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
+  ) noexcept
+  {
+    std::cout << __FILE__ << " " << __LINE__ << " j_id: " << j_id << " arg_idx: " << arg_idx << " value " << t.value << " sz " << t.sz << std::endl;
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
-    return tapasco_device_job_set_arg_transfer(devctx, j_id, arg_idx, sizeof(*t), (void *)t, flags, TAPASCO_COPY_DIRECTION_TO);
+    return tapasco_device_job_set_arg_transfer(devctx, j_id, arg_idx, t.sz, t.value, flags, copy_flags);
   }
 
   template<typename T>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t arg_idx, T t) noexcept
+  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t arg_idx, T &t) noexcept
   {
     return set_arg(j_id, arg_idx, t);
   }
 
   /** Variadic: recursively sets all given arguments. **/
   template<typename T, typename... Targs>
-  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t arg_idx, T t, Targs... args) noexcept
+  tapasco_res_t set_args(tapasco_job_id_t const j_id, size_t arg_idx, T &t, Targs... args) noexcept
   {
     tapasco_res_t r;
     if ((r = set_arg(j_id, arg_idx, t)) != TAPASCO_SUCCESS) return r;
@@ -398,31 +437,9 @@ private:
   /* Setters for register values @} */
 
   /* @{ Getters for register values */
-  /** Gets a single value argument. **/
+  /** Default behaviour. Copying according to flags is handled inside the tapasco API be default. **/
   template<typename T>
-  tapasco_res_t get_arg(tapasco_job_id_t const j_id, size_t const arg_idx, T const t) noexcept {
-    return TAPASCO_SUCCESS;
-  }
-
-  /** Gets a single output-only argument (copy + dealloc). **/
-  template<typename T>
-  tapasco_res_t get_arg(tapasco_job_id_t const j_id, size_t const arg_idx, OutOnly<T> t) noexcept {
-    return get_arg(j_id, arg_idx, t.value);
-  }
-
-  template<typename T>
-  tapasco_res_t get_arg(tapasco_job_id_t const j_id, size_t const arg_idx, Local<T> t) noexcept {
-    return get_arg(j_id, arg_idx, t.value);
-  }
-
-  /** Gets a output-only std::array from the device (copy + dealloc). **/
-  template<typename T, std::size_t N>
-  tapasco_res_t get_arg(tapasco_job_id_t const j_id, size_t const arg_idx, std::array<T, N> &t) noexcept {
-    tapasco_handle_t h;
-    tapasco_res_t r;
-    if ((r = tapasco_device_job_get_arg(devctx, j_id, arg_idx, sizeof(h), &h)) != TAPASCO_SUCCESS) return r;
-    if ((r = tapasco_device_copy_from(devctx, h, (void *)t.data(), N * sizeof(T), TAPASCO_DEVICE_COPY_BLOCKING)) != TAPASCO_SUCCESS) return r;
-    tapasco_device_free(devctx, h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+  tapasco_res_t get_arg(tapasco_job_id_t const j_id, size_t const arg_idx, T &t) noexcept {
     return TAPASCO_SUCCESS;
   }
 
@@ -437,14 +454,14 @@ private:
   }
 
   template<typename T>
-  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T t) noexcept
+  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T &t) noexcept
   {
     return get_arg(j_id, arg_idx, t);
   }
 
   /** Variadic: recursively gets all given arguments. **/
   template<typename T, typename... Targs>
-  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T t, Targs... args) noexcept
+  tapasco_res_t get_args(tapasco_job_id_t const j_id, size_t const arg_idx, T &t, Targs... args) noexcept
   {
     tapasco_res_t r;
     if ((r = get_arg(j_id, arg_idx, t)) != TAPASCO_SUCCESS) return r;
