@@ -124,7 +124,6 @@ template<typename T>
 struct WrappedPointer final {
   WrappedPointer(T* value, size_t sz) : value(value), sz(sz) {
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
-    std::cout << "Got value " << value << " and size " << sz << std::endl;
   }
   T* value;
   size_t sz;
@@ -340,7 +339,6 @@ private:
   template<typename T>
   tapasco_res_t set_arg(tapasco_job_id_t const j_id, size_t const arg_idx, T t) noexcept
   {
-    std::cout << __FILE__ << " " << __LINE__ << " j_id: " << j_id << " arg_idx: " << arg_idx << std::endl;
     // only 32/64bit values can be passed directly (i.e., via register)
     if (sizeof(T) > sizeof(uint64_t))
       return set_arg(j_id, arg_idx, &t);
@@ -372,7 +370,6 @@ private:
     const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
   ) noexcept
   {
-    std::cout << __FILE__ << " " << __LINE__ << " j_id: " << j_id << " arg_idx: " << arg_idx << std::endl;
     return set_arg(j_id, arg_idx, t.value, TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL, copy_flags);
   }
 
@@ -387,7 +384,6 @@ private:
     const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
   ) noexcept
   {
-    std::cout << __FILE__ << " " << __LINE__ << " j_id: " << j_id << " arg_idx: " << arg_idx << std::endl;
     return set_arg(j_id, arg_idx, t.value, flags, TAPASCO_COPY_DIRECTION_FROM);
   }
 
@@ -401,7 +397,6 @@ private:
     const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
   ) noexcept
   {
-    std::cout << __FILE__ << " " << __LINE__ << " j_id: " << j_id << " arg_idx: " << arg_idx << std::endl;
     return set_arg(j_id, arg_idx, t.value, flags, TAPASCO_COPY_DIRECTION_TO);
   }
 
@@ -415,7 +410,6 @@ private:
     const tapasco_copy_direction_flag_t copy_flags = TAPASCO_COPY_DIRECTION_BOTH
   ) noexcept
   {
-    std::cout << __FILE__ << " " << __LINE__ << " j_id: " << j_id << " arg_idx: " << arg_idx << " value " << t.value << " sz " << t.sz << std::endl;
     static_assert(is_trivially_copyable<T>::value, "Types must be trivially copyable!");
     return tapasco_device_job_set_arg_transfer(devctx, j_id, arg_idx, t.sz, t.value, flags, copy_flags);
   }
