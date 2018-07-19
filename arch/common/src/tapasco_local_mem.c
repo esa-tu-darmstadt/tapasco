@@ -77,8 +77,10 @@ tapasco_res_t tapasco_local_mem_init(tapasco_devctx_t *devctx,
 
 void tapasco_local_mem_deinit(tapasco_local_mem_t *lmem)
 {
-	free(lmem);
-	DEVLOG(lmem->dev_id, LALL_MEM, "destroyed");
+	if(lmem) {
+		DEVLOG(lmem->dev_id, LALL_MEM, "destroyed");
+		free(lmem);
+	}
 }
 
 tapasco_res_t tapasco_local_mem_alloc(tapasco_local_mem_t *lmem,

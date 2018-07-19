@@ -166,9 +166,9 @@ void platform_devctx_deinit(platform_devctx_t *devctx)
 		DEVLOG(devctx->dev_id, LPLL_INIT, "destroying platform address map ...");
 		platform_addr_map_deinit(devctx, devctx->addrmap);
 		close(devctx->fd_ctrl);
+		DEVLOG(devctx->dev_id, LPLL_INIT, "context destroyed, have a nice 'un");
 		devctx->fd_ctrl = -1;
 		devctx->dev_id  = -1;
 		free(devctx);
-		DEVLOG(devctx->dev_id, LPLL_INIT, "context destroyed, have a nice 'un");
 	}
 }

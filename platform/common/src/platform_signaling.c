@@ -94,8 +94,10 @@ void platform_signaling_deinit(platform_signaling_t *a)
 	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
 		sem_close(&a->finished[s]);
 	}
-	if (a) free(a);
-	DEVLOG(a->dev_id, LPLL_ASYNC, "async deinitialized");
+	if (a) {
+		DEVLOG(a->dev_id, LPLL_ASYNC, "async deinitialized");
+		free(a);
+	}
 }
 
 platform_res_t platform_signaling_wait_for_slot(platform_signaling_t *a, platform_slot_id_t const slot)
