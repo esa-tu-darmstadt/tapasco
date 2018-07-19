@@ -129,8 +129,7 @@ namespace eval arch {
     variable arch_mem_ports
     set no_kinds [llength [dict keys $composition]]
     set ic_m 0
-    set m32 0
-    set m64 0
+    set m_total 0
 
     # determine number of masters from composition
     for {set i 0} {$i < $no_kinds} {incr i} {
@@ -139,32 +138,12 @@ namespace eval arch {
       set masters [tapasco::get_aximm_interfaces $example]
       set ic_m [expr "$ic_m + [llength $masters] * $no_inst"]
 
-      set masters_32b {}
-      set masters_64b {}
-      set masters_oth {}
-      foreach m $masters {
-        set dw [tapasco::get_aximm_property CONFIG.DATA_WIDTH $m]
-        if {$dw == 64} {
-          lappend masters_64b $m
-        } else {
-          if {$dw == 32} {
-            lappend masters_32b $m
-          } else {
-            lappend masters_oth $m
-          }
-        }
-      }
-
-      set m32 [expr "$m32 + [llength $masters_32b] * $no_inst"]
-      set m64 [expr "$m64 + [llength $masters_64b] * $no_inst"]
+      set m_total [expr "$m_total + [llength $masters] * $no_inst"]
     }
 
-    puts "  Found a total of $m32 32b masters and $m64 64b masters."
-    if {$m32 > 0 && $m64 > 0} {
-      error "  Design contains mixed bitwidth masters, not supported!"
-    }
-    set no_masters [expr "max(max($m32, $m64), [expr $no_inst * [llength $masters]])"]
-    puts "  no_masters : $masters"
+    puts "  Found a total of $m_total masters."
+    set no_masters $m_total
+    puts "  no_masters : $no_masters"
 
     # check if all masters can be connected with the outs config
     set total_ports [expr [join $outs +]]
