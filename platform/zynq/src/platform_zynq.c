@@ -78,40 +78,40 @@ platform_res_t zynq_iomapping()
 	assert(zynq_platform.devctx);
 	assert(zynq_platform.devctx->fd_ctrl);
 	zynq_platform.arch_map = mmap(NULL,
-			zynq_def.arch.size,
-			PROT_READ | PROT_WRITE | PROT_EXEC,
-			MAP_SHARED,
-			zynq_platform.devctx->fd_ctrl,
-			zynq_def.arch.base);
+	                              zynq_def.arch.size,
+	                              PROT_READ | PROT_WRITE | PROT_EXEC,
+	                              MAP_SHARED,
+	                              zynq_platform.devctx->fd_ctrl,
+	                              zynq_def.arch.base);
 	if (zynq_platform.arch_map == MAP_FAILED) {
 		DEVERR(zynq_platform.devctx->dev_id, "could not map GP0: %s (%d)",
-				strerror(errno), errno);
+		       strerror(errno), errno);
 		zynq_unmap();
 		return PERR_MMAP_DEV;
 	}
 
 	zynq_platform.plat_map = mmap(NULL,
-			zynq_def.plat.size,
-			PROT_READ | PROT_WRITE | PROT_EXEC,
-			MAP_SHARED,
-			zynq_platform.devctx->fd_ctrl,
-			zynq_def.plat.base);
+	                              zynq_def.plat.size,
+	                              PROT_READ | PROT_WRITE | PROT_EXEC,
+	                              MAP_SHARED,
+	                              zynq_platform.devctx->fd_ctrl,
+	                              zynq_def.plat.base);
 	if (zynq_platform.plat_map == MAP_FAILED) {
 		DEVERR(zynq_platform.devctx->dev_id, "could not map GP1: %s (%d)",
-				strerror(errno), errno);
+		       strerror(errno), errno);
 		zynq_unmap();
 		return PERR_MMAP_DEV;
 	}
 
 	zynq_platform.status_map = mmap(NULL,
-			zynq_def.status.size,
-			PROT_READ | PROT_WRITE | PROT_EXEC,
-			MAP_SHARED,
-			zynq_platform.devctx->fd_ctrl,
-			zynq_def.status.base);
+	                                zynq_def.status.size,
+	                                PROT_READ | PROT_WRITE | PROT_EXEC,
+	                                MAP_SHARED,
+	                                zynq_platform.devctx->fd_ctrl,
+	                                zynq_def.status.base);
 	if (zynq_platform.status_map == MAP_FAILED) {
 		DEVERR(zynq_platform.devctx->dev_id, "could not map status core: %s (%d)",
-				strerror(errno), errno);
+		       strerror(errno), errno);
 		zynq_unmap();
 		return PERR_MMAP_DEV;
 	}
@@ -120,73 +120,86 @@ platform_res_t zynq_iomapping()
 
 static
 platform_res_t zynq_read_ctl(platform_devctx_t const *ctx,
-		platform_ctl_addr_t const addr,
-		size_t const length,
-		void *data,
-		platform_ctl_flags_t const flags)
-{	
-	int i;
-	uint32_t *p = (uint32_t *)data;
-	volatile uint32_t *r;
-	DEVLOG(ctx->dev_id, LPLL_CTL, "addr = 0x%08lx, length = %zu",
-			(unsigned long)addr, length);
+                             platform_ctl_addr_t const addr,
+                             size_t const length,
+                             void *data,
+                             platform_ctl_flags_t const flags)
+{
 
-#ifndef NDEBUG
-	if (length % 4) {
-		DEVERR(ctx->dev_id, "error: invalid size!");
-		return PERR_CTL_INVALID_SIZE;
+	volatile void *r;
+	DEVLOG(ctx->dev_id, LPLL_CTL, "addr = " PRIctl ", length = %zu", addr, length);
+
+	if (IS_BETWEEN(addr, zynq_def.arch.base, zynq_def.arch.high)) {
+		r = (void *) (((uintptr_t) zynq_platform.arch_map) + (addr - zynq_def.arch.base));
 	}
-#endif
-
-	if (IS_BETWEEN(addr, zynq_def.arch.base, zynq_def.arch.high))
-		r = (volatile uint32_t *)zynq_platform.arch_map + ((addr - zynq_def.arch.base) >> 2);
-	else if (IS_BETWEEN(addr, zynq_def.plat.base, zynq_def.plat.high))
-		r = (volatile uint32_t *)zynq_platform.plat_map + ((addr - zynq_def.plat.base) >> 2);
-	else if (IS_BETWEEN(addr, zynq_def.status.base,
-			zynq_def.status.high))
-		r = (volatile uint32_t *)zynq_platform.status_map + ((addr - zynq_def.status.base) >> 2);
+	else if (IS_BETWEEN(addr, zynq_def.plat.base, zynq_def.plat.high)) {
+		r = (void *) (((uintptr_t) zynq_platform.plat_map) + (addr - zynq_def.plat.base));
+	}
+	else if (IS_BETWEEN(addr, zynq_def.status.base, zynq_def.status.high)) {
+		r = (void *) (((uintptr_t) zynq_platform.status_map) + (addr - zynq_def.status.base));
+	}
 	else {
-		DEVERR(ctx->dev_id, "invalid platform address: 0x%08lx", (unsigned long)addr);
+		DEVERR(ctx->dev_id, "invalid platform address: " PRIctl, addr);
 		return PERR_CTL_INVALID_ADDRESS;
 	}
 
-	for (i = 0; i < (length >> 2); ++i, ++p, ++r)
-		*p = *r;
+	switch (length) {
+	case 1:
+		*((uint8_t*)data) = *((volatile uint8_t*)r);
+		break;
+	case 2:
+		*((uint16_t*)data) = *((volatile uint16_t*)r);
+		break;
+	case 4:
+		*((uint32_t*)data) = *((volatile uint32_t*)r);
+		break;
+	case 8:
+		*((uint64_t*)data) = *((volatile uint64_t*)r);
+		break;
+	default:
+		DEVERR(ctx->dev_id, "invalid size: %zd", length);
+		return PERR_CTL_INVALID_SIZE;
+	}
 
 	return PLATFORM_SUCCESS;
 }
 
 static
 platform_res_t zynq_write_ctl(platform_devctx_t const *ctx,
-		platform_ctl_addr_t const addr,
-		size_t const length,
-		void const *data,
-		platform_ctl_flags_t const flags)
+                              platform_ctl_addr_t const addr,
+                              size_t const length,
+                              void const *data,
+                              platform_ctl_flags_t const flags)
 {
-	int i;
-	uint32_t const *p = (uint32_t const *)data;
-	volatile uint32_t *r;
-	DEVLOG(ctx->dev_id, LPLL_CTL, "addr = 0x%08lx, length = %zu",
-			(unsigned long)addr, length);
-
-#ifndef NDEBUG
-	if (length % 4) {
-		DEVERR(ctx->dev_id, "invalid size: %zd", length);
-		return PERR_CTL_INVALID_SIZE;
-	}
-#endif
+	volatile void *r;
+	DEVLOG(ctx->dev_id, LPLL_CTL, "addr = " PRIctl ", length = %zu", addr, length);
 
 	if (IS_BETWEEN(addr, zynq_def.arch.base, zynq_def.arch.high))
-		r = (volatile uint32_t *)zynq_platform.arch_map + ((addr - zynq_def.arch.base) >> 2);
+		r = (volatile void *) (((uintptr_t) zynq_platform.arch_map) + (addr - zynq_def.arch.base));
 	else if (IS_BETWEEN(addr, zynq_def.plat.base, zynq_def.plat.high))
-		r = (volatile uint32_t *)zynq_platform.plat_map + ((addr - zynq_def.plat.base) >> 2);
+		r = (volatile void *) (((uintptr_t) zynq_platform.plat_map) + (addr - zynq_def.plat.base));
 	else {
 		DEVERR(ctx->dev_id, "invalid platform address: 0x%08lx", (unsigned long)addr);
 		return PERR_CTL_INVALID_ADDRESS;
 	}
 
-	for (i = 0; i < (length >> 2); ++i, ++p, ++r)
-		*r = *p;
+	switch (length) {
+	case 1:
+		*((volatile uint8_t*)r) = *((uint8_t*)data);
+		break;
+	case 2:
+		*((volatile uint16_t*)r) = *((uint16_t*)data);
+		break;
+	case 4:
+		*((volatile uint32_t*)r) = *((uint32_t*)data);
+		break;
+	case 8:
+		*((volatile uint64_t*)r) = *((uint64_t*)data);
+		break;
+	default:
+		DEVERR(ctx->dev_id, "invalid size: %zd", length);
+		return PERR_CTL_INVALID_SIZE;
+	}
 
 	return PLATFORM_SUCCESS;
 }
