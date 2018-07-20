@@ -24,8 +24,8 @@ int tlkm_device_mmap(struct file *fp, struct vm_area_struct *vm)
 	}
 
 	DEVLOG(dp->dev_id, TLKM_LF_CONTROL,
-			"mapping %zu bytes from %#08lx-%#08lx to user space", sz,
-			dp->base_offset + vm->vm_start, dp->base_offset + vm->vm_end);
+			"mapping %zu bytes from physical address 0x%lx to user space 0x%lx-0x%lx", sz,
+			dp->base_offset + off, vm->vm_start, vm->vm_end);
 	vm->vm_page_prot = pgprot_noncached(vm->vm_page_prot);
 	if (io_remap_pfn_range(vm, vm->vm_start, (dp->base_offset + off) >> PAGE_SHIFT, sz, vm->vm_page_prot)) {
 		DEVWRN(dp->dev_id, "io_remap_pfn_range failed!");
