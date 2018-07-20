@@ -54,23 +54,12 @@ static int claim_device(struct tlkm_pcie_device *pdev)
 	DEVLOG(did, TLKM_LF_PCIE, "PCI bar 0: address= 0x%08llx length: 0x%08llx",
 			pdev->phy_addr_bar0, pdev->phy_len_bar0);
 
-	/* map physical address to kernel space */
-	pdev->kvirt_addr_bar0 = ioremap(pdev->phy_addr_bar0, pdev->phy_len_bar0);
-	if (IS_ERR(pdev->kvirt_addr_bar0)) {
-		DEVERR(did, "could not remap bar 0 address to kernel space");
-		goto error_pci_remap;
-	}
-	DEVLOG(did, TLKM_LF_PCIE, "remapped bar 0 address: 0x%px", pdev->kvirt_addr_bar0);
-
 	pdev->parent->base_offset = pdev->phy_addr_bar0;
 	DEVLOG(did, TLKM_LF_PCIE, "status core base: 0x%08llx => 0x%08llx",
 		(u64)pcie_cls.platform.status.base, (u64)pcie_cls.platform.status.base + pdev->parent->base_offset);
 
 	return 0;
 
-	iounmap(pdev->kvirt_addr_bar0);
-error_pci_remap:
-	pci_release_regions(pdev->pdev);
 error_pci_req:
 	pci_disable_device(pdev->pdev);
 error_pci_en:
@@ -79,7 +68,6 @@ error_pci_en:
 
 static void release_device(struct tlkm_pcie_device *pdev)
 {
-	iounmap(pdev->kvirt_addr_bar0);
 	pci_release_regions(pdev->pdev);
 	pci_disable_device(pdev->pdev);
 }

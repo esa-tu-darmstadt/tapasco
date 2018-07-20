@@ -51,7 +51,6 @@ struct tlkm_pcie_device {
 	u64 			phy_addr_bar0;
 	u64 			phy_len_bar0;
 	u64 			phy_flags_bar0;
-	void 			*kvirt_addr_bar0;
 	int 			irq_mapping[REQUIRED_INTERRUPTS];
 	void 			*irq_data[REQUIRED_INTERRUPTS];
 	int			link_width;
