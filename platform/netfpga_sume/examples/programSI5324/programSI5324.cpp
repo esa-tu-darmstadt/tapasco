@@ -59,7 +59,8 @@ const uint64_t fifo_rx_register = iic_base + 0x10C;
 const uint64_t isr_register = iic_base + 0x020;
 const uint64_t gpo_register = iic_base + 0x124;
 const uint64_t reset_register = iic_base + 0x040;
-const uint64_t reset_key = 0xA;
+
+const uint32_t reset_key = 0xA;
 
 #define SWITCH_ADDR 0x74
 #define IIC_BUS_DDR3 0x10
