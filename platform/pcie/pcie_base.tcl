@@ -289,23 +289,10 @@
 
     # create instances of cores: PCIe core, mm_to_lite
     set pcie [create_pcie_core]
-    set mm_to_lite_proto [tapasco::ip::create_proto_conv "mm_to_lite_proto" "AXI4" "AXI4LITE"]
-    set mm_to_lite_slice_before [tapasco::ip::create_axi_reg_slice "mm_to_lite_slice_before"]
-    set mm_to_lite_slice_mid [tapasco::ip::create_axi_reg_slice "mm_to_lite_slice_mid"]
-    set mm_to_lite_slice_after [tapasco::ip::create_axi_reg_slice "mm_to_lite_slice_after"]
-    set mm_to_lite_dwidth [tapasco::ip::create_dwidth_conv "mm_to_lite_dwidth" 256]
-
-    # connect PCIe master to external port
-    connect_bd_intf_net [get_bd_intf_pins -regexp $pcie/M_AXI(_B)?] [get_bd_intf_pins mm_to_lite_slice_before/S_AXI]
-    # connect mm_to_lite datawidth converter to protocol converter
-    connect_bd_intf_net [get_bd_intf_pins mm_to_lite_slice_before/M_AXI] [get_bd_intf_pins mm_to_lite_dwidth/S_AXI]
-    connect_bd_intf_net [get_bd_intf_pins mm_to_lite_dwidth/M_AXI] [get_bd_intf_pins mm_to_lite_slice_mid/S_AXI]
-    connect_bd_intf_net [get_bd_intf_pins mm_to_lite_slice_mid/M_AXI] [get_bd_intf_pins mm_to_lite_proto/S_AXI]
-    connect_bd_intf_net [get_bd_intf_pins mm_to_lite_proto/M_AXI] [get_bd_intf_pins mm_to_lite_slice_after/S_AXI]
 
     # FIXME are the default settings for the IC ok?
     set out_ic [tapasco::ip::create_axi_ic "out_ic" 1 4]
-    connect_bd_intf_net [get_bd_intf_pins mm_to_lite_slice_after/M_AXI] \
+    connect_bd_intf_net [get_bd_intf_pins -regexp $pcie/M_AXI(_B)?] \
       [get_bd_intf_pins -of_objects $out_ic -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
 
     set in_ic [tapasco::ip::create_axi_ic "in_ic" 2 1]
@@ -341,20 +328,8 @@
 
     # forward PCIe clock to external ports
     connect_bd_net [get_bd_pins axi_pcie3_0/axi_aclk] $pcie_aclk
-    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
-      [get_bd_pins mm_to_lite_dwidth/s_axi_aclk] \
-      [get_bd_pins mm_to_lite_proto/aclk] \
-      [get_bd_pins mm_to_lite_slice_before/aclk] \
-      [get_bd_pins mm_to_lite_slice_mid/aclk] \
-      [get_bd_pins mm_to_lite_slice_after/aclk]
 
     connect_bd_net [get_bd_pins axi_pcie3_0/axi_aresetn] $pcie_aresetn
-    connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
-      [get_bd_pins mm_to_lite_dwidth/s_axi_aresetn] \
-      [get_bd_pins mm_to_lite_proto/aresetn] \
-      [get_bd_pins mm_to_lite_slice_before/aresetn] \
-      [get_bd_pins mm_to_lite_slice_mid/aresetn] \
-      [get_bd_pins mm_to_lite_slice_after/aresetn]
   }
 
   proc create_subsystem_clocks_and_resets {} {
