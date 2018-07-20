@@ -217,9 +217,10 @@ struct Tapasco {
   bool is_ready() const noexcept { return _ok; }
 
   template<typename R, typename... Targs>
-  job_future launch(tapasco_kernel_id_t const k_id, tapasco_job_id_t& j_id,
+  job_future launch(tapasco_kernel_id_t const k_id,
                     RetVal<R>& ret, Targs... args) noexcept
   {
+    tapasco_job_id_t j_id { 0 };
     tapasco_res_t res { TAPASCO_SUCCESS };
     auto mkerr = [](tapasco_res_t r) { return [r]() { return r; }; };
     if ((res = tapasco_device_acquire_job_id(devctx, &j_id, k_id, TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING)) != TAPASCO_SUCCESS) return mkerr(res);
@@ -316,7 +317,7 @@ private:
   {
     tapasco_res_t res { TAPASCO_SUCCESS };
     if ((res = tapasco_device_job_collect(devctx, j_id)) != TAPASCO_SUCCESS) return res;
-    if ((res = tapasco_device_job_get_return(devctx, j_id, sizeof(ret), &ret)) != TAPASCO_SUCCESS) return res;
+    if ((res = tapasco_device_job_get_return(devctx, j_id, sizeof(ret.value), &ret.value)) != TAPASCO_SUCCESS) return res;
     if ((res = get_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return res;
     tapasco_device_release_job_id(devctx, j_id);
     return res;
