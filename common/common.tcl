@@ -328,8 +328,6 @@ namespace eval tapasco {
           connect_bd_intf_net $m $port
           incr pidx
         }
-        # activate deep packet mode FIFO
-        set_property -dict [list CONFIG.M00_HAS_DATA_FIFO {2}] $curr_ics
       }
       set ics $curr_ics
       # record current stage
