@@ -136,8 +136,6 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "device setup complete");
 	return ret;
 
-	if (dev->cls->exit_subsystems)
-		dev->cls->exit_subsystems(dev);
 err_dma:
     if (dev->cls->exit_subsystems)
         dev->cls->exit_subsystems(dev);

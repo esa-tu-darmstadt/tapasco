@@ -110,9 +110,11 @@ err_dma_ioremap:
 void tlkm_dma_exit(struct dma_engine *dma)
 {
 	struct tlkm_device *dev = dma->dev;
+    DEVLOG(dma->dev_id, TLKM_LF_DMA, "freeing buffers");
 	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
 	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
-    if (!IS_ERR(dma->regs)) {
+    DEVLOG(dma->dev_id, TLKM_LF_DMA, "unmapping IO memory");
+    if (dma->regs != 0 && !IS_ERR(dma->regs)) {
 	   iounmap(dma->regs);
     }
 	memset(dma, 0, sizeof(*dma));
