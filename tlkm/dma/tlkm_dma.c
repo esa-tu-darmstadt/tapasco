@@ -46,9 +46,10 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 
 	DEVLOG(dev_id, TLKM_LF_DMA, "I/O remapping 0x%px - 0x%px...", base, base + DMA_SZ - 1);
 	dma->regs = ioremap_nocache((resource_size_t)base, DMA_SZ);
-	if (IS_ERR(dma->regs)) {
+	if (dma->regs == 0 || IS_ERR(dma->regs)) {
 		DEVERR(dev_id, "failed to map 0x%px - 0x%px: %ld", base, base + DMA_SZ - 1, PTR_ERR(dma->regs));
-		return PTR_ERR(dma->regs);
+		ret = PTR_ERR(dma->regs);
+        goto err_dma_ioremap;
 	}
 
 	DEVLOG(dev_id, TLKM_LF_DMA, "detecting DMA engine type ...");
@@ -99,12 +100,10 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 	return 0;
 
 err_dma_bufs_write:
-	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
-err_dma_bufs_read:
 	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
-    if (!IS_ERR(dma->regs)) {
-    	iounmap(dma->regs);
-    }
+err_dma_bufs_read:
+    iounmap(dma->regs);
+err_dma_ioremap:
 	return ret;
 }
 
