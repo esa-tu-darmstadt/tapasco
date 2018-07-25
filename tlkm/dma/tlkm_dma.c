@@ -72,12 +72,14 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 	ret = dma->ops.allocate_buffer(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
 	if (ret) {
 		ret = PTR_ERR(dma->dma_buf_read);
+        DEVERR(dev_id, "failed to allocate %zd bytes for read direction", TLKM_DMA_BUF_SZ);
 		goto err_dma_bufs_read;
 	}
 
 	ret = dma->ops.allocate_buffer(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
 	if (ret) {
 		ret = PTR_ERR(dma->dma_buf_write);
+        DEVERR(dev_id, "failed to allocate %zd bytes for write direction", TLKM_DMA_BUF_SZ);
 		goto err_dma_bufs_write;
 	}
 
@@ -100,7 +102,9 @@ err_dma_bufs_write:
 	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
 err_dma_bufs_read:
 	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
-	iounmap(dma->regs);
+    if (!IS_ERR(dma->regs)) {
+    	iounmap(dma->regs);
+    }
 	return ret;
 }
 
