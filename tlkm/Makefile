@@ -4,12 +4,15 @@ endif
 
 ifdef NPERFC
 $(info "environment variable NPERFC is set, building with -DNPERFC")
-CPPFLAGS += -DNPERFC
+CPPFLAGS+=-DNPERFC
 endif
 
-LINUX_HOME ?= /lib/modules/$(shell uname -r)/build
+ifndef LINUX_HOME
+LINUX_HOME:=/lib/modules/$(shell uname -r)/build
+endif
+
 ifeq ($(ARCH), arm)
-CROSS_COMPILE ?= arm-linux-gnueabihf-
+CROSS_COMPILE?=arm-linux-gnueabihf-
 endif
 
 obj-m += tlkm.o
@@ -41,7 +44,7 @@ tlkm-objs := \
 	dma/blue_dma.o
 
 
-CPPFLAGS+=-I$(TAPASCO_HOME)/tlkm -I$(TAPASCO_HOME)/tlkm/device -I$(TAPASCO_HOME)/tlkm/tlkm -I$(TAPASCO_HOME)/tlkm/user -I$(TAPASCO_HOME)/platform/include
+CPPFLAGS+=-Werror -I$(TAPASCO_HOME)/tlkm -I$(TAPASCO_HOME)/tlkm/device -I$(TAPASCO_HOME)/tlkm/tlkm -I$(TAPASCO_HOME)/tlkm/user -I$(TAPASCO_HOME)/platform/include
 
 .PHONY:	all clean
 

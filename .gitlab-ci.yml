@@ -1,0 +1,185 @@
+before_script:
+  - echo "Setup done"
+
+after_script:
+  - echo "Done with the work"
+
+stages:
+  - tlkm_tests
+  - tapasco_tests
+
+build_kernel_ubuntu_16_04:
+  stage: tlkm_tests
+  image: ubuntu:xenial
+  tags:
+    - CAD
+    - Normal
+  script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
+    - source setup.sh
+    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j release; popd; done
+
+build_kernel_ubuntu_18_04:
+  stage: tlkm_tests
+  image: ubuntu:cosmic
+  tags:
+    - CAD
+    - Normal
+  script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
+    - source setup.sh
+    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j release; popd; done
+
+build_kernel_fedora_27:
+  stage: tlkm_tests
+  image: fedora:27
+  tags:
+    - CAD
+    - Normal
+  script:
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
+    - source setup.sh
+    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j release; popd; done
+
+build_kernel_fedora_28:
+  stage: tlkm_tests
+  image: fedora:28
+  tags:
+    - CAD
+    - Normal
+  script:
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
+    - source setup.sh
+    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j release; popd; done
+
+build_kernel_ubuntu_16_04_debug:
+  stage: tlkm_tests
+  image: ubuntu:xenial
+  tags:
+    - CAD
+    - Normal
+  script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
+    - source setup.sh
+    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j; popd; done
+
+build_kernel_ubuntu_18_04_debug:
+  stage: tlkm_tests
+  image: ubuntu:cosmic
+  tags:
+    - CAD
+    - Normal
+  script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
+    - source setup.sh
+    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j; popd; done
+
+build_kernel_fedora_27_debug:
+  stage: tlkm_tests
+  image: fedora:27
+  tags:
+    - CAD
+    - Normal
+  script:
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
+    - source setup.sh
+    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j; popd; done
+
+build_kernel_fedora_28_debug:
+  stage: tlkm_tests
+  image: fedora:28
+  tags:
+    - CAD
+    - Normal
+  script:
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
+    - source setup.sh
+    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j; popd; done
+
+build_tapasco_ubuntu_16_04:
+  stage: tapasco_tests
+  image: ubuntu:xenial
+  tags:
+    - CAD
+    - Normal
+  script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev
+    - source setup.sh
+    - tapasco-build-libs --mode=release
+
+build_tapasco_ubuntu_18_04:
+  stage: tapasco_tests
+  image: ubuntu:cosmic
+  tags:
+    - CAD
+    - Normal
+  script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev
+    - source setup.sh
+    - tapasco-build-libs --mode=release
+
+build_tapasco_fedora_27:
+  stage: tapasco_tests
+  image: fedora:27
+  tags:
+    - CAD
+    - Normal
+  script:
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake
+    - source setup.sh
+    - tapasco-build-libs --mode=release
+
+build_tapasco_fedora_28:
+  stage: tapasco_tests
+  image: fedora:28
+  tags:
+    - CAD
+    - Normal
+  script:
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake
+    - source setup.sh
+    - tapasco-build-libs --mode=release
+
+build_tapasco_ubuntu_16_04_debug:
+  stage: tapasco_tests
+  image: ubuntu:xenial
+  tags:
+    - CAD
+    - Normal
+  script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev
+    - source setup.sh
+    - tapasco-build-libs --mode=debug
+
+build_tapasco_ubuntu_18_04_debug:
+  stage: tapasco_tests
+  image: ubuntu:cosmic
+  tags:
+    - CAD
+    - Normal
+  script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev
+    - source setup.sh
+    - tapasco-build-libs --mode=debug
+
+build_tapasco_fedora_27_debug:
+  stage: tapasco_tests
+  image: fedora:27
+  tags:
+    - CAD
+    - Normal
+  script:
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake
+    - source setup.sh
+    - tapasco-build-libs --mode=debug
+
+build_tapasco_fedora_28_debug:
+  stage: tapasco_tests
+  image: fedora:28
+  tags:
+    - CAD
+    - Normal
+  script:
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake
+    - source setup.sh
+    - tapasco-build-libs --mode=debug

@@ -5,7 +5,7 @@
 #include "tlkm_types.h"
 #include "tlkm_platform.h"
 
-#define TLKM_CLASS_NAME_LEN				32
+#define TLKM_CLASS_NAME_LEN				30
 
 struct tlkm_device;
 struct tlkm_class;

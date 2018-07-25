@@ -40,6 +40,7 @@ long tlkm_device_ioctl_info(struct file *fp, unsigned int ioctl,
 	kinfo.vendor_id = kdev->vendor_id;
 	kinfo.product_id = kdev->product_id;
 	strncpy(kinfo.name, kdev->cls->name, TLKM_DEVNAME_SZ);
+    kinfo.name[TLKM_DEVNAME_SZ - 1] = '\0';
 	if (copy_to_user((void __user *)info, &kinfo, sizeof(kinfo))) {
 		ERR("could not copy all bytes to user space");
 		return -EAGAIN;

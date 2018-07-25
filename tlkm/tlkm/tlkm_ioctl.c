@@ -55,7 +55,8 @@ long tlkm_ioctl_enum_devices(struct file *fp, unsigned int ioctl,
 	for (i = 0; i < ret.num_devs; ++i) {
 		struct tlkm_device *pd = tlkm_bus_get_device(i);
 		if (pd) {
-			strncpy(ret.devs[i].name, pd->name, strlen(pd->name) + 1);
+			strncpy(ret.devs[i].name, pd->name, TLKM_DEVNAME_SZ);
+            ret.devs[i].name[TLKM_DEVNAME_SZ - 1] = '\0';
 			ret.devs[i].vendor_id = pd->vendor_id;
 			ret.devs[i].product_id = pd->product_id;
 		} else {
