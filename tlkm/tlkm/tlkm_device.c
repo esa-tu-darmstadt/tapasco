@@ -139,14 +139,15 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 	if (dev->cls->exit_subsystems)
 		dev->cls->exit_subsystems(dev);
 err_dma:
-	tlkm_status_exit(&dev->status, dev);
+    if (dev->cls->exit_subsystems)
+        dev->cls->exit_subsystems(dev);
 err_sub:
-	dma_engines_exit(dev);
+    tlkm_status_exit(&dev->status, dev);
 err_status:
-	dev->cls->destroy(dev);
-err_priv:
 	tlkm_platform_mmap_exit(dev, &dev->mmap);
 err_ioremap:
+    dev->cls->destroy(dev);
+err_priv:
 	tlkm_control_exit(dev->ctrl);
 err_control:
 	tlkm_perfc_miscdev_exit(dev);
