@@ -48,7 +48,7 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 	dma->regs = ioremap_nocache((resource_size_t)base, DMA_SZ);
 	if (dma->regs == 0 || IS_ERR(dma->regs)) {
 		DEVERR(dev_id, "failed to map 0x%px - 0x%px: %ld", base, base + DMA_SZ - 1, PTR_ERR(dma->regs));
-		ret = PTR_ERR(dma->regs);
+		ret = EIO;
         goto err_dma_ioremap;
 	}
 
