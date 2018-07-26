@@ -105,7 +105,7 @@ build_tapasco_ubuntu_16_04:
   script:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev
     - source setup.sh
-    - tapasco-build-libs --mode=release
+    - tapasco-build-libs --mode=release --skip_driver
 
 build_tapasco_ubuntu_18_04:
   stage: tapasco_tests
@@ -116,7 +116,7 @@ build_tapasco_ubuntu_18_04:
   script:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev
     - source setup.sh
-    - tapasco-build-libs --mode=release
+    - tapasco-build-libs --mode=release --skip_driver
 
 build_tapasco_fedora_27:
   stage: tapasco_tests
@@ -127,7 +127,7 @@ build_tapasco_fedora_27:
   script:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic
     - source setup.sh
-    - tapasco-build-libs --mode=release
+    - tapasco-build-libs --mode=release --skip_driver
 
 build_tapasco_fedora_28:
   stage: tapasco_tests
@@ -138,7 +138,7 @@ build_tapasco_fedora_28:
   script:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic
     - source setup.sh
-    - tapasco-build-libs --mode=release
+    - tapasco-build-libs --mode=release --skip_driver
 
 build_tapasco_ubuntu_16_04_debug:
   stage: tapasco_tests
@@ -149,7 +149,7 @@ build_tapasco_ubuntu_16_04_debug:
   script:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev
     - source setup.sh
-    - tapasco-build-libs --mode=debug
+    - tapasco-build-libs --mode=debug --skip_driver
 
 build_tapasco_ubuntu_18_04_debug:
   stage: tapasco_tests
@@ -160,7 +160,7 @@ build_tapasco_ubuntu_18_04_debug:
   script:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev
     - source setup.sh
-    - tapasco-build-libs --mode=debug
+    - tapasco-build-libs --mode=debug --skip_driver
 
 build_tapasco_fedora_27_debug:
   stage: tapasco_tests
@@ -171,7 +171,7 @@ build_tapasco_fedora_27_debug:
   script:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic
     - source setup.sh
-    - tapasco-build-libs --mode=debug
+    - tapasco-build-libs --mode=debug --skip_driver
 
 build_tapasco_fedora_28_debug:
   stage: tapasco_tests
@@ -182,4 +182,4 @@ build_tapasco_fedora_28_debug:
   script:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic
     - source setup.sh
-    - tapasco-build-libs --mode=debug
+    - tapasco-build-libs --mode=debug --skip_driver

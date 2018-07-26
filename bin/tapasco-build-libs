@@ -14,6 +14,8 @@ parser.add_argument('--mode', help='build mode (default: %(default)s)', default=
 parser.add_argument('--rebuild', help='force rebuild libs (default: %(default)s)', action='store_true')
 parser.add_argument('--shared', help='build shared library instead of static', action='store_true')
 parser.add_argument('--package', help='build installation packages', action='store_true')
+parser.add_argument('--skip_driver', help='do not build the driver', action='store_true')
+parser.add_argument('--skip_runtime', help='do not build the tapasco runtime', action='store_true')
 args = parser.parse_args()
 
 clean        = args.mode == 'clean'
@@ -46,15 +48,17 @@ if not clean:
     if 'LINUX_HOME' in os.environ:
         subprocess.call(['make -C ' + os.environ['LINUX_HOME'] + ' scripts'], shell=True)
 
-    ret = subprocess.call([tlkm_cmd.format(mdir, '' if driver_debug else 'release')], shell=True)
-    if ret:
-        print('Driver build failed!')
-        sys.exit(ret)
-    cmd = default_cmd.format(bdir, " ".join([debug_flags, shared_flags]))
-    ret = subprocess.call([cmd], shell=True)
-    if ret:
-        print('Tapasco build failed!')
-        sys.exit(ret)
+    if not args.skip_driver:
+        ret = subprocess.call([tlkm_cmd.format(mdir, '' if driver_debug else 'release')], shell=True)
+        if ret:
+            print('Driver build failed!')
+            sys.exit(ret)
+    if not args.skip_runtime:
+        cmd = default_cmd.format(bdir, " ".join([debug_flags, shared_flags]))
+        ret = subprocess.call([cmd], shell=True)
+        if ret:
+            print('Tapasco build failed!')
+            sys.exit(ret)
     if args.package:
         ret = subprocess.call("cd {0} && make -j package".format(bdir), shell=True)
         if ret:
