@@ -58,10 +58,10 @@ int main(int argc, char *argv[])
   } catch (int e) {
     exit_ncurses();
     cerr << "Error code: " << e << endl;
-  } catch (tapasco::Tapasco::tapasco_error e) {
+  } catch (tapasco::Tapasco::tapasco_error &e) {
     exit_ncurses();
     cerr << "TaPaSCo error: " <<  e.what() << endl;
-  } catch (runtime_error e) {
+  } catch (runtime_error &e) {
     exit_ncurses();
     cerr << "Unknown error occurred." << endl;
     exit(1);
