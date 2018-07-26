@@ -88,7 +88,7 @@ class ComposeTask(composition: Composition,
 
     LogFileTracker.stopLogFileAppender(appender)
     val result = (_composerResult map (_.result) getOrElse false) == ComposeResult.Success
-    if (result) { composer.clean(composition, target, designFrequency) }
+    //if (result) { composer.clean(composition, target, designFrequency) }
     result
   }
 
