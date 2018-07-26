@@ -125,7 +125,7 @@ build_tapasco_fedora_27:
     - CAD
     - Normal
   script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python
     - source setup.sh
     - tapasco-build-libs --mode=release
 
@@ -136,7 +136,7 @@ build_tapasco_fedora_28:
     - CAD
     - Normal
   script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python
     - source setup.sh
     - tapasco-build-libs --mode=release
 
@@ -169,7 +169,7 @@ build_tapasco_fedora_27_debug:
     - CAD
     - Normal
   script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python
     - source setup.sh
     - tapasco-build-libs --mode=debug
 
@@ -180,6 +180,6 @@ build_tapasco_fedora_28_debug:
     - CAD
     - Normal
   script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python
     - source setup.sh
     - tapasco-build-libs --mode=debug
