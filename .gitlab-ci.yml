@@ -12,7 +12,7 @@ build_sbt_tapasco_ubuntu_16_04:
   image: ubuntu:xenial
   tags:
     - CAD
-    - Normal
+    - High
   script:
     - apt-get -y update && apt-get -y install unzip git zip findutils curl
     - curl -s "https://get.sdkman.io" | bash
@@ -28,7 +28,7 @@ build_sbt_tapasco_ubuntu_18_04:
   image: ubuntu:cosmic
   tags:
     - CAD
-    - Normal
+    - High
   script:
     - apt-get -y update && apt-get -y install unzip git zip findutils curl
     - curl -s "https://get.sdkman.io" | bash
@@ -44,7 +44,7 @@ build_sbt_tapasco_fedora_27:
   image: fedora:27
   tags:
     - CAD
-    - Normal
+    - High
   script:
     - dnf -y install which unzip git zip findutils
     - curl -s "https://get.sdkman.io" | bash
@@ -60,7 +60,7 @@ build_sbt_tapasco_fedora_28:
   image: fedora:28
   tags:
     - CAD
-    - Normal
+    - High
   script:
     - dnf -y install which unzip git zip findutils
     - curl -s "https://get.sdkman.io" | bash
