@@ -1,0 +1,17 @@
+{ 
+	"SFP1": {
+		"PORT" : "0",
+		"mode" : "roundrobin",
+		"kernel" : [{
+			"ID"	: "myStream",
+			"Count" : "3",
+			"interface_rx" : "axiStreamS",
+			"interface_tx" : "axiStreamM"
+		}, {
+			"ID"	: "myStream",
+			"Count" : "2",
+			"interface_rx" : "axiStreamS",
+			"interface_tx" : "axiStreamM"
+		}]
+	}
+}

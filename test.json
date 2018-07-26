@@ -1,0 +1,19 @@
+{
+	"Jobs": [
+		{
+			"Job": "Compose",
+			"Design Frequency": 100,
+			"Platforms" : ["zc706"],
+			"Architectures" : ["axi4mm"],
+			"Composition" : {
+				"Composition":[{"Kernel": "myStream", "Count": 10}]
+			},
+			"Features" : [
+				{
+                    "Feature": "SFPPLUS",
+                    "ConfigFile": "/project/Ethernet.json"
+				}
+			]
+		}
+	]
+}
