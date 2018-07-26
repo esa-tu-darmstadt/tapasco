@@ -5,11 +5,74 @@ after_script:
   - echo "Done with the work"
 
 stages:
-  - tlkm_tests
-  - tapasco_tests
+  - build_tests
+
+build_sbt_tapasco_ubuntu_16_04:
+  stage: build_tests
+  image: ubuntu:xenial
+  tags:
+    - CAD
+    - Normal
+  script:
+    - apt-get -y update && apt-get -y install unzip git zip findutils curl
+    - curl -s "https://get.sdkman.io" | bash
+    - source "/root/.sdkman/bin/sdkman-init.sh"
+    - sdk install java
+    - sdk install sbt
+    - sbt version
+    - source setup.sh
+    - sbt assembly
+
+build_sbt_tapasco_ubuntu_18_04:
+  stage: build_tests
+  image: ubuntu:cosmic
+  tags:
+    - CAD
+    - Normal
+  script:
+    - apt-get -y update && apt-get -y install unzip git zip findutils curl
+    - curl -s "https://get.sdkman.io" | bash
+    - source "/root/.sdkman/bin/sdkman-init.sh"
+    - sdk install java
+    - sdk install sbt
+    - sbt version
+    - source setup.sh
+    - sbt assembly
+
+build_sbt_tapasco_fedora_27:
+  stage: build_tests
+  image: fedora:27
+  tags:
+    - CAD
+    - Normal
+  script:
+    - dnf -y install which unzip git zip findutils
+    - curl -s "https://get.sdkman.io" | bash
+    - source "/root/.sdkman/bin/sdkman-init.sh"
+    - sdk install java
+    - sdk install sbt
+    - sbt version
+    - source setup.sh
+    - sbt assembly
+
+build_sbt_tapasco_fedora_28:
+  stage: build_tests
+  image: fedora:28
+  tags:
+    - CAD
+    - Normal
+  script:
+    - dnf -y install which unzip git zip findutils
+    - curl -s "https://get.sdkman.io" | bash
+    - source "/root/.sdkman/bin/sdkman-init.sh"
+    - sdk install java
+    - sdk install sbt
+    - sbt version
+    - source setup.sh
+    - sbt assembly
 
 build_kernel_ubuntu_16_04:
-  stage: tlkm_tests
+  stage: build_tests
   image: ubuntu:xenial
   tags:
     - CAD
@@ -20,7 +83,7 @@ build_kernel_ubuntu_16_04:
     - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j release; popd; done
 
 build_kernel_ubuntu_18_04:
-  stage: tlkm_tests
+  stage: build_tests
   image: ubuntu:cosmic
   tags:
     - CAD
@@ -31,7 +94,7 @@ build_kernel_ubuntu_18_04:
     - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j release; popd; done
 
 build_kernel_fedora_27:
-  stage: tlkm_tests
+  stage: build_tests
   image: fedora:27
   tags:
     - CAD
@@ -42,7 +105,7 @@ build_kernel_fedora_27:
     - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j release; popd; done
 
 build_kernel_fedora_28:
-  stage: tlkm_tests
+  stage: build_tests
   image: fedora:28
   tags:
     - CAD
@@ -53,7 +116,7 @@ build_kernel_fedora_28:
     - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j release; popd; done
 
 build_kernel_ubuntu_16_04_debug:
-  stage: tlkm_tests
+  stage: build_tests
   image: ubuntu:xenial
   tags:
     - CAD
@@ -64,7 +127,7 @@ build_kernel_ubuntu_16_04_debug:
     - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j; popd; done
 
 build_kernel_ubuntu_18_04_debug:
-  stage: tlkm_tests
+  stage: build_tests
   image: ubuntu:cosmic
   tags:
     - CAD
@@ -75,7 +138,7 @@ build_kernel_ubuntu_18_04_debug:
     - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j; popd; done
 
 build_kernel_fedora_27_debug:
-  stage: tlkm_tests
+  stage: build_tests
   image: fedora:27
   tags:
     - CAD
@@ -86,7 +149,7 @@ build_kernel_fedora_27_debug:
     - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j; popd; done
 
 build_kernel_fedora_28_debug:
-  stage: tlkm_tests
+  stage: build_tests
   image: fedora:28
   tags:
     - CAD
@@ -97,7 +160,7 @@ build_kernel_fedora_28_debug:
     - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j; popd; done
 
 build_tapasco_ubuntu_16_04:
-  stage: tapasco_tests
+  stage: build_tests
   image: ubuntu:xenial
   tags:
     - CAD
@@ -108,7 +171,7 @@ build_tapasco_ubuntu_16_04:
     - tapasco-build-libs --mode=release --skip_driver
 
 build_tapasco_ubuntu_18_04:
-  stage: tapasco_tests
+  stage: build_tests
   image: ubuntu:cosmic
   tags:
     - CAD
@@ -119,7 +182,7 @@ build_tapasco_ubuntu_18_04:
     - tapasco-build-libs --mode=release --skip_driver
 
 build_tapasco_fedora_27:
-  stage: tapasco_tests
+  stage: build_tests
   image: fedora:27
   tags:
     - CAD
@@ -130,7 +193,7 @@ build_tapasco_fedora_27:
     - tapasco-build-libs --mode=release --skip_driver
 
 build_tapasco_fedora_28:
-  stage: tapasco_tests
+  stage: build_tests
   image: fedora:28
   tags:
     - CAD
@@ -141,7 +204,7 @@ build_tapasco_fedora_28:
     - tapasco-build-libs --mode=release --skip_driver
 
 build_tapasco_ubuntu_16_04_debug:
-  stage: tapasco_tests
+  stage: build_tests
   image: ubuntu:xenial
   tags:
     - CAD
@@ -152,7 +215,7 @@ build_tapasco_ubuntu_16_04_debug:
     - tapasco-build-libs --mode=debug --skip_driver
 
 build_tapasco_ubuntu_18_04_debug:
-  stage: tapasco_tests
+  stage: build_tests
   image: ubuntu:cosmic
   tags:
     - CAD
@@ -163,7 +226,7 @@ build_tapasco_ubuntu_18_04_debug:
     - tapasco-build-libs --mode=debug --skip_driver
 
 build_tapasco_fedora_27_debug:
-  stage: tapasco_tests
+  stage: build_tests
   image: fedora:27
   tags:
     - CAD
@@ -174,7 +237,7 @@ build_tapasco_fedora_27_debug:
     - tapasco-build-libs --mode=debug --skip_driver
 
 build_tapasco_fedora_28_debug:
-  stage: tapasco_tests
+  stage: build_tests
   image: fedora:28
   tags:
     - CAD
