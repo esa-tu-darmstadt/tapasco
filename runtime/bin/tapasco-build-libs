@@ -16,7 +16,7 @@ parser.add_argument('--shared', help='build shared library instead of static', a
 parser.add_argument('--package', help='build installation packages', action='store_true')
 parser.add_argument('--skip_driver', help='do not build the driver', action='store_true')
 parser.add_argument('--skip_runtime', help='do not build the tapasco runtime', action='store_true')
-parser.add_argument('--target', help='cross compile for other target (zynq)', default='', choices=['', 'zynq'])
+parser.add_argument('--target', help='cross compile for other target (clang, zynq)', default='', choices=['', 'clang', 'zynq'])
 args = parser.parse_args()
 
 clean        = args.mode == 'clean'
@@ -29,6 +29,9 @@ crosscompile_flags = ''
 if args.target == 'zynq':
     print('Build target: ' + args.target)
     crosscompile_flags = '-DCMAKE_TOOLCHAIN_FILE=%s/cmake/zynq_cross_toolchain.cmake' % os.environ['TAPASCO_HOME_RUNTIME']
+if args.target == 'clang':
+    print('Build target: ' + args.target)
+    crosscompile_flags = '-DCMAKE_TOOLCHAIN_FILE=%s/cmake/clang_toolchain.cmake' % os.environ['TAPASCO_HOME_RUNTIME']
 
 shared_flags = '-DBUILD_SHARED_LIBS:BOOL={}'.format('ON' if args.shared else 'OFF')
 

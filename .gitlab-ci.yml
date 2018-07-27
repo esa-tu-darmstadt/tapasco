@@ -449,6 +449,14 @@ build_tapasco_ubuntu_19_04_cross:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
   extends: .build_tapasco_ubuntu
 
+build_tapasco_ubuntu_19_04_clang:
+  variables:
+    TARGET: "clang"
+  image: ubuntu:disco
+  before_script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm clang
+  extends: .build_tapasco_ubuntu
+
 build_tapasco_ubuntu_16_04_debug:
   variables:
     MODE: "debug"
