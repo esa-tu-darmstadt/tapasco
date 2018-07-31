@@ -14,9 +14,10 @@
 #include <sstream>
 #include <chrono>
 #include <cmath>
+#include <iostream>
 #include <unistd.h>
-#include <ncurses.h>
 #include <tapasco.hpp>
+#include <iomanip>
 
 using namespace std;
 using namespace std::chrono;
@@ -25,7 +26,7 @@ using namespace tapasco;
 /** Measurement class that can measure TaPaSCo memory transfer speeds. **/
 class TransferSpeed {
 public:
-  TransferSpeed(Tapasco& tapasco) : tapasco(tapasco) {}
+  TransferSpeed(Tapasco& tapasco, bool fast) : tapasco(tapasco), fast(fast) {}
   virtual ~TransferSpeed() {}
 
   static constexpr long OP_ALLOCFREE = 0;
@@ -33,39 +34,43 @@ public:
   static constexpr long OP_COPYTO    = 2;
 
   double operator()(size_t const chunk_sz, long const opmask = 3) {
-    CumulativeAverage<double> cavg 	{ 0 };
-    atomic<bool> stop 			{ false };
-    double const cs 			{ chunk_sz / 1024.0 };
-    string const ms 			{ maskToString(opmask) };
-    double b 				{ 0.0 };
-    int x, y;
-    
-    bytes = 0;
-    getyx(stdscr, y, x);
+    CumulativeAverage<double> cavg  { 0 };
+    atomic<bool> stop       { false };
+    double const cs       { chunk_sz / 1024.0 };
+    string const ms       { maskToString(opmask) };
+    double b        { 0.0 };
 
-    auto tstart 			{ high_resolution_clock::now() };
-    duration<double> d 			{ high_resolution_clock::now() - tstart };
-    future<void> f 			{ async(launch::async, [&]() { transfer(stop, chunk_sz, opmask); }) };
-    auto c 				{ getch() };
+    bytes = 0;
+
+    auto tstart       { high_resolution_clock::now() };
+    duration<double> d      { high_resolution_clock::now() - tstart };
+    future<void> f      { async(launch::async, [&]() { transfer(stop, chunk_sz, opmask); }) };
+    double delta = 0.0;
     do {
-      mvprintw(y, x, "Chunk size: %8.2f KiB, Mask: %s, Speed: %8.2f MiB/s",
-               cs, ms.c_str(), cavg());
-      refresh();
-      usleep(1000000);
+      std::ios_base::fmtflags coutf( cout.flags() );
+      std::cout << "\rChunk size: " << std::dec << std::fixed << std::setw(8) << std::setprecision(0) << cs << " KiB, Mask: " << std::dec << ms.c_str()
+                << ", Precision: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << delta
+                << ", Samples: " << std::dec << std::setw(3) << cavg.size()
+                << ", Speed: " << std::dec << std::fixed << std::setw(9) << std::setprecision(3) << cavg() << " MiB/s" << std::flush;
+      cout.flags( coutf );
+      usleep(10000);
       b = bytes.load() / (1024.0 * 1024.0);
       d = high_resolution_clock::now() - tstart;
-      // exit "gracefully" on ctrl+c
-      c = getch();
-      if (c == 3) { endwin(); exit(3); }
-    } while (c == ERR && (fabs(cavg.update(b / d.count())) > 0.1 || cavg.size() < 30));
+      delta = fabs(cavg.update(b / d.count()));
+    } while (((!fast && delta > 0.1) || cavg.size() < 100 || (bytes.load() == 0)));
 
     stop = true;
     f.get();
 
-    mvprintw(y, x, "Chunk size: %8.2f KiB, Mask: %s, Speed: %8.2f MiB/s",
-             cs, ms.c_str(), cavg());
-    refresh();
-    move(y + 1, 0);
+    std::ios_base::fmtflags coutf( cout.flags() );
+    std::cout << "\rChunk size: " << std::dec << std::fixed << std::setw(8) << std::setprecision(0) << cs << " KiB, Mask: " << std::dec << ms.c_str()
+              << ", Precision: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << delta
+              << ", Samples: " << std::dec << std::setw(3) << cavg.size()
+              << ", Speed: " << std::dec << std::fixed << std::setw(9) << std::setprecision(3) << cavg() << " MiB/s" << std::flush;
+    cout.flags( coutf );
+
+    std::cout << std::endl;
+
     return cavg();
   }
 
@@ -76,11 +81,11 @@ private:
       return TAPASCO_SUCCESS;
     tapasco_handle_t h;
     tapasco_res_t r { tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE) };
-    if (r != TAPASCO_SUCCESS) 	{ return r; }
+    if (r != TAPASCO_SUCCESS)   { return r; }
     while (! stop.load()) {
       r = tapasco.copy_from(h, data, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING);
       if (r != TAPASCO_SUCCESS) { stop  = true; }
-      else 			{ bytes += chunk_sz; }
+      else      { bytes += chunk_sz; }
     }
     tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
     return r;
@@ -91,7 +96,7 @@ private:
       return TAPASCO_SUCCESS;
     tapasco_handle_t h;
     tapasco_res_t r { tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE) };
-    if (r != TAPASCO_SUCCESS) 	{ return r; }
+    if (r != TAPASCO_SUCCESS)   { return r; }
     while (! stop.load()) {
       r = tapasco.copy_to(data, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING);
       if (r != TAPASCO_SUCCESS) { stop  = true; }
@@ -126,6 +131,7 @@ private:
 
   atomic<uint64_t> bytes { 0 };
   Tapasco& tapasco;
+  bool fast;
 };
 
 #endif /* TRANSFER_SPEED_HPP__ */

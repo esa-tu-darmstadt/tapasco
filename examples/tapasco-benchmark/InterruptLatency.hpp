@@ -19,10 +19,9 @@
 #include <chrono>
 #include <cmath>
 #include <unistd.h>
-#include <ncurses.h>
 #include <tapasco.hpp>
 extern "C" {
-  #include <platform.h>
+#include <platform.h>
 }
 
 using namespace std;
@@ -36,7 +35,7 @@ class InterruptLatency {
 public:
   static tapasco_kernel_id_t const COUNTER_ID = 14;
 
-  InterruptLatency(Tapasco& tapasco) : tapasco(tapasco) {
+  InterruptLatency(Tapasco& tapasco, bool fast) : tapasco(tapasco), fast(fast) {
     tapasco_res_t r;
     platform_info_t info;
     if (tapasco.kernel_pe_count(COUNTER_ID) == 0)
@@ -55,31 +54,34 @@ public:
   double atcycles(uint32_t const clock_cycles, size_t const min_runs = 100, double *min = NULL, double *max = NULL) {
     CumulativeAverage<double> cavg { 0 };
     atomic<bool> stop { false };
-    int x, y, maxx, maxy;
-    getyx(stdscr, y, x);
-    getmaxyx(stdscr, maxy, maxx);
     future<void> f = async(launch::async, [&]() { trigger(stop, clock_cycles, cavg); });
-    auto c = getch();
     do {
-      move(y, 0);
-      clrtoeol();
-      mvprintw(y, x, "Runtime: %12zu cc, Latency: % 12.1f, Min: % 12.1f, Max: % 12.1f, Count: %zu/%zu",
-               clock_cycles, cavg(), cavg.min(), cavg.max(), cavg.size(), min_runs);
-      refresh();
+      std::ios_base::fmtflags coutf( cout.flags() );
+      std::cout << "\rRuntime: " << std::dec << std::fixed << std::setw(10) << std::setprecision(0) << clock_cycles
+                << " cc, Latency: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg()
+                << ", Max: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg.max()
+                << ", Min: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg.min()
+                << ", Precision: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << fabs(cavg.delta())
+                << ", Samples: " << std::dec << std::setw(3) << cavg.size()
+                << std::flush;
+      cout.flags( coutf );
       usleep(1000000);
-      // exit gracefully on ctrl+c
-      c = getch();
-      if (c == 3) { endwin(); exit(3); }
-    } while (c == ERR && (fabs(cavg.delta()) > 0.01 || cavg.size() < min_runs));
+    } while (((!fast && fabs(cavg.delta()) > 0.01) || cavg.size() < min_runs));
     stop = true;
     f.get();
-    mvprintw(y, x, "Runtime: %12zu cc, Latency: % 12.1f, Min: % 12.1f, Max: % 12.1f, Count: %zu/%zu",
-             clock_cycles, cavg(), cavg.min(), cavg.max(), cavg.size(), min_runs);
-    refresh();
-
-    move((y + 1) % maxy, 0);
     if (min) *min = cavg.min();
     if (max) *max = cavg.max();
+
+    std::ios_base::fmtflags coutf( cout.flags() );
+    std::cout << "\rRuntime: " << std::dec << std::fixed << std::setw(10) << std::setprecision(0) << clock_cycles
+              << " cc, Latency: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg()
+              << ", Max: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg.max()
+              << ", Min: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg.min()
+              << ", Precision: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << fabs(cavg.delta())
+              << ", Samples: " << std::dec << std::setw(3) << cavg.size()
+              << std::flush;
+    cout.flags( coutf );
+
     return cavg();
   }
 
@@ -106,6 +108,7 @@ private:
 
   uint32_t design_clk;
   Tapasco& tapasco;
+  bool fast;
 };
 
 #endif /* INTERRUPT_LATENCY_HPP__ */

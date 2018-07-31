@@ -14,11 +14,10 @@
 #include <future>
 #include <mutex>
 #include <vector>
-#include <ncurses.h>
 #include <tapasco.hpp>
 extern "C" {
-  #include <gen_queue.h>
-  #include <assert.h>
+#include <gen_queue.h>
+#include <assert.h>
 }
 
 using namespace std; using namespace std::chrono;
@@ -27,7 +26,7 @@ using namespace tapasco;
 class JobThroughput {
 public:
   static tapasco_kernel_id_t const COUNTER_ID = 14;
-  JobThroughput(Tapasco& tapasco): tapasco(tapasco), jobs(0) {
+  JobThroughput(Tapasco& tapasco, bool fast): tapasco(tapasco), jobs(0), fast(fast) {
     if (tapasco.kernel_pe_count(COUNTER_ID) < 1)
       throw "need at least one instance of 'Counter' (14) in bitstream";
     q = gq_init();
@@ -38,42 +37,43 @@ public:
   double operator()(size_t const num_threads) {
     CumulativeAverage<double> cavg { 0 };
     jobs.store(0U);
-    int x, y;
     stop = false;
-    getyx(stdscr, y, x);
     vector<future<void> > threads;
     auto const t_start = high_resolution_clock::now();
     threads.push_back(async(launch::async, [&]() { collect(); }));
     for (size_t t = 0; t < num_threads; ++t)
       threads.push_back(async(launch::async, [&]() { run2(); }));
-    auto c = getch();
     do {
-      move(y, 0);
-      clrtoeol();
-      mvprintw(y, x, "Num threads: % 2zu, jobs/second: % 12.1f, max: % 12.f, min: % 12.1f, waiting for: %lu",
-          num_threads, cavg(), cavg.max(), cavg.min(), (unsigned long)job);
-      refresh();
-      //usleep(5000000);
-      usleep(500000);
+      std::ios_base::fmtflags coutf( cout.flags() );
+      std::cout << "\rNum threads: " << std::dec << std::fixed << std::setw(4) << std::setprecision(0) << num_threads
+                << ", Jobs/Second: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg()
+                << ", Max: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg.max()
+                << ", Min: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg.min()
+                << ", Precision: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << fabs(cavg.delta())
+                << ", Samples: " << std::dec << std::setw(3) << cavg.size()
+                << ", Waiting for: " << std::dec << std::fixed << std::setw(4) << std::setprecision(0) << job
+                << std::flush;
+      cout.flags( coutf );
+      usleep(5000);
       auto const j = jobs.load();
       auto const t = high_resolution_clock::now();
       auto const s = duration_cast<seconds>(t - t_start);
       auto const v = s.count() > 0 ? static_cast<double>(j) / static_cast<double>(s.count()) : 0.0;
       if (v > 10.0) cavg.update(v);
-      c = getch();
-      // exit gracefully on ctrl+c
-      if (c == 3) { endwin(); exit(3); }
-    } while(getch() == ERR && (fabs(cavg.delta()) > 10.0 || cavg.size() < 5));
+    } while (((!fast && fabs(cavg.delta()) > 10.0) || cavg.size() < 5));
     stop = true;
     for (auto &f : threads)
       f.wait();
 
-    move(y, 0);
-    clrtoeol();
-    mvprintw(y, x, "Num threads: % 2zu, jobs/second: % 12.1f, max: % 12.f, min: % 12.1f",
-        num_threads, cavg(), cavg.max(), cavg.min());
-    refresh();
-    move(y+1, 0);
+    std::cout << "\rNum threads: " << std::dec << std::fixed << std::setw(4) << std::setprecision(0) << num_threads
+              << ", Jobs/Second: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg()
+              << ", Max: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg.max()
+              << ", Min: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg.min()
+              << ", Precision: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << fabs(cavg.delta())
+              << ", Samples: " << std::dec << std::setw(3) << cavg.size()
+              << ", Waiting for: " << std::dec << std::fixed << std::setw(4) << std::setprecision(0) << job
+              << std::flush;
+
     return cavg();
   }
 
@@ -101,9 +101,9 @@ private:
       while ((jf = (job_future *)gq_dequeue(q))) {
         if ((res = (*jf)()) != TAPASCO_SUCCESS) {
           throw Tapasco::tapasco_error(res);
-	}
-	delete jf;
-	++jobs;
+        }
+        delete jf;
+        ++jobs;
       }
     }
   }
@@ -113,5 +113,6 @@ private:
   atomic<bool> stop { false };
   atomic<uint64_t> jobs { 0 };
   atomic<tapasco_job_id_t> job { 0 };
+  bool fast;
 };
 #endif /* JOB_THROUGHPUT_HPP__ */

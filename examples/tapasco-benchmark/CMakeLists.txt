@@ -9,13 +9,10 @@ find_package(TapascoPlatform REQUIRED)
 find_package(Tapasco REQUIRED)
 endif(NOT TARGET tapasco)
 
-find_package(Curses REQUIRED)
-
 add_executable(tapasco-benchmark tapasco_benchmark.cpp ${CMAKE_CURRENT_BINARY_DIR}/json11/json11.cpp)
 target_include_directories(tapasco-benchmark PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/json11)
 set_tapasco_defaults(tapasco-benchmark)
-target_include_directories(tapasco-benchmark PRIVATE ${CURSES_INCLUDE_DIR})
-target_link_libraries(tapasco-benchmark PRIVATE tapasco pthread atomic ${CURSES_LIBRARIES})
+target_link_libraries(tapasco-benchmark PRIVATE tapasco pthread atomic)
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/json11/json11.cpp ${CMAKE_CURRENT_BINARY_DIR}/json11/json11.hpp
   COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/json11
