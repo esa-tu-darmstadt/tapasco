@@ -76,12 +76,16 @@ static
 long tlkm_ioctl_create_device(struct file *fp, unsigned int ioctl,
 		struct tlkm_ioctl_device_cmd __user *cmd)
 {
+	tlkm_ioctl_data* tmp = NULL;
 	struct tlkm_ioctl_device_cmd kc;
 	if (copy_from_user(&kc, (void __user *)cmd, sizeof(kc))) {
 		ERR("could not copy create device command from user space");
 		return -EACCES;
 	}
 	LOG(TLKM_LF_IOCTL, "create device #%02u command received", kc.dev_id);
+	tmp = (tlkm_ioctl_data*)fp->private_data;
+	tmp->pdev = tlkm_bus_get_device(kc.dev_id);
+	tmp->access = kc.access;
 	return tlkm_device_acquire(tlkm_bus_get_device(kc.dev_id), kc.access);
 }
 
@@ -89,6 +93,7 @@ static
 long tlkm_ioctl_destroy_device(struct file *fp, unsigned int ioctl,
 		struct tlkm_ioctl_device_cmd __user *cmd)
 {
+	tlkm_ioctl_data* tmp = NULL;
 	struct tlkm_ioctl_device_cmd kc;
 	if (copy_from_user(&kc, (void __user *)cmd, sizeof(kc))) {
 		ERR("could not copy destroy device command from user space");
@@ -96,6 +101,8 @@ long tlkm_ioctl_destroy_device(struct file *fp, unsigned int ioctl,
 	}
 	LOG(TLKM_LF_IOCTL, "destroy device #%02u command received", kc.dev_id);
 	tlkm_device_release(tlkm_bus_get_device(kc.dev_id), kc.access);
+	tmp = (tlkm_ioctl_data*)fp->private_data;
+	tmp->pdev = NULL;
 	return 0;
 }
 
