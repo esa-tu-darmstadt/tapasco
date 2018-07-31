@@ -9,9 +9,12 @@ find_package(TapascoPlatform REQUIRED)
 find_package(Tapasco REQUIRED)
 endif(NOT TARGET tapasco)
 
+find_package(Curses REQUIRED)
+
 add_executable(tapasco-debug tapasco_debug.cpp)
 set_tapasco_defaults(tapasco-debug)
-target_link_libraries(tapasco-debug PRIVATE tapasco pthread atomic ncurses)
+target_include_directories(tapasco-debug PRIVATE ${CURSES_INCLUDE_DIR})
+target_link_libraries(tapasco-debug PRIVATE tapasco pthread atomic ${CURSES_LIBRARIES})
 
 include(GNUInstallDirs)
 
