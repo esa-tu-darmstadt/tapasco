@@ -46,3 +46,5 @@ bin/tapasco-reportviewer
 /tapasco-status-cache/
 /lib/
 .cache.mk
+.Xil/
+webtalk.*
