@@ -216,19 +216,6 @@ struct Tapasco {
   /** Returns true, if initialization was successful and device is ready. **/
   bool is_ready() const noexcept { return _ok; }
 
-  template<typename R, typename... Targs>
-  job_future launch(tapasco_kernel_id_t const k_id,
-                    RetVal<R>& ret, Targs... args) noexcept
-  {
-    tapasco_job_id_t j_id { 0 };
-    tapasco_res_t res { TAPASCO_SUCCESS };
-    auto mkerr = [](tapasco_res_t r) { return [r]() { return r; }; };
-    if ((res = tapasco_device_acquire_job_id(devctx, &j_id, k_id, TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING)) != TAPASCO_SUCCESS) return mkerr(res);
-    if ((res = set_args(j_id, 0, args...)) != TAPASCO_SUCCESS) return mkerr(res);
-    if ((res = tapasco_device_job_launch(devctx, j_id, TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING)) != TAPASCO_SUCCESS) return mkerr(res);
-    return [this, j_id, &ret, &args...]() { return collect<R, Targs...>(j_id, ret, args...); };
-  }
-
   template<typename... Targs>
   job_future launch(tapasco_kernel_id_t const k_id, Targs... args) noexcept
   {
