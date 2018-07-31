@@ -74,6 +74,8 @@ public:
               << ", Waiting for: " << std::dec << std::fixed << std::setw(4) << std::setprecision(0) << job
               << std::flush;
 
+    std::cout << std::endl;
+
     return cavg();
   }
 

@@ -82,6 +82,8 @@ public:
               << std::flush;
     cout.flags( coutf );
 
+    std::cout << std::endl;
+
     return cavg();
   }
 

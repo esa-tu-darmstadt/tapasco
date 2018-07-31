@@ -137,7 +137,11 @@ int main(int argc, const char *argv[]) {
     } else platform = getenv("TAPASCO_PLATFORM");
 
     // measure for chunk sizes 2^10 (1KiB) - 2^31 (2GB) bytes
-    for (int i = 10; mode & MEASURE_TRANSFER_SPEED && i < 32; ++i) {
+    size_t max_size = 32;
+    if(fast) {
+      max_size = 18;
+    }
+    for (size_t i = 10; mode & MEASURE_TRANSFER_SPEED && i < max_size; ++i) {
       ts.chunk_sz = 1 << i;
       ts.speed_r  = tp(ts.chunk_sz, TransferSpeed::OP_COPYFROM);
       ts.speed_w  = tp(ts.chunk_sz, TransferSpeed::OP_COPYTO);
@@ -155,7 +159,7 @@ int main(int argc, const char *argv[]) {
 
     // measure average job roundtrip latency for clock cycles counts
     // between 2^0 and 2^31
-    for (size_t i = 0; mode & MEASURE_INTERRUPT_LATENCY && i < 32; ++i) {
+    for (size_t i = 0; mode & MEASURE_INTERRUPT_LATENCY && i < max_size; ++i) {
       ls.cycle_count = 1UL << i;
       ls.latency_us  = il.atcycles(ls.cycle_count, 10, &ls.min_latency_us, &ls.max_latency_us);
       // cout << "Latency @ " << ls.cycle_count << "cc runtime: " << ls.latency_us << " us" << endl;
