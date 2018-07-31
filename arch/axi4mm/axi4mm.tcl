@@ -307,20 +307,33 @@ namespace eval arch {
     set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "$num_slaves > 32 ? 32 : $num_slaves"]]
     lappend arch_irq_concats $cc
     set zero [tapasco::ip::create_constant "zero" 1 0]
+    # Only one Interrupt per IP is connected
     foreach ip [lsort $ips] {
+      set selected 0
       foreach pin [get_bd_pins -of $ip -filter { TYPE == intr }] {
-        connect_bd_net $pin [get_bd_pins -of $cc -filter "NAME == In$i"]
-        incr i
-        incr left -1
-        if {$i > 31} {
-          set i 0
-          incr j
-          if { $left > 0 } {
-            set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "$left > 32 ? 32 : $left"]]
-            lappend arch_irq_concats $cc
-          }
+        if { $selected == 0 } {
+          set selected 1
+          connect_bd_net $pin [get_bd_pins -of $cc -filter "NAME == In$i"]
+        } else {
+          puts "Skipping pin $pin because ip $ip is already connected to the interrupt controller."
         }
       }
+
+      if { $selected == 0 } {
+        puts "IP $ip does not seem to have any interrupts. Skipping."
+      }
+
+      incr i
+      incr left -1
+      if {$i > 31} {
+        set i 0
+        incr j
+        if { $left > 0 } {
+          set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "$left > 32 ? 32 : $left"]]
+          lappend arch_irq_concats $cc
+        }
+      }
+
       set num_slaves [llength [tapasco::get_aximm_interfaces $ip "Slave"]]
       puts "    number of slave interfaces on $ip: $num_slaves"
       for {set tieoff 1} {$tieoff < $num_slaves} {incr tieoff} {
