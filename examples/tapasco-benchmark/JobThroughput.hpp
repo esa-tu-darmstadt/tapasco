@@ -65,6 +65,7 @@ public:
     for (auto &f : threads)
       f.wait();
 
+    std::ios_base::fmtflags coutf( cout.flags() );
     std::cout << "\rNum threads: " << std::dec << std::fixed << std::setw(4) << std::setprecision(0) << num_threads
               << ", Jobs/Second: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg()
               << ", Max: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg.max()
@@ -73,6 +74,7 @@ public:
               << ", Samples: " << std::dec << std::setw(3) << cavg.size()
               << ", Waiting for: " << std::dec << std::fixed << std::setw(4) << std::setprecision(0) << job
               << std::flush;
+    cout.flags( coutf );
 
     std::cout << std::endl;
 
