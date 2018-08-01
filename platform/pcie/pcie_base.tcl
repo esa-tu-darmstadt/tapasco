@@ -296,6 +296,7 @@
       [get_bd_intf_pins -of_objects $out_ic -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
 
     set in_ic [tapasco::ip::create_axi_ic "in_ic" 2 1]
+    set_property -dict [list CONFIG.ENABLE_ADVANCED_OPTIONS {1} CONFIG.S01_ARB_PRIORITY {2} CONFIG.S00_ARB_PRIORITY {1}] $in_ic
     connect_bd_intf_net [get_bd_intf_pins S_HOST] [get_bd_intf_pins $in_ic/S00_AXI]
     connect_bd_intf_net [get_bd_intf_pins S_MSIX] [get_bd_intf_pins $in_ic/S01_AXI]
     connect_bd_intf_net [get_bd_intf_pins -of_object $in_ic -filter { MODE == Master }] \
