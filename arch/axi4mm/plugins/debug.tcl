@@ -16,17 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-# @file   mb_shifter.tcl
-# @brief  Plugin to insert the MicroBlaze Debug Module (MDM) for all DEBUG ports
-#         found in the Architecture.
+# @file   debug.tcl
+# @brief  Add system ILA for all AXI connections specified for use with the Debug feature
 # @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
 namespace eval debug {
   proc debug_feature {args} {
     if {[tapasco::is_feature_enabled "Debug"]} {
       # set defaults
-      set depth       1024
-      set stages      0
+      set depth       8192
+      set stages      2
       set interfaces  {}
 
       set debug [tapasco::get_feature "Debug"]
@@ -39,6 +38,7 @@ namespace eval debug {
             puts "   found interface def: $ifs"
             if {[llength $ifs] == 3} {
               set s_ila [tapasco::ip::create_system_ila "SILA_$i" $num_ifs $depth $stages]
+              set_property -dict [list CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE0_MU_CNT {6} CONFIG.ALL_PROBE_SAME_MU_CNT {6}] $s_ila
               puts "  create System ILA SILA_$i for $num_ifs interfaces with depth $depth and $stages stages"
               set intf [get_bd_intf_pins [lindex $ifs 0]]
               set clk [get_bd_pins [lindex $ifs 1]]
@@ -55,7 +55,18 @@ namespace eval debug {
         }
       }
     }
-  }
-}
 
-tapasco::register_plugin "arch::debug::debug_feature" "pre-wrapper"
+    proc write_ltx {} {
+      global bitstreamname
+      if {[tapasco::is_feature_enabled "Debug"]} {
+        puts "Writing debug probes into file ${bitstreamname}.ltx ..."
+        write_debug_probes -force -verbose "${bitstreamname}.ltx"
+      }
+      return {}
+    }
+  }
+
+  tapasco::register_plugin "arch::debug::debug_feature" "pre-wrapper"
+  tapasco::register_plugin "arch::debug::write_ltx" "post-impl"
+
+}
