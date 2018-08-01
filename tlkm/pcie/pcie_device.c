@@ -52,11 +52,11 @@ static int claim_device(struct tlkm_pcie_device *pdev)
 	pdev->phy_flags_bar0	= pci_resource_flags(dev, 0);
 
 	DEVLOG(did, TLKM_LF_PCIE, "PCI bar 0: address= 0x%08llx length: 0x%08llx",
-			pdev->phy_addr_bar0, pdev->phy_len_bar0);
+	       pdev->phy_addr_bar0, pdev->phy_len_bar0);
 
 	pdev->parent->base_offset = pdev->phy_addr_bar0;
 	DEVLOG(did, TLKM_LF_PCIE, "status core base: 0x%08llx => 0x%08llx",
-		(u64)pcie_cls.platform.status.base, (u64)pcie_cls.platform.status.base + pdev->parent->base_offset);
+	       (u64)pcie_cls.platform.status.base, (u64)pcie_cls.platform.status.base + pdev->parent->base_offset);
 
 	return 0;
 
@@ -81,7 +81,7 @@ static int configure_device(struct pci_dev *pdev)
 {
 	dev_id_t id = TLKM_DEV_ID(pdev);
 	DEVLOG(id, TLKM_LF_PCIE, "MPS: %d, Maximum Read Requests %d",
-			pcie_get_mps(pdev), pcie_get_readrq(pdev));
+	       pcie_get_mps(pdev), pcie_get_readrq(pdev));
 
 	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))) {
 		DEVLOG(id, TLKM_LF_PCIE, "dma_set_mask: using 64 bit DMA addresses");
@@ -116,15 +116,15 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
 	err = pci_enable_msix_range(dev,
-			pdev->msix_entries,
-			REQUIRED_INTERRUPTS,
-			REQUIRED_INTERRUPTS);
+	                            pdev->msix_entries,
+	                            REQUIRED_INTERRUPTS,
+	                            REQUIRED_INTERRUPTS);
 #else
 	/* set up MSI interrupt vector to max size */
 	err = pci_alloc_irq_vectors(dev,
-			REQUIRED_INTERRUPTS,
-			REQUIRED_INTERRUPTS,
-			PCI_IRQ_MSIX);
+	                            REQUIRED_INTERRUPTS,
+	                            REQUIRED_INTERRUPTS,
+	                            PCI_IRQ_MSIX);
 #endif
 
 	if (err <= 0) {
@@ -182,9 +182,9 @@ int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	struct tlkm_device *dev;
 	LOG(TLKM_LF_PCIE, "found TaPaSCo PCIe device, registering ...");
 	dev = tlkm_bus_new_device((struct tlkm_class *)&pcie_cls,
-			XILINX_VENDOR_ID,
-			XILINX_DEVICE_ID,
-			pdev);
+	                          XILINX_VENDOR_ID,
+	                          XILINX_DEVICE_ID,
+	                          pdev);
 	if (! dev) {
 		ERR("could not add device to bus");
 		return -ENOMEM;

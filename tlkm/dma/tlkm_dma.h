@@ -42,7 +42,8 @@ struct dma_operations {
     dma_intr_handler           intr_write;
 };
 
-#define TLKM_DMA_BUF_SZ         (size_t)(4 * 1024 * 1024)   // 4 MiB
+#define TLKM_DMA_CHUNK_SZ         (size_t)(256 * 1024)   // 256 KiB
+#define TLKM_DMA_CHUNKS           (1)
 
 struct dma_engine {
     dev_id_t            dev_id;
@@ -59,10 +60,10 @@ struct dma_engine {
     struct mutex            wq_mutex;
     atomic64_t          wq_enqueued;
     atomic64_t          wq_processed;
-    void                *dma_buf_read;
-    void                *dma_buf_read_dev;
-    void                *dma_buf_write;
-    void                *dma_buf_write_dev;
+    void                *dma_buf_read[TLKM_DMA_CHUNKS];
+    void                *dma_buf_read_dev[TLKM_DMA_CHUNKS];
+    void                *dma_buf_write[TLKM_DMA_CHUNKS];
+    void                *dma_buf_write_dev[TLKM_DMA_CHUNKS];
     struct tlkm_device  *dev;
     int alignment;
 };

@@ -12,6 +12,12 @@
 #define REG_ID 						0x18
 #define DMA_SZ						0x10000
 
+typedef struct {
+	size_t cpy_sz;
+	ssize_t t_id;
+	void __user *usr_addr;
+} chunk_data_t;
+
 static const struct dma_operations tlkm_dma_ops[] = {
 	[DMA_USED_DUAL] = {
 		.intr_read		 = dual_dma_intr_handler_dma, // Dual DMA can not read and write in parallel
@@ -39,6 +45,7 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 {
 	dev_id_t dev_id = dev->dev_id;
 	uint64_t id;
+	int i = 0;
 	int ret = 0;
 	void *base = (void *)((uintptr_t)dbase);
 	BUG_ON(! dma);
@@ -49,7 +56,7 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 	if (dma->regs == 0 || IS_ERR(dma->regs)) {
 		DEVERR(dev_id, "failed to map 0x%px - 0x%px: %ld", base, base + DMA_SZ - 1, PTR_ERR(dma->regs));
 		ret = EIO;
-        goto err_dma_ioremap;
+		goto err_dma_ioremap;
 	}
 
 	DEVLOG(dev_id, TLKM_LF_DMA, "detecting DMA engine type ...");
@@ -68,20 +75,24 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 	}
 	dma->ops = tlkm_dma_ops[dma->dma_used];
 
-	DEVLOG(dev_id, TLKM_LF_DMA, "allocating DMA buffers of %zd bytes ...", TLKM_DMA_BUF_SZ);
+	DEVLOG(dev_id, TLKM_LF_DMA, "allocating DMA buffers of %d x %zd bytes ...", TLKM_DMA_CHUNKS, TLKM_DMA_CHUNK_SZ);
 
-	ret = dma->ops.allocate_buffer(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
-	if (ret) {
-		ret = PTR_ERR(dma->dma_buf_read);
-        DEVERR(dev_id, "failed to allocate %zd bytes for read direction", TLKM_DMA_BUF_SZ);
-		goto err_dma_bufs_read;
+	for (i = 0; i < TLKM_DMA_CHUNKS; ++i) {
+		ret = dma->ops.allocate_buffer(dev->dev_id, dev, &dma->dma_buf_read[i], &dma->dma_buf_read_dev[i], FROM_DEV, TLKM_DMA_CHUNK_SZ);
+		if (ret) {
+			ret = PTR_ERR(dma->dma_buf_read[i]);
+			DEVERR(dev_id, "failed to allocate %zd bytes for read direction", TLKM_DMA_CHUNK_SZ);
+			goto err_dma_bufs_read;
+		}
 	}
 
-	ret = dma->ops.allocate_buffer(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
-	if (ret) {
-		ret = PTR_ERR(dma->dma_buf_write);
-        DEVERR(dev_id, "failed to allocate %zd bytes for write direction", TLKM_DMA_BUF_SZ);
-		goto err_dma_bufs_write;
+	for (i = 0; i < TLKM_DMA_CHUNKS; ++i) {
+		ret = dma->ops.allocate_buffer(dev->dev_id, dev, &dma->dma_buf_write[i], &dma->dma_buf_write_dev[i], TO_DEV, TLKM_DMA_CHUNK_SZ);
+		if (ret) {
+			ret = PTR_ERR(dma->dma_buf_write[i]);
+			DEVERR(dev_id, "failed to allocate %zd bytes for write direction", TLKM_DMA_CHUNK_SZ);
+			goto err_dma_bufs_write;
+		}
 	}
 
 	init_waitqueue_head(&dma->rq);
@@ -100,56 +111,86 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 	return 0;
 
 err_dma_bufs_write:
-	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
+	for (i -= 1; i >= 0; --i) {
+		dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_write[i], &dma->dma_buf_write_dev[i], TO_DEV, TLKM_DMA_CHUNK_SZ);
+	}
+	i = TLKM_DMA_CHUNKS;
 err_dma_bufs_read:
-    iounmap(dma->regs);
+	for (i -= 1; i >= 0; --i) {
+		dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_read[i], &dma->dma_buf_read_dev[i], FROM_DEV, TLKM_DMA_CHUNK_SZ);
+	}
+	iounmap(dma->regs);
 err_dma_ioremap:
 	return ret;
 }
 
 void tlkm_dma_exit(struct dma_engine *dma)
 {
-    if(dma->regs != 0 && !IS_ERR(dma->regs)) {
-    	struct tlkm_device *dev = dma->dev;
-        DEVLOG(dma->dev_id, TLKM_LF_DMA, "freeing buffers");
-    	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, TLKM_DMA_BUF_SZ);
-    	dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, TLKM_DMA_BUF_SZ);
-        DEVLOG(dma->dev_id, TLKM_LF_DMA, "unmapping IO memory");
-    	iounmap(dma->regs);
-    	memset(dma, 0, sizeof(*dma));
-    	DEVLOG(dma->dev_id, TLKM_LF_DMA, "deinitialized DMA engine");
-    }
+	int i = 0;
+	if (dma->regs != 0 && !IS_ERR(dma->regs)) {
+		struct tlkm_device *dev = dma->dev;
+		DEVLOG(dma->dev_id, TLKM_LF_DMA, "freeing buffers");
+		for (i = 0; i < TLKM_DMA_CHUNKS; ++i) {
+			dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_write[i], &dma->dma_buf_write_dev[i], TO_DEV, TLKM_DMA_CHUNK_SZ);
+			dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_read[i], &dma->dma_buf_read_dev[i], FROM_DEV, TLKM_DMA_CHUNK_SZ);
+		}
+		DEVLOG(dma->dev_id, TLKM_LF_DMA, "unmapping IO memory");
+		iounmap(dma->regs);
+		memset(dma, 0, sizeof(*dma));
+		DEVLOG(dma->dev_id, TLKM_LF_DMA, "deinitialized DMA engine");
+	}
 }
 
 ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void __user *usr_addr, size_t len)
 {
 	struct tlkm_device *dev = dma->dev;
 	size_t cpy_sz = len;
-	ssize_t t_id;
+	int i;
+	int current_buffer = 0;
+	ssize_t t_ids[TLKM_DMA_CHUNKS];
+	if ((dev_addr % dma->alignment) != 0) {
+		DEVERR(dma->dev_id, "Transfer is not properly aligned for dma engine. All transfers have to be aligned to %d bytes.", dma->alignment);
+		return -EAGAIN;
+	}
+	for (i = 0; i < TLKM_DMA_CHUNKS; ++i) {
+		t_ids[i] = 0;
+	}
+
+	atomic64_set(&dma->wq_enqueued, 0);
+	atomic64_set(&dma->wq_processed, 0);
+
 	while (len > 0) {
 		DEVLOG(dma->dev_id, TLKM_LF_DMA, "outstanding bytes: %zd - usr_addr = 0x%px, dev_addr = 0x%px",
 		       len, usr_addr, (void *)dev_addr);
-		if ((dev_addr % dma->alignment) != 0) {
-			DEVERR(dma->dev_id, "Transfer is not properly aligned for dma engine. All transfers have to be aligned to %d bytes.", dma->alignment);
-			return -EAGAIN;
+		DEVLOG(dma->dev_id, TLKM_LF_DMA, "using buffer: %d and waiting for t_id == %ld", current_buffer, t_ids[current_buffer]);
+		cpy_sz = len < TLKM_DMA_CHUNK_SZ ? len : TLKM_DMA_CHUNK_SZ;
+		if (wait_event_interruptible(dma->wq, atomic64_read(&dma->wq_processed) >= t_ids[current_buffer])) {
+			DEVWRN(dma->dev_id, "got killed while hanging in waiting queue");
+			return -EACCES;
 		}
-		cpy_sz = len < TLKM_DMA_BUF_SZ ? len : TLKM_DMA_BUF_SZ;
-		dma->ops.buffer_cpu(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, cpy_sz);
-		if (copy_from_user(dma->dma_buf_write, usr_addr, cpy_sz)) {
+
+		dma->ops.buffer_cpu(dev->dev_id, dev, &dma->dma_buf_write[current_buffer], &dma->dma_buf_write_dev[current_buffer], TO_DEV, cpy_sz);
+		if (copy_from_user(dma->dma_buf_write[current_buffer], usr_addr, cpy_sz)) {
 			DEVERR(dma->dev_id, "could not copy data from user");
 			return -EAGAIN;
 		} else {
-			dma->ops.buffer_dev(dev->dev_id, dev, &dma->dma_buf_write, &dma->dma_buf_write_dev, TO_DEV, cpy_sz);
-			t_id = dma->ops.copy_to(dma, dev_addr, dma->dma_buf_write_dev, cpy_sz);
-			if (wait_event_interruptible(dma->wq, atomic64_read(&dma->wq_processed) >= t_id)) {
-				WRN("got killed while hanging in waiting queue");
-				return -EACCES;
-			}
+			dma->ops.buffer_dev(dev->dev_id, dev, &dma->dma_buf_write[current_buffer], &dma->dma_buf_write_dev[current_buffer], TO_DEV, cpy_sz);
+			t_ids[current_buffer] = dma->ops.copy_to(dma, dev_addr, dma->dma_buf_write_dev[current_buffer], cpy_sz);
+
 			usr_addr	+= cpy_sz;
 			dev_addr	+= cpy_sz;
 			len		-= cpy_sz;
+			current_buffer = (current_buffer + 1) % TLKM_DMA_CHUNKS;
 		}
 	}
+
+	for (i = 0; i < TLKM_DMA_CHUNKS; ++i) {
+		if (wait_event_interruptible(dma->wq, atomic64_read(&dma->wq_processed) >= t_ids[i])) {
+			DEVWRN(dma->dev_id, "got killed while hanging in waiting queue");
+			return -EACCES;
+		}
+	}
+
 	tlkm_perfc_dma_writes_add(dma->dev_id, len);
 	return len;
 }
@@ -158,30 +199,69 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_ad
 {
 	struct tlkm_device *dev = dma->dev;
 	size_t cpy_sz = len;
-	ssize_t t_id;
+	int i;
+	int current_buffer = 0;
+	chunk_data_t chunks[TLKM_DMA_CHUNKS];
+	if ((dev_addr % dma->alignment) != 0) {
+		DEVERR(dma->dev_id, "Transfer is not properly aligned for dma engine. All transfers have to be aligned to %d bytes.", dma->alignment);
+		return -EAGAIN;
+	}
+	for (i = 0; i < TLKM_DMA_CHUNKS; ++i) {
+		chunks[i].t_id = 0;
+		chunks[i].usr_addr = 0;
+		chunks[i].cpy_sz = 0;
+	}
+
+	atomic64_set(&dma->rq_enqueued, 0);
+	atomic64_set(&dma->rq_processed, 0);
+
 	while (len > 0) {
 		DEVLOG(dma->dev_id, TLKM_LF_DMA, "outstanding bytes: %zd - usr_addr = 0x%px, dev_addr = 0x%px",
 		       len, usr_addr, (void *)dev_addr);
-		if ((dev_addr % dma->alignment) != 0) {
-			DEVERR(dma->dev_id, "Transfer is not properly aligned for dma engine. All transfers have to be aligned to %d bytes.", dma->alignment);
-			return -EAGAIN;
-		}
-		cpy_sz = len < TLKM_DMA_BUF_SZ ? len : TLKM_DMA_BUF_SZ;
-		dma->ops.buffer_dev(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, cpy_sz);
-		t_id = dma->ops.copy_from(dma, dma->dma_buf_read_dev, dev_addr, cpy_sz);
-		if (wait_event_interruptible(dma->rq, atomic64_read(&dma->rq_processed) >= t_id)) {
+		DEVLOG(dma->dev_id, TLKM_LF_DMA, "using buffer: %d and waiting for t_id == %ld", current_buffer, chunks[current_buffer].t_id);
+		if (wait_event_interruptible(dma->rq, atomic64_read(&dma->rq_processed) >= chunks[current_buffer].t_id)) {
 			DEVWRN(dma->dev_id, "got killed while hanging in waiting queue");
 			return -EACCES;
 		}
-		dma->ops.buffer_cpu(dev->dev_id, dev, &dma->dma_buf_read, &dma->dma_buf_read_dev, FROM_DEV, cpy_sz);
-		if (copy_to_user(usr_addr, dma->dma_buf_read, cpy_sz)) {
-			DEVERR(dma->dev_id, "could not copy data to user");
-			return -EAGAIN;
+		if (chunks[current_buffer].usr_addr != 0) {
+			dma->ops.buffer_cpu(dev->dev_id, dev, &dma->dma_buf_read[current_buffer], &dma->dma_buf_read_dev[current_buffer], FROM_DEV, chunks[current_buffer].cpy_sz);
+			if (copy_to_user(chunks[current_buffer].usr_addr, dma->dma_buf_read[current_buffer], chunks[current_buffer].cpy_sz)) {
+				DEVERR(dma->dev_id, "could not copy data to user");
+				return -EAGAIN;
+			}
+			chunks[current_buffer].usr_addr = 0;
 		}
+
+		cpy_sz = len < TLKM_DMA_CHUNK_SZ ? len : TLKM_DMA_CHUNK_SZ;
+		dma->ops.buffer_dev(dev->dev_id, dev, &dma->dma_buf_read[current_buffer], &dma->dma_buf_read_dev[current_buffer], FROM_DEV, cpy_sz);
+		chunks[current_buffer].t_id = dma->ops.copy_from(dma, dma->dma_buf_read_dev[current_buffer], dev_addr, cpy_sz);
+
+		chunks[current_buffer].usr_addr = usr_addr;
+		chunks[current_buffer].cpy_sz = cpy_sz;
+
 		usr_addr	+= cpy_sz;
 		dev_addr	+= cpy_sz;
 		len		-= cpy_sz;
+		current_buffer = (current_buffer + 1) % TLKM_DMA_CHUNKS;
 	}
+
+
+	for (i = 0; i < TLKM_DMA_CHUNKS; ++i) {
+		if (wait_event_interruptible(dma->rq, atomic64_read(&dma->rq_processed) >= chunks[i].t_id)) {
+			DEVWRN(dma->dev_id, "got killed while hanging in waiting queue");
+			return -EACCES;
+		}
+
+		if (chunks[i].usr_addr != 0) {
+			dma->ops.buffer_cpu(dev->dev_id, dev, &dma->dma_buf_read[i], &dma->dma_buf_read_dev[i], FROM_DEV, chunks[i].cpy_sz);
+			if (copy_to_user(chunks[i].usr_addr, dma->dma_buf_read[i], chunks[i].cpy_sz)) {
+				DEVERR(dma->dev_id, "could not copy data to user");
+				return -EAGAIN;
+			}
+			chunks[i].usr_addr = 0;
+		}
+	}
+
 	tlkm_perfc_dma_reads_add(dma->dev_id, len);
 	return len;
 }
