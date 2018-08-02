@@ -209,34 +209,6 @@ namespace eval ::tapasco::ip {
     return $xlconst
   }
 
-  # Instantiates Dual DMA core.
-  # @param name Name of the instance.
-  proc create_dualdma {name} {
-    variable stdcomps
-    puts "Creating dual DMA core ..."
-    puts "  VLNV: [dict get $stdcomps dualdma vlnv]"
-
-    set dd [create_bd_cell -type ip -vlnv [dict get $stdcomps dualdma vlnv] $name]
-    set_property -dict [list \
-      CONFIG.C_M32_AXI_BURST_LEN {64} \
-      CONFIG.C_M32_AXI_DATA_WIDTH {512} \
-      CONFIG.C_M64_AXI_BURST_LEN {128} \
-      CONFIG.C_M64_AXI_DATA_WIDTH {256} \
-      CONFIG.DATA_FIFO_DEPTH {16} \
-      CONFIG.M32_IS_ASYNC {1} \
-      CONFIG.M32_READ_MAX_REQ {8} \
-      CONFIG.M32_WRITE_MAX_REQ {8} \
-      CONFIG.M64_READ_MAX_REQ {8} \
-      CONFIG.M64_WRITE_MAX_REQ {8} \
-    ] $dd
-    # read XDC file
-    #set folder [format "%s/common/ip/dual_dma_1.0" $::env(TAPASCO_HOME)]
-    # [get_property IP_DIR [get_ips [get_property CONFIG.Component_Name $dd]]]
-    #set xdc ${folder}/dual.xdc
-    #read_xdc -cells "*[get_property NAME $dd]" $xdc
-    return $dd
-  }
-
   # Instantiates a performance counter controller for the zedboard OLED display.
   # @param name Name of the instance.
   proc create_oled_ctrl {name} {

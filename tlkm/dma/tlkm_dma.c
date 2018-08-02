@@ -6,7 +6,6 @@
 #include "tlkm_logging.h"
 #include "tlkm_perfc.h"
 #include "blue_dma.h"
-#include "dual_dma.h"
 #include "pcie/pcie_device.h"
 
 #define REG_ID 						0x18
@@ -19,16 +18,6 @@ typedef struct {
 } chunk_data_t;
 
 static const struct dma_operations tlkm_dma_ops[] = {
-	[DMA_USED_DUAL] = {
-		.intr_read		 = dual_dma_intr_handler_dma, // Dual DMA can not read and write in parallel
-		.intr_write		 = dual_dma_intr_handler_dma,
-		.copy_from		 = dual_dma_copy_from,
-		.copy_to	     = dual_dma_copy_to,
-		.allocate_buffer = pcie_device_dma_allocate_buffer,
-		.free_buffer 	 = pcie_device_dma_free_buffer,
-		.buffer_cpu      = pcie_device_dma_sync_buffer_cpu,
-		.buffer_dev      = pcie_device_dma_sync_buffer_dev,
-	},
 	[DMA_USED_BLUE] = {
 		.intr_read	= blue_dma_intr_handler_read,
 		.intr_write	= blue_dma_intr_handler_write,
@@ -69,9 +58,8 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 		DEVLOG(dev_id, TLKM_LF_DMA, "smallest alignment: %u", (uint8_t)(id >> 48));
 		dma->alignment = (uint8_t)(id >> 48);
 	} else {
-		dma->dma_used = DMA_USED_DUAL;
-		dma->alignment = 64;
-		DEVLOG(dev_id, TLKM_LF_DMA, "detected DualDMA");
+		goto err_unknown_dma;
+		DEVLOG(dev_id, TLKM_LF_DMA, "unknown DMA engine");
 	}
 	dma->ops = tlkm_dma_ops[dma->dma_used];
 
@@ -119,6 +107,7 @@ err_dma_bufs_read:
 	for (i -= 1; i >= 0; --i) {
 		dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_read[i], &dma->dma_buf_read_dev[i], FROM_DEV, TLKM_DMA_CHUNK_SZ);
 	}
+err_unknown_dma:
 	iounmap(dma->regs);
 	dma->regs = 0;
 err_dma_ioremap:

@@ -34,9 +34,7 @@ irqreturn_t blue_dma_intr_handler_read(int irq, void * dev_id)
 {
 	struct dma_engine *dma = (struct dma_engine *)dev_id;
 	atomic64_inc(&dma->rq_processed);
-	//tlkm_perfc_dma_reads_inc(dma->dev_id);
 	wake_up_interruptible(&dma->rq);
-	//DEVWRN(dma->dev_id, "Interrupt");
 	return IRQ_HANDLED;
 }
 
@@ -44,7 +42,6 @@ irqreturn_t blue_dma_intr_handler_write(int irq, void * dev_id)
 {
 	struct dma_engine *dma = (struct dma_engine *)dev_id;
 	atomic64_inc(&dma->wq_processed);
-	//tlkm_perfc_dma_writes_inc(dma->dev_id);
 	wake_up_interruptible(&dma->wq);
 	return IRQ_HANDLED;
 }

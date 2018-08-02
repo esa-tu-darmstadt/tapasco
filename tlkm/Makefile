@@ -40,7 +40,6 @@ tlkm-objs := \
 	pcie/pcie_irq.o \
 	pcie/pcie_ioctl.o \
 	dma/tlkm_dma.o \
-	dma/dual_dma.o \
 	dma/blue_dma.o
 
 

@@ -148,7 +148,7 @@
   }
 
   # Creates the memory subsystem consisting of MIG core for DDR RAM,
-  # and a Dual DMA engine which is connected to the MIG and has an
+  # and a DMA engine which is connected to the MIG and has an
   # external 64bit M_AXI channel toward PCIe.
   proc create_subsystem_memory {} {
     # create hierarchical interface ports
@@ -173,17 +173,12 @@
     set irq_read [create_bd_pin -type "intr" -dir "O" "dma_irq_read"]
     set irq_write [create_bd_pin -type "intr" -dir "O" "dma_irq_write"]
 
-    # create instances of cores: MIG core, dual DMA, system cache
+    # create instances of cores: MIG core, DMA, system cache
     set mig [create_mig_core "mig"]
 
-    if {[tapasco::is_feature_enabled "DualDMA"]} {
-      set dma [tapasco::ip::create_dualdma "dma"]
-      connect_bd_net [get_bd_pins $dma/IRQ] $irq_read
-    } else {
-      set dma [tapasco::ip::create_bluedma "dma"]
-      connect_bd_net [get_bd_pins $dma/IRQ_read] $irq_read
-      connect_bd_net [get_bd_pins $dma/IRQ_write] $irq_write
-    }
+    set dma [tapasco::ip::create_bluedma "dma"]
+    connect_bd_net [get_bd_pins $dma/IRQ_read] $irq_read
+    connect_bd_net [get_bd_pins $dma/IRQ_write] $irq_write
 
     set mig_ic [tapasco::ip::create_axi_ic "mig_ic" 2 1]
     set_property -dict [list \
@@ -210,13 +205,13 @@
     }
 
     # AXI connections:
-    # connect dual dma 32bit to mig_ic
+    # connect dma 32bit to mig_ic
     connect_bd_intf_net [get_bd_intf_pins $dma/M32_AXI] [get_bd_intf_pins mig_ic/S00_AXI]
-    # connect dual DMA 64bit to external port
+    # connect DMA 64bit to external port
     connect_bd_intf_net [get_bd_intf_pins $dma/M64_AXI] $m_axi_mem
     # connect second mig_ic slave to external port
     connect_bd_intf_net $s_axi_mem [get_bd_intf_pins mig_ic/S01_AXI]
-    # connect dual DMA S_AXI to external port
+    # connect DMA S_AXI to external port
     connect_bd_intf_net $s_axi_ddma [get_bd_intf_pins $dma/S_AXI]
 
     # connect PCIe clock and reset
