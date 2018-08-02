@@ -44,7 +44,7 @@ struct dma_operations {
 
 // Currently any chunk size smaller than 2 MB will result in failures due to missing interrupts
 #define TLKM_DMA_CHUNK_SZ         (size_t)(2 * 1024 * 1024)   // 2 MiB
-#define TLKM_DMA_CHUNKS           (2)
+#define TLKM_DMA_CHUNKS           (4)
 
 struct dma_engine {
     dev_id_t            dev_id;

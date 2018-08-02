@@ -277,7 +277,7 @@ int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct tlkm_device *dev, vo
 	// Should be the same size on most systems, however
 	dma_addr_t *handle = (dma_addr_t*)dev_handle;
 	int err = 0;
-	*buffer = kmalloc(size, GFP_DMA);
+	*buffer = kmalloc(size, 0);
 	DEVLOG(dev_id, TLKM_LF_DEVICE, "Allocated %ld bytes at kernel address %p trying to map into DMA space...", size, *buffer);
 	if (*buffer) {
 		memset(*buffer, 0, size);
