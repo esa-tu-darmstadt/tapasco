@@ -13,7 +13,7 @@
 static
 int dma_engines_init(struct tlkm_device *dev)
 {
-	int i, ret = 0, irqn = 0;
+	int i, ret = 0, irqn = -1;
 	u64 *component;
 	u64 dma_base[TLKM_DEVICE_MAX_DMA_ENGINES] = { 0ULL, };
 	u64 status_base;
@@ -41,13 +41,13 @@ int dma_engines_init(struct tlkm_device *dev)
 
 		BUG_ON(! o->intr_read);
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d: registering read interrupt", i);
-		if (o->intr_read && (ret = tlkm_device_request_platform_irq(dev, irqn++, o->intr_read, &dev->dma[i]))) {
+		if (o->intr_read && (ret = tlkm_device_request_platform_irq(dev, ++irqn, o->intr_read, &dev->dma[i]))) {
 			DEVERR(dev->dev_id, "could not register interrupt #%d: %d", irqn, ret);
 			goto err_dma_engine;
 		}
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d: registering write interrupt", i);
 		if (o->intr_write && o->intr_write != o->intr_read && (ret = tlkm_device_request_platform_irq(
-				dev, irqn++, o->intr_write, &dev->dma[i]))) {
+				dev, ++irqn, o->intr_write, &dev->dma[i]))) {
 			DEVERR(dev->dev_id, "could not register interrupt #%d: %d", irqn, ret);
 			goto err_dma_engine;
 		}
@@ -57,14 +57,12 @@ int dma_engines_init(struct tlkm_device *dev)
 	return ret;
 
 err_dma_engine:
+	for(; irqn >= 0; --irqn) {
+		tlkm_device_release_platform_irq(dev, irqn);
+	}
 	for (; i >= 0; --i) {
-		if (dev->dma[i].ops.intr_write && dev->dma[i].ops.intr_write != dev->dma[i].ops.intr_read)
-			tlkm_device_release_platform_irq(dev, --irqn);
-		if (dev->dma[i].ops.intr_read)
-			tlkm_device_release_platform_irq(dev, --irqn);
 		tlkm_dma_exit(&dev->dma[i]);
 	}
-	BUG_ON(irqn);
 	return ret;
 }
 

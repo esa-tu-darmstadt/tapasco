@@ -120,8 +120,9 @@ err_dma_bufs_read:
 		dma->ops.free_buffer(dev->dev_id, dev, &dma->dma_buf_read[i], &dma->dma_buf_read_dev[i], FROM_DEV, TLKM_DMA_CHUNK_SZ);
 	}
 	iounmap(dma->regs);
+	dma->regs = 0;
 err_dma_ioremap:
-	return ret;
+	return -ENODEV;
 }
 
 void tlkm_dma_exit(struct dma_engine *dma)
