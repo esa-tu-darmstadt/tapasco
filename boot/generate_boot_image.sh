@@ -1,7 +1,7 @@
 #!/bin/bash
 BOARD=${1:-zedboard}
 VERSION=${2:-2016.4}
-IMGSIZE=${3:-8192}
+IMGSIZE=${3:-7534}
 SDCARD=${4:-}
 DIR="$BOARD/$VERSION"
 LOGDIR="$DIR/logs"
@@ -44,7 +44,7 @@ given, repartition the device as a bootable SD card (WARNING: all data will
 be lost).
 	BOARD		one of zc706, zedboard, pyng or zcu102
 	VERSION		Vivado Design Suite version, e.g., 2016.4
-	DISK SIZE	Size of the image in MiB (optional, default: 8192)
+	DISK SIZE	Size of the image in MiB (optional, default: 7534)
 	DEVICE		SD card device, e.g., /dev/sdb (optional)
 EOF
 	exit 1
@@ -399,7 +399,7 @@ build_devtree () {
 
 build_output_image () {
 	# size of image (in MiB)
-	IMGSIZE=${1:-8192}
+	IMGSIZE=${1:-7534}
 	# default root size: MAX - 358 MiB (converted to 512B sectors)
 	ROOTSZ=${2:-$((($IMGSIZE - 358) * 1024 * 1024 / 512))}
 	if [[ ! -f $OUTPUT_IMAGE ]]; then
