@@ -51,7 +51,6 @@ public:
                 << ", Min: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg.min()
                 << ", Precision: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << fabs(cavg.delta())
                 << ", Samples: " << std::dec << std::setw(3) << cavg.size()
-                << ", Waiting for: " << std::dec << std::fixed << std::setw(4) << std::setprecision(0) << job
                 << std::flush;
       cout.flags( coutf );
       usleep(5000);
@@ -72,7 +71,6 @@ public:
               << ", Min: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << cavg.min()
               << ", Precision: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << fabs(cavg.delta())
               << ", Samples: " << std::dec << std::setw(3) << cavg.size()
-              << ", Waiting for: " << std::dec << std::fixed << std::setw(4) << std::setprecision(0) << job
               << std::flush;
     cout.flags( coutf );
 
