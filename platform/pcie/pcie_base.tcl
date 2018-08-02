@@ -175,7 +175,16 @@
 
     # create instances of cores: MIG core, dual DMA, system cache
     set mig [create_mig_core "mig"]
-    set dual_dma [tapasco::ip::create_dualdma "dma"]
+
+    if {[tapasco::is_feature_enabled "DualDMA"]} {
+      set dma [tapasco::ip::create_dualdma "dma"]
+      connect_bd_net [get_bd_pins $dma/IRQ] $irq_read
+    } else {
+      set dma [tapasco::ip::create_bluedma "dma"]
+      connect_bd_net [get_bd_pins $dma/IRQ_read] $irq_read
+      connect_bd_net [get_bd_pins $dma/IRQ_write] $irq_write
+    }
+
     set mig_ic [tapasco::ip::create_axi_ic "mig_ic" 2 1]
     set_property -dict [list \
       CONFIG.S01_HAS_DATA_FIFO {2}
@@ -202,17 +211,17 @@
 
     # AXI connections:
     # connect dual dma 32bit to mig_ic
-    connect_bd_intf_net [get_bd_intf_pins $dual_dma/M32_AXI] [get_bd_intf_pins mig_ic/S00_AXI]
+    connect_bd_intf_net [get_bd_intf_pins $dma/M32_AXI] [get_bd_intf_pins mig_ic/S00_AXI]
     # connect dual DMA 64bit to external port
-    connect_bd_intf_net [get_bd_intf_pins $dual_dma/M64_AXI] $m_axi_mem
+    connect_bd_intf_net [get_bd_intf_pins $dma/M64_AXI] $m_axi_mem
     # connect second mig_ic slave to external port
     connect_bd_intf_net $s_axi_mem [get_bd_intf_pins mig_ic/S01_AXI]
     # connect dual DMA S_AXI to external port
-    connect_bd_intf_net $s_axi_ddma [get_bd_intf_pins $dual_dma/S_AXI]
+    connect_bd_intf_net $s_axi_ddma [get_bd_intf_pins $dma/S_AXI]
 
     # connect PCIe clock and reset
-    connect_bd_net $pcie_aclk [get_bd_pins $dual_dma/m64_axi_aclk] [get_bd_pins $dual_dma/s_axi_aclk]
-    connect_bd_net $pcie_p_aresetn [get_bd_pins $dual_dma/m64_axi_aresetn] [get_bd_pins $dual_dma/s_axi_aresetn]
+    connect_bd_net $pcie_aclk [get_bd_pins $dma/m64_axi_aclk] [get_bd_pins $dma/s_axi_aclk]
+    connect_bd_net $pcie_p_aresetn [get_bd_pins $dma/m64_axi_aresetn] [get_bd_pins $dma/s_axi_aresetn]
 
     # connect DDR clock and reset
     set ddr_clk [get_bd_pins -regexp mig/(c0_ddr4_)?ui_clk]
@@ -220,12 +229,12 @@
       [get_bd_pins mig_ic/ACLK] \
       [get_bd_pins mig_ic/M00_ACLK] \
       [get_bd_pins mig_ic/S00_ACLK] \
-      [get_bd_pins $dual_dma/m32_axi_aclk]
+      [get_bd_pins $dma/m32_axi_aclk]
     connect_bd_net $ddr_ic_aresetn [get_bd_pins mig_ic/ARESETN]
     connect_bd_net $ddr_p_aresetn \
       [get_bd_pins mig_ic/M00_ARESETN] \
       [get_bd_pins mig_ic/S00_ARESETN] \
-      [get_bd_pins $dual_dma/m32_axi_aresetn] \
+      [get_bd_pins $dma/m32_axi_aresetn] \
       [get_bd_pins -regexp mig/(c0_ddr4_)?aresetn]
 
     # connect external DDR clk/rst output ports
@@ -265,13 +274,6 @@
       connect_bd_net $ddr_p_aresetn [get_bd_pins $cache/ARESETN]
     }
 
-    # connect IRQ
-     if {[tapasco::is_feature_enabled "BlueDMA"]} {
-       connect_bd_net [get_bd_pins $dual_dma/IRQ_read] $irq_read
-       connect_bd_net [get_bd_pins $dual_dma/IRQ_write] $irq_write
-     } else {
-       connect_bd_net [get_bd_pins $dual_dma/IRQ] $irq_read
-     }
   }
 
   proc create_subsystem_host {} {
