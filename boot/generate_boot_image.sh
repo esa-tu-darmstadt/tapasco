@@ -95,6 +95,11 @@ check_vivado () {
 	error_exit "Xilinx Vivado is not in PATH, please source Vivado settings."
 }
 
+check_tapasco () {
+	[[ -n $TAPASCO_HOME ]] ||
+	error_exit "TAPASCO_HOME is not set, please source setup.sh from TaPaSCo."
+}
+
 check_bootgen () {
 	which bootgen &> /dev/null ||
 	error_exit "Xilinx bootgen tool is not in PATH, please source Vivado settings."
