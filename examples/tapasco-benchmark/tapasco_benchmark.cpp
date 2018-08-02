@@ -136,8 +136,8 @@ int main(int argc, const char *argv[]) {
       }
     } else platform = getenv("TAPASCO_PLATFORM");
 
-    // measure for chunk sizes 2^10 (1KiB) - 2^31 (2GB) bytes
-    size_t max_size = 32;
+    // measure for chunk sizes 2^10 (1KiB) - 2^29 (512MB) bytes
+    size_t max_size = 29;
     if(fast) {
       max_size = 18;
     }
@@ -146,11 +146,6 @@ int main(int argc, const char *argv[]) {
       ts.speed_r  = tp(ts.chunk_sz, TransferSpeed::OP_COPYFROM);
       ts.speed_w  = tp(ts.chunk_sz, TransferSpeed::OP_COPYTO);
       ts.speed_rw = tp(ts.chunk_sz, TransferSpeed::OP_COPYFROM | TransferSpeed::OP_COPYTO);
-      /*cout << "Transfer speed @ chunk_sz = " << (ts.chunk_sz/1024) << " KiB:"
-           << " read "    << ts.speed_r  << " MiB/s"
-           << ", write: " << ts.speed_w  << " MiB/s"
-           << ", r/w: "   << ts.speed_rw << " MiB/s"
-           << endl;*/
       if (ts.speed_r > 0.0 || ts.speed_w > 0 || ts.speed_rw > 0) {
         Json json = ts.to_json();
         speed.push_back(json);
@@ -158,11 +153,10 @@ int main(int argc, const char *argv[]) {
     }
 
     // measure average job roundtrip latency for clock cycles counts
-    // between 2^0 and 2^31
+    // between 2^0 and 2^29
     for (size_t i = 0; mode & MEASURE_INTERRUPT_LATENCY && i < max_size; ++i) {
       ls.cycle_count = 1UL << i;
       ls.latency_us  = il.atcycles(ls.cycle_count, 10, &ls.min_latency_us, &ls.max_latency_us);
-      // cout << "Latency @ " << ls.cycle_count << "cc runtime: " << ls.latency_us << " us" << endl;
       Json json = ls.to_json();
       latency.push_back(json);
     }

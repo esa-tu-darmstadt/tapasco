@@ -48,8 +48,12 @@ public:
     double delta = 0.0;
     do {
       std::ios_base::fmtflags coutf( cout.flags() );
-      std::cout << "\rChunk size: " << std::dec << std::fixed << std::setw(8) << std::setprecision(0) << cs << " KiB, Mask: " << std::dec << ms.c_str()
-                << ", Precision: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << delta
+      if (cs <= 1024) {
+        std::cout << "\rChunk size: " << std::dec << std::fixed << std::setw(10) << std::setprecision(0) << cs << " KiB, Mask: ";
+      } else {
+        std::cout << "\rChunk size: " << std::dec << std::fixed << std::setw(10) << std::setprecision(0) << (cs / 1024.0) << " MiB, Mask: ";
+      }
+      std::cout << std::dec << ms.c_str() << ", Precision: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << delta
                 << ", Samples: " << std::dec << std::setw(3) << cavg.size()
                 << ", Speed: " << std::dec << std::fixed << std::setw(9) << std::setprecision(3) << cavg() << " MiB/s" << std::flush;
       cout.flags( coutf );
@@ -57,13 +61,18 @@ public:
       b = bytes.load() / (1024.0 * 1024.0);
       d = high_resolution_clock::now() - tstart;
       delta = fabs(cavg.update(b / d.count()));
-    } while (((!fast && delta > 0.1) || cavg.size() < 100 || (bytes.load() == 0)));
+    } while (((!fast && delta > 0.1) || cavg.size() < 100 || (bytes.load() <= 2 * chunk_sz)));
 
     stop = true;
     f.get();
 
     std::ios_base::fmtflags coutf( cout.flags() );
-    std::cout << "\rChunk size: " << std::dec << std::fixed << std::setw(8) << std::setprecision(0) << cs << " KiB, Mask: " << std::dec << ms.c_str()
+    if (cs <= 1024) {
+      std::cout << "\rChunk size: " << std::dec << std::fixed << std::setw(10) << std::setprecision(0) << cs << " KiB, Mask: ";
+    } else {
+      std::cout << "\rChunk size: " << std::dec << std::fixed << std::setw(10) << std::setprecision(0) << (cs / 1024.0) << " MiB, Mask: ";
+    }
+    std::cout << std::dec << ms.c_str()
               << ", Precision: " << std::dec << std::fixed << std::setw(6) << std::setprecision(2) << delta
               << ", Samples: " << std::dec << std::setw(3) << cavg.size()
               << ", Speed: " << std::dec << std::fixed << std::setw(9) << std::setprecision(3) << cavg() << " MiB/s" << std::flush;
