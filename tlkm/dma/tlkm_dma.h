@@ -11,6 +11,7 @@
 struct dma_engine;
 struct tlkm_device;
 
+typedef int (*dma_init_fun)(struct dma_engine *);
 typedef irqreturn_t (*dma_intr_handler)(int , void *);
 typedef ssize_t (*dma_copy_to_func_t)(struct dma_engine *, dev_addr_t, const void *, size_t);
 typedef ssize_t (*dma_copy_from_func_t)(struct dma_engine *, void *, dev_addr_t, size_t);
@@ -26,12 +27,8 @@ typedef void (*dma_free_buffer_func_t)(dev_id_t dev_id, struct tlkm_device *dev,
 typedef int (*dma_buffer_cpu_func_t)(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
 typedef int (*dma_buffer_dev_func_t)(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size);
 
-typedef enum {
-    DMA_USED_DUAL =                 0,
-    DMA_USED_BLUE,
-} dma_used_t;
-
 struct dma_operations {
+    dma_init_fun init;
     dma_allocate_buffer_func_t allocate_buffer;
     dma_free_buffer_func_t     free_buffer;
     dma_buffer_cpu_func_t      buffer_cpu;
@@ -52,7 +49,6 @@ struct dma_engine {
     void __iomem            *regs;
     struct mutex            regs_mutex;
     struct dma_operations       ops;
-    dma_used_t          dma_used;
     wait_queue_head_t       rq;
     struct mutex            rq_mutex;
     atomic64_t          rq_enqueued;

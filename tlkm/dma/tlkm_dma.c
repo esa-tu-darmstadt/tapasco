@@ -8,7 +8,6 @@
 #include "blue_dma.h"
 #include "pcie/pcie_device.h"
 
-#define REG_ID 						0x18
 #define DMA_SZ						0x10000
 
 typedef struct {
@@ -18,7 +17,8 @@ typedef struct {
 } chunk_data_t;
 
 static const struct dma_operations tlkm_dma_ops[] = {
-	[DMA_USED_BLUE] = {
+	{
+		.init            = blue_dma_init,
 		.intr_read	= blue_dma_intr_handler_read,
 		.intr_write	= blue_dma_intr_handler_write,
 		.copy_from	= blue_dma_copy_from,
@@ -28,17 +28,36 @@ static const struct dma_operations tlkm_dma_ops[] = {
 		.buffer_cpu      = pcie_device_dma_sync_buffer_cpu,
 		.buffer_dev      = pcie_device_dma_sync_buffer_dev,
 	},
+	{
+		.init            = 0,
+		.intr_read	= 0,
+		.intr_write	= 0,
+		.copy_from	= 0,
+		.copy_to	= 0,
+		.allocate_buffer = 0,
+		.free_buffer 	 = 0,
+		.buffer_cpu      = 0,
+		.buffer_dev      = 0,
+	}
 };
 
 int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 {
 	dev_id_t dev_id = dev->dev_id;
-	uint64_t id;
 	int i = 0;
 	int ret = 0;
 	void *base = (void *)((uintptr_t)dbase);
 	BUG_ON(! dma);
 	DEVLOG(dev_id, TLKM_LF_DMA, "initializing DMA engine @ 0x%px ...", base);
+
+	init_waitqueue_head(&dma->rq);
+	init_waitqueue_head(&dma->wq);
+	mutex_init(&dma->regs_mutex);
+	mutex_init(&dma->rq_mutex);
+	mutex_init(&dma->wq_mutex);
+	dma->dev_id = dev_id;
+	dma->base = base;
+	dma->dev = dev;
 
 	DEVLOG(dev_id, TLKM_LF_DMA, "I/O remapping 0x%px - 0x%px...", base, base + DMA_SZ - 1);
 	dma->regs = ioremap_nocache((resource_size_t)base, DMA_SZ);
@@ -49,21 +68,21 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 	}
 
 	DEVLOG(dev_id, TLKM_LF_DMA, "detecting DMA engine type ...");
-	id = *(u64 *)(dma->regs + REG_ID);
-	if ((id & 0xFFFFFFFF) == BLUE_DMA_ID) {
-		dma->dma_used = DMA_USED_BLUE;
-		DEVLOG(dev_id, TLKM_LF_DMA, "detected BlueDMA");
-		DEVLOG(dev_id, TLKM_LF_DMA, "PCIe beats per burst: %u", (uint8_t)(id >> 32));
-		DEVLOG(dev_id, TLKM_LF_DMA, "FPGA beats per burst: %u", (uint8_t)(id >> 40));
-		DEVLOG(dev_id, TLKM_LF_DMA, "smallest alignment: %u", (uint8_t)(id >> 48));
-		dma->alignment = (uint8_t)(id >> 48);
-	} else {
-		goto err_unknown_dma;
-		DEVLOG(dev_id, TLKM_LF_DMA, "unknown DMA engine");
+	while (tlkm_dma_ops[i].init != 0) {
+		int r = tlkm_dma_ops[i].init(dma);
+		if (r) {
+			dma->ops = tlkm_dma_ops[i];
+			break;
+		}
+		++i;
 	}
-	dma->ops = tlkm_dma_ops[dma->dma_used];
 
-	DEVLOG(dev_id, TLKM_LF_DMA, "allocating DMA buffers of %d x %zd bytes ...", TLKM_DMA_CHUNKS, TLKM_DMA_CHUNK_SZ);
+	if (tlkm_dma_ops[i].init == 0) {
+		DEVLOG(dev_id, TLKM_LF_DMA, "unknown DMA engine");
+		goto err_unknown_dma;
+	}
+
+	DEVLOG(dev_id, TLKM_LF_DMA, "allocating DMA buffers of 2 x %d x %zd bytes ...", TLKM_DMA_CHUNKS, TLKM_DMA_CHUNK_SZ);
 
 	for (i = 0; i < TLKM_DMA_CHUNKS; ++i) {
 		ret = dma->ops.allocate_buffer(dev->dev_id, dev, &dma->dma_buf_read[i], &dma->dma_buf_read_dev[i], FROM_DEV, TLKM_DMA_CHUNK_SZ);
@@ -83,18 +102,6 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 		}
 	}
 
-	init_waitqueue_head(&dma->rq);
-	init_waitqueue_head(&dma->wq);
-	mutex_init(&dma->regs_mutex);
-	mutex_init(&dma->rq_mutex);
-	mutex_init(&dma->wq_mutex);
-	dma->dev_id = dev_id;
-	dma->base = base;
-	dma->dev = dev;
-	atomic64_set(&dma->rq_enqueued, 0);
-	atomic64_set(&dma->rq_processed, 0);
-	atomic64_set(&dma->wq_enqueued, 0);
-	atomic64_set(&dma->wq_processed, 0);
 	DEVLOG(dev_id, TLKM_LF_DMA, "DMA engine initialized");
 	return 0;
 
