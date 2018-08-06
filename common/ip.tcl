@@ -97,6 +97,44 @@ namespace eval ::tapasco::ip {
     return $ic
   }
 
+  # Instantiates an AXI4 Smartconnect IP.
+  # @param name Name of the instance.
+  # @param no_slaves Number of AXI4 Slave interfaces.
+  # @param no_masters Number of AXI4 Master interfaces.
+  # @param no_clocks Number of different clocks used.
+  # @return bd_cell of the instance.
+  proc create_axi_sc {name no_slaves no_masters {num_clocks 1}} {
+    variable stdcomps
+    puts "Creating AXI Smartconnect $name with $no_slaves slaves, $no_masters masters and $num_clocks clocks..."
+    puts "  VLNV: [dict get $stdcomps axi_sc vlnv]"
+
+    set ic [create_bd_cell -type ip -vlnv [dict get $stdcomps axi_sc vlnv] $name]
+    set props [list CONFIG.NUM_SI $no_slaves CONFIG.NUM_MI $no_masters CONFIG.NUM_CLKS $num_clocks CONFIG.HAS_ARESETN {0}]
+    set_property -dict $props $ic
+    return $ic
+  }
+
+  proc connect_sc_default_clocks {name {main_clk "design"}} {
+    puts "Connecting AXI Smartconnect $name to the default clocks..."
+    set_property -dict [list CONFIG.NUM_CLKS {3}] $name
+
+    set clk [tapasco::subsystem::get_port $main_clk "clk"]
+    puts "Connecting clock of type $main_clk as main clock -> $clk"
+    connect_bd_net [get_bd_pins $clk] [get_bd_pins $name/aclk]
+
+    save_bd_design
+
+    set i 1
+    foreach c {host design mem} {
+      if {$c != $main_clk} {
+        set clk [tapasco::subsystem::get_port $c "clk"]
+        puts "Connecting clock of type $c -> $clk"
+        connect_bd_net [get_bd_pins $clk] [get_bd_pins $name/[format "aclk%d" $i]]
+        incr i
+      }
+    }
+  }
+
   # Instantiates a Zynq-7000 Processing System IP core.
   # @param name Name of the instance (default: ps7).
   # @param preset Name of board preset to apply (default: ::tapasco::get_board_preset).
