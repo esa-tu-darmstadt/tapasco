@@ -188,7 +188,7 @@ namespace eval arch {
   }
 
   # Instantiates the host interconnect hierarchy.
-  proc arch_create_host_interconnects {composition {no_slaves 1} {smart_connect 0}} {
+  proc arch_create_host_interconnects {composition {no_slaves 1}} {
     set no_kinds [llength [dict keys $composition]]
     set ic_s 0
 
@@ -199,11 +199,7 @@ namespace eval arch {
       set ic_s [expr "$ic_s + [llength $slaves] * $no_inst"]
     }
 
-    if {$smart_connect} {
-      set in1 [tapasco::create_smartconnect_tree "in1" $ic_s false]
-    } else {
-      set in1 [tapasco::create_interconnect_tree "in1" $ic_s false]
-    }
+    set in1 [tapasco::create_interconnect_tree "in1" $ic_s false]
 
     puts "Creating interconnects toward peripherals ..."
     puts "  $ic_s slaves to connect to host"
@@ -404,8 +400,7 @@ namespace eval arch {
     arch_check_instance_count $kernels
     set arch_mem_ics [arch_create_mem_interconnects $kernels $mgroups]
 
-    set smart_connect [tapasco::is_feature_enabled "SMART_CONNECT"]
-    set arch_host_ics [arch_create_host_interconnects $kernels 1 $smart_connect]
+    set arch_host_ics [arch_create_host_interconnects $kernels 1]
 
     # connect AXI infrastructure
     arch_connect_host $arch_host_ics $insts
