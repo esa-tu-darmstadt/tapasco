@@ -180,8 +180,10 @@
     connect_bd_net [get_bd_pins $dma/IRQ_read] $irq_read
     connect_bd_net [get_bd_pins $dma/IRQ_write] $irq_write
 
-    set mig_ic [tapasco::ip::create_axi_sc "mig_ic" 2 1]
-    tapasco::ip::connect_sc_default_clocks $mig_ic "mem"
+    set mig_ic [tapasco::ip::create_axi_ic "mig_ic" 2 1]
+    set_property -dict [list \
+      CONFIG.S01_HAS_DATA_FIFO {2}
+    ] $mig_ic
 
     # FIXME this belongs into a plugin
     set cache_en [tapasco::is_feature_enabled "Cache"]
@@ -219,13 +221,23 @@
     # connect DDR clock and reset
     set ddr_clk [get_bd_pins -regexp mig/(c0_ddr4_)?ui_clk]
     connect_bd_net [tapasco::subsystem::get_port "mem" "clk"] \
+      [get_bd_pins mig_ic/ACLK] \
+      [get_bd_pins mig_ic/M00_ACLK] \
+      [get_bd_pins mig_ic/S00_ACLK] \
       [get_bd_pins $dma/m32_axi_aclk]
+    connect_bd_net $ddr_ic_aresetn [get_bd_pins mig_ic/ARESETN]
     connect_bd_net $ddr_p_aresetn \
+      [get_bd_pins mig_ic/M00_ARESETN] \
+      [get_bd_pins mig_ic/S00_ARESETN] \
       [get_bd_pins $dma/m32_axi_aresetn] \
       [get_bd_pins -regexp mig/(c0_ddr4_)?aresetn]
 
     # connect external DDR clk/rst output ports
     connect_bd_net $ddr_clk $ddr_aclk
+
+    # connect internal design clk/rst
+    connect_bd_net $design_aclk [get_bd_pins mig_ic/S01_ACLK]
+    connect_bd_net $design_p_aresetn [get_bd_pins mig_ic/S01_ARESETN]
 
     set design_clk_wiz [tapasco::ip::create_clk_wiz design_clk_wiz]
     set_property -dict [list CONFIG.CLK_OUT1_PORT {design_clk} \
@@ -248,6 +260,7 @@
     } else {
         connect_bd_net $ddr_aresetn [get_bd_pins -regexp mig/(c0_ddr4_)?ui_clk_sync_rst]
     }
+    save_bd_design
 
     # FIXME belongs into plugin
     # connect cache clk/rst if configured
@@ -275,14 +288,12 @@
     set pcie [create_pcie_core]
 
     # FIXME are the default settings for the IC ok?
-    set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
-    tapasco::ip::connect_sc_default_clocks $out_ic "host"
+    set out_ic [tapasco::ip::create_axi_ic "out_ic" 1 4]
     connect_bd_intf_net [get_bd_intf_pins -regexp $pcie/M_AXI(_B)?] \
       [get_bd_intf_pins -of_objects $out_ic -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
 
-    set in_ic [tapasco::ip::create_axi_sc "in_ic" 2 1]
-    tapasco::ip::connect_sc_default_clocks $in_ic "host"
-
+    set in_ic [tapasco::ip::create_axi_ic "in_ic" 2 1]
+    set_property -dict [list CONFIG.ENABLE_ADVANCED_OPTIONS {1} CONFIG.S01_ARB_PRIORITY {2} CONFIG.S00_ARB_PRIORITY {1}] $in_ic
     connect_bd_intf_net [get_bd_intf_pins S_HOST] [get_bd_intf_pins $in_ic/S00_AXI]
     connect_bd_intf_net [get_bd_intf_pins S_MSIX] [get_bd_intf_pins $in_ic/S01_AXI]
     connect_bd_intf_net [get_bd_intf_pins -of_object $in_ic -filter { MODE == Master }] \
@@ -292,6 +303,26 @@
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M01_AXI}] $m_intc
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M02_AXI}] $m_tapasco
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M03_AXI}] $m_dma
+
+    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
+      [get_bd_pins $out_ic/ACLK] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == clk}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == clk}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == clk}] \
+      [get_bd_pins -of_objects $in_ic  -filter {TYPE == clk}]
+    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == clk}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == clk}]
+
+    connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
+      [get_bd_pins $out_ic/ARESETN] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == rst}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == rst}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == rst}] \
+      [get_bd_pins -of_objects $in_ic  -filter {TYPE == rst}]
+    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == rst}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == rst}]
 
     # forward PCIe clock to external ports
     connect_bd_net [get_bd_pins axi_pcie3_0/axi_aclk] $pcie_aclk
