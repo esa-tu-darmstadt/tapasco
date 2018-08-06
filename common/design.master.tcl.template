@@ -94,6 +94,9 @@ platform::create
 # event: pre-wrapper
 tapasco::call_plugins "pre-wrapper"
 
+# Save block design before generating the wrapper. Otherwise it will be difficult to debug if anything goes wrong.
+save_bd_design
+
 # create wrapper
 make_wrapper -files [get_files [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/system.bd] -top
 add_files -norecurse [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/hdl/system_wrapper.v
