@@ -222,8 +222,6 @@
         set num_mi [expr "$num_mi_old + 1"]
         set_property -dict [list CONFIG.NUM_MI $num_mi] [get_bd_cells host/out_ic]
         connect_bd_intf_net $m_si [get_bd_intf_pins host/out_ic/[format "M%02d_AXI" $num_mi_old]]
-        connect_bd_net [get_bd_pins host/host_clk] [get_bd_pins host/out_ic/[format "M%02d_ACLK" $num_mi_old]]
-        connect_bd_net [get_bd_pins host/host_peripheral_aresetn] [get_bd_pins host/out_ic/[format "M%02d_ARESETN" $num_mi_old]]
 
         current_bd_instance -quiet $inst
 
