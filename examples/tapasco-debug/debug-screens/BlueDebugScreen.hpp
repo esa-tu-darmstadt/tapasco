@@ -78,11 +78,14 @@ protected:
       platform_read_ctl(tapasco.platform_device(), base_addr, sizeof(intr.interrupts[i].vector_control), &intr.interrupts[i].vector_control, PLATFORM_CTL_FLAGS_RAW);
       base_addr += 4;
     }
+
     base_addr = 0x508000;
-    for(int i = 0; i < 1 + (total_interrupts / 64) + ((total_interrupts % 64) != 0); ++i) {
+    int pba_vecs = (total_interrupts / 64) + ((total_interrupts % 64) != 0);
+    for(int i = 0; i < pba_vecs; ++i) {
       platform_read_ctl(tapasco.platform_device(), base_addr, sizeof(intr.pba[i]), &intr.pba[i], PLATFORM_CTL_FLAGS_RAW);
       base_addr += 8;
     }
+
     base_addr = 0x508100;
     platform_read_ctl(tapasco.platform_device(), base_addr, sizeof(intr.core_id), &intr.core_id, PLATFORM_CTL_FLAGS_RAW);
     base_addr += 4;
