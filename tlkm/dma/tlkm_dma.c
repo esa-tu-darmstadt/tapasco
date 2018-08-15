@@ -62,7 +62,7 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 	DEVLOG(dev_id, TLKM_LF_DMA, "I/O remapping 0x%px - 0x%px...", base, base + DMA_SZ - 1);
 	dma->regs = ioremap_nocache((resource_size_t)base, DMA_SZ);
 	if (dma->regs == 0 || IS_ERR(dma->regs)) {
-		DEVERR(dev_id, "failed to map 0x%px - 0x%px: %ld", base, base + DMA_SZ - 1, PTR_ERR(dma->regs));
+		DEVERR(dev_id, "failed to map 0x%p - 0x%p: %lx", base, base + DMA_SZ - 1, PTR_ERR(dma->regs));
 		ret = EIO;
 		goto err_dma_ioremap;
 	}
@@ -159,7 +159,7 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr, const void
 	while (len > 0) {
 		DEVLOG(dma->dev_id, TLKM_LF_DMA, "outstanding bytes: %zd - usr_addr = 0x%px, dev_addr = 0x%px",
 		       len, usr_addr, (void *)dev_addr);
-		DEVLOG(dma->dev_id, TLKM_LF_DMA, "using buffer: %d and waiting for t_id == %ld", current_buffer, t_ids[current_buffer]);
+		DEVLOG(dma->dev_id, TLKM_LF_DMA, "using buffer: %d and waiting for t_id == %zd", current_buffer, t_ids[current_buffer]);
 		cpy_sz = len < TLKM_DMA_CHUNK_SZ ? len : TLKM_DMA_CHUNK_SZ;
 		if (wait_event_interruptible(dma->wq, atomic64_read(&dma->wq_processed) >= t_ids[current_buffer])) {
 			DEVWRN(dma->dev_id, "got killed while hanging in waiting queue");
@@ -215,7 +215,7 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr, dev_ad
 	while (len > 0) {
 		DEVLOG(dma->dev_id, TLKM_LF_DMA, "outstanding bytes: %zd - usr_addr = 0x%px, dev_addr = 0x%px",
 		       len, usr_addr, (void *)dev_addr);
-		DEVLOG(dma->dev_id, TLKM_LF_DMA, "using buffer: %d and waiting for t_id == %ld", current_buffer, chunks[current_buffer].t_id);
+		DEVLOG(dma->dev_id, TLKM_LF_DMA, "using buffer: %d and waiting for t_id == %zd", current_buffer, chunks[current_buffer].t_id);
 		if (wait_event_interruptible(dma->rq, atomic64_read(&dma->rq_processed) >= chunks[current_buffer].t_id)) {
 			DEVWRN(dma->dev_id, "got killed while hanging in waiting queue");
 			return -EACCES;
