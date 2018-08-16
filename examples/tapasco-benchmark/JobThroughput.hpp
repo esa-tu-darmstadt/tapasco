@@ -40,9 +40,8 @@ public:
     stop = false;
     vector<future<void> > threads;
     auto const t_start = high_resolution_clock::now();
-    threads.push_back(async(launch::async, [&]() { collect(); }));
     for (size_t t = 0; t < num_threads; ++t)
-      threads.push_back(async(launch::async, [&]() { run2(); }));
+      threads.push_back(async(launch::async, [&]() { run(); }));
     do {
       std::ios_base::fmtflags coutf( cout.flags() );
       std::cout << "\rNum threads: " << std::dec << std::fixed << std::setw(4) << std::setprecision(0) << num_threads
@@ -86,27 +85,6 @@ private:
       if ((res = tapasco.launch(COUNTER_ID, 1U)()) != TAPASCO_SUCCESS)
         throw Tapasco::tapasco_error(res);
       jobs++;
-    }
-  }
-
-  void run2() {
-    while (! stop) {
-      job_future *p = new job_future { tapasco.launch(COUNTER_ID, 0) };
-      gq_enqueue(q, p);
-    }
-  }
-
-  void collect(void) {
-    job_future *jf { nullptr };
-    while (! stop) {
-      tapasco_res_t res { TAPASCO_SUCCESS };
-      while ((jf = (job_future *)gq_dequeue(q))) {
-        if ((res = (*jf)()) != TAPASCO_SUCCESS) {
-          throw Tapasco::tapasco_error(res);
-        }
-        delete jf;
-        ++jobs;
-      }
     }
   }
 
