@@ -122,8 +122,6 @@ namespace eval ::tapasco::ip {
     puts "Connecting clock of type $main_clk as main clock -> $clk"
     connect_bd_net [get_bd_pins $clk] [get_bd_pins $name/aclk]
 
-    save_bd_design
-
     set i 1
     foreach c {host design mem} {
       if {$c != $main_clk} {
