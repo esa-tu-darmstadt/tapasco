@@ -276,10 +276,16 @@
 
     connect_bd_intf_net $msix_interface [get_bd_intf_pins $pcie/pcie_cfg_msix]
 
-    # FIXME are the default settings for the IC ok?
+    set bridge [create_bd_cell -type ip -vlnv esa.informatik.tu-darmstadt.de:user:PCIeBridgeToLite:1.0 "PCIeBridgeToLite"]
+    connect_bd_net [get_bd_pins axi_pcie3_0/axi_aclk] [get_bd_pins $bridge/S_AXI_ACLK]
+    connect_bd_net [get_bd_pins axi_pcie3_0/axi_aresetn] [get_bd_pins $bridge/S_AXI_ARESETN]
+
+    connect_bd_intf_net [get_bd_intf_pins -regexp $pcie/M_AXI(_B)?] \
+      [get_bd_intf_pins -of_objects $bridge -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
+
     set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
     tapasco::ip::connect_sc_default_clocks $out_ic "host"
-    connect_bd_intf_net [get_bd_intf_pins -regexp $pcie/M_AXI(_B)?] \
+    connect_bd_intf_net [get_bd_intf_pins -of_objects $bridge -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Master"] \
       [get_bd_intf_pins -of_objects $out_ic -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
 
     set in_ic [tapasco::ip::create_axi_sc "in_ic" 2 1]
