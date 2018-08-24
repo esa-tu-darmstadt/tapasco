@@ -106,7 +106,7 @@ namespace eval sfpplus {
     variable rx_ports       {"AN6" "AM8" "AL6" "AJ6"}
     variable tx_ports       {"AP4" "AN2" "AM4" "AL2"}
     variable disable_pins   {"AB41" "Y42" "AC38" "AC40"}
-    variable fault_pins     {"Y38" "AA39" "AA41" "AE38"}
+    variable fault          {"Y38" "AA39" "AA41" "AE38"}
     variable disable_pins_voltages {"LVCMOS18" "LVCMOS18" "LVCMOS18" "LVCMOS18"}
 
     variable refclk_pins    {"AH8"}
@@ -324,9 +324,8 @@ proc validate_roundrobin {config} {
 proc generate_cores {ports} {
   variable rx_ports
   variable tx_ports
-  variable refclk_pins
   variable disable_pins
-  variable fault_pins
+  variable refclk_pins
   variable disable_pins_voltages
 
   create_bd_pin -type clk -dir O sfp_clock
@@ -391,7 +390,7 @@ proc generate_cores {ports} {
     puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $tx_ports $port] txp_$port]
     puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $disable_pins $port] tx_disable_$port]
     puts $constraints_file [format {set_property IOSTANDARD %s [get_ports %s]} [lindex $disable_pins_voltages $port] tx_disable_$port]
-    #puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $fault_pins $port] tx_fault_$port]
+    #puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $tx_fault_pins $port] tx_fault_$port]
     #puts $constraints_file [format {set_property IOSTANDARD %s [get_ports %s]} [lindex $disable_pins_voltages $port] tx_fault_$port]
 
     # Local Pins (Network-Hierarchie)
@@ -728,7 +727,7 @@ proc addressmap {{args {}}} {
     if {[tapasco::is_feature_enabled "SFPPLUS"]} {
 
       set networkIPs [get_bd_cells -of [get_bd_intf_pins -filter {NAME =~ "*sfp_axis_rx*"} uArch/target_ip_*/*]]
-      puts "Meine Addressmap"
+
       set host_addr_space [get_bd_addr_space "/host/ps7/Data/"]
       set offset 0x0000000000400000
 
