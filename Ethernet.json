@@ -1,7 +1,8 @@
 { 
 	"SFP1": {
 		"PORT" : "0",
-		"mode" : "roundrobin",
+		"mode" : "broadcast",
+		"sync" : "false",
 		"kernel" : [{
 			"ID"	: "myStream",
 			"Count" : "3",
@@ -9,7 +10,29 @@
 			"interface_tx" : "axiStreamM"
 		}, {
 			"ID"	: "myStream",
-			"Count" : "2",
+			"Count" : "3",
+			"interface_rx" : "axiStreamS",
+			"interface_tx" : "axiStreamM"
+		}]
+	},
+    "SFP2": {
+		"PORT" : "1",
+		"mode" : "roundrobin",
+		"sync" : "false",
+		"kernel" : [{
+			"ID"	: "myStream",
+			"Count" : "3",
+			"interface_rx" : "axiStreamS",
+			"interface_tx" : "axiStreamM"
+		}]
+	},
+    "SFP3": {
+		"PORT" : "2",
+		"mode" : "singular",
+		"sync" : "false",
+		"kernel" : [{
+			"ID"	: "myStream",
+			"Count" : "1",
 			"interface_rx" : "axiStreamS",
 			"interface_tx" : "axiStreamM"
 		}]
