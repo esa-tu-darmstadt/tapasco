@@ -1,5 +1,4 @@
-  set vlnv_2016_4 "xilinx.com:ip:axi_10g_ethernet:3.1"
-  set vlnv_2017_2 "xilinx.com:ip:axi_10g_ethernet:3.1"
+  set vlnv_clock_program "esa.informatik.tu-darmstadt.de:user:SumeClockProgrammer:1.0"
 
   if {[tapasco::is_feature_enabled "SFPPLUS"]} {
     proc create_custom_subsystem_network {{args {}}} {
@@ -54,26 +53,31 @@
         puts $constraints_file_late {set_false_path -from [get_clocks gt_refclk_clk_p] -to [get_clocks -filter name=~*sfpmac_*gthe2_i/TXOUTCLK]}
 
         puts $constraints_file {# Main I2C Bus - 100KHz - SUME}
-        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports IIC_0_scl_io]}
-        puts $constraints_file {set_property SLEW SLOW [get_ports IIC_0_scl_io]}
-        puts $constraints_file {set_property DRIVE 16 [get_ports IIC_0_scl_io]}
-        puts $constraints_file {set_property PULLUP true [get_ports IIC_0_scl_io]}
-        puts $constraints_file {set_property PACKAGE_PIN AK24 [get_ports IIC_0_scl_io]}
+        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports SCL_0]}
+        puts $constraints_file {set_property SLEW SLOW [get_ports SCL_0]}
+        puts $constraints_file {set_property DRIVE 16 [get_ports SCL_0]}
+        puts $constraints_file {set_property PULLUP true [get_ports SCL_0]}
+        puts $constraints_file {set_property PACKAGE_PIN AK24 [get_ports SCL_0]}
 
-        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports IIC_0_sda_io]}
-        puts $constraints_file {set_property SLEW SLOW [get_ports IIC_0_sda_io]}
-        puts $constraints_file {set_property DRIVE 16 [get_ports IIC_0_sda_io]}
-        puts $constraints_file {set_property PULLUP true [get_ports IIC_0_sda_io]}
-        puts $constraints_file {set_property PACKAGE_PIN AK25 [get_ports IIC_0_sda_io]}
+        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports SDA_0]}
+        puts $constraints_file {set_property SLEW SLOW [get_ports SDA_0]}
+        puts $constraints_file {set_property DRIVE 16 [get_ports SDA_0]}
+        puts $constraints_file {set_property PULLUP true [get_ports SDA_0]}
+        puts $constraints_file {set_property PACKAGE_PIN AK25 [get_ports SDA_0]}
 
         puts $constraints_file {# i2c_reset[0] - i2c_mux reset - high active}
         puts $constraints_file {# i2c_reset[1] - si5324 reset - high active}
-        puts $constraints_file {set_property SLEW SLOW [get_ports {i2c_reset[*]}]}
-        puts $constraints_file {set_property DRIVE 16 [get_ports {i2c_reset[*]}]}
-        puts $constraints_file {set_property PACKAGE_PIN AM39 [get_ports {i2c_reset[0]}]}
-        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports {i2c_reset[0]}]}
-        puts $constraints_file {set_property PACKAGE_PIN BA29 [get_ports {i2c_reset[1]}]}
-        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports {i2c_reset[1]}]}
+        puts $constraints_file {set_property SLEW SLOW [get_ports {resetSwitch_0}]}
+        puts $constraints_file {set_property DRIVE 16 [get_ports {resetSwitch_0}]}
+        puts $constraints_file {set_property PACKAGE_PIN AM39 [get_ports {resetSwitch_0}]}
+        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports {resetSwitch_0}]}
+        puts $constraints_file {set_property SLEW SLOW [get_ports {resetClock_0}]}
+        puts $constraints_file {set_property DRIVE 16 [get_ports {resetClock_0}]}
+        puts $constraints_file {set_property PACKAGE_PIN BA29 [get_ports {resetClock_0}]}
+        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports {resetClock_0}]}
+
+        puts $constraints_file {set_property PACKAGE_PIN G13 [get_ports {led_0}]}
+        puts $constraints_file {set_property IOSTANDARD LVCMOS15 [get_ports {led_0}]}
 
         puts "Adding required external ports"
         create_bd_port -dir I gt_refclk_clk_p
@@ -86,9 +90,8 @@
         set_property -dict [list CONFIG.USE_SAFE_CLOCK_STARTUP {true} CONFIG.CLKOUT1_REQUESTED_OUT_FREQ 100 \
                           CONFIG.USE_LOCKED {false} \
                           CONFIG.USE_RESET {false}] $dclk_wiz
-        connect_bd_net [get_bd_pins host_clk] [get_bd_pins $dclk_wiz/clk_in1]
+        connect_bd_net [get_bd_pins mem_clk] [get_bd_pins $dclk_wiz/clk_in1]
         set slow_clk [get_bd_pins $dclk_wiz/clk_out1]
-
 
         for {set i 0} {$i < [llength $networkIPs]} {incr i} {
           set ip [lindex $networkIPs $i]
@@ -120,13 +123,13 @@
             connect_bd_net [get_bd_pins sfpmac_0/coreclk_out] [get_bd_pins sfpmac_${i}/coreclk]
             connect_bd_net [get_bd_pins sfpmac_0/gttxreset_out] [get_bd_pins sfpmac_${i}/gttxreset]
             connect_bd_net [get_bd_pins sfpmac_0/gtrxreset_out] [get_bd_pins sfpmac_${i}/gtrxreset]
-            connect_bd_net [get_bd_pins host_peripheral_areset] [get_bd_pins sfpmac_${i}/areset]
+            connect_bd_net [get_bd_pins mem_peripheral_areset] [get_bd_pins sfpmac_${i}/areset]
             connect_bd_net [get_bd_pins sfpmac_${i}/areset_coreclk] [get_bd_pins sfpmac_0/gttxreset_out]
           } else {
             set_property -dict [list CONFIG.base_kr {BASE-R} CONFIG.SupportLevel {1} CONFIG.autonegotiation {0} CONFIG.fec {0} CONFIG.Statistics_Gathering {0} CONFIG.Statistics_Gathering {false} CONFIG.TransceiverControl {true} CONFIG.DRP {false}] [get_bd_cells sfpmac_${i}]
             connect_bd_net [get_bd_ports /gt_refclk_clk_p] [get_bd_pins sfpmac_${i}/refclk_p]
             connect_bd_net [get_bd_ports /gt_refclk_clk_n] [get_bd_pins sfpmac_${i}/refclk_n]
-            connect_bd_net [get_bd_pins sfpmac_${i}/reset] [get_bd_pins host_peripheral_areset]
+            connect_bd_net [get_bd_pins sfpmac_${i}/reset] [get_bd_pins mem_peripheral_areset]
 
             #puts $constraints_file_late {set_false_path -from [get_clocks -of_objects [get_pins system_i/Network/sfpmac_0/coreclk_out]] -to [get_clocks -of_objects [get_pins system_i/Resets/design_aclk]]}
             #puts $constraints_file_late {set_false_path -from [get_clocks -of_objects [get_pins system_i/Resets/design_aclk]] -to [get_clocks -of_objects [get_pins system_i/Network/sfpmac_0/coreclk_out]]}
@@ -137,7 +140,6 @@
           }
 
           connect_bd_net [get_bd_pins sfpmac_${i}/dclk] $slow_clk
-
 
           disconnect_bd_net [get_bd_nets -of_objects [get_bd_pins $ip_rx_rst_n]] [get_bd_pins $ip_rx_rst_n]
           disconnect_bd_net [get_bd_nets -of_objects [get_bd_pins $ip_tx_rst_n]] [get_bd_pins $ip_tx_rst_n]
@@ -196,50 +198,37 @@
         read_xdc $constraints_fn_late
         set_property PROCESSING_ORDER LATE [get_files $constraints_fn_late]
 
-        set si5324prog [tapasco::ip::create_axi_iic "SI5324Prog"]
-        set_property -dict [list CONFIG.C_SCL_INERTIAL_DELAY {5} CONFIG.C_SDA_INERTIAL_DELAY {5} CONFIG.C_GPO_WIDTH {2}] $si5324prog
+        set si5324prog [create_bd_cell -type ip -vlnv esa.informatik.tu-darmstadt.de:user:SumeClockProgrammer:1.0 "SI5324Prog"]
 
-        create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:iic_rtl:1.0 IIC
-        connect_bd_intf_net [get_bd_intf_pin IIC] [get_bd_intf_pins $si5324prog/IIC]
+        make_bd_pins_external [get_bd_pins $si5324prog/SDA]
+        make_bd_pins_external [get_bd_pins $si5324prog/SCL]
 
-        create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_SI5324
-        connect_bd_intf_net [get_bd_intf_pin S_SI5324] [get_bd_intf_pins $si5324prog/S_AXI]
+        connect_bd_net [get_bd_pins $si5324prog/CLK] $slow_clk
 
-        connect_bd_net [get_bd_pins $si5324prog/s_axi_aclk] [get_bd_pins host_clk]
-        connect_bd_net [get_bd_pins $si5324prog/s_axi_aresetn] [get_bd_pins host_peripheral_aresetn]
+        set rst_gen [create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 "dclk_reset"]
+        connect_bd_net [get_bd_pins $rst_gen/slowest_sync_clk] $slow_clk
+        connect_bd_net [get_bd_pins mem_peripheral_areset] [get_bd_pins $rst_gen/ext_reset_in]
+        connect_bd_net [get_bd_pins $rst_gen/peripheral_aresetn] [get_bd_pins $si5324prog/RST_N]
 
-        create_bd_pin -dir O -from 1 -to 0 i2c_reset
-        connect_bd_net [get_bd_pins $si5324prog/gpo] [get_bd_pin i2c_reset]
+        make_bd_pins_external [get_bd_pins $si5324prog/resetSwitch]
+        make_bd_pins_external [get_bd_pins $si5324prog/resetClock]
+        make_bd_pins_external [get_bd_pins $si5324prog/led]
 
-        puts "Fix connections in the rest of the design"
-        set inst [current_bd_instance -quiet .]
-        current_bd_instance -quiet
-        make_bd_intf_pins_external  [get_bd_intf_pins network/IIC]
+        connect_bd_net [get_bd_pins sfpmac_0/coreclk_out] [get_bd_pins $si5324prog/CLK_gt_clk]
+        connect_bd_net [get_bd_pins $rst_inv/Res] [get_bd_pins $si5324prog/RST_N_gt_rst_n]
 
-        set m_si [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 host/M_SI5324]
+        #set ila [create_bd_cell -type ip -vlnv xilinx.com:ip:system_ila:1.1 "net_ila"]
+        #set_property -dict [list CONFIG.C_DATA_DEPTH {8192} CONFIG.C_NUM_OF_PROBES {6} CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE3_MU_CNT {2} CONFIG.C_PROBE2_MU_CNT {2} CONFIG.C_PROBE1_MU_CNT {2} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2} CONFIG.C_MON_TYPE {NATIVE}] $ila
 
-        set num_mi_old [get_property CONFIG.NUM_MI [get_bd_cells host/out_ic]]
-        set num_mi [expr "$num_mi_old + 1"]
-        set_property -dict [list CONFIG.NUM_MI $num_mi] [get_bd_cells host/out_ic]
-        connect_bd_intf_net $m_si [get_bd_intf_pins host/out_ic/[format "M%02d_AXI" $num_mi_old]]
-
-        current_bd_instance -quiet $inst
+        #connect_bd_net [get_bd_pins $ila/clk] $slow_clk
+        #connect_bd_net [get_bd_pins $ila/probe0] [get_bd_pins $si5324prog/resetSwitch]
+        #connect_bd_net [get_bd_pins $ila/probe1] [get_bd_pins $si5324prog/resetClock]
+        #connect_bd_net [get_bd_pins $ila/probe2] [get_bd_pins $si5324prog/scl_debug]
+        #connect_bd_net [get_bd_pins $ila/probe3] [get_bd_pins $si5324prog/sda_debug]
+        #connect_bd_net [get_bd_pins $ila/probe4] [get_bd_pins $si5324prog/ident]
+        #connect_bd_net [get_bd_pins $ila/probe5] [get_bd_pins $si5324prog/step]
 
         puts "SFP connections completed"
       return {}
     }
 }
-
-namespace eval sfpplus {
-  namespace export addressmap
-
-  proc addressmap {args} {
-    if {[tapasco::is_feature_enabled "SFPPLUS"]} {
-        set args [lappend args "M_SI5324" [list 0x22ff000 0 0 ""]]
-        puts $args
-    }
-    return $args
-  }
-}
-
-tapasco::register_plugin "platform::sfpplus::addressmap" "post-address-map"
