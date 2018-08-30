@@ -235,10 +235,10 @@
                         CONFIG.USE_RESET {false}] $design_clk_wiz
 
     # connect external design clk
-    connect_bd_net $pcie_p_aresetn $design_aresetn
+    connect_bd_net $ddr_p_aresetn $design_aresetn
     connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $design_clk
 
-    connect_bd_net [get_bd_pins $pcie_aclk] [get_bd_pins $design_clk_wiz/clk_in1]
+    connect_bd_net [get_bd_pins $ddr_aclk] [get_bd_pins $design_clk_wiz/clk_in1]
 
     if {[get_property CONFIG.POLARITY [get_bd_pins -regexp mig/(c0_ddr4_)?ui_clk_sync_rst]] == "ACTIVE_HIGH"} {
         set ddr_rst_inverter [tapasco::ip::create_logic_vector "ddr_rst_inverter"]
