@@ -41,8 +41,7 @@ tlkm-objs := \
 	pcie/pcie_ioctl.o \
 	dma/tlkm_dma.o \
 	dma/blue_dma.o \
-	hsa/char_device_hsa.o #\
-	#hsa/char_device_hsa_dma.o
+	hsa/char_device_hsa.o
 
 
 CPPFLAGS+=-Werror -I$(TAPASCO_HOME)/tlkm -I$(TAPASCO_HOME)/tlkm/device -I$(TAPASCO_HOME)/tlkm/tlkm -I$(TAPASCO_HOME)/tlkm/user -I$(TAPASCO_HOME)/platform/include -I$(TAPASCO_HOME)/tlkm/hsa

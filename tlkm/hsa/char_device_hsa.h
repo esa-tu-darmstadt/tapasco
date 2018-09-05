@@ -60,6 +60,8 @@
 
 #define TLKM_HSA_NAME "HSA_AQL_QUEUE"
 
+#define HSA_DUMMY_DMA_BUFFER_SIZE 4 * 1024 * 1024
+
 /******************************************************************************/
 
 /* struct array to hold data over multiple fops-calls */
@@ -80,6 +82,10 @@ struct priv_data_struct {
 
     struct cdev cdev;
     struct class *dev_class;
+
+    void* dummy_kvirt;
+    dma_addr_t dummy_dma;
+    size_t dummy_mem_size;
 };
 
 int char_hsa_register(struct tlkm_device *tlkm_dev);

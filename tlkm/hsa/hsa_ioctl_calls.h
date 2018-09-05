@@ -33,6 +33,7 @@
 struct hsa_ioctl_params {
 	void *addr;
 	int offset;
+    uint64_t data;
 };
 
 #define HSA_QUEUE_LENGTH 128
@@ -68,6 +69,12 @@ struct hsa_mmap_space {
 #define HSA_ID_3    3
 #define HSA_SIZE_3  uint8_t[sizeof(struct hsa_ioctl_params)] /*  */
 
+#define HSA_ID_4    4
+#define HSA_SIZE_4  uint8_t[sizeof(struct hsa_ioctl_params)] /*  */
+
+#define HSA_ID_5    5
+#define HSA_SIZE_5  uint8_t[sizeof(struct hsa_ioctl_params)] /*  */
+
 /******************************************************************************/
 /* definition of cmds with _IOWR wrapper function to get system-wide unique numbers */
 
@@ -76,6 +83,9 @@ struct hsa_mmap_space {
 
 #define IOCTL_CMD_HSA_DOORBELL_ASSIGN _IOR(HSA_ID_GROUP_BLOCKING, HSA_ID_2, HSA_SIZE_2)
 #define IOCTL_CMD_HSA_DOORBELL_UNASSIGN _IOR(HSA_ID_GROUP_BLOCKING, HSA_ID_3, HSA_SIZE_3)
+
+#define IOCTL_CMD_HSA_DMA_ADDR _IOR(HSA_ID_GROUP_BLOCKING, HSA_ID_4, HSA_SIZE_4)
+#define IOCTL_CMD_HSA_DMA_SIZE _IOR(HSA_ID_GROUP_BLOCKING, HSA_ID_5, HSA_SIZE_5)
 
 /******************************************************************************/
 

@@ -137,6 +137,32 @@ static void hsa_free_queue(void *p, dma_addr_t handle)
 	}
 }
 
+static int hsa_dma_alloc_mem(void** p, dma_addr_t *handle, size_t *mem_size)
+{
+	int err = 0;
+
+	for (*mem_size = HSA_DUMMY_DMA_BUFFER_SIZE; *mem_size > 0; *mem_size = *mem_size / 2) {
+		*p = dma_alloc_coherent(extractDevice(dev.dev), *mem_size, handle, GFP_KERNEL | __GFP_HIGHMEM);
+		if (*p == 0) {
+			DEVLOG(dev.dev->dev_id, TLKM_LF_HSA, "Couldn't allocate %lu bytes coherent memory for the HSA Queue", *mem_size);
+		} else {
+			DEVLOG(dev.dev->dev_id, TLKM_LF_HSA, "Got %lu bytes dma memory at dma address %llx and kvirt address %llx", *mem_size, *handle, (uint64_t) *p);
+			break;
+		}
+	}
+	if (*mem_size == 0)
+		err = -1;
+
+	return err;
+}
+
+static void hsa_dma_free_mem(void *p, dma_addr_t handle, size_t mem_size)
+{
+	if (p != 0) {
+		dma_free_coherent(extractDevice(dev.dev), mem_size, p, handle);
+	}
+}
+
 static int hsa_initialize(void) {
 	int i;
 
@@ -183,6 +209,11 @@ static int hsa_initialize(void) {
 		goto signal_find_failed;
 	}
 
+	if (hsa_dma_alloc_mem((void**)&dev.dummy_kvirt, &dev.dummy_dma, &dev.dummy_mem_size)) {
+		DEVERR(dev.dev->dev_id, "Failed to allocate dummy memory.");
+		goto hsa_dma_mem_failed;
+	}
+
 	// Invalidate all packages in the queue
 	for (i = 0; i < HSA_QUEUE_LENGTH; ++i) {
 		dev.kvirt_shared_mem->queue[i][0] = 1;
@@ -193,6 +224,9 @@ static int hsa_initialize(void) {
 
 	return 0;
 
+hsa_dma_mem_failed:
+	hsa_free_queue(dev.kvirt_shared_mem, dev.dma_shared_mem);
+	dev.kvirt_shared_mem = 0;
 signal_find_failed:
 	iounmap(dev.signal_base);
 	dev.signal_base = 0;
@@ -205,12 +239,15 @@ arbiter_map_failed:
 
 static void hsa_deinit(void) {
 	DEVLOG(dev.dev->dev_id, TLKM_LF_HSA, "Device not used anymore, removing it.");
-	if(dev.dev != NULL) {
-		disable_queue_fetcher();
-		hsa_free_queue(dev.kvirt_shared_mem, dev.dma_shared_mem);
-		iounmap(dev.signal_base);
-		iounmap(dev.arbiter_base);
-	}
+	disable_queue_fetcher();
+	hsa_free_queue(dev.kvirt_shared_mem, dev.dma_shared_mem);
+	dev.kvirt_shared_mem = 0;
+	hsa_dma_free_mem(dev.dummy_kvirt, dev.dummy_dma, dev.dummy_mem_size);
+	dev.dummy_kvirt = 0;
+	iounmap(dev.signal_base);
+	dev.signal_base = 0;
+	iounmap(dev.arbiter_base);
+	dev.arbiter_base = 0;
 }
 
 /******************************************************************************/
@@ -323,6 +360,12 @@ static long hsa_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long i
 		DEVLOG(dev.dev->dev_id, TLKM_LF_HSA,  "Unassign doorbell");
 		unassign_doorbell();
 		break;
+	case IOCTL_CMD_HSA_DMA_ADDR:
+		params.data = (uint64_t)p->dummy_dma;
+		break;
+	case IOCTL_CMD_HSA_DMA_SIZE:
+		params.data = (uint64_t)p->dummy_mem_size;
+		break;
 	}
 
 err_handler:
@@ -335,7 +378,15 @@ static int hsa_mmap(struct file *filp, struct vm_area_struct *vma)
 {
 	if (dev.kvirt_shared_mem == 0)
 		return -EAGAIN;
-	return dma_mmap_coherent(extractDevice(dev.dev), vma, dev.kvirt_shared_mem, dev.dma_shared_mem, vma->vm_end - vma->vm_start);
+	if (vma->vm_pgoff == 0) {
+		DEVLOG(dev.dev->dev_id, TLKM_LF_HSA,  "MMapping queue memory to user space");
+		return dma_mmap_coherent(extractDevice(dev.dev), vma, dev.kvirt_shared_mem, dev.dma_shared_mem, vma->vm_end - vma->vm_start);
+	} else if (vma->vm_pgoff == 1) {
+		DEVLOG(dev.dev->dev_id, TLKM_LF_HSA,  "MMapping dummy memory to user space");
+		return dma_mmap_coherent(extractDevice(dev.dev), vma, dev.dummy_kvirt, dev.dummy_dma, vma->vm_end - vma->vm_start);
+	} else {
+		return 0;
+	}
 }
 
 /******************************************************************************/
@@ -362,27 +413,30 @@ int char_hsa_register(struct tlkm_device *tlkm_dev)
 	}
 
 	dev.dev_class = class_create(THIS_MODULE, TLKM_HSA_NAME);
-	if(dev.dev_class == NULL) {
+	if (dev.dev_class == NULL) {
+		DEVERR(dev.dev->dev_id, "Failed to create device class");
 		goto class_failed;
 	}
 
-	if(device_create(dev.dev_class, NULL, MKDEV(TLKM_HSA_MAJOR, 0), NULL, TLKM_HSA_NAME)) {
+	if (device_create(dev.dev_class, NULL, MKDEV(TLKM_HSA_MAJOR, 0), NULL, TLKM_HSA_NAME"_0") == NULL) {
+		DEVERR(dev.dev->dev_id, "Failed to create device");
 		goto device_create_failed;
 	}
 
 	/* initialize char dev with fops to prepare for adding */
 	cdev_init(&dev.cdev, &hsa_fops);
-	if(cdev_add(&dev.cdev, MKDEV(TLKM_HSA_MAJOR, 0), 1) == -1) {
+	if (cdev_add(&dev.cdev, MKDEV(TLKM_HSA_MAJOR, 0), 1) == -1) {
+		DEVERR(dev.dev->dev_id, "Failed to add chardev");
 		goto cdev_add_failed;
 	}
 
 	if (hsa_initialize() != 0)
-		goto error_device_create;
+		DEVERR(dev.dev->dev_id, "Failed to initialize HSA queue/HSA infrastructure not available.");
+	goto error_device_create;
 
 	return 0;
 
 error_device_create:
-	DEVERR(dev.dev->dev_id, "Failed to initialize HSA queue/HSA infrastructure not available.");
 	cdev_del(&dev.cdev);
 cdev_add_failed:
 	device_destroy(dev.dev_class, MKDEV(TLKM_HSA_MAJOR, 0));
@@ -402,11 +456,14 @@ error_no_device:
  * */
 void char_hsa_unregister(void)
 {
-	hsa_deinit();
+	if (dev.dev) {
+		hsa_deinit();
 
-	cdev_del(&dev.cdev);
-
-	unregister_chrdev_region(MKDEV(TLKM_HSA_MAJOR, 0), 1);
+		cdev_del(&dev.cdev);
+		device_destroy(dev.dev_class, MKDEV(TLKM_HSA_MAJOR, 0));
+		class_destroy(dev.dev_class);
+		unregister_chrdev_region(MKDEV(TLKM_HSA_MAJOR, 0), 1);
+	}
 }
 
 /******************************************************************************/
