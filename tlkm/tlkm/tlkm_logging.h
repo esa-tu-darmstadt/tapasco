@@ -43,7 +43,8 @@
 	_LF(PCIE      , (1 << 11)) \
 	_LF(DMA       , (1 << 12)) \
 	_LF(STATUS    , (1 << 13)) \
-	_LF(PLATFORM  , (1 << 14))
+	_LF(PLATFORM  , (1 << 14)) \
+	_LF(HSA       , (1 << 15))
 
 typedef enum {
 #define _LF(name, level) TLKM_LF_##name = level,
