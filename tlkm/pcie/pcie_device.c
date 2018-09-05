@@ -11,6 +11,7 @@
 #include "tlkm_logging.h"
 #include "tlkm_device.h"
 #include "tlkm_bus.h"
+#include "char_device_hsa.h"
 
 #define TLKM_DEV_ID(pdev) \
 	(((struct tlkm_pcie_device *)dev_get_drvdata(&(pdev)->dev))->parent->dev_id)
@@ -258,8 +259,18 @@ int pcie_device_init_subsystems(struct tlkm_device *dev, void *data)
 	DEVLOG(dev->dev_id, TLKM_LF_PCIE, "claiming MSI-X interrupts ...");
 	if ((ret = claim_msi(pdev))) {
 		DEVERR(dev->dev_id, "failed to claim MSI-X interrupts: %d", ret);
+		goto pcie_subsystem_err;
 	}
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "initializing HSA subsystems");
+	if((ret = char_hsa_register(dev))) {
+		DEVERR(dev->dev_id, "failed to initialize HSA subsystem: %d", ret);
+		goto pcie_subsystem_err;
+	}
+
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "successfully initialized subsystems");
+
+	return 0;
+pcie_subsystem_err:
 	return ret;
 }
 
@@ -267,6 +278,7 @@ void pcie_device_exit_subsystems(struct tlkm_device *dev)
 {
 	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
 	release_msi(pdev);
+	char_hsa_unregister();
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "exited subsystems");
 }
 
