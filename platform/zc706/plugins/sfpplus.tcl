@@ -1,4 +1,4 @@
-
+if {[tapasco::is_feature_enabled "SFPPLUS"]} {
 proc create_custom_subsystem_network {{args {}}} {
 
   variable data [tapasco::get_feature "SFPPLUS"]
@@ -21,7 +21,7 @@ proc create_custom_subsystem_network {{args {}}} {
   current_bd_instance /network
 }
 
-if {false} {
+if {[tapasco::get_board_preset] == "VC709"} {
   proc create_custom_subsystem_si5324 { } {
 
     #puts $constraints_file {# Main I2C Bus - 100KHz - SUME}
@@ -89,8 +89,7 @@ if {false} {
     connect_bd_net [get_bd_ports /i2c_reset] [get_bd_pins SI5324Prog_0/gpo]
   }
 }
-
-
+}
 
 namespace eval sfpplus {
   if {[tapasco::get_board_preset] == "ZC706"} {
@@ -108,43 +107,8 @@ namespace eval sfpplus {
     variable disable_pins   {"AB41" "Y42" "AC38" "AC40"}
     variable fault_pins     {"Y38" "AA39" "AA41" "AE38"}
     variable disable_pins_voltages {"LVCMOS18" "LVCMOS18" "LVCMOS18" "LVCMOS18"}
-
     variable refclk_pins    {"AH8"}
-
   }
-
-  #zc706
-  ##Y5 rxn
-  ##Y6 rxp
-  ##W4 txp
-  ##W3 txn
-  ##AA18 tx_disable
-  ##LVCMOS25 tx_disable
-  ##AC8 refclk_p
-
-  ###vc709
-  ##tx*
-  #AP4 AP3
-  #AN2 AN1
-  #AM4 AM3
-  #AL2 AL1
-  ##rx*
-  #AN6 AN5
-  #AM8 AM7
-  #AL6 AL5
-  #AJ6 AJ5
-  ##refclk_*
-  #AH8 AH7
-  ##tx_disable
-  #AB41
-  #Y42
-  #AC38
-  #AC40
-  ##tx_fault
-  #Y38
-  #AA39
-  #AA41
-  #AE38
 
 proc find_ID {input} {
     variable composition
@@ -256,7 +220,7 @@ proc validate_singular {config} {
       puts "Only one Kernel allowed in Singular mode"
       exit
     }
-  }
+}
 
   # validate Port for broadcast mode
 proc validate_broadcast {config} {
@@ -329,12 +293,17 @@ proc generate_cores {ports} {
   variable fault_pins
   variable disable_pins_voltages
 
+  set constraints_fn "[get_property DIRECTORY [current_project]]/sfpplus.xdc"
+  set constraints_file [open $constraints_fn w+]
+
   create_bd_pin -type clk -dir O sfp_clock
   create_bd_pin -type rst -dir O sfp_resetn
   create_bd_pin -type rst -dir O sfp_reset
 
+  #Setup CLK-Ports for Ethernet-Subsystem
   create_bd_port -dir I refclk_n
   create_bd_port -dir I refclk_p
+  puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $refclk_pins 0]  refclk_p]
   # AXI Interconnect for Configuration
   create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 AXI_Config
   set_property CONFIG.NUM_SI 1 [get_bd_cells AXI_Config]
@@ -357,40 +326,21 @@ proc generate_cores {ports} {
   connect_bd_net [get_bd_pins AXI_Config/ACLK] [get_bd_pins design_clk]
   connect_bd_net [get_bd_pins AXI_Config/ARESETN] [get_bd_pins design_interconnect_aresetn]
 
-  set constraints_fn "[get_property DIRECTORY [current_project]]/sfpplus.xdc"
-  set constraints_file [open $constraints_fn w+]
-  puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $refclk_pins 0]  refclk_p]
-
- #-------------------------------------------------------------------------------------
- #set constraints_fn_late "[get_property DIRECTORY [current_project]]/sfpplus_late.xdc"
- #set constraints_file_late [open $constraints_fn_late w+]
-
- #puts $constraints_file_late {set_false_path -from [get_clocks -filter name=~*sfpmac_*gthe2_i/RXOUTCLK] -to [get_clocks gt_refclk_clk_p]}
- #puts $constraints_file_late {set_false_path -from [get_clocks gt_refclk_clk_p] -to [get_clocks -filter name=~*sfpmac_*gthe2_i/RXOUTCLK]}
-
- #puts $constraints_file_late {set_false_path -from [get_clocks -filter name=~*sfpmac_*gthe2_i/TXOUTCLK] -to [get_clocks gt_refclk_clk_p]}
- #puts $constraints_file_late {set_false_path -from [get_clocks gt_refclk_clk_p] -to [get_clocks -filter name=~*sfpmac_*gthe2_i/TXOUTCLK]}
-
- #close $constraints_file_late
- #read_xdc $constraints_fn_late
- #set_property PROCESSING_ORDER LATE [get_files $constraints_fn_late]
-
-
   for {set i 0} {$i < [llength $ports]} {incr i} {
     variable port [lindex $ports $i]
     # Global Ports to Physical
+    puts $constraints_file [format {# SFP-Port %d} $port]
     create_bd_port -dir O txp_$port
     create_bd_port -dir O txn_$port
-    create_bd_port -dir O tx_disable_$port
-    create_bd_port -dir I rxp_$port
-    create_bd_port -dir I rxn_$port
-    #create_bd_port -dir I signal_detect_$port
-    #create_bd_port -dir I tx_fault_$port
-    puts $constraints_file [format {# SFP-Port %d} $port]
-    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $rx_ports $port] rxp_$port]
     puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $tx_ports $port] txp_$port]
+    create_bd_port -dir O tx_disable_$port
     puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $disable_pins $port] tx_disable_$port]
     puts $constraints_file [format {set_property IOSTANDARD %s [get_ports %s]} [lindex $disable_pins_voltages $port] tx_disable_$port]
+    create_bd_port -dir I rxp_$port
+    create_bd_port -dir I rxn_$port
+    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $rx_ports $port] rxp_$port]
+    #create_bd_port -dir I signal_detect_$port
+    #create_bd_port -dir I tx_fault_$port
     #puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $fault_pins $port] tx_fault_$port]
     #puts $constraints_file [format {set_property IOSTANDARD %s [get_ports %s]} [lindex $disable_pins_voltages $port] tx_fault_$port]
 
@@ -535,26 +485,17 @@ proc generate_port {input} {
     connect_bd_intf_net [get_bd_intf_pins /arch/AXIS_RX_$PORT] [get_bd_intf_pins AXIS_RX]
     # Create Port infrastructure depending on mode
     switch $mode {
-      singular   { generate_singular [lindex $kernel 0] $PORT $sync }
+      singular   {
+        generate_singular [lindex $kernel 0] $PORT $sync
+      }
       broadcast  {
         generate_broadcast $kernelc $sync
-        connect_PEs $kernel $PORT
+        connect_PEs $kernel $PORT $sync
       }
       roundrobin {
         generate_roundrobin $kernelc $sync
-        connect_PEs $kernel $PORT
+        connect_PEs $kernel $PORT $sync
       }
-    }
-    # Rewire clk and rst connections to syncronize the design to the clk of the Ethernet System
-    if {$sync} {
-      disconnect_bd_net [get_bd_nets -of_objects [get_bd_pins design_clk]]                  [get_bd_pins design_clk]
-      disconnect_bd_net [get_bd_nets -of_objects [get_bd_pins design_peripheral_areset]]    [get_bd_pins design_peripheral_areset]
-      disconnect_bd_net [get_bd_nets -of_objects [get_bd_pins design_peripheral_aresetn]]   [get_bd_pins design_peripheral_aresetn]
-      disconnect_bd_net [get_bd_nets -of_objects [get_bd_pins design_interconnect_aresetn]] [get_bd_pins design_interconnect_aresetn]
-      connect_bd_net [get_bd_pins design_clk]                  [get_bd_pins /arch/sfp_clock]
-      connect_bd_net [get_bd_pins design_peripheral_aresetn]   [get_bd_pins /arch/sfp_resetn]
-      connect_bd_net [get_bd_pins design_peripheral_areset]    [get_bd_pins /arch/sfp_reset]
-      connect_bd_net [get_bd_pins design_interconnect_aresetn] [get_bd_pins /arch/sfp_resetn]
     }
     current_bd_instance $ret
   }
@@ -571,13 +512,15 @@ proc generate_broadcast {kernelc sync} {
           set_property CONFIG.M[format "%02d" $i]_TDATA_REMAP tdata[63:0]  [get_bd_cells reciever]
       }
 
-
-      connect_bd_net [get_bd_pins design_clk] [get_bd_pins reciever/aclk]
-      connect_bd_net [get_bd_pins design_interconnect_aresetn] [get_bd_pins reciever/aresetn]
   # If not Syncronized insert Interconnect to Sync the Clocks
       if {$sync} {
         connect_bd_intf_net [get_bd_intf_pins reciever/S_AXIS] [get_bd_intf_pins AXIS_RX]
+        connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins reciever/aclk]
+        connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins reciever/aresetn]
       } else {
+        connect_bd_net [get_bd_pins design_clk] [get_bd_pins reciever/aclk]
+        connect_bd_net [get_bd_pins design_interconnect_aresetn] [get_bd_pins reciever/aresetn]
+
         create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 reciever_sync
         set_property -dict [list CONFIG.NUM_MI {1} CONFIG.NUM_SI {1} CONFIG.S00_FIFO_DEPTH {2048} CONFIG.M00_FIFO_DEPTH {2048} CONFIG.S00_FIFO_MODE {1} CONFIG.M00_FIFO_MODE {1} ] [get_bd_cells reciever_sync]
         connect_bd_net [get_bd_pins sfp_clock]  [get_bd_pins reciever_sync/ACLK]
@@ -604,14 +547,20 @@ proc generate_broadcast {kernelc sync} {
       }
 
       connect_bd_intf_net [get_bd_intf_pins transmitter/M*_AXIS] [get_bd_intf_pins AXIS_TX]
-      connect_bd_net [get_bd_pins design_clk] [get_bd_pins transmitter/ACLK]
-      connect_bd_net [get_bd_pins design_interconnect_aresetn] [get_bd_pins transmitter/ARESETN]
-
       connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins transmitter/M*_ACLK]
       connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins transmitter/M*_ARESETN]
 
-      connect_bd_net [get_bd_pins design_clk] [get_bd_pins transmitter/S*_ACLK]
-      connect_bd_net [get_bd_pins design_peripheral_aresetn] [get_bd_pins transmitter/S*_ARESETN]
+      if {$sync} {
+        connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins transmitter/ACLK]
+        connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins transmitter/ARESETN]
+        connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins transmitter/S*_ACLK]
+        connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins transmitter/S*_ARESETN]
+      } else {
+        connect_bd_net [get_bd_pins design_clk] [get_bd_pins transmitter/ACLK]
+        connect_bd_net [get_bd_pins design_interconnect_aresetn] [get_bd_pins transmitter/ARESETN]
+        connect_bd_net [get_bd_pins design_clk] [get_bd_pins transmitter/S*_ACLK]
+        connect_bd_net [get_bd_pins design_peripheral_aresetn] [get_bd_pins transmitter/S*_ARESETN]
+      }
 }
 
 # Create A Roundrobin-Config
@@ -628,10 +577,17 @@ proc generate_roundrobin {kernelc sync} {
 
   connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins reciever/ACLK]
   connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins reciever/ARESETN]
+
   connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins reciever/S*_ACLK]
   connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins reciever/S*_ARESETN]
-  connect_bd_net [get_bd_pins design_clk] [get_bd_pins reciever/M*_ACLK]
-  connect_bd_net [get_bd_pins design_peripheral_aresetn] [get_bd_pins reciever/M*_ARESETN]
+
+  if {$sync} {
+    connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins reciever/M*_ACLK]
+    connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins reciever/M*_ARESETN]
+  } else {
+    connect_bd_net [get_bd_pins design_clk] [get_bd_pins reciever/M*_ACLK]
+    connect_bd_net [get_bd_pins design_peripheral_aresetn] [get_bd_pins reciever/M*_ARESETN]
+  }
 
   tapasco::ip::create_axis_arbiter "arbiter"
   create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 roundrobin_turnover
@@ -656,13 +612,20 @@ proc generate_roundrobin {kernelc sync} {
     set_property CONFIG.[format "S%02d" $i]_FIFO_MODE 1 [get_bd_cells transmitter]
   }
 
-  connect_bd_intf_net [get_bd_intf_pins transmitter/M*_AXIS] [get_bd_intf_pins AXIS_TX]
   connect_bd_net [get_bd_pins design_clk] [get_bd_pins transmitter/ACLK]
   connect_bd_net [get_bd_pins design_interconnect_aresetn] [get_bd_pins transmitter/ARESETN]
+
+  connect_bd_intf_net [get_bd_intf_pins transmitter/M*_AXIS] [get_bd_intf_pins AXIS_TX]
   connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins transmitter/M*_ACLK]
   connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins transmitter/M*_ARESETN]
-  connect_bd_net [get_bd_pins design_clk] [get_bd_pins transmitter/S*_ACLK]
-  connect_bd_net [get_bd_pins design_peripheral_aresetn] [get_bd_pins transmitter/S*_ARESETN]
+
+  if {$sync} {
+    connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins transmitter/S*_ACLK]
+    connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins transmitter/S*_ARESETN]
+  } else {
+    connect_bd_net [get_bd_pins design_clk] [get_bd_pins transmitter/S*_ACLK]
+    connect_bd_net [get_bd_pins design_peripheral_aresetn] [get_bd_pins transmitter/S*_ARESETN]
+  }
 }
 
 # Create A Solo-Config
@@ -677,6 +640,33 @@ proc generate_singular {kernel PORT sync} {
       connect_bd_intf_net [get_bd_intf_pins AXIS_RX] [get_bd_intf_pins [lindex $pes 0]/$interface_rx]
       puts "Connecting [get_bd_intf_pins AXIS_TX] to [get_bd_intf_pins [lindex $pes 0]/$interface_tx]"
       connect_bd_intf_net [get_bd_intf_pins AXIS_TX] [get_bd_intf_pins [lindex $pes 0]/$interface_tx]
+
+      variable clks [get_bd_pins -of_objects [lindex $pes 0] -filter {type == clk}]
+      if {[llength $clks] > 1} {
+        foreach clk $clks {
+          variable interfaces [get_property CONFIG.ASSOCIATED_BUSIF $clk]
+          if {[regexp $interface_rx $interfaces]} {
+            connect_bd_net [get_bd_pins sfp_clock] $clk
+            } elseif {[regexp $interface_tx $interfaces]} {
+              connect_bd_net [get_bd_pins sfp_clock] $clk
+            }
+          }
+      } else {
+        variable axi [find_AXI_Connection [lindex $pes 0]]
+        variable axiclk [get_bd_pins ${axi}_ACLK]
+        variable axireset [get_bd_pins ${axi}_ARESETN]
+
+        disconnect_bd_net [get_bd_nets -of_objects $axiclk]    $axiclk
+        disconnect_bd_net [get_bd_nets -of_objects $axireset]  $axireset
+        connect_bd_net [get_bd_pins /arch/sfp_clock] $axiclk
+        connect_bd_net [get_bd_pins /arch/sfp_resetn] $axireset
+
+        variable rst [get_bd_pins [lindex $pes 0]/[get_property CONFIG.ASSOCIATED_RESET $clks]]
+        disconnect_bd_net [get_bd_nets -of_objects $clks]  $clks
+        connect_bd_net [get_bd_pins /arch/sfp_clock] $clks
+        disconnect_bd_net [get_bd_nets -of_objects $rst]  $rst
+        connect_bd_net [get_bd_pins /arch/sfp_resetn] $rst
+      }
     } else {
       create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 reciever_sync
       set_property -dict [list CONFIG.NUM_MI {1} CONFIG.NUM_SI {1} CONFIG.S00_FIFO_DEPTH {2048} CONFIG.M00_FIFO_DEPTH {2048} CONFIG.S00_FIFO_MODE {1} CONFIG.M00_FIFO_MODE {1} ] [get_bd_cells reciever_sync]
@@ -706,7 +696,7 @@ proc generate_singular {kernel PORT sync} {
 }
 
 # Group PEs and Connect them to transmitter and reciever
-proc connect_PEs {kernels PORT} {
+proc connect_PEs {kernels PORT sync} {
   variable counter 0
   foreach kernel $kernels {
     dict with kernel {
@@ -714,15 +704,73 @@ proc connect_PEs {kernels PORT} {
       variable pes [lrange [get_bd_cells /arch/target_ip_[format %02d $kern]_*] 0 $Count-1]
       move_bd_cells [get_bd_cells Port_$PORT] $pes
       for {variable i 0} {$i < $Count} {incr i} {
+        puts "Using PE [lindex $pes $i] for Port $PORT"
         puts "Connecting [get_bd_intf_pins reciever/M[format %02d $counter]_AXIS] to [get_bd_intf_pins [lindex $pes $i]/$interface_rx]"
-        puts "Connecting [get_bd_intf_pins transmitter/S[format %02d $counter]_AXIS] to [get_bd_intf_pins [lindex $pes $i]/$interface_tx]"
         connect_bd_intf_net [get_bd_intf_pins reciever/M[format %02d $counter]_AXIS] [get_bd_intf_pins [lindex $pes $i]/$interface_rx]
+        puts "Connecting [get_bd_intf_pins transmitter/S[format %02d $counter]_AXIS] to [get_bd_intf_pins [lindex $pes $i]/$interface_tx]"
         connect_bd_intf_net [get_bd_intf_pins transmitter/S[format %02d $counter]_AXIS] [get_bd_intf_pins [lindex $pes $i]/$interface_tx]
+
+        if {$sync} {
+          variable clks [get_bd_pins -of_objects [lindex $pes $i] -filter {type == clk}]
+          if {[llength $clks] > 1} {
+            foreach clk $clks {
+              variable interfaces [get_property CONFIG.ASSOCIATED_BUSIF $clk]
+              if {[regexp $interface_rx $interfaces]} {
+                puts "Connecting $clk to SFP-Clock  for $interface_rx"
+                disconnect_bd_net -quiet [get_bd_nets -of_objects $clk] $clk
+                connect_bd_net -quiet [get_bd_pins sfp_clock] $clk
+                variable reset [get_bd_pins [lindex $pes $i]/[get_property CONFIG.ASSOCIATED_RESET $clk]]
+                disconnect_bd_net -quiet [get_bd_nets -of_objects $reset] $reset
+                connect_bd_net -quiet [get_bd_pins sfp_resetn] $reset
+              } elseif {[regexp $interface_tx $interfaces]} {
+                puts "Connecting $clk to SFP-Clock for $interface_tx"
+                disconnect_bd_net -quiet [get_bd_nets -of_objects $clk] $clk
+                connect_bd_net -quiet [get_bd_pins sfp_clock] $clk
+                variable reset [get_bd_pins [lindex $pes $i]/[get_property CONFIG.ASSOCIATED_RESET $clk]]
+                disconnect_bd_net -quiet [get_bd_nets -of_objects $reset] $reset
+                connect_bd_net -quiet [get_bd_pins sfp_resetn] $reset
+              }
+            }
+          } else {
+            #Only one Clock-present
+            variable axi [find_AXI_Connection [lindex $pes $i]]
+            variable axiclk [get_bd_pins ${axi}_ACLK]
+            variable axireset [get_bd_pins ${axi}_ARESETN]
+
+            disconnect_bd_net [get_bd_nets -of_objects $axiclk]    $axiclk
+            disconnect_bd_net [get_bd_nets -of_objects $axireset]  $axireset
+            connect_bd_net [get_bd_pins /arch/sfp_clock] $axiclk
+            connect_bd_net [get_bd_pins /arch/sfp_resetn] $axireset
+
+            variable rst [get_bd_pins [lindex $pes $i]/[get_property CONFIG.ASSOCIATED_RESET $clks]]
+            disconnect_bd_net [get_bd_nets -of_objects $clks]  $clks
+            connect_bd_net [get_bd_pins /arch/sfp_clock] $clks
+            disconnect_bd_net [get_bd_nets -of_objects $rst]  $rst
+            connect_bd_net [get_bd_pins /arch/sfp_resetn] $rst
+          }
+        }
         variable counter [expr {$counter+1}]
       }
     }
   }
 }
+
+#Find the Masterinterface for a given Slaveinterface
+proc find_AXI_Connection {input} {
+  variable pin [get_bd_intf_pins -of_objects $input -filter {vlnv == xilinx.com:interface:aximm_rtl:1.0}]
+  variable net ""
+  while {![regexp "(.*M[0-9][0-9])_AXI" $pin -> port]} {
+    variable nets [get_bd_intf_nets -boundary_type both -of_objects $pin]
+    variable id [lsearch $nets $net]
+    variable net [lreplace $nets $id $id]
+
+    variable pins [get_bd_intf_pins -of_objects $net]
+    variable id [lsearch $pins $pin]
+    variable pin [lreplace $pins $id $id]
+  }
+  return $port
+}
+
 
 proc addressmap {{args {}}} {
     if {[tapasco::is_feature_enabled "SFPPLUS"]} {
