@@ -2228,7 +2228,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>4ebd9974</spirit:value>
+            <spirit:value>99fdc8e3</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -2244,7 +2244,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>a2d57502</spirit:value>
+            <spirit:value>76a934cc</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -4497,7 +4497,7 @@
           </spirit:vector>
           <spirit:wireTypeDefs>
             <spirit:wireTypeDef>
-              <spirit:typeName>reg</spirit:typeName>
+              <spirit:typeName>wire</spirit:typeName>
               <spirit:viewNameRef>xilinx_anylanguagesynthesis</spirit:viewNameRef>
               <spirit:viewNameRef>xilinx_anylanguagebehavioralsimulation</spirit:viewNameRef>
             </spirit:wireTypeDef>
@@ -4818,7 +4818,7 @@
           </spirit:vector>
           <spirit:wireTypeDefs>
             <spirit:wireTypeDef>
-              <spirit:typeName>reg</spirit:typeName>
+              <spirit:typeName>wire</spirit:typeName>
               <spirit:viewNameRef>xilinx_anylanguagesynthesis</spirit:viewNameRef>
               <spirit:viewNameRef>xilinx_anylanguagebehavioralsimulation</spirit:viewNameRef>
             </spirit:wireTypeDef>
@@ -5192,7 +5192,7 @@
           </spirit:vector>
           <spirit:wireTypeDefs>
             <spirit:wireTypeDef>
-              <spirit:typeName>reg</spirit:typeName>
+              <spirit:typeName>wire</spirit:typeName>
               <spirit:viewNameRef>xilinx_anylanguagesynthesis</spirit:viewNameRef>
               <spirit:viewNameRef>xilinx_anylanguagebehavioralsimulation</spirit:viewNameRef>
             </spirit:wireTypeDef>
@@ -5513,7 +5513,7 @@
           </spirit:vector>
           <spirit:wireTypeDefs>
             <spirit:wireTypeDef>
-              <spirit:typeName>reg</spirit:typeName>
+              <spirit:typeName>wire</spirit:typeName>
               <spirit:viewNameRef>xilinx_anylanguagesynthesis</spirit:viewNameRef>
               <spirit:viewNameRef>xilinx_anylanguagebehavioralsimulation</spirit:viewNameRef>
             </spirit:wireTypeDef>
@@ -6071,13 +6071,9 @@
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>src/mkBlueDMA.v</spirit:name>
-        <spirit:fileType>verilogSource</spirit:fileType>
-      </spirit:file>
-      <spirit:file>
         <spirit:name>src/mkHSAWrapper.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_402036c3</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_bc511c6d</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>constraints/bluedma.xdc</spirit:name>
@@ -6120,10 +6116,6 @@
       </spirit:file>
       <spirit:file>
         <spirit:name>src/mkAQLQueueFetcher.v</spirit:name>
-        <spirit:fileType>verilogSource</spirit:fileType>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/mkBlueDMA.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
@@ -6185,7 +6177,7 @@
       <xilinx:displayName>HSAWrapper</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2018-08-20T13:48:57Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2018-09-06T13:42:18Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
@@ -6195,8 +6187,8 @@
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="00f83482"/>
       <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="c07327f0"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="4beeded9"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="70bd942d"/>
-      <xilinx:checksum xilinx:scope="ports" xilinx:value="a14e7575"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="bfa7bf95"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="4dae2705"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="e36e4719"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>
