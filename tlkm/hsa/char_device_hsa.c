@@ -52,6 +52,7 @@
 #include "tlkm/tlkm_device.h"
 #include "tlkm/tlkm_class.h"
 #include "pcie/pcie_device.h"
+#include "pcie/pcie_irq.h"
 
 #include "char_device_hsa.h"
 
@@ -112,12 +113,12 @@ static int hsa_alloc_queue(void** p, dma_addr_t *handle)
 {
 	size_t mem_size = sizeof(struct hsa_mmap_space);
 
-	*p = dma_alloc_coherent(extractDevice(dev.dev), mem_size, handle, GFP_KERNEL | __GFP_HIGHMEM);
+	*p = dma_alloc_coherent(extractDevice(dev.dev), mem_size, handle, 0);
 	if (*p == 0) {
 		DEVERR(dev.dev->dev_id, "Couldn't allocate %zu bytes coherent memory for the HSA Queue", mem_size);
 		return -1;
 	}
-	DEVLOG(dev.dev->dev_id, TLKM_LF_HSA,  "Got dma memory at dma address %llx and virtual address %llx", *handle, (uint64_t)*p);
+	DEVLOG(dev.dev->dev_id, TLKM_LF_HSA,  "Got dma memory at dma address %llx and virtual address %p", *handle, *p);
 
 	return 0;
 }
@@ -142,11 +143,11 @@ static int hsa_dma_alloc_mem(void** p, dma_addr_t *handle, size_t *mem_size)
 	int err = 0;
 
 	for (*mem_size = HSA_DUMMY_DMA_BUFFER_SIZE; *mem_size > 0; *mem_size = *mem_size / 2) {
-		*p = dma_alloc_coherent(extractDevice(dev.dev), *mem_size, handle, GFP_KERNEL | __GFP_HIGHMEM);
+		*p = dma_alloc_coherent(extractDevice(dev.dev), *mem_size, handle, 0);
 		if (*p == 0) {
 			DEVLOG(dev.dev->dev_id, TLKM_LF_HSA, "Couldn't allocate %lu bytes coherent memory for the HSA Queue", *mem_size);
 		} else {
-			DEVLOG(dev.dev->dev_id, TLKM_LF_HSA, "Got %lu bytes dma memory at dma address %llx and kvirt address %llx", *mem_size, *handle, (uint64_t) *p);
+			DEVLOG(dev.dev->dev_id, TLKM_LF_HSA, "Got %lu bytes dma memory at dma address %llx and kvirt address %p", *mem_size, *handle, *p);
 			break;
 		}
 	}
@@ -362,9 +363,19 @@ static long hsa_ioctl(struct file *filp, unsigned int ioctl_num, unsigned long i
 		break;
 	case IOCTL_CMD_HSA_DMA_ADDR:
 		params.data = (uint64_t)p->dummy_dma;
+		if (copy_to_user((void*)ioctl_param, &params, _IOC_SIZE(ioctl_num))) {
+			DEVERR(dev.dev->dev_id, "Couldn't copy all bytes back to userspace\n");
+			err = -EACCES;
+			goto err_handler;
+		}
 		break;
 	case IOCTL_CMD_HSA_DMA_SIZE:
 		params.data = (uint64_t)p->dummy_mem_size;
+		if (copy_to_user((void*)ioctl_param, &params, _IOC_SIZE(ioctl_num))) {
+			DEVERR(dev.dev->dev_id, "Couldn't copy all bytes back to userspace\n");
+			err = -EACCES;
+			goto err_handler;
+		}
 		break;
 	}
 
@@ -376,17 +387,47 @@ err_handler:
 
 static int hsa_mmap(struct file *filp, struct vm_area_struct *vma)
 {
-	if (dev.kvirt_shared_mem == 0)
-		return -EAGAIN;
+	int ret = 0;
 	if (vma->vm_pgoff == 0) {
+		if (dev.kvirt_shared_mem == 0)
+			return -EAGAIN;
 		DEVLOG(dev.dev->dev_id, TLKM_LF_HSA,  "MMapping queue memory to user space");
-		return dma_mmap_coherent(extractDevice(dev.dev), vma, dev.kvirt_shared_mem, dev.dma_shared_mem, vma->vm_end - vma->vm_start);
+		ret = dma_mmap_coherent(extractDevice(dev.dev), vma, dev.kvirt_shared_mem, dev.dma_shared_mem, vma->vm_end - vma->vm_start);
 	} else if (vma->vm_pgoff == 1) {
-		DEVLOG(dev.dev->dev_id, TLKM_LF_HSA,  "MMapping dummy memory to user space");
-		return dma_mmap_coherent(extractDevice(dev.dev), vma, dev.dummy_kvirt, dev.dummy_dma, vma->vm_end - vma->vm_start);
-	} else {
-		return 0;
+		if (dev.dummy_kvirt == 0)
+			return -EAGAIN;
+		vma->vm_pgoff = 0;
+		DEVLOG(dev.dev->dev_id, TLKM_LF_HSA,  "MMapping dummy memory to user space %llx %p %ld", dev.dummy_dma, dev.dummy_kvirt, vma->vm_end - vma->vm_start);
+		ret = dma_mmap_coherent(extractDevice(dev.dev), vma, dev.dummy_kvirt, dev.dummy_dma, vma->vm_end - vma->vm_start);
+	} else if (vma->vm_pgoff == 2) {
+		struct tlkm_device *dp = dev.dev;
+
+		DEVLOG(dp->dev_id, TLKM_LF_HSA,
+		       "mapping %u bytes from physical address 0x%lx to user space 0x%lx-0x%lx", HSA_ARBITER_SIZE,
+		       dp->base_offset + HSA_ARBITER_BASE_ADDR, vma->vm_start, vma->vm_end);
+		vma->vm_pgoff = 0;
+		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+		if (io_remap_pfn_range(vma, vma->vm_start, (dp->base_offset + HSA_ARBITER_BASE_ADDR) >> PAGE_SHIFT, HSA_ARBITER_SIZE, vma->vm_page_prot)) {
+			DEVWRN(dp->dev_id, "io_remap_pfn_range failed!");
+			return -EAGAIN;
+		}
+		DEVLOG(dp->dev_id, TLKM_LF_HSA, "register space mapping successful");
+	} else if (vma->vm_pgoff == 3) {
+		struct tlkm_device *dp = dev.dev;
+
+		DEVLOG(dp->dev_id, TLKM_LF_HSA,
+		       "mapping %u bytes from physical address 0x%lx to user space 0x%lx-0x%lx", HSA_SIGNAL_SIZE,
+		       dp->base_offset + HSA_ARBITER_BASE_ADDR, vma->vm_start, vma->vm_end);
+		vma->vm_pgoff = 0;
+		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+		if (io_remap_pfn_range(vma, vma->vm_start, (dp->base_offset + HSA_SIGNAL_BASE_ADDR) >> PAGE_SHIFT, HSA_SIGNAL_SIZE, vma->vm_page_prot)) {
+			DEVWRN(dp->dev_id, "io_remap_pfn_range failed!");
+			return -EAGAIN;
+		}
+		DEVLOG(dp->dev_id, TLKM_LF_HSA, "register space mapping successful");
 	}
+	DEVLOG(dev.dev->dev_id, TLKM_LF_HSA, "Return code %d", ret);
+	return ret;
 }
 
 /******************************************************************************/
@@ -430,9 +471,12 @@ int char_hsa_register(struct tlkm_device *tlkm_dev)
 		goto cdev_add_failed;
 	}
 
-	if (hsa_initialize() != 0)
+	if (hsa_initialize() != 0) {
 		DEVERR(dev.dev->dev_id, "Failed to initialize HSA queue/HSA infrastructure not available.");
-	goto error_device_create;
+		goto error_device_create;
+	}
+
+	pcie_irqs_request_platform_irq(tlkm_dev, 2, intr_handler_hsa_signals, 0);
 
 	return 0;
 
@@ -458,6 +502,8 @@ void char_hsa_unregister(void)
 {
 	if (dev.dev) {
 		hsa_deinit();
+
+		pcie_irqs_release_platform_irq(dev.dev, 2);
 
 		cdev_del(&dev.cdev);
 		device_destroy(dev.dev_class, MKDEV(TLKM_HSA_MAJOR, 0));

@@ -19,6 +19,7 @@ install(FILES user/tlkm_access.h
               user/tlkm_ioctl_cmds.h
               user/tlkm_platform.h
               user/tlkm_types.h
+              hsa/hsa_ioctl_calls.h
               DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tapasco/tlkm
         )
 

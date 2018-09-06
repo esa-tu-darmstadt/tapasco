@@ -277,8 +277,8 @@ pcie_subsystem_err:
 void pcie_device_exit_subsystems(struct tlkm_device *dev)
 {
 	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
-	release_msi(pdev);
 	char_hsa_unregister();
+	release_msi(pdev);
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "exited subsystems");
 }
 
