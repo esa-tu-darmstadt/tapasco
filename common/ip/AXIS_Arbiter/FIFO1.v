@@ -47,8 +47,8 @@
  `define BSV_ARESET_EDGE_HEAD
 `endif
 
-// Depth 2 FIFO
-module FIFO2(CLK,
+// Depth 1 FIFO
+module FIFO1(CLK,
              RST,
              D_IN,
              ENQ,
@@ -56,99 +56,80 @@ module FIFO2(CLK,
              D_OUT,
              DEQ,
              EMPTY_N,
-             CLR);
+             CLR
+             );
 
    parameter width = 1;
    parameter guarded = 1;
+   input                  CLK;
+   input                  RST;
+   input [width - 1 : 0]  D_IN;
+   input                  ENQ;
+   input                  DEQ;
+   input                  CLR ;
 
-   input     CLK ;
-   input     RST ;
-   input [width - 1 : 0] D_IN;
-   input                 ENQ;
-   input                 DEQ;
-   input                 CLR ;
-
-   output                FULL_N;
-   output                EMPTY_N;
+   output                 FULL_N;
    output [width - 1 : 0] D_OUT;
+   output                 EMPTY_N;
 
-   reg                    full_reg;
-   reg                    empty_reg;
-   reg [width - 1 : 0]    data0_reg;
-   reg [width - 1 : 0]    data1_reg;
+   reg [width - 1 : 0]    D_OUT;
+   reg                    empty_reg ;
 
-   assign                 FULL_N = full_reg ;
+
    assign                 EMPTY_N = empty_reg ;
-   assign                 D_OUT = data0_reg ;
 
-
-   // Optimize the loading logic since state encoding is not power of 2!
-   wire                   d0di = (ENQ && ! empty_reg ) || ( ENQ && DEQ && full_reg ) ;
-   wire                   d0d1 = DEQ && ! full_reg ;
-   wire                   d0h = ((! DEQ) && (! ENQ )) || (!DEQ && empty_reg ) || ( ! ENQ &&full_reg) ;
-   wire                   d1di = ENQ & empty_reg ;
 
 `ifdef BSV_NO_INITIAL_BLOCKS
 `else // not BSV_NO_INITIAL_BLOCKS
    // synopsys translate_off
    initial
      begin
-        data0_reg   = {((width + 1)/2) {2'b10}} ;
-        data1_reg  = {((width + 1)/2) {2'b10}} ;
-        empty_reg = 1'b0;
-        full_reg  = 1'b1;
+        D_OUT   = {((width + 1)/2) {2'b10}} ;
+        empty_reg = 1'b0 ;
      end // initial begin
    // synopsys translate_on
 `endif // BSV_NO_INITIAL_BLOCKS
+
+
+   assign FULL_N = !empty_reg;
 
    always@(posedge CLK `BSV_ARESET_EDGE_META)
      begin
         if (RST == `BSV_RESET_VALUE)
           begin
              empty_reg <= `BSV_ASSIGNMENT_DELAY 1'b0;
-             full_reg  <= `BSV_ASSIGNMENT_DELAY 1'b1;
           end // if (RST == `BSV_RESET_VALUE)
         else
-          begin
-             if (CLR)
-               begin
-                  empty_reg <= `BSV_ASSIGNMENT_DELAY 1'b0;
-                  full_reg  <= `BSV_ASSIGNMENT_DELAY 1'b1;
-               end // if (CLR)
-             else if ( ENQ && ! DEQ ) // just enq
-               begin
-                  empty_reg <= `BSV_ASSIGNMENT_DELAY 1'b1;
-                  full_reg <= `BSV_ASSIGNMENT_DELAY ! empty_reg ;
-               end
-             else if ( DEQ && ! ENQ )
-               begin
-                  full_reg  <= `BSV_ASSIGNMENT_DELAY 1'b1;
-                  empty_reg <= `BSV_ASSIGNMENT_DELAY ! full_reg;
-               end // if ( DEQ && ! ENQ )
-          end // else: !if(RST == `BSV_RESET_VALUE)
-
+           begin
+              if (CLR)
+                begin
+                   empty_reg <= `BSV_ASSIGNMENT_DELAY 1'b0;
+                end // if (CLR)
+              else if (ENQ)
+                begin
+                   empty_reg <= `BSV_ASSIGNMENT_DELAY 1'b1;
+                end // if (ENQ)
+              else if (DEQ)
+                begin
+                   empty_reg <= `BSV_ASSIGNMENT_DELAY 1'b0;
+                end // if (DEQ)
+           end // else: !if(RST == `BSV_RESET_VALUE)
      end // always@ (posedge CLK or `BSV_RESET_EDGE RST)
-
 
    always@(posedge CLK `BSV_ARESET_EDGE_HEAD)
      begin
 `ifdef BSV_RESET_FIFO_HEAD
         if (RST == `BSV_RESET_VALUE)
           begin
-             data0_reg <= `BSV_ASSIGNMENT_DELAY {width {1'b0}} ;
-             data1_reg <= `BSV_ASSIGNMENT_DELAY {width {1'b0}} ;
+             D_OUT <= `BSV_ASSIGNMENT_DELAY {width {1'b0}} ;
           end
         else
 `endif
-          begin
-             data0_reg  <= `BSV_ASSIGNMENT_DELAY
-                           {width{d0di}} & D_IN | {width{d0d1}} & data1_reg | {width{d0h}} & data0_reg ;
-             data1_reg <= `BSV_ASSIGNMENT_DELAY
-                          d1di ? D_IN : data1_reg ;
-          end // else: !if(RST == `BSV_RESET_VALUE)
+           begin
+              if (ENQ)
+                D_OUT     <= `BSV_ASSIGNMENT_DELAY D_IN;
+           end // else: !if(RST == `BSV_RESET_VALUE)
      end // always@ (posedge CLK or `BSV_RESET_EDGE RST)
-
-
 
    // synopsys translate_off
    always@(posedge CLK)
@@ -158,19 +139,20 @@ module FIFO2(CLK,
         deqerror =  0;
         enqerror = 0;
         if (RST == ! `BSV_RESET_VALUE)
-          begin
-             if ( ! empty_reg && DEQ )
-               begin
-                  deqerror =  1;
-                  $display( "Warning: FIFO2: %m -- Dequeuing from empty fifo" ) ;
-               end
-             if ( ! full_reg && ENQ && (!DEQ || guarded) )
-               begin
-                  enqerror = 1;
-                  $display( "Warning: FIFO2: %m -- Enqueuing to a full fifo" ) ;
-               end
-          end
-     end // always@ (posedge CLK)
+           begin
+              if ( ! empty_reg && DEQ )
+                begin
+                   deqerror = 1 ;
+                   $display( "Warning: FIFO1: %m -- Dequeuing from empty fifo" ) ;
+                end
+              if ( ! FULL_N && ENQ && (!DEQ || guarded) )
+                begin
+                   enqerror =  1 ;
+                   $display( "Warning: FIFO1: %m -- Enqueuing to a full fifo" ) ;
+                end
+           end // if (RST == ! `BSV_RESET_VALUE)
+     end
    // synopsys translate_on
 
 endmodule
+
