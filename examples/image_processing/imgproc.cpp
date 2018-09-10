@@ -273,7 +273,7 @@ int main(int argc, const char *argv[]) {
 			std::cout << "Waiting for completion" << std::endl;
 
 			for(int i = 0; i < 64; ++i) {
-				std::cout << i << " " << signal_space[i] << std::endl;
+				std::cout << i << " " << std::hex << signal_space[i] << std::dec << std::endl;
 			}
 
 			// Print some status registers for debugging
@@ -332,6 +332,7 @@ int main(int argc, const char *argv[]) {
 	queue.deallocate_signal(completion_signal);
 
 	munmap(arbiter_space, 0x1000);
+	munmap(signal_space, 0x1000);
 	close(fd);
 
 	return EXIT_SUCCESS;
