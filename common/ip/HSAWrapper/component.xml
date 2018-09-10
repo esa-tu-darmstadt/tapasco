@@ -2228,7 +2228,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>99fdc8e3</spirit:value>
+            <spirit:value>9d662cd2</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -2244,7 +2244,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>76a934cc</spirit:value>
+            <spirit:value>50ae4e79</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -6073,7 +6073,7 @@
       <spirit:file>
         <spirit:name>src/mkHSAWrapper.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_bc511c6d</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_d5bfb443</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>constraints/bluedma.xdc</spirit:name>
@@ -6177,7 +6177,7 @@
       <xilinx:displayName>HSAWrapper</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2018-09-06T13:42:18Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2018-09-10T12:19:51Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
@@ -6187,7 +6187,7 @@
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="00f83482"/>
       <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="c07327f0"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="4beeded9"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="bfa7bf95"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="62c1597c"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="4dae2705"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="e36e4719"/>
     </xilinx:packagingInfo>
