@@ -578,9 +578,13 @@ proc generate_roundrobin {kernelc sync} {
   connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins transmitter/M*_ARESETN]
 
   if {$sync} {
+    connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins transmitter/ACLK]
+    connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins transmitter/ARESETN]
     connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins transmitter/S*_ACLK]
     connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins transmitter/S*_ARESETN]
   } else {
+    connect_bd_net [get_bd_pins design_clk] [get_bd_pins transmitter/ACLK]
+    connect_bd_net [get_bd_pins design_interconnect_aresetn] [get_bd_pins transmitter/ARESETN]
     connect_bd_net [get_bd_pins design_clk] [get_bd_pins transmitter/S*_ACLK]
     connect_bd_net [get_bd_pins design_peripheral_aresetn] [get_bd_pins transmitter/S*_ARESETN]
   }
@@ -604,9 +608,19 @@ proc generate_singular {kernel PORT sync} {
         foreach clk $clks {
           variable interfaces [get_property CONFIG.ASSOCIATED_BUSIF $clk]
           if {[regexp $interface_rx $interfaces]} {
-            connect_bd_net [get_bd_pins sfp_clock] $clk
-            } elseif {[regexp $interface_tx $interfaces]} {
+              disconnect_bd_net [get_bd_nets -of_objects $clk]    $clk
               connect_bd_net [get_bd_pins sfp_clock] $clk
+
+              variable rst [get_bd_pins [lindex $pes 0]/[get_property CONFIG.ASSOCIATED_RESET $clk]]
+              disconnect_bd_net [get_bd_nets -of_objects $rst]  $rst
+              connect_bd_net [get_bd_pins /arch/sfp_resetn] $rst
+            } elseif {[regexp $interface_tx $interfaces]} {
+              disconnect_bd_net [get_bd_nets -of_objects $clk]    $clk
+              connect_bd_net [get_bd_pins sfp_clock] $clk
+
+              variable rst [get_bd_pins [lindex $pes 0]/[get_property CONFIG.ASSOCIATED_RESET $clk]]
+              disconnect_bd_net [get_bd_nets -of_objects $rst]  $rst
+              connect_bd_net [get_bd_pins /arch/sfp_resetn] $rst
             }
           }
       } else {
@@ -675,18 +689,18 @@ proc connect_PEs {kernels PORT sync} {
               variable interfaces [get_property CONFIG.ASSOCIATED_BUSIF $clk]
               if {[regexp $interface_rx $interfaces]} {
                 puts "Connecting $clk to SFP-Clock  for $interface_rx"
-                disconnect_bd_net -quiet [get_bd_nets -of_objects $clk] $clk
-                connect_bd_net -quiet [get_bd_pins sfp_clock] $clk
+                disconnect_bd_net [get_bd_nets -of_objects $clk] $clk
+                connect_bd_net [get_bd_pins sfp_clock] $clk
                 variable reset [get_bd_pins [lindex $pes $i]/[get_property CONFIG.ASSOCIATED_RESET $clk]]
-                disconnect_bd_net -quiet [get_bd_nets -of_objects $reset] $reset
-                connect_bd_net -quiet [get_bd_pins sfp_resetn] $reset
+                disconnect_bd_net [get_bd_nets -of_objects $reset] $reset
+                connect_bd_net [get_bd_pins sfp_resetn] $reset
               } elseif {[regexp $interface_tx $interfaces]} {
                 puts "Connecting $clk to SFP-Clock for $interface_tx"
-                disconnect_bd_net -quiet [get_bd_nets -of_objects $clk] $clk
-                connect_bd_net -quiet [get_bd_pins sfp_clock] $clk
+                disconnect_bd_net [get_bd_nets -of_objects $clk] $clk
+                connect_bd_net [get_bd_pins sfp_clock] $clk
                 variable reset [get_bd_pins [lindex $pes $i]/[get_property CONFIG.ASSOCIATED_RESET $clk]]
-                disconnect_bd_net -quiet [get_bd_nets -of_objects $reset] $reset
-                connect_bd_net -quiet [get_bd_pins sfp_resetn] $reset
+                disconnect_bd_net [get_bd_nets -of_objects $reset] $reset
+                connect_bd_net [get_bd_pins sfp_resetn] $reset
               }
             }
           } else {
