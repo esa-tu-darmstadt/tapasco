@@ -20,75 +20,6 @@ proc create_custom_subsystem_network {{args {}}} {
   puts "Network Connection done"
   current_bd_instance /network
 }
-
-if {[tapasco::get_board_preset] == "VC709"} {
-  proc create_custom_subsystem_si5324 { } {
-
-    #puts $constraints_file {# Main I2C Bus - 100KHz - SUME}
-    #puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports IIC_0_scl_io]}
-    #puts $constraints_file {set_property SLEW SLOW [get_ports IIC_0_scl_io]}
-    #puts $constraints_file {set_property DRIVE 16 [get_ports IIC_0_scl_io]}
-    #puts $constraints_file {set_property PULLUP true [get_ports IIC_0_scl_io]}
-    #puts $constraints_file {set_property PACKAGE_PIN AK24 [get_ports IIC_0_scl_io]}
-
-    #puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports IIC_0_sda_io]}
-    #puts $constraints_file {set_property SLEW SLOW [get_ports IIC_0_sda_io]}
-    #puts $constraints_file {set_property DRIVE 16 [get_ports IIC_0_sda_io]}
-    #puts $constraints_file {set_property PULLUP true [get_ports IIC_0_sda_io]}
-    #puts $constraints_file {set_property PACKAGE_PIN AK25 [get_ports IIC_0_sda_io]}
-
-    #puts $constraints_file {# i2c_reset[0] - i2c_mux reset - high active}
-    #puts $constraints_file {# i2c_reset[1] - si5324 reset - high active}
-    #puts $constraints_file {set_property SLEW SLOW [get_ports {i2c_reset[*]}]}
-    #puts $constraints_file {set_property DRIVE 16 [get_ports {i2c_reset[*]}]}
-    #puts $constraints_file {set_property PACKAGE_PIN AM39 [get_ports {i2c_reset[0]}]}
-    #puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports {i2c_reset[0]}]}
-    #puts $constraints_file {set_property PACKAGE_PIN BA29 [get_ports {i2c_reset[1]}]}
-    #puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports {i2c_reset[1]}]}
-
-    #puts $constraints_file {#  I2C 0 / sda / MIO[51]}
-    #puts $constraints_file {set_property iostandard "LVCMOS25" [get_ports "iic_sda_io"]}
-    #puts $constraints_file {set_property PACKAGE_PIN "AJ18" [get_ports "iic_sda_io"]}
-    #puts $constraints_file {set_property slew "slow" [get_ports "iic_sda_io"]}
-    #puts $constraints_file {set_property drive "8" [get_ports "iic_sda_io"]}
-    #puts $constraints_file {set_property pullup "TRUE" [get_ports "iic_sda_io"]}
-    #puts $constraints_file {set_property PIO_DIRECTION "BIDIR" [get_ports "iic_sda_io"]}
-    #puts $constraints_file {#  I2C 0 / scl / MIO[50]}
-    #puts $constraints_file {set_property iostandard "LVCMOS25" [get_ports "iic_scl_io"]}
-    #puts $constraints_file {set_property PACKAGE_PIN "AJ14" [get_ports "iic_scl_io"]}
-    #puts $constraints_file {set_property slew "slow" [get_ports "iic_scl_io"]}
-    #puts $constraints_file {set_property drive "8" [get_ports "iic_scl_io"]}
-    #puts $constraints_file {set_property pullup "TRUE" [get_ports "iic_scl_io"]}
-    #puts $constraints_file {#  I2C 0 / reset / i2c_reset[*]}
-    #puts $constraints_file {set_property PIO_DIRECTION "BIDIR" [get_ports "iic_scl_io"]}
-    #puts $constraints_file {set_property iostandard "LVCMOS18" [get_ports "i2c_reset[0]"]}
-    #puts $constraints_file {set_property PACKAGE_PIN "F20" [get_ports "i2c_reset[0]"]}
-    #puts $constraints_file {set_property PACKAGE_PIN "W23" [get_ports "i2c_reset[1]"]}
-    #puts $constraints_file {set_property IOSTANDARD "LVCMOS25" [get_ports "i2c_reset[1]"]}
-    #puts $constraints_file {set_property slew "slow" [get_ports "i2c_reset[*]"]}
-    #puts $constraints_file {set_property drive "8" [get_ports "i2c_reset[*]"]}
-    #puts $constraints_file {set_property pullup "TRUE" [get_ports "i2c_reset[*]"]}
-    #puts $constraints_file {set_property PIO_DIRECTION "OUTPUT" [get_ports "i2c_reset[*]"]}
-
-    create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_SI5324
-    puts "Setting up the Clock for 10G-SFP Config"
-
-    #set_property CONFIG.FREQ_HZ 156250000 [get_bd_ports /refclk_p]
-    #set_property CONFIG.FREQ_HZ 156250000 [get_bd_ports /refclk_n]
-
-    create_bd_port -dir O -from 1 -to 0 i2c_reset
-
-    create_bd_cell -type ip -vlnv xilinx.com:ip:axi_iic:2.0 SI5324Prog_0
-    set_property -dict [list CONFIG.C_SCL_INERTIAL_DELAY {5} CONFIG.C_SDA_INERTIAL_DELAY {5} CONFIG.C_GPO_WIDTH {2}] [get_bd_cells SI5324Prog_0]
-
-    create_bd_intf_port -mode Master -vlnv xilinx.com:interface:iic_rtl:1.0 IIC
-    connect_bd_intf_net [get_bd_intf_ports /IIC] [get_bd_intf_pins SI5324Prog_0/IIC]
-    connect_bd_intf_net [get_bd_intf_pins S_SI5324] [get_bd_intf_pins SI5324Prog_0/S_AXI]
-    connect_bd_net [get_bd_pins SI5324Prog_0/s_axi_aclk] [get_bd_pins design_clk]
-    connect_bd_net [get_bd_pins SI5324Prog_0/s_axi_aresetn] [get_bd_pins design_peripheral_aresetn]
-    connect_bd_net [get_bd_ports /i2c_reset] [get_bd_pins SI5324Prog_0/gpo]
-  }
-}
 }
 
 namespace eval sfpplus {
@@ -206,7 +137,7 @@ proc validate_singular {config} {
         if { $kernelID != -1 } {
           variable newCount [expr {[dict get $composition $kernelID count] - $Count}]
           set vlnv [dict get $composition $kernelID vlnv]
-          if { $newCount <= 0} {
+          if { $newCount < 0} {
             puts "Not Enough Instances of Kernel $ID"
             exit
           }
@@ -705,9 +636,9 @@ proc connect_PEs {kernels PORT sync} {
       move_bd_cells [get_bd_cells Port_$PORT] $pes
       for {variable i 0} {$i < $Count} {incr i} {
         puts "Using PE [lindex $pes $i] for Port $PORT"
-        puts "Connecting [get_bd_intf_pins reciever/M[format %02d $counter]_AXIS] to [get_bd_intf_pins [lindex $pes $i]/$interface_rx]"
+        puts "  Connecting [get_bd_intf_pins reciever/M[format %02d $counter]_AXIS] to [get_bd_intf_pins [lindex $pes $i]/$interface_rx]"
         connect_bd_intf_net [get_bd_intf_pins reciever/M[format %02d $counter]_AXIS] [get_bd_intf_pins [lindex $pes $i]/$interface_rx]
-        puts "Connecting [get_bd_intf_pins transmitter/S[format %02d $counter]_AXIS] to [get_bd_intf_pins [lindex $pes $i]/$interface_tx]"
+        puts "  Connecting [get_bd_intf_pins transmitter/S[format %02d $counter]_AXIS] to [get_bd_intf_pins [lindex $pes $i]/$interface_tx]"
         connect_bd_intf_net [get_bd_intf_pins transmitter/S[format %02d $counter]_AXIS] [get_bd_intf_pins [lindex $pes $i]/$interface_tx]
 
         if {$sync} {
@@ -771,22 +702,6 @@ proc find_AXI_Connection {input} {
   return $port
 }
 
-
-proc addressmap {{args {}}} {
-    if {[tapasco::is_feature_enabled "SFPPLUS"]} {
-
-      set networkIPs [get_bd_cells -of [get_bd_intf_pins -filter {NAME =~ "*sfp_axis_rx*"} uArch/target_ip_*/*]]
-      puts "Meine Addressmap"
-      set host_addr_space [get_bd_addr_space "/host/ps7/Data/"]
-      set offset 0x0000000000400000
-
-      set addr_space [get_bd_addr_segs "/network/PORT_0/Ethernet10G/s_axi/Reg0"]
-      create_bd_addr_seg -range 64K -offset $offset $host_addr_space $addr_space "Network_i2c"
-    }
-    return {}
-  }
-
 }
 
 tapasco::register_plugin "platform::sfpplus::validate_sfp_ports" "pre-arch"
-tapasco::register_plugin "platform::sfpplus::addressmap" "post-address-map"

@@ -164,7 +164,7 @@ proc validate_singular {config} {
         if { $kernelID != -1 } {
           variable newCount [expr {[dict get $composition $kernelID count] - $Count}]
           set vlnv [dict get $composition $kernelID vlnv]
-          if { $newCount <= 0} {
+          if { $newCount < 0} {
             puts "Not Enough Instances of Kernel $ID"
             exit
           }
@@ -735,8 +735,6 @@ proc makeMaster {name} {
   set num_mi [expr "$num_mi_old + 1"]
   set_property -dict [list CONFIG.NUM_MI $num_mi] [get_bd_cells /host/out_ic]
   connect_bd_intf_net $m_si [get_bd_intf_pins /host/out_ic/[format "M%02d_AXI" $num_mi_old]]
-  connect_bd_net [get_bd_pins /host/design_clk] [get_bd_pins /host/out_ic/[format "M%02d_ACLK" $num_mi_old]]
-  connect_bd_net [get_bd_pins /host/design_peripheral_aresetn] [get_bd_pins /host/out_ic/[format "M%02d_ARESETN" $num_mi_old]]
 }
 
 proc write_SI5324_Constraints {} {
