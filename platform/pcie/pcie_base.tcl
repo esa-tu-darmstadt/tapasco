@@ -231,11 +231,16 @@
     set_property -dict [list CONFIG.CLK_OUT1_PORT {design_clk} \
                         CONFIG.USE_SAFE_CLOCK_STARTUP {true} \
                         CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
-                        CONFIG.USE_LOCKED {false} \
-                        CONFIG.USE_RESET {false}] $design_clk_wiz
+                        CONFIG.USE_LOCKED {true} \
+                        CONFIG.USE_RESET {true} \
+                        CONFIG.RESET_TYPE {ACTIVE_LOW} \
+                        CONFIG.RESET_PORT {resetn} \
+                        ] $design_clk_wiz
+
+    connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins $mig/mmcm_locked]
+    connect_bd_net [get_bd_pins $design_clk_wiz/locked] $design_aresetn
 
     # connect external design clk
-    connect_bd_net $ddr_p_aresetn $design_aresetn
     connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $design_clk
 
     connect_bd_net [get_bd_pins $ddr_aclk] [get_bd_pins $design_clk_wiz/clk_in1]
