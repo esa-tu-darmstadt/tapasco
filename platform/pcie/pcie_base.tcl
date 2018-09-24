@@ -237,7 +237,7 @@
                         CONFIG.RESET_PORT {resetn} \
                         ] $design_clk_wiz
 
-    connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins $mig/mmcm_locked]
+    connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins -regexp $mig/((mmcm_locked)|(c0_init_calib_complete))]
     connect_bd_net [get_bd_pins $design_clk_wiz/locked] $design_aresetn
 
     # connect external design clk

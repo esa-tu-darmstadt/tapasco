@@ -1,5 +1,6 @@
 #
 # Copyright (C) 2017 Jens Korinth, TU Darmstadt
+# Copyright (C) 2018 Jaco A. Hofmann, TU Darmstadt
 #
 # This file is part of Tapasco (TPC).
 #
@@ -16,11 +17,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-## Download a bit file to the FPGA on the VC709
+## Download a bit file to the FPGA on the supported PCIe devices
 
 #set default values
 set wait 1000
-set dev {xc7vx690t_0|xcvu9p_0}
+set dev {xc7vx690t_0|xcvu9p_0|xcvu095_0}
 set probes_file {}
 set program_file {}
 set devid -1
