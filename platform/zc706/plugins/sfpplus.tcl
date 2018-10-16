@@ -453,7 +453,7 @@ proc generate_broadcast {kernelc sync} {
         connect_bd_net [get_bd_pins design_interconnect_aresetn] [get_bd_pins reciever/aresetn]
 
         create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 reciever_sync
-        set_property -dict [list CONFIG.NUM_MI {1} CONFIG.NUM_SI {1} CONFIG.S00_FIFO_DEPTH {2048} CONFIG.M00_FIFO_DEPTH {2048} CONFIG.S00_FIFO_MODE {1} CONFIG.M00_FIFO_MODE {1} ] [get_bd_cells reciever_sync]
+        set_property -dict [list CONFIG.NUM_MI {1} CONFIG.NUM_SI {1} CONFIG.S00_FIFO_DEPTH {2048} CONFIG.M00_FIFO_DEPTH {2048} CONFIG.S00_FIFO_MODE {0} CONFIG.M00_FIFO_MODE {0} ] [get_bd_cells reciever_sync]
         connect_bd_net [get_bd_pins sfp_clock]  [get_bd_pins reciever_sync/ACLK]
         connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins reciever_sync/ARESETN]
         connect_bd_net [get_bd_pins sfp_clock]  [get_bd_pins reciever_sync/S*_ACLK]
@@ -474,7 +474,7 @@ proc generate_broadcast {kernelc sync} {
 
       for {variable i 0} {$i < $kernelc} {incr i} {
           set_property CONFIG.[format "S%02d" $i]_FIFO_DEPTH 2048 [get_bd_cells transmitter]
-          set_property CONFIG.[format "S%02d" $i]_FIFO_MODE 1 [get_bd_cells transmitter]
+          set_property CONFIG.[format "S%02d" $i]_FIFO_MODE 0 [get_bd_cells transmitter]
       }
 
       connect_bd_intf_net [get_bd_intf_pins transmitter/M*_AXIS] [get_bd_intf_pins AXIS_TX]
@@ -498,12 +498,12 @@ proc generate_broadcast {kernelc sync} {
 proc generate_roundrobin {kernelc sync} {
   # Create Reciever Interconnect
   create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 reciever
-  set_property -dict [list CONFIG.NUM_SI {1} CONFIG.S00_FIFO_MODE {1} CONFIG.S00_FIFO_DEPTH {2048}] [get_bd_cells reciever]
+  set_property -dict [list CONFIG.NUM_SI {1} CONFIG.S00_FIFO_MODE {0} CONFIG.S00_FIFO_DEPTH {2048}] [get_bd_cells reciever]
   set_property CONFIG.NUM_MI $kernelc [get_bd_cells reciever]
 
   for {variable i 0} {$i < $kernelc} {incr i} {
       set_property CONFIG.[format "M%02d" $i]_FIFO_DEPTH 2048 [get_bd_cells reciever]
-      set_property CONFIG.[format "M%02d" $i]_FIFO_MODE 1 [get_bd_cells reciever]
+      set_property CONFIG.[format "M%02d" $i]_FIFO_MODE 0 [get_bd_cells reciever]
   }
 
   connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins reciever/ACLK]
@@ -540,7 +540,7 @@ proc generate_roundrobin {kernelc sync} {
 
   for {variable i 0} {$i < $kernelc} {incr i} {
     set_property CONFIG.[format "S%02d" $i]_FIFO_DEPTH 2048 [get_bd_cells transmitter]
-    set_property CONFIG.[format "S%02d" $i]_FIFO_MODE 1 [get_bd_cells transmitter]
+    set_property CONFIG.[format "S%02d" $i]_FIFO_MODE 0 [get_bd_cells transmitter]
   }
 
   connect_bd_intf_net [get_bd_intf_pins transmitter/M*_AXIS] [get_bd_intf_pins AXIS_TX]
@@ -611,7 +611,7 @@ proc generate_singular {kernel PORT sync} {
       }
     } else {
       create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 reciever_sync
-      set_property -dict [list CONFIG.NUM_MI {1} CONFIG.NUM_SI {1} CONFIG.S00_FIFO_DEPTH {2048} CONFIG.M00_FIFO_DEPTH {2048} CONFIG.S00_FIFO_MODE {1} CONFIG.M00_FIFO_MODE {1} ] [get_bd_cells reciever_sync]
+      set_property -dict [list CONFIG.NUM_MI {1} CONFIG.NUM_SI {1} CONFIG.S00_FIFO_DEPTH {2048} CONFIG.M00_FIFO_DEPTH {2048} CONFIG.S00_FIFO_MODE {0} CONFIG.M00_FIFO_MODE {0} ] [get_bd_cells reciever_sync]
       connect_bd_net [get_bd_pins sfp_clock]  [get_bd_pins reciever_sync/ACLK]
       connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins reciever_sync/ARESETN]
       connect_bd_net [get_bd_pins sfp_clock]  [get_bd_pins reciever_sync/S*_ACLK]
@@ -623,7 +623,7 @@ proc generate_singular {kernel PORT sync} {
       connect_bd_intf_net [get_bd_intf_pins reciever_sync/S00_AXIS] [get_bd_intf_pins AXIS_RX]
 
       create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 transmitter_sync
-      set_property -dict [list CONFIG.NUM_MI {1} CONFIG.NUM_SI {1} CONFIG.S00_FIFO_DEPTH {2048} CONFIG.M00_FIFO_DEPTH {2048} CONFIG.S00_FIFO_MODE {1} CONFIG.M00_FIFO_MODE {1} ] [get_bd_cells transmitter_sync]
+      set_property -dict [list CONFIG.NUM_MI {1} CONFIG.NUM_SI {1} CONFIG.S00_FIFO_DEPTH {2048} CONFIG.M00_FIFO_DEPTH {2048} CONFIG.S00_FIFO_MODE {0} CONFIG.M00_FIFO_MODE {1} ] [get_bd_cells transmitter_sync]
       connect_bd_net [get_bd_pins design_clk]  [get_bd_pins transmitter_sync/ACLK]
       connect_bd_net [get_bd_pins design_interconnect_aresetn] [get_bd_pins transmitter_sync/ARESETN]
       connect_bd_net [get_bd_pins design_clk]  [get_bd_pins transmitter_sync/S*_ACLK]
