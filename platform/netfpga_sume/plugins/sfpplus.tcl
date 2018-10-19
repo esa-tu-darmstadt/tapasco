@@ -57,17 +57,17 @@
         puts $constraints_file_late {set_false_path -from [get_clocks gt_refclk_clk_p] -to [get_clocks -filter name=~*sfpmac_*gthe2_i/TXOUTCLK]}
 
         puts $constraints_file {# Main I2C Bus - 100KHz - SUME}
-        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports SCL_0]}
-        puts $constraints_file {set_property SLEW SLOW [get_ports SCL_0]}
-        puts $constraints_file {set_property DRIVE 16 [get_ports SCL_0]}
-        puts $constraints_file {set_property PULLUP true [get_ports SCL_0]}
-        puts $constraints_file {set_property PACKAGE_PIN AK24 [get_ports SCL_0]}
+        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports IIC_0_scl_io]}
+        puts $constraints_file {set_property SLEW SLOW [get_ports IIC_0_scl_io]}
+        puts $constraints_file {set_property DRIVE 16 [get_ports IIC_0_scl_io]}
+        puts $constraints_file {set_property PULLUP true [get_ports IIC_0_scl_io]}
+        puts $constraints_file {set_property PACKAGE_PIN AK24 [get_ports IIC_0_scl_io]}
 
-        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports SDA_0]}
-        puts $constraints_file {set_property SLEW SLOW [get_ports SDA_0]}
-        puts $constraints_file {set_property DRIVE 16 [get_ports SDA_0]}
-        puts $constraints_file {set_property PULLUP true [get_ports SDA_0]}
-        puts $constraints_file {set_property PACKAGE_PIN AK25 [get_ports SDA_0]}
+        puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports IIC_0_sda_io]}
+        puts $constraints_file {set_property SLEW SLOW [get_ports IIC_0_sda_io]}
+        puts $constraints_file {set_property DRIVE 16 [get_ports IIC_0_sda_io]}
+        puts $constraints_file {set_property PULLUP true [get_ports IIC_0_sda_io]}
+        puts $constraints_file {set_property PACKAGE_PIN AK25 [get_ports IIC_0_sda_io]}
 
         puts $constraints_file {# i2c_reset[0] - i2c_mux reset - high active}
         puts $constraints_file {# i2c_reset[1] - si5324 reset - high active}
@@ -214,8 +214,15 @@
         read_xdc $constraints_fn_late
         set_property PROCESSING_ORDER LATE [get_files $constraints_fn_late]
 
-        make_bd_pins_external [get_bd_pins $si5324prog/SDA]
-        make_bd_pins_external [get_bd_pins $si5324prog/SCL]
+        set iic_controller [tapasco::ip::create_axi_iic "IICController"]
+        set_property -dict [list CONFIG.C_SCL_INERTIAL_DELAY {5} CONFIG.C_SDA_INERTIAL_DELAY {5} CONFIG.C_GPO_WIDTH {2}] $iic_controller
+
+        create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:iic_rtl:1.0 IIC
+        connect_bd_intf_net [get_bd_intf_pin IIC] [get_bd_intf_pins $iic_controller/IIC]
+
+        connect_bd_intf_net [get_bd_intf_pin $si5324prog/M_AXI] [get_bd_intf_pins $iic_controller/S_AXI]
+
+        connect_bd_net [get_bd_pins $iic_controller/s_axi_aclk] [get_bd_pins $slow_clk]
 
         connect_bd_net [get_bd_pins $si5324prog/CLK] $slow_clk
 
@@ -223,6 +230,7 @@
         connect_bd_net [get_bd_pins $rst_gen/slowest_sync_clk] $slow_clk
         connect_bd_net $design_clk_aresetn [get_bd_pins $rst_gen/ext_reset_in]
         connect_bd_net [get_bd_pins $rst_gen/peripheral_aresetn] [get_bd_pins $si5324prog/RST_N]
+        connect_bd_net [get_bd_pins $iic_controller/s_axi_aresetn] [get_bd_pins $rst_gen/peripheral_aresetn]
 
         make_bd_pins_external [get_bd_pins $si5324prog/resetSwitch]
         make_bd_pins_external [get_bd_pins $si5324prog/resetClock]
@@ -237,18 +245,8 @@
         current_bd_instance
         make_bd_pins_external [get_bd_pins memory/mig/mmcm_locked]
         make_bd_pins_external [get_bd_pins memory/mig/init_calib_complete]
+        make_bd_intf_pins_external  [get_bd_intf_pins network/IIC]
         current_bd_instance $inst
-
-        #set ila [create_bd_cell -type ip -vlnv xilinx.com:ip:system_ila:1.1 "net_ila"]
-        #set_property -dict [list CONFIG.C_DATA_DEPTH {8192} CONFIG.C_NUM_OF_PROBES {6} CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE3_MU_CNT {2} CONFIG.C_PROBE2_MU_CNT {2} CONFIG.C_PROBE1_MU_CNT {2} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2} CONFIG.C_MON_TYPE {NATIVE}] $ila
-
-        #connect_bd_net [get_bd_pins $ila/clk] $slow_clk
-        #connect_bd_net [get_bd_pins $ila/probe0] [get_bd_pins $si5324prog/resetSwitch]
-        #connect_bd_net [get_bd_pins $ila/probe1] [get_bd_pins $si5324prog/resetClock]
-        #connect_bd_net [get_bd_pins $ila/probe2] [get_bd_pins $si5324prog/scl_debug]
-        #connect_bd_net [get_bd_pins $ila/probe3] [get_bd_pins $si5324prog/sda_debug]
-        #connect_bd_net [get_bd_pins $ila/probe4] [get_bd_pins $si5324prog/ident]
-        #connect_bd_net [get_bd_pins $ila/probe5] [get_bd_pins $si5324prog/step]
 
         puts "SFP connections completed"
       return {}
