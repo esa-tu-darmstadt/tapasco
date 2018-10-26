@@ -30,7 +30,7 @@ if args.verbose:
 path = 'module/'
 reld = '-d' if args.reload_driver else ''
 verb = '-v' if args.verbose else ''
-program = '-h' if args.mode == 'normal' or args.mode == 'program' else ''
-hotplug = '-p' if args.mode == 'normal' or args.mode == 'hotplug' else ''
+program = '-p' if args.mode == 'normal' or args.mode == 'program' else ''
+hotplug = '-h' if args.mode == 'normal' or args.mode == 'hotplug' else ''
 cmd = '$TAPASCO_HOME/platform/$TAPASCO_PLATFORM/{0}bit_reload.sh {1} {2} {3} {4} {5}'.format(path, verb, reld, hotplug, program, args.bitstream)
 subprocess.call([cmd], shell=True)
