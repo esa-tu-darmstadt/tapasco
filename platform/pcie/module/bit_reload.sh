@@ -36,6 +36,8 @@ Program first supported PCIe based FPGA found in JTAG chain with BITSTREAM.
 
 	-v	enable verbose output
 	-d	reload device driver
+	-p  program the device
+	-h  hotplug the device
 EOF
 }
 
@@ -69,6 +71,8 @@ hotplug() {
 BITSTREAM=""
 VERBOSE=0
 RELOADD=0
+HOTPLUG=0
+PROGRAM=0
 
 OPTIND=1
 while getopts vd opt; do
@@ -78,6 +82,12 @@ while getopts vd opt; do
 			;;
 		d)
 			RELOADD=1
+			;;
+		h)
+			HOTPLUG=1
+			;;
+		p)
+			PROGRAM=1
 			;;
 		*)
 			echo "unknown option: $opt"
@@ -99,24 +109,30 @@ then
 	fi
 
 	# program the device
-	if [ $VERBOSE -gt 0 ]; then
-		vivado -nolog -nojournal -notrace -mode tcl -source $BITLOAD_SCRIPT -tclargs $BITSTREAM
-		VIVADORET=$?
-	else
-		echo "programming bitstream silently, this could take a while ..."
-		vivado -nolog -nojournal -notrace -mode batch -source $BITLOAD_SCRIPT -tclargs $BITSTREAM > /dev/null
-		VIVADORET=$?
+	if [ $PROGRAM -gt 0 ]; then
+
+		if [ $VERBOSE -gt 0 ]; then
+			vivado -nolog -nojournal -notrace -mode tcl -source $BITLOAD_SCRIPT -tclargs $BITSTREAM
+			VIVADORET=$?
+		else
+			echo "programming bitstream silently, this could take a while ..."
+			vivado -nolog -nojournal -notrace -mode batch -source $BITLOAD_SCRIPT -tclargs $BITSTREAM > /dev/null
+			VIVADORET=$?
+		fi
+
+		# check return code
+		if [ $VIVADORET -ne 0 ]; then
+			echo "programming failed, Vivado returned non-zero exit code $VIVADORET"
+			exit $VIVADORET
+		fi
+		echo "bitstream programmed successfully!"
+
 	fi
 
-	# check return code
-	if [ $VIVADORET -ne 0 ]; then
-		echo "programming failed, Vivado returned non-zero exit code $VIVADORET"
-		exit $VIVADORET
+	if [ $HOTPLUG -gt 0 ]; then
+		# hotplug the bus
+		hotplug
 	fi
-	echo "bitstream programmed successfully!"
-
-	# hotplug the bus
-	hotplug
 
 	# reload driver?
 	if [ $RELOADD -gt 0 ]; then

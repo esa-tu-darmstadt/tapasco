@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('bitstream', help='.bit file to load')
 parser.add_argument('--reload-driver', help='reload driver, if loaded (default: %(default)s)', action='store_true')
 parser.add_argument('--verbose', help='verbose output (default: %(default)s)', action='store_true')
+parser.add_argument('--mode', help='select the operation to be performed (default: %(default)s)', default='normal', choices=['normal', 'program', 'hotplug'])
 args = parser.parse_args()
 
 if not os.path.exists(args.bitstream):
@@ -29,5 +30,7 @@ if args.verbose:
 path = 'module/'
 reld = '-d' if args.reload_driver else ''
 verb = '-v' if args.verbose else ''
-cmd = '$TAPASCO_HOME/platform/$TAPASCO_PLATFORM/{0}bit_reload.sh {1} {2} {3}'.format(path, verb, reld, args.bitstream)
+program = '-h' if args.mode == 'normal' or args.mode == 'program' else ''
+hotplug = '-p' if args.mode == 'normal' or args.mode == 'hotplug' else ''
+cmd = '$TAPASCO_HOME/platform/$TAPASCO_PLATFORM/{0}bit_reload.sh {1} {2} {3} {4} {5} {6}'.format(path, verb, reld, hotplug, program, args.bitstream)
 subprocess.call([cmd], shell=True)

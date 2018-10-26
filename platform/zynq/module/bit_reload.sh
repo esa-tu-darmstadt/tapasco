@@ -41,6 +41,8 @@ EOF
 BITSTREAM=""
 VERBOSE=0
 RELOADD=0
+HOTPLUG=0
+PROGRAM=0
 
 OPTIND=1
 while getopts vd opt; do
@@ -50,6 +52,12 @@ while getopts vd opt; do
 			;;
 		d)
 			RELOADD=1
+			;;
+		h)
+			HOTPLUG=1
+			;;
+		p)
+			PROGRAM=1
 			;;
 		*)
 			echo "unknown option: $opt"
@@ -65,7 +73,9 @@ if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit ]]
 then
 	echo "bitstream = $BITSTREAM"
 
-	(lsmod | grep $DRIVER > /dev/null) && sudo rmmod $DRIVER 2> /dev/null
+	if [ $RELOADD -gt 0 ]; then
+		(lsmod | grep $DRIVER > /dev/null) && sudo rmmod $DRIVER 2> /dev/null
+	fi
 
 	# program the device
 	cat $BITSTREAM > /dev/xdevcfg
@@ -78,8 +88,10 @@ then
 	fi
 	echo "bitstream programmed successfully!"
 
-	# load driver
-	sudo insmod $DRIVERPATH/${DRIVER}.ko
+	if [ $RELOADD -gt 0 ]; then
+		# load driver
+		sudo insmod $DRIVERPATH/${DRIVER}.ko
+	fi
 else
 	show_usage
 	exit 1
