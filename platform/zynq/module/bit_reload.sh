@@ -45,7 +45,7 @@ HOTPLUG=0
 PROGRAM=0
 
 OPTIND=1
-while getopts vd opt; do
+while getopts vdhp opt; do
 	case $opt in
 		v)
 			VERBOSE=1
