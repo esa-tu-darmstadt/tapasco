@@ -279,7 +279,12 @@
     # create instances of cores: PCIe core, mm_to_lite
     set pcie [create_pcie_core]
 
-    connect_bd_intf_net $msix_interface [get_bd_intf_pins $pcie/pcie_cfg_msix]
+    set trans [get_bd_cells -filter {NAME == "MSIxTranslator"}]
+    if { $trans != "" } {
+        connect_bd_intf_net $msix_interface [get_bd_intf_pins $trans/fromMSIxController]
+    } else {
+        connect_bd_intf_net $msix_interface [get_bd_intf_pins $pcie/pcie_cfg_msix]
+    }
 
     set bridge [create_bd_cell -type ip -vlnv esa.informatik.tu-darmstadt.de:user:PCIeBridgeToLite:1.0 "PCIeBridgeToLite"]
     connect_bd_net [get_bd_pins axi_pcie3_0/axi_aclk] [get_bd_pins $bridge/S_AXI_ACLK]

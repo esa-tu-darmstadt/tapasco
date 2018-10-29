@@ -294,6 +294,21 @@ namespace eval ::tapasco::ip {
     return $inst
   }
 
+  proc create_msixusptrans {name pcie} {
+    variable stdcomps
+    puts "Creating translator for US+ MSIx VLNV and connecting it to $pcie ..."
+    puts "  VLNV: [dict get $stdcomps msixusptrans vlnv]"
+
+    set inst [create_bd_cell -type ip -vlnv [dict get $stdcomps msixusptrans vlnv] $name]
+    connect_bd_net [get_bd_pins $pcie/cfg_interrupt_msix_address] [get_bd_pins $inst/m_cfg_interrupt_msix_address]
+    connect_bd_net [get_bd_pins $pcie/cfg_interrupt_msix_data] [get_bd_pins $inst/m_cfg_interrupt_msix_data]
+    connect_bd_net [get_bd_pins $inst/m_cfg_interrupt_msix_int] [get_bd_pins $pcie/cfg_interrupt_msix_int]
+    connect_bd_net [get_bd_pins $pcie/cfg_interrupt_msix_enable] [get_bd_pins $inst/m_cfg_interrupt_msix_enable]
+    connect_bd_net [get_bd_pins $pcie/cfg_interrupt_msi_fail] [get_bd_pins $inst/m_cfg_interrupt_msix_fail]
+    connect_bd_net [get_bd_pins $inst/m_cfg_interrupt_msix_sent] [get_bd_pins $pcie/cfg_interrupt_msi_sent]
+    return $inst
+  }
+
   # Instantiates an AXI System Cache.
   # @param name Name of the instance.
   proc create_axi_cache {name {num_ports 3} {size 262144} {num_sets 2}} {

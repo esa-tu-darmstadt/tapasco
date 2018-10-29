@@ -87,6 +87,8 @@ namespace eval platform {
                h2c "4" c2h "4" }  \
                $axi_pcie3_0
 
+    tapasco::ip::create_msixusptrans "MSIxTranslator" $axi_pcie3_0
+
     return $axi_pcie3_0
   }
 }

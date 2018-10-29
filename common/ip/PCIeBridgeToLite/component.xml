@@ -611,7 +611,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>e11af023</spirit:value>
+            <spirit:value>dac150e9</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -627,7 +627,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>e11af023</spirit:value>
+            <spirit:value>dac150e9</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -707,7 +707,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long">3</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -945,7 +945,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long">3</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -1051,7 +1051,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long">3</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -1407,7 +1407,7 @@
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">2</spirit:left>
+            <spirit:left spirit:format="long">3</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -1762,7 +1762,7 @@
       <spirit:file>
         <spirit:name>src/mkPCIeBridgeToLite.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_e19b7451</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_9338a7bf</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -1826,18 +1826,18 @@
       <xilinx:displayName>PCIeBridgeToLite</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2018-08-16T14:01:25Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2018-10-26T14:53:27Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
-      <xilinx:xilinxVersion>2018.2</xilinx:xilinxVersion>
+      <xilinx:xilinxVersion>2018.1</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="cc995e68"/>
       <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="ad6fee34"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="55531630"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="b3bf3353"/>
-      <xilinx:checksum xilinx:scope="ports" xilinx:value="7c05c300"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="d7367178"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="f522af88"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="9f0be055"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>
