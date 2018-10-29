@@ -17,7 +17,7 @@ build_sbt_tapasco_ubuntu_16_04:
     - apt-get -y update && apt-get -y install unzip git zip findutils curl
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java 9.0.7-zulu
+    - sdk install java
     - sdk install sbt
     - sbt version
     - source setup.sh
@@ -33,7 +33,7 @@ build_sbt_tapasco_ubuntu_18_04:
     - apt-get -y update && apt-get -y install unzip git zip findutils curl
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java 9.0.7-zulu
+    - sdk install java
     - sdk install sbt
     - sbt version
     - source setup.sh
@@ -49,7 +49,7 @@ build_sbt_tapasco_fedora_27:
     - dnf -y install which unzip git zip findutils
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java 9.0.7-zulu
+    - sdk install java
     - sdk install sbt
     - sbt version
     - source setup.sh
@@ -65,7 +65,7 @@ build_sbt_tapasco_fedora_28:
     - dnf -y install which unzip git zip findutils
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java 9.0.7-zulu
+    - sdk install java
     - sdk install sbt
     - sbt version
     - source setup.sh
