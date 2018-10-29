@@ -50,11 +50,19 @@ object EvaluateIP {
   /** Template for the out-of-context synth+PnR script. */
   final val tclTemplate = Common.commonDir.resolve("evaluate_ip.tcl.template")
 
-  // custom ProcessIO: ignore everything
+  def captureProcessOutput(input : java.io.InputStream) : Unit = {
+    val buffer = new Array[Byte](1024)
+    val stringBuilder : StringBuilder = new StringBuilder
+    Stream.continually(input.read(buffer)).takeWhile(_ != -1).foreach(stringBuilder.append(buffer, 0, _))
+    logger.debug(stringBuilder.toString())
+    input.close()
+  }
+
+  // custom ProcessIO: Write stdout and stderr to DEBUG-level log.
   private final val io = new ProcessIO(
     stdin => {stdin.close()},
-    stdout => {stdout.close()},
-    stderr => {stderr.close()}
+    captureProcessOutput,
+    captureProcessOutput
   )
 
   /** Managment of temporary files, directories, reports. */
