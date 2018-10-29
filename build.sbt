@@ -6,7 +6,7 @@ version := tapascoVersion
 
 name := "Tapasco"
 
-scalaVersion := "2.12.4"
+scalaVersion := "2.12.7"
 
 libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-compiler" % scalaVersion.value,
