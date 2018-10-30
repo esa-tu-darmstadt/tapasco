@@ -22,6 +22,7 @@
 #
 namespace eval platform {
   set platform_dirname "vcu118"
+  set pcie_width "x16"
 
   source $::env(TAPASCO_HOME)/platform/pcie/pcie_base.tcl
 
@@ -42,7 +43,7 @@ namespace eval platform {
     set pcie_properties [list \
       CONFIG.functional_mode {AXI_Bridge} \
       CONFIG.mode_selection {Advanced} \
-      CONFIG.pl_link_cap_max_link_width {X8} \
+      CONFIG.pl_link_cap_max_link_width {X16} \
       CONFIG.pl_link_cap_max_link_speed {8.0_GT/s} \
       CONFIG.axi_addr_width {64} \
       CONFIG.pipe_sim {true} \
@@ -58,7 +59,7 @@ namespace eval platform {
       CONFIG.pf0_bar0_size {64} \
       CONFIG.pf0_bar0_scale {Megabytes} \
       CONFIG.pf0_bar0_64bit {true} \
-      CONFIG.axi_data_width {256_bit} \
+      CONFIG.axi_data_width {512_bit} \
       CONFIG.pf0_device_id {7038} \
       CONFIG.pf0_class_code_base {05} \
       CONFIG.pf0_class_code_sub {80} \
@@ -78,7 +79,7 @@ namespace eval platform {
     set_property -dict $pcie_properties $axi_pcie3_0
     apply_bd_automation -rule xilinx.com:bd_rule:xdma \
       -config {auto_level "IP Level" \
-               lane_width "X8" \
+               lane_width "X16" \
                link_speed "8.0 GT/s (PCIe Gen 3)" \
                axi_clk "Maximum Data Width" \
                axi_intf "AXI Memory Mapped" \
