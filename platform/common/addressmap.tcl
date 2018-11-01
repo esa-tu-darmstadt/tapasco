@@ -157,17 +157,17 @@ namespace eval addressmap {
               puts "    neither $intf nor $sintf were found in address map for $seg: $::errorInfo"
               puts "    assuming internal connection, setting values as found in segment:"
               set range  [get_property RANGE $seg]
-              puts "      range: $range"
               if {$range eq ""} {
-                puts "      found no range on segment $seg, skipping"
+                puts "      found no range on segment $seg, setting to max"
                 report_property $seg
-                continue
+                set range [expr "1 << 64"]
               }
+              puts "      range: $range"
               set offset [get_property OFFSET $seg]
               if {$offset eq ""} {
-                puts "      found no offset on segment $seg, skipping"
+                puts "      found no offset on segment $seg, setting to zero"
                 report_property $seg
-                continue
+                set offset 0
               }
               puts "      offset: $offset"
               set me [dict create "range" $range "offset" $offset "space" $space seg "$seg"]

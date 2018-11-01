@@ -313,6 +313,8 @@
     connect_bd_intf_net [get_bd_intf_pins -regexp $pcie/M_AXI(_B)?] \
       [get_bd_intf_pins -of_objects $bridge -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
 
+    #assign_bd_address [get_bd_addr_segs {$bridge/S_AXI/reg0 }]
+
     set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
     tapasco::ip::connect_sc_default_clocks $out_ic "host"
     connect_bd_intf_net [get_bd_intf_pins -of_objects $bridge -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Master"] \
