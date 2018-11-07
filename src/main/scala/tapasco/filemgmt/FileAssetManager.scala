@@ -107,7 +107,7 @@ final object FileAssetManager extends Publisher {
       def update(e: BasePathManager.Event): Unit = e match {
         case BasePathManager.BasePathChanged(base, path) =>
           _dirs.synchronized { _dirs += base -> path }
-          if (e equals Entities.Cores) reports.clear(Some(Set(path)))
+          if (base equals Entities.Cores) reports.clear(Some(Set(path)))
           restartWatcher()
           publish(Events.BasePathChanged(base, path))
       }
