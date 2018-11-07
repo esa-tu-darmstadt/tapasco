@@ -90,7 +90,7 @@ object CoreStatistics {
             (for (t <- r.timing; c <- cd.averageClockCycles)
               yield "%2.2f" format (1.0 / ((t.clockPeriod * c) / 1000000000.0f))).getOrElse("")
            ) mkString ","
-      } getOrElse ""
+      } getOrElse "NA,NA"
 
   private def dumpMaxDelayPath(r: Option[TimingReport]): String =
     Seq(r.map(_.maxDelayPath.slack),
