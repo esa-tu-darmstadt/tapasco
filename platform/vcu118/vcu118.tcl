@@ -40,6 +40,7 @@ namespace eval platform {
 
     # create PCIe core
     set axi_pcie3_0 [tapasco::ip::create_axi_pcie3_0_usp "axi_pcie3_0"]
+
     set pcie_properties [list \
       CONFIG.functional_mode {AXI_Bridge} \
       CONFIG.mode_selection {Advanced} \
@@ -52,7 +53,7 @@ namespace eval platform {
       CONFIG.pf0_sub_class_interface_menu {Other_memory_controller} \
       CONFIG.pf0_interrupt_pin {NONE} CONFIG.pf0_msi_enabled {false} \
       CONFIG.SYS_RST_N_BOARD_INTERFACE {pcie_perstn} \
-      CONFIG.PCIE_BOARD_INTERFACE {pci_express_x8} \
+      CONFIG.PCIE_BOARD_INTERFACE {pci_express_x16} \
       CONFIG.pf0_msix_enabled {true} \
       CONFIG.c_m_axi_num_write {32} \
       CONFIG.pf0_msix_impl_locn {External} \
@@ -77,6 +78,7 @@ namespace eval platform {
       ]
 
     set_property -dict $pcie_properties $axi_pcie3_0
+
     apply_bd_automation -rule xilinx.com:bd_rule:xdma \
       -config {auto_level "IP Level" \
                lane_width "X16" \
@@ -87,6 +89,7 @@ namespace eval platform {
                bypass_size "Disable" \
                h2c "4" c2h "4" }  \
                $axi_pcie3_0
+
 
     tapasco::ip::create_msixusptrans "MSIxTranslator" $axi_pcie3_0
 
