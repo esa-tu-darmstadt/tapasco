@@ -1102,7 +1102,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>3b0ee4a4</spirit:value>
+            <spirit:value>b3bbc5d1</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -1118,7 +1118,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>4980578c</spirit:value>
+            <spirit:value>c2fdff1c</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -2983,7 +2983,7 @@
       <spirit:file>
         <spirit:name>src/mkBlueDMAVivado.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_4b8d4ef2</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_e9ed7cc9</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>constraints/bluedma.xdc</spirit:name>
@@ -3083,7 +3083,7 @@
       <xilinx:displayName>BlueDMA_x16</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2018-10-30T11:52:25Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2018-11-20T15:19:26Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
@@ -3093,7 +3093,7 @@
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="54f03df3"/>
       <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="2ab1796e"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="6362e295"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="c8a8111f"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="f3c92ef1"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="6a025e53"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="ce7bf2c3"/>
     </xilinx:packagingInfo>
