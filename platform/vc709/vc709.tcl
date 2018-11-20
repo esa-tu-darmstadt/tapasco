@@ -342,5 +342,29 @@ namespace eval platform {
     close $mig_prj_file
   }
   # End of write_mig_file_design_1_mig_7series_0_0()
+    namespace eval vc709 {
+        namespace export set_pblocks
 
+        proc set_pblocks {args} {
+            startgroup
+            create_pblock pblock_mig
+            resize_pblock pblock_mig -add {SLICE_X156Y425:SLICE_X221Y499 DSP48_X13Y170:DSP48_X17Y199 RAMB18_X10Y170:RAMB18_X14Y199 RAMB36_X10Y85:RAMB36_X14Y99}
+            add_cells_to_pblock pblock_mig [get_cells [list system_i/memory/mig]]
+            endgroup
+            startgroup
+            create_pblock pblock_dma
+            resize_pblock pblock_dma -add {SLICE_X168Y301:SLICE_X221Y424 DSP48_X15Y122:DSP48_X17Y169 RAMB18_X11Y122:RAMB18_X14Y169 RAMB36_X11Y61:RAMB36_X14Y84}
+            add_cells_to_pblock pblock_dma [get_cells [list system_i/memory/dma]]
+            endgroup
+            startgroup
+            create_pblock pblock_axi_pcie3_0
+            resize_pblock pblock_axi_pcie3_0 -add {SLICE_X170Y200:SLICE_X221Y299 DSP48_X15Y80:DSP48_X17Y119 RAMB18_X11Y80:RAMB18_X14Y119 RAMB36_X11Y40:RAMB36_X14Y59}
+            add_cells_to_pblock pblock_axi_pcie3_0 [get_cells [list system_i/host/axi_pcie3_0]]
+            endgroup
+            return $args
+        }
+    }
+
+
+    tapasco::register_plugin "platform::vc709::set_pblocks" "post-synth"
 }
