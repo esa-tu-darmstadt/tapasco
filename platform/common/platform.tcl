@@ -174,8 +174,6 @@ namespace eval platform {
     generate_target all [get_files system.bd]
     set synth_run [get_runs synth_1]
     set_property -dict [list \
-      strategy Flow_PerfOptimized_high \
-      STEPS.SYNTH_DESIGN.ARGS.DIRECTIVE AlternateRoutability \
       STEPS.SYNTH_DESIGN.ARGS.RETIMING true \
     ] $synth_run
     current_run $synth_run
@@ -189,7 +187,6 @@ namespace eval platform {
 
     set impl_run [get_runs impl_1]
     set_property -dict [list \
-      STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE Explore \
       STEPS.PHYS_OPT_DESIGN.IS_ENABLED true \
     ] $impl_run
     current_run $impl_run
