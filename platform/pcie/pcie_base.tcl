@@ -203,11 +203,13 @@
       set cache [tapasco::ip::create_axi_cache "cache_l2" 1 \
           [dict get [tapasco::get_feature "Cache"] "size"] \
           [dict get [tapasco::get_feature "Cache"] "associativity"]]
+      # set slave port width to 512bit, otherwise uses (not working) width conversion in SmartConnect
+      set_property CONFIG.C_S0_AXI_GEN_DATA_WIDTH {512} $cache
 
       # connect mig_ic master to cache_l2
       connect_bd_intf_net [get_bd_intf_pins mig_ic/M00_AXI] [get_bd_intf_pins $cache/S0_AXI_GEN]
       # connect cache_l2 to MIG
-      connect_bd_intf_net [get_bd_intf_pins $cache/M_AXI] [get_bd_intf_pins  -regexp mig/(C0_DDR4_)?S_AXI]
+      connect_bd_intf_net [get_bd_intf_pins $cache/M0_AXI] [get_bd_intf_pins -regexp mig/(C0_DDR4_)?S_AXI]
     } {
       puts "Platform configured w/o L2 Cache"
       # no cache - connect directly to MIG

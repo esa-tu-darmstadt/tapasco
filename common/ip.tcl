@@ -322,10 +322,10 @@ namespace eval ::tapasco::ip {
     set inst [create_bd_cell -type ip -vlnv [dict get $stdcomps system_cache vlnv] $name]
     set_property -dict [list \
       CONFIG.C_CACHE_SIZE $size \
-      CONFIG.C_M_AXI_THREAD_ID_WIDTH {6} \
+      CONFIG.C_M0_AXI_THREAD_ID_WIDTH {6} \
       CONFIG.C_NUM_GENERIC_PORTS $num_ports \
       CONFIG.C_NUM_OPTIMIZED_PORTS {0} \
-      CONFIG.C_NUM_SETS $num_sets \
+      CONFIG.C_NUM_WAYS $num_sets \
     ] $inst
     return $inst
   }
