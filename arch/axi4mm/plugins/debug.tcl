@@ -28,42 +28,58 @@ namespace eval debug {
       set stages      2
       set interfaces  {}
 
+      # map interfaces to clock domain
+      set intf_map    [dict create]
+
       set debug [tapasco::get_feature "Debug"]
       puts "Debug feature enabled: $debug"
       dict with debug {
         set num_ifs [llength $interfaces]
         if {$num_ifs > 0} {
-          set i 0
           foreach ifs $interfaces {
             puts "   found interface def: $ifs"
             if {[llength $ifs] == 3} {
-              set s_ila [tapasco::ip::create_system_ila "SILA_$i" $num_ifs $depth $stages]
-              set_property -dict [list CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE0_MU_CNT {6} CONFIG.ALL_PROBE_SAME_MU_CNT {6}] $s_ila
-              puts "  create System ILA SILA_$i for $num_ifs interfaces with depth $depth and $stages stages"
-              set intf [get_bd_intf_pins [lindex $ifs 0]]
-              set clk [get_bd_pins [lindex $ifs 1]]
-              set rst [get_bd_pins [lindex $ifs 2]]
-              puts "  connecting $intf to port #$i, clock to $clk, reset to $rst ..."
-              connect_bd_intf_net $intf [get_bd_intf_pins "$s_ila/SLOT_${i}_AXI"]
-              connect_bd_net $clk [get_bd_pins -of_objects $s_ila -filter {TYPE == clk && DIR == I}]
-              connect_bd_net $rst [get_bd_pins -of_objects $s_ila -filter {TYPE == rst && DIR == I}]
-              incr i
+              # use clock domain as key in dict
+              # TODO retrieve clock domain from interface
+              set clk [lindex $ifs 1]
+              dict lappend intf_map $clk $ifs
             } else {
               error "expected three elements for debugging interface: interface, clock and reset; found: $ifs"
             }
           }
+          set i 0
+          dict for {clk intfs} $intf_map {
+            set num_ifs [llength $intfs]
+            set s_ila [tapasco::ip::create_system_ila "SILA_$i" $num_ifs $depth $stages]
+            set_property -dict [list CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE0_MU_CNT {6} CONFIG.ALL_PROBE_SAME_MU_CNT {6}] $s_ila
+            puts "  create System ILA SILA_$i for $num_ifs interfaces with depth $depth and $stages stages"
+            set s 0
+            foreach ifs $intfs {
+              set intf [get_bd_intf_pins [lindex $ifs 0]]
+              set clk [get_bd_pins [lindex $ifs 1]]
+              set rst [get_bd_pins [lindex $ifs 2]]
+              puts "    connecting $intf to port #$i"
+              connect_bd_intf_net $intf [get_bd_intf_pins "$s_ila/SLOT_${s}_AXI"]
+              incr s
+            }
+            puts "  connecting clock to $clk, reset to $rst ..."
+            connect_bd_net $clk [get_bd_pins -of_objects $s_ila -filter {TYPE == clk && DIR == I}]
+            connect_bd_net $rst [get_bd_pins -of_objects $s_ila -filter {TYPE == rst && DIR == I}]
+            incr i
+          }
         }
       }
     }
+    return $args
+  }
 
-    proc write_ltx {} {
-      global bitstreamname
-      if {[tapasco::is_feature_enabled "Debug"]} {
-        puts "Writing debug probes into file ${bitstreamname}.ltx ..."
-        write_debug_probes -force -verbose "${bitstreamname}.ltx"
-      }
-      return {}
+  proc write_ltx {args} {
+    global bitstreamname
+    if {[tapasco::is_feature_enabled "Debug"]} {
+      puts "Writing debug probes into file ${bitstreamname}.ltx ..."
+      write_debug_probes -force -verbose "${bitstreamname}.ltx"
     }
+    return $args
   }
 
   tapasco::register_plugin "arch::debug::debug_feature" "pre-wrapper"
