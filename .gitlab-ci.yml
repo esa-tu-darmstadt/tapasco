@@ -81,6 +81,9 @@ build_kernel_ubuntu_16_04:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
     - source setup.sh
     - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j release; popd; done
+  artifacts:
+    paths:
+      - tlkm/tlkm.ko
 
 build_kernel_ubuntu_18_04:
   stage: build_tests
@@ -92,6 +95,9 @@ build_kernel_ubuntu_18_04:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
     - source setup.sh
     - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j release; popd; done
+  artifacts:
+    paths:
+      - tlkm/tlkm.ko
 
 build_kernel_fedora_27:
   stage: build_tests
@@ -103,6 +109,9 @@ build_kernel_fedora_27:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
     - source setup.sh
     - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j release; popd; done
+  artifacts:
+    paths:
+      - tlkm/tlkm.ko
 
 build_kernel_fedora_28:
   stage: build_tests
@@ -114,6 +123,23 @@ build_kernel_fedora_28:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
     - source setup.sh
     - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j release; popd; done
+  artifacts:
+    paths:
+      - tlkm/tlkm.ko
+
+build_kernel_fedora_29:
+  stage: build_tests
+  image: fedora:29
+  tags:
+    - CAD
+    - Normal
+  script:
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
+    - source setup.sh
+    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j release; popd; done
+  artifacts:
+    paths:
+      - tlkm/tlkm.ko
 
 build_kernel_ubuntu_16_04_debug:
   stage: build_tests
@@ -125,6 +151,9 @@ build_kernel_ubuntu_16_04_debug:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
     - source setup.sh
     - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j; popd; done
+  artifacts:
+    paths:
+      - tlkm/tlkm.ko
 
 build_kernel_ubuntu_18_04_debug:
   stage: build_tests
@@ -136,6 +165,9 @@ build_kernel_ubuntu_18_04_debug:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
     - source setup.sh
     - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j; popd; done
+  artifacts:
+    paths:
+      - tlkm/tlkm.ko
 
 build_kernel_fedora_27_debug:
   stage: build_tests
@@ -147,6 +179,9 @@ build_kernel_fedora_27_debug:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
     - source setup.sh
     - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j; popd; done
+  artifacts:
+    paths:
+      - tlkm/tlkm.ko
 
 build_kernel_fedora_28_debug:
   stage: build_tests
@@ -158,6 +193,23 @@ build_kernel_fedora_28_debug:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
     - source setup.sh
     - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j; popd; done
+  artifacts:
+    paths:
+      - tlkm/tlkm.ko
+
+build_kernel_fedora_29_debug:
+  stage: build_tests
+  image: fedora:29
+  tags:
+    - CAD
+    - Normal
+  script:
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
+    - source setup.sh
+    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j; popd; done
+  artifacts:
+    paths:
+      - tlkm/tlkm.ko
 
 build_tapasco_ubuntu_16_04:
   stage: build_tests
@@ -169,6 +221,9 @@ build_tapasco_ubuntu_16_04:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git
     - source setup.sh
     - tapasco-build-libs --mode=release --skip_driver
+    - cd build && make package
+  artifacts:
+    - builds/tapasco-0.1.1-Linux.deb
 
 build_tapasco_ubuntu_18_04:
   stage: build_tests
@@ -180,6 +235,9 @@ build_tapasco_ubuntu_18_04:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git
     - source setup.sh
     - tapasco-build-libs --mode=release --skip_driver
+    - cd build && make package
+  artifacts:
+    - builds/tapasco-0.1.1-Linux.deb
 
 build_tapasco_fedora_27:
   stage: build_tests
@@ -191,6 +249,9 @@ build_tapasco_fedora_27:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git
     - source setup.sh
     - tapasco-build-libs --mode=release --skip_driver
+    - cd build && make package
+  artifacts:
+    - builds/tapasco-0.1.1-Linux.rpm
 
 build_tapasco_fedora_28:
   stage: build_tests
@@ -202,6 +263,23 @@ build_tapasco_fedora_28:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git
     - source setup.sh
     - tapasco-build-libs --mode=release --skip_driver
+    - cd build && make package
+  artifacts:
+    - builds/tapasco-0.1.1-Linux.rpm
+
+build_tapasco_fedora_29:
+  stage: build_tests
+  image: fedora:28
+  tags:
+    - CAD
+    - Normal
+  script:
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git
+    - source setup.sh
+    - tapasco-build-libs --mode=release --skip_driver
+    - cd build && make package
+  artifacts:
+    - builds/tapasco-0.1.1-Linux.rpm
 
 build_tapasco_ubuntu_16_04_debug:
   stage: build_tests
@@ -213,6 +291,9 @@ build_tapasco_ubuntu_16_04_debug:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git
     - source setup.sh
     - tapasco-build-libs --mode=debug --skip_driver
+    - cd build && make package
+  artifacts:
+    - builds/tapasco-0.1.1-Linux.deb
 
 build_tapasco_ubuntu_18_04_debug:
   stage: build_tests
@@ -224,6 +305,9 @@ build_tapasco_ubuntu_18_04_debug:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git
     - source setup.sh
     - tapasco-build-libs --mode=debug --skip_driver
+    - cd build && make package
+  artifacts:
+    - builds/tapasco-0.1.1-Linux.deb
 
 build_tapasco_fedora_27_debug:
   stage: build_tests
@@ -235,6 +319,9 @@ build_tapasco_fedora_27_debug:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git
     - source setup.sh
     - tapasco-build-libs --mode=debug --skip_driver
+    - cd build && make package
+  artifacts:
+    - builds/tapasco-0.1.1-Linux.rpm
 
 build_tapasco_fedora_28_debug:
   stage: build_tests
@@ -246,3 +333,20 @@ build_tapasco_fedora_28_debug:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git
     - source setup.sh
     - tapasco-build-libs --mode=debug --skip_driver
+    - cd build && make package
+  artifacts:
+    - builds/tapasco-0.1.1-Linux.rpm
+
+build_tapasco_fedora_29_debug:
+  stage: build_tests
+  image: fedora:29
+  tags:
+    - CAD
+    - Normal
+  script:
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git
+    - source setup.sh
+    - tapasco-build-libs --mode=debug --skip_driver
+    - cd build && make package
+  artifacts:
+    - builds/tapasco-0.1.1-Linux.rpm
