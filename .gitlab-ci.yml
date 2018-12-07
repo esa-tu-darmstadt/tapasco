@@ -223,7 +223,8 @@ build_tapasco_ubuntu_16_04:
     - tapasco-build-libs --mode=release --skip_driver
     - cd build && make package
   artifacts:
-    - builds/tapasco-0.1.1-Linux.deb
+    paths:
+      - builds/tapasco-0.1.1-Linux.deb
 
 build_tapasco_ubuntu_18_04:
   stage: build_tests
@@ -237,7 +238,8 @@ build_tapasco_ubuntu_18_04:
     - tapasco-build-libs --mode=release --skip_driver
     - cd build && make package
   artifacts:
-    - builds/tapasco-0.1.1-Linux.deb
+    paths:
+      - builds/tapasco-0.1.1-Linux.deb
 
 build_tapasco_fedora_27:
   stage: build_tests
@@ -251,7 +253,8 @@ build_tapasco_fedora_27:
     - tapasco-build-libs --mode=release --skip_driver
     - cd build && make package
   artifacts:
-    - builds/tapasco-0.1.1-Linux.rpm
+    paths:
+      - builds/tapasco-0.1.1-Linux.rpm
 
 build_tapasco_fedora_28:
   stage: build_tests
@@ -265,7 +268,8 @@ build_tapasco_fedora_28:
     - tapasco-build-libs --mode=release --skip_driver
     - cd build && make package
   artifacts:
-    - builds/tapasco-0.1.1-Linux.rpm
+    paths:
+      - builds/tapasco-0.1.1-Linux.rpm
 
 build_tapasco_fedora_29:
   stage: build_tests
@@ -279,7 +283,8 @@ build_tapasco_fedora_29:
     - tapasco-build-libs --mode=release --skip_driver
     - cd build && make package
   artifacts:
-    - builds/tapasco-0.1.1-Linux.rpm
+    paths:
+      - builds/tapasco-0.1.1-Linux.rpm
 
 build_tapasco_ubuntu_16_04_debug:
   stage: build_tests
@@ -293,7 +298,8 @@ build_tapasco_ubuntu_16_04_debug:
     - tapasco-build-libs --mode=debug --skip_driver
     - cd build && make package
   artifacts:
-    - builds/tapasco-0.1.1-Linux.deb
+    paths:
+      - builds/tapasco-0.1.1-Linux.deb
 
 build_tapasco_ubuntu_18_04_debug:
   stage: build_tests
@@ -307,7 +313,8 @@ build_tapasco_ubuntu_18_04_debug:
     - tapasco-build-libs --mode=debug --skip_driver
     - cd build && make package
   artifacts:
-    - builds/tapasco-0.1.1-Linux.deb
+    paths:
+      - builds/tapasco-0.1.1-Linux.deb
 
 build_tapasco_fedora_27_debug:
   stage: build_tests
@@ -321,7 +328,8 @@ build_tapasco_fedora_27_debug:
     - tapasco-build-libs --mode=debug --skip_driver
     - cd build && make package
   artifacts:
-    - builds/tapasco-0.1.1-Linux.rpm
+    paths:
+      - builds/tapasco-0.1.1-Linux.rpm
 
 build_tapasco_fedora_28_debug:
   stage: build_tests
@@ -335,7 +343,8 @@ build_tapasco_fedora_28_debug:
     - tapasco-build-libs --mode=debug --skip_driver
     - cd build && make package
   artifacts:
-    - builds/tapasco-0.1.1-Linux.rpm
+    paths:
+      - builds/tapasco-0.1.1-Linux.rpm
 
 build_tapasco_fedora_29_debug:
   stage: build_tests
@@ -349,4 +358,5 @@ build_tapasco_fedora_29_debug:
     - tapasco-build-libs --mode=debug --skip_driver
     - cd build && make package
   artifacts:
-    - builds/tapasco-0.1.1-Linux.rpm
+    paths:
+      - builds/tapasco-0.1.1-Linux.rpm
