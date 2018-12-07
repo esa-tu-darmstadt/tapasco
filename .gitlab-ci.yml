@@ -218,7 +218,7 @@ build_tapasco_ubuntu_16_04:
     - CAD
     - Normal
   script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
     - source setup.sh
     - tapasco-build-libs --mode=release --skip_driver
     - cd build && make package
@@ -233,7 +233,7 @@ build_tapasco_ubuntu_18_04:
     - CAD
     - Normal
   script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
     - source setup.sh
     - tapasco-build-libs --mode=release --skip_driver
     - cd build && make package
@@ -248,7 +248,7 @@ build_tapasco_fedora_27:
     - CAD
     - Normal
   script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
     - source setup.sh
     - tapasco-build-libs --mode=release --skip_driver
     - cd build && make package
@@ -263,7 +263,7 @@ build_tapasco_fedora_28:
     - CAD
     - Normal
   script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
     - source setup.sh
     - tapasco-build-libs --mode=release --skip_driver
     - cd build && make package
@@ -278,7 +278,7 @@ build_tapasco_fedora_29:
     - CAD
     - Normal
   script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
     - source setup.sh
     - tapasco-build-libs --mode=release --skip_driver
     - cd build && make package
@@ -293,7 +293,7 @@ build_tapasco_ubuntu_16_04_debug:
     - CAD
     - Normal
   script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
     - source setup.sh
     - tapasco-build-libs --mode=debug --skip_driver
     - cd build && make package
@@ -308,7 +308,7 @@ build_tapasco_ubuntu_18_04_debug:
     - CAD
     - Normal
   script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
     - source setup.sh
     - tapasco-build-libs --mode=debug --skip_driver
     - cd build && make package
@@ -323,7 +323,7 @@ build_tapasco_fedora_27_debug:
     - CAD
     - Normal
   script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
     - source setup.sh
     - tapasco-build-libs --mode=debug --skip_driver
     - cd build && make package
@@ -338,7 +338,7 @@ build_tapasco_fedora_28_debug:
     - CAD
     - Normal
   script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
     - source setup.sh
     - tapasco-build-libs --mode=debug --skip_driver
     - cd build && make package
@@ -353,7 +353,7 @@ build_tapasco_fedora_29_debug:
     - CAD
     - Normal
   script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
     - source setup.sh
     - tapasco-build-libs --mode=debug --skip_driver
     - cd build && make package
