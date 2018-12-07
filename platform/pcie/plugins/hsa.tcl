@@ -138,14 +138,13 @@ namespace eval hsa {
     return $args
   }
 
-  proc fix_addressmap {args} {
-    if {[tapasco::is_feature_enabled "HSA"]} {
-        #set_property offset 0x0000000000000000 [get_bd_addr_segs {host/PCIeBridgeToLite/M_AXI/AM_SEG_004}]
-        #set_property offset 0x0000000000001000 [get_bd_addr_segs {host/PCIeBridgeToLite/M_AXI/AM_SEG_005}]
+    proc set_pblocks {args} {
+        create_pblock pblock_HSAWrapper
+        resize_pblock pblock_HSAWrapper -add {SLICE_X92Y215:SLICE_X165Y424 DSP48_X6Y86:DSP48_X14Y169 RAMB18_X6Y86:RAMB18_X10Y169 RAMB36_X6Y43:RAMB36_X10Y84}
+        add_cells_to_pblock pblock_HSAWrapper [get_cells [list system_i/hsa/HSAWrapper]]
+        return $args
     }
-    return $args
-  }
 }
 
 tapasco::register_plugin "platform::hsa::addressmap" "post-address-map"
-tapasco::register_plugin "platform::hsa::fix_addressmap" "pre-wrapper"
+tapasco::register_plugin "platform::hsa::set_pblocks" "post-synth"
