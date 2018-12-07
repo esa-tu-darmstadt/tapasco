@@ -224,7 +224,7 @@ build_tapasco_ubuntu_16_04:
     - cd build && make package
   artifacts:
     paths:
-      - build/tapasco-0.1.1-Linux.deb
+      - build/tapasco-2018.2.1-Linux.deb
 
 build_tapasco_ubuntu_18_04:
   stage: build_tests
@@ -239,7 +239,7 @@ build_tapasco_ubuntu_18_04:
     - cd build && make package
   artifacts:
     paths:
-      - build/tapasco-0.1.1-Linux.deb
+      - build/tapasco-2018.2.1-Linux.deb
 
 build_tapasco_fedora_27:
   stage: build_tests
@@ -254,7 +254,7 @@ build_tapasco_fedora_27:
     - cd build && make package
   artifacts:
     paths:
-      - build/tapasco-0.1.1-Linux.rpm
+      - build/tapasco-2018.2.1-Linux.rpm
 
 build_tapasco_fedora_28:
   stage: build_tests
@@ -269,7 +269,7 @@ build_tapasco_fedora_28:
     - cd build && make package
   artifacts:
     paths:
-      - build/tapasco-0.1.1-Linux.rpm
+      - build/tapasco-2018.2.1-Linux.rpm
 
 build_tapasco_fedora_29:
   stage: build_tests
@@ -284,7 +284,7 @@ build_tapasco_fedora_29:
     - cd build && make package
   artifacts:
     paths:
-      - build/tapasco-0.1.1-Linux.rpm
+      - build/tapasco-2018.2.1-Linux.rpm
 
 build_tapasco_ubuntu_16_04_debug:
   stage: build_tests
@@ -299,7 +299,7 @@ build_tapasco_ubuntu_16_04_debug:
     - cd build && make package
   artifacts:
     paths:
-      - build/tapasco-0.1.1-Linux.deb
+      - build/tapasco-2018.2.1-Linux.deb
 
 build_tapasco_ubuntu_18_04_debug:
   stage: build_tests
@@ -314,7 +314,7 @@ build_tapasco_ubuntu_18_04_debug:
     - cd build && make package
   artifacts:
     paths:
-      - build/tapasco-0.1.1-Linux.deb
+      - build/tapasco-2018.2.1-Linux.deb
 
 build_tapasco_fedora_27_debug:
   stage: build_tests
@@ -329,7 +329,7 @@ build_tapasco_fedora_27_debug:
     - cd build && make package
   artifacts:
     paths:
-      - build/tapasco-0.1.1-Linux.rpm
+      - build/tapasco-2018.2.1-Linux.rpm
 
 build_tapasco_fedora_28_debug:
   stage: build_tests
@@ -344,7 +344,7 @@ build_tapasco_fedora_28_debug:
     - cd build && make package
   artifacts:
     paths:
-      - build/tapasco-0.1.1-Linux.rpm
+      - build/tapasco-2018.2.1-Linux.rpm
 
 build_tapasco_fedora_29_debug:
   stage: build_tests
@@ -359,4 +359,4 @@ build_tapasco_fedora_29_debug:
     - cd build && make package
   artifacts:
     paths:
-      - build/tapasco-0.1.1-Linux.rpm
+      - build/tapasco-2018.2.1-Linux.rpm
