@@ -16,11 +16,13 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+from subprocess import call
+call(['doxygen', 'Doxyfile'])
 
 # -- Project information -----------------------------------------------------
 
 project = u'Tapasco'
-copyright = u'2019, Jens Korinth, Jaco Hofmann, Carsten Heinz, Lukas Sommer'
+copyright = u'2019, ESA, TU Darmstadt'
 author = u'Jens Korinth, Jaco Hofmann, Carsten Heinz, Lukas Sommer'
 
 # The short X.Y version
@@ -28,7 +30,7 @@ version = u''
 # The full version, including alpha/beta/rc tags
 release = u''
 
-breathe_projects = { "tapasco": "./doxyxml/xml/" }
+breathe_projects = { "tapasco": "./doxyxml/" }
 breathe_default_project = "tapasco"
 
 # -- General configuration ---------------------------------------------------
@@ -47,6 +49,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx_markdown_builder',
     'breathe',
+    'recommonmark',
 ]
 
 
@@ -58,7 +61,7 @@ templates_path = ['_templates']
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ['.rst', '.md']
 
 # The master toctree document.
 master_doc = 'index'
@@ -84,7 +87,7 @@ pygments_style = None
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

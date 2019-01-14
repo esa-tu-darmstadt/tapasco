@@ -50,3 +50,5 @@ bin/tapasco-reportviewer
 webtalk.*
 nf_sume_ddr3A.prj
 .idea
+docs/doxyxml
+docs/_build

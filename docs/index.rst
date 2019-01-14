@@ -7,15 +7,13 @@ Welcome to Tapasco's documentation!
 ===================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
-.. doxygenindex::
-.. doxygenfunction::
-.. doxygenstruct::
-.. doxygenenum::
-.. doxygentypedef::
-.. doxygenclass::
+   extra/pe-local-memories
+   extra/tapasco-features
+   extra/tapasco-debug
+   extra/debugging
 
 Indices and tables
 ==================
