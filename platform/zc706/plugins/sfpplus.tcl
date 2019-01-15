@@ -17,6 +17,7 @@ proc create_custom_subsystem_network {{args {}}} {
   foreach port $value {
     sfpplus::generate_port $port
   }
+    
   puts "Network Connection done"
   current_bd_instance /network
 }
@@ -49,7 +50,7 @@ proc find_ID {input} {
       }
     }
     return -1
-  }
+}
 
 proc countKernels {kernels} {
     variable counter 0
@@ -421,7 +422,8 @@ proc generate_port {input} {
       }
       broadcast  {
         generate_broadcast $kernelc $sync
-        connect_PEs $kernel $PORT $sync
+	connect_PEs $kernel $PORT $sync
+
       }
       roundrobin {
         generate_roundrobin $kernelc $sync
@@ -430,6 +432,7 @@ proc generate_port {input} {
     }
     current_bd_instance $ret
   }
+  
 }
 
 # Create A Broadcast-Config
@@ -470,13 +473,13 @@ proc generate_broadcast {kernelc sync} {
       set_property -dict [list CONFIG.NUM_MI {1} CONFIG.ARB_ON_TLAST {1}] [get_bd_cells transmitter]
       set_property -dict [list CONFIG.M00_FIFO_MODE {1} CONFIG.M00_FIFO_DEPTH {2048}] [get_bd_cells transmitter]
       set_property CONFIG.NUM_SI $kernelc [get_bd_cells transmitter]
-      set_property CONFIG.ARB_ALGORITHM 3 [get_bd_cells transmitter]
+      set_property -dict [list CONFIG.ARB_ALGORITHM {3} CONFIG.ARB_ON_MAX_XFERS {0}] [get_bd_cells transmitter]
 
       for {variable i 0} {$i < $kernelc} {incr i} {
           set_property CONFIG.[format "S%02d" $i]_FIFO_DEPTH 2048 [get_bd_cells transmitter]
           set_property CONFIG.[format "S%02d" $i]_FIFO_MODE 0 [get_bd_cells transmitter]
       }
-
+      
       connect_bd_intf_net [get_bd_intf_pins transmitter/M*_AXIS] [get_bd_intf_pins AXIS_TX]
       connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins transmitter/M*_ACLK]
       connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins transmitter/M*_ARESETN]
@@ -536,7 +539,7 @@ proc generate_roundrobin {kernelc sync} {
   set_property -dict [list CONFIG.NUM_MI {1} CONFIG.ARB_ON_TLAST {1}] [get_bd_cells transmitter]
   set_property -dict [list CONFIG.M00_FIFO_MODE {1} CONFIG.M00_FIFO_DEPTH {2048}] [get_bd_cells transmitter]
   set_property CONFIG.NUM_SI $kernelc [get_bd_cells transmitter]
-  set_property CONFIG.ARB_ALGORITHM 3 [get_bd_cells transmitter]
+  set_property -dict [list CONFIG.ARB_ALGORITHM {3} CONFIG.ARB_ON_MAX_XFERS {0}] [get_bd_cells transmitter]
 
   for {variable i 0} {$i < $kernelc} {incr i} {
     set_property CONFIG.[format "S%02d" $i]_FIFO_DEPTH 2048 [get_bd_cells transmitter]

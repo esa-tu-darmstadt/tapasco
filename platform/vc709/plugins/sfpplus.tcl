@@ -497,7 +497,8 @@ proc generate_broadcast {kernelc sync} {
       set_property -dict [list CONFIG.NUM_MI {1} CONFIG.ARB_ON_TLAST {1}] [get_bd_cells transmitter]
       set_property -dict [list CONFIG.M00_FIFO_MODE {1} CONFIG.M00_FIFO_DEPTH {2048}] [get_bd_cells transmitter]
       set_property CONFIG.NUM_SI $kernelc [get_bd_cells transmitter]
-      set_property CONFIG.ARB_ALGORITHM 3 [get_bd_cells transmitter]
+      set_property -dict [list CONFIG.ARB_ALGORITHM {3} CONFIG.ARB_ON_MAX_XFERS {0}] [get_bd_cells transmitter]
+
 
       for {variable i 0} {$i < $kernelc} {incr i} {
           set_property CONFIG.[format "S%02d" $i]_FIFO_DEPTH 2048 [get_bd_cells transmitter]
@@ -563,7 +564,8 @@ proc generate_roundrobin {kernelc sync} {
   set_property -dict [list CONFIG.NUM_MI {1} CONFIG.ARB_ON_TLAST {1}] [get_bd_cells transmitter]
   set_property -dict [list CONFIG.M00_FIFO_MODE {1} CONFIG.M00_FIFO_DEPTH {2048}] [get_bd_cells transmitter]
   set_property CONFIG.NUM_SI $kernelc [get_bd_cells transmitter]
-  set_property CONFIG.ARB_ALGORITHM 3 [get_bd_cells transmitter]
+  set_property -dict [list CONFIG.ARB_ALGORITHM {3} CONFIG.ARB_ON_MAX_XFERS {0}] [get_bd_cells transmitter]
+
 
   for {variable i 0} {$i < $kernelc} {incr i} {
     set_property CONFIG.[format "S%02d" $i]_FIFO_DEPTH 2048 [get_bd_cells transmitter]
