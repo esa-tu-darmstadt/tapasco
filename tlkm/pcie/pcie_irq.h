@@ -7,6 +7,8 @@
 	#undef _INTR
 #endif
 
+#define NUMBER_OF_INTERRUPTS 128
+
 #define TLKM_PCIE_SLOT_INTERRUPTS \
 	_INTR(0)	\
 	_INTR(1)	\

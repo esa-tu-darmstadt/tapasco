@@ -34,12 +34,10 @@ TLKM_PCIE_SLOT_INTERRUPTS
 int pcie_irqs_init(struct tlkm_device *dev)
 {
 	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
-#define _INTR(nr) + 1
-	size_t const n = 0 TLKM_PCIE_SLOT_INTERRUPTS;
-#undef _INTR
-	int ret = 0, irqn, err[n];
+
+	int ret = 0, irqn, err[NUMBER_OF_INTERRUPTS];
 	BUG_ON(! dev);
-	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registering %zu interrupts ...", n);
+	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registering %d interrupts ...", NUMBER_OF_INTERRUPTS);
 #define _INTR(nr) \
 	irqn = nr + pcie_cls.npirqs; \
 	if ((err[nr] = request_irq(pci_irq_vector(pdev->pdev, irqn), \
