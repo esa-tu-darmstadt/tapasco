@@ -100,19 +100,19 @@ We provided pre-compiled packages for many popular Linux distributions. All pack
 [Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.deb?job=build_tapasco_ubuntu_18_04)
 [Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.deb?job=build_tapasco_ubuntu_18_04_debug)
 
-### Ubuntu Fedora 27
+### Fedora 27
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_27)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_27_debug)
 [Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_27)
 [Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_27_debug)
 
-### Ubuntu Fedora 28
+### Fedora 28
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_28)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_28_debug)
 [Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_28)
 [Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_28_debug)
 
-### Ubuntu Fedora 29
+### Fedora 29
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_29)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_29_debug)
 [Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_29)
