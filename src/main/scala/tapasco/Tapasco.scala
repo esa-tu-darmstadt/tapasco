@@ -25,6 +25,7 @@ import  parser._
 import  slurm._
 import  java.nio.file.Path
 import  scala.concurrent._
+import  java.util.Locale
 
 object Tapasco {
   import org.slf4j.LoggerFactory
@@ -68,6 +69,8 @@ object Tapasco {
   // scalastyle:off cyclomatic.complexity
   // scalastyle:off method.length
   def main(args: Array[String]) {
+    Locale.setDefault(Locale.US);
+
     val cfgargs = if (args.length > 0 && args(0).toLowerCase.equals("itapasco")) args.drop(1) else args
     // try to parse all arguments
     val c = CommandLineParser(cfgargs mkString " ")
