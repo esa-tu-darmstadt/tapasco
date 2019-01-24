@@ -1,0 +1,61 @@
+#!/usr/bin/python
+
+default_version = "v2017.4"
+
+stages = {"v2017.4": ["Calling pre-header plugins", "Subsystem tapasco complete.", "Event pre-wrapper finished.", "Starting RTL Elaboration",
+                      "Finished RTL Component Statistics ", "Starting Routing Task", "Phase 1", "Phase 2", "Phase 3", "Phase 4", "Phase 5", "Phase 6", "Phase 7", "Phase 8", "Phase 9", "Phase 10", "Routing Is Done.", "write_bitstream completed successfully"]}
+
+import argparse
+
+parser = argparse.ArgumentParser(description='Parse Vivado log and show progress information')
+parser.add_argument('log_file', type=str, help='A Vivado log file')
+args = parser.parse_args()
+
+import re
+import sys
+from tqdm import tqdm
+import time
+
+def fetch_vivado_version(filename):
+    with open(filename, 'r') as f:
+        pattern = re.compile("# Vivado (v[0-9]+\.[0-9])")
+        for line in f:
+            m = pattern.search(line)
+            if m:
+                return m.group(1)
+        else:
+            print("Failed to determine Vivado version in {}".format(filename))
+            sys.exit(1)
+
+version = fetch_vivado_version(args.log_file)
+print("Found Vivado Version {}".format(version))
+if version not in stages:
+    print("Vivado version {} is unknown. Resetting to default version {}".format(version, default_version))
+    version = default_version
+
+current_line = 0
+
+f = open(args.log_file, 'r')
+stage = stages[version]
+with tqdm(total=len(stage)) as pbar:
+    for p in stage:
+        searching = True
+        pattern = re.compile(".*" + p + ".*")
+        while searching:
+                line = f.readline()
+                while line == '': # Poor mans iNotify...
+                    pos = f.tell()
+                    f.close()
+                    time.sleep(0.1)
+                    f = open(args.log_file, 'r')
+                    f.seek(pos)
+                    line = f.readline()
+                current_line += 1
+                pbar.set_description('Line {}'.format(current_line))
+                m = pattern.search(line)
+                if m:
+                    searching = False
+                    pbar.update(1)
+                    break
+
+f.close()

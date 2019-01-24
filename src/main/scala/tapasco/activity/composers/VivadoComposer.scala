@@ -65,7 +65,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
                 target       = target,
                 composition  = composition(bd, target))
 
-    logger.info("Vivado starting run {}: output in {}", files.runName: Any, files.logFile)
+    logger.info("Vivado starting run {}: show progress with `vivado_progress {}`", files.runName: Any, files.logFile)
     files.logFile.toFile.delete
     cfg.verbose foreach { mode =>
       logger.info("verbose mode {} is active, starting to watch {}", mode: Any, files.logFile)
