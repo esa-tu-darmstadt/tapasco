@@ -39,6 +39,9 @@ if {[tapasco::is_feature_enabled "HSA"]} {
 
         set to_wrapper [tapasco::ip::create_axi_sc "to_wrapper" 2 1]
         tapasco::ip::connect_sc_default_clocks $to_wrapper "design"
+
+        set to_wrapper_acc [tapasco::ip::create_axi_sc "to_wrapper_acc" 2 1]
+        tapasco::ip::connect_sc_default_clocks $to_wrapper_acc "design"
         puts "\[PLUGIN HSA\] Done creating interconnects"
 
         # AXI Connections
@@ -48,9 +51,10 @@ if {[tapasco::is_feature_enabled "HSA"]} {
         connect_bd_intf_net [get_bd_intf_pins $to_ddr/S01_AXI] [get_bd_intf_pins $wrapper/mdma_ddr_axi]
         connect_bd_intf_net [get_bd_intf_pins $wrapper/mdma_pcie_axi] [get_bd_intf_pins $to_pcie/S00_AXI]
         connect_bd_intf_net [get_bd_intf_pins $wrapper/mpcie_axi] [get_bd_intf_pins $to_pcie/S01_AXI]
-        connect_bd_intf_net [get_bd_intf_pins $accelerator/M_CMD_AXI] [get_bd_intf_pins $to_wrapper/S00_AXI]
-        connect_bd_intf_net [get_bd_intf_pins $from_host/M01_AXI] [get_bd_intf_pins $to_wrapper/S01_AXI]
-        connect_bd_intf_net [get_bd_intf_pins $to_wrapper/M00_AXI] [get_bd_intf_pins $wrapper/swrapper_axi]
+        connect_bd_intf_net [get_bd_intf_pins $accelerator/M_CMD_AXI] [get_bd_intf_pins $to_wrapper_acc/S00_AXI]
+        connect_bd_intf_net [get_bd_intf_pins $to_wrapper_acc/M00_AXI] [get_bd_intf_pins $wrapper/swrapper_axi_acc]
+        connect_bd_intf_net [get_bd_intf_pins $from_host/M01_AXI] [get_bd_intf_pins $to_wrapper/S00_AXI]
+        connect_bd_intf_net [get_bd_intf_pins $to_wrapper/M00_AXI] [get_bd_intf_pins $wrapper/swrapper_axi_host]
         connect_bd_intf_net [get_bd_intf_pins $accelerator/M_DATA_AXI] [get_bd_intf_pins $to_ddr/S02_AXI]
         connect_bd_intf_net [get_bd_intf_pins $axi_mem] [get_bd_intf_pins $to_ddr/M00_AXI]
         connect_bd_intf_net [get_bd_intf_pins $axi_host] [get_bd_intf_pins $to_pcie/M00_AXI]
