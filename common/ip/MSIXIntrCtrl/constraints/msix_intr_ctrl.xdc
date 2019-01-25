@@ -17,3 +17,4 @@ set_false_path -through [get_ports -scoped_to_current_instance -filter {NAME =~ 
 set_false_path -through [get_ports -scoped_to_current_instance -filter {NAME =~ design_rst}] -to [filter [get_cells -hier -filter {NAME =~ *dDeqToggle*}] {IS_SEQUENTIAL}]
 set_false_path -through [get_ports -scoped_to_current_instance -filter {NAME =~ design_rst}] -to [filter [get_cells -hier -filter {NAME =~ *dNotEmpty*}] {IS_SEQUENTIAL}]
 set_false_path -through [get_ports -scoped_to_current_instance -filter {NAME =~ design_rst}] -to [filter [get_cells -hier -filter {NAME =~ *dLastState*}] {IS_SEQUENTIAL}]
+set_false_path -through [get_ports -scoped_to_current_instance -filter {NAME =~ design_rst}] -to [filter [get_cells -hier -filter {NAME =~ *dSyncPulse_reg*}] {IS_SEQUENTIAL}]

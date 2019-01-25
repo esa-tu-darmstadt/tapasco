@@ -3,7 +3,7 @@ if {[tapasco::is_feature_enabled "HSA"]} {
         set vlnv_package_processor "fau.de:hsa:accelerator_backend:1.0"
         set dir "$::env(FAU_HOME)"
         if { $dir eq "" } {
-            puts "FAU_HOME dir is not set."
+            puts "\[PLUGIN HSA\] FAU_HOME dir is not set."
             exit 1
         }
 
@@ -12,14 +12,22 @@ if {[tapasco::is_feature_enabled "HSA"]} {
         set axi_mem [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_MEM_HSA"]
 
         set repos [get_property ip_repo_paths [current_project]]
-        set_property  ip_repo_paths [lappend repos $dir] [current_project]
+        set dirs [split $dir ":"]
+        foreach path $dirs {
+            puts "\[PLUGIN HSA\] Adding directory $path to IP-Repository-Cache"
+            set repos [lappend repos $path]
+        }
+        set_property  ip_repo_paths $repos [current_project]
         update_ip_catalog
 
         # IP
+        puts "\[PLUGIN HSA\] Creating IP"
         set wrapper [tapasco::ip::create_hsa_wrapper "HSAWrapper"]
         set accelerator [create_bd_cell -type ip -vlnv $vlnv_package_processor "HSAAccelerator"]
+        puts "\[PLUGIN HSA\] Done creating IP"
 
         # Interconnects
+        puts "\[PLUGIN HSA\] Creating interconnects"
         set to_ddr [tapasco::ip::create_axi_sc "to_ddr" 3 1]
         tapasco::ip::connect_sc_default_clocks $to_ddr "design"
 
@@ -31,10 +39,10 @@ if {[tapasco::is_feature_enabled "HSA"]} {
 
         set to_wrapper [tapasco::ip::create_axi_sc "to_wrapper" 2 1]
         tapasco::ip::connect_sc_default_clocks $to_wrapper "design"
-
-        save_bd_design
+        puts "\[PLUGIN HSA\] Done creating interconnects"
 
         # AXI Connections
+        puts "\[PLUGIN HSA\] Connecting AXI"
         connect_bd_intf_net [get_bd_intf_pins $from_host/M00_AXI] [get_bd_intf_pins $wrapper/squeue_axi]
         connect_bd_intf_net [get_bd_intf_pins $to_ddr/S00_AXI] [get_bd_intf_pins $wrapper/mddr_axi]
         connect_bd_intf_net [get_bd_intf_pins $to_ddr/S01_AXI] [get_bd_intf_pins $wrapper/mdma_ddr_axi]
@@ -47,8 +55,10 @@ if {[tapasco::is_feature_enabled "HSA"]} {
         connect_bd_intf_net [get_bd_intf_pins $axi_mem] [get_bd_intf_pins $to_ddr/M00_AXI]
         connect_bd_intf_net [get_bd_intf_pins $axi_host] [get_bd_intf_pins $to_pcie/M00_AXI]
         connect_bd_intf_net [get_bd_intf_pins $s_axi_host] [get_bd_intf_pins $from_host/S00_AXI]
+        puts "\[PLUGIN HSA\] Done with AXI"
 
         # Interrupts
+        puts "\[PLUGIN HSA\] Connecting Interrupts"
         connect_bd_net [get_bd_pins $accelerator/tp_halt] [get_bd_pins $wrapper/pe_halt]
         connect_bd_net [get_bd_pins $accelerator/rcv_aql_irq] [get_bd_pins $wrapper/rcv_aql_irq]
         connect_bd_net [get_bd_pins $accelerator/rcv_cpl_irq] [get_bd_pins $wrapper/rcv_cpl_irq]
@@ -69,7 +79,9 @@ if {[tapasco::is_feature_enabled "HSA"]} {
         connect_bd_net [get_bd_pins $accelerator/rcv_rem_irq_ack] [get_bd_pins $wrapper/rcv_rem_irq_ack]
         connect_bd_net [get_bd_pins $accelerator/snd_add_irq] [get_bd_pins $wrapper/snd_add_irq]
         connect_bd_net [get_bd_pins $accelerator/snd_rem_irq] [get_bd_pins $wrapper/snd_rem_irq]
+        puts "\[PLUGIN HSA\] Done connecting interrupts"
 
+        puts "\[PLUGIN HSA\] Fix outside world connections"
         set pcie_aclk [tapasco::subsystem::get_port "host" "clk"]
         set pcie_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
         set design_aclk [tapasco::subsystem::get_port "design" "clk"]
@@ -88,10 +100,13 @@ if {[tapasco::is_feature_enabled "HSA"]} {
 
         connect_bd_net $design_aclk [get_bd_pins -of_objects $accelerator -filter {NAME == "clk"}]
         connect_bd_net $design_aresetn [get_bd_pins -of_objects $accelerator -filter {NAME == "rstn"}]
+        puts "\[PLUGIN HSA\] Outside world connected"
 
         # Fix connections to upstream interconnects
         set inst [current_bd_instance -quiet .]
         current_bd_instance -quiet
+
+        puts "\[PLUGIN HSA\] Connecting outside world AXI and Interrupts"
 
         set m_si [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 host/M_HSA]
 
@@ -118,8 +133,7 @@ if {[tapasco::is_feature_enabled "HSA"]} {
         connect_bd_net [get_bd_pins hsa/HSAWrapper/hsa_signal_interrupt] [get_bd_pins intc/interrupt_concat/In2]
 
         current_bd_instance -quiet $inst
-
-        save_bd_design
+        puts "\[PLUGIN HSA\] Plugin HSA instantiated"
 
         return {}
     }

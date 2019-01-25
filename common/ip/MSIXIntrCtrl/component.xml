@@ -336,7 +336,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>253e68a3</spirit:value>
+            <spirit:value>f5bf6125</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -352,7 +352,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>23df4389</spirit:value>
+            <spirit:value>ec2e46f0</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -877,6 +877,16 @@
     <spirit:fileSet>
       <spirit:name>xilinx_anylanguagesynthesis_view_fileset</spirit:name>
       <spirit:file>
+        <spirit:name>constraints/msix_intr_ctrl.xdc</spirit:name>
+        <spirit:userFileType>xdc</spirit:userFileType>
+        <spirit:userFileType>USED_IN_implementation</spirit:userFileType>
+        <spirit:userFileType>USED_IN_synthesis</spirit:userFileType>
+        <spirit:define>
+          <spirit:name>processing_order</spirit:name>
+          <spirit:value>late</spirit:value>
+        </spirit:define>
+      </spirit:file>
+      <spirit:file>
         <spirit:name>src/BRAM2BE.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
@@ -889,21 +899,13 @@
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>src/SyncHandshake.v</spirit:name>
+        <spirit:name>src/SyncPulse.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/mkMSIXIntrCtrl.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_2ab7848e</spirit:userFileType>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>constraints/msix_intr_ctrl.xdc</spirit:name>
-        <spirit:userFileType>xdc</spirit:userFileType>
-        <spirit:define>
-          <spirit:name>processing_order</spirit:name>
-          <spirit:value>late</spirit:value>
-        </spirit:define>
+        <spirit:userFileType>CHECKSUM_b020e4f8</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -921,7 +923,7 @@
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>src/SyncHandshake.v</spirit:name>
+        <spirit:name>src/SyncPulse.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
@@ -975,16 +977,16 @@
       <xilinx:displayName>MSIXIntrCtrl</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2018-08-15T19:37:12Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2019-01-25T10:19:28Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
-      <xilinx:xilinxVersion>2018.1</xilinx:xilinxVersion>
+      <xilinx:xilinxVersion>2017.4</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="005537d1"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="ce939530"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="c5fdf84f"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="41a46aaf"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="9334f89d"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="4ff74fe2"/>
     </xilinx:packagingInfo>
