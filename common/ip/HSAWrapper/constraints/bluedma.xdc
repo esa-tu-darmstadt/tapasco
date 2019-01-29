@@ -24,3 +24,4 @@ set_false_path -through [get_ports -scoped_to_current_instance -filter {NAME =~ 
 set_false_path -through [get_ports -scoped_to_current_instance -filter {NAME =~ *_axi_aresetn}] -to [filter [get_cells -hier -filter {NAME =~ *dEnqToggle*}] {IS_SEQUENTIAL}]
 set_false_path -through [get_ports -scoped_to_current_instance -filter {NAME =~ *_axi_aresetn}] -to [filter [get_cells -hier -filter {NAME =~ *dDeqToggle*}] {IS_SEQUENTIAL}]
 set_false_path -through [get_ports -scoped_to_current_instance -filter {NAME =~ *_axi_aresetn}] -to [filter [get_cells -hier -filter {NAME =~ *dNotEmpty*}] {IS_SEQUENTIAL}]
+set_false_path -through [get_ports -scoped_to_current_instance -filter {NAME =~ *_axi_aresetn}] -to [filter [get_cells -hier -filter {NAME =~ *dSyncPulse*}] {IS_SEQUENTIAL}]
