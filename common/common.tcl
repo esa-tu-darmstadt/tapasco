@@ -21,9 +21,43 @@
 # @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 #
 namespace eval tapasco {
+
+  namespace export vivado_is_newer
+  namespace export is_hls
+  # Returns true if the vivado version running is newer or equal to the desired one
+  # @param Desired Vivado Version as String, e.g. "2018.3"
+  # @return 1 if [version -short] <= cmp, else 0
+  proc vivado_is_newer {cmp} {
+    set regex {([0-9][0-9][0-9][0-9]).([0-9][0-9]*)}
+    set major_ver [regsub $regex [version -short] {\1}]
+    set minor_ver [regsub $regex [version -short] {\2}]
+    set major_cmp [regsub $regex $cmp {\1}]
+    set minor_cmp [regsub $regex $cmp {\2}]
+    if { ($major_ver > $major_cmp) || (($major_ver == $major_cmp) && ($minor_ver >= $minor_cmp)) } {
+      return 1
+    } else {
+      return 0
+    }
+  }
+
+  # Returns true if Vivado HLS is running
+  # @return 1 if HLS, else 0
+  proc is_hls {} {
+    if {[string first "HLS" [version] ]} {
+      return 1
+    } else {
+      return 0
+    }
+  }
+
   namespace export source_quiet
   proc source_quiet {fn} {
-    eval "source [expr {[string is space [info commands version]] ? {} : {-notrace}}]" $fn
+    # Vivado HLS lost -notrace for whatever reason in Vivado HLS 2018.3
+    if {[is_hls] == 1 && [vivado_is_newer "2018.3"] == 1} {
+      eval "source " $fn
+    } else {
+      eval "source " $fn "[expr {[string is space [info commands version]] ? {} : {-notrace}}]"
+    }
   }
 
   source_quiet $::env(TAPASCO_HOME)/common/subsystem.tcl
