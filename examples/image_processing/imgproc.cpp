@@ -1,5 +1,5 @@
 #include <cstring> //png++ needs it (in this version)
-#include <png++/png.hpp>
+#include <CImg/CImg.h>
 
 #include <iostream>
 #include <iomanip>
@@ -23,6 +23,8 @@
 #include "stringtools.h"
 #include "cliparser.h"
 
+using namespace cimg_library;
+
 inline uint64_t calculate_packet_index(uint64_t ptr) {
 	return ptr % HSA_QUEUE_LENGTH;
 }
@@ -32,6 +34,26 @@ std::atomic<bool> quit(false);    // signal flag
 void got_signal(int)
 {
 	quit.store(true);
+}
+
+typedef struct {
+	uint8_t red;
+	uint8_t green;
+	uint8_t blue;
+} RGBPixel;
+
+RGBPixel fetchPixel(CImg<uint8_t> &i, int x, int y) {
+	RGBPixel t;
+	t.red = i(x,y,0,0);
+	t.green = i(x,y,0,1);
+	t.blue = i(x,y,0,2);
+	return t;
+}
+
+void setPixel(CImg<uint8_t> &i, int x, int y, RGBPixel &p) {
+	i(x,y,0,0) = p.red;
+	i(x,y,0,1) = p.green;
+	i(x,y,0,2) = p.blue;
 }
 
 int main(int argc, const char *argv[]) {
@@ -188,11 +210,11 @@ int main(int argc, const char *argv[]) {
 	uint64_t offset_image = 0x1000;
 
 	// copy image to specific memory area
-	png::image<png::rgb_pixel> src_img(infile);
+	CImg<uint8_t> src_img(infile.c_str());
 	uint8_t *dma_area = static_cast<uint8_t*>(mem.getVirtualAddr()) + offset_image;
 
 	uint64_t max_size = (4 * 1024 * 1024) - offset_image;
-	uint64_t actual_size = src_img.get_height() * src_img.get_width();
+	uint64_t actual_size = src_img.height() * src_img.width();
 	actual_size = convert_grayscale ? actual_size * 2 : actual_size * 3;
 	if(debug_mode){
 		std::cout << "Using " << actual_size << "byte of " << max_size << " byte." << std::endl;
@@ -202,24 +224,24 @@ int main(int argc, const char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	for (unsigned int j = 0; j < (unsigned int)src_img.get_height(); ++j) {
-		for (unsigned int i = 0; i < (unsigned int)src_img.get_width(); ++i) {
+	for (unsigned int j = 0; j < (unsigned int)src_img.height(); ++j) {
+		for (unsigned int i = 0; i < (unsigned int)src_img.width(); ++i) {
 			// in pngpp (0,0) is the TOP left corner!
-			png::rgb_pixel pix = src_img.get_pixel(i,j);
+			RGBPixel pix = fetchPixel(src_img, i, j);
 			if(convert_grayscale){
 				float luminance = 0.2126f*(static_cast<float>(pix.red)/0xFF)
 						+ 0.7152f*(static_cast<float>(pix.green)/0xFF)
 						+ 0.0722f*(static_cast<float>(pix.blue)/0xFF);
 				uint16_t gs_val = static_cast<uint16_t>(luminance*((1 << pixel_bitwidth)-1));
 				uint16_t *pix_ptr = reinterpret_cast<uint16_t*>(dma_area);
-				pix_ptr += j*src_img.get_width()+i;
+				pix_ptr += j*src_img.width()+i;
 				*pix_ptr = gs_val;
 			}else{
 				uint8_t r_val = static_cast<uint8_t>(pix.red);
 				uint8_t g_val = static_cast<uint8_t>(pix.green);
 				uint8_t b_val = static_cast<uint8_t>(pix.blue);
 				uint8_t *pix_ptr = dma_area;
-				pix_ptr += (j*src_img.get_width()+i)*3;
+				pix_ptr += (j*src_img.width()+i)*3;
 				*pix_ptr = b_val;
 				pix_ptr += 1;
 				*pix_ptr = r_val;
@@ -246,8 +268,8 @@ int main(int argc, const char *argv[]) {
 	// populate kernel
 	packet->kernel_object = (uint64_t)op;
 	packet->kernarg_address = (void *)(mem.getDevAddr() + offset_kernargs);
-	packet->grid_size_x = src_img.get_width();
-	packet->grid_size_y = src_img.get_height();
+	packet->grid_size_x = src_img.width();
+	packet->grid_size_y = src_img.height();
 	packet->completion_signal = hsa_cmpl_signal;
 
 	uint32_t packet_format = ((uint32_t)setup(2) << 16) | header(HSA_PACKET_TYPE_KERNEL_DISPATCH);
@@ -300,32 +322,34 @@ int main(int argc, const char *argv[]) {
 	}
 
 	// generate png from dma image area
-	png::image<png::rgb_pixel> dst_img(src_img.get_width(),src_img.get_height());
+	CImg<uint8_t> dst_img(src_img.width(),src_img.height(),1,3,0);
 
-	for (unsigned int y = 0; y < (unsigned int)src_img.get_height(); ++y) {
-		for (unsigned int x = 0; x < (unsigned int)src_img.get_width(); ++x) {
+	for (unsigned int y = 0; y < (unsigned int)src_img.height(); ++y) {
+		for (unsigned int x = 0; x < (unsigned int)src_img.width(); ++x) {
 			if(convert_grayscale){
 				uint16_t *pix_ptr = reinterpret_cast<uint16_t*>(dma_area);
-				pix_ptr += y*src_img.get_width()+x;
+				pix_ptr += y*src_img.width()+x;
 
 				unsigned int gs_val = *pix_ptr;
 				unsigned int scaling_factor = ((pixel_bitwidth/8)-1)*8;
 				unsigned int intensity = gs_val >> scaling_factor;
-				dst_img[y][x] = png::rgb_pixel(intensity,intensity,intensity);
+				auto r = RGBPixel{(uint8_t)intensity,(uint8_t)intensity,(uint8_t)intensity};
+				setPixel(dst_img, x, y, r);
 			}else{
 				uint8_t *pix_ptr = static_cast<uint8_t*>(dma_area);
-				pix_ptr += (y*src_img.get_width()+x)*3;
+				pix_ptr += (y*src_img.width()+x)*3;
 
 				uint8_t blue  = *pix_ptr;
 				pix_ptr += 1;
 				uint8_t red  = *pix_ptr;
 				pix_ptr += 1;
 				uint8_t green   = *pix_ptr;
-				dst_img[y][x] = png::rgb_pixel(red,green,blue);
+				auto r = RGBPixel{red,green,blue};
+				setPixel(dst_img, x, y, r);
 			}
 		}
 	}
-	dst_img.write(outfile);
+	dst_img.save(outfile.c_str());
 
 	queue.unset_doorbell(doorbell_signal);
 	queue.deallocate_signal(doorbell_signal);

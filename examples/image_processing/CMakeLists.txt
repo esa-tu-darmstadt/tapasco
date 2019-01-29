@@ -9,18 +9,26 @@ find_package(TapascoPlatform REQUIRED)
 find_package(Tapasco REQUIRED)
 endif(NOT TARGET tapasco)
 
-add_executable (imgproc imgproc.cpp cliparser.cpp stringtools.cpp ${CMAKE_CURRENT_BINARY_DIR}/png++/png.hpp)
+find_package(PNG)
+
+add_executable (imgproc imgproc.cpp cliparser.cpp stringtools.cpp ${CMAKE_CURRENT_BINARY_DIR}/CImg/CImg.h)
 target_include_directories(imgproc PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/)
 set_tapasco_defaults(imgproc)
-target_link_libraries (imgproc PRIVATE tapasco tlkm platform tapasco-common pthread atomic png)
+target_link_libraries (imgproc PRIVATE tapasco tlkm platform tapasco-common pthread atomic PNG::PNG)
 
 add_executable (print_status print_status.cpp)
 set_tapasco_defaults(print_status)
 target_link_libraries (print_status PRIVATE tapasco tlkm platform tapasco-common pthread atomic)
 
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/png++/png.hpp
-  COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/png++
-  COMMAND wget -O ${CMAKE_CURRENT_BINARY_DIR}/png++.tgz "http://download.savannah.nongnu.org/releases/pngpp/png++-0.2.9.tar.gz"
-  COMMAND tar xf ${CMAKE_CURRENT_BINARY_DIR}/png++.tgz
-  COMMAND mv ${CMAKE_CURRENT_BINARY_DIR}/png++-0.2.9 ${CMAKE_CURRENT_BINARY_DIR}/png++
+target_compile_definitions(imgproc PRIVATE -Dcimg_display=0)
+
+IF(PNG_FOUND)
+    target_compile_definitions(imgproc PRIVATE -Dcimg_use_png)
+ENDIF()
+
+add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CImg/CImg.h
+  COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/CImg
+  COMMAND wget -O ${CMAKE_CURRENT_BINARY_DIR}/CImg.zip "http://cimg.eu/files/CImg_latest.zip"
+  COMMAND unzip ${CMAKE_CURRENT_BINARY_DIR}/CImg.zip
+  COMMAND mv "${CMAKE_CURRENT_BINARY_DIR}/CImg-*" ${CMAKE_CURRENT_BINARY_DIR}/CImg
   )
