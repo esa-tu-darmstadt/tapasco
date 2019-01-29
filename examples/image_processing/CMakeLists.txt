@@ -31,4 +31,5 @@ add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CImg/CImg.h
   COMMAND wget -O ${CMAKE_CURRENT_BINARY_DIR}/CImg.zip "http://cimg.eu/files/CImg_latest.zip"
   COMMAND unzip ${CMAKE_CURRENT_BINARY_DIR}/CImg.zip
   COMMAND mv "${CMAKE_CURRENT_BINARY_DIR}/CImg-*" ${CMAKE_CURRENT_BINARY_DIR}/CImg
+  COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/CImg.zip
   )
