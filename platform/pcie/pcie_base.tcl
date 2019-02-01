@@ -36,9 +36,6 @@
     puts "Using PCIe width $pcie_width."
   }
 
-  set device_type [get_property ARCHITECTURE [get_parts -of_objects [get_projects]]]
-  puts "Device type is $device_type"
-
   # scan plugin directory
   foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/pcie/plugins" "*.tcl"] {
     source -notrace $f
@@ -282,7 +279,9 @@
 
   proc create_subsystem_host {} {
     variable pcie_width
-    variable device_type
+
+    set device_type [get_property ARCHITECTURE [get_parts -of_objects [current_project]]]
+    puts "Device type is $device_type"
 
     puts "Creating PCIe subsystem ..."
 
