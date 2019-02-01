@@ -23,6 +23,7 @@
 namespace eval platform {
   set platform_dirname "AU250"
   variable pcie_width "x16"
+  variable device_type "US+"
 
   if { [::tapasco::vivado_is_newer "2018.3"] == 0 } {
     puts "Vivado [version -short] is too old to support AU250."
