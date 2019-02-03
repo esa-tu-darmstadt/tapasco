@@ -53,7 +53,7 @@ namespace eval tapasco {
   namespace export source_quiet
   proc source_quiet {fn} {
     # Vivado HLS lost -notrace for whatever reason in Vivado HLS 2018.3
-    if {[is_hls] == 1 && [vivado_is_newer "2018.3"] == 1} {
+    if {[is_hls] == 1 && [vivado_is_newer "2018.2"] == 1} {
       eval "source " $fn
     } else {
       eval "source " $fn "[expr {[string is space [info commands version]] ? {} : {-notrace}}]"
