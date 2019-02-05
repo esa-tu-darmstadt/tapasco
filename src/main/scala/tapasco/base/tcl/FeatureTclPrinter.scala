@@ -33,8 +33,8 @@ class FeatureTclPrinter(prefix: String = "") {
     * @return String containing Tcls commands to write f into
     *         a dict called <prefix>features.
    **/
-  def toTcl(f: Feature): String = f.props map {
-    case (name, value) => s"$pre ${f.name} $name $value"
+  def toTcl(f: Feature): String = f.props.value map {
+    case (name, value) => s"$pre ${f.name} $name ${value.toTCL}"
   } mkString NL
 
   def toTcl(fs: Seq[Feature]): String = fs.map(toTcl).mkString(NL)

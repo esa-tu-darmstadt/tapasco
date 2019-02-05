@@ -18,6 +18,7 @@
 //
 package de.tu_darmstadt.cs.esa.tapasco.parser
 import  de.tu_darmstadt.cs.esa.tapasco.base.Feature
+import  de.tu_darmstadt.cs.esa.tapasco.base.Feature._
 import  fastparse.all._
 
 private object FeatureParsers {
@@ -27,7 +28,7 @@ private object FeatureParsers {
      featureBegin ~ ws ~/
      (featureKeyValue ~ ws).rep ~ ws ~/
      featureEnd ~ ws)
-        .map(p => Feature(p._1, p._2.toMap))
+        .map(p => Feature(p._1, FMap(p._2.toMap)))
 
   def features: Parser[(String, Seq[Feature])] =
     longOption("features", "Features") ~ ws ~/ seqOne(feature)
@@ -47,11 +48,11 @@ private object FeatureParsers {
     (quotedString | string(featureAssigns ++ featureMarks))
       .opaque("feature key name")
 
-  def featureVal: Parser[String] =
+  def featureVal: Parser[FString] =
     (quotedString | string(featureAssigns ++ featureMarks))
-      .opaque("feature value for given key")
+      .opaque("feature value for given key")map(a => FString(a))
 
-  def featureKeyValue: Parser[(String, String)] =
+  def featureKeyValue: Parser[(String, FString)] =
     featureKey ~ ws ~/
     featureAssign.opaque("feature assignment operator, one of '->', '=', ':=' or ':'") ~ ws ~/
     featureVal ~ ws

@@ -40,7 +40,7 @@ class FeatureSpec extends FlatSpec with Matchers {
     c.jobs.head match {
       case job: ComposeJob =>
         job.features.get.length shouldBe (1)
-        job.features.get.head shouldEqual (Feature("LED", Map("Enabled" -> "true")))
+        job.features.get.head shouldEqual (Feature("LED", Feature.FMap(Map("Enabled" -> Feature.FString("true")))))
       case _ => assert(false, "expected ComposeJob")
     }
   }
@@ -53,7 +53,7 @@ class FeatureSpec extends FlatSpec with Matchers {
     c.jobs.head match {
       case job: ComposeJob =>
         job.features.get.length shouldBe (1)
-        job.features.get.head shouldEqual (Feature("OLED", Map("Enabled" -> "true")))
+        job.features.get.head shouldEqual (Feature("OLED", Feature.FMap(Map("Enabled" -> Feature.FString("true")))))
       case _ => assert(false, "expected ComposeJob")
     }
   }
@@ -66,11 +66,11 @@ class FeatureSpec extends FlatSpec with Matchers {
     c.jobs.head match {
       case job: ComposeJob =>
         job.features.get.length shouldBe (1)
-        job.features.get.head shouldEqual (Feature("Cache", Map(
-          "Enabled" -> "true",
-          "Associativity" -> "2",
-          "Size" -> "32768"
-        )))
+        job.features.get.head shouldEqual (Feature("Cache", Feature.FMap(Map(
+          "Enabled" -> Feature.FString("true"),
+          "Associativity" -> Feature.FString("2"),
+          "Size" -> Feature.FString("32768")
+        ))))
       case _ => assert(false, "expected ComposeJob")
     }
   }
@@ -83,12 +83,12 @@ class FeatureSpec extends FlatSpec with Matchers {
     c.jobs.head match {
       case job: ComposeJob =>
         job.features.get.length shouldBe (1)
-        job.features.get.head shouldEqual (Feature("Debug", Map(
-          "Enabled" -> "true",
-          "Depth" -> "4096",
-          "Stages" -> "1",
-          "Use Defaults" -> "false",
-          "Nets" -> "[list *interrupt *HP0* *GP]")))
+        job.features.get.head shouldEqual (Feature("Debug", Feature.FMap(Map(
+          "Enabled" -> Feature.FString("true"),
+          "Depth" -> Feature.FString("4096"),
+          "Stages" -> Feature.FString("1"),
+          "Use Defaults" -> Feature.FString("false"),
+          "Nets" -> Feature.FString("[list *interrupt *HP0* *GP]")))))
       case _ => assert(false, "expected ComposeJob")
     }
 
@@ -99,7 +99,7 @@ class FeatureSpec extends FlatSpec with Matchers {
     c2.jobs.head match {
       case job: ComposeJob =>
         job.features.get.length shouldBe (1)
-        job.features.get.head shouldEqual (Feature("Debug", Map("Enabled" -> "false")))
+        job.features.get.head shouldEqual (Feature("Debug", Feature.FMap(Map("Enabled" -> Feature.FString("false")))))
       case _ => assert(false, "expected ComposeJob")
     }
   }
