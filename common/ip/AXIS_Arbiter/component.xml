@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <spirit:component xmlns:xilinx="http://www.xilinx.com" xmlns:spirit="http://www.spiritconsortium.org/XMLSchema/SPIRIT/1685-2009" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <spirit:vendor>user.org</spirit:vendor>
+  <spirit:vendor>esa.informatik.tu-darmstadt.de</spirit:vendor>
   <spirit:library>user</spirit:library>
-  <spirit:name>AXIS-Arbiter</spirit:name>
+  <spirit:name>AXIS_Arbiter</spirit:name>
   <spirit:version>1.0</spirit:version>
   <spirit:busInterfaces>
     <spirit:busInterface>
@@ -226,7 +226,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>f92e9879</spirit:value>
+            <spirit:value>f0ae4cc8</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -517,9 +517,9 @@
     <spirit:fileSet>
       <spirit:name>xilinx_xpgui_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>xgui/AXIS-Arbiter_v1_0.tcl</spirit:name>
+        <spirit:name>xgui/AXIS_Arbiter_v1_0.tcl</spirit:name>
         <spirit:fileType>tclSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_f92e9879</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_f0ae4cc8</spirit:userFileType>
         <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -559,23 +559,25 @@
       </xilinx:taxonomies>
       <xilinx:displayName>AXIS Arbiter</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
-      <xilinx:coreRevision>1</xilinx:coreRevision>
+      <xilinx:coreRevision>2</xilinx:coreRevision>
       <xilinx:upgrades>
         <xilinx:canUpgradeFrom>user.org:user:mkAXIS_Arbiter:1.0</xilinx:canUpgradeFrom>
       </xilinx:upgrades>
-      <xilinx:coreCreationDateTime>2018-09-07T15:22:05Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2019-02-05T12:51:26Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
         <xilinx:tag xilinx:name="user.org:user:mkAXIS_Arbiter:1.0_ARCHIVE_LOCATION">/home/developer/project/tapasco_sfp/common/ip/AXIS_Arbiter</xilinx:tag>
-        <xilinx:tag xilinx:name="user.org:user:AXIS-Arbiter:1.0_ARCHIVE_LOCATION">/home/developer/project/tapasco_sfp/common/ip/AXIS_Arbiter</xilinx:tag>
+        <xilinx:tag xilinx:name="user.org:user:AXIS-Arbiter:1.0_ARCHIVE_LOCATION">/home/stud/tist/project/tapasco/common/ip/AXIS_Arbiter</xilinx:tag>
+        <xilinx:tag xilinx:name="user.org:user:AXIS_Arbiter:1.0_ARCHIVE_LOCATION">/home/stud/tist/project/tapasco/common/ip/AXIS_Arbiter</xilinx:tag>
+        <xilinx:tag xilinx:name="esa.informatik.tu-darmstadt.de:user:AXIS_Arbiter:1.0_ARCHIVE_LOCATION">/home/stud/tist/project/tapasco/common/ip/AXIS_Arbiter</xilinx:tag>
       </xilinx:tags>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
-      <xilinx:xilinxVersion>2017.2</xilinx:xilinxVersion>
-      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="90d0dd00"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="e2d1451d"/>
-      <xilinx:checksum xilinx:scope="ports" xilinx:value="afbd0935"/>
-      <xilinx:checksum xilinx:scope="parameters" xilinx:value="6af7ca5c"/>
+      <xilinx:xilinxVersion>2018.1</xilinx:xilinxVersion>
+      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="64ad5e5f"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="bc91e471"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="93793271"/>
+      <xilinx:checksum xilinx:scope="parameters" xilinx:value="7f8dc820"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>
 </spirit:component>
