@@ -306,7 +306,7 @@
     }
 
     set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
-    tapasco::ip::connect_sc_default_clocks $out_ic "host"
+    tapasco::ip::connect_sc_default_clocks $out_ic "design"
 
     if {$device_type != "virtexuplus"} {
       if { $pcie_width == "x8" } {
