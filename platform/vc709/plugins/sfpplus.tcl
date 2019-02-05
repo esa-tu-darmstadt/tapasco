@@ -572,13 +572,9 @@ proc generate_roundrobin {kernelc sync} {
     set_property CONFIG.[format "S%02d" $i]_FIFO_MODE 0 [get_bd_cells transmitter]
   }
 
-  connect_bd_net [get_bd_pins design_clk] [get_bd_pins transmitter/ACLK]
-  connect_bd_net [get_bd_pins design_interconnect_aresetn] [get_bd_pins transmitter/ARESETN]
-
   connect_bd_intf_net [get_bd_intf_pins transmitter/M*_AXIS] [get_bd_intf_pins AXIS_TX]
   connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins transmitter/M*_ACLK]
   connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins transmitter/M*_ARESETN]
-
   if {$sync} {
     connect_bd_net [get_bd_pins sfp_clock] [get_bd_pins transmitter/ACLK]
     connect_bd_net [get_bd_pins sfp_resetn] [get_bd_pins transmitter/ARESETN]
