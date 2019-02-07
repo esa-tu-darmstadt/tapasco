@@ -22,6 +22,7 @@ test_tapasco:
     - source "/root/.sdkman/bin/sdkman-init.sh"
     - sdk install java
     - sdk install sbt
+    - source setup.sh
     - sbt test
 
 build_sbt_tapasco_ubuntu_16_04:
