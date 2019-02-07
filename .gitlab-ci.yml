@@ -5,7 +5,22 @@ after_script:
   - echo "Done with the work"
 
 stages:
+  - software_tests
   - build_tests
+
+test_tapasco:
+  stage: software_tests
+  image: ubuntu:latest
+  tages:
+    - CAD
+    - High
+  script:
+    - apt-get -y update && apt-get -y install unzip git zip findutils curl
+    - curl -s "https://get.sdkman.io" | bash
+    - source "/root/.sdkman/bin/sdkman-init.sh"
+    - sdk install java
+    - sdk install sbt
+    - sbt test
 
 build_sbt_tapasco_ubuntu_16_04:
   stage: build_tests
