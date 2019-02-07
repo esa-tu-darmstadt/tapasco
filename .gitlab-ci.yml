@@ -6,7 +6,9 @@ after_script:
 
 stages:
   - software_tests
-  - build_tests
+  - build_sbt
+  - build_kernel
+  - build_runtime
 
 test_tapasco:
   stage: software_tests
@@ -23,7 +25,7 @@ test_tapasco:
     - sbt test
 
 build_sbt_tapasco_ubuntu_16_04:
-  stage: build_tests
+  stage: build_sbt
   image: ubuntu:xenial
   tags:
     - CAD
@@ -39,7 +41,7 @@ build_sbt_tapasco_ubuntu_16_04:
     - sbt assembly
 
 build_sbt_tapasco_ubuntu_18_04:
-  stage: build_tests
+  stage: build_sbt
   image: ubuntu:cosmic
   tags:
     - CAD
@@ -55,7 +57,7 @@ build_sbt_tapasco_ubuntu_18_04:
     - sbt assembly
 
 build_sbt_tapasco_fedora_27:
-  stage: build_tests
+  stage: build_sbt
   image: fedora:27
   tags:
     - CAD
@@ -71,7 +73,7 @@ build_sbt_tapasco_fedora_27:
     - sbt assembly
 
 build_sbt_tapasco_fedora_28:
-  stage: build_tests
+  stage: build_sbt
   image: fedora:28
   tags:
     - CAD
@@ -87,7 +89,7 @@ build_sbt_tapasco_fedora_28:
     - sbt assembly
 
 build_kernel_ubuntu_16_04:
-  stage: build_tests
+  stage: build_kernel
   image: ubuntu:xenial
   tags:
     - CAD
@@ -101,7 +103,7 @@ build_kernel_ubuntu_16_04:
       - tlkm/tlkm.ko
 
 build_kernel_ubuntu_18_04:
-  stage: build_tests
+  stage: build_kernel
   image: ubuntu:cosmic
   tags:
     - CAD
@@ -115,7 +117,7 @@ build_kernel_ubuntu_18_04:
       - tlkm/tlkm.ko
 
 build_kernel_fedora_27:
-  stage: build_tests
+  stage: build_kernel
   image: fedora:27
   tags:
     - CAD
@@ -129,7 +131,7 @@ build_kernel_fedora_27:
       - tlkm/tlkm.ko
 
 build_kernel_fedora_28:
-  stage: build_tests
+  stage: build_kernel
   image: fedora:28
   tags:
     - CAD
@@ -143,7 +145,7 @@ build_kernel_fedora_28:
       - tlkm/tlkm.ko
 
 build_kernel_fedora_29:
-  stage: build_tests
+  stage: build_kernel
   image: fedora:29
   tags:
     - CAD
@@ -157,7 +159,7 @@ build_kernel_fedora_29:
       - tlkm/tlkm.ko
 
 build_kernel_ubuntu_16_04_debug:
-  stage: build_tests
+  stage: build_kernel
   image: ubuntu:xenial
   tags:
     - CAD
@@ -171,7 +173,7 @@ build_kernel_ubuntu_16_04_debug:
       - tlkm/tlkm.ko
 
 build_kernel_ubuntu_18_04_debug:
-  stage: build_tests
+  stage: build_kernel
   image: ubuntu:cosmic
   tags:
     - CAD
@@ -185,7 +187,7 @@ build_kernel_ubuntu_18_04_debug:
       - tlkm/tlkm.ko
 
 build_kernel_fedora_27_debug:
-  stage: build_tests
+  stage: build_kernel
   image: fedora:27
   tags:
     - CAD
@@ -199,7 +201,7 @@ build_kernel_fedora_27_debug:
       - tlkm/tlkm.ko
 
 build_kernel_fedora_28_debug:
-  stage: build_tests
+  stage: build_kernel
   image: fedora:28
   tags:
     - CAD
@@ -213,7 +215,7 @@ build_kernel_fedora_28_debug:
       - tlkm/tlkm.ko
 
 build_kernel_fedora_29_debug:
-  stage: build_tests
+  stage: build_kernel
   image: fedora:29
   tags:
     - CAD
@@ -227,7 +229,7 @@ build_kernel_fedora_29_debug:
       - tlkm/tlkm.ko
 
 build_tapasco_ubuntu_16_04:
-  stage: build_tests
+  stage: build_runtime
   image: ubuntu:xenial
   tags:
     - CAD
@@ -242,7 +244,7 @@ build_tapasco_ubuntu_16_04:
       - build/tapasco-2018.2.1-Linux.deb
 
 build_tapasco_ubuntu_18_04:
-  stage: build_tests
+  stage: build_runtime
   image: ubuntu:cosmic
   tags:
     - CAD
@@ -257,7 +259,7 @@ build_tapasco_ubuntu_18_04:
       - build/tapasco-2018.2.1-Linux.deb
 
 build_tapasco_fedora_27:
-  stage: build_tests
+  stage: build_runtime
   image: fedora:27
   tags:
     - CAD
@@ -272,7 +274,7 @@ build_tapasco_fedora_27:
       - build/tapasco-2018.2.1-Linux.rpm
 
 build_tapasco_fedora_28:
-  stage: build_tests
+  stage: build_runtime
   image: fedora:28
   tags:
     - CAD
@@ -287,7 +289,7 @@ build_tapasco_fedora_28:
       - build/tapasco-2018.2.1-Linux.rpm
 
 build_tapasco_fedora_29:
-  stage: build_tests
+  stage: build_runtime
   image: fedora:28
   tags:
     - CAD
@@ -302,7 +304,7 @@ build_tapasco_fedora_29:
       - build/tapasco-2018.2.1-Linux.rpm
 
 build_tapasco_ubuntu_16_04_debug:
-  stage: build_tests
+  stage: build_runtime
   image: ubuntu:xenial
   tags:
     - CAD
@@ -317,7 +319,7 @@ build_tapasco_ubuntu_16_04_debug:
       - build/tapasco-2018.2.1-Linux.deb
 
 build_tapasco_ubuntu_18_04_debug:
-  stage: build_tests
+  stage: build_runtime
   image: ubuntu:cosmic
   tags:
     - CAD
@@ -332,7 +334,7 @@ build_tapasco_ubuntu_18_04_debug:
       - build/tapasco-2018.2.1-Linux.deb
 
 build_tapasco_fedora_27_debug:
-  stage: build_tests
+  stage: build_runtime
   image: fedora:27
   tags:
     - CAD
@@ -347,7 +349,7 @@ build_tapasco_fedora_27_debug:
       - build/tapasco-2018.2.1-Linux.rpm
 
 build_tapasco_fedora_28_debug:
-  stage: build_tests
+  stage: build_runtime
   image: fedora:28
   tags:
     - CAD
@@ -362,7 +364,7 @@ build_tapasco_fedora_28_debug:
       - build/tapasco-2018.2.1-Linux.rpm
 
 build_tapasco_fedora_29_debug:
-  stage: build_tests
+  stage: build_runtime
   image: fedora:29
   tags:
     - CAD
