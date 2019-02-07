@@ -11,7 +11,7 @@ stages:
 test_tapasco:
   stage: software_tests
   image: ubuntu:latest
-  tages:
+  tags:
     - CAD
     - High
   script:
