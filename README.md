@@ -20,6 +20,7 @@ To use TaPaSCo, you'll need working installations of
 *   Java SDK 7+
 *   sbt 0.13.x
 *   git
+*   GCC newer than 5.x.x for C++11 support
 *   *OPTIONAL:* libncurses for the tapasco-debug application
 
 If you want to use the High-Level Synthesis flow for generating custom IP
