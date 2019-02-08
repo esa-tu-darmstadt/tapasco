@@ -16,15 +16,16 @@ Prerequisites
 -------------
 To use TaPaSCo, you'll need working installations of
 
-*   Vivado Design Suite 2016.3 or newer
+*   Vivado Design Suite 2017.4 or newer
 *   Java SDK 7+
 *   sbt 0.13.x
 *   git
+*   *OPTIONAL:* libncurses for the tapasco-debug application
 
 If you want to use the High-Level Synthesis flow for generating custom IP
 cores, you'll also need:
 
-*   Vivado HLS 2016.3+
+*   Vivado HLS 2017.4+
 
 Check that at least the following are in your `$PATH`:
 
