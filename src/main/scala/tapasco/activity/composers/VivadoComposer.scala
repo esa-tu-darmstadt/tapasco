@@ -138,16 +138,17 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       composition: String): Unit = {
     // needles for template
     val needles: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map(
-      "PROJECT_NAME"     -> "microarch",
-      "BITSTREAM_NAME"   -> projectName,
-      "HEADER"           -> header,
-      "PRELOAD_FILES"    -> "",
-      "PART"             -> target.pd.part,
-      "BOARD_PART"       -> (target.pd.boardPart getOrElse ""),
-      "BOARD_PRESET"     -> (target.pd.boardPreset getOrElse ""),
-      "PLATFORM_TCL"     -> target.pd.tclLibrary.toString,
-      "ARCHITECTURE_TCL" -> target.ad.tclLibrary.toString,
-      "COMPOSITION"      -> composition
+      "PROJECT_NAME"          -> "microarch",
+      "BITSTREAM_NAME"        -> projectName,
+      "HEADER"                -> header,
+      "PRELOAD_FILES"         -> "",
+      "PART"                  -> target.pd.part,
+      "BOARD_PART"            -> (target.pd.boardPart getOrElse ""),
+      "BOARD_PART_REPOSITORY" -> (target.pd.boardPartRepository getOrElse ""),
+      "BOARD_PRESET"          -> (target.pd.boardPreset getOrElse ""),
+      "PLATFORM_TCL"          -> target.pd.tclLibrary.toString,
+      "ARCHITECTURE_TCL"      -> target.ad.tclLibrary.toString,
+      "COMPOSITION"           -> composition,
     )
 
     // write Tcl script

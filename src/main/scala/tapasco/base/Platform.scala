@@ -34,6 +34,7 @@ case class Platform (
       part: String,
       boardPart: Option[String],
       boardPreset: Option[String],
+      boardPartRepository: Option[String],
       targetUtilization: Int,
       supportedFrequencies: Seq[Int],
       private val _slotCount: Option[Int],

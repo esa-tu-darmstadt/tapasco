@@ -331,6 +331,7 @@ def readMapFromFile(p: Path): JsResult[Feature.FMap] ={
     (JsPath \ "Part").read[String] (minLength[String](1)) ~
     (JsPath \ "BoardPart").readNullable[String] (minLength[String](4)) ~
     (JsPath \ "BoardPreset").readNullable[String] (minLength[String](4)) ~
+    (JsPath \ "BoardPartRepository").readNullable[String] (minLength[String](4)) ~
     (JsPath \ "TargetUtilization").read[Int] (min(5) keepAnd max(100)) ~
     (JsPath \ "SupportedFrequencies").readNullable[Seq[Int]] (minLength[Seq[Int]](1)) .map (_ getOrElse (50 to 450 by 5)) ~
     (JsPath \ "SlotCount").readNullable[Int] (min(1) keepAnd max(255)) ~
@@ -347,6 +348,7 @@ def readMapFromFile(p: Path): JsResult[Feature.FMap] ={
     (JsPath \ "Part").write[String] ~
     (JsPath \ "BoardPart").writeNullable[String] ~
     (JsPath \ "BoardPreset").writeNullable[String] ~
+    (JsPath \ "BoardPartRepository").writeNullable[String] ~
     (JsPath \ "TargetUtilization").write[Int] ~
     (JsPath \ "SupportedFrequencies").write[Seq[Int]] ~
     (JsPath \ "SlotCount").writeNullable[Int] ~
