@@ -28,6 +28,10 @@ namespace eval tapasco {
   # @param Desired Vivado Version as String, e.g. "2018.3"
   # @return 1 if [version -short] <= cmp, else 0
   proc vivado_is_newer {cmp} {
+    if {[catch {set vers [version]}]} {
+        puts "Could not find version command. No version information available."
+        return 1
+    }
     set regex {([0-9][0-9][0-9][0-9]).([0-9][0-9]*)}
     set major_ver [regsub $regex [version -short] {\1}]
     set minor_ver [regsub $regex [version -short] {\2}]
@@ -43,6 +47,10 @@ namespace eval tapasco {
   # Returns true if Vivado HLS is running
   # @return 1 if HLS, else 0
   proc is_hls {} {
+    if {[catch {set hls_check [string first "HLS" [version]]}]} {
+        puts "Could not find version command. Assuming HLS pre 2018.1."
+        return 1
+    }
     if {[string first "HLS" [version] ]} {
       return 1
     } else {
