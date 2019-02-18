@@ -54,7 +54,7 @@ set bitstreamname @@BITSTREAM_NAME@@
 create_project @@PROJECT_NAME@@ [pwd]/@@PROJECT_NAME@@ -part {@@PART@@} -force
 if {"@@BOARD_PART@@" != ""} {
   if {"@@BOARD_PART_REPOSITORY@@" != ""} {
-    set_property BOARD_PART_REPO_PATHS {@@BOARD_PART_REPOSITORY@@} [current_project]
+    set_property BOARD_PART_REPO_PATHS "@@BOARD_PART_REPOSITORY@@" [current_project]
   }
   set_property board_part {@@BOARD_PART@@} [current_project]
 }
