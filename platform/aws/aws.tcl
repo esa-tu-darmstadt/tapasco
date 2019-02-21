@@ -105,7 +105,6 @@ namespace eval platform {
   # @param irqs List of the interrupts from the threadpool.
   proc create_subsystem_intc {} {
 
-    puts "IP REPO PATHS: [get_property "ip_repo_paths" [current_project]]"
     save_bd_design
 
     set irqs [arch::get_irqs]
@@ -161,6 +160,8 @@ namespace eval platform {
   # and a DMA engine which is connected to the MIG and has an
   # external 64bit M_AXI channel toward PCIe.
   proc create_subsystem_memory {} {
+
+    save_bd_design
 
     puts "Delete memory block"
 
@@ -452,14 +453,10 @@ namespace eval platform {
     # # Set parent object as current
     # current_bd_instance $parentObj
 
-    puts "IP REPO PATHS: [get_property "ip_repo_paths" [current_project]]"    
+    set_property ip_repo_paths  "[get_property ip_repo_paths [current_project]] \
+        [file join $::env(AWS_FPGA_REPO_DIR)/hdk/common/shell_v04261818/hlx/design/ip/aws_v1_0]" [current_project]
 
-#           set_property  ip_repo_paths  [file join $_nsvars::script_dir ip]  [current_project]
-    set_property ip_repo_paths [file join $::env(AWS_FPGA_REPO_DIR)/hdk/common/shell_v04261818/hlx/design/ip/aws_v1_0] [current_project]
-#TODO: FILE CR, adding PWD
-#           set_property  ip_repo_paths  [list [get_property ip_repo_paths [current_project]] [file join $_nsvars::script_dir ip] ] [current_project]
     update_ip_catalog
-
 
       # Create interface ports
     set S_SH [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aws_f1_sh1_rtl:1.0 S_SH ]
