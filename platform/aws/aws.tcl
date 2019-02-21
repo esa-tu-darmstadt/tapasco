@@ -165,10 +165,10 @@ namespace eval platform {
 
     puts "Delete memory block"
 
-    set oldCurInst [current_bd_instance .]
+    #set oldCurInst [current_bd_instance .]
     current_bd_instance
     delete_bd_objs [get_bd_cells "memory"]   
-    current_bd_instance $oldCurInst
+    #current_bd_instance $oldCurInst
 
     # # create hierarchical interface ports
     # set s_axi_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0"]
