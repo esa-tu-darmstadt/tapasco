@@ -3,7 +3,7 @@
 	"Description" : "AWS F1 Platform",
 	"TclLibrary" : "aws.tcl",
 	"Part" : "xcvu9p-flgb2104-2-i",
-	"BoardPartRepository" : "\\$::env(AWS_FPGA_REPO_DIR)/hdk/common/shell_v04261818/hlx/design/boards",
+	"BoardPartRepository" : "\\$::env(AWS_FPGA_REPO_DIR)/hdk/common/shell_stable/hlx/design/boards",
 	"BoardPart" : "xilinx.com:f1_cl:part0:1.0",
 	"BoardPreset" : "f1_cl",
 	"TargetUtilization" : 90,
