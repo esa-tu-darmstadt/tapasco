@@ -298,8 +298,15 @@ namespace eval platform {
     set pcie_aresetn [create_bd_pin -type "rst" -dir "O" "pcie_aresetn"]
     set msix_interface [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:pcie3_cfg_msix_rtl:1.0 "S_MSIX"]
 
-    # create instances of cores: PCIe core, mm_to_lite
-    set pcie [create_f1_shell]
+    set irq_input [create_bd_pin -type "intr" -dir I "interrupts"]
+
+    # create instances of shell
+    set f1_shell [create_f1_shell]
+
+    # TODO: WARNING: [BD 41-1731] Type mismatch between connected pins: /host/interrupts(intr) and /host/f1_inst/irq_req(undef)
+    connect_bd_net $irq_input [get_bd_pins "$f1_shell/irq_req"]
+
+    save_bd_design
 
     # set trans [get_bd_cells -filter {NAME == "MSIxTranslator"}]
     # if { $trans != "" } {
