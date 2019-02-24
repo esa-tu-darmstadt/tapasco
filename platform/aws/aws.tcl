@@ -193,9 +193,11 @@ namespace eval platform {
   proc create_subsystem_memory {} {
 
     # # create hierarchical interface ports
+    # Moved to host subsystem
     # set s_axi_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0"]
-    # set m_axi_mem [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_HOST"]
-    # set s_axi_ddma [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DMA"]
+
+    set m_axi_mem [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_HOST"]
+    set s_axi_ddma [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DMA"]
 
     # # create hierarchical ports: clocks
     # set ddr_aclk [create_bd_pin -type "clk" -dir "O" "ddr_aclk"]
@@ -296,7 +298,7 @@ namespace eval platform {
     set m_dma [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DMA"]
     set pcie_aclk [create_bd_pin -type "clk" -dir "O" "pcie_aclk"]
     set pcie_aresetn [create_bd_pin -type "rst" -dir "O" "pcie_aresetn"]
-    set msix_interface [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:pcie3_cfg_msix_rtl:1.0 "S_MSIX"]
+    #set msix_interface [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:pcie3_cfg_msix_rtl:1.0 "S_MSIX"]
 
     set irq_input [create_bd_pin -type "intr" -dir I "interrupts"]
 
@@ -327,6 +329,41 @@ namespace eval platform {
     connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $design_aclk
     connect_bd_net [get_bd_pins $design_clk_wiz/locked] $design_aresetn
 
+    # Connect DDR ports
+    set ddr_ic [tapasco::ip::create_axi_sc "ddr_ic" 2 4]
+
+    connect_bd_intf_net [get_bd_intf_pins "$ddr_ic/M00_AXI"] [get_bd_intf_pins "$f1_inst/S_AXI_DDRA"]
+    connect_bd_intf_net [get_bd_intf_pins "$ddr_ic/M01_AXI"] [get_bd_intf_pins "$f1_inst/S_AXI_DDRB"]
+    connect_bd_intf_net [get_bd_intf_pins "$ddr_ic/M02_AXI"] [get_bd_intf_pins "$f1_inst/S_AXI_DDRC"]
+    connect_bd_intf_net [get_bd_intf_pins "$ddr_ic/M03_AXI"] [get_bd_intf_pins "$f1_inst/S_AXI_DDRD"]
+
+    set s_ddr [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DDR"]
+
+    connect_bd_intf_net [get_bd_intf_pins "$ddr_ic/S00_AXI"] $s_ddr
+
+    # This was part of the memory subsystem and moved here
+    set s_axi_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0"]
+
+    connect_bd_intf_net [get_bd_intf_pins "$ddr_ic/S01_AXI"] $s_axi_mem
+
+    # Connect "out" AXI ports
+    set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
+    tapasco::ip::connect_sc_default_clocks $out_ic "design"
+
+    connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M00_AXI}] $m_arch
+    connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M01_AXI}] $m_intc
+    connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M02_AXI}] $m_tapasco
+    connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M03_AXI}] $m_dma
+
+    connect_bd_intf_net [get_bd_intf_pins "$out_ic/S00_AXI"] [get_bd_intf_pins "$f1_inst/M_AXI_PCIS"]
+
+    # Connect "in" AXI ports
+    set in_ic [tapasco::ip::create_axi_sc "in_ic" 2 1]
+    tapasco::ip::connect_sc_default_clocks $in_ic "host"
+
+    connect_bd_intf_net [get_bd_intf_pins S_HOST] [get_bd_intf_pins $in_ic/S00_AXI]
+    connect_bd_intf_net [get_bd_intf_pins -of_object $in_ic -filter { MODE == Master }] \
+       [get_bd_intf_pins "$f1_inst/S_AXI_PCIM"]
 
     save_bd_design
 
