@@ -301,10 +301,32 @@ namespace eval platform {
     set irq_input [create_bd_pin -type "intr" -dir I "interrupts"]
 
     # create instances of shell
-    set f1_shell [create_f1_shell]
+    set f1_inst [create_f1_shell]
 
     # TODO: WARNING: [BD 41-1731] Type mismatch between connected pins: /host/interrupts(intr) and /host/f1_inst/irq_req(undef)
-    connect_bd_net $irq_input [get_bd_pins "$f1_shell/irq_req"]
+    connect_bd_net $irq_input [get_bd_pins "$f1_inst/irq_req"]
+
+    # create clocking wizard instance and ports
+    set design_clk_wiz [tapasco::ip::create_clk_wiz design_clk_wiz]
+    set_property -dict [list CONFIG.CLK_OUT1_PORT {design_clk} \
+                        CONFIG.USE_SAFE_CLOCK_STARTUP {true} \
+                        CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
+                        CONFIG.USE_LOCKED {true} \
+                        CONFIG.USE_RESET {true} \
+                        CONFIG.RESET_TYPE {ACTIVE_LOW} \
+                        CONFIG.RESET_PORT {resetn} \
+                        ] $design_clk_wiz
+
+    set design_aclk [create_bd_pin -type "clk" -dir "O" "design_aclk"]
+    set design_aresetn [create_bd_pin -type "rst" -dir "O" "design_aresetn"]
+
+    connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins "$f1_inst/rst_main_n_out"]
+    connect_bd_net [get_bd_pins $design_clk_wiz/clk_in1] [get_bd_pins "$f1_inst/clk_main_a0_out"]
+
+    # connect external design clk
+    connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $design_aclk
+    connect_bd_net [get_bd_pins $design_clk_wiz/locked] $design_aresetn
+
 
     save_bd_design
 
@@ -457,9 +479,6 @@ namespace eval platform {
         CONFIG.SDA_PRESENT {1} \
     ] $f1_inst
 
-    set design_aclk [create_bd_pin -type "clk" -dir "O" "design_aclk"]
-    set design_aresetn [create_bd_pin -type "rst" -dir "O" "design_aresetn"]
-
     set ddr_aclk [create_bd_pin -type "clk" -dir "O" "ddr_aclk"]
     set ddr_aresetn [create_bd_pin -type "rst" -dir "O" "ddr_aresetn"]
 
@@ -469,93 +488,13 @@ namespace eval platform {
     connect_bd_intf_net $S_SH [get_bd_intf_pins $f1_inst/S_SH]
     current_bd_instance $oldCurInst
 
-    set design_clk_wiz [tapasco::ip::create_clk_wiz design_clk_wiz]
-    set_property -dict [list CONFIG.CLK_OUT1_PORT {design_clk} \
-                        CONFIG.USE_SAFE_CLOCK_STARTUP {true} \
-                        CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
-                        CONFIG.USE_LOCKED {true} \
-                        CONFIG.USE_RESET {true} \
-                        CONFIG.RESET_TYPE {ACTIVE_LOW} \
-                        CONFIG.RESET_PORT {resetn} \
-                        ] $design_clk_wiz
-
-    connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins "$f1_inst/rst_main_n_out"]
-    connect_bd_net [get_bd_pins $design_clk_wiz/clk_in1] [get_bd_pins "$f1_inst/clk_main_a0_out"]
-
     connect_bd_net [get_bd_pins "pcie_aclk"] [get_bd_pins "$f1_inst/clk_main_a0_out"]
     connect_bd_net [get_bd_pins "pcie_aresetn"] [get_bd_pins "$f1_inst/rst_main_n_out"]
 
     connect_bd_net $ddr_aclk [get_bd_pins "$f1_inst/clk_main_a0_out"]
     connect_bd_net $ddr_aresetn [get_bd_pins "$f1_inst/rst_main_n_out"]
 
-    # connect external design clk
-    connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $design_aclk
-    connect_bd_net [get_bd_pins $design_clk_wiz/locked] $design_aresetn
-
-    # connect_bd_net [get_bd_pins $ddr_aclk] [get_bd_pins $design_clk_wiz/clk_in1]
-
-    save_bd_design
-
     return $f1_inst
-
-    # puts "Creating AXI PCIe Gen3 bridge ..."
-    # # create ports
-    # set pcie_7x_mgt [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:pcie_7x_mgt_rtl:1.0 pcie_7x_mgt ]
-    # set IBUF_DS_N [ create_bd_port -dir I -from 0 -to 0 IBUF_DS_N ]
-    # set IBUF_DS_P [ create_bd_port -dir I -from 0 -to 0 IBUF_DS_P ]
-    # set pcie_perst [ create_bd_port -dir I -type rst pcie_perst ]
-    # set_property -dict [ list CONFIG.POLARITY {ACTIVE_LOW}  ] $pcie_perst
-    # # create PCIe core
-    # set axi_pcie3_0 [tapasco::ip::create_axi_pcie3_0 "axi_pcie3_0"]
-    # set pcie_properties [list \
-    #   CONFIG.SYS_RST_N_BOARD_INTERFACE {pcie_perst} \
-    #   CONFIG.axi_data_width {256_bit} \
-    #   CONFIG.pcie_blk_locn {X0Y1} \
-    #   CONFIG.pf0_bar0_64bit {true} \
-    #   CONFIG.pf0_bar0_scale {Megabytes} \
-    #   CONFIG.pf0_bar0_size {64} \
-    #   CONFIG.pf0_device_id {7038} \
-    #   CONFIG.pl_link_cap_max_link_width {X8} \
-    #   CONFIG.pipe_sim {true} \
-    #   CONFIG.comp_timeout {50ms} \
-    #   CONFIG.pl_link_cap_max_link_speed {8.0_GT/s} \
-    #   CONFIG.axisten_freq {250} \
-    #   CONFIG.axi_addr_width {64} \
-    #   CONFIG.pf0_msi_enabled {false} \
-    #   CONFIG.pf0_msix_enabled {true} \
-    #   CONFIG.pf0_msix_cap_table_size {83} \
-    #   CONFIG.pf0_msix_cap_table_offset {500000} \
-    #   CONFIG.pf0_msix_cap_pba_offset {508000} \
-    #   CONFIG.comp_timeout {50ms} \
-    #   CONFIG.pf0_interrupt_pin {NONE} \
-    #   CONFIG.c_s_axi_supports_narrow_burst {false} \
-    # ]
-
-    # # enable ATS/PRI (if platform feature is set)
-    # if {[tapasco::is_feature_enabled "ATS-PRI"]} {
-    #   puts "  ATS/PRI support is enabled"
-    #   lappend pcie_properties \
-    #     CONFIG.c_ats_enable {true} \
-    #     CONFIG.c_pri_enable {true} \
-    # }
-    # set_property -dict $pcie_properties $axi_pcie3_0
-    # # create refclk_ibuf
-    # set refclk_ibuf [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.1 refclk_ibuf ]
-    # set_property -dict [ list CONFIG.C_BUF_TYPE {IBUFDSGTE}  ] $refclk_ibuf
-    # # connect wires
-    # connect_bd_intf_net $pcie_7x_mgt [get_bd_intf_pins axi_pcie3_0/pcie_7x_mgt]
-    # connect_bd_net $IBUF_DS_N [get_bd_pins refclk_ibuf/IBUF_DS_N]
-    # connect_bd_net $IBUF_DS_P [get_bd_pins refclk_ibuf/IBUF_DS_P]
-    # connect_bd_net $pcie_perst [get_bd_pins axi_pcie3_0/sys_rst_n]
-    # connect_bd_net [get_bd_pins axi_pcie3_0/refclk] [get_bd_pins refclk_ibuf/IBUF_OUT]
-    # # create constraints file for GTX transceivers
-    # set constraints_fn "[get_property DIRECTORY [current_project]]/pcie.xdc"
-    # set constraints_file [open $constraints_fn w+]
-    # puts $constraints_file "set_property LOC IBUFDS_GTE2_X1Y11 \[get_cells {system_i/host/refclk_ibuf/U0/USE_IBUFDS_GTE2.GEN_IBUFDS_GTE2[0].IBUFDS_GTE2_I}\]"
-    # close $constraints_file
-    # read_xdc $constraints_fn
-
-    # return $axi_pcie3_0
   }
 
 }
