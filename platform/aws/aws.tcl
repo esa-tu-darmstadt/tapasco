@@ -72,6 +72,7 @@ namespace eval platform {
         "M_HOST"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_MEM_0"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_ARCH"    { set base "skip" }
+        "M_DDR"    { foreach {base stride range comp} [list 0x000C00000000 0x000100000000 0x80000000 "PLATFORM_COMPONENT_DDR"] {} }
         default     { if { [dict exists $extra_masters [get_property NAME $m]] } {
                           set l [dict get $extra_masters [get_property NAME $m]]
                           set base [lindex $l 0]
@@ -94,7 +95,10 @@ namespace eval platform {
   proc platform_connect_clock {clock_pin} {
     puts "Connecting clocks ..."
 
-    set clk_inputs [get_bd_pins -of_objects [get_bd_cells -filter {NAME != "mig_7series_0" && NAME != "proc_sys_reset_0"&& NAME != "axi_pcie3_0" && NAME != "pcie_ic"}] -filter { TYPE == "clk" && DIR == "I" && NAME != "refclk"}]
+    set clk_inputs [get_bd_pins -of_objects [get_bd_cells \
+      -filter {NAME != "mig_7series_0" && NAME != "proc_sys_reset_0"&& NAME != "axi_pcie3_0" && NAME != "pcie_ic"}] \
+      -filter { TYPE == "clk" && DIR == "I" && NAME != "refclk"}]
+
     connect_bd_net $clock_pin $clk_inputs
   }
 
@@ -123,12 +127,6 @@ namespace eval platform {
     set num_irqs [expr $num_irqs_threadpools + 4]
 
     set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 4]
-
-    # create MSIX interrupt controller
-    #set msix_intr_ctrl [tapasco::ip::create_msix_intr_ctrl "msix_intr_ctrl"]
-    #connect_bd_net [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "dout"}] [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "interrupt_pcie"}]
-
-    #connect_bd_intf_net $msix_interface [get_bd_intf_pins msix_intr_ctrl/msix]
 
     connect_bd_net $dma_irq_read [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
     connect_bd_net $dma_irq_write [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
@@ -202,13 +200,13 @@ namespace eval platform {
     # # create hierarchical ports: clocks
     # set ddr_aclk [create_bd_pin -type "clk" -dir "O" "ddr_aclk"]
     # set design_clk [create_bd_pin -type "clk" -dir "O" "design_aclk"]
-    # set pcie_aclk [tapasco::subsystem::get_port "host" "clk"]
+    set pcie_aclk [tapasco::subsystem::get_port "host" "clk"]
     # set design_aclk [tapasco::subsystem::get_port "design" "clk"]
 
     # # create hierarchical ports: resets
     # set ddr_aresetn [create_bd_pin -type "rst" -dir "O" "ddr_aresetn"]
     # set design_aresetn [create_bd_pin -type "rst" -dir "O" "design_aresetn"]
-    # set pcie_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
+    set pcie_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
     # set ddr_ic_aresetn [tapasco::subsystem::get_port "mem" "rst" "interconnect"]
     # set ddr_p_aresetn  [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
     # set design_p_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
@@ -231,16 +229,28 @@ namespace eval platform {
     # # AXI connections:
     # # connect dma 32bit to mig_ic
     # connect_bd_intf_net [get_bd_intf_pins $dma/M32_AXI] [get_bd_intf_pins mig_ic/S00_AXI]
-    # # connect DMA 64bit to external port
-    # connect_bd_intf_net [get_bd_intf_pins $dma/M64_AXI] $m_axi_mem
+
+    # connect DMA 64bit to external port
+    connect_bd_intf_net [get_bd_intf_pins $dma/M64_AXI] $m_axi_mem
+
     # # connect second mig_ic slave to external port
     # connect_bd_intf_net $s_axi_mem [get_bd_intf_pins mig_ic/S01_AXI]
-    # # connect DMA S_AXI to external port
-    # connect_bd_intf_net $s_axi_ddma [get_bd_intf_pins $dma/S_AXI]
 
-    # # connect PCIe clock and reset
-    # connect_bd_net $pcie_aclk [get_bd_pins $dma/m64_axi_aclk] [get_bd_pins $dma/s_axi_aclk]
-    # connect_bd_net $pcie_p_aresetn [get_bd_pins $dma/m64_axi_aresetn] [get_bd_pins $dma/s_axi_aresetn]
+    # connect DMA S_AXI to external port
+    connect_bd_intf_net $s_axi_ddma [get_bd_intf_pins $dma/S_AXI]
+
+    # create port for access to DDR memory
+    set m_ddr [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DDR"]
+
+    connect_bd_intf_net $m_ddr [get_bd_intf_pins "$dma/m32_axi"]
+
+
+    # connect PCIe clock and reset
+    connect_bd_net $pcie_aclk \
+      [get_bd_pins $dma/m32_axi_aclk] [get_bd_pins $dma/m64_axi_aclk] [get_bd_pins $dma/s_axi_aclk]
+
+    connect_bd_net $pcie_p_aresetn \
+      [get_bd_pins $dma/m32_axi_aresetn] [get_bd_pins $dma/m64_axi_aresetn] [get_bd_pins $dma/s_axi_aresetn]
 
     # # connect DDR clock and reset
     # set ddr_clk [get_bd_pins -regexp mig/(c0_ddr4_)?ui_clk]
@@ -253,24 +263,6 @@ namespace eval platform {
     # # connect external DDR clk/rst output ports
     # connect_bd_net $ddr_clk $ddr_aclk
 
-    # set design_clk_wiz [tapasco::ip::create_clk_wiz design_clk_wiz]
-    # set_property -dict [list CONFIG.CLK_OUT1_PORT {design_clk} \
-    #                     CONFIG.USE_SAFE_CLOCK_STARTUP {true} \
-    #                     CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
-    #                     CONFIG.USE_LOCKED {true} \
-    #                     CONFIG.USE_RESET {true} \
-    #                     CONFIG.RESET_TYPE {ACTIVE_LOW} \
-    #                     CONFIG.RESET_PORT {resetn} \
-    #                     ] $design_clk_wiz
-
-    # connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins -regexp $mig/((mmcm_locked)|(c0_init_calib_complete))]
-    # connect_bd_net [get_bd_pins $design_clk_wiz/locked] $design_aresetn
-
-    # # connect external design clk
-    # connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $design_clk
-
-    # connect_bd_net [get_bd_pins $ddr_aclk] [get_bd_pins $design_clk_wiz/clk_in1]
-
     # if {[get_property CONFIG.POLARITY [get_bd_pins -regexp mig/(c0_ddr4_)?ui_clk_sync_rst]] == "ACTIVE_HIGH"} {
     #     set ddr_rst_inverter [tapasco::ip::create_logic_vector "ddr_rst_inverter"]
     #     set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] [get_bd_cells $ddr_rst_inverter]
@@ -279,7 +271,6 @@ namespace eval platform {
     # } else {
     #     connect_bd_net $ddr_aresetn [get_bd_pins -regexp mig/(c0_ddr4_)?ui_clk_sync_rst]
     # }
-
   }
 
   proc create_subsystem_host {} {
@@ -331,6 +322,7 @@ namespace eval platform {
 
     # Connect DDR ports
     set ddr_ic [tapasco::ip::create_axi_sc "ddr_ic" 2 4]
+    tapasco::ip::connect_sc_default_clocks $ddr_ic "host"
 
     connect_bd_intf_net [get_bd_intf_pins "$ddr_ic/M00_AXI"] [get_bd_intf_pins "$f1_inst/S_AXI_DDRA"]
     connect_bd_intf_net [get_bd_intf_pins "$ddr_ic/M01_AXI"] [get_bd_intf_pins "$f1_inst/S_AXI_DDRB"]
@@ -531,7 +523,66 @@ namespace eval platform {
     connect_bd_net $ddr_aclk [get_bd_pins "$f1_inst/clk_main_a0_out"]
     connect_bd_net $ddr_aresetn [get_bd_pins "$f1_inst/rst_main_n_out"]
 
+    # Required later (manifest file)
+
+    # set timestamp [exec date +"%y_%m_%d-%H%M%S"]
+    # # FIXME - grep 'HDK_VERSION' $HDK_DIR/hdk_version.txt | sed 's/=/ /g' | awk '{print $2}'
+    # set hdk_version 1.4.5
+    # # FIXME - grep 'SHELL_VERSION' $HDK_SHELL_DIR/shell_version.txt | sed 's/=/ /g' | awk '{print $2}'
+    # # set shell_version 0x04261818
+
+    # set clock_recipe_a [get_property CONFIG.CLOCK_A_RECIPE [get_bd_cells $f1_inst]]
+    # set clock_recipe_b [get_property CONFIG.CLOCK_B_RECIPE [get_bd_cells $f1_inst]]
+    # set clock_recipe_c [get_property CONFIG.CLOCK_C_RECIPE [get_bd_cells $f1_inst]]
+
+    # set device_id [get_property CONFIG.DEVICE_ID [get_bd_cells $f1_inst]]
+    # set vendor_id [get_property CONFIG.VENDOR_ID [get_bd_cells $f1_inst]]
+    # set subsystem_id [get_property CONFIG.SUBSYSTEM_ID [get_bd_cells $f1_inst]]
+    # set subsystem_vendor_id [get_property CONFIG.SUBSYSTEM_VENDOR_ID [get_bd_cells $f1_inst]]
+
+    # set faas_shell_version [get_property CONFIG.SHELL_VERSION [get_bd_cells $f1_inst]]
+    # set shell_version $faas_shell_version
+
+    # set ::env(CLOCK_A_RECIPE) $clock_recipe_a
+    # set ::env(CLOCK_B_RECIPE) $clock_recipe_b
+    # set ::env(CLOCK_C_RECIPE) $clock_recipe_c
+
+    # set ::env(device_id) $device_id
+    # set ::env(vendor_id) $vendor_id
+    # set ::env(subsystem_id) $subsystem_id
+    # set ::env(subsystem_vendor_id) $subsystem_vendor_id
+
+    # set ::env(FAAS_SHELL_VERSION) $faas_shell_version
+
+    # Create address segments
+    # /host/f1_inst/S_AXI_DDRA/Mem_DDRA
+
+    # create_bd_addr_seg -range 0x80000000 -offset 0x000C00000000 [get_bd_addr_spaces $f1_inst/M_AXI_PCIS] [get_bd_addr_segs $f1_inst/S_AXI_DDRA/Mem_DDRA] SEG_aws_0_Mem_DDRA
+    # create_bd_addr_seg -range 0x80000000 -offset 0x000D00000000 [get_bd_addr_spaces $f1_inst/M_AXI_PCIS] [get_bd_addr_segs $f1_inst/S_AXI_DDRB/Mem_DDRB] SEG_aws_0_Mem_DDRB
+    # create_bd_addr_seg -range 0x80000000 -offset 0x000E00000000 [get_bd_addr_spaces $f1_inst/M_AXI_PCIS] [get_bd_addr_segs $f1_inst/S_AXI_DDRC/Mem_DDRC] SEG_aws_0_Mem_DDRC
+    # create_bd_addr_seg -range 0x80000000 -offset 0x000F00000000 [get_bd_addr_spaces $f1_inst/M_AXI_PCIS] [get_bd_addr_segs $f1_inst/S_AXI_DDRD/Mem_DDRD] SEG_aws_0_Mem_DDRD
+    # create_bd_addr_seg -range 0x00010000 -offset 0x00000000 [get_bd_addr_spaces $f1_inst/M_AXI_BAR1] [get_bd_addr_segs axi_cdma_0/S_AXI_LITE/Reg] SEG_axi_cdma_0_Reg
+    # create_bd_addr_seg -range 0x00001000 -offset 0x00000000 [get_bd_addr_spaces $f1_inst/M_AXI_SDA] [get_bd_addr_segs axi_gpio_0/S_AXI/Reg] SEG_axi_gpio_0_Reg
+    # create_bd_addr_seg -range 0x00001000 -offset 0x00000000 [get_bd_addr_spaces $f1_inst/M_AXI_OCL] [get_bd_addr_segs axi_gpio_1/S_AXI/Reg] SEG_axi_gpio_1_Reg
+    # create_bd_addr_seg -range 0x80000000 -offset 0x000C00000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs $f1_inst/S_AXI_DDRA/Mem_DDRA] SEG_aws_0_Mem_DDRA
+    # create_bd_addr_seg -range 0x80000000 -offset 0x000D00000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs $f1_inst/S_AXI_DDRB/Mem_DDRB] SEG_aws_0_Mem_DDRB
+    # create_bd_addr_seg -range 0x80000000 -offset 0x000E00000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs $f1_inst/S_AXI_DDRC/Mem_DDRC] SEG_aws_0_Mem_DDRC
+    # create_bd_addr_seg -range 0x80000000 -offset 0x000F00000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs $f1_inst/S_AXI_DDRD/Mem_DDRD] SEG_aws_0_Mem_DDRD
+
     return $f1_inst
   }
 
+  # namespace eval aws {
+  #     namespace export addressmap
+
+  #     proc addressmap {args} {
+  #         set args [lappend args "Mem_DDRA" [list 0x000C00000000 0 0 ""]]
+  #         set args [lappend args "S_AXI_DDRB" [list 0x000D00000000 0 0 ""]]
+  #         set args [lappend args "S_AXI_DDRC" [list 0x000E00000000 0 0 ""]]
+  #         set args [lappend args "S_AXI_DDRD" [list 0x000F00000000 0 0 ""]]
+  #         return $args
+  #     }
+  # }
+
+  # tapasco::register_plugin "platform::aws::addressmap" "post-address-map"
 }
