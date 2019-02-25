@@ -22,8 +22,10 @@ namespace eval afi_tarball {
 		puts "AWS FPGA: ([clock format [clock seconds] -format %T]) writing final DCP to to_aws directory.";
 
 		file mkdir $FAAS_CL_DIR/build/checkpoints/to_aws
-		write_checkpoint -force $FAAS_CL_DIR/build/checkpoints/to_aws/${timestamp}.SH_CL_routed.dcp
-		close_project		
+
+		write_checkpoint -force $FAAS_CL_DIR/build/checkpoints/to_aws/${timestamp}.SH_CL_routed.dcp -encrypt
+
+		# close_project
 
 		puts "AWS FPGA: ([clock format [clock seconds] -format %T]) Compress files for sending to AWS. "
 
