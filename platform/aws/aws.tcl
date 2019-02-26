@@ -263,26 +263,6 @@ namespace eval platform {
 
     connect_bd_net $pcie_p_aresetn \
       [get_bd_pins $dma/m32_axi_aresetn] [get_bd_pins $dma/m64_axi_aresetn] [get_bd_pins $dma/s_axi_aresetn]
-
-    # # connect DDR clock and reset
-    # set ddr_clk [get_bd_pins -regexp mig/(c0_ddr4_)?ui_clk]
-    # connect_bd_net [tapasco::subsystem::get_port "mem" "clk"] \
-    #   [get_bd_pins $dma/m32_axi_aclk]
-    # connect_bd_net $ddr_p_aresetn \
-    #   [get_bd_pins $dma/m32_axi_aresetn] \
-    #   [get_bd_pins -regexp mig/(c0_ddr4_)?aresetn]
-
-    # # connect external DDR clk/rst output ports
-    # connect_bd_net $ddr_clk $ddr_aclk
-
-    # if {[get_property CONFIG.POLARITY [get_bd_pins -regexp mig/(c0_ddr4_)?ui_clk_sync_rst]] == "ACTIVE_HIGH"} {
-    #     set ddr_rst_inverter [tapasco::ip::create_logic_vector "ddr_rst_inverter"]
-    #     set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] [get_bd_cells $ddr_rst_inverter]
-    #     connect_bd_net [get_bd_pins $ddr_rst_inverter/Op1] [get_bd_pins -regexp mig/(c0_ddr4_)?ui_clk_sync_rst]
-    #     connect_bd_net [get_bd_pins $ddr_rst_inverter/Res] $ddr_aresetn
-    # } else {
-    #     connect_bd_net $ddr_aresetn [get_bd_pins -regexp mig/(c0_ddr4_)?ui_clk_sync_rst]
-    # }
   }
 
   proc create_subsystem_host {} {
@@ -371,54 +351,6 @@ namespace eval platform {
        [get_bd_intf_pins "$f1_inst/S_AXI_PCIM"]
 
     save_bd_design
-
-    # set trans [get_bd_cells -filter {NAME == "MSIxTranslator"}]
-    # if { $trans != "" } {
-    #     connect_bd_intf_net $msix_interface [get_bd_intf_pins $trans/fromMSIxController]
-    # } else {
-    #     connect_bd_intf_net $msix_interface [get_bd_intf_pins $pcie/pcie_cfg_msix]
-    # }
-
-    # set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
-    # tapasco::ip::connect_sc_default_clocks $out_ic "design"
-
-    # if {$device_type != "virtexuplus"} {
-    #   if { $pcie_width == "x8" } {
-    #     puts "Using PCIe IP for x8..."
-    #     set bridge [tapasco::ip::create_pciebridgetolite "PCIeBridgeToLite"]
-    #   } else {
-    #     puts "Using PCIe IP for x16..."
-    #     set bridge [tapasco::ip::create_pciebridgetolite_x16 "PCIeBridgeToLite"]
-    #   }
-    #     connect_bd_intf_net [get_bd_intf_pins -regexp $pcie/M_AXI(_B)?] \
-    #   [get_bd_intf_pins -of_objects $bridge -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
-
-    #   connect_bd_net [get_bd_pins axi_pcie3_0/axi_aclk] [get_bd_pins -of_objects $bridge -filter "TYPE == clk"]
-    #   connect_bd_net [get_bd_pins axi_pcie3_0/axi_aresetn] [get_bd_pins -of_objects $bridge -filter "TYPE == rst"]
-
-    #   connect_bd_intf_net [get_bd_intf_pins -of_objects $bridge -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Master"] \
-    #   [get_bd_intf_pins -of_objects $out_ic -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
-    # } else {
-    #   connect_bd_intf_net [get_bd_intf_pins -regexp $pcie/M_AXI(_B)?] \
-    #     [get_bd_intf_pins -of_objects $out_ic -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
-    # }
-
-    # set in_ic [tapasco::ip::create_axi_sc "in_ic" 2 1]
-    # tapasco::ip::connect_sc_default_clocks $in_ic "host"
-
-    # connect_bd_intf_net [get_bd_intf_pins S_HOST] [get_bd_intf_pins $in_ic/S00_AXI]
-    # connect_bd_intf_net [get_bd_intf_pins -of_object $in_ic -filter { MODE == Master }] \
-    #   [get_bd_intf_pins -regexp $pcie/S_AXI(_B)?]
-
-    # connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M00_AXI}] $m_arch
-    # connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M01_AXI}] $m_intc
-    # connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M02_AXI}] $m_tapasco
-    # connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M03_AXI}] $m_dma
-
-    # forward PCIe clock to external ports
-    # connect_bd_net [get_bd_pins axi_pcie3_0/axi_aclk] $pcie_aclk
-
-    # connect_bd_net [get_bd_pins axi_pcie3_0/axi_aresetn] $pcie_aresetn
   }
 
   proc create_subsystem_clocks_and_resets {} {
@@ -567,35 +499,7 @@ namespace eval platform {
 
     set ::env(FAAS_SHELL_VERSION) $::faas_shell_version
 
-    # Create address segments
-    # /host/f1_inst/S_AXI_DDRA/Mem_DDRA
-
-    # create_bd_addr_seg -range 0x80000000 -offset 0x000C00000000 [get_bd_addr_spaces $f1_inst/M_AXI_PCIS] [get_bd_addr_segs $f1_inst/S_AXI_DDRA/Mem_DDRA] SEG_aws_0_Mem_DDRA
-    # create_bd_addr_seg -range 0x80000000 -offset 0x000D00000000 [get_bd_addr_spaces $f1_inst/M_AXI_PCIS] [get_bd_addr_segs $f1_inst/S_AXI_DDRB/Mem_DDRB] SEG_aws_0_Mem_DDRB
-    # create_bd_addr_seg -range 0x80000000 -offset 0x000E00000000 [get_bd_addr_spaces $f1_inst/M_AXI_PCIS] [get_bd_addr_segs $f1_inst/S_AXI_DDRC/Mem_DDRC] SEG_aws_0_Mem_DDRC
-    # create_bd_addr_seg -range 0x80000000 -offset 0x000F00000000 [get_bd_addr_spaces $f1_inst/M_AXI_PCIS] [get_bd_addr_segs $f1_inst/S_AXI_DDRD/Mem_DDRD] SEG_aws_0_Mem_DDRD
-    # create_bd_addr_seg -range 0x00010000 -offset 0x00000000 [get_bd_addr_spaces $f1_inst/M_AXI_BAR1] [get_bd_addr_segs axi_cdma_0/S_AXI_LITE/Reg] SEG_axi_cdma_0_Reg
-    # create_bd_addr_seg -range 0x00001000 -offset 0x00000000 [get_bd_addr_spaces $f1_inst/M_AXI_SDA] [get_bd_addr_segs axi_gpio_0/S_AXI/Reg] SEG_axi_gpio_0_Reg
-    # create_bd_addr_seg -range 0x00001000 -offset 0x00000000 [get_bd_addr_spaces $f1_inst/M_AXI_OCL] [get_bd_addr_segs axi_gpio_1/S_AXI/Reg] SEG_axi_gpio_1_Reg
-    # create_bd_addr_seg -range 0x80000000 -offset 0x000C00000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs $f1_inst/S_AXI_DDRA/Mem_DDRA] SEG_aws_0_Mem_DDRA
-    # create_bd_addr_seg -range 0x80000000 -offset 0x000D00000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs $f1_inst/S_AXI_DDRB/Mem_DDRB] SEG_aws_0_Mem_DDRB
-    # create_bd_addr_seg -range 0x80000000 -offset 0x000E00000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs $f1_inst/S_AXI_DDRC/Mem_DDRC] SEG_aws_0_Mem_DDRC
-    # create_bd_addr_seg -range 0x80000000 -offset 0x000F00000000 [get_bd_addr_spaces axi_cdma_0/Data] [get_bd_addr_segs $f1_inst/S_AXI_DDRD/Mem_DDRD] SEG_aws_0_Mem_DDRD
-
     return $f1_inst
   }
 
-  # namespace eval aws {
-  #     namespace export addressmap
-
-  #     proc addressmap {args} {
-  #         set args [lappend args "Mem_DDRA" [list 0x000C00000000 0 0 ""]]
-  #         set args [lappend args "S_AXI_DDRB" [list 0x000D00000000 0 0 ""]]
-  #         set args [lappend args "S_AXI_DDRC" [list 0x000E00000000 0 0 ""]]
-  #         set args [lappend args "S_AXI_DDRD" [list 0x000F00000000 0 0 ""]]
-  #         return $args
-  #     }
-  # }
-
-  # tapasco::register_plugin "platform::aws::addressmap" "post-address-map"
 }
