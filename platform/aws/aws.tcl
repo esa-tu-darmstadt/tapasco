@@ -121,7 +121,8 @@ namespace eval platform {
     set dma_irq_read [create_bd_pin -type "intr" -dir I "dma_irq_read"]
     set dma_irq_write [create_bd_pin -type "intr" -dir I "dma_irq_write"]
 
-    set irq_output [create_bd_pin -type "intr" -dir O "interrupts"]
+    # TODO using type "undef" instead of "intr" to be compatible with F1 shell
+    set irq_output [create_bd_pin -type "undef" -dir O "interrupts"]
 
     set num_irqs_threadpools [::tapasco::get_platform_num_slots]
     set num_irqs [expr $num_irqs_threadpools + 4]
@@ -142,9 +143,13 @@ namespace eval platform {
     connect_bd_intf_net [get_bd_intf_pins "$intc_ic/S00_AXI"] $s_axi
 
     # Concat design interrupts
-    set irq_concat_design [tapasco::ip::create_xlconcat "interrupt_concat_design" 4]
+    set irq_concat_design [tapasco::ip::create_xlconcat "interrupt_concat_design" 5]
 
-    for {set i 0} {$i < 4} {incr i} {
+    # TODO a total of 16 interrupts are supported, but for now we are not using all of them
+    set unused [tapasco::ip::create_constant "irq_unused_design" 8 0]
+    connect_bd_net [get_bd_pins $unused/dout] [get_bd_pins "$irq_concat_design/In4"]
+
+    for {set i 0} {$i < 1} {incr i} {
       set port [create_bd_pin -from 31 -to 0 -dir I -type intr "intr_$i"]
       #connect_bd_net $port [get_bd_pin -of_objects $irq_concat_design -filter "NAME == In$i"]
 
@@ -161,6 +166,12 @@ namespace eval platform {
       # Connect clocks/resets
       connect_bd_net [get_bd_pins $axi_intc($i)/s_axi_aclk] $aclk
       connect_bd_net [get_bd_pins $axi_intc($i)/s_axi_aresetn] $p_aresetn
+    }
+
+    # Set unused interrupts to constant zero
+    for {set j $i} {$j < 4} {incr j} {
+      set unused [tapasco::ip::create_constant "irq_unused_$j" 1 0]
+      connect_bd_net [get_bd_pins $unused/dout] [get_bd_pins "$irq_concat_design/In$j"]
     }
 
     # Concat DMA and design concat interrupts
@@ -291,7 +302,8 @@ namespace eval platform {
     set pcie_aresetn [create_bd_pin -type "rst" -dir "O" "pcie_aresetn"]
     #set msix_interface [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:pcie3_cfg_msix_rtl:1.0 "S_MSIX"]
 
-    set irq_input [create_bd_pin -type "intr" -dir I "interrupts"]
+    # TODO using type "undef" instead of "intr" to be compatible with F1 shell
+    set irq_input [create_bd_pin -type "undef" -dir I "interrupts"]
 
     # create instances of shell
     set f1_inst [create_f1_shell]
@@ -490,7 +502,7 @@ namespace eval platform {
     set f1_inst [ create_bd_cell -type ip -vlnv xilinx.com:ip:aws:1.0 f1_inst ]
     set_property -dict [ list \
         CONFIG.AUX_PRESENT {1} \
-        CONFIG.BAR1_PRESENT {1} \
+        CONFIG.BAR1_PRESENT {0} \
         CONFIG.CLOCK_A0_FREQ {125000000} \
         CONFIG.CLOCK_A1_FREQ {62500000} \
         CONFIG.CLOCK_A2_FREQ {187500000} \
@@ -504,8 +516,8 @@ namespace eval platform {
         CONFIG.DDR_B_PRESENT {1} \
         CONFIG.DDR_C_PRESENT {1} \
         CONFIG.DDR_D_PRESENT {1} \
-        CONFIG.OCL_PRESENT {1} \
-        CONFIG.SDA_PRESENT {1} \
+        CONFIG.OCL_PRESENT {0} \
+        CONFIG.SDA_PRESENT {0} \
     ] $f1_inst
 
     set ddr_aclk [create_bd_pin -type "clk" -dir "O" "ddr_aclk"]
