@@ -535,36 +535,36 @@ namespace eval platform {
     connect_bd_net $ddr_aclk [get_bd_pins "$f1_inst/clk_main_a0_out"]
     connect_bd_net $ddr_aresetn [get_bd_pins "$f1_inst/rst_main_n_out"]
 
-    # Required later (manifest file)
+    # Required for AFI manifest file
 
-    # set timestamp [exec date +"%y_%m_%d-%H%M%S"]
-    # # FIXME - grep 'HDK_VERSION' $HDK_DIR/hdk_version.txt | sed 's/=/ /g' | awk '{print $2}'
-    # set hdk_version 1.4.5
-    # # FIXME - grep 'SHELL_VERSION' $HDK_SHELL_DIR/shell_version.txt | sed 's/=/ /g' | awk '{print $2}'
-    # # set shell_version 0x04261818
+    set ::timestamp [exec date +"%y_%m_%d-%H%M%S"]
+    # FIXME - grep 'HDK_VERSION' $HDK_DIR/hdk_version.txt | sed 's/=/ /g' | awk '{print $2}'
+    set ::hdk_version 1.4.5
+    # FIXME - grep 'SHELL_VERSION' $HDK_SHELL_DIR/shell_version.txt | sed 's/=/ /g' | awk '{print $2}'
+    # set shell_version 0x04261818
 
-    # set clock_recipe_a [get_property CONFIG.CLOCK_A_RECIPE [get_bd_cells $f1_inst]]
-    # set clock_recipe_b [get_property CONFIG.CLOCK_B_RECIPE [get_bd_cells $f1_inst]]
-    # set clock_recipe_c [get_property CONFIG.CLOCK_C_RECIPE [get_bd_cells $f1_inst]]
+    set ::clock_recipe_a [get_property CONFIG.CLOCK_A_RECIPE [get_bd_cells $f1_inst]]
+    set ::clock_recipe_b [get_property CONFIG.CLOCK_B_RECIPE [get_bd_cells $f1_inst]]
+    set ::clock_recipe_c [get_property CONFIG.CLOCK_C_RECIPE [get_bd_cells $f1_inst]]
 
-    # set device_id [get_property CONFIG.DEVICE_ID [get_bd_cells $f1_inst]]
-    # set vendor_id [get_property CONFIG.VENDOR_ID [get_bd_cells $f1_inst]]
-    # set subsystem_id [get_property CONFIG.SUBSYSTEM_ID [get_bd_cells $f1_inst]]
-    # set subsystem_vendor_id [get_property CONFIG.SUBSYSTEM_VENDOR_ID [get_bd_cells $f1_inst]]
+    set ::device_id [get_property CONFIG.DEVICE_ID [get_bd_cells $f1_inst]]
+    set ::vendor_id [get_property CONFIG.VENDOR_ID [get_bd_cells $f1_inst]]
+    set ::subsystem_id [get_property CONFIG.SUBSYSTEM_ID [get_bd_cells $f1_inst]]
+    set ::subsystem_vendor_id [get_property CONFIG.SUBSYSTEM_VENDOR_ID [get_bd_cells $f1_inst]]
 
-    # set faas_shell_version [get_property CONFIG.SHELL_VERSION [get_bd_cells $f1_inst]]
-    # set shell_version $faas_shell_version
+    set ::faas_shell_version [get_property CONFIG.SHELL_VERSION [get_bd_cells $f1_inst]]
+    set ::shell_version $::faas_shell_version
 
-    # set ::env(CLOCK_A_RECIPE) $clock_recipe_a
-    # set ::env(CLOCK_B_RECIPE) $clock_recipe_b
-    # set ::env(CLOCK_C_RECIPE) $clock_recipe_c
+    set ::env(CLOCK_A_RECIPE) $::clock_recipe_a
+    set ::env(CLOCK_B_RECIPE) $::clock_recipe_b
+    set ::env(CLOCK_C_RECIPE) $::clock_recipe_c
 
-    # set ::env(device_id) $device_id
-    # set ::env(vendor_id) $vendor_id
-    # set ::env(subsystem_id) $subsystem_id
-    # set ::env(subsystem_vendor_id) $subsystem_vendor_id
+    set ::env(device_id) $::device_id
+    set ::env(vendor_id) $::vendor_id
+    set ::env(subsystem_id) $::subsystem_id
+    set ::env(subsystem_vendor_id) $::subsystem_vendor_id
 
-    # set ::env(FAAS_SHELL_VERSION) $faas_shell_version
+    set ::env(FAAS_SHELL_VERSION) $::faas_shell_version
 
     # Create address segments
     # /host/f1_inst/S_AXI_DDRA/Mem_DDRA
