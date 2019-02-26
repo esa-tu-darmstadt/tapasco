@@ -20,6 +20,7 @@
 # @brief	AWS F1 platform implementation.
 # @author	J. Korinth, TU Darmstadt (jk@esa.tu-darmstadt.de)
 # @author	J. A. Hofmann, TU Darmstadt (jah@esa.tu-darmstadt.de)
+# @author M. Ober, TU Darmstadt (tapasco@ober-mail.de)
 #
 namespace eval platform {
 
