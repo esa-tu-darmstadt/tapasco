@@ -307,7 +307,7 @@ namespace eval platform {
     set design_aresetn [create_bd_pin -type "rst" -dir "O" "design_aresetn"]
 
     connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins "$f1_inst/rst_main_n_out"]
-    connect_bd_net [get_bd_pins $design_clk_wiz/clk_in1] [get_bd_pins "$f1_inst/clk_main_a0_out"]
+    connect_bd_net [get_bd_pins $design_clk_wiz/clk_in1] [get_bd_pins "$f1_inst/clk_extra_a1_out"]
 
     # connect external design clk
     connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $design_aclk
@@ -436,6 +436,7 @@ namespace eval platform {
     set_property -dict [ list \
         CONFIG.AUX_PRESENT {1} \
         CONFIG.BAR1_PRESENT {0} \
+        CONFIG.NUM_A_CLOCKS {2} \
         CONFIG.CLOCK_A0_FREQ {125000000} \
         CONFIG.CLOCK_A1_FREQ {62500000} \
         CONFIG.CLOCK_A2_FREQ {187500000} \
