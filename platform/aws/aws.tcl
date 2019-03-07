@@ -500,7 +500,27 @@ namespace eval platform {
 
     set ::env(FAAS_SHELL_VERSION) $::faas_shell_version
 
+    create_constraints
+
     return $f1_inst
+  }
+
+  proc create_constraints {} {
+
+    set constraints_fn "[pwd]/build/constraints/cl_clocks_aws.xdc"
+    read_xdc $constraints_fn
+    set_property PROCESSING_ORDER EARLY [get_files $constraints_fn]
+    set_property USED_IN {synthesis synthesis out_of_context implementation} [get_files $constraints_fn]
+
+    set constraints_fn "[pwd]/build/constraints/cl_ddr.xdc"
+    read_xdc $constraints_fn
+    set_property PROCESSING_ORDER EARLY [get_files $constraints_fn]
+    set_property USED_IN {synthesis synthesis out_of_context implementation} [get_files $constraints_fn]
+
+    set constraints_fn "[pwd]/build/constraints/cl_synth_aws.xdc"
+    read_xdc $constraints_fn
+    set_property PROCESSING_ORDER EARLY [get_files $constraints_fn]
+    set_property USED_IN {synthesis synthesis out_of_context implementation} [get_files $constraints_fn]
   }
 
 }
