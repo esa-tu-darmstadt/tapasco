@@ -523,4 +523,19 @@ namespace eval platform {
     set_property USED_IN {synthesis synthesis out_of_context implementation} [get_files $constraints_fn]
   }
 
+  # Plugins
+
+  namespace eval aws {
+    namespace export _set_params
+
+    proc _set_params {args} {
+        set_param hd.clockRoutingWireReduction false
+        set_param hd.supportClockNetCrossDiffReconfigurablePartitions 1
+        set_param physynth.ultraRAMOptOutput false
+        return $args
+    }
+  }
+
+  tapasco::register_plugin "platform::aws::_set_params" "pre-header"
+
 }
