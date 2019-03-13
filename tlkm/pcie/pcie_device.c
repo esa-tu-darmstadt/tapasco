@@ -195,6 +195,11 @@ int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 void tlkm_pcie_remove(struct pci_dev *pdev)
 {
+	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *)dev_get_drvdata(&pdev->dev);
+	LOG(TLKM_LF_PCIE, "removing TaPaSCo PCIe device ...");
+	if(dev) {
+		tlkm_bus_delete_device(dev->parent);
+	}
 }
 
 int pcie_device_create(struct tlkm_device *dev, void *data)
