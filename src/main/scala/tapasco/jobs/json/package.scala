@@ -35,7 +35,8 @@ package object json {
     (JsPath \ "Implementation").readNullable[String].map (_ getOrElse "VivadoHLS") ~
     (JsPath \ "Architectures").readNullable[Seq[String]] ~
     (JsPath \ "Platforms").readNullable[Seq[String]] ~
-    (JsPath \ "Kernels").readNullable[Seq[String]]
+    (JsPath \ "Kernels").readNullable[Seq[String]] ~
+    (JsPath \ "Skip Evaluation").readNullable[Boolean]
   ) (HighLevelSynthesisJob.apply _)
 
   implicit val highLevelSynthesisJobWrites: Writes[HighLevelSynthesisJob] = (
@@ -43,7 +44,8 @@ package object json {
     (JsPath \ "Implementation").write[String] ~
     (JsPath \ "Architectures").writeNullable[Seq[String]] ~
     (JsPath \ "Platforms").writeNullable[Seq[String]] ~
-    (JsPath \ "Kernels").writeNullable[Seq[String]]
+    (JsPath \ "Kernels").writeNullable[Seq[String]] ~
+      (JsPath \ "Skip Evaluation").writeNullable[Boolean]
   ) (unlift(HighLevelSynthesisJob.unapply _ andThen (_ map ("HighLevelSynthesis" +: _))))
   /* HighLevelSynthesisJob @} */
 
