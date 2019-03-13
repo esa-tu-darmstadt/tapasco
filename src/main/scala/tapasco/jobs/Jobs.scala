@@ -191,7 +191,8 @@ final case class HighLevelSynthesisJob(
     private val _implementation: String,
     private val _architectures: Option[Seq[String]] = None,
     private val _platforms: Option[Seq[String]] = None,
-    private val _kernels: Option[Seq[String]] = None) extends Job("hls") {
+    private val _kernels: Option[Seq[String]] = None,
+    skipEvaluation : Option[Boolean] = None) extends Job("hls") {
   /** Returns the selected HLS tool implementation. */
   lazy val implementation: HighLevelSynthesizer.Implementation = HighLevelSynthesizer.Implementation(_implementation)
 

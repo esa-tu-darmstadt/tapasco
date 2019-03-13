@@ -37,8 +37,11 @@ private object HighLevelSynthesisParser {
 
   private val jobid = identity[HighLevelSynthesisJob] _
 
+  private def skipEval: Parser[(String, Boolean)] =
+    (longOption("skipEvaluation", "SkipEval") ~ ws) map { case s => (s, true) }
+
   private def options: Parser[HighLevelSynthesisJob => HighLevelSynthesisJob] =
-    (implementation | architectures | platforms).rep map (opt =>
+    (implementation | architectures | platforms | skipEval).rep map (opt =>
       (opt map (applyOption _) fold jobid) (_ andThen _))
 
   private def applyOption(opt: (String, _)): HighLevelSynthesisJob => HighLevelSynthesisJob =
@@ -46,6 +49,7 @@ private object HighLevelSynthesisParser {
       case ("Implementation", i: String) => _.copy(_implementation = i)
       case ("Architectures", as: Seq[String @unchecked]) => _.copy(_architectures = Some(as))
       case ("Platforms", ps: Seq[String @unchecked]) => _.copy(_platforms = Some(ps))
+      case ("SkipEval", se : Boolean) => _.copy(skipEvaluation = Some(se))
       case o => throw new Exception(s"parsed illegal option: $o")
     }
 }
