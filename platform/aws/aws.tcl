@@ -523,6 +523,8 @@ namespace eval platform {
     read_xdc $constraints_fn
     set_property PROCESSING_ORDER EARLY [get_files $constraints_fn]
     #set_property USED_IN {synthesis synthesis out_of_context implementation} [get_files $constraints_fn]
+
+    add_files -norecurse [file join $::env(HDK_SHELL_DIR) hlx design lib cl_top.sv]
   }
 
   # Plugins
