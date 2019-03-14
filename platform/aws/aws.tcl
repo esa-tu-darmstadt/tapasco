@@ -25,6 +25,7 @@
 namespace eval platform {
 
   set platform_dirname "aws"
+  set pcie_width "x16"
 
   namespace export create
   namespace export max_masters
@@ -226,12 +227,12 @@ namespace eval platform {
     set irq_read [create_bd_pin -type "intr" -dir "O" "dma_irq_read"]
     set irq_write [create_bd_pin -type "intr" -dir "O" "dma_irq_write"]
 
-    # variable pcie_width
-    #if { $pcie_width == "x8" } {
+    variable pcie_width
+    if { $pcie_width == "x8" } {
       set dma [tapasco::ip::create_bluedma "dma"]
-    #} else {
-    #  set dma [tapasco::ip::create_bluedma_x16 "dma"]
-    #}
+    } else {
+      set dma [tapasco::ip::create_bluedma_x16 "dma"]
+    }
     connect_bd_net [get_bd_pins $dma/IRQ_read] $irq_read
     connect_bd_net [get_bd_pins $dma/IRQ_write] $irq_write
 
@@ -609,3 +610,5 @@ namespace eval platform {
   tapasco::register_plugin "platform::aws::_post_synth" "post-synth"
 
 }
+
+# vim: set expandtab ts=2 sw=2:
