@@ -69,6 +69,8 @@ error_pci_en:
 
 static void release_device(struct tlkm_pcie_device *pdev)
 {
+	struct pci_dev *dev = pdev->pdev;
+	dev_set_drvdata(&dev->dev, NULL);
 	pci_release_regions(pdev->pdev);
 	pci_disable_device(pdev->pdev);
 }
