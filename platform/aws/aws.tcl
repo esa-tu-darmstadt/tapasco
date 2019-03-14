@@ -543,6 +543,13 @@ namespace eval platform {
     # Before synthesis
     proc _pre_synth {args} {
       set_param sta.enableAutoGenClkNamePersistence 0
+
+      set synth_run [get_runs synth_1]
+      set_property -dict [list \
+        STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY rebuilt \
+        {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS} {-mode out_of_context -max_uram_cascade_height 1} \
+      ] $synth_run
+
       return $args
     }
 
@@ -608,7 +615,7 @@ namespace eval platform {
   }
 
   tapasco::register_plugin "platform::aws::_set_params" "pre-header"
-  tapasco::register_plugin "platform::aws::_pre_synth" "pre-wrapper"
+  tapasco::register_plugin "platform::aws::_pre_synth" "pre-synth"
   tapasco::register_plugin "platform::aws::_post_synth" "post-synth"
 
 }

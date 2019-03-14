@@ -225,6 +225,9 @@ namespace eval platform {
     generate_target all [get_files "[get_bd_name].bd"]
     set synth_run [get_runs synth_1]
     set_property -dict $synth_settings $synth_run
+
+    tapasco::call_plugins "pre-synth" $synth_run
+
     current_run $synth_run
     launch_runs -jobs $jobs $synth_run
     wait_on_run $synth_run
