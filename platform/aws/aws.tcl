@@ -425,7 +425,7 @@ namespace eval platform {
     # current_bd_instance $parentObj
 
     set_property ip_repo_paths  "[get_property ip_repo_paths [current_project]] \
-        [file join $::env(AWS_FPGA_REPO_DIR)/hdk/common/shell_stable/hlx/design/ip/aws_v1_0]" [current_project]
+        [file join $::env(HDK_SHELL_DIR) hlx design ip aws_v1_0]" [current_project]
 
     update_ip_catalog
 
