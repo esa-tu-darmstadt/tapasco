@@ -559,6 +559,7 @@ namespace eval platform {
       global clock_recipe_a
       global clock_recipe_b
       global clock_recipe_c
+      global timestamp
 
       # Write checkpoint and close project: synthesized CL
       write_checkpoint -force CL.post_synth.dcp
