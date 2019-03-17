@@ -164,6 +164,15 @@ namespace eval platform {
     }
   }
 
+  proc get_bd_name {} {
+    variable bd_design_name
+    if {[info exists bd_design_name] == 0} {
+      return "system"
+    } else {
+      return "${platform::bd_design_name}"
+    }
+  }
+
   # Platform API: Main entry point to generate the bitstream.
   proc generate {} {
     global bitstreamname
@@ -171,7 +180,7 @@ namespace eval platform {
     set jobs [tapasco::get_number_of_processors]
     puts "  using $jobs parallel jobs"
 
-    generate_target all [get_files system.bd]
+    generate_target all [get_files "[get_bd_name].bd"]
     set synth_run [get_runs synth_1]
     set_property -dict [list \
       STEPS.SYNTH_DESIGN.ARGS.RETIMING true \
