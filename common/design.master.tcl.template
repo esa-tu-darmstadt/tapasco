@@ -101,9 +101,15 @@ tapasco::call_plugins "pre-wrapper"
 save_bd_design
 
 # create wrapper
-make_wrapper -files [get_files [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/system.bd] -top
-add_files -norecurse [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/hdl/system_wrapper.v
-update_compile_order -fileset sources_1
+if {[llength [info commands platform::generate_wrapper]] == 0} {
+  # create default wrapper
+  make_wrapper -files [get_files [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/system.bd] -top
+  add_files -norecurse [pwd]/@@PROJECT_NAME@@/@@PROJECT_NAME@@.srcs/sources_1/bd/system/hdl/system_wrapper.v
+  update_compile_order -fileset sources_1
+} else {
+  # create platform specific wrapper
+  platform::generate_wrapper
+}
 
 # activate retiming in synthesis
 set_property STEPS.SYNTH_DESIGN.ARGS.RETIMING true [get_runs synth_1]
