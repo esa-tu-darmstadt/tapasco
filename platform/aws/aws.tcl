@@ -472,7 +472,7 @@ namespace eval platform {
 
     # Required for AFI manifest file
 
-    set ::timestamp [exec date +"%y_%m_%d-%H%M%S"]
+    set ::timestamp [exec date +%y_%m_%d-%H%M%S]
     # FIXME - grep 'HDK_VERSION' $HDK_DIR/hdk_version.txt | sed 's/=/ /g' | awk '{print $2}'
     set ::hdk_version 1.4.5
     # FIXME - grep 'SHELL_VERSION' $HDK_SHELL_DIR/shell_version.txt | sed 's/=/ /g' | awk '{print $2}'
@@ -509,21 +509,26 @@ namespace eval platform {
   proc create_constraints {} {
     variable platform_dirname
 
+    # TODO this needs to be generated depending on the actual clock settings!
     set constraints_fn [file join $::env(TAPASCO_HOME) platform $platform_dirname constraints cl_clocks_aws.xdc]
     read_xdc $constraints_fn
     set_property PROCESSING_ORDER EARLY [get_files $constraints_fn]
-    #set_property USED_IN {synthesis synthesis out_of_context implementation} [get_files $constraints_fn]
+    set_property USED_IN {synthesis out_of_context implementation} [get_files $constraints_fn]
 
-    set constraints_fn [file join $::env(TAPASCO_HOME) platform $platform_dirname constraints cl_ddr.xdc]
-    read_xdc $constraints_fn
-    set_property PROCESSING_ORDER EARLY [get_files $constraints_fn]
-    #set_property USED_IN {synthesis synthesis out_of_context implementation} [get_files $constraints_fn]
+    # This contains the CL specific constraints for synthesis at the CL level
+    set constraints_fn [file join $::env(HDK_SHELL_DIR) new_cl_template build constraints cl_synth_user.xdc]
+    import_files -fileset constrs_1 -force $constraints_fn
 
-    set constraints_fn [file join $::env(TAPASCO_HOME) platform $platform_dirname constraints cl_synth_aws.xdc]
-    read_xdc $constraints_fn
-    set_property PROCESSING_ORDER EARLY [get_files $constraints_fn]
-    #set_property USED_IN {synthesis synthesis out_of_context implementation} [get_files $constraints_fn]
+    # This contains the CL specific constraints for Top level PNR
+    set constraints_fn [file join $::env(HDK_SHELL_DIR) new_cl_template build constraints cl_pnr_user.xdc]
+    import_files -fileset constrs_1 -force $constraints_fn
+    set_property PROCESSING_ORDER LATE [get_files */cl_pnr_user.xdc]
+    set_property USED_IN {implementation} [get_files */cl_pnr_user.xdc]
 
+    set_property is_enabled false [get_files */cl_pnr_user.xdc]
+    set ::env(PNR_USER) [get_files */cl_pnr_user.xdc]
+
+    # Add top module (TODO move somewhere else...)
     add_files -norecurse [file join $::env(HDK_SHELL_DIR) hlx design lib cl_top.sv]
   }
 
@@ -546,8 +551,9 @@ namespace eval platform {
 
       set synth_run [get_runs synth_1]
       set_property -dict [list \
-        STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY rebuilt \
+        STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY none \
         {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS} {-mode out_of_context -max_uram_cascade_height 1} \
+        STEPS.SYNTH_DESIGN.ARGS.DIRECTIVE RuntimeOptimized \
       ] $synth_run
 
       return $args
@@ -562,8 +568,7 @@ namespace eval platform {
       global timestamp
 
       # Write checkpoint and close project: synthesized CL
-      write_checkpoint -force CL.post_synth.dcp
-      close_project
+      write_checkpoint -force CL.post_synth_inline.dcp
 
       # Set default value
       set_param sta.enableAutoGenClkNamePersistence 1
@@ -606,18 +611,50 @@ namespace eval platform {
       source $HDK_SHELL_DIR/build/scripts/aws_clock_properties.tcl
 
       # Write post-link checkpoint
-      puts "\nAWS FPGA: ([clock format [clock seconds] -format %T]) - Writing post-link_design checkpoint ${timestamp}.post_link.dcp";
+      puts "\nAWS FPGA: ([clock format [clock seconds] -format %T]) - Writing post-link_design checkpoint post_link.dcp";
       write_checkpoint -force post_link.dcp
 
       # ----------------------------
 
       return $args
     }
+
+
+    proc _post_synth2 {args} {
+      set sdp_script_dir [file join $::env(HDK_SHELL_DIR) hlx build scripts subscripts]
+      set synth_directory [pwd]
+      set BD_PATH [get_files */cl.bd]
+      set AWS_XDC_PATH NONE
+      set _post_synth_dcp [file join [get_property DIRECTORY [current_project]] CL.post_synth.dcp]
+
+      puts "*******************************************************"
+      puts "sdp_script_dir  = $sdp_script_dir"
+      puts "synth_directory = $synth_directory"
+      puts "BD_PATH         = $BD_PATH"
+      puts "AWS_XDC_PATH    = $AWS_XDC_PATH"
+      puts "_post_synth_dcp = $_post_synth_dcp"
+      puts "*******************************************************"
+
+      set vivcmd "vivado -mode batch -source [file normalize [file join $sdp_script_dir make_post_synth_dcp.tcl ]] -tclargs\
+        -TOP [get_property top [current_fileset]]\
+        -IP_REPO [get_property IP_OUTPUT_REPO [get_project [get_projects]]]\
+        -SYNTH_DIR $synth_directory\
+        -BD_PATH ${BD_PATH}\
+        -XDC [get_files */cl_clocks_aws.xdc]\
+        -USR_XDC [get_files */cl_synth_user.xdc]\
+        -AWS_XDC ${AWS_XDC_PATH}\
+        -LINK_DCP_PATH $_post_synth_dcp"
+
+      puts "Running the following command from the TCL tab in Vivado\n\t$vivcmd"
+      exec {*}${vivcmd}
+      puts "Finished running the command from the TCL tab in Vivado\n\t$vivcmd"
+      puts "\n\n"
+    }
   }
 
   tapasco::register_plugin "platform::aws::_set_params" "pre-header"
   tapasco::register_plugin "platform::aws::_pre_synth" "pre-synth"
-  tapasco::register_plugin "platform::aws::_post_synth" "post-synth"
+  tapasco::register_plugin "platform::aws::_post_synth2" "post-synth"
 
 }
 
