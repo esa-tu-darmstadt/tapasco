@@ -74,7 +74,7 @@ set_msg_config -suppress -id {[xilinx.com:ip:axi_intc:4.1-7]}
 @@COMPOSITION@@
 
 # create design
-create_bd_design -quiet "system"
+create_bd_design -quiet [platform::get_bd_name]
 
 # enable PE-local memories
 tapasco::add_capabilities_flag "PLATFORM_CAP0_PE_LOCAL_MEM"
