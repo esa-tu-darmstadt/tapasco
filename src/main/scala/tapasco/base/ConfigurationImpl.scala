@@ -34,7 +34,7 @@ import  java.nio.file._
  * file names etc.
  **/
 private case class ConfigurationImpl (
-      descPath: Path                                  = TapascoCommon.homeDir.resolve("default.cfg"),
+      descPath: Path                                  = Paths.get(System.getProperty("user.dir")).resolve("default.cfg"),
       private val _archDir: Path                      = TapascoCommon.homeDir.resolve("arch"),
       private val _platformDir: Path                  = TapascoCommon.homeDir.resolve("platform"),
       private val _kernelDir: Path                    = TapascoCommon.homeDir.resolve("kernel"),
@@ -48,7 +48,7 @@ private case class ConfigurationImpl (
       dryRun: Option[Path]                            = None,
       verbose: Option[String]                         = None,
       jobs: Seq[Job]                                  = Seq()
-    ) extends Description(descPath: Path) with Configuration {
+    ) extends Description(descPath) with Configuration {
   def descPath(p: Path): Configuration                = this.copy(descPath = p)
   val archDir: Path                                   = resolve(_archDir)
   def archDir(p: Path): Configuration                 = this.copy(_archDir = p)
