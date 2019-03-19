@@ -27,6 +27,9 @@ namespace eval platform {
   set platform_dirname "aws"
   set pcie_width "x16"
 
+  variable bd_design_name
+  set bd_design_name "cl"
+
   namespace export create
   namespace export max_masters
   namespace export create_subsystem_clocks_and_resets
@@ -34,6 +37,8 @@ namespace eval platform {
   namespace export create_subsystem_memory
   namespace export create_subsystem_intc
   namespace export create_subsystem_tapasco
+
+  namespace export generate_wrapper
 
   if { ! [info exists pcie_width] } {
     puts "No PCIe width defined. Assuming x8..."
@@ -536,6 +541,10 @@ namespace eval platform {
 
     # Add top module (TODO move somewhere else...)
     add_files -norecurse [file join $::env(HDK_SHELL_DIR) hlx design lib cl_top.sv]
+  }
+
+  proc generate_wrapper {} {
+    puts "Wrapper already added."
   }
 
   # Plugins
