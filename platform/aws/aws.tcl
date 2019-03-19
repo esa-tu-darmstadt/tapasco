@@ -511,9 +511,15 @@ namespace eval platform {
 
     # TODO this needs to be generated depending on the actual clock settings!
     set constraints_fn [file join $::env(TAPASCO_HOME) platform $platform_dirname constraints cl_clocks_aws.xdc]
-    read_xdc $constraints_fn
-    set_property PROCESSING_ORDER EARLY [get_files $constraints_fn]
-    set_property USED_IN {synthesis out_of_context implementation} [get_files $constraints_fn]
+    #read_xdc $constraints_fn
+    #set_property PROCESSING_ORDER EARLY [get_files $constraints_fn]
+    #set_property USED_IN {synthesis out_of_context implementation} [get_files $constraints_fn]
+
+    add_files -fileset constrs_1 -norecurse $constraints_fn -force
+
+    set_property PROCESSING_ORDER EARLY [get_files */cl_clocks_aws.xdc]
+    set_property USED_IN {synthesis out_of_context implementation} [get_files */cl_clocks_aws.xdc]
+
 
     # This contains the CL specific constraints for synthesis at the CL level
     set constraints_fn [file join $::env(HDK_SHELL_DIR) new_cl_template build constraints cl_synth_user.xdc]
@@ -535,19 +541,25 @@ namespace eval platform {
   # Plugins
 
   namespace eval aws {
-    namespace export _set_params
 
     proc _set_params {args} {
-      set_param hd.clockRoutingWireReduction false
+      #set_param hd.clockRoutingWireReduction false
       set_param hd.supportClockNetCrossDiffReconfigurablePartitions 1
       set_param physynth.ultraRAMOptOutput false
+      set_param synth.elaboration.rodinMoreOptions {rt::set_parameter disableOregPackingUram true}
+
+      set ::FAAS_CL_DIR [get_property DIRECTORY [current_project]]
+      set ::env(FAAS_CL_DIR) $::FAAS_CL_DIR
+      file mkdir "${::FAAS_CL_DIR}/build/checkpoints"
+
+      puts "FAAS_CL_DIR = ${::FAAS_CL_DIR}"
 
       return $args
     }
 
     # Before synthesis
     proc _pre_synth {args} {
-      set_param sta.enableAutoGenClkNamePersistence 0
+      #set_param sta.enableAutoGenClkNamePersistence 0
 
       set synth_run [get_runs synth_1]
       set_property -dict [list \
@@ -568,10 +580,10 @@ namespace eval platform {
       global timestamp
 
       # Write checkpoint and close project: synthesized CL
-      write_checkpoint -force CL.post_synth_inline.dcp
+      write_checkpoint -force "${::FAAS_CL_DIR}/build/checkpoints/CL.post_synth_inline.dcp"
 
       # Set default value
-      set_param sta.enableAutoGenClkNamePersistence 1
+      #set_param sta.enableAutoGenClkNamePersistence 1
 
       # Synthesis finished, start implementation...
 
@@ -622,10 +634,11 @@ namespace eval platform {
 
     proc _post_synth2 {args} {
       set sdp_script_dir [file join $::env(HDK_SHELL_DIR) hlx build scripts subscripts]
-      set synth_directory [pwd]
+      #set synth_directory [pwd]
+      set synth_directory [get_property DIRECTORY [current_run -synthesis]]
       set BD_PATH [get_files */cl.bd]
       set AWS_XDC_PATH NONE
-      set _post_synth_dcp [file join [get_property DIRECTORY [current_project]] CL.post_synth.dcp]
+      set _post_synth_dcp "${::FAAS_CL_DIR}/build/checkpoints/CL.post_synth.dcp"
 
       puts "*******************************************************"
       puts "sdp_script_dir  = $sdp_script_dir"
@@ -649,10 +662,24 @@ namespace eval platform {
       exec {*}${vivcmd}
       puts "Finished running the command from the TCL tab in Vivado\n\t$vivcmd"
       puts "\n\n"
+
+      set platform_dirname $::platform::platform_dirname
+
+      set_property -name "STEPS.OPT_DESIGN.TCL.PRE" \
+        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname opt_design_pre.tcl]] \
+        -objects [get_runs [current_run -implementation]]
+
+      set_property -name "STEPS.OPT_DESIGN.TCL.POST" \
+        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname opt_design_post.tcl]] \
+        -objects [get_runs [current_run -implementation]]
+
+      set_property -name "STEPS.ROUTE_DESIGN.TCL.POST" \
+        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname route_design_post.tcl]] \
+        -objects [get_runs [current_run -implementation]]
     }
   }
 
-  tapasco::register_plugin "platform::aws::_set_params" "pre-header"
+  tapasco::register_plugin "platform::aws::_set_params" "pre-arch"
   tapasco::register_plugin "platform::aws::_pre_synth" "pre-synth"
   tapasco::register_plugin "platform::aws::_post_synth2" "post-synth"
 
