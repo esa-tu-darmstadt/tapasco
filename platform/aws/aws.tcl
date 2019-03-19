@@ -571,67 +571,6 @@ namespace eval platform {
       return $args
     }
 
-    # After synthesis, before implementation
-    # TODO: ${timestamp} prefix for checkpoints?
-    proc _post_synth {args} {
-      global clock_recipe_a
-      global clock_recipe_b
-      global clock_recipe_c
-      global timestamp
-
-      # Write checkpoint and close project: synthesized CL
-      write_checkpoint -force "${::FAAS_CL_DIR}/build/checkpoints/CL.post_synth_inline.dcp"
-
-      # Set default value
-      #set_param sta.enableAutoGenClkNamePersistence 1
-
-      # Synthesis finished, start implementation...
-
-      # ----------------------------
-
-      set DEVICE_TYPE {xcvu9p-flgb2104-2-i}
-      set TOP {top_sp}
-      set HDK_SHELL_DIR "${::env(HDK_SHELL_DIR)}"
-      set cacheDir "${::env(HDK_SHELL_DESIGN_DIR)}/cache/ddr4_phy"
-
-      # ----------------------------
-
-      ####Create in-memory prjoect and setup IP cache location
-      create_project -part $DEVICE_TYPE -in_memory
-      set_property IP_REPO_PATHS $cacheDir [current_project]
-      puts "\nAWS FPGA: ([clock format [clock seconds] -format %T]) - Combining Shell and CL design checkpoints";
-      add_files $HDK_SHELL_DIR/build/checkpoints/from_aws/SH_CL_BB_routed.dcp
-      add_files CL.post_synth.dcp
-      set_property SCOPED_TO_CELLS {WRAPPER_INST/CL} [get_files CL.post_synth.dcp]
-
-      #Read the constraints, note *DO NOT* read cl_clocks_aws (clocks originating from AWS shell)
-      #read_xdc [ list \
-         #$CL_DIR/build/constraints/cl_pnr_user.xdc
-      #]
-      #set_property PROCESSING_ORDER late [get_files cl_pnr_user.xdc]
-
-      puts "\nAWS FPGA: ([clock format [clock seconds] -format %T]) - Running link_design";
-      link_design -top $TOP -part $DEVICE_TYPE -reconfig_partitions {WRAPPER_INST/SH WRAPPER_INST/CL}
-
-      puts "\nAWS FPGA: ([clock format [clock seconds] -format %T]) - PLATFORM.IMPL==[get_property PLATFORM.IMPL [current_design]]";
-      ##################################################
-      # Apply Clock Properties for Clock Table Recipes
-      ##################################################
-      puts "AWS FPGA: ([clock format [clock seconds] -format %T]) - Sourcing aws_clock_properties.tcl to apply properties to clocks. ";
-
-      # Apply properties to clocks
-      source $HDK_SHELL_DIR/build/scripts/aws_clock_properties.tcl
-
-      # Write post-link checkpoint
-      puts "\nAWS FPGA: ([clock format [clock seconds] -format %T]) - Writing post-link_design checkpoint post_link.dcp";
-      write_checkpoint -force post_link.dcp
-
-      # ----------------------------
-
-      return $args
-    }
-
-
     proc _post_synth2 {args} {
       set sdp_script_dir [file join $::env(HDK_SHELL_DIR) hlx build scripts subscripts]
       #set synth_directory [pwd]
