@@ -559,7 +559,7 @@ namespace eval platform {
 
       set ::FAAS_CL_DIR [get_property DIRECTORY [current_project]]
       set ::env(FAAS_CL_DIR) $::FAAS_CL_DIR
-      file mkdir "${::FAAS_CL_DIR}/build/checkpoints"
+      file mkdir "${::FAAS_CL_DIR}/build/checkpoints/to_aws"
 
       puts "FAAS_CL_DIR = ${::FAAS_CL_DIR}"
 
