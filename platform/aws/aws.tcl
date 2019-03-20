@@ -706,6 +706,8 @@ namespace eval platform {
 
       close $manifest_file
 
+      package require tar
+
       # Delete old tar file with same name
       if { [file exists $::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.Developer_CL.tar] } {
         puts "Deleting old tar file with same name.";
