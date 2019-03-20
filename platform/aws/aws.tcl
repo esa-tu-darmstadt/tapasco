@@ -401,6 +401,13 @@ namespace eval platform {
     return 0x02000000;
   }
 
+  proc readfile {filename} {
+    set f [open $filename]
+    set data [read $f]
+    close $f
+    return $data
+  }
+
   proc create_f1_shell {} {
 
     puts "Creating AWS F1 Shell ..."
@@ -478,10 +485,11 @@ namespace eval platform {
     # Required for AFI manifest file
 
     set ::timestamp [exec date +%y_%m_%d-%H%M%S]
-    # FIXME - grep 'HDK_VERSION' $HDK_DIR/hdk_version.txt | sed 's/=/ /g' | awk '{print $2}'
-    set ::hdk_version 1.4.5
-    # FIXME - grep 'SHELL_VERSION' $HDK_SHELL_DIR/shell_version.txt | sed 's/=/ /g' | awk '{print $2}'
-    # set shell_version 0x04261818
+
+    if {[regexp {HDK_VERSION=([0-9.]+)} [readfile ${::env(HDK_DIR)}/hdk_version.txt] match ::hdk_version] eq 0} {
+      puts "WARNING: Could not read HDK_VERSION, using default value"
+      set ::hdk_version 1.0.0
+    }
 
     set ::clock_recipe_a [get_property CONFIG.CLOCK_A_RECIPE [get_bd_cells $f1_inst]]
     set ::clock_recipe_b [get_property CONFIG.CLOCK_B_RECIPE [get_bd_cells $f1_inst]]
@@ -492,8 +500,23 @@ namespace eval platform {
     set ::subsystem_id [get_property CONFIG.SUBSYSTEM_ID [get_bd_cells $f1_inst]]
     set ::subsystem_vendor_id [get_property CONFIG.SUBSYSTEM_VENDOR_ID [get_bd_cells $f1_inst]]
 
+    # TODO read shell version from file instead? ($HDK_SHELL_DIR/shell_version.txt)
     set ::faas_shell_version [get_property CONFIG.SHELL_VERSION [get_bd_cells $f1_inst]]
     set ::shell_version $::faas_shell_version
+
+    puts "timestamp           = ${::timestamp}"
+    puts "hdk_version         = ${::hdk_version}"
+    puts "clock_recipe_a      = ${::clock_recipe_a}"
+    puts "clock_recipe_b      = ${::clock_recipe_b}"
+    puts "clock_recipe_c      = ${::clock_recipe_c}"
+    puts "device_id           = ${::device_id}"
+    puts "vendor_id           = ${::vendor_id}"
+    puts "subsystem_id        = ${::subsystem_id}"
+    puts "subsystem_vendor_id = ${::subsystem_vendor_id}"
+    puts "shell_version       = ${::shell_version}"
+
+    set ::env(timestamp) $::timestamp
+    set ::env(hdk_version) $::hdk_version
 
     set ::env(CLOCK_A_RECIPE) $::clock_recipe_a
     set ::env(CLOCK_B_RECIPE) $::clock_recipe_b
@@ -547,19 +570,23 @@ namespace eval platform {
     puts "Wrapper already added."
   }
 
-  # Plugins
+  # Begin plugins
 
-  namespace eval aws {
+  namespace eval aws_plugins {
 
-    proc _set_params {args} {
+    proc set_params {args} {
       #set_param hd.clockRoutingWireReduction false
       set_param hd.supportClockNetCrossDiffReconfigurablePartitions 1
       set_param physynth.ultraRAMOptOutput false
       set_param synth.elaboration.rodinMoreOptions {rt::set_parameter disableOregPackingUram true}
 
+      # Create directories for output files
+
       set ::FAAS_CL_DIR [get_property DIRECTORY [current_project]]
       set ::env(FAAS_CL_DIR) $::FAAS_CL_DIR
+
       file mkdir "${::FAAS_CL_DIR}/build/checkpoints/to_aws"
+      file mkdir "${::FAAS_CL_DIR}/build/reports"
 
       puts "FAAS_CL_DIR = ${::FAAS_CL_DIR}"
 
@@ -567,12 +594,12 @@ namespace eval platform {
     }
 
     # Before synthesis
-    proc _pre_synth {args} {
+    proc pre_synth {args} {
       #set_param sta.enableAutoGenClkNamePersistence 0
 
       set synth_run [get_runs synth_1]
       set_property -dict [list \
-        STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY none \
+        STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY rebuilt \
         {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS} {-mode out_of_context -max_uram_cascade_height 1} \
         STEPS.SYNTH_DESIGN.ARGS.DIRECTIVE RuntimeOptimized \
       ] $synth_run
@@ -580,7 +607,7 @@ namespace eval platform {
       return $args
     }
 
-    proc _post_synth2 {args} {
+    proc post_synth {args} {
       set sdp_script_dir [file join $::env(HDK_SHELL_DIR) hlx build scripts subscripts]
       #set synth_directory [pwd]
       set synth_directory [get_property DIRECTORY [current_run -synthesis]]
@@ -594,7 +621,6 @@ namespace eval platform {
       puts "BD_PATH         = $BD_PATH"
       puts "AWS_XDC_PATH    = $AWS_XDC_PATH"
       puts "_post_synth_dcp = $_post_synth_dcp"
-      puts "*******************************************************"
 
       set vivcmd "vivado -mode batch -source [file normalize [file join $sdp_script_dir make_post_synth_dcp.tcl ]] -tclargs\
         -TOP [get_property top [current_fileset]]\
@@ -606,9 +632,10 @@ namespace eval platform {
         -AWS_XDC ${AWS_XDC_PATH}\
         -LINK_DCP_PATH $_post_synth_dcp"
 
-      puts "Running the following command from the TCL tab in Vivado\n\t$vivcmd"
+      puts "Create post synth DCP:\n\t$vivcmd"
       exec {*}${vivcmd}
-      puts "Finished running the command from the TCL tab in Vivado\n\t$vivcmd"
+      puts "Finished!"
+      puts "*******************************************************"
       puts "\n\n"
 
       set platform_dirname $::platform::platform_dirname
@@ -624,12 +651,76 @@ namespace eval platform {
       set_property -name "STEPS.ROUTE_DESIGN.TCL.POST" \
         -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname route_design_post.tcl]] \
         -objects [get_runs [current_run -implementation]]
+
+      set_property -name "STEPS.PLACE_DESIGN.TCL.POST" \
+        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname place_design_post.tcl]] \
+        -objects [get_runs [current_run -implementation]]
+    }
+
+    proc create_tarfile {} {
+      puts "\n\nCREATE AMAZON FPGA IMAGE (AFI) TARBALL\n\n"
+
+      # Lock the design to preserve the placement and routing
+      puts "Locking design"
+      lock_design -level routing
+
+      # Report final timing
+      report_timing_summary -file $::FAAS_CL_DIR/build/reports/${::timestamp}.SH_CL_final_timing_summary.rpt
+
+      # This is what will deliver to AWS
+      puts "Writing final DCP to to_aws directory"
+      write_checkpoint -force $::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.SH_CL_routed.dcp -encrypt
+
+      # close_project
+
+      # Create manifest file
+      puts "Write manifest file"
+      set manifest_file [open "$::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.manifest.txt" w]
+
+      puts "Getting hash"
+      set hash [lindex [split [exec sha256sum $::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.SH_CL_routed.dcp] ] 0]
+
+      set vivado_version [string range [version -short] 0 5]
+      puts "vivado_version is $vivado_version\n"
+
+      puts $manifest_file "manifest_format_version=2\n"
+      puts $manifest_file "pci_vendor_id=${::vendor_id}\n"
+      puts $manifest_file "pci_device_id=${::device_id}\n"
+      puts $manifest_file "pci_subsystem_id=${::subsystem_id}\n"
+      puts $manifest_file "pci_subsystem_vendor_id=${::subsystem_vendor_id}\n"
+      puts $manifest_file "dcp_hash=${hash}\n"
+      puts $manifest_file "shell_version=${::shell_version}\n"
+      puts $manifest_file "tool_version=v${vivado_version}\n"
+      puts $manifest_file "dcp_file_name=${::timestamp}.SH_CL_routed.dcp\n"
+      puts $manifest_file "hdk_version=${::hdk_version}\n"
+      puts $manifest_file "date=${::timestamp}\n"
+      puts $manifest_file "clock_recipe_a=A${::clock_recipe_a}\n"
+      puts $manifest_file "clock_recipe_b=B${::clock_recipe_b}\n"
+      puts $manifest_file "clock_recipe_c=C${::clock_recipe_c}\n"
+
+      close $manifest_file
+
+      # Delete old tar file with same name
+      if { [file exists $::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.Developer_CL.tar] } {
+        puts "Deleting old tar file with same name.";
+        file delete -force $::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.Developer_CL.tar
+      }
+
+      # Tar checkpoint to aws
+      cd $::FAAS_CL_DIR/build/checkpoints
+      tar::create to_aws/${::timestamp}.Developer_CL.tar [glob to_aws/${::timestamp}*]
+
+      puts "\n\nFinished creating final tar file in to_aws directory:";
+      puts "$::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.Developer_CL.tar"
     }
   }
 
-  tapasco::register_plugin "platform::aws::_set_params" "pre-arch"
-  tapasco::register_plugin "platform::aws::_pre_synth" "pre-synth"
-  tapasco::register_plugin "platform::aws::_post_synth2" "post-synth"
+  # End plugins
+
+  tapasco::register_plugin "platform::aws_plugins::set_params" "pre-arch"
+  tapasco::register_plugin "platform::aws_plugins::pre_synth" "pre-synth"
+  tapasco::register_plugin "platform::aws_plugins::post_synth" "post-synth"
+  tapasco::register_plugin "platform::aws_plugins::create_tarfile" "post-impl"
 
 }
 
