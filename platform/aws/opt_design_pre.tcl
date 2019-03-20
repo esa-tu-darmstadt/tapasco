@@ -31,6 +31,8 @@ set_property USED_IN {implementation} [get_files $PNR_USR_LOC]
 link_design -top $top -part [get_parts -of_objects [current_project]] \
   -reconfig_partitions {WRAPPER_INST/SH WRAPPER_INST/CL}
 
+set_property CLOCK_DEDICATED_ROUTE ANY_CMT_COLUMN [get_nets WRAPPER_INST/SH/kernel_clks_i/clkwiz_sys_clk/inst/CLK_CORE_DRP_I/clk_inst/clk_out2]
+
 #source ${FAAS_CL_DIR}/build/constraints/aws_gen_clk_constraints.tcl
 source $::env(TAPASCO_HOME)/platform/aws/constraints/aws_gen_clk_constraints.tcl
 
