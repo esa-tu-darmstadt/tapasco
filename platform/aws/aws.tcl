@@ -599,10 +599,12 @@ namespace eval platform {
 
       set synth_run [get_runs synth_1]
       set_property -dict [list \
-        STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY rebuilt \
         {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS} {-mode out_of_context -max_uram_cascade_height 1} \
-        STEPS.SYNTH_DESIGN.ARGS.DIRECTIVE RuntimeOptimized \
+        STEPS.SYNTH_DESIGN.ARGS.RETIMING true \
       ] $synth_run
+
+      # STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY rebuilt \
+      # STEPS.SYNTH_DESIGN.ARGS.DIRECTIVE RuntimeOptimized \
 
       return $args
     }
@@ -639,6 +641,10 @@ namespace eval platform {
       puts "\n\n"
 
       set platform_dirname $::platform::platform_dirname
+
+      set_property STEPS.OPT_DESIGN.ARGS.DIRECTIVE Explore [get_runs [current_run -implementation]]
+      set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE Explore [get_runs [current_run -implementation]]
+      set_property STEPS.PHYS_OPT_DESIGN.IS_ENABLED true [get_runs [current_run -implementation]]
 
       set_property -name "STEPS.OPT_DESIGN.TCL.PRE" \
         -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname opt_design_pre.tcl]] \
