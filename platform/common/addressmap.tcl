@@ -120,14 +120,15 @@ namespace eval addressmap {
     foreach seg [lsort [get_bd_addr_segs -addressables -of_objects $master]] {
       puts [format "  $master: $seg -> 0x%08x (range: 0x%08x)" $base $range]
       set sintf [get_bd_intf_pins -of_objects $seg]
-      if {$range <= 0} { set range [get_property RANGE $seg] }
+      set srange $range
+      if {$range <= 0} { set srange [get_property RANGE $seg] }
       set kind [get_property USAGE $seg]
-      dict set address_map $sintf "interface $sintf offset $base range $range kind $kind"
+      dict set address_map $sintf "interface $sintf offset $base range $srange kind $kind"
       if {[string compare $component ""] != 0} {
         add_platform_component $component $base
         set component [increase_component_name $component]
       }
-      if {$stride == 0} { incr base $range } else { incr base $stride }
+      if {$stride == 0} { incr base $srange } else { incr base $stride }
     }
     return $address_map
   }
