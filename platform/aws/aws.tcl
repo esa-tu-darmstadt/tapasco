@@ -598,6 +598,11 @@ namespace eval platform {
       set AWS_XDC_PATH NONE
       set _post_synth_dcp "${::FAAS_CL_DIR}/build/checkpoints/CL.post_synth.dcp"
 
+      set const_dir [file normalize [file join ${::FAAS_CL_DIR} build constraints]]
+      file mkdir $const_dir
+      file copy -force [file normalize [file join $sdp_script_dir cl_debug_bridge_hlx.xdc ]] \
+        [file normalize [file join $const_dir cl_debug_bridge_hlx.xdc]]
+
       puts "*******************************************************"
       puts "sdp_script_dir  = $sdp_script_dir"
       puts "synth_directory = $synth_directory"

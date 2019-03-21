@@ -10,8 +10,6 @@ if {[info exist FAAS_CL_DIR] eq 0} {
 
 report_design_analysis -congestion
 
-set_param hd.clockRoutingWireReduction false
-
 set timestamp $::env(timestamp)
 write_checkpoint -force $FAAS_CL_DIR/build/checkpoints/${timestamp}.SH_CL.post_place.dcp
 

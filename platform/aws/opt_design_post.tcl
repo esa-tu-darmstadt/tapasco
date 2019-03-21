@@ -8,6 +8,8 @@ if {[info exist FAAS_CL_DIR] eq 0} {
   }
 }
 
+source [file join $::env(HDK_SHELL_DIR) hlx build scripts subscripts apply_debug_constraints_hlx.tcl]
+
 set_param hd.clockRoutingWireReduction false
 
 set timestamp $::env(timestamp)
