@@ -20,7 +20,7 @@
 # @brief	AWS F1 platform implementation.
 # @author	J. Korinth, TU Darmstadt (jk@esa.tu-darmstadt.de)
 # @author	J. A. Hofmann, TU Darmstadt (jah@esa.tu-darmstadt.de)
-# @author M. Ober, TU Darmstadt (tapasco@ober-mail.de)
+# @author	M. Ober, TU Darmstadt (tapasco@ober-mail.de)
 #
 namespace eval platform {
 
@@ -188,19 +188,6 @@ namespace eval platform {
     connect_bd_net [get_bd_pins "$irq_concat_design/dout"] [get_bd_pins "$irq_concat_all/In1"]
 
     connect_bd_net [get_bd_pins "$irq_concat_all/dout"] $irq_output
-
-    save_bd_design
-
-    #connect_bd_net [get_bd_pin -of_objects $irq_concat_design -filter {NAME == "dout"}] [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "interrupt_design"}]
-
-    # connect internal clocks
-    #connect_bd_net $aclk [get_bd_pins -of_objects $msix_intr_ctrl -filter {NAME == "S_AXI_ACLK"}]
-    #connect_bd_net $design_aclk [get_bd_pins -of_objects $msix_intr_ctrl -filter {NAME == "design_clk"}]
-    #connect_bd_net $p_aresetn [get_bd_pins -of_objects $msix_intr_ctrl -filter {NAME == "S_AXI_ARESETN"}]
-    #connect_bd_net $design_aresetn [get_bd_pins -of_objects $msix_intr_ctrl -filter {NAME == "design_rst"}]
-
-    # connect S_AXI
-    #connect_bd_intf_net $s_axi [get_bd_intf_pins -of_objects $msix_intr_ctrl -filter {NAME == "S_AXI"}]
   }
 
   # Creates the memory subsystem consisting of MIG core for DDR RAM,
@@ -355,8 +342,6 @@ namespace eval platform {
     connect_bd_intf_net [get_bd_intf_pins S_HOST] [get_bd_intf_pins $in_ic/S00_AXI]
     connect_bd_intf_net [get_bd_intf_pins -of_object $in_ic -filter { MODE == Master }] \
        [get_bd_intf_pins "$f1_inst/S_AXI_PCIM"]
-
-    save_bd_design
   }
 
   proc create_subsystem_clocks_and_resets {} {
@@ -411,30 +396,6 @@ namespace eval platform {
   proc create_f1_shell {} {
 
     puts "Creating AWS F1 Shell ..."
-
-    # #if { $parentCell eq "" } {
-    #  set parentCell [get_bd_cells /]
-    # #}
-
-    # # Get object for parentCell
-    # set parentObj [get_bd_cells $parentCell]
-    # if { $parentObj == "" } {
-    #  catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
-    #  return
-    # }
-
-    # # Make sure parentObj is hier blk
-    # set parentType [get_property TYPE $parentObj]
-    # if { $parentType ne "hier" } {
-    #  catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
-    #  return
-    # }
-
-    # # Save current instance; Restore later
-    # set oldCurInst [current_bd_instance .]
-
-    # # Set parent object as current
-    # current_bd_instance $parentObj
 
     set_property ip_repo_paths  "[get_property ip_repo_paths [current_project]] \
         [file join $::env(HDK_SHELL_DIR) hlx design ip aws_v1_0]" [current_project]
@@ -539,9 +500,6 @@ namespace eval platform {
 
     # TODO this needs to be generated depending on the actual clock settings!
     set constraints_fn [file join $::env(TAPASCO_HOME) platform $platform_dirname constraints cl_clocks_aws.xdc]
-    #read_xdc $constraints_fn
-    #set_property PROCESSING_ORDER EARLY [get_files $constraints_fn]
-    #set_property USED_IN {synthesis out_of_context implementation} [get_files $constraints_fn]
 
     add_files -fileset constrs_1 -norecurse $constraints_fn -force
 
@@ -590,6 +548,30 @@ namespace eval platform {
 
       puts "FAAS_CL_DIR = ${::FAAS_CL_DIR}"
 
+      set platform_dirname $::platform::platform_dirname
+
+      set_property STEPS.OPT_DESIGN.ARGS.DIRECTIVE Explore [get_runs [current_run -implementation]]
+      set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE Explore [get_runs [current_run -implementation]]
+      set_property STEPS.PHYS_OPT_DESIGN.IS_ENABLED true [get_runs [current_run -implementation]]
+
+      # Set TCL pre/post hooks
+
+      set_property -name "STEPS.OPT_DESIGN.TCL.PRE" \
+        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname opt_design_pre.tcl]] \
+        -objects [get_runs [current_run -implementation]]
+
+      set_property -name "STEPS.OPT_DESIGN.TCL.POST" \
+        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname opt_design_post.tcl]] \
+        -objects [get_runs [current_run -implementation]]
+
+      set_property -name "STEPS.ROUTE_DESIGN.TCL.POST" \
+        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname route_design_post.tcl]] \
+        -objects [get_runs [current_run -implementation]]
+
+      set_property -name "STEPS.PLACE_DESIGN.TCL.POST" \
+        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname place_design_post.tcl]] \
+        -objects [get_runs [current_run -implementation]]
+
       return $args
     }
 
@@ -611,7 +593,6 @@ namespace eval platform {
 
     proc post_synth {args} {
       set sdp_script_dir [file join $::env(HDK_SHELL_DIR) hlx build scripts subscripts]
-      #set synth_directory [pwd]
       set synth_directory [get_property DIRECTORY [current_run -synthesis]]
       set BD_PATH [get_files */cl.bd]
       set AWS_XDC_PATH NONE
@@ -639,28 +620,6 @@ namespace eval platform {
       puts "Finished!"
       puts "*******************************************************"
       puts "\n\n"
-
-      set platform_dirname $::platform::platform_dirname
-
-      set_property STEPS.OPT_DESIGN.ARGS.DIRECTIVE Explore [get_runs [current_run -implementation]]
-      set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE Explore [get_runs [current_run -implementation]]
-      set_property STEPS.PHYS_OPT_DESIGN.IS_ENABLED true [get_runs [current_run -implementation]]
-
-      set_property -name "STEPS.OPT_DESIGN.TCL.PRE" \
-        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname opt_design_pre.tcl]] \
-        -objects [get_runs [current_run -implementation]]
-
-      set_property -name "STEPS.OPT_DESIGN.TCL.POST" \
-        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname opt_design_post.tcl]] \
-        -objects [get_runs [current_run -implementation]]
-
-      set_property -name "STEPS.ROUTE_DESIGN.TCL.POST" \
-        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname route_design_post.tcl]] \
-        -objects [get_runs [current_run -implementation]]
-
-      set_property -name "STEPS.PLACE_DESIGN.TCL.POST" \
-        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname place_design_post.tcl]] \
-        -objects [get_runs [current_run -implementation]]
     }
 
     proc create_tarfile {} {
@@ -670,16 +629,11 @@ namespace eval platform {
       puts "Locking design"
       lock_design -level routing
 
-      # Report final timing
       report_timing_summary -file $::FAAS_CL_DIR/build/reports/${::timestamp}.SH_CL_final_timing_summary.rpt
 
-      # This is what will deliver to AWS
       puts "Writing final DCP to to_aws directory"
       write_checkpoint -force $::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.SH_CL_routed.dcp -encrypt
 
-      # close_project
-
-      # Create manifest file
       puts "Write manifest file"
       set manifest_file [open "$::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.manifest.txt" w]
 
@@ -714,7 +668,7 @@ namespace eval platform {
         file delete -force $::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.Developer_CL.tar
       }
 
-      # Tar checkpoint to aws
+      # Add checkpoint and manifest to TAR archive from which the AFI can be generated
       cd $::FAAS_CL_DIR/build/checkpoints
       tar::create to_aws/${::timestamp}.Developer_CL.tar [glob to_aws/${::timestamp}*]
 
@@ -725,6 +679,7 @@ namespace eval platform {
 
   # End plugins
 
+  # Register plugins
   tapasco::register_plugin "platform::aws_plugins::set_params" "pre-arch"
   tapasco::register_plugin "platform::aws_plugins::pre_synth" "pre-synth"
   tapasco::register_plugin "platform::aws_plugins::post_synth" "post-synth"

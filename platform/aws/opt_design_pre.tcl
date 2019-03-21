@@ -1,9 +1,9 @@
 puts "Running opt_design pre hook..."
 
 if {[info exist FAAS_CL_DIR] eq 0} {
-	if {[info exist ::env(FAAS_CL_DIR)]} {
-		set FAAS_CL_DIR $::env(FAAS_CL_DIR)
-	} else {
+  if {[info exist ::env(FAAS_CL_DIR)]} {
+    set FAAS_CL_DIR $::env(FAAS_CL_DIR)
+  } else {
     send_msg_id "opt_design_pre 0-1" ERROR "FAAS_CL_DIR environment varaiable not set"
   }
 }
@@ -41,4 +41,3 @@ source $::env(HDK_SHELL_DIR)/build/scripts/check_uram.tcl
 write_checkpoint -force $FAAS_CL_DIR/build/checkpoints/${timestamp}.SH_CL.post_link_design.dcp
 
 # vim: set expandtab ts=2 sw=2:
-
