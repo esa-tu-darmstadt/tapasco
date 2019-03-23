@@ -143,11 +143,17 @@ namespace eval platform {
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In2"}]
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In3"}]
 
-    # Smartconnect for INTC
-    set intc_ic [tapasco::ip::create_axi_sc "intc_ic" 1 4]
+    # Calculate number of needed AXI INTC
+    set num_axi_intc [expr {int(ceil([llength $irqs]/32.0))}]
+    puts "Number of required AXI INTC: $num_axi_intc"
 
-    connect_bd_net [get_bd_pins "$intc_ic/aclk"] $aclk
-    connect_bd_intf_net [get_bd_intf_pins "$intc_ic/S00_AXI"] $s_axi
+    # Smartconnect, only instantiated when >1 AXI INTC required
+    if {$num_axi_intc > 1} {
+      set intc_ic [tapasco::ip::create_axi_sc "intc_ic" 1 4]
+
+      connect_bd_net [get_bd_pins "$intc_ic/aclk"] $aclk
+      connect_bd_intf_net [get_bd_intf_pins "$intc_ic/S00_AXI"] $s_axi
+    }
 
     # Concat design interrupts
     set irq_concat_design [tapasco::ip::create_xlconcat "interrupt_concat_design" 5]
@@ -156,16 +162,18 @@ namespace eval platform {
     set unused [tapasco::ip::create_constant "irq_unused_design" 8 0]
     connect_bd_net [get_bd_pins $unused/dout] [get_bd_pins "$irq_concat_design/In4"]
 
-    for {set i 0} {$i < 1} {incr i} {
+    for {set i 0} {$i < $num_axi_intc} {incr i} {
       set port [create_bd_pin -from 31 -to 0 -dir I -type intr "intr_$i"]
-      #connect_bd_net $port [get_bd_pin -of_objects $irq_concat_design -filter "NAME == In$i"]
 
       # Instantiate INTC (each supports 1-32 interrupts)
-      #set axi_intc($i) [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_intc:4.1 "axi_intc_$i"]
       set axi_intc($i) [tapasco::ip::create_axi_irqc "axi_intc_$i"]
       connect_bd_net $port [get_bd_pins $axi_intc($i)/intr]
 
-      connect_bd_intf_net [get_bd_intf_pins "$intc_ic/M0${i}_AXI"] [get_bd_intf_pins "$axi_intc($i)/s_axi"]
+      if {[info exist intc_ic]} {
+        connect_bd_intf_net [get_bd_intf_pins "$intc_ic/M0${i}_AXI"] [get_bd_intf_pins "$axi_intc($i)/s_axi"]
+      } {
+        connect_bd_intf_net $s_axi [get_bd_intf_pins "$axi_intc($i)/s_axi"]
+      }
 
       # Connect output of INTC to InX of Concat
       connect_bd_net [get_bd_pins $axi_intc($i)/irq] [get_bd_pins "$irq_concat_design/In$i"]
