@@ -79,7 +79,7 @@ namespace eval platform {
         "M_HOST"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_MEM_0"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_ARCH"    { set base "skip" }
-        "M_DDR"    { foreach {base stride range comp} [list 0x000C00000000 0x000100000000 0x80000000 "PLATFORM_COMPONENT_DDR"] {} }
+        "M_DDR"    { foreach {base stride range comp} [list 0x000C00000000 0x000100000000 0x80000000 ""] {} }
         default     { if { [dict exists $extra_masters [get_property NAME $m]] } {
                           set l [dict get $extra_masters [get_property NAME $m]]
                           set base [lindex $l 0]
@@ -312,15 +312,15 @@ namespace eval platform {
       }
     }
 
-    set ddr_ic [tapasco::ip::create_axi_sc "ddr_ic" 2 [llength ddr_available]]
+    set ddr_ic [tapasco::ip::create_axi_sc "ddr_ic" 2 [llength $ddr_available]]
     tapasco::ip::connect_sc_default_clocks $ddr_ic "host"
 
     set num_ddr 0
     foreach x $ddr_available {
+      puts "Connect AXI master $num_ddr to DDR port $x"
       connect_bd_intf_net [get_bd_intf_pins "$ddr_ic/M0${num_ddr}_AXI"] [get_bd_intf_pins "$f1_inst/S_AXI_DDR${x}"]
       incr num_ddr
     }
-    puts "Connected $num_ddr DDR ports: $ddr_available"
 
     set s_ddr [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DDR"]
     connect_bd_intf_net [get_bd_intf_pins "$ddr_ic/S00_AXI"] $s_ddr
@@ -424,10 +424,10 @@ namespace eval platform {
         CONFIG.DEVICE_ID {0xF000} \
         CONFIG.PCIS_PRESENT {1} \
         CONFIG.PCIM_PRESENT {1} \
-        CONFIG.DDR_A_PRESENT {1} \
-        CONFIG.DDR_B_PRESENT {1} \
+        CONFIG.DDR_A_PRESENT {0} \
+        CONFIG.DDR_B_PRESENT {0} \
         CONFIG.DDR_C_PRESENT {1} \
-        CONFIG.DDR_D_PRESENT {1} \
+        CONFIG.DDR_D_PRESENT {0} \
         CONFIG.OCL_PRESENT {0} \
         CONFIG.SDA_PRESENT {0} \
     ] $f1_inst
