@@ -134,7 +134,7 @@ namespace eval platform {
     set num_irqs_threadpools [::tapasco::get_platform_num_slots]
     set num_irqs [expr $num_irqs_threadpools + 4]
 
-    set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 16]
+    set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 4]
 
     connect_bd_net $dma_irq_read [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
     connect_bd_net $dma_irq_write [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
@@ -155,7 +155,13 @@ namespace eval platform {
       connect_bd_intf_net [get_bd_intf_pins "$intc_ic/S00_AXI"] $s_axi
     }
 
-    set curr_concat_in 4
+    # Concat design interrupts
+    set irq_concat_design [tapasco::ip::create_xlconcat "interrupt_concat_design" 5]
+
+    # TODO a total of 16 interrupts are supported, but for now we are not using all of them
+    set unused [tapasco::ip::create_constant "irq_unused_design" 8 0]
+    connect_bd_net [get_bd_pins $unused/dout] [get_bd_pins "$irq_concat_design/In4"]
+
     for {set i 0} {$i < $num_axi_intc} {incr i} {
       set port [create_bd_pin -from 31 -to 0 -dir I -type intr "intr_$i"]
 
@@ -170,8 +176,7 @@ namespace eval platform {
       }
 
       # Connect output of INTC to InX of Concat
-      connect_bd_net [get_bd_pins $axi_intc($i)/irq] [get_bd_pins "$irq_concat_ss/In${curr_concat_in}"]
-      incr curr_concat_in
+      connect_bd_net [get_bd_pins $axi_intc($i)/irq] [get_bd_pins "$irq_concat_design/In$i"]
 
       # Connect clocks/resets
       connect_bd_net [get_bd_pins $axi_intc($i)/s_axi_aclk] $aclk
@@ -179,11 +184,18 @@ namespace eval platform {
     }
 
     # Set unused interrupts to constant zero
-    for {set j $curr_concat_in} {$j < 16} {incr j} {
-      connect_bd_net [get_bd_pins $irq_unused/dout] [get_bd_pins "$irq_concat_ss/In$j"]
+    for {set j $i} {$j < 4} {incr j} {
+      set unused [tapasco::ip::create_constant "irq_unused_$j" 1 0]
+      connect_bd_net [get_bd_pins $unused/dout] [get_bd_pins "$irq_concat_design/In$j"]
     }
 
-    connect_bd_net [get_bd_pins "$irq_concat_ss/dout"] $irq_output
+    # Concat DMA and design concat interrupts
+    set irq_concat_all [tapasco::ip::create_xlconcat "interrupt_concat_all" 2]
+
+    connect_bd_net [get_bd_pins "$irq_concat_ss/dout"] [get_bd_pins "$irq_concat_all/In0"]
+    connect_bd_net [get_bd_pins "$irq_concat_design/dout"] [get_bd_pins "$irq_concat_all/In1"]
+
+    connect_bd_net [get_bd_pins "$irq_concat_all/dout"] $irq_output
   }
 
   # Creates the memory subsystem consisting of MIG core for DDR RAM,
