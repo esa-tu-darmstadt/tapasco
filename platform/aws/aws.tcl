@@ -149,7 +149,7 @@ namespace eval platform {
 
     # Smartconnect, only instantiated when >1 AXI INTC required
     if {$num_axi_intc > 1} {
-      set intc_ic [tapasco::ip::create_axi_sc "intc_ic" 1 4]
+      set intc_ic [tapasco::ip::create_axi_sc "intc_ic" 1 $num_axi_intc]
 
       connect_bd_net [get_bd_pins "$intc_ic/aclk"] $aclk
       connect_bd_intf_net [get_bd_intf_pins "$intc_ic/S00_AXI"] $s_axi
