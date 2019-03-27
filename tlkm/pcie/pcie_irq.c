@@ -21,10 +21,13 @@ irqreturn_t tlkm_pcie_slot_irq_ ## nr(int irq, void *dev_id) 		\
 { 									\
 	struct pci_dev *pdev = (struct pci_dev *)dev_id; \
 	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *) dev_get_drvdata(&pdev->dev); \
+	struct platform *p = &dev->parent->cls->platform;\
+	volatile uint32_t* msix_ack = (volatile uint32_t*) (dev->parent->mmap.plat + ((0x500000 + 0x8120) - p->plat.base)); \
 	BUG_ON(! dev); \
 	if (! schedule_work(&dev->irq_work[nr])) \
 		tlkm_perfc_irq_error_already_pending_inc(dev->parent->dev_id); \
 	tlkm_perfc_total_irqs_inc(dev->parent->dev_id); \
+	msix_ack[0] = nr + pcie_cls.npirqs; \
 	return IRQ_HANDLED; \
 }
 
