@@ -23,7 +23,7 @@
 #ifndef PLATFORM_CAPS_H__
 #define PLATFORM_CAPS_H__
 
-/** 
+/**
  * NOTE: the enum definitions are parsed by a rather primitive regex in Tcl; so
  * make sure not to use any references or complex expressions, the tcl expr
  * command must be able to interpret the RHS. Especially, take care to keep the
@@ -34,6 +34,7 @@ typedef enum {
 	PLATFORM_CAP0_ATSCHECK 				= (1 << 1),
 	PLATFORM_CAP0_PE_LOCAL_MEM 			= (1 << 2),
 	PLATFORM_CAP0_DYNAMIC_ADDRESS_MAP		= (1 << 3),
+	PLATFORM_CAP0_AWS_EC2_PLATFORM			= (1 << 6),
 } platform_capabilities_0_t;
 
 #define PLATFORM_VERSION_MAJOR(v) 			((v) >> 16)
