@@ -226,7 +226,7 @@ namespace eval platform {
     set synth_run [get_runs synth_1]
     set_property -dict $synth_settings $synth_run
 
-    tapasco::call_plugins "pre-synth" $synth_run
+    tapasco::call_plugins "pre-synth"
 
     current_run $synth_run
     launch_runs -jobs $jobs $synth_run
@@ -237,8 +237,9 @@ namespace eval platform {
     # call plugins
     tapasco::call_plugins "post-synth"
 
-    set impl_run [get_runs impl_1]
+    set impl_run [get_runs [current_run -implementation]]
     set_property -dict $impl_settings $impl_run
+
     current_run $impl_run
     launch_runs -jobs $jobs -to_step route_design $impl_run
     wait_on_run $impl_run
