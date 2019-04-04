@@ -18,10 +18,11 @@ import boto3
 import os
 import uuid
 import shutil
+import logging
 import argparse
 import datetime
 
-parser = argparse.ArgumentParser(description='Process some integers.')
+parser = argparse.ArgumentParser(description='Helper script for creating AFIs')
 parser.add_argument('bucket',
     help='name of the target S3 bucket (created when not existing)')
 parser.add_argument('tarfile',
@@ -29,8 +30,15 @@ parser.add_argument('tarfile',
 parser.add_argument('name', help='name of the AFI')
 parser.add_argument('--dry-run', default=False, action='store_true',
     help='dry run operation')
+parser.add_argument('--verbose', default=False, action='store_true',
+    help='be more talkative')
+parser.add_argument('--description', default=False,
+    help='description of the AFI')
 
 args = parser.parse_args()
+
+if args.verbose:
+    boto3.set_stream_logger('boto3.resources', logging.DEBUG)
 
 if not os.path.isfile(args.tarfile):
     print('ERROR: File does not exist')
@@ -45,10 +53,12 @@ if not bucket.creation_date:
 fname = os.path.basename(args.tarfile)
 s3.meta.client.upload_file(args.tarfile, args.bucket, fname)
 
-ec2 = boto3.client('ec2')
+ec2 = boto3.resource('ec2')
 
 token = uuid.uuid4().hex
-response = ec2.create_fpga_image(
+description = args.description or 'Created from {} at {}'.format(fname, datetime.datetime.now().isoformat())
+
+response = ec2.meta.client.create_fpga_image(
     DryRun=args.dry_run,
     InputStorageLocation={
         'Bucket': args.bucket,
@@ -58,7 +68,7 @@ response = ec2.create_fpga_image(
         'Bucket': args.bucket,
         'Key': 'logs'
     },
-    Description='Created from {} at {}'.format(fname, datetime.datetime.now().isoformat()),
+    Description=description,
     Name=args.name,
     ClientToken=token
 )
