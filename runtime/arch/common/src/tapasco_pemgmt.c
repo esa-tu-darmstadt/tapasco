@@ -38,6 +38,8 @@
 #include <gen_stack.h>
 #include <khash.h>
 
+#include <fpga_pci.h>
+
 typedef size_t midx_t;
 
 /* Group of PEs by their kernel id. */
@@ -134,9 +136,14 @@ void tapasco_pemgmt_deinit(tapasco_pemgmt_t *pemgmt)
 	free(pemgmt);
 }
 
+uint32_t dma_reg_addr(uint32_t target, uint32_t channel, uint32_t offset) {
+  return ((target << 12) | (channel << 8) | offset);
+}
+
 void tapasco_pemgmt_setup_system(tapasco_devctx_t *devctx, tapasco_pemgmt_t *ctx)
 {
 	assert (ctx);
+    // TODO Enable XDMA interrupt controller here? Need BAR2
 	uint32_t d = 1;
 	tapasco_slot_id_t slot_id = 0;
 	platform_devctx_t *pctx = devctx->pdctx;
@@ -159,7 +166,7 @@ void tapasco_pemgmt_setup_system(tapasco_devctx_t *devctx, tapasco_pemgmt_t *ctx
 				PLATFORM_CTL_FLAGS_NONE); 		// IPIER
 			// ack all existing interrupts
 			DEVLOG(devctx->id, LALL_PEMGMT, "writing IAR  at " PRIhandle, iar);
-			platform_read_ctl(pctx, iar, sizeof(d), &d, 
+			platform_read_ctl(pctx, iar, sizeof(d), &d,
 				PLATFORM_CTL_FLAGS_NONE);               // IAR
 			platform_write_ctl(pctx, iar, sizeof(d), &d,
 				PLATFORM_CTL_FLAGS_NONE);
@@ -168,6 +175,32 @@ void tapasco_pemgmt_setup_system(tapasco_devctx_t *devctx, tapasco_pemgmt_t *ctx
 		++pemgmt;
 		++slot_id;
 	}
+
+    int rc = 0;
+
+    pci_bar_handle_t dma_bar_handle = PCI_BAR_HANDLE_INIT;
+    // slot id, pf id, bar, flags
+    rc = fpga_pci_attach(0, 0, 2, 0, &dma_bar_handle);
+
+	if (rc)
+        DEVLOG(devctx->id, LALL_PEMGMT, "XDMA: Cannot open BAR");
+
+
+    // set user vector number (target 2, channel 0)
+    rc = fpga_pci_poke(dma_bar_handle, dma_reg_addr(2, 0, 0x080), 0x03020100);
+    rc += fpga_pci_poke(dma_bar_handle, dma_reg_addr(2, 0, 0x084), 0x07060504);
+    rc += fpga_pci_poke(dma_bar_handle, dma_reg_addr(2, 0, 0x088), 0x0b0a0908);
+    rc += fpga_pci_poke(dma_bar_handle, dma_reg_addr(2, 0, 0x08c), 0x0f0e0d0c);
+
+    if (rc)
+		DEVLOG(devctx->id, LALL_PEMGMT, "XDMA: Cannot set user vector numbers");
+
+
+    // user interrupt enable mask
+    rc = fpga_pci_poke(dma_bar_handle, dma_reg_addr(2, 0, 0x004), 0xffff);
+
+    if (rc)
+        DEVLOG(devctx->id, LALL_PEMGMT, "XDMA: Cannot set IER");
 
 }
 

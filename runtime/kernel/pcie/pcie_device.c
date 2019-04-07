@@ -48,9 +48,9 @@ static int claim_device(struct tlkm_pcie_device *pdev)
 	dev_set_drvdata(&dev->dev, pdev);
 
 	/* read out pci bar 0 settings */
-	pdev->phy_addr_bar0 	= pci_resource_start(dev, 0);
-	pdev->phy_len_bar0	= pci_resource_len(dev, 0);
-	pdev->phy_flags_bar0	= pci_resource_flags(dev, 0);
+	pdev->phy_addr_bar0 	= pci_resource_start(dev, 4);
+	pdev->phy_len_bar0	= pci_resource_len(dev, 4);
+	pdev->phy_flags_bar0	= pci_resource_flags(dev, 4);
 
 	DEVLOG(did, TLKM_LF_PCIE, "PCI bar 0: address= 0x%zx length: 0x%zx",
 	       (size_t) pdev->phy_addr_bar0, (size_t) pdev->phy_len_bar0);
@@ -99,6 +99,11 @@ static int configure_device(struct pci_dev *pdev)
 	return 0;
 }
 
+irqreturn_t dummy_intr_handler(int irq, void *dev_id)
+{
+    return IRQ_HANDLED;
+}
+
 /**
  * @brief Initializes msi-capable structure and binds to irq_functions
  * @param pci_dev device, which should be allocated
@@ -120,13 +125,13 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
 	err = pci_enable_msix_range(dev,
 	                            pdev->msix_entries,
-	                            REQUIRED_INTERRUPTS,
-	                            REQUIRED_INTERRUPTS);
+	                            32,
+	                            32);
 #else
-	/* set up MSI interrupt vector to max size */
+/*	 set up MSI interrupt vector to max size */
 	err = pci_alloc_irq_vectors(dev,
-	                            REQUIRED_INTERRUPTS,
-	                            REQUIRED_INTERRUPTS,
+	                            32,
+	                            32,
 	                            PCI_IRQ_MSIX);
 #endif
 
@@ -137,10 +142,18 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 		DEVLOG(did, TLKM_LF_IRQ, "got %d MSI vectors", err);
 	}
 
-	if ((err = pcie_irqs_init(pdev->parent))) {
-		DEVERR(did, "failed to register interrupts: %d", err);
+    for (i = 2; i < 32; i++) {
+        request_irq(pci_irq_vector(dev, i),
+            dummy_intr_handler,
+            IRQF_EARLY_RESUME,
+            TLKM_PCI_NAME,
+            0);
+    }
+
+	/*if ((err = pcie_irqs_init(pdev->parent))) {
+	DEVERR(did, "failed to register interrupts: %d", err);
 		return -ENOSPC;
-	}
+    }*/
 	return 0;
 }
 

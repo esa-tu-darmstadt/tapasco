@@ -24,6 +24,7 @@ add_library(tapasco ${AXI4MM_SOURCES} ${COMMON_SOURCES})
 target_include_directories(tapasco PUBLIC "$<INSTALL_INTERFACE:include/tapasco>"
                                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
                                           "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/common/include>"
+                                          $ENV{SDK_DIR}/userspace/include
                           )
 
 set_property(TARGET tapasco PROPERTY PUBLIC_HEADER include/tapasco_errors.h
@@ -51,7 +52,7 @@ target_compile_definitions(tapasco PRIVATE -DNPERFC)
 
 set_tapasco_defaults(tapasco)
 
-target_link_libraries(tapasco PUBLIC tlkm platform tapasco-common PRIVATE atomic pthread)
+target_link_libraries(tapasco PUBLIC fpga_mgmt tlkm platform tapasco-common PRIVATE atomic pthread)
 
 install(TARGETS tapasco EXPORT TapascoConfig
         ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}
