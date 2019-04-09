@@ -117,10 +117,16 @@ namespace eval platform {
   proc create_subsystem_intc {} {
 
     set irqs [arch::get_irqs]
-    puts "Connecting [llength $irqs] interrupts .."
-    # create hierarchical ports
-    set s_axi [create_bd_intf_pin -mode Slave -vlnv [tapasco::ip::get_vlnv "aximm_intf"] "S_INTC"]
-    # set msix_interface [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:pcie3_cfg_msix_rtl:1.0 "M_MSIX"]
+    set num_design_irqs 0
+    foreach irq_port $irqs {
+      set i [expr [get_property LEFT $irq_port] + 1]
+      puts "Interrupt line $irq_port width is $i"
+      incr num_design_irqs $i
+    }
+
+    puts "Connecting $num_design_irqs design interrupt(s)..."
+
+    #set s_axi [create_bd_intf_pin -mode Slave -vlnv [tapasco::ip::get_vlnv "aximm_intf"] "S_INTC"]
     set aclk [tapasco::subsystem::get_port "host" "clk"]
     set p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
     set design_aclk [tapasco::subsystem::get_port "design" "clk"]
@@ -129,65 +135,87 @@ namespace eval platform {
     set dma_irq_write [create_bd_pin -type "intr" -dir I "dma_irq_write"]
 
     # TODO using type "undef" instead of "intr" to be compatible with F1 shell
-    set irq_output [create_bd_pin -type "undef" -dir O "interrupts"]
+    set irq_output [create_bd_pin -from 15 -to 0 -type "undef" -dir O "interrupts"]
 
-    set num_irqs_threadpools [::tapasco::get_platform_num_slots]
-    set num_irqs [expr $num_irqs_threadpools + 4]
+    # set num_irqs_threadpools [::tapasco::get_platform_num_slots]
+    # set num_irqs [expr $num_irqs_threadpools + 4]
 
-    set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 4]
+    set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 6]
 
     connect_bd_net $dma_irq_read [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
     connect_bd_net $dma_irq_write [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
     puts "Unused Interrupts: 2, 3 are tied to 0"
     set irq_unused [tapasco::ip::create_constant "irq_unused" 1 0]
+    #connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
+    #connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In2"}]
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In3"}]
 
+    set port [create_bd_pin -from [expr $num_design_irqs - 1] -to 0 -dir I -type intr "intr_0"]
+    connect_bd_net $port [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In4"}]
+
+    set unused [tapasco::ip::create_constant "irq_unused_design" [expr 12 - $num_design_irqs] 0]
+    connect_bd_net [get_bd_pin -of_object $unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In5"}]
+
+    # if {$num_design_irqs <= 12} {
+    #   set port [create_bd_pin -from 31 -to 0 -dir I -type intr "intr_0"]
+    #   set irq_concat_design [tapasco::ip::create_xlconcat "interrupt_concat_design" 2]
+
+    #   connect_bd_net $port [get_bd_pins "$irq_concat_design/In0"]
+
+    #   set unused [tapasco::ip::create_constant "irq_unused_design" [expr 12 - $num_design_irqs] 0]
+    #   connect_bd_net [get_bd_pins $unused/dout] [get_bd_pins "$irq_concat_design/In1"]
+    # } {
+    #   puts "Cannot connect $num_design_irqs interrupts, exiting"
+    #   exit 1
+    # }
+
     # Smartconnect for INTC
-    set intc_ic [tapasco::ip::create_axi_sc "intc_ic" 1 4]
+    # set intc_ic [tapasco::ip::create_axi_sc "intc_ic" 1 4]
+    # connect_bd_net [get_bd_pins "$intc_ic/aclk"] $aclk
+    # connect_bd_intf_net [get_bd_intf_pins "$intc_ic/S00_AXI"] $s_axi
 
-    connect_bd_net [get_bd_pins "$intc_ic/aclk"] $aclk
-    connect_bd_intf_net [get_bd_intf_pins "$intc_ic/S00_AXI"] $s_axi
+    # # Concat design interrupts
+    # set irq_concat_design [tapasco::ip::create_xlconcat "interrupt_concat_design" 5]
 
-    # Concat design interrupts
-    set irq_concat_design [tapasco::ip::create_xlconcat "interrupt_concat_design" 5]
+    # # TODO a total of 16 interrupts are supported, but for now we are not using all of them
+    # set unused [tapasco::ip::create_constant "irq_unused_design" 8 0]
+    # connect_bd_net [get_bd_pins $unused/dout] [get_bd_pins "$irq_concat_design/In4"]
 
-    # TODO a total of 16 interrupts are supported, but for now we are not using all of them
-    set unused [tapasco::ip::create_constant "irq_unused_design" 8 0]
-    connect_bd_net [get_bd_pins $unused/dout] [get_bd_pins "$irq_concat_design/In4"]
+    # for {set i 0} {$i < 1} {incr i} {
+    #   set port [create_bd_pin -from 31 -to 0 -dir I -type intr "intr_$i"]
+    #   #connect_bd_net $port [get_bd_pin -of_objects $irq_concat_design -filter "NAME == In$i"]
 
-    for {set i 0} {$i < 1} {incr i} {
-      set port [create_bd_pin -from 31 -to 0 -dir I -type intr "intr_$i"]
-      #connect_bd_net $port [get_bd_pin -of_objects $irq_concat_design -filter "NAME == In$i"]
+    #   # Instantiate INTC (each supports 1-32 interrupts)
+    #   #set axi_intc($i) [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_intc:4.1 "axi_intc_$i"]
+    #   set axi_intc($i) [tapasco::ip::create_axi_irqc "axi_intc_$i"]
+    #   connect_bd_net $port [get_bd_pins $axi_intc($i)/intr]
 
-      # Instantiate INTC (each supports 1-32 interrupts)
-      #set axi_intc($i) [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_intc:4.1 "axi_intc_$i"]
-      set axi_intc($i) [tapasco::ip::create_axi_irqc "axi_intc_$i"]
-      connect_bd_net $port [get_bd_pins $axi_intc($i)/intr]
+    #   connect_bd_intf_net [get_bd_intf_pins "$intc_ic/M0${i}_AXI"] [get_bd_intf_pins "$axi_intc($i)/s_axi"]
 
-      connect_bd_intf_net [get_bd_intf_pins "$intc_ic/M0${i}_AXI"] [get_bd_intf_pins "$axi_intc($i)/s_axi"]
+    #   # Connect output of INTC to InX of Concat
+    #   connect_bd_net [get_bd_pins $axi_intc($i)/irq] [get_bd_pins "$irq_concat_design/In$i"]
 
-      # Connect output of INTC to InX of Concat
-      connect_bd_net [get_bd_pins $axi_intc($i)/irq] [get_bd_pins "$irq_concat_design/In$i"]
+    #   # Connect clocks/resets
+    #   connect_bd_net [get_bd_pins $axi_intc($i)/s_axi_aclk] $aclk
+    #   connect_bd_net [get_bd_pins $axi_intc($i)/s_axi_aresetn] $p_aresetn
+    # }
 
-      # Connect clocks/resets
-      connect_bd_net [get_bd_pins $axi_intc($i)/s_axi_aclk] $aclk
-      connect_bd_net [get_bd_pins $axi_intc($i)/s_axi_aresetn] $p_aresetn
-    }
-
-    # Set unused interrupts to constant zero
-    for {set j $i} {$j < 4} {incr j} {
-      set unused [tapasco::ip::create_constant "irq_unused_$j" 1 0]
-      connect_bd_net [get_bd_pins $unused/dout] [get_bd_pins "$irq_concat_design/In$j"]
-    }
+    # # Set unused interrupts to constant zero
+    # for {set j $i} {$j < 4} {incr j} {
+    #   set unused [tapasco::ip::create_constant "irq_unused_$j" 1 0]
+    #   connect_bd_net [get_bd_pins $unused/dout] [get_bd_pins "$irq_concat_design/In$j"]
+    # }
 
     # Concat DMA and design concat interrupts
-    set irq_concat_all [tapasco::ip::create_xlconcat "interrupt_concat_all" 2]
+    # set irq_concat_all [tapasco::ip::create_xlconcat "interrupt_concat_all" 2]
 
-    connect_bd_net [get_bd_pins "$irq_concat_ss/dout"] [get_bd_pins "$irq_concat_all/In0"]
-    connect_bd_net [get_bd_pins "$irq_concat_design/dout"] [get_bd_pins "$irq_concat_all/In1"]
+    # connect_bd_net [get_bd_pins "$irq_concat_ss/dout"] [get_bd_pins "$irq_concat_all/In0"]
+    # connect_bd_net [get_bd_pins "$irq_concat_design/dout"] [get_bd_pins "$irq_concat_all/In1"]
 
-    connect_bd_net [get_bd_pins "$irq_concat_all/dout"] $irq_output
+    # connect_bd_net [get_bd_pins "$irq_concat_all/dout"] $irq_output
+
+    connect_bd_net [get_bd_pin -of_object $irq_concat_ss -filter {NAME == "dout"}] $irq_output
   }
 
   # Creates the memory subsystem consisting of MIG core for DDR RAM,
@@ -267,7 +295,7 @@ namespace eval platform {
     # create hierarchical ports
     set s_axi [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_HOST"]
     set m_arch [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_ARCH"]
-    set m_intc [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_INTC"]
+    #set m_intc [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_INTC"]
     set m_tapasco [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_TAPASCO"]
     set m_dma [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DMA"]
     set pcie_aclk [create_bd_pin -type "clk" -dir "O" "pcie_aclk"]
@@ -330,13 +358,13 @@ namespace eval platform {
     # Finished connecting DDR ports
 
     # Connect "out" AXI ports
-    set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
+    set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 3]
     tapasco::ip::connect_sc_default_clocks $out_ic "design"
 
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M00_AXI}] $m_arch
-    connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M01_AXI}] $m_intc
-    connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M02_AXI}] $m_tapasco
-    connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M03_AXI}] $m_dma
+    connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M01_AXI}] $m_tapasco
+    connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M02_AXI}] $m_dma
+    #connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M03_AXI}] $m_intc
 
     connect_bd_intf_net [get_bd_intf_pins "$out_ic/S00_AXI"] [get_bd_intf_pins "$f1_inst/M_AXI_PCIS"]
 
