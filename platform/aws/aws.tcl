@@ -424,8 +424,8 @@ namespace eval platform {
         CONFIG.DEVICE_ID {0xF000} \
         CONFIG.PCIS_PRESENT {1} \
         CONFIG.PCIM_PRESENT {1} \
-        CONFIG.DDR_A_PRESENT {0} \
-        CONFIG.DDR_B_PRESENT {0} \
+        CONFIG.DDR_A_PRESENT {1} \
+        CONFIG.DDR_B_PRESENT {1} \
         CONFIG.DDR_C_PRESENT {1} \
         CONFIG.DDR_D_PRESENT {0} \
         CONFIG.OCL_PRESENT {0} \
