@@ -537,6 +537,8 @@ namespace eval platform {
   namespace eval aws_plugins {
 
     proc set_params {args} {
+      tapasco::add_capabilities_flag "PLATFORM_CAP0_AWS_EC2_PLATFORM"
+
       #set_param hd.clockRoutingWireReduction false
       set_param hd.supportClockNetCrossDiffReconfigurablePartitions 1
       set_param physynth.ultraRAMOptOutput false
