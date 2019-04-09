@@ -567,6 +567,9 @@ namespace eval platform {
     proc set_params {args} {
       tapasco::add_capabilities_flag "PLATFORM_CAP0_AWS_EC2_PLATFORM"
 
+      set_msg_config -id {Opt 31-430}       -suppress
+      set_msg_config -string {AXI_QUAD_SPI} -suppress
+
       #set_param hd.clockRoutingWireReduction false
       set_param hd.supportClockNetCrossDiffReconfigurablePartitions 1
       set_param physynth.ultraRAMOptOutput false
