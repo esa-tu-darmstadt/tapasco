@@ -79,7 +79,7 @@ namespace eval platform {
         "M_HOST"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_MEM_0"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_ARCH"    { set base "skip" }
-        "M_DDR"    { foreach {base stride range comp} [list 0x000C00000000 0x000100000000 0x80000000 ""] {} }
+        "M_DDR"    { foreach {base stride range comp} [list 0 0 0 ""] {} }
         default     { if { [dict exists $extra_masters [get_property NAME $m]] } {
                           set l [dict get $extra_masters [get_property NAME $m]]
                           set base [lindex $l 0]
