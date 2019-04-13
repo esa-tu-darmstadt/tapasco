@@ -585,9 +585,9 @@ namespace eval platform {
 
       set platform_dirname $::platform::platform_dirname
 
-      set_property STEPS.OPT_DESIGN.ARGS.DIRECTIVE Explore [get_runs [current_run -implementation]]
-      set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE Explore [get_runs [current_run -implementation]]
-      set_property STEPS.PHYS_OPT_DESIGN.IS_ENABLED true [get_runs [current_run -implementation]]
+      # set_property STEPS.OPT_DESIGN.ARGS.DIRECTIVE Explore [get_runs [current_run -implementation]]
+      # set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE Explore [get_runs [current_run -implementation]]
+      # set_property STEPS.PHYS_OPT_DESIGN.IS_ENABLED true [get_runs [current_run -implementation]]
 
       # Set TCL pre/post hooks
 
