@@ -222,6 +222,10 @@ namespace eval platform {
         puts "Normal mode selected."
     }
 
+    # Workaround for Vivado unpredictably crashing on `generate_target`.
+    close_bd_design -quiet [current_bd_design]
+    open_bd_design -quiet [get_files "[get_bd_name].bd"]
+
     generate_target all [get_files "[get_bd_name].bd"]
     set synth_run [get_runs synth_1]
     set_property -dict $synth_settings $synth_run
