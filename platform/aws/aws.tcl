@@ -685,14 +685,17 @@ namespace eval platform {
 
       report_timing_summary -file $::FAAS_CL_DIR/build/reports/${::timestamp}.SH_CL_final_timing_summary.rpt
 
+      set to_aws_dir "${::FAAS_CL_DIR}/build/checkpoints/to_aws"
+      puts "to_aws_dir = ${to_aws_dir}"
+
       puts "Writing final DCP to to_aws directory"
-      write_checkpoint -force $::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.SH_CL_routed.dcp -encrypt
+      write_checkpoint -force ${to_aws_dir}/${::timestamp}.SH_CL_routed.dcp -encrypt
 
       puts "Write manifest file"
-      set manifest_file [open "$::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.manifest.txt" w]
+      set manifest_file [open "${to_aws_dir}/${::timestamp}.manifest.txt" w]
 
       puts "Getting hash"
-      set hash [lindex [split [exec sha256sum $::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.SH_CL_routed.dcp] ] 0]
+      set hash [lindex [split [exec sha256sum ${to_aws_dir}/${::timestamp}.SH_CL_routed.dcp] ] 0]
 
       set vivado_version [string range [version -short] 0 5]
       puts "vivado_version is $vivado_version\n"
@@ -716,18 +719,15 @@ namespace eval platform {
 
       package require tar
 
-      # Delete old tar file with same name
-      if { [file exists $::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.Developer_CL.tar] } {
-        puts "Deleting old tar file with same name.";
-        file delete -force $::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.Developer_CL.tar
-      }
+      set tarfilepath [file normalize [file join $::FAAS_CL_DIR .. "${::timestamp}.${::bitstreamname}.tar"]]
 
-      # Add checkpoint and manifest to TAR archive from which the AFI can be generated
-      cd $::FAAS_CL_DIR/build/checkpoints
-      tar::create to_aws/${::timestamp}.Developer_CL.tar [glob to_aws/${::timestamp}*]
+      # Add checkpoint and manifest to tar file from which the AFI can be generated
+      # (tar file must contains "to_aws" folder, so change directory accordingly)
+      cd [file normalize [file join $to_aws_dir ..]]
+      tar::create $tarfilepath [glob to_aws/${::timestamp}*]
 
-      puts "\n\nFinished creating final tar file in to_aws directory:";
-      puts "$::FAAS_CL_DIR/build/checkpoints/to_aws/${::timestamp}.Developer_CL.tar"
+      puts "\n\nFinished creating tarfile:"
+      puts "$tarfilepath\n\n"
     }
   }
 
