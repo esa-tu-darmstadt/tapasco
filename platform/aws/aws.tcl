@@ -151,11 +151,23 @@ namespace eval platform {
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In2"}]
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In3"}]
 
-    set port [create_bd_pin -from [expr $num_design_irqs - 1] -to 0 -dir I -type intr "intr_0"]
-    connect_bd_net $port [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In4"}]
+    if {$num_design_irqs <= 12} {
+      set port [create_bd_pin -from [expr $num_design_irqs - 1] -to 0 -dir I -type intr "intr_0"]
+      connect_bd_net $port [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In4"}]
 
-    set unused [tapasco::ip::create_constant "irq_unused_design" [expr 12 - $num_design_irqs] 0]
-    connect_bd_net [get_bd_pin -of_object $unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In5"}]
+      if {$num_design_irqs < 12} {
+        # Tief off unused interrupts to avoid critical warning about width mismatch
+        set unused [tapasco::ip::create_constant "irq_unused_design" [expr 12 - $num_design_irqs] 0]
+        connect_bd_net [get_bd_pin -of_object $unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In5"}]
+      } {
+        # Width is matching, remove unused input
+        set_property -dict [list CONFIG.NUM_PORTS {5}] $irq_concat_ss
+      }
+    } {
+      puts "Cannot connect $num_design_irqs interrupts"
+      exit 1
+    }
+
 
     # if {$num_design_irqs <= 12} {
     #   set port [create_bd_pin -from 31 -to 0 -dir I -type intr "intr_0"]
