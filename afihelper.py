@@ -21,6 +21,7 @@ import shutil
 import logging
 import argparse
 import datetime
+import subprocess
 
 parser = argparse.ArgumentParser(description='Helper script for creating AFIs')
 parser.add_argument('bucket',
