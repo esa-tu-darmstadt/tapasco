@@ -47,9 +47,8 @@ if not os.path.isfile(args.tarfile):
 
 s3 = boto3.resource('s3')
 
-bucket = s3.Bucket(args.bucket)
-if not bucket.creation_date:
-    s3.create_bucket(Bucket=args.bucket)
+s3.create_bucket(Bucket=args.bucket)
+s3.Object(args.bucket, 'logs/').put()
 
 fname = os.path.basename(args.tarfile)
 s3.meta.client.upload_file(args.tarfile, args.bucket, fname)
