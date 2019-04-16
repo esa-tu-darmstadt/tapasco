@@ -4,10 +4,7 @@ project(tapasco-common VERSION 1.0 LANGUAGES C)
 
 add_library(tapasco-common
                 src/gen_mem.c
-                src/gen_mem_test.c
                 src/gen_queue.c
-                src/gen_queue_test.c
-                src/gen_stack_test.c
                 src/log.c)
 
 target_include_directories(tapasco-common PUBLIC $<INSTALL_INTERFACE:include/tapasco/common> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
