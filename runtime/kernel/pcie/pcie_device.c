@@ -142,13 +142,14 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 		DEVLOG(did, TLKM_LF_IRQ, "got %d MSI vectors", err);
 	}
 
-    for (i = 2; i < 32; i++) {
-        request_irq(pci_irq_vector(dev, i),
-            dummy_intr_handler,
-            IRQF_EARLY_RESUME,
-            TLKM_PCI_NAME,
-            0);
-    }
+  for (i = 2; i < 32; i++) {
+  	request_irq(pci_irq_vector(dev, i),
+    		dummy_intr_handler,
+	      IRQF_EARLY_RESUME,
+        TLKM_PCI_NAME,
+        pdev->pdev);
+		pdev->irq_mapping[i] = pci_irq_vector(pdev->pdev, i);
+  }
 
 	/*if ((err = pcie_irqs_init(pdev->parent))) {
 	DEVERR(did, "failed to register interrupts: %d", err);
@@ -159,7 +160,13 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 
 static void release_msi(struct tlkm_pcie_device *pdev)
 {
-	pcie_irqs_exit(pdev->parent);
+	int i;
+	for (i = 2; i < 32; i++) {
+		free_irq(pdev->irq_mapping[i], pdev->pdev);
+		pdev->irq_mapping[i] = -1;
+  }
+
+	//pcie_irqs_exit(pdev->parent);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
 	pci_disable_msix(pdev->pdev);
 #else
