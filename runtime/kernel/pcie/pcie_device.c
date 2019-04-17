@@ -92,18 +92,6 @@ static int claim_device(struct tlkm_pcie_device *pdev)
 
 	dev_set_drvdata(&dev->dev, pdev);
 
-	/* read out pci bar 0 settings */
-	pdev->phy_addr_bar0 	= pci_resource_start(dev, 4);
-	pdev->phy_len_bar0	= pci_resource_len(dev, 4);
-	pdev->phy_flags_bar0	= pci_resource_flags(dev, 4);
-
-	DEVLOG(did, TLKM_LF_PCIE, "PCI bar 0: address= 0x%zx length: 0x%zx",
-	       (size_t) pdev->phy_addr_bar0, (size_t) pdev->phy_len_bar0);
-
-	pdev->parent->base_offset = pdev->phy_addr_bar0;
-	DEVLOG(did, TLKM_LF_PCIE, "status core base: 0x%8p => 0x%8p",
-	       (void*) pcie_cls.platform.status.base, (void*) pcie_cls.platform.status.base + pdev->parent->base_offset);
-
 	// set up XDMA user interrupts on AWS EC2 platform
 	if (dev->vendor == AWS_EC2_VENDOR_ID && dev->device == AWS_EC2_DEVICE_ID) {
 		err = aws_ec2_configure_xdma(pdev);
@@ -111,7 +99,23 @@ static int claim_device(struct tlkm_pcie_device *pdev)
 			DEVERR(did, "failed to configure XDMA core");
 			goto error_pci_req;
 		}
+
+		pdev->phy_addr_bar0 	= pci_resource_start(dev, 4);
+		pdev->phy_len_bar0	= pci_resource_len(dev, 4);
+		pdev->phy_flags_bar0	= pci_resource_flags(dev, 4);
+	} else {
+		/* read out pci bar 0 settings */
+		pdev->phy_addr_bar0 	= pci_resource_start(dev, 0);
+		pdev->phy_len_bar0	= pci_resource_len(dev, 0);
+		pdev->phy_flags_bar0	= pci_resource_flags(dev, 0);
 	}
+
+	DEVLOG(did, TLKM_LF_PCIE, "PCI bar 0: address= 0x%zx length: 0x%zx",
+	       (size_t) pdev->phy_addr_bar0, (size_t) pdev->phy_len_bar0);
+
+	pdev->parent->base_offset = pdev->phy_addr_bar0;
+	DEVLOG(did, TLKM_LF_PCIE, "status core base: 0x%8p => 0x%8p",
+	       (void*) pcie_cls.platform.status.base, (void*) pcie_cls.platform.status.base + pdev->parent->base_offset);
 
 	return 0;
 
