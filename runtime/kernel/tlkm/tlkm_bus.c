@@ -64,7 +64,7 @@ struct tlkm_device *tlkm_bus_new_device(struct tlkm_class *cls, int vendor_id, i
 			return NULL;
 		}
 		strncpy(dev->name, cls->name, TLKM_DEVICE_NAME_LEN);
-        dev->name[TLKM_DEVICE_NAME_LEN - 1] = '\0';
+		dev->name[TLKM_DEVICE_NAME_LEN - 1] = '\0';
 		mutex_init(&dev->mtx);
 		return dev;
 	} else {

@@ -7,6 +7,8 @@
 #define PCIE_CLS_NAME			"pcie"
 #define XILINX_VENDOR_ID   		0x10EE
 #define XILINX_DEVICE_ID   		0x7038
+#define AWS_EC2_VENDOR_ID   	0x1D0F
+#define AWS_EC2_DEVICE_ID  		0xF000
 
 #define PCIE_DEF 			INIT_PLATFORM(0x02800000ULL, 0x00002000,  /* status */ \
 						      0x02000000ULL, 0x00800000,  /* arch */ \

@@ -7,10 +7,37 @@
 #include "tlkm_logging.h"
 #include "user/tlkm_device_ioctl_cmds.h"
 
+#define AWS_EC2_VENDOR_ID   	0x1D0F
+#define AWS_EC2_DEVICE_ID  		0xF000
+
+static int aws_ec2_configure_axi_intc(struct tlkm_device *dev, struct platform_mmap *mmap)
+{
+	struct platform *p = &dev->cls->platform;
+	uint32_t val;
+
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "Enable AXI interrupt controller");
+
+	// set interrupt enable register
+	iowrite32(0xffffffff, mmap->plat + 0x500000 + 0x08 - p->plat.base);
+	// set master enable register (master enable + hardware interrupt enable)
+	iowrite32(0xffffffff, mmap->plat + 0x500000 + 0x1c - p->plat.base);
+	wmb();
+
+	val = ioread32(mmap->plat + 0x500000 + 0x08 - p->plat.base);
+	if (!val) {
+		DEVERR(dev->dev_id, "Interrupts are still disabled");
+		return 1;
+	}
+
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "AXI INTC IER value: %x", val);
+	return 0;
+}
+
 int tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap)
 {
 	int retval = 0;
 	u32 magic_id = 0;
+
 	struct platform *p = &dev->cls->platform;
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%px-0x%px for architecture",
 			(void *)(dev->base_offset + p->arch.base),
@@ -49,6 +76,13 @@ int tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap)
 				(void *)(dev->base_offset + p->status.high));
 		retval = -ENOSPC;
 		goto err_status;
+	}
+
+	if (dev->vendor_id == AWS_EC2_VENDOR_ID && dev->product_id == AWS_EC2_DEVICE_ID) {
+		retval = aws_ec2_configure_axi_intc(dev, mmap);
+		if (retval) {
+			goto err_status;
+		}
 	}
 
 	magic_id = ioread32(mmap->status);
