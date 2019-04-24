@@ -7,8 +7,8 @@
 #include "tlkm_logging.h"
 #include "user/tlkm_device_ioctl_cmds.h"
 
-#define AWS_EC2_VENDOR_ID   	0x1D0F
-#define AWS_EC2_DEVICE_ID  		0xF000
+#define AWS_EC2_VENDOR_ID	0x1D0F
+#define AWS_EC2_DEVICE_ID	0xF000
 
 static int aws_ec2_configure_axi_intc(struct tlkm_device *dev, struct platform_mmap *mmap)
 {
@@ -25,8 +25,7 @@ static int aws_ec2_configure_axi_intc(struct tlkm_device *dev, struct platform_m
 
 	val = ioread32(mmap->plat + 0x500000 + 0x08 - p->plat.base);
 	if (!val) {
-		DEVERR(dev->dev_id, "Interrupts are still disabled");
-		return 1;
+		DEVWRN(dev->dev_id, "No interrupt enabled");
 	}
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "AXI INTC IER value: %x", val);

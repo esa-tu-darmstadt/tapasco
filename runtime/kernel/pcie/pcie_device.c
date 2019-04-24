@@ -34,26 +34,26 @@ static int aws_ec2_configure_xdma(struct tlkm_pcie_device *pdev)
 
 	if (!bar2) {
 		DEVLOG(did, TLKM_LF_PCIE, "XDMA ioremap_nocache failed");
-		return 1;
+		return -ENODEV;
 	}
 
 	DEVLOG(did, TLKM_LF_PCIE, "XDMA addr: %p\n", bar2);
 	DEVLOG(did, TLKM_LF_PCIE, "XDMA len: %x\n", (int)pci_resource_len(dev, 2));
 
 	val = ioread32(bar2 + get_xdma_reg_addr(2, 0, 0));
-	DEVLOG(did, TLKM_LF_PCIE, "XDMA IRQ block identifier:  %x\n", val);
+	DEVLOG(did, TLKM_LF_PCIE, "XDMA IRQ block identifier: %x\n", val);
 
 	// set user interrupt vectors
-	iowrite32(0x03020100, bar2 + get_xdma_reg_addr(2, 0, 0x080));
-	iowrite32(0x07060504, bar2 + get_xdma_reg_addr(2, 0, 0x084));
-	iowrite32(0x0b0a0908, bar2 + get_xdma_reg_addr(2, 0, 0x088));
-	iowrite32(0x0f0e0d0c, bar2 + get_xdma_reg_addr(2, 0, 0x08c));
+	iowrite32(0x03020100, bar2 + get_xdma_reg_addr(2, 0, 0x80));
+	iowrite32(0x07060504, bar2 + get_xdma_reg_addr(2, 0, 0x84));
+	iowrite32(0x0b0a0908, bar2 + get_xdma_reg_addr(2, 0, 0x88));
+	iowrite32(0x0f0e0d0c, bar2 + get_xdma_reg_addr(2, 0, 0x8c));
 
 	// set user interrupt enable mask
-	iowrite32(0xffff, bar2 + get_xdma_reg_addr(2, 0, 0x004));
+	iowrite32(0xffff, bar2 + get_xdma_reg_addr(2, 0, 0x04));
 	wmb();
 
-	val = ioread32(bar2 + get_xdma_reg_addr(2, 0, 0x004));
+	val = ioread32(bar2 + get_xdma_reg_addr(2, 0, 0x04));
 	DEVLOG(did, TLKM_LF_PCIE, "XDMA user IER: %x\n", val);
 
 	DEVLOG(did, TLKM_LF_PCIE, "Finished configuring XDMA core, unmapping BAR2");
@@ -183,13 +183,13 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
 	err = pci_enable_msix_range(dev,
 	                            pdev->msix_entries,
-	                            32,
-	                            32);
+	                            16,
+	                            16);
 #else
 /*	 set up MSI interrupt vector to max size */
 	err = pci_alloc_irq_vectors(dev,
-	                            32,
-	                            32,
+	                            16,
+	                            16,
 	                            PCI_IRQ_MSIX);
 #endif
 
@@ -200,31 +200,31 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 		DEVLOG(did, TLKM_LF_IRQ, "got %d MSI vectors", err);
 	}
 
-  for (i = 2; i < 32; i++) {
-  	request_irq(pci_irq_vector(dev, i),
-    		dummy_intr_handler,
-	      IRQF_EARLY_RESUME,
-        TLKM_PCI_NAME,
-        pdev->pdev);
-		pdev->irq_mapping[i] = pci_irq_vector(pdev->pdev, i);
-  }
+	// for (i = 2; i < 32; i++) {
+	// 	request_irq(pci_irq_vector(dev, i),
+	// 		dummy_intr_handler,
+	// 		IRQF_EARLY_RESUME,
+	// 		TLKM_PCI_NAME,
+	// 		pdev->pdev);
+	// 	pdev->irq_mapping[i] = pci_irq_vector(pdev->pdev, i);
+	// }
 
-	/*if ((err = pcie_irqs_init(pdev->parent))) {
+	if ((err = aws_ec2_pcie_irqs_init(pdev->parent))) {
 	DEVERR(did, "failed to register interrupts: %d", err);
 		return -ENOSPC;
-    }*/
+	}
 	return 0;
 }
 
 static void release_msi(struct tlkm_pcie_device *pdev)
 {
-	int i;
-	for (i = 2; i < 32; i++) {
-		free_irq(pdev->irq_mapping[i], pdev->pdev);
-		pdev->irq_mapping[i] = -1;
-  }
+	// int i;
+	// for (i = 2; i < 32; i++) {
+	// 	free_irq(pdev->irq_mapping[i], pdev->pdev);
+	// 	pdev->irq_mapping[i] = -1;
+	// }
 
-	//pcie_irqs_exit(pdev->parent);
+	aws_ec2_pcie_irqs_exit(pdev->parent);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
 	pci_disable_msix(pdev->pdev);
 #else

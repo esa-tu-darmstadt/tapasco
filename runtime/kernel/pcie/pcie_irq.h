@@ -141,6 +141,8 @@
 
 int  pcie_irqs_init(struct tlkm_device *dev);
 void pcie_irqs_exit(struct tlkm_device *dev);
+int  aws_ec2_pcie_irqs_init(struct tlkm_device *dev);
+void aws_ec2_pcie_irqs_exit(struct tlkm_device *dev);
 int  pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no, irq_handler_t, void *data);
 void pcie_irqs_release_platform_irq(struct tlkm_device *dev, int irq_no);
 
