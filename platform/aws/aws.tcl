@@ -30,6 +30,15 @@ namespace eval platform {
   variable bd_design_name
   set bd_design_name "cl"
 
+  # Instead of a bitstream, a tarfile is generated which is then
+  # processed by AWS in order to generate a loadable AFI.
+  variable disable_write_bitstream
+  set disable_write_bitstream true
+
+  # Using OOC synthesis is mandatory for this platform.
+  variable ooc_synth_mode
+  set ooc_synth_mode true
+
   namespace export create
   namespace export max_masters
   namespace export create_subsystem_clocks_and_resets
