@@ -16,12 +16,34 @@ and running `aws configure`, where the required credentials can be entered.
 import boto3
 
 import os
+import sys
 import uuid
 import shutil
 import logging
 import argparse
 import datetime
+import threading
 import subprocess
+
+# https://boto3.amazonaws.com/v1/documentation/api/latest/_modules/boto3/s3/transfer.html
+class ProgressPercentage(object):
+    def __init__(self, filename):
+        self._filename = filename
+        self._size = float(os.path.getsize(filename))
+        self._seen_so_far = 0
+        self._lock = threading.Lock()
+
+    def __call__(self, bytes_amount):
+        # To simplify we'll assume this is hooked up
+        # to a single filename.
+        with self._lock:
+            self._seen_so_far += bytes_amount
+            percentage = (self._seen_so_far / self._size) * 100
+            sys.stdout.write(
+                "\r%s  %s / %s  (%.2f%%)" % (
+                    self._filename, self._seen_so_far, self._size,
+                    percentage))
+            sys.stdout.flush()
 
 parser = argparse.ArgumentParser(description='Helper script for creating AFIs')
 parser.add_argument('bucket',
@@ -51,12 +73,16 @@ s3.create_bucket(Bucket=args.bucket)
 s3.Object(args.bucket, 'logs/').put()
 
 fname = os.path.basename(args.tarfile)
-s3.meta.client.upload_file(args.tarfile, args.bucket, fname)
+transfer = boto3.s3.transfer.S3Transfer(s3.meta.client)
+transfer.upload_file(args.tarfile, args.bucket, fname,
+                        callback=ProgressPercentage(args.tarfile))
+print('\nUpload finished')
 
 ec2 = boto3.resource('ec2')
 
 token = uuid.uuid4().hex
-description = args.description or 'Created from {} at {}'.format(fname, datetime.datetime.now().isoformat())
+description = args.description or 'Created from {} at {}'.format(fname,
+                datetime.datetime.now().isoformat())
 
 response = ec2.meta.client.create_fpga_image(
     DryRun=args.dry_run,
@@ -73,7 +99,8 @@ response = ec2.meta.client.create_fpga_image(
     ClientToken=token
 )
 
-print(response)
+print('FpgaImageGlobalId = {}'.format(response['FpgaImageGlobalId']))
+print('FpgaImageId       = {}'.format(response['FpgaImageId']))
 
 if shutil.which('wait_for_afi.py') is not None:
     subprocess.call(['wait_for_afi.py', '--afi', response['FpgaImageId']])
