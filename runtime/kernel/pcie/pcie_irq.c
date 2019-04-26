@@ -94,7 +94,6 @@ void pcie_irqs_exit(struct tlkm_device *dev)
 // begin aws ec2 interrupt handliing
 // *********************************
 
-uint32_t get_xdma_reg_addr(uint32_t target, uint32_t channel, uint32_t offset);
 
 #define _INTR(nr) \
 void aws_ec2_tlkm_pcie_slot_irq_work_ ## nr(struct work_struct *work) \
