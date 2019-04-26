@@ -90,24 +90,17 @@ void pcie_irqs_exit(struct tlkm_device *dev)
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "interrupts deactivated");
 }
 
-// *********************************
-// begin aws ec2 interrupt handliing
-// *********************************
-
-
 #define _INTR(nr) \
 void aws_ec2_tlkm_pcie_slot_irq_work_ ## nr(struct work_struct *work) \
 { \
 	int i; \
 	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *)container_of(work, struct tlkm_pcie_device, irq_work[nr]); \
 	struct platform *p = &dev->parent->cls->platform; \
-	/*volatile uint32_t* interrupt_pending = (volatile uint32_t*) (dev->parent->mmap.plat + ((0x500000 + 0x00) - p->plat.base));*/ \
 	/* read ISR (interrupt status register) */ \
 	uint32_t isr = ioread32(dev->parent->mmap.plat + 0x500000 + nr * 0x10000 + 0x00 - p->plat.base); \
 	BUG_ON(! dev->parent->ctrl); \
 	for (i = 0; i < 32; i++) { \
 		if (isr & (1 << i)) { \
-			/*DEVLOG(dev->parent->dev_id, TLKM_LF_IRQ, "[ISR] bit %d set", i);*/ \
 			/* write to IAR (interrupt ack register) */ \
 			iowrite32(1 << i, dev->parent->mmap.plat + 0x500000 + nr * 0x10000 + 0x0C - p->plat.base); \
 			tlkm_control_signal_slot_interrupt(dev->parent->ctrl, nr * 32 + i); \
@@ -124,7 +117,7 @@ irqreturn_t aws_ec2_tlkm_pcie_slot_irq_ ## nr(int irq, void *dev_id) \
 		tlkm_perfc_irq_error_already_pending_inc(dev->parent->dev_id); \
 	tlkm_perfc_total_irqs_inc(dev->parent->dev_id); \
 	return IRQ_HANDLED; \
-} \
+}
 
 TLKM_AWS_EC2_SLOT_INTERRUPTS
 #undef _INTR
@@ -187,10 +180,6 @@ void aws_ec2_pcie_irqs_exit(struct tlkm_device *dev)
 
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "interrupts deactivated");
 }
-
-// ******************************
-// end aws ec2 interrupt handling
-// ******************************
 
 int pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no, irq_handler_t intr_handler, void *data)
 {
