@@ -14,21 +14,32 @@ static int aws_ec2_configure_axi_intc(struct tlkm_device *dev, struct platform_m
 {
 	struct platform *p = &dev->cls->platform;
 	uint32_t val;
+	int i;
+	void* __iomem intc_base;
 
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "Enable AXI interrupt controller");
+	for (i = 0; i < 4; i++) {
+		intc_base = mmap->plat + 0x500000 + i * 0x10000 - p->plat.base;
 
-	// set interrupt enable register
-	iowrite32(0xffffffff, mmap->plat + 0x500000 + 0x08 - p->plat.base);
-	// set master enable register (master enable + hardware interrupt enable)
-	iowrite32(0xffffffff, mmap->plat + 0x500000 + 0x1c - p->plat.base);
-	wmb();
+		val = ioread32(intc_base + 0x08);
+		if (val) {
+			DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "AXI interrupt controller %d already enabled or not found", i);
+		} else {
+			DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "Enable AXI interrupt controller %d", i);
 
-	val = ioread32(mmap->plat + 0x500000 + 0x08 - p->plat.base);
-	if (!val) {
-		DEVWRN(dev->dev_id, "No interrupt enabled");
+			// set interrupt enable register (try to enable all interrupts)
+			iowrite32(0xffffffff, intc_base + 0x08);
+			// set master enable register (master enable + hardware interrupt enable)
+			iowrite32(0xffffffff, intc_base + 0x1c);
+			wmb();
+
+			val = ioread32(intc_base + 0x08);
+			if (!val) {
+				DEVWRN(dev->dev_id, "AXI interrupt controller %d: No interrupt enabled", i);
+			} else {
+				DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "AXI interrupt controller %d enabled, IER = %x", i, val);
+			}
+		}
 	}
-
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "AXI INTC IER value: %x", val);
 	return 0;
 }
 
