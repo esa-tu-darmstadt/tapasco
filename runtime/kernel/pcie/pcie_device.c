@@ -157,11 +157,6 @@ static int configure_device(struct pci_dev *pdev)
 	return 0;
 }
 
-irqreturn_t dummy_intr_handler(int irq, void *dev_id)
-{
-    return IRQ_HANDLED;
-}
-
 /**
  * @brief Initializes msi-capable structure and binds to irq_functions
  * @param pci_dev device, which should be allocated
@@ -180,18 +175,33 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 #endif
 	}
 
+	if (dev->vendor == AWS_EC2_VENDOR_ID && dev->device == AWS_EC2_DEVICE_ID) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
-	err = pci_enable_msix_range(dev,
-	                            pdev->msix_entries,
-	                            16,
-	                            16);
+		err = pci_enable_msix_range(dev,
+		                            pdev->msix_entries,
+		                            16,
+		                            16);
 #else
-/*	 set up MSI interrupt vector to max size */
-	err = pci_alloc_irq_vectors(dev,
-	                            16,
-	                            16,
-	                            PCI_IRQ_MSIX);
+		/* set up MSI interrupt vector to max size */
+		err = pci_alloc_irq_vectors(dev,
+		                            16,
+		                            16,
+		                            PCI_IRQ_MSIX);
 #endif
+	} else {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
+		err = pci_enable_msix_range(dev,
+		                            pdev->msix_entries,
+		                            REQUIRED_INTERRUPTS,
+		                            REQUIRED_INTERRUPTS);
+#else
+		/* set up MSI interrupt vector to max size */
+		err = pci_alloc_irq_vectors(dev,
+		                            REQUIRED_INTERRUPTS,
+		                            REQUIRED_INTERRUPTS,
+		                            PCI_IRQ_MSIX);
+#endif
+	}
 
 	if (err <= 0) {
 		DEVERR(did, "cannot set MSI vector (%d)", err);
@@ -200,17 +210,14 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 		DEVLOG(did, TLKM_LF_IRQ, "got %d MSI vectors", err);
 	}
 
-	// for (i = 2; i < 32; i++) {
-	// 	request_irq(pci_irq_vector(dev, i),
-	// 		dummy_intr_handler,
-	// 		IRQF_EARLY_RESUME,
-	// 		TLKM_PCI_NAME,
-	// 		pdev->pdev);
-	// 	pdev->irq_mapping[i] = pci_irq_vector(pdev->pdev, i);
-	// }
+	if (dev->vendor == AWS_EC2_VENDOR_ID && dev->device == AWS_EC2_DEVICE_ID) {
+		err = aws_ec2_pcie_irqs_init(pdev->parent);
+	} else {
+		err = pcie_irqs_init(pdev->parent);
+	}
 
-	if ((err = aws_ec2_pcie_irqs_init(pdev->parent))) {
-	DEVERR(did, "failed to register interrupts: %d", err);
+	if (err) {
+		DEVERR(did, "failed to register interrupts: %d", err);
 		return -ENOSPC;
 	}
 	return 0;
@@ -218,13 +225,11 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 
 static void release_msi(struct tlkm_pcie_device *pdev)
 {
-	// int i;
-	// for (i = 2; i < 32; i++) {
-	// 	free_irq(pdev->irq_mapping[i], pdev->pdev);
-	// 	pdev->irq_mapping[i] = -1;
-	// }
-
-	aws_ec2_pcie_irqs_exit(pdev->parent);
+	if (pdev->pdev->vendor == AWS_EC2_VENDOR_ID && pdev->pdev->device == AWS_EC2_DEVICE_ID) {
+		aws_ec2_pcie_irqs_exit(pdev->parent);
+	} else {
+		pcie_irqs_exit(pdev->parent);
+	}
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
 	pci_disable_msix(pdev->pdev);
 #else

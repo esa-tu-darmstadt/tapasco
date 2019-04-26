@@ -47,7 +47,6 @@ int tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap)
 {
 	int retval = 0;
 	u32 magic_id = 0;
-
 	struct platform *p = &dev->cls->platform;
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%px-0x%px for architecture",
 			(void *)(dev->base_offset + p->arch.base),
