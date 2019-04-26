@@ -38,7 +38,7 @@ int pcie_irqs_init(struct tlkm_device *dev)
 {
 	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
 
-	int ret = 0, irqn, err[NUMBER_OF_INTERRUPTS];
+	int ret = 0, irqn, err[NUMBER_OF_INTERRUPTS] = { [0 ... NUMBER_OF_INTERRUPTS - 1] = 1 };
 	BUG_ON(! dev);
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registering %d interrupts ...", NUMBER_OF_INTERRUPTS);
 #define _INTR(nr) \
@@ -134,11 +134,8 @@ int aws_ec2_pcie_irqs_init(struct tlkm_device *dev)
 {
 	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
 
-	int ret = 0, irqn, err[4];
-	err[0] = 0;
-	err[1] = 0;
-	err[2] = 0;
-	err[3] = 0;
+	int ret = 0, irqn, err[4] = { [0 ... 3] = 1 };
+
 	BUG_ON(! dev);
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registering %d interrupts ...", 4);
 #define _INTR(nr) \
