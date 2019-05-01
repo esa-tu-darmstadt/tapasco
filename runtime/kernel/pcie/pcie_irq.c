@@ -93,18 +93,18 @@ void pcie_irqs_exit(struct tlkm_device *dev)
 #define _INTR(nr) \
 void aws_ec2_tlkm_pcie_slot_irq_work_ ## nr(struct work_struct *work) \
 { \
-	int i; \
+	uint32_t isr; \
 	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *)container_of(work, struct tlkm_pcie_device, irq_work[nr]); \
 	struct platform *p = &dev->parent->cls->platform; \
 	/* read ISR (interrupt status register) */ \
-	uint32_t isr = ioread32(dev->parent->mmap.plat + 0x500000 + nr * 0x10000 + 0x00 - p->plat.base); \
-	BUG_ON(! dev->parent->ctrl); \
-	for (i = 0; i < 32; i++) { \
-		if (isr & (1 << i)) { \
-			/* write to IAR (interrupt ack register) */ \
-			iowrite32(1 << i, dev->parent->mmap.plat + 0x500000 + nr * 0x10000 + 0x0C - p->plat.base); \
-			tlkm_control_signal_slot_interrupt(dev->parent->ctrl, nr * 32 + i); \
-		} \
+	while ((isr = ioread32(dev->parent->mmap.plat + 0x500000 + nr * 0x10000 + 0x00 - p->plat.base))) { \
+		iowrite32(isr, dev->parent->mmap.plat + 0x500000 + nr * 0x10000 + 0x0C - p->plat.base); \
+		do { \
+			/* Returns one plus the index of the least significant 1-bit of x, or if x is zero, returns zero. */ \
+			const uint32_t slot = __builtin_ffs(isr) - 1; \
+			tlkm_control_signal_slot_interrupt(dev->parent->ctrl, nr * 32 + slot); \
+			isr ^= (1U << slot); \
+		} while (isr); \
 	} \
 } \
 \
@@ -112,7 +112,6 @@ irqreturn_t aws_ec2_tlkm_pcie_slot_irq_ ## nr(int irq, void *dev_id) \
 { \
 	struct pci_dev *pdev = (struct pci_dev *)dev_id; \
 	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *) dev_get_drvdata(&pdev->dev); \
-	BUG_ON(! dev); \
 	if (! schedule_work(&dev->irq_work[nr])) \
 		tlkm_perfc_irq_error_already_pending_inc(dev->parent->dev_id); \
 	tlkm_perfc_total_irqs_inc(dev->parent->dev_id); \
