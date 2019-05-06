@@ -66,13 +66,27 @@ Basic Setup
 2.  Build TaPaSCo: `sbt compile` (this may take a while, `sbt` needs to fetch
     all dependencies etc. once).
 2.  Create the necessary jar files with `sbt assembly`.
-4.  Run TaPaSCo unit tests: `sbt test`
+4.  _Optional_: Run TaPaSCo unit tests: `sbt test`
 5.  _Optional_: Generate sample configuration file: `tapasco -n config.json`
     TaPaSCo should exit immediately and `config.json` will include a full
     configuration that can be read with `--configFile`, including one example
     for each kind of job.
+6.  Build libraries and _tlkm_ kernel module: `tapasco-build-libs`
 
 When everything completed successfully, **TaPaSCo is ready to use!**
+
+Build a TaPaSCo design
+----------------------
+1.  Import your kernels
+    *   HDL flow: `tapasco import <ZIP> as <ID>`
+    *   HLS flow: `tapasco hls <KERNELS>`
+2.  Create a composition: `tapasco compose [<KERNEL> x <COUNT>] @ <NUM> MHz -p <PLATFORM>`
+3.  Load the bitstream: `tapasco-load-bitstream <BITSTREAM>`
+4.  Implement your host software
+    *   C API
+    *   C++ API
+
+You can get more information about commands with `tapasco help <COMMAND>`.
 
 Acknowledgements
 ----------------
