@@ -27,11 +27,8 @@ import  de.tu_darmstadt.cs.esa.tapasco.base._
 import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.LogTrackingFileWatcher
 import  de.tu_darmstadt.cs.esa.tapasco.reports._
 import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  de.tu_darmstadt.cs.esa.tapasco.util.ZipUtils._
-import  Logging._
-import  java.nio.file.{Files, Path, Paths}
+import  java.nio.file.{Files, Path}
 import  scala.sys.process._
-import  scala.xml.XML
 
 /** EvaluateIP is the out-of-context synthesis activity.
   * The EvaluateIP activity performs an out-of-context synthesis and
@@ -72,55 +69,11 @@ object EvaluateIP {
     lazy val rpt_power  = reportFile.resolveSibling("power.rpt")
     lazy val s_dcp      = reportFile.resolveSibling("out-of-context_synth.dcp")
     lazy val i_dcp      = reportFile.resolveSibling("out-of-context_impl.dcp")
-    // unzip relevant files into temporary directory
-    lazy val (baseDir, files) = unzipFile(zipFile, Seq(
-        """\.v$""".r,
-        """\.vhd$""".r,
-        """\.sv$""".r,
-        """\.xdc$""".r,
-        """\.vh$""".r,
-        """\.xci$""".r,
-        """\.saif$""".r,
-        """\.ngc$""".r,
-        """subcore.*""".r,
-        """component.xml$""".r),
-        Seq("""hdl/ip/""".r)
-      )
-    // partition files
-    final private val suflen = 4
-    lazy val tcl_files  = files filter (_.toString.endsWith(".tcl"))
-    lazy val v_files    = files collect {
-      case f if """\.v$""".r.findFirstIn(f.toString).nonEmpty && !includes.contains(f.getFileName) => f
-    }
-    lazy val sv_files    = files collect {
-      case f if """\.sv$""".r.findFirstIn(f.toString).nonEmpty && !includes.contains(f.getFileName) => f
-    }
-    lazy val vhd_files  = files collect {
-      case f if """\.vhd$""".r.findFirstIn(f.toString).nonEmpty &&
-                !(v_files map (_.toString) contains (f.toString.dropRight(suflen) + ".v")) &&
-                !includes.contains(f.getFileName) => f
-    }
-    lazy val ngc_files  = files collect {
-      case f if """\.ngc$""".r.findFirstIn(f.toString).nonEmpty && !includes.contains(f.getFileName) => f
-    }
-    lazy val xci_files  = files.collect {
-      case f if f.toString.endsWith(".xci") && !includes.contains(f.getFileName) => f
-    }
-    lazy val hdl_files  = v_files ++ vhd_files ++ sv_files
+    lazy val zip        = zipFile
+    lazy val vlnv       = VLNV.fromZip(zipFile)
+    lazy val baseDir    = Files.createTempDirectory(null)
     lazy val logFile    = baseDir.resolve("evaluate.log")
     lazy val tclFile    = baseDir.resolve("evaluate.tcl")
-    lazy val ipxact     = files collectFirst { case f if f.toString.endsWith("component.xml") => f }
-    lazy val includes   = catchAllDefault[Seq[Path]](Seq[Path](), "could not parse component.xml: ") {
-      (XML.loadFile(ipxact.get.toString) \\ "component" \\ "fileSet" filter { fs: scala.xml.Node =>
-        (fs \ "name").text equals "xilinx_anylanguagesynthesis_view_fileset"
-      }) \ "file" collect {
-        case f if (f \ "isIncludeFile").nonEmpty && (f \ "isIncludeFile").text.equals("true") =>
-          java.nio.file.Paths.get((f \ "name").text).getFileName
-      }
-    }
-    lazy val netlist   = catchAllDefault[Path](Paths.get("netlist.edn"), "could not parse component.xml: ") {
-      reportFile.resolveSibling("%s.edn".format((XML.loadFile(ipxact.get.toString) \\ "component" \\ "name").head.text))
-    }
   }
 
   /** Perform the evaluation.
@@ -173,7 +126,6 @@ object EvaluateIP {
         // clean up files on exit
         deleteOnExit(files.baseDir.toFile)
         deleteOnExit(files.baseDir.resolve(".Xil").toFile) // also remove Xilinx's crap
-        files.files.map(f => deleteOnExit(f.toFile)) // remove files from zip only on success, else keep
         deleteOnExit(files.tclFile.toFile)
         deleteOnExit(files.logFile.toFile)
       } else {
@@ -195,10 +147,9 @@ object EvaluateIP {
                              optimization: Int,
                              synthOptions: Option[String]): Unit = {
     val needles: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map(
-      "SRC_FILES"          -> (files.hdl_files map (_.toString) mkString " "),
-      "TCL_FILES"          -> (files.tcl_files mkString " "),
-      "NGC_FILES"          -> (files.ngc_files mkString " "),
-      "XCI_FILES"          -> (files.xci_files mkString " "),
+      "BASE_DIR"           -> files.baseDir.toString,
+      "ZIP_FILE"           -> files.zip.toString,
+      "VLNV"               -> files.vlnv.toString,
       "PART"               -> targetPart,
       "PERIOD"             -> targetPeriod.toString,
       "REPORT_TIMING"      -> files.rpt_timing.toString,
@@ -206,7 +157,6 @@ object EvaluateIP {
       "REPORT_POWER"       -> files.rpt_power.toString,
       "SYNTH_CHECKPOINT"   -> files.s_dcp.toString,
       "IMPL_CHECKPOINT"    -> files.i_dcp.toString,
-      "NETLIST"            -> files.netlist.toString,
       "OPTIMIZATION"       -> optimization.toString,
       "SYNTH_OPTIONS"      -> (synthOptions getOrElse "")
     )
