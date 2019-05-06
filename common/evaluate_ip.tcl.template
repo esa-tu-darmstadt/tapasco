@@ -31,21 +31,14 @@ set_param general.maxThreads 1
 create_project -in_memory -part @@PART@@
 
 # add common IP
-set_property IP_REPO_PATHS "$::env(TAPASCO_HOME)/common/ip" [current_project]
+set_property IP_REPO_PATHS "$::env(TAPASCO_HOME)/common/ip @@BASE_DIR@@" [current_project]
 
-# add files
-add_files @@SRC_FILES@@
-# Read ngc/edif files, e.g. for primitives
-foreach ngc_file [list @@NGC_FILES@@] { read_edif $ngc_file }
-# Read xci files, e.g. for primitives
-set xci_files [list @@XCI_FILES@@]
-if {[llength $xci_files] > 0} {
-  import_ip $xci_files
-  generate_target all [get_ips]
-  synth_ip [get_ips]
-}
-# add_files -fileset constrs_1 @@XDC_FILES@@
-foreach script [list @@TCL_FILES@@] { source $script }
+# add IP core
+update_ip_catalog
+update_ip_catalog -add_ip @@ZIP_FILE@@ -repo_path @@BASE_DIR@@
+
+set pe [create_ip -module_name pe -vlnv @@VLNV@@]
+generate_target all $pe
 
 # find top
 set top [lindex [find_top] 0]
@@ -205,10 +198,6 @@ if {$wns < 0} {
 
 # report power
 report_power -quiet -file @@REPORT_POWER@@
-
-# write netlist file
-set netlist "@@NETLIST@@"
-write_edif -force $netlist
 
 # done!
 exit
