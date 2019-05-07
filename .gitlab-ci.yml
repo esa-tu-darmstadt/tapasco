@@ -140,145 +140,157 @@ build_sbt_tapasco_ubuntu_19_04:
   image: ubuntu:disco
   extends: .build_sbt_tapasco_ubuntu
 
-build_kernel_ubuntu_16_04:
+# build kernel module
+# as we are running in a docker instance, we cannot use tapasco-build-libs
+.build_kernel_ubuntu:
   stage: build_kernel
-  image: ubuntu:xenial
+  variables:
+    MODE: "release"
   tags:
     - CAD
     - Normal
   script:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
     - source setup.sh
-    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j release; popd; done
+    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j $MODE; popd; done
   artifacts:
     paths:
       - tlkm/tlkm.ko
+
+build_kernel_ubuntu_16_04:
+  image: ubuntu:xenial
+  extends: .build_kernel_ubuntu
 
 build_kernel_ubuntu_18_04:
-  stage: build_kernel
+  image: ubuntu:bionic
+  extends: .build_kernel_ubuntu
+
+build_kernel_ubuntu_18_10:
   image: ubuntu:cosmic
-  tags:
-    - CAD
-    - Normal
-  script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
-    - source setup.sh
-    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j release; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
+  extends: .build_kernel_ubuntu
 
-build_kernel_fedora_27:
-  stage: build_kernel
-  image: fedora:27
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
-    - source setup.sh
-    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j release; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
-
-build_kernel_fedora_28:
-  stage: build_kernel
-  image: fedora:28
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
-    - source setup.sh
-    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j release; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
-
-build_kernel_fedora_29:
-  stage: build_kernel
-  image: fedora:29
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
-    - source setup.sh
-    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j release; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
+build_kernel_ubuntu_19_04:
+  image: ubuntu:disco
+  extends: .build_kernel_ubuntu
 
 build_kernel_ubuntu_16_04_debug:
-  stage: build_kernel
+  variables:
+    MODE: "all"
   image: ubuntu:xenial
-  tags:
-    - CAD
-    - Normal
-  script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
-    - source setup.sh
-    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
+  extends: .build_kernel_ubuntu
 
 build_kernel_ubuntu_18_04_debug:
-  stage: build_kernel
+  variables:
+    MODE: "all"
+  image: ubuntu:bionic
+  extends: .build_kernel_ubuntu
+
+build_kernel_ubuntu_18_10_debug:
+  variables:
+    MODE: "all"
   image: ubuntu:cosmic
+  extends: .build_kernel_ubuntu
+
+build_kernel_ubuntu_19_04_debug:
+  variables:
+    MODE: "all"
+  image: ubuntu:disco
+  extends: .build_kernel_ubuntu
+
+.build_kernel_fedora:
+  stage: build_kernel
+  variables:
+    MODE: "release"
   tags:
     - CAD
     - Normal
   script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
     - source setup.sh
-    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j; popd; done
+    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j  $MODE; popd; done
   artifacts:
     paths:
       - tlkm/tlkm.ko
+
+build_kernel_fedora_24:
+  image: fedora:24
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_25:
+  image: fedora:25
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_26:
+  image: fedora:26
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_27:
+  image: fedora:27
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_28:
+  image: fedora:28
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_29:
+  image: fedora:29
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_30:
+  image: fedora:30
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_31:
+  image: fedora:31
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_24_debug:
+  variables:
+    MODE: "all"
+  image: fedora:24
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_25_debug:
+  variables:
+    MODE: "all"
+  image: fedora:25
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_26_debug:
+  variables:
+    MODE: "all"
+  image: fedora:26
+  extends: .build_kernel_fedora
 
 build_kernel_fedora_27_debug:
-  stage: build_kernel
+  variables:
+    MODE: "all"
   image: fedora:27
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
-    - source setup.sh
-    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
+  extends: .build_kernel_fedora
 
 build_kernel_fedora_28_debug:
-  stage: build_kernel
+  variables:
+    MODE: "all"
   image: fedora:28
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
-    - source setup.sh
-    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
+  extends: .build_kernel_fedora
 
 build_kernel_fedora_29_debug:
-  stage: build_kernel
+  variables:
+    MODE: "all"
   image: fedora:29
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
-    - source setup.sh
-    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j; popd; done
-  artifacts:
-    paths:
-      - tlkm/tlkm.ko
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_30_debug:
+  variables:
+    MODE: "all"
+  image: fedora:30
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_31_debug:
+  variables:
+    MODE: "all"
+  image: fedora:31
+  extends: .build_kernel_fedora
 
 .build_tapasco:
   stage: build_runtime
