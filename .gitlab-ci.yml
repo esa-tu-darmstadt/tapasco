@@ -35,7 +35,7 @@ test_tapasco_java_8:
 
 test_tapasco_java_9:
   variables:
-    JAVA_VERSION: "9.0.4-open"
+    JAVA_VERSION: "9.0.7-zulu"
   extends: .test_tapasco
 
 test_tapasco_java_10:
