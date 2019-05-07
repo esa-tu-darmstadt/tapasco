@@ -70,7 +70,6 @@ test_tapasco_sbt_1_2_8:
 
 .build_sbt_tapasco:
   stage: build_sbt
-  image: ubuntu:xenial
   tags:
     - CAD
     - High
@@ -85,7 +84,7 @@ test_tapasco_sbt_1_2_8:
 
 .build_sbt_tapasco_fedora:
   before_script:
-    - dnf -y install which unzip git zip findutils
+    - dnf -y install which unzip git zip tar findutils
   extends: .build_sbt_tapasco
 
 build_sbt_tapasco_fedora_24:
