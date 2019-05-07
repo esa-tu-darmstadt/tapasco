@@ -22,7 +22,7 @@ Prerequisites
 To use TaPaSCo, you'll need working installations of
 
 *   Vivado Design Suite 2017.4 or newer
-*   Java SDK 8+
+*   Java SDK 8 - 11
 *   sbt 0.13.x or newer
 *   git
 *   GCC newer than 5.x.x for C++11 support
