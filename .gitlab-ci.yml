@@ -277,18 +277,6 @@ build_tapasco_fedora_30:
   image: fedora:30
   extends: .build_tapasco_fedora
 
-build_tapasco_fedora_24_debug:
-  variables:
-    MODE: "debug"
-  image: fedora:24
-  extends: .build_tapasco_fedora
-
-build_tapasco_fedora_25_debug:
-  variables:
-    MODE: "debug"
-  image: fedora:25
-  extends: .build_tapasco_fedora
-
 build_tapasco_fedora_26_debug:
   variables:
     MODE: "debug"
