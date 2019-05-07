@@ -10,7 +10,8 @@ System Requirements
 TaPaSCo is known to work in this environment:
 
 *   Intel x86_64 arch
-*   Fedora 24/25, Ubuntu 14.04/16.01
+*   Linux kernel 4.4+
+*   Fedora 24+, Ubuntu 16.04+
 *   Bash Shell 4.2.x+
 
 Other setups likely work as well, but are untested.
@@ -20,8 +21,8 @@ Prerequisites
 To use TaPaSCo, you'll need working installations of
 
 *   Vivado Design Suite 2017.4 or newer
-*   Java SDK 7+
-*   sbt 0.13.x
+*   Java SDK 8+
+*   sbt 0.13.x or newer
 *   git
 *   GCC newer than 5.x.x for C++11 support
 *   *OPTIONAL:* libncurses for the tapasco-debug application
