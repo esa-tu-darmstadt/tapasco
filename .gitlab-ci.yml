@@ -229,152 +229,140 @@ build_kernel_fedora_29_debug:
     paths:
       - tlkm/tlkm.ko
 
-build_tapasco_ubuntu_16_04:
+.build_tapasco:
   stage: build_runtime
-  image: ubuntu:xenial
+  variables:
+    MODE: "release"
   tags:
     - CAD
     - Normal
   script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
     - source setup.sh
-    - tapasco-build-libs --mode=release --skip_driver
+    - tapasco-build-libs --mode=$MODE --skip_driver
     - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.deb
 
-build_tapasco_ubuntu_18_04:
-  stage: build_runtime
-  image: ubuntu:cosmic
-  tags:
-    - CAD
-    - Normal
-  script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
-    - source setup.sh
-    - tapasco-build-libs --mode=release --skip_driver
-    - cd build && make package
+.build_tapasco_fedora:
+  before_script:
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
   artifacts:
     paths:
-      - build/tapasco-2018.2.1-Linux.deb
+      - build/tapasco-2018.2.1-Linux.rpm
+  extends: .build_tapasco
+
+build_tapasco_fedora_24:
+  image: fedora:24
+  extends: .build_tapasco_fedora
+
+build_tapasco_fedora_25:
+  image: fedora:25
+  extends: .build_tapasco_fedora
+
+build_tapasco_fedora_26:
+  image: fedora:26
+  extends: .build_tapasco_fedora
 
 build_tapasco_fedora_27:
-  stage: build_runtime
   image: fedora:27
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
-    - source setup.sh
-    - tapasco-build-libs --mode=release --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.rpm
+  extends: .build_tapasco_fedora
 
 build_tapasco_fedora_28:
-  stage: build_runtime
   image: fedora:28
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
-    - source setup.sh
-    - tapasco-build-libs --mode=release --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.rpm
+  extends: .build_tapasco_fedora
 
 build_tapasco_fedora_29:
-  stage: build_runtime
-  image: fedora:28
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
-    - source setup.sh
-    - tapasco-build-libs --mode=release --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.rpm
+  image: fedora:29
+  extends: .build_tapasco_fedora
 
-build_tapasco_ubuntu_16_04_debug:
-  stage: build_runtime
-  image: ubuntu:xenial
-  tags:
-    - CAD
-    - Normal
-  script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
-    - source setup.sh
-    - tapasco-build-libs --mode=debug --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.deb
+build_tapasco_fedora_30:
+  image: fedora:30
+  extends: .build_tapasco_fedora
 
-build_tapasco_ubuntu_18_04_debug:
-  stage: build_runtime
-  image: ubuntu:cosmic
-  tags:
-    - CAD
-    - Normal
-  script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
-    - source setup.sh
-    - tapasco-build-libs --mode=debug --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.deb
+build_tapasco_fedora_24_debug:
+  variables:
+    MODE: "debug"
+  image: fedora:24
+  extends: .build_tapasco_fedora
+
+build_tapasco_fedora_25_debug:
+  variables:
+    MODE: "debug"
+  image: fedora:25
+  extends: .build_tapasco_fedora
+
+build_tapasco_fedora_26_debug:
+  variables:
+    MODE: "debug"
+  image: fedora:26
+  extends: .build_tapasco_fedora
 
 build_tapasco_fedora_27_debug:
-  stage: build_runtime
+  variables:
+    MODE: "debug"
   image: fedora:27
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
-    - source setup.sh
-    - tapasco-build-libs --mode=debug --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.rpm
+  extends: .build_tapasco_fedora
 
 build_tapasco_fedora_28_debug:
-  stage: build_runtime
+  variables:
+    MODE: "debug"
   image: fedora:28
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
-    - source setup.sh
-    - tapasco-build-libs --mode=debug --skip_driver
-    - cd build && make package
-  artifacts:
-    paths:
-      - build/tapasco-2018.2.1-Linux.rpm
+  extends: .build_tapasco_fedora
 
 build_tapasco_fedora_29_debug:
-  stage: build_runtime
+  variables:
+    MODE: "debug"
   image: fedora:29
-  tags:
-    - CAD
-    - Normal
-  script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
-    - source setup.sh
-    - tapasco-build-libs --mode=debug --skip_driver
-    - cd build && make package
+  extends: .build_tapasco_fedora
+
+build_tapasco_fedora_30_debug:
+  variables:
+    MODE: "debug"
+  image: fedora:30
+  extends: .build_tapasco_fedora
+
+.build_tapasco_ubuntu:
+  before_script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
   artifacts:
     paths:
-      - build/tapasco-2018.2.1-Linux.rpm
+      - build/tapasco-2018.2.1-Linux.deb
+  extends: .build_tapasco
+
+build_tapasco_ubuntu_16_04:
+  image: ubuntu:xenial
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_18_04:
+  image: ubuntu:bionic
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_18_10:
+  image: ubuntu:cosmic
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_19_04:
+  image: ubuntu:disco
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_16_04_debug:
+  variables:
+    MODE: "debug"
+  image: ubuntu:xenial
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_18_04_debug:
+  variables:
+    MODE: "debug"
+  image: ubuntu:bionic
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_18_10_debug:
+  variables:
+    MODE: "debug"
+  image: ubuntu:cosmic
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_19_04_debug:
+  variables:
+    MODE: "debug"
+  image: ubuntu:disco
+  extends: .build_tapasco_ubuntu
