@@ -9,6 +9,7 @@ stages:
   - build_sbt
   - build_kernel
   - build_runtime
+  - build_hw
 
 .test_tapasco:
   stage: software_tests
@@ -17,7 +18,6 @@ stages:
     SBT_VERSION: "1.2.8"
   image: ubuntu:latest
   tags:
-    - CAD
     - High
   script:
     - apt-get -y update && apt-get -y install unzip git zip findutils curl
@@ -71,7 +71,6 @@ test_tapasco_sbt_1_2_8:
 .build_sbt_tapasco:
   stage: build_sbt
   tags:
-    - CAD
     - High
   script:
     - curl -s "https://get.sdkman.io" | bash
@@ -147,7 +146,6 @@ build_sbt_tapasco_ubuntu_19_04:
   variables:
     MODE: "release"
   tags:
-    - CAD
     - Normal
   script:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
@@ -202,7 +200,6 @@ build_kernel_ubuntu_19_04_debug:
   variables:
     MODE: "release"
   tags:
-    - CAD
     - Normal
   script:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
@@ -297,7 +294,6 @@ build_kernel_fedora_31_debug:
   variables:
     MODE: "release"
   tags:
-    - CAD
     - Normal
   script:
     - source setup.sh
@@ -427,3 +423,54 @@ build_tapasco_ubuntu_19_04_debug:
     MODE: "debug"
   image: ubuntu:disco
   extends: .build_tapasco_ubuntu
+
+tapasco_hls:
+  stage: build_hw
+  variables:
+    VIVADO_VERSION: "2018.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vivado/Vivado/${VIVADO_VERSION}"
+    XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
+  tags:
+    - CAD
+  image: fedora:28
+  before_script:
+    - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++
+    - ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
+  script:
+    - source $XILINX_VIVADO/settings64.sh
+    - which vivado
+    - which vivado_hls
+    - curl -s "https://get.sdkman.io" | bash
+    - source "/root/.sdkman/bin/sdkman-init.sh"
+    - sdk install java
+    - sdk install sbt
+    - source $XILINX_VIVADO/settings64.sh
+    - source setup.sh
+    - sbt assembly
+    - tapasco -v hls counter -p pynq
+
+.tapasco_compose:
+  stage: build_hw
+  variables:
+    VIVADO_VERSION: "2018.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vivado/Vivado/${VIVADO_VERSION}"
+    XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
+  tags:
+    - CAD
+  image: fedora:28
+  before_script:
+    - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++ python
+    - ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
+  script:
+    - source $XILINX_VIVADO/settings64.sh
+    - which vivado
+    - which vivado_hls
+    - curl -s "https://get.sdkman.io" | bash
+    - source "/root/.sdkman/bin/sdkman-init.sh"
+    - sdk install java
+    - sdk install sbt
+    - source $XILINX_VIVADO/settings64.sh
+    - source setup.sh
+    - sbt assembly
+    - tapasco hls counter -p pynq --skipEvaluation
+    - tapasco -v compose [counter x 3] @ 100 MHz -p pynq
