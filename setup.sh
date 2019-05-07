@@ -29,6 +29,11 @@ export TapascoTLKM_DIR=${TAPASCO_HOME}/build/install/usr/local/share/Tapasco/cma
 
 if echo "${PATH}" | grep --quiet "cmake-3.3.2";
 then
-    echo "Removing old CMake version 3.3.2 distributed with Vivado from Path"
-    export PATH=`python -c "import re; print(re.sub(r'[:][^:]*?cmake[-]3[.]3[.]2.*?[:]', ':', '${PATH}'));"`
+    if ! command -v python > /dev/null;
+    then
+        echo "Could not remove old CMake version from Path. Please install python"
+    else
+        echo "Removing old CMake version 3.3.2 distributed with Vivado from Path"
+        export PATH=`python -c "import re; print(re.sub(r'[:][^:]*?cmake[-]3[.]3[.]2.*?[:]', ':', '${PATH}'));"`
+    fi
 fi
