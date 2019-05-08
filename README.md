@@ -12,7 +12,7 @@ TaPaSCo is known to work in this environment:
 *   Intel x86_64 arch
 *   Linux kernel 4.4+
 *   Fedora 26+, Ubuntu 16.04+
-*   Fedora 24/25 does not support debug mode
+*   Fedora 24/25 does not support debug mode due to GCC bug
 *   Bash Shell 4.2.x+
 
 Other setups likely work as well, but are untested.
@@ -23,7 +23,7 @@ To use TaPaSCo, you'll need working installations of
 
 *   Vivado Design Suite 2017.4 or newer
 *   Java SDK 8 - 11
-*   sbt 0.13.x or newer
+*   sbt 0.13.x or newer (use [SDKMAN!](http://sdkman.io/) for easy installation)
 *   git
 *   python
 *   GCC newer than 5.x.x for C++11 support
@@ -59,24 +59,6 @@ Check that at least the following are in your `$PATH`:
 *   `git`
 *   `bash`
 *   \[`vivado_hls`\]
-
-Install sbt
------------
-Installing multiple versions of Java, Scala and tools like sbt can be a hassle.
-[SDKman!](http://sdkman.io/) simplifies the process by managing the
-installations without root requirements. To install sbt, simply
-```
-curl -s "https://get.sdkman.io" | bash
-```
-Then, run in a new terminal:
-```
-sdk install sbt
-```
-Try if this worked, via
-```
-sbt version
-```
-If `sbt` was successfully installed, it will return its version number.
 
 Basic Setup
 -------------------
