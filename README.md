@@ -25,6 +25,7 @@ To use TaPaSCo, you'll need working installations of
 *   Java SDK 8 - 11
 *   sbt 0.13.x or newer
 *   git
+*   python
 *   GCC newer than 5.x.x for C++11 support
 *   *OPTIONAL:* libncurses for the tapasco-debug application
 
