@@ -1,1 +1,0 @@
-source $::env(TAPASCO_HOME)/common/common_ip.tcl
