@@ -474,3 +474,23 @@ tapasco_hls:
     - sbt assembly
     - tapasco hls counter -p pynq --skipEvaluation
     - tapasco -v compose [counter x 3] @ 100 MHz -p pynq
+
+tapasco_compose_17_4:
+  variables:
+    VIVADO_VERSION: "2017.4"
+  extends: .tapasco_compose
+
+tapasco_compose_18_1:
+  variables:
+    VIVADO_VERSION: "2018.1"
+  extends: .tapasco_compose
+
+tapasco_compose_18_2:
+  variables:
+    VIVADO_VERSION: "2018.2"
+  extends: .tapasco_compose
+
+tapasco_compose_18_3:
+  variables:
+    VIVADO_VERSION: "2018.3"
+  extends: .tapasco_compose
