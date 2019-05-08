@@ -28,6 +28,24 @@ To use TaPaSCo, you'll need working installations of
 *   python
 *   GCC newer than 5.x.x for C++11 support
 *   *OPTIONAL:* libncurses for the tapasco-debug application
+*   Ubuntu
+    ```bash
+    apt-get -y update && apt-get -y install unzip git zip findutils curl build-essential \
+        linux-headers-generic python cmake libelf-dev libncurses-dev rpm
+    curl -s "https://get.sdkman.io" | bash
+    source "/root/.sdkman/bin/sdkman-init.sh"
+    sdk install java
+    sdk install sbt
+    ```
+*   Fedora
+    ```bash
+    dnf -y install which unzip git zip tar findutils kernel-devel make gcc gcc-c++ \
+        elfutils-libelf-devel cmake ncurses-devel python libatomic rpm-build
+    curl -s "https://get.sdkman.io" | bash
+    source "$HOME/.sdkman/bin/sdkman-init.sh"
+    sdk install java
+    sdk install sbt
+    ```
 
 If you want to use the High-Level Synthesis flow for generating custom IP
 cores, you'll also need:
