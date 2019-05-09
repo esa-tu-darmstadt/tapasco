@@ -150,7 +150,7 @@ build_sbt_tapasco_ubuntu_19_04:
   script:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
     - source setup.sh
-    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j $MODE; popd; done
+    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j 1 $MODE; popd; done
   artifacts:
     paths:
       - tlkm/tlkm.ko
@@ -204,7 +204,7 @@ build_kernel_ubuntu_19_04_debug:
   script:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
     - source setup.sh
-    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j  $MODE; popd; done
+    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j 1 $MODE; popd; done
   artifacts:
     paths:
       - tlkm/tlkm.ko
@@ -455,8 +455,10 @@ tapasco_hls:
     VIVADO_VERSION: "2018.2"
     XILINX_VIVADO: "/opt/cad/xilinx/vivado/Vivado/${VIVADO_VERSION}"
     XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
+    PLATFORM: "pynq"
   tags:
     - CAD
+    - High
   image: fedora:28
   before_script:
     - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++ python
@@ -473,7 +475,7 @@ tapasco_hls:
     - source setup.sh
     - sbt assembly
     - tapasco hls counter -p pynq --skipEvaluation
-    - tapasco -v compose [counter x 3] @ 100 MHz -p pynq
+    - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p $PLATFORM
 
 tapasco_compose_17_4:
   variables:
@@ -493,4 +495,10 @@ tapasco_compose_18_2:
 tapasco_compose_18_3:
   variables:
     VIVADO_VERSION: "2018.3"
+  extends: .tapasco_compose
+
+tapasco_compose_pcie:
+  variables:
+    VIVADO_VERSION: "2018.3"
+    PLATFORM: "vc709"
   extends: .tapasco_compose
