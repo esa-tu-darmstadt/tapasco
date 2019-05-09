@@ -33,7 +33,7 @@ To use TaPaSCo, you'll need working installations of
     apt-get -y update && apt-get -y install unzip git zip findutils curl build-essential \
         linux-headers-generic python cmake libelf-dev libncurses-dev rpm
     curl -s "https://get.sdkman.io" | bash
-    source "/root/.sdkman/bin/sdkman-init.sh"
+    source "$HOME/.sdkman/bin/sdkman-init.sh"
     sdk install java
     sdk install sbt
     ```
