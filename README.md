@@ -30,7 +30,7 @@ To use TaPaSCo, you'll need working installations of
 *   *OPTIONAL:* libncurses for the tapasco-debug application
 *   Ubuntu
     ```bash
-    apt-get -y update && apt-get -y install unzip git zip findutils curl build-essential \
+    sudo apt-get -y update && sudo apt-get -y install unzip git zip findutils curl build-essential \
         linux-headers-generic python cmake libelf-dev libncurses-dev rpm
     curl -s "https://get.sdkman.io" | bash
     source "$HOME/.sdkman/bin/sdkman-init.sh"
@@ -39,7 +39,7 @@ To use TaPaSCo, you'll need working installations of
     ```
 *   Fedora
     ```bash
-    dnf -y install which unzip git zip tar findutils kernel-devel make gcc gcc-c++ \
+    sudo dnf -y install which unzip git zip tar findutils kernel-devel make gcc gcc-c++ \
         elfutils-libelf-devel cmake ncurses-devel python libatomic rpm-build
     curl -s "https://get.sdkman.io" | bash
     source "$HOME/.sdkman/bin/sdkman-init.sh"
