@@ -22,10 +22,12 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.base.json._
-import  org.scalatest._
-import  java.nio.file._
+import de.tu_darmstadt.cs.esa.tapasco.base._
+import de.tu_darmstadt.cs.esa.tapasco.base.json._
+import org.scalatest._
+import java.nio.file._
+
+import de.tu_darmstadt.cs.esa.tapasco.util.Listener
 
 class FileAssetManagerSpec extends FlatSpec with Matchers {
   private final val TAPASCO_HOME = Paths.get(sys.env("TAPASCO_HOME")).toAbsolutePath.normalize
@@ -69,12 +71,19 @@ class FileAssetManagerSpec extends FlatSpec with Matchers {
     Files.createFile(zip)
     val t = Target(FileAssetManager.entities.architectures.toSeq.head, FileAssetManager.entities.platforms.toSeq.head)
     val core = Core(cf, zip, "Test", 42, "0.0.1", t, None, None)
+    var updated : Boolean = false
+    val listener = new Listener[FileAssetManager.Event] {
+      override def update(e: FileAssetManager.Event): Unit = updated.synchronized{updated=true}
+    }
+    FileAssetManager.addListener(listener)
     Core.to(core, cf)
-
+    while(!updated){
+      Thread.sleep(FS_SLEEP)
+    }
     assert(FileAssetManager.entities.cores.size == 1)
     val c = FileAssetManager.entities.cores.toSeq.head
     assert(c equals core)
-
+    FileAssetManager.remListener(listener)
     cf.toFile().deleteOnExit()
     zip.toFile().deleteOnExit()
     p.toFile().deleteOnExit()

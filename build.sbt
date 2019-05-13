@@ -1,4 +1,4 @@
-val tapascoVersion = "2018.1-SNAPSHOT"
+val tapascoVersion = "2018.2"
 
 organization := "de.tu_darmstadt.esa.cs"
 
