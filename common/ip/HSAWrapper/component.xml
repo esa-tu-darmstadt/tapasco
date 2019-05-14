@@ -2438,7 +2438,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>863601e3</spirit:value>
+            <spirit:value>207a20f2</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -2454,7 +2454,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>76cfa35e</spirit:value>
+            <spirit:value>57f5497d</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -6342,7 +6342,7 @@
       <spirit:file>
         <spirit:name>src/mkHSAWrapper.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_4fea0299</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_32de0d63</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -6434,7 +6434,7 @@
       <xilinx:displayName>HSAWrapper</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2019-05-13T16:26:48Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2019-05-14T15:02:15Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
@@ -6444,7 +6444,7 @@
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="ac831ebc"/>
       <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="c07327f0"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="d5c76c08"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="94dee2ba"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="f2bd6f19"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="7bae5b7e"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="e36e4719"/>
     </xilinx:packagingInfo>
