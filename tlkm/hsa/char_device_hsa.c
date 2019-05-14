@@ -284,6 +284,9 @@ static int hsa_close(struct inode *inode, struct file *filp)
 
 irqreturn_t intr_handler_hsa_signals(int irq, void * dev_id)
 {
+	struct tlkm_device *tlkm_dev = (struct tlkm_device *)dev_id;
+	struct platform *p = &tlkm_dev->cls->platform;
+	volatile uint32_t* msix_ack = (volatile uint32_t*) (tlkm_dev->mmap.plat + ((0x500000 + 0x8120) - p->plat.base));
 	struct hsa_mmap_space *dma_mem = (struct hsa_mmap_space*)dev.dma_shared_mem;
 	uint64_t signal = dev.signal_base[HSA_SIGNAL_ADDR];
 	uint64_t *signal_kvirt = (uint64_t*)dev.kvirt_shared_mem->signals;
@@ -291,6 +294,7 @@ irqreturn_t intr_handler_hsa_signals(int irq, void * dev_id)
 	signal /= sizeof(uint64_t);
 	--signal_kvirt[signal];
 	dev.signal_base[HSA_SIGNAL_ACK] = 1;
+	msix_ack[0] = 2;
 	return IRQ_HANDLED;
 }
 
@@ -476,7 +480,7 @@ int char_hsa_register(struct tlkm_device *tlkm_dev)
 		goto error_device_create;
 	}
 
-	pcie_irqs_request_platform_irq(tlkm_dev, 2, intr_handler_hsa_signals, 0);
+	pcie_irqs_request_platform_irq(tlkm_dev, 2, intr_handler_hsa_signals, (void*)tlkm_dev);
 
 	return 0;
 
