@@ -23,4 +23,8 @@
 <AchievedClockPeriod>@@MIN_PERIOD@@</AchievedClockPeriod>
 </TimingReport>
 
+<PortReport>
+<NumSlaves>@@SLAVES@@</NumSlaves>
+</PortReport>
+
 </profile>

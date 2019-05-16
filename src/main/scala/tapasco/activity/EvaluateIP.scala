@@ -122,7 +122,8 @@ object EvaluateIP {
         logger.trace("%s: Vivado finished successfully".format(runPrefix))
         val ur  = UtilizationReport(files.rpt_util).get
         val dpd = TimingReport(files.rpt_timing).get.dataPathDelay
-        writeXMLReport(reportFile, ur, dpd, targetPeriod)
+        val numSlaves = PortReport(files.rpt_port).get.numSlaves
+        writeXMLReport(reportFile, ur, dpd, targetPeriod, numSlaves)
         logger.info("{} finished successfully, report in {}", runPrefix: Any, reportFile)
         // clean up files on exit
         deleteOnExit(files.baseDir.toFile)
@@ -179,7 +180,7 @@ object EvaluateIP {
    * @param targetPeriod Target operating period.
    **/
   private def writeXMLReport(reportFile: Path, ur: UtilizationReport, dataPathDelay: Double,
-      targetPeriod: Double): Unit = {
+      targetPeriod: Double, slaves : Int): Unit = {
     val needles = scala.collection.mutable.Map[String, String](
       "SLICE"      -> ur.used.SLICE.toString,
       "SLICES"     -> ur.available.SLICE.toString,
@@ -192,7 +193,8 @@ object EvaluateIP {
       "DSP"        -> ur.used.DSP.toString,
       "DSPS"       -> ur.available.DSP.toString,
       "PERIOD"     -> targetPeriod.toString,
-      "MIN_PERIOD" -> dataPathDelay.toString
+      "MIN_PERIOD" -> dataPathDelay.toString,
+      "SLAVES"     -> slaves.toString
     )
 
     // write final report

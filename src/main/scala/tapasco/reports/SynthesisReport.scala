@@ -30,9 +30,10 @@ import  java.nio.file.Path
 final case class SynthesisReport(
     override val file: Path,
     area: Option[AreaEstimate],
-    timing: Option[TimingEstimate]) extends Report(file) {
+    timing: Option[TimingEstimate],
+    ports : Option[Int]) extends Report(file) {
   require(file.toFile.exists, "file %s does not exist".format(file.toString))
-  require(area.nonEmpty || timing.nonEmpty, "no synthesis results found in %s".format(file.toString))
+  require(area.nonEmpty || timing.nonEmpty || ports.nonEmpty, "no synthesis results found in %s".format(file.toString))
 }
 
 object SynthesisReport {
@@ -64,9 +65,14 @@ object SynthesisReport {
         ((xml \\ "TimingReport" \\ "TargetClockPeriod") text).toDouble))
     } catch { case e: Exception => logger.warn("parsing timing report failed: " + e); None }
 
+  def extractSlavePorts(sr : Path) : Option[Int] = try {
+    val xml = scala.xml.XML.loadFile(sr.toAbsolutePath.toString)
+    Some(((xml \\ "PortReport" \\ "NumSlaves") text).toInt)
+  } catch { case e : Exception => logger.warn("parsing port report failed: %s".format(e)); None}
+
   /** Produce SynthesisReport instance from file. **/
   def apply(sr: Path): Option[SynthesisReport] = catchAllDefault(None: Option[SynthesisReport],
       "failed to read synthesis report %s: ".format(sr.toString)) {
-    Some(SynthesisReport(sr, extractArea(sr), extractTiming(sr)))
+    Some(SynthesisReport(sr, extractArea(sr), extractTiming(sr), extractSlavePorts(sr)))
   }
 }
