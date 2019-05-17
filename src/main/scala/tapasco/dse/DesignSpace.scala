@@ -37,11 +37,13 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.dse
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  de.tu_darmstadt.cs.esa.tapasco.util.LogFormatter._
-import  java.nio.file.{Paths}
-import  Heuristics._
+import de.tu_darmstadt.cs.esa.tapasco.base._
+import de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
+import de.tu_darmstadt.cs.esa.tapasco.util.LogFormatter._
+import java.nio.file.Paths
+
+import Heuristics._
+import de.tu_darmstadt.cs.esa.tapasco.util.SlotOccupation
 
 class DesignSpace(
     bd: Composition,
@@ -80,34 +82,40 @@ class DesignSpace(
     val cores         = bd.composition flatMap (ce => FileAssetManager.entities.core(ce.kernel, target))
     val srs           = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
     val areaEstimates = srs flatMap (_.area)
+    val slotOccupations = srs map (r => SlotOccupation(r.slaves.get, target.pd.slotCount))
     val targetUtil    = target.pd.targetUtilization.toDouble
     logger.trace("target util = " + targetUtil)
 
+    def slotUtil(counts : Seq[Int]) : SlotOccupation = (slotOccupations zip counts).map(o => o._1 * o._2).reduce(_ + _)
     // check if there is any feasible composition
-    if (minCounts.reduce(_ + _) > target.pd.slotCount) {
+    if (!slotUtil(minCounts).isFeasible) {
       throw new Exception("Composition infeasible! Exceeds maximal slot count of " + target.pd.slotCount
           + " for " + target + "." + NL + bd)
     }
 
-    def areaUtil(counts: Seq[Int]) = (areaEstimates zip counts) map (a => a._1 * a._2) reduce (_ + _)
-    val currUtil = areaUtil(minCounts).utilization
+    def areaUtil(counts: Seq[Int]) = (areaEstimates zip counts) map (a => a._1 * a._2) reduce(_ + _)
     // compute number of steps
+    val currUtil = areaUtil(minCounts).utilization
     val df: Int = Seq(java.lang.Math.round((targetUtil - currUtil) / currUtil).toInt, 1).max
+    val currSlots = slotUtil(minCounts).slots
+    val targetSlots = target.pd.slotCount
+    val sf : Int = Math.max(Math.round(targetSlots.toDouble/currSlots.toDouble), 1).toInt
+    val steps = Math.min(sf, df)
 
     logger.trace("minCounts = " + minCounts + " currUtil = " + currUtil)
 
     // compute feasible sequences as multiples of minCounts
-    val seqs = (for (i <- df to 1 by -1)
-      yield minCounts map (n => i * n)) filter (c => areaUtil(c).isFeasible)
+    val seqs = (for (i <- steps to 1 by -1)
+      yield minCounts map (n => i * n)) filter (c => areaUtil(c).isFeasible && slotUtil(c).isFeasible)
 
     logger.trace("number of feasible counts: " + seqs.length)
-    if (seqs.length == 0) {
+    if (seqs.isEmpty) {
       logger.warn("No feasible composition found; please check starting composition ratios: " + NL + bd)
     }
 
     // make sequence of CompositionEntries
     val ces = for {
-        s <- seqs filter (_.reduce(_ + _) <= target.pd.slotCount)
+        s <- seqs filter (_.sum <= target.pd.slotCount)
       } yield bd.composition.map(_.kernel) zip s map (x => Composition.Entry(x._1, x._2))
 
     // make full composition
@@ -123,7 +131,7 @@ class DesignSpace(
     feasibleAlternatives(bd) map (feasibleCompositions(_)) reduce (_++_)
 
   lazy val enumerate: Seq[DesignSpace.Element] = (for {
-      bd <- compositions(bd);
+      bd <- compositions(bd)
       f  <- feasibleFreqs(bd)
     } yield DesignSpace.Element(bd, f, heuristic(bd, f, target)(cfg))) sortBy (_.h) reverse
 
@@ -162,7 +170,7 @@ object DesignSpace {
     val cores = bd.composition flatMap (ce => FileAssetManager.entities.core(ce.kernel, target))
     val srs   = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
     val cps   = srs flatMap (_.timing) map (_.clockPeriod)
-    val fmax  = if (cps.length > 0) 1000.0 / cps.max else Double.PositiveInfinity
+    val fmax  = if (cps.nonEmpty) 1000.0 / cps.max else Double.PositiveInfinity
     target.pd.supportedFrequencies map (_.toDouble) filter (_ <= fmax) sortWith (_>_)
   }
 
@@ -172,39 +180,45 @@ object DesignSpace {
     val cores         = bd.composition flatMap (ce => FileAssetManager.entities.core(ce.kernel, target))
     val srs           = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
     val areaEstimates = srs flatMap (_.area)
+    val slotOccupations = srs map (r => SlotOccupation(r.slaves.get, target.pd.slotCount))
     val targetUtil    = target.pd.targetUtilization.toDouble
     logger.trace("target util = " + targetUtil)
 
+    def slotUtil(counts : Seq[Int]) : SlotOccupation = (slotOccupations zip counts).map(o => o._1 * o._2).reduce(_ + _)
     // check if there is any feasible composition
-    if ((minCounts fold 0) (_ + _) > target.pd.slotCount) {
+    if (!slotUtil(minCounts).isFeasible) {
       throw new Exception("Composition infeasible! Exceeds maximal slot count of " + target.pd.slotCount
-          + " for " + target + "." + NL + bd)
+        + " for " + target + "." + NL + bd)
     }
 
-    def areaUtil(counts: Seq[Int]) = (areaEstimates zip counts) map (a => a._1 * a._2) reduce (_ + _)
-    val currUtil = areaUtil(minCounts).utilization
+    def areaUtil(counts: Seq[Int]) = (areaEstimates zip counts) map (a => a._1 * a._2) reduce(_ + _)
     // compute number of steps
+    val currUtil = areaUtil(minCounts).utilization
     val df: Int = Seq(java.lang.Math.round((targetUtil - currUtil) / currUtil).toInt, 1).max
+    val currSlots = slotUtil(minCounts).slots
+    val targetSlots = target.pd.slotCount
+    val sf : Int = Math.max(Math.round(targetSlots.toDouble/currSlots.toDouble), 1).toInt
+    val steps = Math.min(sf, df)
 
     logger.trace("minCounts = " + minCounts + " currUtil = " + currUtil)
 
     // compute feasible sequences as multiples of minCounts
-    val seqs = (for (i <- df to 1 by -1)
-      yield minCounts map (n => i * n)) filter (c => areaUtil(c).isFeasible)
+    val seqs = (for (i <- steps to 1 by -1)
+      yield minCounts map (n => i * n)) filter (c => areaUtil(c).isFeasible && slotUtil(c).isFeasible)
 
     logger.trace("number of feasible counts: " + seqs.length)
-    if (seqs.length == 0) {
+    if (seqs.isEmpty) {
       logger.warn("No feasible composition found; please check starting composition ratios: " + NL + bd)
     }
 
     // make sequence of CompositionEntries
     val ces = for {
-        s <- seqs filter (_.reduce(_ + _) <= target.pd.slotCount)
-      } yield bd.composition.map(_.kernel) zip s map (x => Composition.Entry(x._1, x._2))
+      s <- seqs filter (_.sum <= target.pd.slotCount)
+    } yield bd.composition.map(_.kernel) zip s map (x => Composition.Entry(x._1, x._2))
 
     // make full composition
     ces map (Composition(Paths.get("N/A"), Some("Generated composition."), _))
   } else {
-    Seq()
+    Seq.empty
   }
 }
