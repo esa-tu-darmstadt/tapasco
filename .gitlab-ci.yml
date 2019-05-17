@@ -13,6 +13,7 @@ stages:
 
 .test_tapasco:
   stage: software_tests
+  retry: 2
   variables:
     JAVA_VERSION: "8.0.212-zulu"
     SBT_VERSION: "1.2.8"
@@ -70,6 +71,7 @@ test_tapasco_sbt_1_2_8:
 
 .build_sbt_tapasco:
   stage: build_sbt
+  retry: 2
   tags:
     - High
   script:
@@ -143,6 +145,7 @@ build_sbt_tapasco_ubuntu_19_04:
 # as we are running in a docker instance, we cannot use tapasco-build-libs
 .build_kernel_ubuntu:
   stage: build_kernel
+  retry: 2
   variables:
     MODE: "release"
   tags:
@@ -197,6 +200,7 @@ build_kernel_ubuntu_19_04_debug:
 
 .build_kernel_fedora:
   stage: build_kernel
+  retry: 2
   variables:
     MODE: "release"
   tags:
@@ -291,6 +295,7 @@ build_kernel_fedora_31_debug:
 
 .build_tapasco:
   stage: build_runtime
+  retry: 2
   variables:
     MODE: "release"
   tags:
@@ -451,6 +456,7 @@ tapasco_hls:
 
 .tapasco_compose:
   stage: build_hw
+  retry: 2
   variables:
     VIVADO_VERSION: "2018.2"
     XILINX_VIVADO: "/opt/cad/xilinx/vivado/Vivado/${VIVADO_VERSION}"
