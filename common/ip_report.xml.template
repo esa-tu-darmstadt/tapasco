@@ -24,6 +24,7 @@
 </TimingReport>
 
 <PortReport>
+<NumMasters>@@MASTERS@@</NumMasters>
 <NumSlaves>@@SLAVES@@</NumSlaves>
 </PortReport>
 
