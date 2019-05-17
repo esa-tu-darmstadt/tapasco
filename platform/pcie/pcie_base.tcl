@@ -109,7 +109,7 @@
     puts "Connecting [llength $irqs] interrupts .."
     # create hierarchical ports
     set s_axi [create_bd_intf_pin -mode Slave -vlnv [tapasco::ip::get_vlnv "aximm_intf"] "S_INTC"]
-    set msix_interface [create_bd_intf_pin -mode Master -vlnv [tapasco::ip::get_vlnv "aximm_intf"] "M_MSIX"]
+    set msix_interface [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:pcie3_cfg_msix_rtl:1.0 "M_MSIX"]
     set aclk [tapasco::subsystem::get_port "host" "clk"]
     set p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
     set design_aclk [tapasco::subsystem::get_port "design" "clk"]
@@ -126,7 +126,7 @@
     set msix_intr_ctrl [tapasco::ip::create_msix_intr_ctrl "msix_intr_ctrl"]
     connect_bd_net [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "dout"}] [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "interrupt_pcie"}]
 
-    connect_bd_intf_net $msix_interface [get_bd_intf_pins msix_intr_ctrl/M_AXI]
+    connect_bd_intf_net $msix_interface [get_bd_intf_pins msix_intr_ctrl/msix]
 
     connect_bd_net $dma_irq_read [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
     connect_bd_net $dma_irq_write [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
@@ -293,10 +293,17 @@
     set m_dma [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DMA"]
     set pcie_aclk [create_bd_pin -type "clk" -dir "O" "pcie_aclk"]
     set pcie_aresetn [create_bd_pin -type "rst" -dir "O" "pcie_aresetn"]
-    set msix_interface [create_bd_intf_pin -mode Slave -vlnv [tapasco::ip::get_vlnv "aximm_intf"] "S_MSIX"]
+    set msix_interface [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:pcie3_cfg_msix_rtl:1.0 "S_MSIX"]
 
     # create instances of cores: PCIe core, mm_to_lite
     set pcie [create_pcie_core]
+
+    set trans [get_bd_cells -filter {NAME == "MSIxTranslator"}]
+    if { $trans != "" } {
+        connect_bd_intf_net $msix_interface [get_bd_intf_pins $trans/fromMSIxController]
+    } else {
+        connect_bd_intf_net $msix_interface [get_bd_intf_pins $pcie/pcie_cfg_msix]
+    }
 
     set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
     tapasco::ip::connect_sc_default_clocks $out_ic "design"
@@ -326,7 +333,6 @@
     tapasco::ip::connect_sc_default_clocks $in_ic "host"
 
     connect_bd_intf_net [get_bd_intf_pins S_HOST] [get_bd_intf_pins $in_ic/S00_AXI]
-    connect_bd_intf_net $msix_interface [get_bd_intf_pins $in_ic/S01_AXI]
     connect_bd_intf_net [get_bd_intf_pins -of_object $in_ic -filter { MODE == Master }] \
       [get_bd_intf_pins -regexp $pcie/S_AXI(_B)?]
 
