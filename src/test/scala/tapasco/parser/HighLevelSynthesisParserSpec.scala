@@ -41,7 +41,10 @@ private object HighLevelSynthesisParserSpec {
     Gen.oneOf(anyCase("VivadoHLS"), quoted(anyCase("VivadoHLS")))
   ))
 
-  val kernelGen: Gen[String] = qstringGen
+  val kernelGen: Gen[String] = for {
+    g <- qstringGen
+  } yield g.replaceAll("all", "asdf")
+
   val allGen: Gen[String]    = anyCase("all")
 
   val optionGen: Gen[String] = Gen.oneOf(
