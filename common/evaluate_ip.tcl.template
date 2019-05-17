@@ -199,5 +199,17 @@ if {$wns < 0} {
 # report power
 report_power -quiet -file @@REPORT_POWER@@
 
+# extract AXI interfaces
+# requires a block design
+set bd [create_bd_design bd]
+set pe [create_bd_cell pe -vlnv @@VLNV@@]
+set interfaces_file [open @@REPORT_PORT@@ "w"]
+puts @@REPORT_PORT@@
+set axi_master_ports [tapasco::get_aximm_interfaces $pe "Master"]
+set axi_slave_ports [tapasco::get_aximm_interfaces $pe "Slave"]
+puts $interfaces_file "AXI_MASTER_PORTS\t[llength $axi_master_ports]"
+puts $interfaces_file "AXI_SLAVE_PORTS\t[llength $axi_slave_ports]"
+close $interfaces_file
+
 # done!
 exit
