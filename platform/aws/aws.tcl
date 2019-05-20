@@ -728,8 +728,10 @@ namespace eval platform {
 
       # Add checkpoint and manifest to tar file from which the AFI can be generated
       # (tar file must contains "to_aws" folder, so change directory accordingly)
+      set old_pwd [pwd]
       cd [file normalize [file join $to_aws_dir ..]]
       tar::create $tarfilepath [glob to_aws/${::timestamp}*]
+      cd $old_pwd
 
       puts "\n\nFinished creating tarfile:"
       puts "$tarfilepath\n\n"
