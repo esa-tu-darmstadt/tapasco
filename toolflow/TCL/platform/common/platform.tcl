@@ -223,8 +223,8 @@ namespace eval platform {
     }
 
     # Workaround for Vivado unpredictably crashing on `generate_target`.
-    # close_bd_design -quiet [current_bd_design]
-    # open_bd_design -quiet [get_files "[get_bd_name].bd"]
+    close_bd_design -quiet [current_bd_design]
+    open_bd_design -quiet [get_files "[get_bd_name].bd"]
 
     generate_target all [get_files "[get_bd_name].bd"]
     set synth_run [get_runs synth_1]
