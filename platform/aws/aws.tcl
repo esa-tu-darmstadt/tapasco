@@ -140,6 +140,8 @@ namespace eval platform {
     set p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
     set design_aclk [tapasco::subsystem::get_port "design" "clk"]
     set design_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
+    set ic_aresetn [::tapasco::subsystem::get_port "host" "rst" "interconnect"]
+
     set dma_irq_read [create_bd_pin -type "intr" -dir I "dma_irq_read"]
     set dma_irq_write [create_bd_pin -type "intr" -dir I "dma_irq_write"]
 
@@ -178,8 +180,16 @@ namespace eval platform {
     # }
 
     # Smartconnect for INTC
-    set intc_ic [tapasco::ip::create_axi_sc "intc_ic" 1 [llength $irqs]]
-    connect_bd_net [get_bd_pins -of_objects $intc_ic -filter {NAME == "aclk"}] $aclk
+    set intc_ic [tapasco::ip::create_axi_ic "intc_ic" 1 [llength $irqs]]
+    # clocks
+    connect_bd_net -net intc_clock_net $aclk [get_bd_pins -of_objects [get_bd_cells] -filter {TYPE == "clk" && DIR == "I"}]
+    # resets
+    set ic_resets [get_bd_pins -of_objects [get_bd_cells -filter {VLNV =~ "*:axi_interconnect:*"}] -filter {NAME == "ARESETN"}]
+    connect_bd_net -net intc_ic_reset_net $ic_aresetn $ic_resets
+    # peripheral resets
+    set p_resets [get_bd_pins -of_objects [get_bd_cells] -filter {TYPE == rst && DIR == I && NAME != "ARESETN"}]
+    connect_bd_net -net intc_p_reset_net $p_aresetn $p_resets
+
     connect_bd_intf_net [get_bd_intf_pins -of_objects $intc_ic -filter {NAME == "S00_AXI"}] $s_axi
 
     # Concat design interrupts
