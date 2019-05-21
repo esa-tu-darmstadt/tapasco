@@ -41,8 +41,9 @@ class ComposeTask(composition: Composition,
                   features: Option[Seq[Feature]] = None,
                   logFile: Option[String] = None,
                   debugMode: Option[String] = None,
-                  val onComplete: Boolean => Unit,
-                  val deleteOnFail: Option[Boolean] = None)
+                  val deleteOnFail: Option[Boolean] = None,
+                  private val effortLevel : String = "normal",
+                  val onComplete: Boolean => Unit)
                  (implicit cfg: Configuration) extends Task with LogTracking {
   private[this] implicit val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   private[this] val _slurm = Slurm.enabled
@@ -64,7 +65,7 @@ class ComposeTask(composition: Composition,
     _logger.debug("launching compose run for {}@{} [current thread: {}], logfile {}",
       target.ad.name: Object, target.pd.name: Object, Thread.currentThread.getName(): Object, _logFile: Object)
     if (debugMode.isEmpty) {
-      _composerResult = Some(try   { composer.compose(composition, target, designFrequency, features getOrElse Seq()) }
+      _composerResult = Some(try   { composer.compose(composition, target, designFrequency, effortLevel, features getOrElse Seq()) }
                              catch { case e: Exception =>
                                        _logger.error(e.toString)
                                        _logger.debug("stacktrace: {}", e.getStackTrace() mkString NL)

@@ -53,7 +53,7 @@ private object ComposeParser {
       case ("Features", fs: Seq[Feature @unchecked]) => _.copy(features = Some(fs))
       case ("DebugMode", m: String) => _.copy(debugMode = Some(m))
       case ("DeleteProjects", e: Boolean) => _.copy(deleteProjects = Some(e))
-      case ("SynthEffort", effort : String) => if(effortModes.contains(effort)){
+      case ("SynthEffort", effort : String) => if(effortModes.contains(effort.toLowerCase)){
         _.copy(synthEffort = Some(effort))
       }
       else{
