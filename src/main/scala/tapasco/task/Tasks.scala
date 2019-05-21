@@ -125,6 +125,7 @@ class Tasks(maxParallel: Option[Int] = None) extends Publisher {
   def stop(): Unit = {
     _stop = true
     if (processingThread.isAlive()) processingThread.interrupt()
+    _exectx.shutdown();
   }
   private[this] var _stop = false
 
