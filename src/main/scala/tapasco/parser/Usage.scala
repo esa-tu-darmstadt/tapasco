@@ -169,7 +169,14 @@ configuration via `tapasco -n config.json`.
            Indent(Arg("  r", "generate random result values") &
                   Arg("  f", "generate only timing failures") &
                   Arg("  p", "generate only placer errors") &
-                  Arg("  o", "generate only other errors"))) &
+                  Arg("  o", "generate only other errors")) &
+           Arg("--synthEffort EFFORT", "set effort level for synthesis and PnR; levels:") &
+           Indent(Arg("fastest", "lowest effort, minimal runtime") &
+                  Arg("fast", "slightly slower, but still short runtime") &
+                  Arg("normal", "default options") &
+                  Arg("optimal", "slower, get best QoR possible") &
+                  Arg("aggressive_performance", "maximal optimization for performance") &
+                  Arg("aggressive_area", "maximal optimization for area"))) &
     "" &
     "NOTE: Currently the  total number of PEs must be <= ${PLATFORM_NUM_SLOTS}.")
 
