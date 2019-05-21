@@ -46,7 +46,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
   def maxMemoryUsagePerProcess: Int = VIVADO_PROCESS_PEAK_MEM
 
   /** @inheritdoc */
-  def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, features: Seq[Feature] = Seq())
+  def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, synthEffort : String, features: Seq[Feature] = Seq())
              (implicit cfg: Configuration): Composer.Result = {
     logger.debug("VivadoComposer uses at most {} threads", cfg.maxThreads getOrElse "unlimited")
     // create output struct
@@ -63,7 +63,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
                 projectName  = Composer.mkProjectName(bd, target, f),
                 header       = makeHeader(bd, target, f, features),
                 target       = target,
-                composition  = composition(bd, target))
+                composition  = composition(bd, target),
+                effort = synthEffort)
 
     logger.info("Vivado starting run {}: show progress with `vivado_progress {}`", files.runName: Any, files.logFile)
     files.logFile.toFile.delete
@@ -141,7 +142,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
 
   /** Writes the .tcl script for Vivado. */
   private def mkTclScript(fromTemplate: Path, to: Path, projectName: String, header: String, target: Target,
-      composition: String): Unit = {
+      composition: String, effort : String): Unit = {
     // needles for template
     val needles: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map(
       "PROJECT_NAME"          -> "microarch",
@@ -155,6 +156,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       "PLATFORM_TCL"          -> target.pd.tclLibrary.toString,
       "ARCHITECTURE_TCL"      -> target.ad.tclLibrary.toString,
       "COMPOSITION"           -> composition,
+      "EFFORT_LEVEL"          -> effort.toUpperCase
     )
 
     // write Tcl script

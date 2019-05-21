@@ -70,6 +70,9 @@ set_msg_config -suppress -severity INFO
 # ignore AXI Interrupt controller warning about manual edge trigger setting
 set_msg_config -suppress -id {[xilinx.com:ip:axi_intc:4.1-7]}
 
+# Synthesis and P&R effort level
+puts @@EFFORT_LEVEL@@
+
 # loadout-specific configuration
 @@COMPOSITION@@
 

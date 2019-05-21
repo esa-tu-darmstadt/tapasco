@@ -43,7 +43,7 @@ trait Composer {
    *  @param cfg implicit Configuration instance
    *  @return Composer.Result with error code / additional data
    **/
-  def compose(bd: Composition, target: Target, f: Double = 0, features: Seq[Feature] = Seq())
+  def compose(bd: Composition, target: Target, f: Double = 0, synthEffort : String, features: Seq[Feature] = Seq())
              (implicit cfg: Configuration): Result
 
   /** Removes all intermediate files for the run, leaving results.
