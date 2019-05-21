@@ -73,6 +73,10 @@ private object CommonArgParsers {
     (longOption("deleteProjects", "DeleteProjects") ~ ws ~/
       ( boolstr ~ ws).?) map {case s => (s._1, s._2.getOrElse(true))}
 
+  def synthEffort : Parser[(String, String)] =
+    longOption("synthEffort", "SynthEffort") ~ ws ~/
+    string.opaque("Synthesis effort") ~ ws
+
   def implementation: Parser[(String, String)] =
     longOption("implementation", "Implementation") ~
     ws ~/
