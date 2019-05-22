@@ -24,21 +24,40 @@ import MultiFileWatcher._
 import Events._
 import ProgressTrackingFileWatcher._
 
+import scala.concurrent.duration.Duration
 
+/**
+  * A [[MultiFileWatcher]] which tracks the overall logfile.
+  * Using a FSM, the current state of the Compose Progression is Determined and Logged
+  * to give the user an overview how far the compose-Task has progressed.
+  * @param _logger Optional logger instance to use.
+  * @param pollInterval Polling interval in ms (default: [[MultiFileWatcher.POLL_INTERVAL]]).
+  */
 class ProgressTrackingFileWatcher(_logger: Option[Logger] = None, pollInterval: Int = POLL_INTERVAL)
   extends MultiFileWatcher(POLL_INTERVAL) {
   private[this] final val logger = _logger getOrElse de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
 
   var currentState: Int = -1
+  val start: Long = System.currentTimeMillis()
+  var stageStart: Long = System.currentTimeMillis()
+  var lastLog: Long = 0
 
   private lazy val listener = new Listener[Event] {
     def update(e: MultiFileWatcher.Event): Unit = e match {
-      case LinesAdded(src, ls) => ls foreach {l =>
-        checkState(l)
+      case LinesAdded(src, ls) => {
+        ls foreach {l =>
+          checkState(l)
+        }
       }
     }
   }
 
+  /**
+    * Checks whether a transition has occured depending on the current line of the log.
+    * If so, the corresponding new state is logged.
+    * Additionally, the finished State is also logged with its runtime.
+    * @param string parsed String
+    */
   private def checkState(string: String): Unit = {
     val old = currentState
     if(currentState == -1) {
@@ -51,8 +70,29 @@ class ProgressTrackingFileWatcher(_logger: Option[Logger] = None, pollInterval: 
       }
     }
     if(old != currentState) {
-      logger.info(progressionStringsInfo(currentState)._2)
+      if(old != -1) {
+        val oldProgressionString = progressionStringsInfo(old)._2
+        logger.info("Finished %s after %s (Total Elapsed: %s)".format(oldProgressionString, timeString(stageStart), timeString(start)))
+      }
+      val progressionString = progressionStringsInfo(currentState)._2
+      logger.info("Started %s (Total Elapsed: %s)".format(progressionString, timeString(start)))
+      stageStart = System.currentTimeMillis()
+
+
+
     }
+  }
+
+  /**
+    * Calculates the time since a certain TimeStamp and transforms it into a hh:mm:ss-Formatted String.
+    * @param since timestamp
+    * @return TimeString
+    */
+  private def timeString(since: Long): String = {
+    val now = System.currentTimeMillis()
+    val dur = Duration(now-since, "millis")
+    val s = dur.toSeconds.toInt
+    f"${s / 3600}%d:${(s % 3600) / 60}%02d:${s%60}%02d"
   }
 
   addListener(listener)
@@ -60,8 +100,8 @@ class ProgressTrackingFileWatcher(_logger: Option[Logger] = None, pollInterval: 
 
 private object ProgressTrackingFileWatcher {
   val progressionStringsInfo = Seq(
-    ("create_comp", "Composing"),
-    ("synth_design", "Synthesising"),
+    ("create_comp", "System Composition"),
+    ("synth_design", "Synthesis"),
     ("place_design", "Placing"),
     ("route_design", "Routing"),
     ("write_bitstream", "Writing Bitstream")
