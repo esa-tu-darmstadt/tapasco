@@ -78,6 +78,10 @@ class ProgressTrackingFileWatcher(_logger: Option[Logger] = None, pollInterval: 
       logger.info("Started %s (Total Elapsed: %s)".format(progressionString, timeString(start)))
       stageStart = System.currentTimeMillis()
 
+      //This ensures that this watcher will close all opened files if he reaches the final state.
+      if(currentState == progressionStringsInfo.length) {
+        closeAll()
+      }
 
 
     }
