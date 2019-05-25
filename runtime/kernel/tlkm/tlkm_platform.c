@@ -18,7 +18,9 @@ static int aws_ec2_configure_axi_intc(struct tlkm_device *dev, struct platform_m
 	void* __iomem intc_base;
 
 	for (i = 0; i < 4; i++) {
-		intc_base = mmap->plat + 0x500000 + i * 0x10000 - p->plat.base;
+		DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "Testing for interrupt controller %d", i);
+
+		intc_base = mmap->plat + 0x6000 + i * 0x2000 - p->plat.base;
 
 		val = ioread32(intc_base + 0x08);
 		if (val) {

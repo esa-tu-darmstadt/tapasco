@@ -26,8 +26,8 @@ public:
       intr.pba.push_back(0);
     }
     uint64_t accumulated_delay = 199;
-    platform_write_ctl(tapasco->platform_device(), 0x300000 + 80, sizeof(accumulated_delay), &accumulated_delay, PLATFORM_CTL_FLAGS_RAW);
-    platform_write_ctl(tapasco->platform_device(), 0x300000 + 104, sizeof(accumulated_delay), &accumulated_delay, PLATFORM_CTL_FLAGS_RAW);
+    platform_write_ctl(tapasco->platform_device(), 0x4000 + 80, sizeof(accumulated_delay), &accumulated_delay, PLATFORM_CTL_FLAGS_RAW);
+    platform_write_ctl(tapasco->platform_device(), 0x4000 + 104, sizeof(accumulated_delay), &accumulated_delay, PLATFORM_CTL_FLAGS_RAW);
   }
   virtual ~BlueDebugScreen() {}
 
@@ -51,20 +51,20 @@ protected:
 
   virtual void update() {
     // Update BlueDMA data
-    platform_read_ctl(tapasco.platform_device(), 0x300000 + 0, sizeof(dma.host_addr), &dma.host_addr, PLATFORM_CTL_FLAGS_RAW);
-    platform_read_ctl(tapasco.platform_device(), 0x300000 + 8, sizeof(dma.fpga_addr), &dma.fpga_addr, PLATFORM_CTL_FLAGS_RAW);
-    platform_read_ctl(tapasco.platform_device(), 0x300000 + 16, sizeof(dma.transfer_length), &dma.transfer_length, PLATFORM_CTL_FLAGS_RAW);
-    platform_read_ctl(tapasco.platform_device(), 0x300000 + 24, sizeof(dma.id), &dma.id, PLATFORM_CTL_FLAGS_RAW);
-    platform_read_ctl(tapasco.platform_device(), 0x300000 + 32, sizeof(dma.cmd), &dma.cmd, PLATFORM_CTL_FLAGS_RAW);
-    platform_read_ctl(tapasco.platform_device(), 0x300000 + 40, sizeof(dma.status), &dma.status, PLATFORM_CTL_FLAGS_RAW);
-    platform_read_ctl(tapasco.platform_device(), 0x300000 + 48, sizeof(dma.read_requests), &dma.read_requests, PLATFORM_CTL_FLAGS_RAW);
-    platform_read_ctl(tapasco.platform_device(), 0x300000 + 56, sizeof(dma.write_requests), &dma.write_requests, PLATFORM_CTL_FLAGS_RAW);
-    platform_read_ctl(tapasco.platform_device(), 0x300000 + 64, sizeof(dma.last_request_read), &dma.last_request_read, PLATFORM_CTL_FLAGS_RAW);
-    platform_read_ctl(tapasco.platform_device(), 0x300000 + 72, sizeof(dma.cycles_between_read), &dma.cycles_between_read, PLATFORM_CTL_FLAGS_RAW);
-    platform_read_ctl(tapasco.platform_device(), 0x300000 + 80, sizeof(dma.cycles_between_set_read), &dma.cycles_between_set_read, PLATFORM_CTL_FLAGS_RAW);
-    platform_read_ctl(tapasco.platform_device(), 0x300000 + 88, sizeof(dma.last_request_write), &dma.last_request_write, PLATFORM_CTL_FLAGS_RAW);
-    platform_read_ctl(tapasco.platform_device(), 0x300000 + 96, sizeof(dma.cycles_between_write), &dma.cycles_between_write, PLATFORM_CTL_FLAGS_RAW);
-    platform_read_ctl(tapasco.platform_device(), 0x300000 + 104, sizeof(dma.cycles_between_set_write), &dma.cycles_between_set_write, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(tapasco.platform_device(), 0x4000 + 0, sizeof(dma.host_addr), &dma.host_addr, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(tapasco.platform_device(), 0x4000 + 8, sizeof(dma.fpga_addr), &dma.fpga_addr, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(tapasco.platform_device(), 0x4000 + 16, sizeof(dma.transfer_length), &dma.transfer_length, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(tapasco.platform_device(), 0x4000 + 24, sizeof(dma.id), &dma.id, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(tapasco.platform_device(), 0x4000 + 32, sizeof(dma.cmd), &dma.cmd, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(tapasco.platform_device(), 0x4000 + 40, sizeof(dma.status), &dma.status, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(tapasco.platform_device(), 0x4000 + 48, sizeof(dma.read_requests), &dma.read_requests, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(tapasco.platform_device(), 0x4000 + 56, sizeof(dma.write_requests), &dma.write_requests, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(tapasco.platform_device(), 0x4000 + 64, sizeof(dma.last_request_read), &dma.last_request_read, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(tapasco.platform_device(), 0x4000 + 72, sizeof(dma.cycles_between_read), &dma.cycles_between_read, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(tapasco.platform_device(), 0x4000 + 80, sizeof(dma.cycles_between_set_read), &dma.cycles_between_set_read, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(tapasco.platform_device(), 0x4000 + 88, sizeof(dma.last_request_write), &dma.last_request_write, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(tapasco.platform_device(), 0x4000 + 96, sizeof(dma.cycles_between_write), &dma.cycles_between_write, PLATFORM_CTL_FLAGS_RAW);
+    platform_read_ctl(tapasco.platform_device(), 0x4000 + 104, sizeof(dma.cycles_between_set_write), &dma.cycles_between_set_write, PLATFORM_CTL_FLAGS_RAW);
     ++dma.cycles_between_set_read; // Register contains num requests - 1
     ++dma.cycles_between_set_write; // Register contains num requests - 1
 

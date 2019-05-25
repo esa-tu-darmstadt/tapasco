@@ -8,7 +8,7 @@
 #include "blue_dma.h"
 #include "pcie/pcie_device.h"
 
-#define DMA_SZ						0x10000
+#define DMA_SZ						0x1000
 
 typedef struct {
 	size_t cpy_sz;

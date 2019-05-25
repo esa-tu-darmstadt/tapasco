@@ -97,8 +97,8 @@ void aws_ec2_tlkm_pcie_slot_irq_work_ ## nr(struct work_struct *work) \
 	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *)container_of(work, struct tlkm_pcie_device, irq_work[nr]); \
 	struct platform *p = &dev->parent->cls->platform; \
 	/* read ISR (interrupt status register) */ \
-	while ((isr = ioread32(dev->parent->mmap.plat + 0x500000 + nr * 0x10000 + 0x00 - p->plat.base))) { \
-		iowrite32(isr, dev->parent->mmap.plat + 0x500000 + nr * 0x10000 + 0x0C - p->plat.base); \
+	while ((isr = ioread32(dev->parent->mmap.plat + 0x6000 + nr * 0x2000 + 0x00 - p->plat.base))) { \
+		iowrite32(isr, dev->parent->mmap.plat + 0x6000 + nr * 0x2000 + 0x0C - p->plat.base); \
 		do { \
 			/* Returns one plus the index of the least significant 1-bit of x, or if x is zero, returns zero. */ \
 			const uint32_t slot = __builtin_ffs(isr) - 1; \

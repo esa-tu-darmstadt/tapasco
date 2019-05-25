@@ -39,22 +39,22 @@
 irqreturn_t blue_dma_intr_handler_read(int irq, void * dev_id)
 {
 	struct dma_engine *dma = (struct dma_engine *)dev_id;
-	struct platform *p = &dma->dev->cls->platform;
-	volatile uint32_t* msix_ack = (volatile uint32_t*) (dma->dev->mmap.plat + ((0x500000 + 0x8120) - p->plat.base));
+	//struct platform *p = &dma->dev->cls->platform;
+	//volatile uint32_t* msix_ack = (volatile uint32_t*) (dma->dev->mmap.plat + ((0x500000 + 0x8120) - p->plat.base));
 	atomic64_inc(&dma->rq_processed);
 	wake_up_interruptible(&dma->rq);
-	msix_ack[0] = 0;
+	//msix_ack[0] = 0;
 	return IRQ_HANDLED;
 }
 
 irqreturn_t blue_dma_intr_handler_write(int irq, void * dev_id)
 {
 	struct dma_engine *dma = (struct dma_engine *)dev_id;
-	struct platform *p = &dma->dev->cls->platform;
-	volatile uint32_t* msix_ack = (volatile uint32_t*) (dma->dev->mmap.plat + ((0x500000 + 0x8120) - p->plat.base));
+	//struct platform *p = &dma->dev->cls->platform;
+	//volatile uint32_t* msix_ack = (volatile uint32_t*) (dma->dev->mmap.plat + ((0x500000 + 0x8120) - p->plat.base));
 	atomic64_inc(&dma->wq_processed);
 	wake_up_interruptible(&dma->wq);
-	msix_ack[0] = 1;
+	//msix_ack[0] = 1;
 	return IRQ_HANDLED;
 }
 

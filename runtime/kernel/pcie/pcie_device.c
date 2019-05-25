@@ -37,11 +37,11 @@ static int aws_ec2_configure_xdma(struct tlkm_pcie_device *pdev)
 		return -ENODEV;
 	}
 
-	DEVLOG(did, TLKM_LF_PCIE, "XDMA addr: %p\n", bar2);
-	DEVLOG(did, TLKM_LF_PCIE, "XDMA len: %x\n", (int)pci_resource_len(dev, 2));
+	DEVLOG(did, TLKM_LF_PCIE, "XDMA addr: %p", bar2);
+	DEVLOG(did, TLKM_LF_PCIE, "XDMA len: %x", (int)pci_resource_len(dev, 2));
 
 	val = ioread32(bar2 + get_xdma_reg_addr(2, 0, 0));
-	DEVLOG(did, TLKM_LF_PCIE, "XDMA IRQ block identifier: %x\n", val);
+	DEVLOG(did, TLKM_LF_PCIE, "XDMA IRQ block identifier: %x", val);
 
 	// set user interrupt vectors
 	iowrite32(0x03020100, bar2 + get_xdma_reg_addr(2, 0, 0x80));
@@ -54,7 +54,7 @@ static int aws_ec2_configure_xdma(struct tlkm_pcie_device *pdev)
 	wmb();
 
 	val = ioread32(bar2 + get_xdma_reg_addr(2, 0, 0x04));
-	DEVLOG(did, TLKM_LF_PCIE, "XDMA user IER: %x\n", val);
+	DEVLOG(did, TLKM_LF_PCIE, "XDMA user IER: %x", val);
 
 	DEVLOG(did, TLKM_LF_PCIE, "Finished configuring XDMA core, unmapping BAR2");
 	iounmap(bar2);
@@ -100,9 +100,9 @@ static int claim_device(struct tlkm_pcie_device *pdev)
 			goto error_pci_req;
 		}
 
-		pdev->phy_addr_bar0 	= pci_resource_start(dev, 4);
-		pdev->phy_len_bar0	= pci_resource_len(dev, 4);
-		pdev->phy_flags_bar0	= pci_resource_flags(dev, 4);
+		pdev->phy_addr_bar0 	= pci_resource_start(dev, 0);
+		pdev->phy_len_bar0	= pci_resource_len(dev, 0);
+		pdev->phy_flags_bar0	= pci_resource_flags(dev, 0);
 	} else {
 		/* read out pci bar 0 settings */
 		pdev->phy_addr_bar0 	= pci_resource_start(dev, 0);

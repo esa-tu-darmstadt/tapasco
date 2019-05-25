@@ -81,10 +81,10 @@ namespace eval platform {
     puts "Computing addresses for masters ..."
     foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
       switch -glob [get_property NAME $m] {
-        "M_DMA"     { foreach {base stride range comp} [list 0x00300000 0x10000 0      "PLATFORM_COMPONENT_DMA0"] {} }
-        "M_INTC"    { foreach {base stride range comp} [list 0x00500000 0x10000 0      "PLATFORM_COMPONENT_INTC0"] {} }
+        "M_DMA"     { foreach {base stride range comp} [list 0x00004000 0x2000 0      "PLATFORM_COMPONENT_DMA0"] {} }
+        "M_INTC"    { foreach {base stride range comp} [list 0x00006000 0x2000 0      "PLATFORM_COMPONENT_INTC0"] {} }
         "M_MSIX"    { foreach {base stride range comp} [list 0          0       $max64 "PLATFORM_COMPONENT_MSIX0"] {} }
-        "M_TAPASCO" { foreach {base stride range comp} [list 0x02800000 0       0      "PLATFORM_COMPONENT_STATUS"] {} }
+        "M_TAPASCO" { foreach {base stride range comp} [list 0x00000000 0       0      "PLATFORM_COMPONENT_STATUS"] {} }
         "M_HOST"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_MEM_0"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_ARCH"    { set base "skip" }
@@ -383,7 +383,7 @@ namespace eval platform {
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M02_AXI}] $m_dma
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M03_AXI}] $m_intc
 
-    connect_bd_intf_net [get_bd_intf_pins "$out_ic/S00_AXI"] [get_bd_intf_pins "$f1_inst/M_AXI_PCIS"]
+    connect_bd_intf_net [get_bd_intf_pins "$out_ic/S00_AXI"] [get_bd_intf_pins "$f1_inst/M_AXI_OCL"]
 
     # Connect "in" AXI ports
     set in_ic [tapasco::ip::create_axi_sc "in_ic" 2 1]
@@ -433,7 +433,7 @@ namespace eval platform {
   }
 
   proc get_pe_base_address {} {
-    return 0x02000000;
+    return 0x20000;
   }
 
   proc readfile {filename} {
@@ -467,13 +467,13 @@ namespace eval platform {
         CONFIG.CLOCK_A3_FREQ {250000000} \
         CONFIG.CLOCK_A_RECIPE {0} \
         CONFIG.DEVICE_ID {0xF000} \
-        CONFIG.PCIS_PRESENT {1} \
+        CONFIG.PCIS_PRESENT {0} \
         CONFIG.PCIM_PRESENT {1} \
-        CONFIG.DDR_A_PRESENT {1} \
-        CONFIG.DDR_B_PRESENT {1} \
+        CONFIG.DDR_A_PRESENT {0} \
+        CONFIG.DDR_B_PRESENT {0} \
         CONFIG.DDR_C_PRESENT {1} \
         CONFIG.DDR_D_PRESENT {0} \
-        CONFIG.OCL_PRESENT {0} \
+        CONFIG.OCL_PRESENT {1} \
         CONFIG.SDA_PRESENT {0} \
     ] $f1_inst
 
