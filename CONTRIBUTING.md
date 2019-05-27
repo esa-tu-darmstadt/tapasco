@@ -39,8 +39,8 @@ for the entities in your code.
 * **Document your code:** This should also be a given. Include comments in your
 code, in particular for complicated statements or parts difficult to understand.
 
-* **Follow the given identation scheme:** You should use the same scheme for
-identation as the existing code base, even if that does not match your personal
+* **Follow the given indentation scheme:** You should use the same scheme for
+indentation as the existing code base, even if that does not match your personal
 preference. Please also make sure that your editor/IDE is not breaking things
 in the background.
 
@@ -92,7 +92,7 @@ happened on the `develop`-branch while you were developing your feature using
 development of your feature (e.g. hotfixes), please also use `git merge` to
 integrate them into your branch.
 
-6. Request a review by one of the TaPaSCo maintainers (@jahofmann, @cahz, @sommerlukas).
+6. Request a review by one of the TaPaSCo maintainers ([jahofmann](https://github.com/jahofmann), [cahz](https://github.com/cahz), [sommerlukas](https://github.com/sommerlukas)).
 We will review your changes, giving you feedback on your code.
 
 7. When the review process is done, we will accept the pull request, merging
