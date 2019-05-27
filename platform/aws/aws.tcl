@@ -492,6 +492,12 @@ namespace eval platform {
     connect_bd_net $ddr_aclk [get_bd_pins "$f1_inst/clk_main_a0_out"]
     connect_bd_net $ddr_aresetn [get_bd_pins "$f1_inst/rst_main_n_out"]
 
+    # Connect ILA to M_AXI_OCL / BAR0
+    set ila [tapasco::ip::create_system_ila "maxi_ocl_ila"]
+    connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_0_AXI] [get_bd_intf_pins $f1_inst/M_AXI_OCL]
+    connect_bd_net [get_bd_pins $ila/clk] [get_bd_pins $f1_inst/clk_main_a0_out]
+    connect_bd_net [get_bd_pins $ila/resetn] [get_bd_pins $f1_inst/rst_main_n_out]
+
     # Required for AFI manifest file
 
     set ::timestamp [exec date +%y_%m_%d-%H%M%S]
