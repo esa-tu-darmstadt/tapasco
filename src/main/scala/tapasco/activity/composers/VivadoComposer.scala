@@ -26,7 +26,7 @@ import  de.tu_darmstadt.cs.esa.tapasco.Common
 import  de.tu_darmstadt.cs.esa.tapasco.base._
 import  de.tu_darmstadt.cs.esa.tapasco.base.json._
 import  de.tu_darmstadt.cs.esa.tapasco.base.tcl._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.LogTrackingFileWatcher
+import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.{LogTrackingFileWatcher, ProgressTrackingFileWatcher}
 import  de.tu_darmstadt.cs.esa.tapasco.util._
 import  de.tu_darmstadt.cs.esa.tapasco.reports._
 import  de.tu_darmstadt.cs.esa.tapasco.dse.Heuristics
