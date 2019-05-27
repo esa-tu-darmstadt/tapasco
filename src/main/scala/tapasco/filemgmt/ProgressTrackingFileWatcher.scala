@@ -95,8 +95,7 @@ class ProgressTrackingFileWatcher(_logger: Option[Logger] = None, pollInterval: 
   private def timeString(since: Long): String = {
     val now = System.currentTimeMillis()
     val dur = Duration(now-since, "millis")
-    val s = dur.toSeconds.toInt
-    f"${s / 3600}%d:${(s % 3600) / 60}%02d:${s%60}%02d"
+    f"${dur.toHours}%d:${dur.toMinutes}%02d:${dur.toSeconds}%02d"
   }
 
   addListener(listener)
