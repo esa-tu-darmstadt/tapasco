@@ -41,7 +41,8 @@ class ComposeTask(composition: Composition,
                   features: Option[Seq[Feature]] = None,
                   logFile: Option[String] = None,
                   debugMode: Option[String] = None,
-                  val onComplete: Boolean => Unit)
+                  val onComplete: Boolean => Unit,
+                  val deleteOnFinish: Boolean = false)
                  (implicit cfg: Configuration) extends Task with LogTracking {
   private[this] implicit val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   private[this] val _slurm = Slurm.enabled
@@ -88,7 +89,7 @@ class ComposeTask(composition: Composition,
 
     LogFileTracker.stopLogFileAppender(appender)
     val result = (_composerResult map (_.result) getOrElse false) == ComposeResult.Success
-    if (result) { composer.clean(composition, target, designFrequency) }
+    if (result || deleteOnFinish) { composer.clean(composition, target, designFrequency) } // TODO This has to be run, if this compose task is part of a DSE
     result
   }
 
