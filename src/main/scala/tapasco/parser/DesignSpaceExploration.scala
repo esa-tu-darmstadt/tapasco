@@ -41,7 +41,7 @@ private object DesignSpaceExplorationParser {
     ))}
 
   private def optionsMap: Parser[Seq[(String, _)]] =
-    (heuristic | batchSize | basePath | architectures | platforms | features | debugMode).rep
+    (heuristic | batchSize | basePath | architectures | platforms | features | debugMode | delProj).rep
 
   private val jobid = identity[DesignSpaceExplorationJob] _
 
@@ -66,6 +66,7 @@ private object DesignSpaceExplorationParser {
       case ("BasePath", p: Path) => _.copy(basePath = Some(p))
       case ("Features", fs: Seq[Feature @unchecked]) => _.copy(features = Some(fs))
       case ("DebugMode", m: String) => _.copy(debugMode = Some(m))
+      case ("DeleteProjects", e: Boolean) => _.copy(deleteProjects = Some(e))
       case o => throw new Exception(s"parsed illegal option: $o")
     }
 

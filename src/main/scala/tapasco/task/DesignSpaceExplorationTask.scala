@@ -50,7 +50,8 @@ private class DesignSpaceExplorationTask(
     features: Option[Seq[Feature]],
     logFile: Option[String],
     debugMode: Option[String],
-    val onComplete: Boolean => Unit)
+    val onComplete: Boolean => Unit,
+    val deleteOnFail: Boolean = false)
     (implicit cfg: Configuration, tsk: Tasks) extends Task with LogTracking with ExplorationTask {
   private[this] val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   /** Internal representation of result. **/
@@ -167,7 +168,8 @@ object DesignSpaceExplorationTask {
             features: Option[Seq[Feature]],
             logFile: Option[String],
             debugMode: Option[String],
-            onComplete: Boolean => Unit)
+            onComplete: Boolean => Unit,
+            deleteOnFail: Boolean = false)
            (implicit cfg: Configuration, tsk: Tasks): ExplorationTask = {
     new DesignSpaceExplorationTask(
         composition,
@@ -180,7 +182,8 @@ object DesignSpaceExplorationTask {
         features,
         logFile,
         debugMode,
-        onComplete)
+        onComplete,
+        deleteOnFail)
   }
   // scalastyle:on parameter.number
 }

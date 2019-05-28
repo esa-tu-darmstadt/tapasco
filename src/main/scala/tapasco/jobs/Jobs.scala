@@ -67,7 +67,8 @@ final case class ComposeJob(
     private val _architectures: Option[Seq[String]] = None,
     private val _platforms: Option[Seq[String]] = None,
     features: Option[Seq[Feature]] = None,
-    debugMode: Option[String] = None) extends Job("compose") {
+    debugMode: Option[String] = None,
+    deleteProjects: Option[Boolean] = None) extends Job("compose") {
   /** Returns the selected composer tool implementation. */
   lazy val implementation: Composer.Implementation = Composer.Implementation(_implementation)
 
@@ -143,7 +144,8 @@ final case class DesignSpaceExplorationJob(
     private val _architectures: Option[Seq[String]] = None,
     private val _platforms: Option[Seq[String]] = None,
     features: Option[Seq[Feature]] = None,
-    debugMode: Option[String] = None) extends Job("dse") {
+    debugMode: Option[String] = None,
+    deleteProjects: Option[Boolean] = None) extends Job("dse") {
   private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   // warn if dimensions are completely empty
   dimensions match {

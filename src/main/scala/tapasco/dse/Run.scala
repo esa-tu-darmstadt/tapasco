@@ -57,7 +57,7 @@ private class ConcreteRun(val no: Int, val element: DesignSpace.Element, val tar
       logFile         = Some("%s/%s/%s.log".format(exploration.basePath, id, id)),
       debugMode       = debugMode,
       onComplete      = res => stop(signal),
-      deleteOnFinish  = true)
+      deleteOnFail  = true)
     _task = Some(t)
     exploration.publish(Exploration.Events.RunStarted(element, t))
     exploration.tasks(t) // start task

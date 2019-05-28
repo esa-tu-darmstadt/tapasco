@@ -80,7 +80,9 @@ private object Compose extends Executor[ComposeJob] {
           target = t,
           features = job.features,
           debugMode = job.debugMode,
-          onComplete = _ => signal.release())
+          onComplete = _ => signal.release(),
+          deleteOnFail = job.deleteProjects getOrElse(false)
+      )
 
       composeTasks foreach { tsk.apply _ }
 
