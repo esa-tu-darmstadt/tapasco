@@ -688,7 +688,7 @@ namespace eval platform {
     }
 
     proc create_tarfile {} {
-      puts "\n\nCREATE AMAZON FPGA IMAGE (AFI) TARBALL\n\n"
+      puts "\nwrite_bitstream disabled, creating tarfile instead..."
 
       # Lock the design to preserve the placement and routing
       puts "Locking design"
