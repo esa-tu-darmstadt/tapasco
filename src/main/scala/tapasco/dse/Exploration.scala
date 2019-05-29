@@ -50,7 +50,8 @@ private class ConcreteExploration(
     val designFrequency: Heuristics.Frequency,
     val batchSize: Int = Exploration.MAX_BATCH_SZ,
     val basePath: Path,
-    val debugMode: Option[String])(implicit cfg: Configuration, val tasks: Tasks) extends Exploration {
+    val debugMode: Option[String],
+    val deleteOnFail: Boolean = false)(implicit cfg: Configuration, val tasks: Tasks) extends Exploration {
   private implicit val _exploration = this
   private[this] val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   private var _result: Option[(DesignSpace.Element, Composer.Result)] = None
@@ -106,7 +107,7 @@ private class ConcreteExploration(
       val feasibleElem = DesignSpace.Element(run.element.composition, newFrequency, newH)
       // skip feedback elements with frequency of less than 50 MHz
       if (newFrequency >= 50.0) {
-        Seq(new ConcreteRun(nextRunId, feasibleElem, run.target, debugMode))
+        Seq(new ConcreteRun(nextRunId, feasibleElem, run.target, debugMode, deleteOnFail))
       } else {
         Seq()
       }
@@ -199,7 +200,7 @@ private class ConcreteExploration(
     space.enumerate foreach { e =>
       val util = AreaUtilization(target, e.composition)
       require (util.nonEmpty, "area estimate must be known for all elements")
-      val run = new ConcreteRun(nextRunId, e, target, debugMode)
+      val run = new ConcreteRun(nextRunId, e, target, debugMode, deleteOnFail)
       if (q.find(r =>(r compare run) == 0).isEmpty) {
         publish(Exploration.Events.RunDefined(e, util.get))
         q.enqueue(run)
@@ -232,8 +233,9 @@ object Exploration {
             designFrequency: Heuristics.Frequency,
             batchSize: Int = MAX_BATCH_SZ,
             basePath: Path,
-            debugMode: Option[String] = None) (implicit cfg: Configuration, tsk: Tasks): Exploration =
-    new ConcreteExploration(initialComposition, target, dimensions, designFrequency, batchSize, basePath, debugMode)
+            debugMode: Option[String] = None,
+            deleteOnFail: Boolean = false) (implicit cfg: Configuration, tsk: Tasks): Exploration =
+    new ConcreteExploration(initialComposition, target, dimensions, designFrequency, batchSize, basePath, debugMode, deleteOnFail)
   // scalastyle:on parameter.number
 
   final val MAX_BATCH_SZ: Int = 10 // FIXME use Compose.maxNumberOfThreads

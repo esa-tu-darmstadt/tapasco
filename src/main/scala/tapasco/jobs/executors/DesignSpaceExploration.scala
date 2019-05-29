@@ -110,6 +110,6 @@ private object DesignSpaceExploration extends Executor[DesignSpaceExplorationJob
       None, // logfile
       job.debugMode,
       onComplete,
-      deleteOnFail = job.deleteProjects getOrElse(false)
+      deleteOnFail = job.deleteProjects getOrElse false
     )
 }
