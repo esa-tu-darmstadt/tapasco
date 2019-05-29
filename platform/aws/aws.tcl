@@ -304,22 +304,12 @@ namespace eval platform {
 
 
     # Connect ILA to DMA config interface
-    set ila [tapasco::ip::create_system_ila "dma_config_ila"]
+    set ila [tapasco::ip::create_system_ila "dma_config_ila" 3 2048]
     connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_0_AXI] "$dma/S_AXI"
+    connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_1_AXI] "$dma/m64_axi"
+    connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_2_AXI] "$dma/m32_axi"
     connect_bd_net [get_bd_pins $ila/clk] [get_bd_pins "$dma/s_axi_aclk"]
     connect_bd_net [get_bd_pins $ila/resetn] [get_bd_pins "$dma/s_axi_aresetn"]
-
-    # Connect ILA to DMA host interface
-    set ila [tapasco::ip::create_system_ila "dma_host_ila"]
-    connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_0_AXI] "$dma/m64_axi"
-    connect_bd_net [get_bd_pins $ila/clk] [get_bd_pins "$dma/m64_axi_aclk"]
-    connect_bd_net [get_bd_pins $ila/resetn] [get_bd_pins "$dma/m64_axi_aresetn"]
-
-    # Connect ILA to DMA memory interface
-    set ila [tapasco::ip::create_system_ila "dma_ddr_ila"]
-    connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_0_AXI] "$dma/m32_axi"
-    connect_bd_net [get_bd_pins $ila/clk] [get_bd_pins "$dma/m32_axi_aclk"]
-    connect_bd_net [get_bd_pins $ila/resetn] [get_bd_pins "$dma/m32_axi_aresetn"]
   }
 
   proc create_subsystem_host {} {
