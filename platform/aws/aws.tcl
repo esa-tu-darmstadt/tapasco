@@ -383,7 +383,20 @@ namespace eval platform {
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M02_AXI}] $m_dma
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M03_AXI}] $m_intc
 
-    connect_bd_intf_net [get_bd_intf_pins "$out_ic/S00_AXI"] [get_bd_intf_pins "$f1_inst/M_AXI_OCL"]
+    set axi_conv [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_converter:2.1 "axi_protocol_converter"]
+    set_property -dict [list \
+      CONFIG.MI_PROTOCOL.VALUE_SRC USER \
+      CONFIG.SI_PROTOCOL.VALUE_SRC USER \
+      CONFIG.SI_PROTOCOL {AXI4LITE} \
+      CONFIG.MI_PROTOCOL {AXI4} \
+      CONFIG.TRANSLATION_MODE {2} \
+    ] $axi_conv
+
+    connect_bd_net [get_bd_pins "$axi_conv/aclk"] [get_bd_pins "$f1_inst/clk_main_a0_out"]
+    connect_bd_net [get_bd_pins "$axi_conv/aresetn"] [get_bd_pins "$f1_inst/rst_main_n_out"]
+
+    connect_bd_intf_net [get_bd_intf_pins "$f1_inst/M_AXI_OCL"] [get_bd_intf_pins "$axi_conv/S_AXI"]
+    connect_bd_intf_net [get_bd_intf_pins "$axi_conv/M_AXI"] [get_bd_intf_pins "$out_ic/S00_AXI"]
 
     # Connect "in" AXI port(s)
     connect_bd_intf_net $s_axi [get_bd_intf_pins "$f1_inst/S_AXI_PCIM"]
