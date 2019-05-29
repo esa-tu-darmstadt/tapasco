@@ -75,7 +75,8 @@ private class DesignSpaceExplorationTask(
     designFrequency,
     batchSize,
     _bp,
-    debugMode
+    debugMode,
+    deleteOnFail
   )(_cfg, tsk)
 
   /**
