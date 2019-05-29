@@ -57,6 +57,11 @@ class CommonArgParsersSpec extends FlatSpec with Matchers with Checkers {
       checkParsed( P( debugMode ~ End ).parse(d) )
     })
 
+  "The deleteProject switch" should "be parsed correctly by deleteProject" in
+    check(forAllNoShrink(deleteProjectsGen) { d =>
+      checkParsed( P( delProj ~ End).parse(d) )
+    })
+
   "All valid implementation parameters" should "be parsed correctly by implementation" in
     check(forAllNoShrink(implementationGen) { i =>
       checkParsed( P( implementation ~ End ).parse(i) )
@@ -102,6 +107,8 @@ private object CommonArgParsersSpec {
     genLongOption("debugMode"),
     qstringGen
   ))
+
+  val deleteProjectsGen: Gen[String] = join(Seq(genLongOption("deleteProjects")))
 
   val implementationGen: Gen[String] = join(Seq(
     genLongOption("implementation"),
