@@ -462,8 +462,13 @@ namespace eval platform {
 
 
 
-    # Connect "in" AXI port(s)
-    connect_bd_intf_net $s_axi [get_bd_intf_pins "$f1_inst/S_AXI_PCIM"]
+    # Connect "in" AXI ports
+    set in_ic [tapasco::ip::create_axi_sc "in_ic" 2 1]
+    tapasco::ip::connect_sc_default_clocks $in_ic "host"
+
+    connect_bd_intf_net [get_bd_intf_pins S_HOST] [get_bd_intf_pins $in_ic/S00_AXI]
+    connect_bd_intf_net [get_bd_intf_pins -of_object $in_ic -filter { MODE == Master }] \
+       [get_bd_intf_pins "$f1_inst/S_AXI_PCIM"]
   }
 
   proc create_subsystem_clocks_and_resets {} {
