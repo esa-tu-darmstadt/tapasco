@@ -1022,7 +1022,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>ace03ee8</spirit:value>
+            <spirit:value>c67810b3</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -1038,7 +1038,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>d4f0b7fd</spirit:value>
+            <spirit:value>ec52ca9d</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -2777,7 +2777,7 @@
       <spirit:file>
         <spirit:name>src/mkBlueDMAVivado.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_5a445cb8</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_4bfd30db</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -2861,7 +2861,7 @@
       <xilinx:displayName>BlueDMA_512_512_64</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2019-02-05T14:30:01Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2019-05-30T13:25:43Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
@@ -2871,7 +2871,7 @@
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="4a980b8b"/>
       <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="2ab1796e"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="6362e295"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="2bbfe8f6"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="1030287d"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="5b266965"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="ce7bf2c3"/>
     </xilinx:packagingInfo>
