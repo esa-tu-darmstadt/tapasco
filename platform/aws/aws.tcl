@@ -348,15 +348,15 @@ namespace eval platform {
                         CONFIG.RESET_PORT {resetn} \
                         ] $design_clk_wiz
 
-    set design_aclk [create_bd_pin -type "clk" -dir "O" "design_aclk"]
-    set design_aresetn [create_bd_pin -type "rst" -dir "O" "design_aresetn"]
+    set clkwiz_design_aclk [create_bd_pin -type "clk" -dir "O" "design_aclk"]
+    set clkwiz_design_aresetn [create_bd_pin -type "rst" -dir "O" "design_aresetn"]
 
     connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins "$f1_inst/rst_main_n_out"]
     connect_bd_net [get_bd_pins $design_clk_wiz/clk_in1] [get_bd_pins "$f1_inst/clk_extra_a1_out"]
 
     # connect external design clk
-    connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $design_aclk
-    connect_bd_net [get_bd_pins $design_clk_wiz/locked] $design_aresetn
+    connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $clkwiz_design_aclk
+    connect_bd_net [get_bd_pins $design_clk_wiz/locked] $clkwiz_design_aresetn
 
     # Connect DDR ports (DDR C is inside the Shell and should always be available)
     set ddr_available {}
@@ -384,28 +384,83 @@ namespace eval platform {
     # Finished connecting DDR ports
 
     # Connect "out" AXI ports
-    set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
-    tapasco::ip::connect_sc_default_clocks $out_ic "design"
+    # set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
+    # tapasco::ip::connect_sc_default_clocks $out_ic "design"
+
+    # connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M00_AXI}] $m_arch
+    # connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M01_AXI}] $m_tapasco
+    # connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M02_AXI}] $m_dma
+    # connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M03_AXI}] $m_intc
+
+    # connect_bd_intf_net [get_bd_intf_pins "$out_ic/S00_AXI"] [get_bd_intf_pins "$f1_inst/M_AXI_OCL"]
+
+    set out_ic [tapasco::ip::create_axi_ic "out_ic" 1 4]
+
+    # puts $design_aclk
+    # clocks
+    #connect_bd_net -net intc_clock_net $aclk [get_bd_pins -of_objects [get_bd_cells] -filter {TYPE == "clk" && DIR == "I"}]
+    # connect_bd_net $aclk [get_bd_pins -of_objects $out_ic -filter {NAME == ACLK}]
+    # connect_bd_net $design_aclk [get_bd_pins -of_objects $out_ic -filter {NAME == M00_ACLK}]
+    # connect_bd_net $design_aclk [get_bd_pins -of_objects $out_ic -filter {NAME == M01_ACLK}]
+    # connect_bd_net $aclk [get_bd_pins -of_objects $out_ic -filter {NAME == M02_ACLK}]
+    # connect_bd_net $aclk [get_bd_pins -of_objects $out_ic -filter {NAME == M03_ACLK}]
+    # connect_bd_net $aclk [get_bd_pins -of_objects $out_ic -filter {NAME == S00_ACLK}]
+    # # resets
+    # connect_bd_net $ic_aresetn [get_bd_pins -of_objects $out_ic -filter {NAME == "ARESETN"}]
+    # connect_bd_net $design_aresetn [get_bd_pins -of_objects $out_ic -filter {NAME == "M00_ARESETN"}]
+    # connect_bd_net $design_aresetn [get_bd_pins -of_objects $out_ic -filter {NAME == "M01_ARESETN"}]
+    # connect_bd_net $p_aresetn [get_bd_pins -of_objects $out_ic -filter {NAME == "M02_ARESETN"}]
+    # connect_bd_net $p_aresetn [get_bd_pins -of_objects $out_ic -filter {NAME == "M03_ARESETN"}]
+    # connect_bd_net $p_aresetn [get_bd_pins -of_objects $out_ic -filter {NAME == "S00_ARESETN"}]
+
+    set_property -dict [list \
+      CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
+      CONFIG.XBAR_DATA_WIDTH {32} \
+    ] $out_ic
 
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M00_AXI}] $m_arch
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M01_AXI}] $m_tapasco
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M02_AXI}] $m_dma
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M03_AXI}] $m_intc
 
-    set axi_conv [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_converter:2.1 "axi_protocol_converter"]
-    set_property -dict [list \
-      CONFIG.MI_PROTOCOL.VALUE_SRC USER \
-      CONFIG.SI_PROTOCOL.VALUE_SRC USER \
-      CONFIG.SI_PROTOCOL {AXI4LITE} \
-      CONFIG.MI_PROTOCOL {AXI4} \
-      CONFIG.TRANSLATION_MODE {2} \
-    ] $axi_conv
+    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
+      [get_bd_pins $out_ic/ACLK] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == clk}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == clk}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == clk}]
 
-    connect_bd_net [get_bd_pins "$axi_conv/aclk"] [get_bd_pins "$f1_inst/clk_main_a0_out"]
-    connect_bd_net [get_bd_pins "$axi_conv/aresetn"] [get_bd_pins "$f1_inst/rst_main_n_out"]
+    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == clk}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == clk}]
 
-    connect_bd_intf_net [get_bd_intf_pins "$f1_inst/M_AXI_OCL"] [get_bd_intf_pins "$axi_conv/S_AXI"]
-    connect_bd_intf_net [get_bd_intf_pins "$axi_conv/M_AXI"] [get_bd_intf_pins "$out_ic/S00_AXI"]
+    connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
+      [get_bd_pins $out_ic/ARESETN] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == rst}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == rst}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == rst}]
+
+    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == rst}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == rst}]
+
+    # set axi_conv [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_converter:2.1 "axi_protocol_converter"]
+    # set_property -dict [list \
+    #   CONFIG.MI_PROTOCOL.VALUE_SRC USER \
+    #   CONFIG.SI_PROTOCOL.VALUE_SRC USER \
+    #   CONFIG.SI_PROTOCOL {AXI4LITE} \
+    #   CONFIG.MI_PROTOCOL {AXI4} \
+    #   CONFIG.TRANSLATION_MODE {2} \
+    # ] $axi_conv
+
+    # connect_bd_net [get_bd_pins "$axi_conv/aclk"] [get_bd_pins "$f1_inst/clk_main_a0_out"]
+    # connect_bd_net [get_bd_pins "$axi_conv/aresetn"] [get_bd_pins "$f1_inst/rst_main_n_out"]
+
+    # connect_bd_intf_net [get_bd_intf_pins "$f1_inst/M_AXI_OCL"] [get_bd_intf_pins "$axi_conv/S_AXI"]
+    # connect_bd_intf_net [get_bd_intf_pins "$axi_conv/M_AXI"] [get_bd_intf_pins "$out_ic/S00_AXI"]
+
+    connect_bd_intf_net [get_bd_intf_pins "$f1_inst/M_AXI_OCL"] [get_bd_intf_pins "$out_ic/S00_AXI"]
+
+
 
     # Connect "in" AXI port(s)
     connect_bd_intf_net $s_axi [get_bd_intf_pins "$f1_inst/S_AXI_PCIM"]
