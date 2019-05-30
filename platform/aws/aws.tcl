@@ -205,6 +205,8 @@ namespace eval platform {
       # Instantiate INTC (each supports 1-32 interrupts)
       #set axi_intc($i) [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_intc:4.1 "axi_intc_$i"]
       set axi_intc($i) [tapasco::ip::create_axi_irqc "axi_intc_$i"]
+      set_property -dict [list CONFIG.C_IRQ_IS_LEVEL {0}] $axi_intc($i)
+
       connect_bd_net $port [get_bd_pins $axi_intc($i)/intr]
 
       connect_bd_intf_net [get_bd_intf_pins "$intc_ic/M0${i}_AXI"] [get_bd_intf_pins "$axi_intc($i)/s_axi"]
