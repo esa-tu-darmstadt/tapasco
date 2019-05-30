@@ -368,8 +368,26 @@ namespace eval platform {
       }
     }
 
-    set ddr_ic [tapasco::ip::create_axi_sc "ddr_ic" 2 [llength $ddr_available]]
-    tapasco::ip::connect_sc_default_clocks $ddr_ic "host"
+    set ddr_ic [tapasco::ip::create_axi_ic "ddr_ic" 2 [llength $ddr_available]]
+    # connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
+    #   [get_bd_pins -of_objects $ddr_ic -filter {TYPE == clk}]
+    # connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
+    #   [get_bd_pins -of_objects $ddr_ic -filter {TYPE == rst}]
+    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
+      [get_bd_pins $ddr_ic/ACLK] \
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00_* && TYPE == clk}] \
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M00_* && TYPE == clk}]
+
+    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == clk}]
+
+    connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
+      [get_bd_pins $ddr_ic/ARESETN] \
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00* && TYPE == rst}] \
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M00_* && TYPE == rst}]
+
+    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == rst}]
 
     set num_ddr 0
     foreach x $ddr_available {
