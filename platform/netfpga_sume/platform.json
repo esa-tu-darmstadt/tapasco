@@ -6,5 +6,5 @@
 	"TargetUtilization" : 90,
 	"Benchmark" : "netfpga_sume.benchmark",
 	"HostFrequency": 250.0,
-	"MemFrequency": 233.0
+	"MemFrequency": 200.0
 }
