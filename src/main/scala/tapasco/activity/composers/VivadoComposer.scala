@@ -85,8 +85,9 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
           stdoutString => logger.trace("Vivado: {}", stdoutString),
           stderrString => logger.trace("Vivado ERR: {}", stderrString)
         ))
+
     lt.closeAll()
-    pt.closeAll()
+    pt.closeWithReturnCode(r)
 
     // check retcode
     if (r == InterruptibleProcess.TIMEOUT_RETCODE) {

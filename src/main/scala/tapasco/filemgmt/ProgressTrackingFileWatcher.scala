@@ -77,13 +77,6 @@ class ProgressTrackingFileWatcher(_logger: Option[Logger] = None, pollInterval: 
       val progressionString = progressionStringsInfo(currentState)._2
       logger.info("Started %s (Total Elapsed: %s)".format(progressionString, timeString(start)))
       stageStart = System.currentTimeMillis()
-
-      //This ensures that this watcher will close all opened files if he reaches the final state.
-      if(currentState == progressionStringsInfo.length) {
-        closeAll()
-      }
-
-
     }
   }
 
@@ -96,6 +89,20 @@ class ProgressTrackingFileWatcher(_logger: Option[Logger] = None, pollInterval: 
     val now = System.currentTimeMillis()
     val dur = Duration(now-since, "millis")
     f"${dur.toHours}%d:${dur.toMinutes % 60}%02d:${dur.toSeconds % 60}%02d"
+  }
+
+  /**
+    * Closes all Files watched by this Watcher and give a corresponding result message based on the return code.
+    * @param returnCode return code
+    */
+  def closeWithReturnCode(returnCode: Int): Unit = {
+    if(returnCode == 0) {
+      logger.info("Finished %s after %s (Total Elapsed: %s)".format(progressionStringsInfo(currentState - 1)._2, timeString(stageStart), timeString(start)))
+      super.closeAll()
+    } else {
+      logger.error("%s failed after %s (Total Elapsed: %s)".format(progressionStringsInfo(currentState)._2, timeString(stageStart), timeString(start)))
+      super.closeAll()
+    }
   }
 
   addListener(listener)
