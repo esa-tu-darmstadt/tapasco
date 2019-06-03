@@ -97,7 +97,7 @@ class ProgressTrackingFileWatcher(_logger: Option[Logger] = None, pollInterval: 
     */
   def closeWithReturnCode(returnCode: Int): Unit = {
     if(returnCode == 0) {
-      logger.info("Finished %s after %s (Total Elapsed: %s)".format(progressionStringsInfo(currentState - 1)._2, timeString(stageStart), timeString(start)))
+      logger.info("Finished %s after %s (Total Elapsed: %s)".format(progressionStringsInfo(currentState)._2, timeString(stageStart), timeString(start)))
       super.closeAll()
     } else {
       logger.error("%s failed after %s (Total Elapsed: %s)".format(progressionStringsInfo(currentState)._2, timeString(stageStart), timeString(start)))
