@@ -123,7 +123,7 @@ object Tapasco {
 
     if (! ok) {
       logger.error("TaPaSCo finished with errors")
-      //sys.exit(1)
+      sys.exit(1)
     } else {
       logger.info("TaPaSCo finished successfully")
     }

@@ -146,7 +146,7 @@ package object json {
     (JsPath \ "Platforms").readNullable[Seq[String]] ~
     (JsPath \ "Features").readNullable[Seq[Feature]] ~
     (JsPath \ "DebugMode").readNullable[String] ~
-    (JsPath \ "DeleteÜrpkects").readNullable[Boolean]
+    (JsPath \ "DeleteProjects").readNullable[Boolean]
   ) (DesignSpaceExplorationJob.apply _)
 
   implicit val dseJobWrites: Writes[DesignSpaceExplorationJob] = (
