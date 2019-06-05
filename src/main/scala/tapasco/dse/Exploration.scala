@@ -51,7 +51,7 @@ private class ConcreteExploration(
     val batchSize: Int = Exploration.MAX_BATCH_SZ,
     val basePath: Path,
     val debugMode: Option[String],
-    val deleteOnFail: Boolean = false)(implicit cfg: Configuration, val tasks: Tasks) extends Exploration {
+    val deleteOnFail: Option[Boolean])(implicit cfg: Configuration, val tasks: Tasks) extends Exploration {
   private implicit val _exploration = this
   private[this] val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   private var _result: Option[(DesignSpace.Element, Composer.Result)] = None
@@ -234,7 +234,7 @@ object Exploration {
             batchSize: Int = MAX_BATCH_SZ,
             basePath: Path,
             debugMode: Option[String] = None,
-            deleteOnFail: Boolean = false) (implicit cfg: Configuration, tsk: Tasks): Exploration =
+            deleteOnFail: Option[Boolean]) (implicit cfg: Configuration, tsk: Tasks): Exploration =
     new ConcreteExploration(initialComposition, target, dimensions, designFrequency, batchSize, basePath, debugMode, deleteOnFail)
   // scalastyle:on parameter.number
 

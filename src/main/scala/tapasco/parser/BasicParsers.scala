@@ -84,6 +84,9 @@ private object BasicParsers {
   val dblstr: Parser[String] =
     (signednumstr.! ~ (CharIn(",.") ~ numstr).!.?) map { case (n, r) => n ++ r.getOrElse("")  }
 
+  val boolstr: Parser[Boolean] =
+    ("true" | "false" ).! map { _.toBoolean} opaque "boolean"
+
   val double: Parser[Double] = dblstr.map(_.toDouble)
       .opaque("floating point number")
 
