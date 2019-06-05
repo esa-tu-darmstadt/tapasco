@@ -108,7 +108,9 @@ private object CommonArgParsersSpec {
     qstringGen
   ))
 
-  val deleteProjectsGen: Gen[String] = join(Seq(genLongOption("deleteProjects")))
+  val booleanOrNoneGen: Gen[String] = Gen.oneOf("true", "false", "")
+
+  val deleteProjectsGen: Gen[String] = join(Seq(genLongOption("deleteProjects"), booleanOrNoneGen))
 
   val implementationGen: Gen[String] = join(Seq(
     genLongOption("implementation"),
