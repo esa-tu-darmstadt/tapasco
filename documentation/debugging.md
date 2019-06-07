@@ -88,7 +88,7 @@ can be helpful to use on-board LEDs to communicate the wire states. This can be
 achieved with the `LED` feature, which is available on most Platforms:
 
 ```
-tapasco compose [precision_counter x 1] @ 100 Mhz --features 'LED { inputs: "{system_i/arch/target_ip_00_000/interrupt system_i/arch/irq_0}" }'
+tapasco compose [precision_counter x 1] @ 100 Mhz --features 'LED { inputs: "/arch/target_ip_00_000/interrupt /arch/irq_0" }'
 ```
 
 On most platforms, default inputs are defined to be the interrupt lines of the

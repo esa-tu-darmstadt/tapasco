@@ -46,6 +46,10 @@ FanControl {
 
 #### OLED
 
+### Pynq
+
+#### LED
+
 ## PCIe based platforms
 
 #### Cache
