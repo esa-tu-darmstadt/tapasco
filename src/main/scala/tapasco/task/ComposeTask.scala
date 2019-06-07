@@ -59,7 +59,6 @@ class ComposeTask(composition: Composition,
   def job: Boolean = if (! _slurm) nodeExecution else slurmExecution
 
   private def nodeExecution: Boolean = {
-
     val appender = LogFileTracker.setupLogFileAppender(_logFile.toString)
     val composer = Composer(implementation)(cfg)
     _logger.debug("launching compose run for {}@{} [current thread: {}], logfile {}",
