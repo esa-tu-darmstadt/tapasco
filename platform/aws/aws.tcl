@@ -348,6 +348,7 @@ namespace eval platform {
                         CONFIG.USE_RESET {true} \
                         CONFIG.RESET_TYPE {ACTIVE_LOW} \
                         CONFIG.RESET_PORT {resetn} \
+                        CONFIG.PRIM_SOURCE {No_buffer} \
                         ] $design_clk_wiz
 
     set clkwiz_design_aclk [create_bd_pin -type "clk" -dir "O" "design_aclk"]
