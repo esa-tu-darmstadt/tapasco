@@ -201,10 +201,21 @@
       set cf [tapasco::get_feature "Cache"]
       puts "Platform configured w/L2 Cache, implementing ..."
       set cache [tapasco::ip::create_axi_cache "cache_l2" 1 \
-          [dict get [tapasco::get_feature "Cache"] "size"] \
-          [dict get [tapasco::get_feature "Cache"] "associativity"]]
+          [tapasco::get_feature_option "Cache" "size" 32768] \
+          [tapasco::get_feature_option "Cache" "associativity" 2]]
       # set slave port width to 512bit, otherwise uses (not working) width conversion in SmartConnect
       set_property CONFIG.C_S0_AXI_GEN_DATA_WIDTH {512} $cache
+      if {[tapasco::get_feature_option "Cache" "force_allocate_read"]} {
+        # force caching for master (otherwise relies on axi cache signals)
+        puts "  Force allocate read"
+        set_property CONFIG.C_S0_AXI_GEN_FORCE_READ_ALLOCATE 1 $cache
+        set_property CONFIG.C_S0_AXI_GEN_FORCE_READ_BUFFER 1 $cache
+      }
+      if {[tapasco::get_feature_option "Cache" "force_allocate_write"]} {
+        puts "  Force allocate write"
+        set_property CONFIG.C_S0_AXI_GEN_FORCE_WRITE_ALLOCATE 1 $cache
+        set_property CONFIG.C_S0_AXI_GEN_FORCE_WRITE_BUFFER 1 $cache
+      }
 
       # connect mig_ic master to cache_l2
       connect_bd_intf_net [get_bd_intf_pins mig_ic/M00_AXI] [get_bd_intf_pins $cache/S0_AXI_GEN]
