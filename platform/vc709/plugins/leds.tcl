@@ -46,6 +46,9 @@ namespace eval leds {
       if {$bd_pin != {}} {
         lappend rlist $bd_pin
       } else {
+        if {$pin != {}} {
+          puts "  WARNING: pin $pin not found in block design, discarding signal"
+        }
         lappend rlist $zero_pin
       }
     }
@@ -54,7 +57,7 @@ namespace eval leds {
         lappend rlist $zero_pin
       }
     }
-    if {[lsearch rlist $zero_pin] == -1} {
+    if {[lsearch $rlist $zero_pin] == -1} {
       # delete the constant
       delete_bd_objs $zero
     }
@@ -97,12 +100,10 @@ namespace eval leds {
       set inputs [list]
       if {[dict exists $f "inputs"]} { set inputs [dict get $f "inputs"] }
       set gp_led [create_led_core "gp_led" $inputs]
-      set pcie_aclk [get_bd_pins "/PCIe/pcie_aclk"]
-      set pcie_aresetn [get_bd_pins "/PCIe/pcie_aresetn"]
-      set pcie_aclk_net [get_bd_net -of_objects $pcie_aclk]
-      set pcie_aresetn_net [get_bd_net -of_objects $pcie_aresetn]
-      connect_bd_net -net pcie_aclk_net $pcie_aclk [get_bd_pins $gp_led/aclk]
-      connect_bd_net -net pcie_aresetn_net [get_bd_pins "/PCIe/pcie_aresetn"] [get_bd_pins $gp_led/aresetn]
+      set pcie_aclk [get_bd_pins "/host/pcie_aclk"]
+      set pcie_aresetn [get_bd_pins "/host/pcie_aresetn"]
+      connect_bd_net $pcie_aclk [get_bd_pins $gp_led/aclk]
+      connect_bd_net $pcie_aresetn [get_bd_pins $gp_led/aresetn]
     }
     return {}
   }
