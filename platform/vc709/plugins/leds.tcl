@@ -23,11 +23,10 @@
 namespace eval leds {
   set vlnv "ESA:user:GP_LED:1.0"
   set default_led_pins [list \
-    "/PCIe/axi_pcie3_0/user_link_up" \
-    "/PCIe/axi_pcie3_0/msi_enable" \
-    "/Memory/mig/init_calib_complete" \
-    "/Resets/pcie_peripheral_aresetn" \
-    "/Resets/design_clk_peripheral_aresetn" \
+    "/host/axi_pcie3_0/user_link_up" \
+    "/memory/mig/init_calib_complete" \
+    "/clocks_and_resets/host_peripheral_aresetn" \
+    "/clocks_and_resets/design_peripheral_aresetn" \
   ]
 
   proc get_led_inputs {inputs} {
@@ -100,10 +99,10 @@ namespace eval leds {
       set inputs [list]
       if {[dict exists $f "inputs"]} { set inputs [dict get $f "inputs"] }
       set gp_led [create_led_core "gp_led" $inputs]
-      set pcie_aclk [get_bd_pins "/host/pcie_aclk"]
-      set pcie_aresetn [get_bd_pins "/host/pcie_aresetn"]
-      connect_bd_net $pcie_aclk [get_bd_pins $gp_led/aclk]
-      connect_bd_net $pcie_aresetn [get_bd_pins $gp_led/aresetn]
+      set clk [get_bd_pins "/clocks_and_resets/host_clk"]
+      set resetn [get_bd_pins "/clocks_and_resets/host_peripheral_aresetn"]
+      connect_bd_net $clk [get_bd_pins $gp_led/aclk]
+      connect_bd_net $resetn [get_bd_pins $gp_led/aresetn]
     }
     return {}
   }
