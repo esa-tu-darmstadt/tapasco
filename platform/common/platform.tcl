@@ -203,9 +203,9 @@ namespace eval platform {
         set synth_settings [list strategy Flow_RuntimeOptimized]
         set impl_settings [list strategy Flow_RuntimeOptimized]
     } elseif { $effort_level == "fast" } {
-        puts "Selecting Flow_Quick."
-        #set synth_settings [list strategy ]
-        set impl_settings [list strategy Flow_Quick]
+        puts "Selecting FLOW_RuntimeOptimized."
+        set synth_settings [list strategy Flow_RuntimeOptimized]
+        set impl_settings [list strategy Flow_RuntimeOptimized]
     } elseif { $effort_level == "optimal" } {
         puts "Selecting Flow_PerfOptimized_high and Performance_Explore."
         set synth_settings [list strategy Flow_PerfOptimized_high]
