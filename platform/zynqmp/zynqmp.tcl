@@ -21,8 +21,6 @@
 #         are instantiated, depending on the number interrupt sources returned by the architecture.
 # @author	Jaco A. Hofmann, TU Darmstadt (hofmann@esa.tu-darmstadt.de)
 #
-source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
-
   # check if TAPASCO_HOME env var is set
   if {![info exists ::env(TAPASCO_HOME)]} {
     puts "Could not find TaPaSCo root directory, please set environment variable 'TAPASCO_HOME'."
