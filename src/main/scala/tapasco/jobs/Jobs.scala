@@ -59,18 +59,18 @@ final case class BulkImportJob(csvFile: Path) extends Job("bulkimport")
  * @param _platforms Name list of [[base.Platform]] instances.
  * @param features List of [[base.Feature]] configurations for the design (opt.).
  * @param debugMode Debug mode name (opt.).
-  * @param synthEffort Synthesis effort level (opt.).
+ * @param effortLevel Synthesis effort level (opt.).
  **/
 final case class ComposeJob(
-    composition: Composition,
-    designFrequency: Heuristics.Frequency,
-    private val _implementation: String,
-    private val _architectures: Option[Seq[String]] = None,
-    private val _platforms: Option[Seq[String]] = None,
-    features: Option[Seq[Feature]] = None,
-    debugMode: Option[String] = None,
-    deleteProjects: Option[Boolean] = None,
-    synthEffort : Option[String] = Some("normal")) extends Job("compose") {
+   composition: Composition,
+   designFrequency: Heuristics.Frequency,
+   private val _implementation: String,
+   private val _architectures: Option[Seq[String]] = None,
+   private val _platforms: Option[Seq[String]] = None,
+   features: Option[Seq[Feature]] = None,
+   debugMode: Option[String] = None,
+   effortLevel : Option[String] = Some("normal"),
+   deleteProjects: Option[Boolean] = None) extends Job("compose") {
   /** Returns the selected composer tool implementation. */
   lazy val implementation: Composer.Implementation = Composer.Implementation(_implementation)
 

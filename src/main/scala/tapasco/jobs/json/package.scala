@@ -117,8 +117,8 @@ package object json {
     (JsPath \ "Platforms").readNullable[Seq[String]] ~
     (JsPath \ "Features").readNullable[Seq[Feature]] ~
     (JsPath \ "DebugMode").readNullable[String] ~
-    (JsPath \ "DeleteProjects").readNullable[Boolean] ~
-    (JsPath \ "SynthEffort").readNullable[String]
+    (JsPath \ "EffortLevel").readNullable[String] ~
+    (JsPath \ "DeleteProjects").readNullable[Boolean]
   ) (ComposeJob.apply _)
 
   implicit val composeJobWrites: Writes[ComposeJob] = (
@@ -130,8 +130,8 @@ package object json {
     (JsPath \ "Platforms").writeNullable[Seq[String]] ~
     (JsPath \ "Features").writeNullable[Seq[Feature]] ~
     (JsPath \ "DebugMode").writeNullable[String] ~
-    (JsPath \ "DeleteProjects").writeNullable[Boolean] ~
-    (JsPath \ "SynthEffort").writeNullable[String]
+    (JsPath \ "EffortLevel").writeNullable[String] ~
+    (JsPath \ "DeleteProjects").writeNullable[Boolean]
   ) (unlift(ComposeJob.unapply _ andThen (_ map ("Compose" +: _))))
   /* ComposeJob @} */
 

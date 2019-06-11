@@ -46,7 +46,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
   def maxMemoryUsagePerProcess: Int = VIVADO_PROCESS_PEAK_MEM
 
   /** @inheritdoc */
-  def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, synthEffort : String, features: Seq[Feature] = Seq())
+  def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, effortLevel : String, features: Seq[Feature] = Seq())
              (implicit cfg: Configuration): Composer.Result = {
     logger.debug("VivadoComposer uses at most {} threads", cfg.maxThreads getOrElse "unlimited")
     // create output struct
@@ -64,7 +64,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
                 header       = makeHeader(bd, target, f, features),
                 target       = target,
                 composition  = composition(bd, target),
-                effort = synthEffort)
+                effort = effortLevel)
 
     logger.info("Vivado starting run {}: show progress with `vivado_progress {}`", files.runName: Any, files.logFile)
     files.logFile.toFile.delete

@@ -170,7 +170,7 @@ configuration via `tapasco -n config.json`.
                   Arg("  f", "generate only timing failures") &
                   Arg("  p", "generate only placer errors") &
                   Arg("  o", "generate only other errors")) &
-           Arg("--synthEffort EFFORT", "set effort level for synthesis and PnR; levels:") &
+           Arg("--effortLevel EFFORT", "set effort level for synthesis and PnR; levels:") &
            Indent(Arg("fastest", "lowest effort, minimal runtime") &
                   Arg("fast", "slightly slower, but still short runtime") &
                   Arg("normal", "default options") &

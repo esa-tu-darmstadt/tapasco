@@ -39,7 +39,7 @@ private object ComposeParser {
   private val jobid = identity[ComposeJob] _
 
   private def options: Parser[ComposeJob => ComposeJob] =
-    (implementation | architectures | platforms | features | debugMode | synthEffort | delProj).rep
+    (implementation | architectures | platforms | features | debugMode | effortLevel | delProj).rep
       .map (opts => (opts map (applyOption _) fold jobid) (_ andThen _))
 
   private val effortModes : Set[String] = Set("fastest", "fast", "normal",
@@ -53,12 +53,12 @@ private object ComposeParser {
       case ("Features", fs: Seq[Feature @unchecked]) => _.copy(features = Some(fs))
       case ("DebugMode", m: String) => _.copy(debugMode = Some(m))
       case ("DeleteProjects", e: Boolean) => _.copy(deleteProjects = Some(e))
-      case ("SynthEffort", effort : String) => if(effortModes.contains(effort.toLowerCase)){
-        _.copy(synthEffort = Some(effort))
+      case ("EffortLevel", effort : String) => if(effortModes.contains(effort.toLowerCase)){
+        _.copy(effortLevel = Some(effort))
       }
       else{
         logger.warn(s"Unknown effort level $effort, using default normal")
-        _.copy(synthEffort = Some("normal"))
+        _.copy(effortLevel = Some("normal"))
       }
       case o => throw new Exception(s"parsed illegal option: $o")
     }
