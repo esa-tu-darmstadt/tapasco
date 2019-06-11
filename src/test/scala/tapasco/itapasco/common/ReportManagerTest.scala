@@ -46,24 +46,20 @@ class ReportManagerSpec extends FlatSpec with Matchers {
     Files.walkFileTree(p, visitor)
   }
 
-  private def setupStructure(p: Path): (Path, Path, Path, Path) = {
+  private def setupStructure(p: Path): (Path, Path, Path) = {
     val cosimPath = p.resolve("arraysum").resolve("axi4mm").resolve("vc709").resolve("ipcore")
-    val powerPath = p.resolve("arrayinit").resolve("blueline").resolve("zedboard").resolve("ipcore")
     val synthPath = p.resolve("aes").resolve("blackline").resolve("zc706").resolve("ipcore")
     val timingPath = p.resolve("test").resolve("axi4mm").resolve("zc706").resolve("ipcore")
     Files.createDirectories(cosimPath)
-    Files.createDirectories(powerPath)
     Files.createDirectories(synthPath)
     Files.createDirectories(timingPath)
     Files.copy(TAPASCO_HOME.resolve("report-examples").resolve("correct-cosim1.rpt"),
       cosimPath.resolve("arraysum_cosim.rpt"))
-    Files.copy(TAPASCO_HOME.resolve("report-examples").resolve("correct-power1.rpt"),
-      powerPath.resolve("power.rpt"))
     Files.copy(TAPASCO_HOME.resolve("report-examples").resolve("correct-synth1.rpt"),
       synthPath.resolve("aes_export.xml"))
     Files.copy(TAPASCO_HOME.resolve("report-examples").resolve("correct-timing.rpt"),
       timingPath.resolve("timing.rpt"))
-    (cosimPath, powerPath, synthPath, timingPath)
+    (cosimPath, synthPath, timingPath)
   }
 
   "All reports in existing directory structure" should "be found and built correctly" in {
@@ -76,16 +72,11 @@ class ReportManagerSpec extends FlatSpec with Matchers {
     bpm += rc.basePathListener
     assert(rc.timingReports.size == 1)
     assert(rc.synthReports.size == 1)
-    assert(rc.powerReports.size == 1)
     assert(rc.timingReports.size == 1)
 
     val r1 = rc.cosimReport("arraysum", "axi4mm", "vc709")
     assert(r1.nonEmpty)
     assert(r1.get.latency.avg == 280)
-
-    val r2 = rc.powerReport("arrayinit", "blueline", "zedboard")
-    assert(r2.nonEmpty)
-    assert(r2.get.totalOnChipPower map (_ == 0.33) getOrElse false)
 
     val r3 = rc.synthReport("aes", "blackline", "zc706")
     assert(r3.nonEmpty)
@@ -103,7 +94,7 @@ class ReportManagerSpec extends FlatSpec with Matchers {
     import Entities._
     val p = Files.createTempDirectory("tapasco-reportcache-").resolve("core")
     val dw = DirectoryWatcher(p)
-    val (p1, p2, p3, p4) = setupStructure(p)
+    val (p1, p2, p3) = setupStructure(p)
     val bpm = new BasePathManager
     bpm.basepath(Cores).set(p)
     val rc = new ReportManager(bpm.basepath(Cores))
@@ -113,7 +104,6 @@ class ReportManagerSpec extends FlatSpec with Matchers {
 
     assert(rc.timingReports.size == 1)
     assert(rc.synthReports.size == 1)
-    assert(rc.powerReports.size == 1)
     assert(rc.timingReports.size == 1)
 
     val r1 = rc.cosimReport("arraysum", "axi4mm", "vc709")
@@ -128,14 +118,6 @@ class ReportManagerSpec extends FlatSpec with Matchers {
     val r2 = rc.cosimReport("arraysum", "axi4mm", "vc709")
     assert(r2.nonEmpty)
     assert(r2.get.latency.avg == 2279)
-
-    val r3 = rc.powerReport("arrayinit", "blueline", "zedboard")
-    assert(r3.nonEmpty)
-
-    Files.delete(r3.get.file)
-    Thread.sleep(FS_SLEEP)
-
-    assert(rc.powerReports.size == 0)
 
     dw.stop()
     markForDeletion(p)
@@ -153,14 +135,12 @@ class ReportManagerSpec extends FlatSpec with Matchers {
 
     assert(rc.timingReports.size == 1)
     assert(rc.synthReports.size == 1)
-    assert(rc.powerReports.size == 1)
     assert(rc.timingReports.size == 1)
 
     bpm.basepath(Cores).set(p2)
 
     assert(rc.timingReports.size == 0)
     assert(rc.synthReports.size == 0)
-    assert(rc.powerReports.size == 0)
     assert(rc.timingReports.size == 0)
 
     markForDeletion(p1)
