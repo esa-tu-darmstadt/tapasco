@@ -26,6 +26,11 @@ namespace eval platform {
   namespace export get_address_map
   source "$::env(TAPASCO_HOME)/platform/common/addressmap.tcl"
 
+  # scan plugin directory
+  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/common/plugins" "*.tcl"] {
+    source -notrace $f
+  }
+
   # Creates the platform infrastructure, consisting of a number of subsystems.
   # Subsystems "host", "clocks_and_resets", "memory", "intc" and "tapasco" are
   # mandatory, their wiring pre-defined. Custom subsystems can be instantiated
