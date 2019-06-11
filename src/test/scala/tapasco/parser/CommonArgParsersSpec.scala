@@ -57,14 +57,14 @@ class CommonArgParsersSpec extends FlatSpec with Matchers with Checkers {
       checkParsed( P( debugMode ~ End ).parse(d) )
     })
 
+  "All valid effortLevel parameters" should "be parsed correctly by effortLevel" in
+    check(forAllNoShrink(effortModeGen) { e =>
+      checkParsed(P(effortLevel ~ End).parse(e))
+    })
+
   "The deleteProject switch" should "be parsed correctly by deleteProject" in
     check(forAllNoShrink(deleteProjectsGen) { d =>
       checkParsed(P(delProj ~ End).parse(d))
-    })
-
-  "All valid synthEffort parameters" should "be parsed correctly by synthEffort" in
-    check(forAllNoShrink(effortModeGen) { e =>
-      checkParsed( P(synthEffort ~ End).parse(e))
     })
 
   "All valid implementation parameters" should "be parsed correctly by implementation" in
@@ -113,16 +113,14 @@ private object CommonArgParsersSpec {
     qstringGen
   ))
 
-<<<<<<< HEAD
   val booleanOrNoneGen: Gen[String] = Gen.oneOf("true", "false", "")
 
   val deleteProjectsGen: Gen[String] = join(Seq(genLongOption("deleteProjects"), booleanOrNoneGen))
-=======
+
   val effortModeGen : Gen[String] = join(Seq(
-    genLongOption("synthEffort"),
+    genLongOption("effortLevel"),
     Gen.oneOf("fastest", "fast", "normal", "optimal", "optimal", "aggressive_performance", "aggressive_area")
   ))
->>>>>>> Introduce additional flag for compose command, setting the effort level;
 
   val implementationGen: Gen[String] = join(Seq(
     genLongOption("implementation"),

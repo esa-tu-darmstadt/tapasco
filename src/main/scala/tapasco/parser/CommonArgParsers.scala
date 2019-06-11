@@ -69,6 +69,10 @@ private object CommonArgParsers {
     longOption("debugMode", "DebugMode") ~ ws ~/
     qstring.opaque("debug mode name, any string") ~ ws
 
+  def effortLevel : Parser[(String, String)] =
+    longOption("effortLevel", "EffortLevel") ~ ws ~/
+    string.opaque("Effort level") ~ ws
+
   def delProj: Parser[(String, Boolean)] =
     (longOption("deleteProjects", "DeleteProjects") ~ ws ~/
       ( boolstr ~ ws).?) map {case s => (s._1, s._2.getOrElse(true))}
