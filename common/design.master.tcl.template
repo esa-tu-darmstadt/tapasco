@@ -70,9 +70,6 @@ set_msg_config -suppress -severity INFO
 # ignore AXI Interrupt controller warning about manual edge trigger setting
 set_msg_config -suppress -id {[xilinx.com:ip:axi_intc:4.1-7]}
 
-# Synthesis and P&R effort level
-puts @@EFFORT_LEVEL@@
-
 # loadout-specific configuration
 @@COMPOSITION@@
 
@@ -114,9 +111,11 @@ if {[llength [info commands platform::generate_wrapper]] == 0} {
   platform::generate_wrapper
 }
 
-# activate retiming in synthesis
-set_property STEPS.SYNTH_DESIGN.ARGS.RETIMING true [get_runs synth_1]
+# Disable OOC synthesis to avoid log file problems
 set_property synth_checkpoint_mode None [get_files system.bd]
+
+# Synthesis and P&R effort level
+set effort_level "@@EFFORT_LEVEL@@"
 
 # generate according to the mode
 platform::generate

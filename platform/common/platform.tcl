@@ -181,15 +181,50 @@ namespace eval platform {
   # Platform API: Main entry point to generate the bitstream.
   proc generate {} {
     global bitstreamname
+    global effort_level
     # generate bitstream from given design and report utilization / timing closure
     set jobs [tapasco::get_number_of_processors]
     puts "  using $jobs parallel jobs"
 
+    set synth_settings [list \
+      STEPS.SYNTH_DESIGN.ARGS.RETIMING true \
+    ]
+
+    set impl_settings [list \
+      STEPS.PHYS_OPT_DESIGN.IS_ENABLED true \
+    ]
+
+    set effort_level [string tolower $effort_level]
+
+    puts "Effort is $effort_level"
+
+    if { $effort_level == "fastest" } {
+        puts "Selecting FLOW_RuntimeOptimized."
+        set synth_settings [list strategy Flow_RuntimeOptimized]
+        set impl_settings [list strategy Flow_RuntimeOptimized]
+    } elseif { $effort_level == "fast" } {
+        puts "Selecting Flow_Quick."
+        #set synth_settings [list strategy ]
+        set impl_settings [list strategy Flow_Quick]
+    } elseif { $effort_level == "optimal" } {
+        puts "Selecting Flow_PerfOptimized_high and Performance_Explore."
+        set synth_settings [list strategy Flow_PerfOptimized_high]
+        set impl_settings [list strategy Performance_Explore]
+    } elseif { $effort_level == "aggressive_performance" } {
+        puts "Selecting Flow_PerfOptimized_high and Performance_Explore."
+        set synth_settings [list strategy Flow_PerfOptimized_high]
+        set impl_settings [list strategy Performance_Explore]
+    } elseif { $effort_level == "aggressive_area" } {
+        puts "Selecting Flow_AreaOptimized_high and Area_Explore."
+        set synth_settings [list strategy Flow_AreaOptimized_high]
+        set impl_settings [list strategy Area_Explore]
+    } else {
+        puts "Normal mode selected."
+    }
+
     generate_target all [get_files "[get_bd_name].bd"]
     set synth_run [get_runs synth_1]
-    set_property -dict [list \
-      STEPS.SYNTH_DESIGN.ARGS.RETIMING true \
-    ] $synth_run
+    set_property -dict $synth_settings $synth_run
     current_run $synth_run
     launch_runs -jobs $jobs $synth_run
     wait_on_run $synth_run
@@ -200,9 +235,7 @@ namespace eval platform {
     tapasco::call_plugins "post-synth"
 
     set impl_run [get_runs impl_1]
-    set_property -dict [list \
-      STEPS.PHYS_OPT_DESIGN.IS_ENABLED true \
-    ] $impl_run
+    set_property -dict $impl_settings $impl_run
     current_run $impl_run
     launch_runs -jobs $jobs -to_step route_design $impl_run
     wait_on_run $impl_run
