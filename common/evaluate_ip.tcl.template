@@ -190,15 +190,6 @@ report_timing_summary -quiet -datasheet -file @@REPORT_TIMING@@
 # report utilization
 report_utilization -quiet -file @@REPORT_UTILIZATION@@
 
-# recalculate achieved frequency and set new period (for realistic power values)
-set wns [tapasco::get_wns_from_timing_report @@REPORT_TIMING@@]
-if {$wns < 0} {
-  create_clock -name clk -period [expr "$period - $wns"] $clock_ports
-}
-
-# report power
-report_power -quiet -file @@REPORT_POWER@@
-
 # extract AXI interfaces
 # requires a block design
 set bd [create_bd_design bd]

@@ -93,19 +93,19 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     // check retcode
     if (r == InterruptibleProcess.TIMEOUT_RETCODE) {
       logger.error("Vivado timeout for %s in '%s'".format(files.runName, files.outdir))
-      Composer.Result(Timeout, log = files.log, util = None, timing = None, power = None)
+      Composer.Result(Timeout, log = files.log, util = None, timing = None)
     } else if (r != 0) {
       logger.error("Vivado finished with non-zero exit code: %d for %s in '%s'"
         .format(r, files.runName, files.outdir))
       Composer.Result(files.log map (_.result) getOrElse OtherError, log = files.log,
-          util = None, timing = None, power = None)
+          util = None, timing = None)
     } else {
       // check for timing failure
       if (files.tim.isEmpty) {
         throw new Exception("could not parse timing report: '%s'".format(files.timFile.toString))
       } else {
         Composer.Result(checkTimingFailure(files), Some(files.bitFile.toString),
-          files.log, files.util, files.tim, files.pwr)
+          files.log, files.util, files.tim)
       }
     }
   }
@@ -228,11 +228,9 @@ object VivadoComposer {
     lazy val tclFile: Path   = outdir.resolve("%s.tcl".format(t.pd.name))
     lazy val bitFile: Path   = logFile.resolveSibling("%s.bit".format(Composer.mkProjectName(c, t, f)))
     lazy val runName: String = "%s with %s[F=%1.3f]".format(logformat(c), t, f)
-    lazy val pwrFile: Path   = logFile.resolveSibling("power.txt")
     lazy val timFile: Path   = logFile.resolveSibling("timing.txt")
     lazy val utilFile: Path  = logFile.resolveSibling("utilization.txt")
     lazy val log             = ComposerLog(logFile)
-    lazy val pwr             = PowerReport(pwrFile)
     lazy val tim             = TimingReport(timFile)
     lazy val util            = UtilizationReport(utilFile)
   }

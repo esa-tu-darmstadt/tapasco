@@ -45,7 +45,7 @@ object ReportViewer extends SimpleSwingApplication {
    */
   def loadReport(filename: String): Option[Report] = {
     val fn = Paths.get(filename)
-    lazy val rs: Stream[Option[Report]] = Stream.empty :+ CoSimReport(fn) :+ PowerReport(fn) :+ SynthesisReport(fn) :+
+    lazy val rs: Stream[Option[Report]] = Stream.empty :+ CoSimReport(fn) :+ SynthesisReport(fn) :+
       TimingReport(fn) :+ UtilizationReport(fn)
     rs collectFirst { case Some(r) => r }
   }
