@@ -89,8 +89,7 @@ object Composer {
     bit:    Option[String]            = None,
     log:    Option[ComposerLog]       = None,
     util:   Option[UtilizationReport] = None,
-    timing: Option[TimingReport]      = None,
-    power:  Option[PowerReport]       = None
+    timing: Option[TimingReport]      = None
   )
 
   /** Result of the external process execution. **/

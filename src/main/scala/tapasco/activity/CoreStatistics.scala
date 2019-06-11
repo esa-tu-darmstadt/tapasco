@@ -40,12 +40,10 @@ object CoreStatistics {
       FileAssetManager.targetForReport(r.file).equals(target)
     } map (path => CoreReports(
         path,
-        PowerReport(path.file.resolveSibling("power.rpt")),
         TimingReport(path.file.resolveSibling("timing.rpt")))))
 
   private final case class CoreReports(
     synth: SynthesisReport,
-    power: Option[PowerReport],
     timing: Option[TimingReport]
   )
 
@@ -56,7 +54,6 @@ object CoreStatistics {
       e.synth.file,
       dumpArea(e.synth),
       dumpClocks(e.synth),
-      dumpPower(e.power),
       dumpAvgClockCycles(e.synth),
       dumpMaxDelayPath(e.timing)) mkString "," } mkString NL)
     fw.close()
@@ -76,14 +73,6 @@ object CoreStatistics {
         r.timing.map(_.targetPeriod).getOrElse("")
        ) mkString ","
 
-  private def dumpPower(pr: Option[PowerReport]): String = pr match {
-    case Some(r) => Seq(r.totalOnChipPower.getOrElse(""),
-                        r.dynamicPower.getOrElse(""),
-                        r.staticPower.getOrElse(""),
-                        r.confidenceLevel.getOrElse("")) mkString ","
-    case _ => Seq("","","","") mkString ","
-  }
-
   private def dumpAvgClockCycles(r: SynthesisReport): String =
     Core.from(r.file.getParent.resolveSibling("core.json")) map { cd =>
         Seq(cd.averageClockCycles.getOrElse(""),
@@ -101,7 +90,6 @@ object CoreStatistics {
   private final val HEADER = Seq(
       "Core", "Slices", "Slices (%)", "LUT", "LUT (%)", "FF", "FF (%)",
       "DSP", "DSP (%)", "BRAM", "BRAM (%)", "AchievedClockPeriod", "TargetClockPeriod",
-      "Total On-Chip Power (W)", "Dynamic Power (W)", "Device Static Power (W)", "Power Confidence Level",
       "Average Runtime (clock cycles)", "Jobs / s",
       "Max Delay Path Slack", "Max Delay Path Source", "Max Delay Path Destination"
     ) mkString ","

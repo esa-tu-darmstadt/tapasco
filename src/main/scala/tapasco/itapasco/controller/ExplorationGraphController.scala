@@ -114,7 +114,6 @@ class ExplorationGraphController extends ViewController {
           _logger.trace("{} -> {}", n: Any, cr)
           cr.util foreach   { Reports += _ }
           cr.timing foreach { Reports += _ }
-          cr.power foreach  { Reports += _ }
         }}
       case _ => {}
     }
@@ -159,8 +158,7 @@ class ExplorationGraphController extends ViewController {
    *  Reports can simply be added by [[Reports.+=]], [[Reports.++=]], [[Reports.-=]]
    *  and [[Reports.--=]] methods, will be matched to their panel automatically
    *  based on the type of report.
-   *  @note supports currently [[reports.SynthesisReport]], [[reports.TimingReport]],
-   *        [[reports.PowerReport]]
+   *  @note supports currently [[reports.SynthesisReport]], [[reports.TimingReport]]
    */
   object Reports {
     private val _reports = scala.collection.mutable.Set[Report]()
@@ -170,7 +168,6 @@ class ExplorationGraphController extends ViewController {
       r match {
         case sr: SynthesisReport => egp.reportPanel(0).report = sr
         case tr: TimingReport    => egp.reportPanel(1).report = tr
-        case pr: PowerReport     => egp.reportPanel(2).report = pr
         case _                   => {}
       }
     }

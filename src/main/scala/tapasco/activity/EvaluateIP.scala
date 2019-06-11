@@ -66,7 +66,6 @@ object EvaluateIP {
   private final class Files(zipFile: Path, reportFile: Path) {
     lazy val rpt_timing = reportFile.resolveSibling("timing.rpt")
     lazy val rpt_util   = reportFile.resolveSibling("utilization.rpt")
-    lazy val rpt_power  = reportFile.resolveSibling("power.rpt")
     lazy val rpt_port   = reportFile.resolveSibling("port.rpt")
     lazy val s_dcp      = reportFile.resolveSibling("out-of-context_synth.dcp")
     lazy val i_dcp      = reportFile.resolveSibling("out-of-context_impl.dcp")
@@ -156,7 +155,6 @@ object EvaluateIP {
       "PERIOD"             -> targetPeriod.toString,
       "REPORT_TIMING"      -> files.rpt_timing.toString,
       "REPORT_UTILIZATION" -> files.rpt_util.toString,
-      "REPORT_POWER"       -> files.rpt_power.toString,
       "REPORT_PORT"        -> files.rpt_port.toString,
       "SYNTH_CHECKPOINT"   -> files.s_dcp.toString,
       "IMPL_CHECKPOINT"    -> files.i_dcp.toString,

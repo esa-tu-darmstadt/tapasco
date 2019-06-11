@@ -47,7 +47,6 @@ private object ReportPanel {
 
   def mkData(r: Report): Array[Array[Any]] = r match {
     case cr: CoSimReport       => mkData(cr)
-    case pr: PowerReport       => mkData(pr)
     case sr: SynthesisReport   => mkData(sr)
     case tr: TimingReport      => mkData(tr)
     case ur: UtilizationReport => mkData(ur)
@@ -74,14 +73,6 @@ private object ReportPanel {
     Array("Min. Interval (clock cycles)", cr.interval.min),
     Array("Avg. Interval (clock cycles)", cr.interval.avg),
     Array("Max. Interval (clock cycles)", cr.interval.max)
-  )
-
-  def mkData(pr: PowerReport): Array[Array[Any]] = Array(
-    Array("File", pr.file.toString),
-    Array("Total on-chip power (W)", pr.totalOnChipPower getOrElse "N/A"),
-    Array("Dynamic power (W)", pr.dynamicPower getOrElse "N/A"),
-    Array("Static power (W)", pr.staticPower getOrElse "N/A"),
-    Array("Confidence Level", pr.confidenceLevel getOrElse "")
   )
 
   def mkData(tr: TimingReport): Array[Array[Any]] = Array(

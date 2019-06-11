@@ -24,7 +24,7 @@ import  java.nio.file._
 
 /**
  * A ReportManager maintains caches for different report types in a common base
- * directory: Currently co-simulation, timing, power and synthesis reports
+ * directory: Currently co-simulation, timing and synthesis reports
  * are supported, each in an [[EntityCache]] of their own.
  *
  * To react on changes, the basePathListener and directoryListener values
@@ -77,23 +77,6 @@ class ReportManager(var _base: Path) extends Publisher {
     files.headOption flatMap { f => _cosimReportCache.apply(f).head }
   }
 
-  /** Returns all PowerReports. **/
-  def powerReports: Set[PowerReport] = _powerReportCache.entities
-  /** Returns PowerReport for given core and target. **/
-  def powerReport(name: String, target: Target): Option[PowerReport] =
-    powerReport(name, target.ad.name, target.pd.name)
-  /** Returns PowerReport for given core and Architecture/Platform combination. **/
-  def powerReport(name: String, archName: String, platformName: String): Option[PowerReport] = {
-    val bp = _base.resolve(name).resolve(archName).resolve(platformName)
-    _logger.trace("looking for PowerReport of {}@{}@{} in {}", name, archName, platformName, bp)
-    val files = _powerReportCache.files filter (f => f.startsWith(bp))
-    if (files.size > 1) {
-      _logger.warn("found more than one PowerReport of {}@{}@{} in {}: {}",
-        name, archName, platformName, bp, files)
-    }
-    files.headOption flatMap { f => _powerReportCache.apply(f).head }
-  }
-
   /** Returns all SynthesisReports. **/
   def synthReports: Set[SynthesisReport] = _synthReportCache.entities
   /** Returns SynthesisReport for given core and target. **/
@@ -132,9 +115,6 @@ class ReportManager(var _base: Path) extends Publisher {
   /** EntityCache instance for CoSimReports. **/
   private val _cosimReportCache = EntityCache(Set(_base),
       """_cosim.rpt$""".r.unanchored, CoSimReport.apply _)
-  /** EntityCache instance for PowerReports. **/
-  private val _powerReportCache = EntityCache(Set(_base),
-      """power.rpt$""".r.unanchored, PowerReport.apply _)
   /** EntityCache instance for SynthesisReports. **/
   private val _synthReportCache = EntityCache(Set(_base),
       """_export.xml$""".r.unanchored, SynthesisReport.apply _)
@@ -145,7 +125,6 @@ class ReportManager(var _base: Path) extends Publisher {
   /** Internal seq of report caches. **/
   private val _reportCaches: Seq[EntityCache[_]] = Seq(
     _cosimReportCache,
-    _powerReportCache,
     _synthReportCache,
     _timingReportCache
   )
@@ -161,9 +140,6 @@ class ReportManager(var _base: Path) extends Publisher {
     import scala.util.Properties.{lineSeparator => NL}
     osw.append("<<ReportEntityCache: CoSim>>").append(NL)
     EntityCache.dump(_cosimReportCache, osw)
-    osw.append(NL)
-    osw.append("<<ReportEntityCache: Power>>").append(NL)
-    EntityCache.dump(_powerReportCache, osw)
     osw.append(NL)
     osw.append("<<ReportEntityCache: Synth>>").append(NL)
     EntityCache.dump(_synthReportCache, osw)
