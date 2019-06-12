@@ -21,9 +21,8 @@
 #         are instantiated, depending on the number interrupt sources returned by the architecture.
 # @author	Jaco A. Hofmann, TU Darmstadt (hofmann@esa.tu-darmstadt.de)
 #
-  # check if TAPASCO_HOME env var is set
-  if {![info exists ::env(TAPASCO_HOME)]} {
-    puts "Could not find TaPaSCo root directory, please set environment variable 'TAPASCO_HOME'."
+  if { [::tapasco::vivado_is_newer "2018.1"] == 0 } {
+    puts "Vivado [version -short] is too old to support MPSoC."
     exit 1
   }
 
@@ -59,9 +58,20 @@
       }
       if {$base != "skip"} { set peam [addressmap::assign_address $peam $m $base $stride $range $comp] }
     }
-    assign_bd_address [get_bd_addr_segs {host/zynqmp/SAXIGP2/HP0_DDR_HIGH }]
-    assign_bd_address [get_bd_addr_segs {host/zynqmp/SAXIGP4/HP2_DDR_HIGH }]
     return $peam
+  }
+
+  proc get_ignored_segments { } {
+    set ignored [list]
+    lappend ignored "/host/zynqmp/SAXIGP2/HP0_DDR_LOW"
+    lappend ignored "/host/zynqmp/SAXIGP2/HP0_LPS_OCM"
+    lappend ignored "/host/zynqmp/SAXIGP2/HP0_PCIE_LOW"
+    lappend ignored "/host/zynqmp/SAXIGP2/HP0_QSPI"
+    lappend ignored "/host/zynqmp/SAXIGP4/HP2_DDR_LOW"
+    lappend ignored "/host/zynqmp/SAXIGP4/HP2_LPS_OCM"
+    lappend ignored "/host/zynqmp/SAXIGP4/HP2_PCIE_LOW"
+    lappend ignored "/host/zynqmp/SAXIGP4/HP2_QSPI"
+    return $ignored
   }
 
   proc number_of_interrupt_controllers {} {
@@ -316,6 +326,7 @@
       connect_bd_net $design_p_arstn \
         [get_bd_pins -of_objects $bic -filter { TYPE == rst && DIR == I && NAME =~ "S00_ARESETN" }]
     }
+
 
     # generate PS MPSoC instance. Default values are fine
     set ps [tapasco::ip::create_ultra_ps "zynqmp" [tapasco::get_board_preset] [tapasco::get_design_frequency]]

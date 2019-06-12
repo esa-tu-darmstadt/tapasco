@@ -144,6 +144,7 @@ namespace eval addressmap {
   proc construct_address_map {{map ""}} {
     if {$map == ""} { set map [::platform::get_address_map [::platform::get_pe_base_address]] }
     set map [apply_address_map_mods $map]
+    set ignored [::platform::get_ignored_segments]
     set seg_i 0
     foreach space [get_bd_addr_spaces] {
       puts "space: $space"
@@ -151,49 +152,53 @@ namespace eval addressmap {
       foreach intf $intfs {
         set segs [get_bd_addr_segs -addressables -of_objects $intf]
         foreach seg $segs {
-          puts "  seg: $seg"
-          set sintf [get_bd_intf_pins -quiet -of_objects $seg]
-          if {[catch {dict get $map $intf}]} {
-            if {[catch {dict get $map $sintf}]} {
-              puts "    neither $intf nor $sintf were found in address map for $seg: $::errorInfo"
-              puts "    assuming internal connection, setting values as found in segment:"
-              set range  [get_property RANGE $seg]
-              if {$range eq ""} {
-                puts "      found no range on segment $seg, setting to max"
-                report_property $seg
-                set range [expr "1 << 64"]
-              }
-              puts "      range: $range"
-              set offset [get_property OFFSET $seg]
-              if {$offset eq ""} {
-                puts "      found no offset on segment $seg, setting to zero"
-                report_property $seg
-                set offset 0
-              }
-              puts "      offset: $offset"
-              set me [dict create "range" $range "offset" $offset "space" $space seg "$seg"]
-            } else {
-              set me [dict get $map $sintf]
-            }
+          if {[lsearch $ignored $seg] >= 0 } {
+            puts "Skipping ignored segment $seg"
           } else {
-            set me [dict get $map $intf]
+            puts "  seg: $seg"
+            set sintf [get_bd_intf_pins -quiet -of_objects $seg]
+            if {[catch {dict get $map $intf}]} {
+              if {[catch {dict get $map $sintf}]} {
+                puts "    neither $intf nor $sintf were found in address map for $seg: $::errorInfo"
+                puts "    assuming internal connection, setting values as found in segment:"
+                set range  [get_property RANGE $seg]
+                if {$range eq ""} {
+                  puts "      found no range on segment $seg, setting to max"
+                  report_property $seg
+                  set range [expr "1 << 64"]
+                }
+                puts "      range: $range"
+                set offset [get_property OFFSET $seg]
+                if {$offset eq ""} {
+                  puts "      found no offset on segment $seg, setting to zero"
+                  report_property $seg
+                  set offset 0
+                }
+                puts "      offset: $offset"
+                set me [dict create "range" $range "offset" $offset "space" $space seg "$seg"]
+              } else {
+                set me [dict get $map $sintf]
+              }
+            } else {
+              set me [dict get $map $intf]
+            }
+            puts "    address map info: $me]"
+            set range  [expr "max([dict get $me range], 4096)"]
+            set offset [expr "max([dict get $me "offset"], [get_property OFFSET $intf])"]
+            set range  [expr "min($range, [get_property RANGE $intf])"]
+            puts "      range: $range"
+            puts "      offset: $offset"
+            puts "      space: $space"
+            puts "      seg: $seg"
+            if {[expr "(1 << 64) == $range"]} { set range "16E" }
+            create_bd_addr_seg \
+              -offset $offset \
+              -range $range \
+              $space \
+              $seg \
+              [format "AM_SEG_%03d" $seg_i]
+            incr seg_i
           }
-          puts "    address map info: $me]"
-          set range  [expr "max([dict get $me range], 4096)"]
-          set offset [expr "max([dict get $me "offset"], [get_property OFFSET $intf])"]
-          set range  [expr "min($range, [get_property RANGE $intf])"]
-          puts "      range: $range"
-          puts "      offset: $offset"
-          puts "      space: $space"
-          puts "      seg: $seg"
-          if {[expr "(1 << 64) == $range"]} { set range "16E" }
-          create_bd_addr_seg \
-            -offset $offset \
-            -range $range \
-            $space \
-            $seg \
-            [format "AM_SEG_%03d" $seg_i]
-          incr seg_i
         }
       }
     }
