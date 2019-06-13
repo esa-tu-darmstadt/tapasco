@@ -116,7 +116,9 @@ package object json {
     (JsPath \ "Architectures").readNullable[Seq[String]] ~
     (JsPath \ "Platforms").readNullable[Seq[String]] ~
     (JsPath \ "Features").readNullable[Seq[Feature]] ~
-    (JsPath \ "DebugMode").readNullable[String]
+    (JsPath \ "DebugMode").readNullable[String] ~
+    (JsPath \ "EffortLevel").readNullable[String] ~
+    (JsPath \ "DeleteProjects").readNullable[Boolean]
   ) (ComposeJob.apply _)
 
   implicit val composeJobWrites: Writes[ComposeJob] = (
@@ -127,7 +129,9 @@ package object json {
     (JsPath \ "Architectures").writeNullable[Seq[String]] ~
     (JsPath \ "Platforms").writeNullable[Seq[String]] ~
     (JsPath \ "Features").writeNullable[Seq[Feature]] ~
-    (JsPath \ "DebugMode").writeNullable[String]
+    (JsPath \ "DebugMode").writeNullable[String] ~
+    (JsPath \ "EffortLevel").writeNullable[String] ~
+    (JsPath \ "DeleteProjects").writeNullable[Boolean]
   ) (unlift(ComposeJob.unapply _ andThen (_ map ("Compose" +: _))))
   /* ComposeJob @} */
 
@@ -143,7 +147,8 @@ package object json {
     (JsPath \ "Architectures").readNullable[Seq[String]] ~
     (JsPath \ "Platforms").readNullable[Seq[String]] ~
     (JsPath \ "Features").readNullable[Seq[Feature]] ~
-    (JsPath \ "DebugMode").readNullable[String]
+    (JsPath \ "DebugMode").readNullable[String] ~
+    (JsPath \ "DeleteProjects").readNullable[Boolean]
   ) (DesignSpaceExplorationJob.apply _)
 
   implicit val dseJobWrites: Writes[DesignSpaceExplorationJob] = (
@@ -157,7 +162,8 @@ package object json {
     (JsPath \ "Architectures").writeNullable[Seq[String]] ~
     (JsPath \ "Platforms").writeNullable[Seq[String]] ~
     (JsPath \ "Features").writeNullable[Seq[Feature]] ~
-    (JsPath \ "DebugMode").writeNullable[String]
+    (JsPath \ "DebugMode").writeNullable[String] ~
+    (JsPath \ "DeleteProjects").writeNullable[Boolean]
   ) (unlift(DesignSpaceExplorationJob.unapply _ andThen (_ map ("DesignSpaceExploration" +: _))))
   /* DesignSpaceExplorationJob @} */
 

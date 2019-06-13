@@ -163,11 +163,20 @@ configuration via `tapasco -n config.json`.
                                         """default: "Vivado"""") &
            Arg("--features FEATURES", "configures Features, see `tapasco -h features`" &
                                       "syntax: FEATURE [, FEATURE]*") &
+           Arg("--deleteProjects (true | false)?", "Spefify whether project files are deleted or kept" &
+                                                   """default: true""") &
            Arg("--debugMode NAME", "dry run, no composition is executed; modes:") &
            Indent(Arg("  r", "generate random result values") &
                   Arg("  f", "generate only timing failures") &
                   Arg("  p", "generate only placer errors") &
-                  Arg("  o", "generate only other errors"))) &
+                  Arg("  o", "generate only other errors")) &
+           Arg("--effortLevel EFFORT", "set effort level for synthesis and PnR; levels:") &
+           Indent(Arg("fastest", "lowest effort, minimal runtime") &
+                  Arg("fast", "slightly slower, but still short runtime") &
+                  Arg("normal", "default options") &
+                  Arg("optimal", "slower, get best QoR possible") &
+                  Arg("aggressive_performance", "maximal optimization for performance") &
+                  Arg("aggressive_area", "maximal optimization for area"))) &
     "" &
     "NOTE: Currently the  total number of PEs must be <= ${PLATFORM_NUM_SLOTS}.")
 
@@ -317,6 +326,8 @@ configuration via `tapasco -n config.json`.
                                   "default: number of CPUs") &
            Arg("--debugMode NAME", "dry run, no compositions are executed, see" ~
                                    "`tapasco -h compose`") &
+           Arg("--deleteProjects ( true | false )?", "Spefify whether project files are deleted or kept" &
+                                                     """default: true""" ) &
            Arg("--features FEATURES", "configures Features, see `tapasco -h features`" &
                                       "syntax: FEATURE [, FEATURE]*") &
            Arg("--heuristic NAME", "select heuristic function" &

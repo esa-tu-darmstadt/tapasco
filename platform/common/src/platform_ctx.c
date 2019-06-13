@@ -19,14 +19,14 @@ struct platform_ctx {
 };
 
 static
-int get_tlkm_version(platform_ctx_t *ctx, char *v)
+int get_tlkm_version(platform_ctx_t *ctx, char *v, int v_buffer_length)
 {
 	struct tlkm_ioctl_version_cmd c = { .version = "", };
 	if (ioctl(ctx->fd_tlkm, TLKM_IOCTL_VERSION, &c)) {
 		ERR("getting version from device driver failed: %s (%d)", strerror(errno), errno);
 		return errno;
 	}
-	strncpy(v, c.version, strlen(c.version) + 1);
+	strncpy(v, c.version, v_buffer_length);
 	return 0;
 }
 
@@ -71,7 +71,7 @@ platform_res_t init_platform(platform_ctx_t *ctx)
 		r = PERR_TLKM_ERROR;
 		goto err_tlkm;
 	}
-	if (get_tlkm_version(ctx, ctx->version)) goto err_ioctl;
+	if (get_tlkm_version(ctx, ctx->version, TLKM_VERSION_SZ)) goto err_ioctl;
 	LOG(LPLL_TLKM, "TLKM version: %s", ctx->version);
 
 	if (enum_devs(ctx)) goto err_ioctl;

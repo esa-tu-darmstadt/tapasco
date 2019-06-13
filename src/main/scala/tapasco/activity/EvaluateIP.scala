@@ -66,7 +66,7 @@ object EvaluateIP {
   private final class Files(zipFile: Path, reportFile: Path) {
     lazy val rpt_timing = reportFile.resolveSibling("timing.rpt")
     lazy val rpt_util   = reportFile.resolveSibling("utilization.rpt")
-    lazy val rpt_power  = reportFile.resolveSibling("power.rpt")
+    lazy val rpt_port   = reportFile.resolveSibling("port.rpt")
     lazy val s_dcp      = reportFile.resolveSibling("out-of-context_synth.dcp")
     lazy val i_dcp      = reportFile.resolveSibling("out-of-context_impl.dcp")
     lazy val zip        = zipFile
@@ -121,7 +121,8 @@ object EvaluateIP {
         logger.trace("%s: Vivado finished successfully".format(runPrefix))
         val ur  = UtilizationReport(files.rpt_util).get
         val dpd = TimingReport(files.rpt_timing).get.dataPathDelay
-        writeXMLReport(reportFile, ur, dpd, targetPeriod)
+        val portReport = PortReport(files.rpt_port).get
+        writeXMLReport(reportFile, ur, dpd, targetPeriod, portReport.numMasters, portReport.numSlaves)
         logger.info("{} finished successfully, report in {}", runPrefix: Any, reportFile)
         // clean up files on exit
         deleteOnExit(files.baseDir.toFile)
@@ -154,7 +155,7 @@ object EvaluateIP {
       "PERIOD"             -> targetPeriod.toString,
       "REPORT_TIMING"      -> files.rpt_timing.toString,
       "REPORT_UTILIZATION" -> files.rpt_util.toString,
-      "REPORT_POWER"       -> files.rpt_power.toString,
+      "REPORT_PORT"        -> files.rpt_port.toString,
       "SYNTH_CHECKPOINT"   -> files.s_dcp.toString,
       "IMPL_CHECKPOINT"    -> files.i_dcp.toString,
       "OPTIMIZATION"       -> optimization.toString,
@@ -177,7 +178,7 @@ object EvaluateIP {
    * @param targetPeriod Target operating period.
    **/
   private def writeXMLReport(reportFile: Path, ur: UtilizationReport, dataPathDelay: Double,
-      targetPeriod: Double): Unit = {
+      targetPeriod: Double, masters : Int, slaves : Int): Unit = {
     val needles = scala.collection.mutable.Map[String, String](
       "SLICE"      -> ur.used.SLICE.toString,
       "SLICES"     -> ur.available.SLICE.toString,
@@ -190,7 +191,9 @@ object EvaluateIP {
       "DSP"        -> ur.used.DSP.toString,
       "DSPS"       -> ur.available.DSP.toString,
       "PERIOD"     -> targetPeriod.toString,
-      "MIN_PERIOD" -> dataPathDelay.toString
+      "MIN_PERIOD" -> dataPathDelay.toString,
+      "MASTERS"    -> masters.toString,
+      "SLAVES"     -> slaves.toString
     )
 
     // write final report

@@ -40,7 +40,9 @@ private object ComposeParserSpec {
     CommonArgParsersSpec.architecturesGen,
     CommonArgParsersSpec.platformsGen,
     FeatureParsersSpec.featuresGen,
-    CommonArgParsersSpec.debugModeGen
+    CommonArgParsersSpec.debugModeGen,
+    CommonArgParsersSpec.deleteProjectsGen,
+    CommonArgParsersSpec.effortModeGen
   )
   val optionsGen: Gen[String] = for {
     n <- Gen.choose(1, 20)

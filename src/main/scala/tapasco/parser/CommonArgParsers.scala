@@ -17,11 +17,13 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 package de.tu_darmstadt.cs.esa.tapasco.parser
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.base.json._
-import  de.tu_darmstadt.cs.esa.tapasco.dse.Heuristics
-import  fastparse.all._
-import  java.nio.file._
+import de.tu_darmstadt.cs.esa.tapasco.base._
+import de.tu_darmstadt.cs.esa.tapasco.base.json._
+import de.tu_darmstadt.cs.esa.tapasco.dse.Heuristics
+import fastparse.all._
+import java.nio.file._
+
+import scala.util.Try
 
 private object CommonArgParsers {
   import BasicParsers._
@@ -66,6 +68,18 @@ private object CommonArgParsers {
   def debugMode: Parser[(String, String)] =
     longOption("debugMode", "DebugMode") ~ ws ~/
     qstring.opaque("debug mode name, any string") ~ ws
+
+  def effortLevel : Parser[(String, String)] =
+    longOption("effortLevel", "EffortLevel") ~ ws ~/
+    string.opaque("Effort level") ~ ws
+
+  def delProj: Parser[(String, Boolean)] =
+    (longOption("deleteProjects", "DeleteProjects") ~ ws ~/
+      ( boolstr ~ ws).?) map {case s => (s._1, s._2.getOrElse(true))}
+
+  def synthEffort : Parser[(String, String)] =
+    longOption("synthEffort", "SynthEffort") ~ ws ~/
+    string.opaque("Synthesis effort") ~ ws
 
   def implementation: Parser[(String, String)] =
     longOption("implementation", "Implementation") ~

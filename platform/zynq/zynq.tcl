@@ -23,8 +23,6 @@
 #               interrupt sources returned by the architecture.
 # @author	J. Korinth, TU Darmstadt (jk@esa.tu-darmstadt.de)
 #
-source -notrace $::env(TAPASCO_HOME)/platform/common/platform.tcl
-
 namespace eval ::platform {
   namespace export max_masters
   namespace export get_address_map

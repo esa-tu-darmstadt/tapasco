@@ -90,3 +90,17 @@ final case class AreaEstimate(
   def isFeasible: Boolean = List(slice, lut, ff, dsp, bram).map(x => x <= 100.0).reduce(_&&_)
   def compare(that: AreaEstimate): Int = this.resources compare that.resources
 }
+
+/**
+  * Occupation of slots of a hardware design
+  * @param slots Number of occupied slots
+  * @param available Number of available slots
+  */
+final case class SlotOccupation(slots : Int, available : Int) extends Ordered[SlotOccupation] {
+
+  override def toString: String = "SlotOccupation: %d/%d\n".format(slots, available)
+  def *(n : Int) : SlotOccupation = SlotOccupation(slots * n, available)
+  def +(s : SlotOccupation) : SlotOccupation = SlotOccupation(slots + s.slots, available)
+  def isFeasible : Boolean = slots <= available
+  override def compare(that: SlotOccupation): Int = this.slots compare that.slots
+}

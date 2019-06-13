@@ -26,7 +26,7 @@ import  de.tu_darmstadt.cs.esa.tapasco.Common
 import  de.tu_darmstadt.cs.esa.tapasco.base._
 import  de.tu_darmstadt.cs.esa.tapasco.base.json._
 import  de.tu_darmstadt.cs.esa.tapasco.base.tcl._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.LogTrackingFileWatcher
+import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.{LogTrackingFileWatcher, ProgressTrackingFileWatcher}
 import  de.tu_darmstadt.cs.esa.tapasco.util._
 import  de.tu_darmstadt.cs.esa.tapasco.reports._
 import  de.tu_darmstadt.cs.esa.tapasco.dse.Heuristics
@@ -46,7 +46,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
   def maxMemoryUsagePerProcess: Int = VIVADO_PROCESS_PEAK_MEM
 
   /** @inheritdoc */
-  def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, features: Seq[Feature] = Seq())
+  def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, effortLevel : String, features: Seq[Feature] = Seq())
              (implicit cfg: Configuration): Composer.Result = {
     logger.debug("VivadoComposer uses at most {} threads", cfg.maxThreads getOrElse "unlimited")
     // create output struct
@@ -63,7 +63,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
                 projectName  = Composer.mkProjectName(bd, target, f),
                 header       = makeHeader(bd, target, f, features),
                 target       = target,
-                composition  = composition(bd, target))
+                composition  = composition(bd, target),
+                effort = effortLevel)
 
     logger.info("Vivado starting run {}: show progress with `vivado_progress {}`", files.runName: Any, files.logFile)
     files.logFile.toFile.delete
@@ -71,6 +72,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       logger.info("verbose mode {} is active, starting to watch {}", mode: Any, files.logFile)
       lt += files.logFile
     }
+    val pt = new ProgressTrackingFileWatcher(Some(logger))
+    pt += files.logFile
 
     // Vivado shell command
     val vivadoCmd = Seq("vivado", "-mode", "batch", "-source", files.tclFile.toString,
@@ -83,30 +86,34 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
           stdoutString => logger.trace("Vivado: {}", stdoutString),
           stderrString => logger.trace("Vivado ERR: {}", stderrString)
         ))
-    lt.closeAll
+
+    lt.closeAll()
+    pt.closeWithReturnCode(r)
 
     // check retcode
     if (r == InterruptibleProcess.TIMEOUT_RETCODE) {
       logger.error("Vivado timeout for %s in '%s'".format(files.runName, files.outdir))
-      Composer.Result(Timeout, log = files.log, util = None, timing = None, power = None)
+      Composer.Result(Timeout, log = files.log, util = None, timing = None)
     } else if (r != 0) {
       logger.error("Vivado finished with non-zero exit code: %d for %s in '%s'"
         .format(r, files.runName, files.outdir))
       Composer.Result(files.log map (_.result) getOrElse OtherError, log = files.log,
-          util = None, timing = None, power = None)
+          util = None, timing = None)
     } else {
       // check for timing failure
       if (files.tim.isEmpty) {
         throw new Exception("could not parse timing report: '%s'".format(files.timFile.toString))
       } else {
         Composer.Result(checkTimingFailure(files), Some(files.bitFile.toString),
-          files.log, files.util, files.tim, files.pwr)
+          files.log, files.util, files.tim)
       }
     }
   }
 
   /** @inheritdoc */
   def clean(bd: Composition, target: Target, f: Double = 0)(implicit cfg: Configuration): Unit = {
+    cfg.outputDir(bd, target, f).resolve("microarch").toFile.deleteOnExit
+    cfg.outputDir(bd, target, f).resolve("user_ip").toFile.deleteOnExit
     Common.getFiles(cfg.outputDir(bd, target, f).resolve("microarch").toFile).filter(_.isFile).map(_.delete)
     Common.getFiles(cfg.outputDir(bd, target, f).resolve("microarch").toFile).filter(_.isDirectory).map(_.deleteOnExit)
     Common.getFiles(cfg.outputDir(bd, target, f).resolve("user_ip").toFile).filter(_.isFile).map(_.delete)
@@ -135,7 +142,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
 
   /** Writes the .tcl script for Vivado. */
   private def mkTclScript(fromTemplate: Path, to: Path, projectName: String, header: String, target: Target,
-      composition: String): Unit = {
+      composition: String, effort : String): Unit = {
     // needles for template
     val needles: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map(
       "PROJECT_NAME"          -> "microarch",
@@ -149,6 +156,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       "PLATFORM_TCL"          -> target.pd.tclLibrary.toString,
       "ARCHITECTURE_TCL"      -> target.ad.tclLibrary.toString,
       "COMPOSITION"           -> composition,
+      "EFFORT_LEVEL"          -> effort.toUpperCase
     )
 
     // write Tcl script
@@ -220,11 +228,9 @@ object VivadoComposer {
     lazy val tclFile: Path   = outdir.resolve("%s.tcl".format(t.pd.name))
     lazy val bitFile: Path   = logFile.resolveSibling("%s.bit".format(Composer.mkProjectName(c, t, f)))
     lazy val runName: String = "%s with %s[F=%1.3f]".format(logformat(c), t, f)
-    lazy val pwrFile: Path   = logFile.resolveSibling("power.txt")
     lazy val timFile: Path   = logFile.resolveSibling("timing.txt")
     lazy val utilFile: Path  = logFile.resolveSibling("utilization.txt")
     lazy val log             = ComposerLog(logFile)
-    lazy val pwr             = PowerReport(pwrFile)
     lazy val tim             = TimingReport(timFile)
     lazy val util            = UtilizationReport(utilFile)
   }

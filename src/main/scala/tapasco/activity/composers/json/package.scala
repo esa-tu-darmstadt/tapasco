@@ -44,13 +44,12 @@ package object json {
   }
 
   private def mkComposerResult(r: ComposeResult, bit: Option[String], log: Option[String], util: Option[String],
-      timing: Option[String], power: Option[String]) = Composer.Result(
+      timing: Option[String]) = Composer.Result(
     r,
     bit,
     log flatMap    (f => ComposerLog(Paths.get(f))),
     util flatMap   (f => UtilizationReport(Paths.get(f))),
-    timing flatMap (f => TimingReport(Paths.get(f))),
-    power flatMap  (f => PowerReport(Paths.get(f)))
+    timing flatMap (f => TimingReport(Paths.get(f)))
   )
 
   private def wrComposerResult(r: Composer.Result) = (
@@ -58,8 +57,7 @@ package object json {
     r.bit,
     r.log map (_.file.toString),
     r.util map (_.file.toString),
-    r.timing map (_.file.toString),
-    r.power map (_.file.toString)
+    r.timing map (_.file.toString)
   )
 
   implicit val composerResultFormat: Format[Composer.Result] = (
@@ -67,7 +65,6 @@ package object json {
     (JsPath \ "Bitstream").formatNullable[String] ~
     (JsPath \ "Log").formatNullable[String] ~
     (JsPath \ "UtilizationReport").formatNullable[String] ~
-    (JsPath \ "TimingReport").formatNullable[String] ~
-    (JsPath \ "PowerReport").formatNullable[String]
+    (JsPath \ "TimingReport").formatNullable[String]
   ) (mkComposerResult _, wrComposerResult _)
 }

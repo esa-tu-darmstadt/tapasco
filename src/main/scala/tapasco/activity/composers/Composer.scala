@@ -43,7 +43,7 @@ trait Composer {
    *  @param cfg implicit Configuration instance
    *  @return Composer.Result with error code / additional data
    **/
-  def compose(bd: Composition, target: Target, f: Double = 0, features: Seq[Feature] = Seq())
+  def compose(bd: Composition, target: Target, f: Double = 0, effortLevel : String, features: Seq[Feature] = Seq())
              (implicit cfg: Configuration): Result
 
   /** Removes all intermediate files for the run, leaving results.
@@ -89,8 +89,7 @@ object Composer {
     bit:    Option[String]            = None,
     log:    Option[ComposerLog]       = None,
     util:   Option[UtilizationReport] = None,
-    timing: Option[TimingReport]      = None,
-    power:  Option[PowerReport]       = None
+    timing: Option[TimingReport]      = None
   )
 
   /** Result of the external process execution. **/

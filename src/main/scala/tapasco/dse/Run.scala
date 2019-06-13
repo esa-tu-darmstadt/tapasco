@@ -35,7 +35,7 @@ sealed private trait Run extends Startable with Ordered[Run] {
     (that.area.utilization, that.element.h, that.element.frequency)
 }
 
-private class ConcreteRun(val no: Int, val element: DesignSpace.Element, val target: Target, val debugMode: Option[String])
+private class ConcreteRun(val no: Int, val element: DesignSpace.Element, val target: Target, val debugMode: Option[String], val deleteOnFail: Option[Boolean])
                          (implicit exploration: Exploration, configuration: Configuration) extends Run {
   private[this] var _result: Option[Composer.Result] = None
   private[this] var _task: Option[ComposeTask] = None
@@ -56,7 +56,8 @@ private class ConcreteRun(val no: Int, val element: DesignSpace.Element, val tar
       target          = target,
       logFile         = Some("%s/%s/%s.log".format(exploration.basePath, id, id)),
       debugMode       = debugMode,
-      onComplete      = res => stop(signal))
+      onComplete      = res => stop(signal),
+      deleteOnFail    = deleteOnFail)
     _task = Some(t)
     exploration.publish(Exploration.Events.RunStarted(element, t))
     exploration.tasks(t) // start task

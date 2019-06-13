@@ -50,7 +50,8 @@ private class DesignSpaceExplorationTask(
     features: Option[Seq[Feature]],
     logFile: Option[String],
     debugMode: Option[String],
-    val onComplete: Boolean => Unit)
+    val onComplete: Boolean => Unit,
+    val deleteOnFail: Option[Boolean])
     (implicit cfg: Configuration, tsk: Tasks) extends Task with LogTracking with ExplorationTask {
   private[this] val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   /** Internal representation of result. **/
@@ -74,7 +75,8 @@ private class DesignSpaceExplorationTask(
     designFrequency,
     batchSize,
     _bp,
-    debugMode
+    debugMode,
+    deleteOnFail
   )(_cfg, tsk)
 
   /**
@@ -99,14 +101,13 @@ private class DesignSpaceExplorationTask(
       _logger.info("DSE%s run %s for %s finished, result: %s;{}".format(dimensions, composition, target, result.nonEmpty),
           result map ( res =>
             (" best result: %s @ %1.3f, bitstream file: '%s', logfile: '%s', utilization report: '%s', " +
-            "timing report: '%s', power report: '%s'").format(
+            "timing report: '%s'").format(
               res._1.composition,
               res._1.frequency,
               res._2.bit getOrElse "",
               res._2.log map (_.file) getOrElse "",
               res._2.util map (_.file) getOrElse "",
-              res._2.timing map (_.file) getOrElse "",
-              res._2.power map (_.file) getOrElse "")) getOrElse "")
+              res._2.timing map (_.file) getOrElse "")) getOrElse "")
       // return success, if result is not empty
       result.nonEmpty
     } catch { case ex: Throwable =>
@@ -167,7 +168,8 @@ object DesignSpaceExplorationTask {
             features: Option[Seq[Feature]],
             logFile: Option[String],
             debugMode: Option[String],
-            onComplete: Boolean => Unit)
+            onComplete: Boolean => Unit,
+            deleteOnFail: Option[Boolean])
            (implicit cfg: Configuration, tsk: Tasks): ExplorationTask = {
     new DesignSpaceExplorationTask(
         composition,
@@ -180,7 +182,8 @@ object DesignSpaceExplorationTask {
         features,
         logFile,
         debugMode,
-        onComplete)
+        onComplete,
+        deleteOnFail)
   }
   // scalastyle:on parameter.number
 }

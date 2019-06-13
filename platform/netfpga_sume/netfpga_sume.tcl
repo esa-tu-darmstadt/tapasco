@@ -27,15 +27,19 @@ namespace eval platform {
 
   proc create_mig_core {name} {
     puts "Creating MIG core for DDR ..."
-    if { ! [file exists [get_property DIRECTORY [current_project]]/nf_sume_ddr3A.prj]} {
-      puts "Copying MIG configuration to project directory"
-      file copy "$::env(TAPASCO_HOME)/platform/netfpga_sume/nf_sume_ddr3A.prj" "[get_property DIRECTORY [current_project]]/nf_sume_ddr3A.prj"
+    set copy_to "[get_property DIRECTORY [current_project]]/nf_sume_ddr3A.prj"
+    if { [file exists $copy_to] == 1} {
+      puts "Delete MIG configuration to project directory"
+      file delete $copy_to
     }
+    puts "Copying MIG configuration to project directory"
+    file copy "$::env(TAPASCO_HOME)/platform/netfpga_sume/nf_sume_ddr3A.prj" $copy_to
     # create the IP core itself
     set mig_7series_0 [tapasco::ip::create_mig_core $name]
+    puts "Initializing MIG settings"
     # set MIG properties
     set_property -dict [ list \
-    CONFIG.XML_INPUT_FILE "[get_property DIRECTORY [current_project]]/nf_sume_ddr3A.prj" \
+    CONFIG.XML_INPUT_FILE $copy_to \
     CONFIG.RESET_BOARD_INTERFACE {Custom} \
     CONFIG.MIG_DONT_TOUCH_PARAM {Custom} \
     CONFIG.BOARD_MIG_PARAM {Custom}] $mig_7series_0

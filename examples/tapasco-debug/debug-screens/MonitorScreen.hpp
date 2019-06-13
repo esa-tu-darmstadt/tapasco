@@ -42,14 +42,6 @@ protected:
       ++sid;
       if (sid >= h * w) break;
     }
-    // also render ISRs of INTCs
-    start_col = (cols - intc_addr.size() * 18) / 2;
-    for (uint32_t intc = intc_addr.size(); intc > 0; --intc) {
-      if (intc_isr[intc - 1]) attron(COLOR_PAIR(1)); else attron(A_REVERSE);
-      mvprintw(0, start_col, "INTC%d: 0x%08x", intc_addr.size() - intc, intc_isr[intc - 1]);
-      if (intc_isr[intc - 1]) attroff(COLOR_PAIR(1)); else attroff(A_REVERSE);
-      start_col += 18;
-    }
     // render keyboard hints
     attron(A_REVERSE);
     mvprintw(rows - 1, cols / 2 - 24,

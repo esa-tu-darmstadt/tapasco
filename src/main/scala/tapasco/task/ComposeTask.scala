@@ -41,6 +41,8 @@ class ComposeTask(composition: Composition,
                   features: Option[Seq[Feature]] = None,
                   logFile: Option[String] = None,
                   debugMode: Option[String] = None,
+                  val deleteOnFail: Option[Boolean] = None,
+                  private val effortLevel : String = "normal",
                   val onComplete: Boolean => Unit)
                  (implicit cfg: Configuration) extends Task with LogTracking {
   private[this] implicit val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
@@ -63,7 +65,7 @@ class ComposeTask(composition: Composition,
     _logger.debug("launching compose run for {}@{} [current thread: {}], logfile {}",
       target.ad.name: Object, target.pd.name: Object, Thread.currentThread.getName(): Object, _logFile: Object)
     if (debugMode.isEmpty) {
-      _composerResult = Some(try   { composer.compose(composition, target, designFrequency, features getOrElse Seq()) }
+      _composerResult = Some(try   { composer.compose(composition, target, designFrequency, effortLevel, features getOrElse Seq()) }
                              catch { case e: Exception =>
                                        _logger.error(e.toString)
                                        _logger.debug("stacktrace: {}", e.getStackTrace() mkString NL)
@@ -75,7 +77,7 @@ class ComposeTask(composition: Composition,
 
     _logger.trace("_composerResult = {}", _composerResult: Any)
     _logger.info(("compose run %s@%2.3f MHz for %s finished, result: %s, bitstream file: '%s', " +
-        "logfile: '%s', utilization report: '%s', timing report: '%s', power report: '%s'").format(
+        "logfile: '%s', utilization report: '%s', timing report: '%s'").format(
         composition: Any,
         designFrequency,
         target,
@@ -83,12 +85,13 @@ class ComposeTask(composition: Composition,
         _composerResult flatMap (_.bit) getOrElse "",
         _composerResult flatMap (_.log map (_.file)) getOrElse "",
         _composerResult flatMap (_.util map (_.file)) getOrElse "",
-        _composerResult flatMap (_.timing map (_.file)) getOrElse "",
-        _composerResult flatMap (_.power map (_.file)) getOrElse ""))
+        _composerResult flatMap (_.timing map (_.file)) getOrElse ""))
 
     LogFileTracker.stopLogFileAppender(appender)
     val result = (_composerResult map (_.result) getOrElse false) == ComposeResult.Success
-    if (result) { composer.clean(composition, target, designFrequency) }
+    // If --deleteProjects is set use the corresponding value, else delete only successful runs
+    val delete = if(deleteOnFail.isDefined) deleteOnFail.get else result
+    if (delete) { composer.clean(composition, target, designFrequency) }
     result
   }
 
@@ -166,7 +169,6 @@ object ComposeTask {
   private final val RE_RESULT = """compose run .*result: ([^,]+)""".r.unanchored
   private final val RE_LOG    = """compose run .*result: \S+.*logfile: '([^']+)'""".r.unanchored
   private final val RE_TIMING = """compose run .*result: \S+.*timing report: '([^']+)'""".r.unanchored
-  private final val RE_POWER  = """compose run .*result: \S+.*power report: '([^']+)'""".r.unanchored
   private final val RE_UTIL   = """compose run .*result: \S+.*utilization report: '([^']+)'""".r.unanchored
   private final val RE_RRANDOM = """(?i)(random|r(?:nd)?)""".r
   private final val RE_RPLACER = """(?i)(placer|p(?:lc)?)""".r
@@ -186,10 +188,6 @@ object ComposeTask {
         logger.trace("log path: {}", mkpath(m))
         ComposerLog(mkpath(m))
       })
-      val power = RE_POWER.findFirstMatchIn(lines) flatMap (m   => {
-        logger.trace("power path: {}", mkpath(m))
-        PowerReport(mkpath(m))
-      })
       val util = RE_UTIL.findFirstMatchIn(lines) flatMap (m   => {
         logger.trace("utilization path: {}", mkpath(m))
         UtilizationReport(mkpath(m))
@@ -198,8 +196,8 @@ object ComposeTask {
         logger.trace("timing path: {}", mkpath(m))
         TimingReport(mkpath(m))
       })
-      logger.debug("result = {}, llog = {}, power = {}, util = {}, timing = {}", result, llog, power, util, timing)
-      result map (r => Composer.Result(r, log = llog, power = power, util = util, timing = timing))
+      logger.debug("result = {}, llog = {}, util = {}, timing = {}", result, llog, util, timing)
+      result map (r => Composer.Result(r, log = llog, util = util, timing = timing))
     }
 
   // scalastyle:off magic.number

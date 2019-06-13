@@ -58,6 +58,7 @@
 
 #define TLKM_HSA_MAJOR 421
 
+#ifdef __x86_64__
 /******************************************************************************/
 /* global struct and variable declarations */
 
@@ -515,5 +516,17 @@ void char_hsa_unregister(void)
 		unregister_chrdev_region(MKDEV(TLKM_HSA_MAJOR, 0), 1);
 	}
 }
+
+#else
+
+// dummy functions on 32bit devices
+int char_hsa_register(struct tlkm_device *tlkm_dev)
+{
+	return 0;
+}
+
+void char_hsa_unregister(void) {}
+
+#endif
 
 /******************************************************************************/

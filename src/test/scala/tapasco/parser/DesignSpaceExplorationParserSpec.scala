@@ -71,7 +71,9 @@ private object DesignSpaceExplorationParserSpec {
     batchSizeGen,
     basePath,
     architecturesGen,
-    platformsGen
+    platformsGen,
+    debugModeGen,
+    deleteProjectsGen
   )
 
   val optionsGen: Gen[String] = for {

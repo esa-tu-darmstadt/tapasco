@@ -54,20 +54,23 @@ final case class BulkImportJob(csvFile: Path) extends Job("bulkimport")
  * i.e., each combination of [[base.Architecture]] and [[base.Platform]] given.
  * @param composition Composition to synthesize micro-architecture for.
  * @param designFrequency Operating frequency of PEs in the design.
- * @param implementation Composer Implementation (e.g., Vivado).
+ * @param _implementation Composer Implementation (e.g., Vivado).
  * @param _architectures Name list of [[base.Architecture]] instances.
  * @param _platforms Name list of [[base.Platform]] instances.
  * @param features List of [[base.Feature]] configurations for the design (opt.).
  * @param debugMode Debug mode name (opt.).
+ * @param effortLevel Synthesis effort level (opt.).
  **/
 final case class ComposeJob(
-    composition: Composition,
-    designFrequency: Heuristics.Frequency,
-    private val _implementation: String,
-    private val _architectures: Option[Seq[String]] = None,
-    private val _platforms: Option[Seq[String]] = None,
-    features: Option[Seq[Feature]] = None,
-    debugMode: Option[String] = None) extends Job("compose") {
+   composition: Composition,
+   designFrequency: Heuristics.Frequency,
+   private val _implementation: String,
+   private val _architectures: Option[Seq[String]] = None,
+   private val _platforms: Option[Seq[String]] = None,
+   features: Option[Seq[Feature]] = None,
+   debugMode: Option[String] = None,
+   effortLevel : Option[String] = Some("normal"),
+   deleteProjects: Option[Boolean] = None) extends Job("compose") {
   /** Returns the selected composer tool implementation. */
   lazy val implementation: Composer.Implementation = Composer.Implementation(_implementation)
 
@@ -143,7 +146,8 @@ final case class DesignSpaceExplorationJob(
     private val _architectures: Option[Seq[String]] = None,
     private val _platforms: Option[Seq[String]] = None,
     features: Option[Seq[Feature]] = None,
-    debugMode: Option[String] = None) extends Job("dse") {
+    debugMode: Option[String] = None,
+    deleteProjects: Option[Boolean] = None) extends Job("dse") {
   private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
   // warn if dimensions are completely empty
   dimensions match {

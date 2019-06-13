@@ -37,12 +37,11 @@ object LogFormatter {
     "%s[F=%3.3f] with (h = %3.5f)".format(logformat(de.composition), de.frequency, de.h)
 
   def logformat(ce: Composer.Result): String =
-    "%s, logfile: '%s', utilization report: '%s', timing report: '%s', power report: '%s'"
+    "%s, logfile: '%s', utilization report: '%s', timing report: '%s'"
       .format(ce.result,
               ce.log map (_.file.toString) getOrElse "",
               ce.util map (_.file.toString) getOrElse "",
-              ce.timing map (_.file.toString) getOrElse "",
-              ce.power map (_.file.toString) getOrElse "")
+              ce.timing map (_.file.toString) getOrElse "")
 
   def logformat(cs: Seq[Composition.Entry]): String = "[%s]".format(cs map (logformat _) mkString ", ")
 }

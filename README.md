@@ -3,7 +3,7 @@ The Task Parallel System Composer (TaPaSCo)
 ![Tapasco logo](icon/tapasco_icon.png)
 
 Master Branch Status: [![pipeline status](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/badges/master/pipeline.svg)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/commits/master)
-Dev Branch Status: [![pipeline status](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/badges/2018.2/pipeline.svg)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/commits/2018.2)
+Dev Branch Status: [![pipeline status](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/badges/develop/pipeline.svg)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/commits/develop)
 
 System Requirements
 -------------------
@@ -30,16 +30,16 @@ To use TaPaSCo, you'll need working installations of
 *   *OPTIONAL:* libncurses for the tapasco-debug application
 *   Ubuntu
     ```bash
-    apt-get -y update && apt-get -y install unzip git zip findutils curl build-essential \
+    sudo apt-get -y update && sudo apt-get -y install unzip git zip findutils curl build-essential \
         linux-headers-generic python cmake libelf-dev libncurses-dev rpm
     curl -s "https://get.sdkman.io" | bash
-    source "/root/.sdkman/bin/sdkman-init.sh"
+    source "$HOME/.sdkman/bin/sdkman-init.sh"
     sdk install java
     sdk install sbt
     ```
 *   Fedora
     ```bash
-    dnf -y install which unzip git zip tar findutils kernel-devel make gcc gcc-c++ \
+    sudo dnf -y install which unzip git zip tar findutils kernel-devel make gcc gcc-c++ \
         elfutils-libelf-devel cmake ncurses-devel python libatomic rpm-build
     curl -s "https://get.sdkman.io" | bash
     source "$HOME/.sdkman/bin/sdkman-init.sh"
