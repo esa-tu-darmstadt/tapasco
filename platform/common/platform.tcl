@@ -276,4 +276,10 @@ namespace eval platform {
   proc number_of_interrupt_controllers {} {
     error "Platform does not implement mandatory proc number_of_interrupt_controllers!"
   }
+
+  proc get_ignored_segments { } {
+    set ignored [list]
+    puts "Platform does not specify any ignored segments."
+    return $ignored
+  }
 }
