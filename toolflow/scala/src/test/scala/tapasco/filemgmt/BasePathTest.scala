@@ -22,10 +22,14 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  org.scalatest._
-import  java.nio.file._
+import de.tu_darmstadt.cs.esa.tapasco.util._
+import org.scalatest._
+import java.nio.file._
 
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+
+@RunWith(classOf[JUnitRunner])
 class BasePathSpec extends FlatSpec with Matchers {
   "Setting a new path" should "change the path" in {
     val p = Paths.get(".").resolve("test")

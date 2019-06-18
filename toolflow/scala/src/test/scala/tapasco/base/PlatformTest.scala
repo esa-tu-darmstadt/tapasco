@@ -22,12 +22,14 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
-import  json._
-import  org.scalatest._
-import  java.nio.file._
+import de.tu_darmstadt.cs.esa.tapasco.base.json._
+import org.junit.runner.RunWith
+import org.scalatest._
+import org.scalatest.junit.JUnitRunner
+import tapasco.base._
 
+@RunWith(classOf[JUnitRunner])
 class PlatformSpec extends FlatSpec with Matchers {
-  val jsonPath = Paths.get("json-examples").toAbsolutePath
 
   "A missing Platform file" should "throw an exception" in {
     assert(Platform.from(jsonPath.resolve("missing.json")).isLeft)

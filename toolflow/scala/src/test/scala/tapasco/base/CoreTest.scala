@@ -22,15 +22,16 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
-import  json._
-import  org.scalatest._
-import  java.nio.file._
+import de.tu_darmstadt.cs.esa.tapasco.base.json._
+import org.junit.runner.RunWith
+import org.scalatest._
+import org.scalatest.junit.JUnitRunner
+import tapasco.base._
 
+@RunWith(classOf[JUnitRunner])
 class CoreSpec extends FlatSpec with Matchers {
   private final lazy val logger =
     de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
-
-  val jsonPath = Paths.get("json-examples").toAbsolutePath
 
   "A missing Core file" should "throw an exception" in {
     assert(Core.from(jsonPath.resolve("missing.json")).isLeft)

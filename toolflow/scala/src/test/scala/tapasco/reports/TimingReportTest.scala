@@ -22,11 +22,15 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.reports
-import org.scalatest._
 import java.nio.file._
 
+import org.junit.runner.RunWith
+import org.scalatest._
+import org.scalatest.junit.JUnitRunner
+
+@RunWith(classOf[JUnitRunner])
 class TimingReportSpec extends FlatSpec with Matchers {
-  val reportPath = Paths.get("report-examples").toAbsolutePath
+  val reportPath = Paths.get("src/test/resources/report-examples").toAbsolutePath
 
   "A missing TimingReport file" should "result in None" in {
     TimingReport(reportPath.resolve("missing.rpt")) shouldBe empty

@@ -22,16 +22,19 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
-import  json._
-import  org.scalacheck._
-import  org.scalatest._
-import  org.scalatest.prop.Checkers
-import  java.nio.file._
-import  java.time.{LocalDate, LocalDateTime}
+import java.time.{LocalDate, LocalDateTime}
 
+import de.tu_darmstadt.cs.esa.tapasco.base.json._
+import org.junit.runner.RunWith
+import org.scalacheck._
+import org.scalatest._
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.prop.Checkers
+import tapasco.base._
+
+@RunWith(classOf[JUnitRunner])
 class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
   import org.scalacheck.Prop._
-  val jsonPath = Paths.get("json-examples").toAbsolutePath
 
   "All library versions" should "be read and written correctly" in {
     import play.api.libs.json._

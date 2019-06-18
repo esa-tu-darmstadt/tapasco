@@ -22,16 +22,18 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  de.tu_darmstadt.cs.esa.tapasco.parser.CommandLineParser
-import  org.scalatest._
-import  java.nio.file._
-import  json._
+import de.tu_darmstadt.cs.esa.tapasco.base.json._
+import de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
+import de.tu_darmstadt.cs.esa.tapasco.jobs._
+import de.tu_darmstadt.cs.esa.tapasco.parser.CommandLineParser
+import org.junit.runner.RunWith
+import org.scalatest._
+import org.scalatest.junit.JUnitRunner
+import tapasco.base._
 
+@RunWith(classOf[JUnitRunner])
 class ConfigurationSpec extends FlatSpec with Matchers {
   private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
-  val jsonPath = Paths.get("json-examples").toAbsolutePath
 
   "A missing Configuration file" should "throw an exception" in {
     assert(Configuration.from(jsonPath.resolve("missing.json")).isLeft)

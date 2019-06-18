@@ -22,15 +22,16 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  org.scalatest._
-import  java.nio.file._
-import  json._
+import de.tu_darmstadt.cs.esa.tapasco.base.json._
+import de.tu_darmstadt.cs.esa.tapasco.jobs._
+import org.junit.runner.RunWith
+import org.scalatest._
+import org.scalatest.junit.JUnitRunner
+import tapasco.base._
 
+@RunWith(classOf[JUnitRunner])
 class FeatureSpec extends FlatSpec with Matchers {
   private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
-
-  val jsonPath = Paths.get("json-examples").toAbsolutePath.resolve("configTest")
 
   "LED Feature" should "be parsed correctly" in {
     val oc = Configuration.from(jsonPath.resolve("platform-led.json"))

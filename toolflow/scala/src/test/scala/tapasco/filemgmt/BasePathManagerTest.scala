@@ -22,10 +22,14 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  org.scalatest._
-import  java.nio.file._
+import de.tu_darmstadt.cs.esa.tapasco.util._
+import org.scalatest._
+import java.nio.file._
 
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+
+@RunWith(classOf[JUnitRunner])
 class BasePathManagerSpec extends FlatSpec with Matchers {
   "A BasePathManager" should "generate a correct event for a change on any entity" in {
     val bpm = new BasePathManager(false)

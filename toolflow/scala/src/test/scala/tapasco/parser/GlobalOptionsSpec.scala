@@ -17,13 +17,17 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 package de.tu_darmstadt.cs.esa.tapasco.parser
-import  org.scalacheck._
-import  org.scalatest._
-import  org.scalatest.prop.Checkers
-import  fastparse.all._
-import  java.nio.file._
-import  Common._
+import org.scalacheck._
+import org.scalatest._
+import org.scalatest.prop.Checkers
+import fastparse.all._
+import java.nio.file._
 
+import Common._
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+
+@RunWith(classOf[JUnitRunner])
 class GlobalOptionsSpec extends FlatSpec with Matchers with Checkers {
   import org.scalacheck.Prop._
   import GlobalOptions._, GlobalOptionsSpec._

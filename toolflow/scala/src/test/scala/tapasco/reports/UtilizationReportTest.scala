@@ -22,11 +22,15 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.reports
-import  org.scalatest._
-import  java.nio.file._
+import org.scalatest._
+import java.nio.file._
 
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+
+@RunWith(classOf[JUnitRunner])
 class UtilizationReportSpec extends FlatSpec with Matchers {
-  val reportPath = Paths.get("report-examples").toAbsolutePath
+  val reportPath = Paths.get("src/test/resources/report-examples").toAbsolutePath
 
   "A missing UtilizationReport file" should "result in None" in {
     UtilizationReport(reportPath.resolve("missing.rpt")) shouldBe empty

@@ -22,14 +22,16 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
-import  org.scalatest._
-import  org.scalatest.prop.Checkers
-import  java.nio.file._
-import  json._
-import  org.scalacheck.Prop._
+import de.tu_darmstadt.cs.esa.tapasco.base.json._
+import org.junit.runner.RunWith
+import org.scalacheck.Prop._
+import org.scalatest._
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.prop.Checkers
+import tapasco.base._
 
+@RunWith(classOf[JUnitRunner])
 class CompositionSpec extends FlatSpec with Matchers with Checkers {
-  val jsonPath = Paths.get("json-examples").toAbsolutePath
 
   "All valid compositions" should "be read and written correctly" in {
     check(forAll { composition: Composition =>

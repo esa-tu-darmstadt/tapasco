@@ -28,7 +28,10 @@ import org.scalatest._
 import java.nio.file._
 
 import de.tu_darmstadt.cs.esa.tapasco.util.Listener
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
 
+@RunWith(classOf[JUnitRunner])
 class FileAssetManagerSpec extends FlatSpec with Matchers {
   private final val TAPASCO_HOME = Paths.get(sys.env("TAPASCO_HOME")).toAbsolutePath.normalize
   private final val FS_SLEEP = 500

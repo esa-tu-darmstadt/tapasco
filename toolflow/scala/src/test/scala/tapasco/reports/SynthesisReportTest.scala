@@ -25,6 +25,10 @@ package de.tu_darmstadt.cs.esa.tapasco.reports
 import org.scalatest._
 import java.nio.file._
 
+import org.junit.runner.RunWith
+import org.scalatest.junit.JUnitRunner
+
+@RunWith(classOf[JUnitRunner])
 class SynthesisReportSpec extends FlatSpec with Matchers {
   val reportPath = Paths.get("report-examples").toAbsolutePath
 
