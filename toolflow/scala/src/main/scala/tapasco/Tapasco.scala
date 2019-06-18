@@ -20,7 +20,6 @@ package de.tu_darmstadt.cs.esa.tapasco
 import  base._
 import  filemgmt._
 import  task._
-import  itapasco.controller._
 import  parser._
 import  slurm._
 import  java.nio.file.Path
@@ -55,10 +54,6 @@ object Tapasco {
     if (quiet) Logging.rootLogger.setAdditive(quiet)
   }
 
-  private def runGui(args: Array[String])(implicit cfg: Configuration): Boolean = args.headOption map { firstArg =>
-    (firstArg.toLowerCase equals "itapasco") && { new AppController(Some(cfg)).show; true }
-  } getOrElse false
-
   private def dryRun(p: Path)(implicit cfg: Configuration) {
     import base.json._
     logger.info("dry run, dumping configuration to {}", p)
@@ -71,9 +66,8 @@ object Tapasco {
   def main(args: Array[String]) {
     Locale.setDefault(Locale.US);
 
-    val cfgargs = if (args.length > 0 && args(0).toLowerCase.equals("itapasco")) args.drop(1) else args
     // try to parse all arguments
-    val c = CommandLineParser(cfgargs mkString " ")
+    val c = CommandLineParser(args mkString " ")
     logger.debug("parsed config: {}", c)
     val ok = if (c.isRight) {
       implicit val tasks = new Tasks(c.right.get.maxTasks)
@@ -96,9 +90,9 @@ object Tapasco {
       try {
         if (cfg.parallel) {
           implicit val exe = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(cfg.maxTasks getOrElse UNLIMITED_THREADS))
-          runGui(args) || (cfg.jobs map { j => Future { jobs.executors.execute(j) } } map (get _) fold true) (_ && _)
+          (cfg.jobs map { j => Future { jobs.executors.execute(j) } } map (get _) fold true) (_ && _)
         } else {
-          runGui(args) || (cfg.jobs map { jobs.executors.execute(_) } fold true) (_ && _)
+          (cfg.jobs map { jobs.executors.execute(_) } fold true) (_ && _)
         }
       } catch { case ex: Exception =>
         logger.error(ex.toString)
