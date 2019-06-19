@@ -16,16 +16,20 @@ else
 	echo "WARNING: unknown shell; need to source setup.sh from the TaPaSCo root dir!"
 	export TAPASCO_HOME=$PWD
 fi
-echo "TAPASCO_HOME=$TAPASCO_HOME"
-export PATH=$TAPASCO_HOME/bin:$TAPASCO_HOME/build/install/usr/local/bin/:$PATH
+export TAPASCO_HOME=${TAPASCO_HOME}/toolflow
+echo "TAPASCO_HOME=${TAPASCO_HOME}"
+export TAPASCO_WORK_DIR=$PWD
+echo "TAPASCO_WORK_DIR=${TAPASCO_WORK_DIR}"
+
+export PATH=$TAPASCO_HOME/bin:${TAPASCO_WORK_DIR}/runtime/install/usr/local/bin/:$PATH
 export MANPATH=$MANPATH:$TAPASCO_HOME/man
 export MYVIVADO=$MYVIVADO:$TAPASCO_HOME/common
 export XILINX_PATH=$XILINX_PATH:$TAPASCO_HOME/common
 
-export Tapasco_DIR=${TAPASCO_HOME}/build/install/usr/local/share/Tapasco/cmake/
-export TapascoPlatform_DIR=${TAPASCO_HOME}/build/install/usr/local/share/Tapasco/cmake/
-export TapascoCommon_DIR=${TAPASCO_HOME}/build/install/usr/local/share/Tapasco/cmake/
-export TapascoTLKM_DIR=${TAPASCO_HOME}/build/install/usr/local/share/Tapasco/cmake/
+export Tapasco_DIR=${TAPASCO_WORK_DIR}/runtime/install/usr/local/share/Tapasco/cmake/
+export TapascoPlatform_DIR=${TAPASCO_WORK_DIR}/runtime/install/usr/local/share/Tapasco/cmake/
+export TapascoCommon_DIR=${TAPASCO_WORK_DIR}/runtime/install/usr/local/share/Tapasco/cmake/
+export TapascoTLKM_DIR=${TAPASCO_WORK_DIR}/runtime/install/usr/local/share/Tapasco/cmake/
 
 if echo "${PATH}" | grep --quiet "cmake-3.3.2";
 then
