@@ -26,13 +26,10 @@ import de.tu_darmstadt.cs.esa.tapasco.base.json._
 import de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
 import de.tu_darmstadt.cs.esa.tapasco.jobs._
 import de.tu_darmstadt.cs.esa.tapasco.parser.CommandLineParser
-import org.junit.runner.RunWith
 import org.scalatest._
-import org.scalatest.junit.JUnitRunner
-import tapasco.base._
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class ConfigurationSpec extends FlatSpec with Matchers {
+class ConfigurationSpec extends TaPaSCoSpec with Matchers {
   private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
 
   "A missing Configuration file" should "throw an exception" in {

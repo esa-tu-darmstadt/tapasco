@@ -22,15 +22,13 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import de.tu_darmstadt.cs.esa.tapasco.util.Listener
-import org.scalatest._
 import java.nio.file._
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import de.tu_darmstadt.cs.esa.tapasco.util.Listener
+import org.scalatest._
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class DirectoryWatcherSpec extends FlatSpec with Matchers {
+class DirectoryWatcherSpec extends TaPaSCoSpec with Matchers {
   private final val FS_SLEEP = 500
   "Creating a file in a watched directory" should "generate a Create event" in {
     val p = Files.createTempDirectory(Paths.get("/tmp"), "tapasco-directorywatcherspec-")

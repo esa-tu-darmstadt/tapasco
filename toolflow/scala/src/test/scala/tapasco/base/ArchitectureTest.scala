@@ -23,13 +23,10 @@
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
 import de.tu_darmstadt.cs.esa.tapasco.base.json._
-import org.junit.runner.RunWith
 import org.scalatest._
-import org.scalatest.junit.JUnitRunner
-import tapasco.base._
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class ArchitectureSpec extends FlatSpec with Matchers {
+class ArchitectureSpec extends TaPaSCoSpec with Matchers {
 
   "A missing Architecture file" should "throw an exception" in {
     assert(Architecture.from(jsonPath.resolve("missing.json")).isLeft)

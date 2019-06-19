@@ -24,17 +24,14 @@
 package de.tu_darmstadt.cs.esa.tapasco.base
 import de.tu_darmstadt.cs.esa.tapasco.base.json._
 import de.tu_darmstadt.cs.esa.tapasco.jobs._
-import org.junit.runner.RunWith
 import org.scalatest._
-import org.scalatest.junit.JUnitRunner
-import tapasco.base._
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class FeatureSpec extends FlatSpec with Matchers {
+class FeatureSpec extends TaPaSCoSpec with Matchers {
   private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
 
   "LED Feature" should "be parsed correctly" in {
-    val oc = Configuration.from(jsonPath.resolve("platform-led.json"))
+    val oc = Configuration.from(jsonPath.resolve("configTest").resolve("platform-led.json"))
     lazy val c = oc.right.get
     if (oc.isLeft) logger.error("parsing failed: {}", oc.left.get)
     assert(oc.isRight)
@@ -47,7 +44,7 @@ class FeatureSpec extends FlatSpec with Matchers {
   }
 
   "OLED Feature" should "be parsed correctly" in {
-    val oc = Configuration.from(jsonPath.resolve("platform-oled.json"))
+    val oc = Configuration.from(jsonPath.resolve("configTest").resolve("platform-oled.json"))
     lazy val c = oc.right.get
     if (oc.isLeft) logger.error("parsing failed: {}", oc.left.get)
     assert(oc.isRight)
@@ -60,7 +57,7 @@ class FeatureSpec extends FlatSpec with Matchers {
   }
 
   "Cache Feature" should "be parsed correctly" in {
-    val oc = Configuration.from(jsonPath.resolve("platform-cache.json"))
+    val oc = Configuration.from(jsonPath.resolve("configTest").resolve("platform-cache.json"))
     lazy val c = oc.right.get
     if (oc.isLeft) logger.error("parsing failed: {}", oc.left.get)
     assert(oc.isRight)
@@ -77,7 +74,7 @@ class FeatureSpec extends FlatSpec with Matchers {
   }
 
   "Debug Feature" should "be parsed correctly" in {
-    val oc = Configuration.from(jsonPath.resolve("platform-debug.json"))
+    val oc = Configuration.from(jsonPath.resolve("configTest").resolve("platform-debug.json"))
     lazy val c = oc.right.get
     if (oc.isLeft) logger.error("parsing failed: {}", oc.left.get)
     assert(oc.isRight)
@@ -93,7 +90,7 @@ class FeatureSpec extends FlatSpec with Matchers {
       case _ => assert(false, "expected ComposeJob")
     }
 
-    val oc2 = Configuration.from(jsonPath.resolve("platform-debug2.json"))
+    val oc2 = Configuration.from(jsonPath.resolve("configTest").resolve("platform-debug2.json"))
     lazy val c2 = oc2.right.get
     if (oc2.isLeft) logger.error("parsing failed: {}", oc2.left.get)
     assert(oc2.isRight)

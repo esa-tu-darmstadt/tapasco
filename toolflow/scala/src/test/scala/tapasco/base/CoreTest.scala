@@ -23,13 +23,10 @@
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
 import de.tu_darmstadt.cs.esa.tapasco.base.json._
-import org.junit.runner.RunWith
 import org.scalatest._
-import org.scalatest.junit.JUnitRunner
-import tapasco.base._
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class CoreSpec extends FlatSpec with Matchers {
+class CoreSpec extends TaPaSCoSpec with Matchers {
   private final lazy val logger =
     de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
 

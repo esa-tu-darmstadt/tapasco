@@ -17,18 +17,17 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 package de.tu_darmstadt.cs.esa.tapasco.parser
+import fastparse.all._
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.prop.Checkers
-import fastparse.all._
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class CoreStatisticsParserSpec extends FlatSpec with Matchers with Checkers {
-  import CoreStatisticsParser._, CoreStatisticsParserSpec._
-  import Prop._
+class CoreStatisticsParserSpec extends TaPaSCoSpec with Matchers with Checkers {
   import Common._
+  import CoreStatisticsParser._
+  import CoreStatisticsParserSpec._
+  import Prop._
   implicit val cfg = PropertyCheckConfiguration(minSize = 10000)
 
   "All valid CoreStat jobs" should "be parsed correctly" in

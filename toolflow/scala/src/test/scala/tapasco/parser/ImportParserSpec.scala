@@ -17,17 +17,17 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 package de.tu_darmstadt.cs.esa.tapasco.parser
+import fastparse.all._
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.prop.Checkers
-import fastparse.all._
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class ImportParserSpec extends FlatSpec with Matchers with Checkers {
+class ImportParserSpec extends TaPaSCoSpec with Matchers with Checkers {
+  import Common._
+  import ImportParser._
+  import ImportParserSpec._
   import org.scalacheck.Prop._
-  import ImportParser._, ImportParserSpec._, Common._
   implicit val cfg = PropertyCheckConfiguration(minSize = 10000)
 
   "All valid Import jobs" should "be correctly parsed by importzip" in
@@ -37,7 +37,9 @@ class ImportParserSpec extends FlatSpec with Matchers with Checkers {
 }
 
 private object ImportParserSpec {
-  import BasicParserSpec._, CommonArgParsersSpec._, GlobalOptionsSpec.pathGen
+  import BasicParserSpec._
+  import CommonArgParsersSpec._
+  import GlobalOptionsSpec.pathGen
 
   val descriptionGen: Gen[String] = join(Seq(
     genLongOption("description"),

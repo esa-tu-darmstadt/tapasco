@@ -23,14 +23,9 @@
  **/
 package de.tu_darmstadt.cs.esa.tapasco.reports
 import org.scalatest._
-import java.nio.file._
+import tapasco.TaPaSCoSpec
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-
-@RunWith(classOf[JUnitRunner])
-class SynthesisReportSpec extends FlatSpec with Matchers {
-  val reportPath = Paths.get("report-examples").toAbsolutePath
+class SynthesisReportSpec extends TaPaSCoSpec with Matchers {
 
   "A missing SynthesisReport file" should "result in None" in {
     SynthesisReport(reportPath.resolve("missing.rpt")) shouldBe empty

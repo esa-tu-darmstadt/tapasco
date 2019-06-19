@@ -24,13 +24,10 @@
 package de.tu_darmstadt.cs.esa.tapasco.base
 import de.tu_darmstadt.cs.esa.tapasco.base.Kernel.PassingConvention._
 import de.tu_darmstadt.cs.esa.tapasco.base.json._
-import org.junit.runner.RunWith
 import org.scalatest._
-import org.scalatest.junit.JUnitRunner
-import tapasco.base._
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class KernelSpec extends FlatSpec with Matchers {
+class KernelSpec extends TaPaSCoSpec with Matchers {
 
   "A missing Kernel file" should "throw an exception" in {
     assert(Kernel.from(jsonPath.resolve("missing.json")).isLeft)

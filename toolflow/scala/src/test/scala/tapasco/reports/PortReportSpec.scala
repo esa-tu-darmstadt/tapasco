@@ -1,14 +1,9 @@
 package de.tu_darmstadt.cs.esa.tapasco.reports
 
-import java.nio.file.Paths
+import org.scalatest.Matchers
+import tapasco.TaPaSCoSpec
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.{FlatSpec, Matchers}
-
-@RunWith(classOf[JUnitRunner])
-class PortReportSpec extends FlatSpec with Matchers {
-  val reportPath = Paths.get("src/test/resources/report-examples").toAbsolutePath
+class PortReportSpec extends TaPaSCoSpec with Matchers {
 
   "A missing PortReport file" should "result in None" in {
     PortReport(reportPath.resolve("missing.rpt")) shouldBe empty

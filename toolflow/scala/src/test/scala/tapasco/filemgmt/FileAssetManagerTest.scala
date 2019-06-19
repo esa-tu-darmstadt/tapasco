@@ -22,17 +22,15 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import de.tu_darmstadt.cs.esa.tapasco.base._
-import de.tu_darmstadt.cs.esa.tapasco.base.json._
-import org.scalatest._
 import java.nio.file._
 
+import de.tu_darmstadt.cs.esa.tapasco.base._
+import de.tu_darmstadt.cs.esa.tapasco.base.json._
 import de.tu_darmstadt.cs.esa.tapasco.util.Listener
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import org.scalatest._
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class FileAssetManagerSpec extends FlatSpec with Matchers {
+class FileAssetManagerSpec extends TaPaSCoSpec with Matchers {
   private final val TAPASCO_HOME = Paths.get(sys.env("TAPASCO_HOME")).toAbsolutePath.normalize
   private final val FS_SLEEP = 500
   private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
@@ -41,7 +39,8 @@ class FileAssetManagerSpec extends FlatSpec with Matchers {
     var oldpath = FileAssetManager.basepath(Entities.Architectures).get
     var oldnum = FileAssetManager.entities.architectures.size
     FileAssetManager.basepath(Entities.Architectures).set(
-      TAPASCO_HOME.resolve("json-examples").resolve("configTest").resolve("arch"))
+      TAPASCO_HOME.resolve("toolflow").resolve("scala")
+        .resolve(jsonDirectory).resolve("configTest").resolve("arch"))
     assert(FileAssetManager.entities.architectures.size == 3)
     FileAssetManager.basepath(Entities.Architectures).set(oldpath)
     assert(FileAssetManager.entities.architectures.size == oldnum)
@@ -49,7 +48,8 @@ class FileAssetManagerSpec extends FlatSpec with Matchers {
     oldpath = FileAssetManager.basepath(Entities.Platforms).get
     oldnum = FileAssetManager.entities.platforms.size
     FileAssetManager.basepath(Entities.Platforms).set(
-      TAPASCO_HOME.resolve("json-examples").resolve("configTest").resolve("platform"))
+      TAPASCO_HOME.resolve("toolflow").resolve("scala")
+        .resolve(jsonDirectory).resolve("configTest").resolve("platform"))
     assert(FileAssetManager.entities.platforms.size == 3)
     FileAssetManager.basepath(Entities.Platforms).set(oldpath)
     assert(FileAssetManager.entities.platforms.size == oldnum)
@@ -57,7 +57,8 @@ class FileAssetManagerSpec extends FlatSpec with Matchers {
     oldpath = FileAssetManager.basepath(Entities.Kernels).get
     oldnum = FileAssetManager.entities.kernels.size
     FileAssetManager.basepath(Entities.Kernels).set(
-      TAPASCO_HOME.resolve("json-examples").resolve("configTest").resolve("kernel"))
+      TAPASCO_HOME.resolve("toolflow").resolve("scala")
+        .resolve(jsonDirectory).resolve("configTest").resolve("kernel"))
     assert(FileAssetManager.entities.kernels.size == 3)
     FileAssetManager.basepath(Entities.Kernels).set(oldpath)
     assert(FileAssetManager.entities.kernels.size == oldnum)

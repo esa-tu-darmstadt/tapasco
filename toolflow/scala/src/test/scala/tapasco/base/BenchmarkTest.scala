@@ -25,15 +25,12 @@ package de.tu_darmstadt.cs.esa.tapasco.base
 import java.time.{LocalDate, LocalDateTime}
 
 import de.tu_darmstadt.cs.esa.tapasco.base.json._
-import org.junit.runner.RunWith
 import org.scalacheck._
 import org.scalatest._
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.prop.Checkers
-import tapasco.base._
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class BenchmarkSpec extends FlatSpec with Matchers with Checkers {
+class BenchmarkSpec extends TaPaSCoSpec with Matchers with Checkers {
   import org.scalacheck.Prop._
 
   "All library versions" should "be read and written correctly" in {

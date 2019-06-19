@@ -17,17 +17,17 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 package de.tu_darmstadt.cs.esa.tapasco.parser
+import fastparse.all._
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.prop.Checkers
-import fastparse.all._
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class JobParsersSpec extends FlatSpec with Matchers with Checkers {
+class JobParsersSpec extends TaPaSCoSpec with Matchers with Checkers {
+  import Common._
+  import JobParsers._
+  import JobParsersSpec._
   import org.scalacheck.Prop._
-  import JobParsers._, JobParsersSpec._, Common._
 
   "All valid jobs" should "be correctly parsed by job" in
     check(forAllNoShrink(jobGen) { h =>

@@ -22,15 +22,13 @@
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import de.tu_darmstadt.cs.esa.tapasco.util._
-import org.scalatest._
 import java.nio.file._
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import de.tu_darmstadt.cs.esa.tapasco.util._
+import org.scalatest._
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class BasePathSpec extends FlatSpec with Matchers {
+class BasePathSpec extends TaPaSCoSpec with Matchers {
   "Setting a new path" should "change the path" in {
     val p = Paths.get(".").resolve("test")
     val bp = new BasePath(p.getParent, false)
@@ -67,8 +65,9 @@ class BasePathSpec extends FlatSpec with Matchers {
 
   "Parallel changes with unique paths" should "generate an event for each change" in {
     import java.util.concurrent.atomic.AtomicInteger
-    import scala.concurrent.Future
+
     import scala.concurrent.ExecutionContext.Implicits.global
+    import scala.concurrent.Future
 
     val tests = 1000000
     val count = new AtomicInteger(tests)

@@ -17,17 +17,16 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 package de.tu_darmstadt.cs.esa.tapasco.parser
+import fastparse.all._
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.prop.Checkers
-import fastparse.all._
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class DesignSpaceExplorationParserSpec extends FlatSpec with Matchers with Checkers {
+class DesignSpaceExplorationParserSpec extends TaPaSCoSpec with Matchers with Checkers {
+  import DesignSpaceExplorationParser._
+  import DesignSpaceExplorationParserSpec._
   import org.scalacheck.Prop._
-  import DesignSpaceExplorationParser._, DesignSpaceExplorationParserSpec._
   implicit val cfg = PropertyCheckConfiguration(minSize = 50000, sizeRange = 1000)
 
   "All valid DSE jobs" should "be parsed correctly" in
@@ -37,7 +36,9 @@ class DesignSpaceExplorationParserSpec extends FlatSpec with Matchers with Check
 }
 
 private object DesignSpaceExplorationParserSpec {
-  import BasicParserSpec._, CommonArgParsersSpec._, GlobalOptionsSpec.pathGen
+  import BasicParserSpec._
+  import CommonArgParsersSpec._
+  import GlobalOptionsSpec.pathGen
 
   val dimensionGen: Gen[String] = Gen.oneOf(
     anyCase("area"),

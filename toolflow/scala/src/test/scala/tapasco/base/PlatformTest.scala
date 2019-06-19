@@ -23,13 +23,10 @@
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
 import de.tu_darmstadt.cs.esa.tapasco.base.json._
-import org.junit.runner.RunWith
 import org.scalatest._
-import org.scalatest.junit.JUnitRunner
-import tapasco.base._
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class PlatformSpec extends FlatSpec with Matchers {
+class PlatformSpec extends TaPaSCoSpec with Matchers {
 
   "A missing Platform file" should "throw an exception" in {
     assert(Platform.from(jsonPath.resolve("missing.json")).isLeft)

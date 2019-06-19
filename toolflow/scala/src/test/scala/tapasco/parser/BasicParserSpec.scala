@@ -17,17 +17,15 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 package de.tu_darmstadt.cs.esa.tapasco.parser
+import fastparse.all._
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.prop.Checkers
-import fastparse.all._
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class BasicParserSpec extends FlatSpec with Matchers with Checkers {
-  import org.scalacheck.Prop._
+class BasicParserSpec extends TaPaSCoSpec with Matchers with Checkers {
   import BasicParserSpec._
+  import org.scalacheck.Prop._
   implicit val cfg = PropertyCheckConfiguration(minSize = 50000, sizeRange = 1000)
 
   "Arbitrary whitespace" should "be matched by ws completely" in

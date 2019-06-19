@@ -17,16 +17,15 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 package de.tu_darmstadt.cs.esa.tapasco.parser
+import fastparse.all._
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.prop.Checkers
-import fastparse.all._
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class BulkImportParserSpec extends FlatSpec with Matchers with Checkers {
-  import BulkImportParser._, BulkImportParserSpec._
+class BulkImportParserSpec extends TaPaSCoSpec with Matchers with Checkers {
+  import BulkImportParser._
+  import BulkImportParserSpec._
   import Common._
   import Prop._
 

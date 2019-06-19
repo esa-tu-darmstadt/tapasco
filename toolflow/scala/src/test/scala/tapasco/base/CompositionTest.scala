@@ -23,15 +23,12 @@
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
 import de.tu_darmstadt.cs.esa.tapasco.base.json._
-import org.junit.runner.RunWith
 import org.scalacheck.Prop._
 import org.scalatest._
-import org.scalatest.junit.JUnitRunner
 import org.scalatest.prop.Checkers
-import tapasco.base._
+import tapasco.TaPaSCoSpec
 
-@RunWith(classOf[JUnitRunner])
-class CompositionSpec extends FlatSpec with Matchers with Checkers {
+class CompositionSpec extends TaPaSCoSpec with Matchers with Checkers {
 
   "All valid compositions" should "be read and written correctly" in {
     check(forAll { composition: Composition =>
