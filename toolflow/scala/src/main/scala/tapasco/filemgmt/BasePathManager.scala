@@ -49,20 +49,28 @@ object BasePathManager {
     throw e
   }
 
+  /** Working directory of TaPaSCo, set by TAPASCO_WORK_DIR environmment variable. **/
+  final private val TAPASCO_WORK_DIR = try {
+    Paths.get(sys.env("TAPASCO_WORK_DIR")).toAbsolutePath().normalize
+  } catch { case e: NoSuchElementException =>
+    logger.error("FATAL: TAPASCO_WORK_DIR environment variable is not set")
+    throw e
+  }
+
   /** Default directory: Architectures. **/
-  final val DEFAULT_DIR_ARCHS        = TAPASCO_HOME.resolve("arch")
+  final val DEFAULT_DIR_ARCHS        = TAPASCO_HOME.resolve("toolflow").resolve("TCL").resolve("arch")
 
   /** Default directory: Bitstreams. **/
-  final val DEFAULT_DIR_COMPOSITIONS = TAPASCO_HOME.resolve("bd")
+  final val DEFAULT_DIR_COMPOSITIONS = TAPASCO_WORK_DIR.resolve("compose")
 
   /** Default directory: Cores. **/
-  final val DEFAULT_DIR_CORES        = TAPASCO_HOME.resolve("core")
+  final val DEFAULT_DIR_CORES        = TAPASCO_WORK_DIR.resolve("core")
 
   /** Default directory: Kernels. **/
-  final val DEFAULT_DIR_KERNELS      = TAPASCO_HOME.resolve("kernel")
+  final val DEFAULT_DIR_KERNELS      = TAPASCO_WORK_DIR.resolve("kernel")
 
   /** Default directory: Platforms. **/
-  final val DEFAULT_DIR_PLATFORMS    = TAPASCO_HOME.resolve("platform")
+  final val DEFAULT_DIR_PLATFORMS    = TAPASCO_HOME.resolve("toolflow").resolve("TCL").resolve("platform")
 
   /** Map of default directories for entities. */
   lazy final val defaultDirectory: Map[Entity, (Path, Boolean)] = Map(
