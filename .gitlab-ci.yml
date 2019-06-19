@@ -27,7 +27,7 @@ stages:
     - sdk install java $JAVA_VERSION
     - sdk install sbt $SBT_VERSION
     - source setup.sh
-    - cd ${TAPASCO_HOME}
+    - cd ${TAPASCO_HOME_TOOLFLOW}
     - sbt test
 
 test_tapasco_java_8:
@@ -82,7 +82,7 @@ test_tapasco_sbt_1_2_8:
     - sdk install sbt
     - sbt version
     - source setup.sh
-    - cd ${TAPASCO_HOME}
+    - cd ${TAPASCO_HOME_TOOLFLOW}
     - sbt assembly
 
 .build_sbt_tapasco_fedora:
