@@ -1,0 +1,27 @@
+obj-m += tlkm.o
+tlkm-objs := \
+    tlkm_module.o \
+    tlkm/tlkm_logging.o \
+    tlkm/tlkm_bus.o \
+    tlkm/tlkm.o \
+    tlkm/tlkm_ioctl.o \
+    tlkm/tlkm_device.o \
+    tlkm/tlkm_status.o \
+    tlkm/tlkm_platform.o \
+    device/tlkm_perfc.o \
+    device/tlkm_perfc_miscdev.o \
+    device/tlkm_control.o \
+    device/tlkm_device_rw.o \
+    device/tlkm_device_ioctl.o \
+    device/tlkm_device_mmap.o \
+    zynq/zynq_device.o \
+    zynq/zynq_ioctl.o \
+    zynq/zynq_dmamgmt.o \
+    zynq/zynq_irq.o \
+    pcie/pcie.o \
+    pcie/pcie_device.o \
+    pcie/pcie_irq.o \
+    pcie/pcie_ioctl.o \
+    dma/tlkm_dma.o \
+    dma/blue_dma.o \
+    hsa/char_device_hsa.o

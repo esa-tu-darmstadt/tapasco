@@ -1,4 +1,4 @@
-CFLAGS+=-Wall -Werror -I$(TAPASCO_HOME)/tlkm/user
+CFLAGS+=-Wall -Werror -I$(TAPASCO_HOME_RUNTIME)/kernel/user
 LDFLAGS+=-lc
 
 %.o: %.c

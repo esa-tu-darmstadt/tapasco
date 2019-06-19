@@ -18,22 +18,22 @@ else
 fi
 export TAPASCO_HOME=${TAPASCO_HOME}
 echo "TAPASCO_HOME=${TAPASCO_HOME}"
-export TAPASCO_HOME=${TAPASCO_HOME_TOOLFLOW}
+export TAPASCO_HOME_TOOLFLOW=${TAPASCO_HOME}/toolflow
 echo "TAPASCO_HOME_TOOLFLOW=${TAPASCO_HOME_TOOLFLOW}"
-export TAPASCO_HOME_RUNTIME=${TAPASCO_HOME_RUNTIME}
+export TAPASCO_HOME_RUNTIME=${TAPASCO_HOME}/runtime
 echo "TAPASCO_HOME_RUNTIME=${TAPASCO_HOME_RUNTIME}"
 export TAPASCO_WORK_DIR=$PWD
 echo "TAPASCO_WORK_DIR=${TAPASCO_WORK_DIR}"
 
-export PATH=${TAPASCO_HOME_TOOLFLOW}/bin:${TAPASCO_HOME_RUNTIME}/bin:${TAPASCO_WORK_DIR}/runtime/install/usr/local/bin/:$PATH
+export PATH=${TAPASCO_HOME_TOOLFLOW}/bin:${TAPASCO_HOME_RUNTIME}/bin:${TAPASCO_WORK_DIR}/build/install/usr/local/bin/:$PATH
 export MANPATH=$MANPATH:$TAPASCO_HOME/man
 export MYVIVADO=$MYVIVADO:$TAPASCO_HOME/common
 export XILINX_PATH=$XILINX_PATH:$TAPASCO_HOME/common
 
-export Tapasco_DIR=${TAPASCO_WORK_DIR}/runtime/install/usr/local/share/Tapasco/cmake/
-export TapascoPlatform_DIR=${TAPASCO_WORK_DIR}/runtime/install/usr/local/share/Tapasco/cmake/
-export TapascoCommon_DIR=${TAPASCO_WORK_DIR}/runtime/install/usr/local/share/Tapasco/cmake/
-export TapascoTLKM_DIR=${TAPASCO_WORK_DIR}/runtime/install/usr/local/share/Tapasco/cmake/
+export Tapasco_DIR=${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/
+export TapascoPlatform_DIR=${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/
+export TapascoCommon_DIR=${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/
+export TapascoTLKM_DIR=${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/
 
 if echo "${PATH}" | grep --quiet "cmake-3.3.2";
 then

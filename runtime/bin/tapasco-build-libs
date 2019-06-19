@@ -6,7 +6,7 @@ from   socket import gethostname
 import os
 
 tools        = ['tapasco-debug', 'tapasco-benchmark']
-default_cmd  = 'mkdir -p {0} && cd {0} && cmake {1} .. && make -j install DESTDIR={0}/install'
+default_cmd  = 'mkdir -p {0} && cd {0} && cmake {1} {2} && make -j install DESTDIR={0}/install'
 tlkm_cmd     = 'cd {0} && make -j {1}'
 
 parser = argparse.ArgumentParser()
@@ -27,13 +27,13 @@ shared_flags = '-DBUILD_SHARED_LIBS:BOOL={}'.format('ON' if args.shared else 'OF
 
 print 'Build mode: ' + args.mode
 
-mdir = '%s/bin'         % os.environ['TAPASCO_HOME']
-mdir = '%s/tlkm'        % os.environ['TAPASCO_HOME']
-pdir = '%s/platform/build'  % os.environ['TAPASCO_HOME']
-adir = '%s/arch/build'      % os.environ['TAPASCO_HOME']
-tdir = '%s/arch/tests/build'    % os.environ['TAPASCO_HOME']
-ldir = '%s/lib'         % os.environ['TAPASCO_HOME']
-bdir   = os.environ['TAPASCO_HOME'] + '/build'
+mdir = '%s/bin'         % os.environ['TAPASCO_HOME_RUNTIME']
+mdir = '%s/kernel'        % os.environ['TAPASCO_HOME_RUNTIME']
+pdir = '%s/platform/build'  % os.environ['TAPASCO_HOME_RUNTIME']
+adir = '%s/arch/build'      % os.environ['TAPASCO_HOME_RUNTIME']
+tdir = '%s/arch/tests/build'    % os.environ['TAPASCO_HOME_RUNTIME']
+ldir = '%s/lib'         % os.environ['TAPASCO_HOME_RUNTIME']
+bdir   = os.environ['TAPASCO_WORK_DIR'] + '/build'
 
 if clean or args.rebuild:
     subprocess.call(['rm -rf %s' % bdir], shell=True)
@@ -54,7 +54,7 @@ if not clean:
             print('Driver build failed!')
             sys.exit(ret)
     if not args.skip_runtime:
-        cmd = default_cmd.format(bdir, " ".join([debug_flags, shared_flags]))
+        cmd = default_cmd.format(bdir, " ".join([debug_flags, shared_flags]), os.environ['TAPASCO_HOME_RUNTIME'])
         ret = subprocess.call([cmd], shell=True)
         if ret:
             print('Tapasco build failed!')

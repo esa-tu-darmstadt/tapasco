@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
-include($ENV{TAPASCO_HOME}/cmake/Tapasco.cmake NO_POLICY_SCOPE)
+include($ENV{TAPASCO_HOME_RUNTIME}/cmake/Tapasco.cmake NO_POLICY_SCOPE)
 project (basic_test)
 
 find_package(TapascoTLKM REQUIRED)
