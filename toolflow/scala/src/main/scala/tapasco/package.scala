@@ -40,6 +40,7 @@ package object tapasco {
 
   lazy val PLATFORM_NUM_SLOTS: Int = {
     val f = Paths.get(sys.env("TAPASCO_HOME"))
+      .resolve("runtime")
       .resolve("platform")
       .resolve("include")
       .resolve("platform_global.h")
