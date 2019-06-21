@@ -9,6 +9,7 @@
 plugins {
     // Apply the scala plugin to add support for Scala
     id 'scala'
+    id 'application'
 }
 
 repositories {
@@ -34,4 +35,9 @@ dependencies {
 
     // Need scala-xml at test runtime
     testRuntimeOnly 'org.scala-lang.modules:scala-xml_2.12:1.1.1'
+}
+
+application {
+    mainClassName = 'de.tu_darmstadt.cs.esa.tapasco.Tapasco'
+    applicationDefaultJvmArgs = ['-Xms512M', '-Xmx1536M', '-Xss1M', '-XX:+CMSClassUnloadingEnabled']
 }
