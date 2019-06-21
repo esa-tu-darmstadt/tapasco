@@ -844,11 +844,25 @@ namespace eval platform {
       puts "\n\nFinished creating tarfile:"
       puts "$tarfilepath\n\n"
     }
+
+    proc check_hdk {} {
+      if {[info exist ::env(HDK_SHELL_DIR)] eq 0} {
+        puts "****************************************************"
+        puts "Environment variable HDK_SHELL_DIR is not set."
+        puts "This likely means the Amazon HDK has not been (properly) set up."
+        puts "Please download/clone the current version from:"
+        puts "https://github.com/aws/aws-fpga"
+        puts "Before using TaPaSCo, run 'source hdk_setup.sh'."
+        puts "****************************************************"
+        exit 1
+      }
+    }
   }
 
   # End plugins
 
   # Register plugins
+  tapasco::register_plugin "platform::aws_plugins::check_hdk" "post-init"
   tapasco::register_plugin "platform::aws_plugins::set_params" "pre-arch"
   tapasco::register_plugin "platform::aws_plugins::pre_synth" "pre-synth"
   tapasco::register_plugin "platform::aws_plugins::post_synth" "post-synth"
