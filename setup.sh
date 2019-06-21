@@ -26,6 +26,7 @@ export TAPASCO_WORK_DIR=$PWD
 echo "TAPASCO_WORK_DIR=${TAPASCO_WORK_DIR}"
 
 export PATH=${TAPASCO_HOME_TOOLFLOW}/bin:${TAPASCO_HOME_RUNTIME}/bin:${TAPASCO_WORK_DIR}/build/install/usr/local/bin/:$PATH
+export PATH=${TAPASCO_HOME_TOOLFLOW}/scala/build/install/tapasco/bin:$PATH
 export MANPATH=$MANPATH:$TAPASCO_HOME/man
 export MYVIVADO=$MYVIVADO:$TAPASCO_HOME/common
 export XILINX_PATH=$XILINX_PATH:$TAPASCO_HOME/common
