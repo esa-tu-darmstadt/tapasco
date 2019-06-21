@@ -342,20 +342,19 @@ namespace eval platform {
     # create clocking wizard instance and ports
     set design_clk_wiz [tapasco::ip::create_clk_wiz design_clk_wiz]
     set_property -dict [list CONFIG.CLK_OUT1_PORT {design_clk} \
-                        CONFIG.USE_SAFE_CLOCK_STARTUP {true} \
+                        CONFIG.USE_SAFE_CLOCK_STARTUP {false} \
                         CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
                         CONFIG.USE_LOCKED {true} \
                         CONFIG.USE_RESET {true} \
                         CONFIG.RESET_TYPE {ACTIVE_LOW} \
                         CONFIG.RESET_PORT {resetn} \
-                        CONFIG.PRIM_SOURCE {No_buffer} \
                         ] $design_clk_wiz
 
     set clkwiz_design_aclk [create_bd_pin -type "clk" -dir "O" "design_aclk"]
     set clkwiz_design_aresetn [create_bd_pin -type "rst" -dir "O" "design_aresetn"]
 
     connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins "$f1_inst/rst_main_n_out"]
-    connect_bd_net [get_bd_pins $design_clk_wiz/clk_in1] [get_bd_pins "$f1_inst/clk_extra_a1_out"]
+    connect_bd_net [get_bd_pins $design_clk_wiz/clk_in1] [get_bd_pins "$f1_inst/clk_extra_a2_out"]
 
     # connect external design clk
     connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $clkwiz_design_aclk
@@ -563,7 +562,7 @@ namespace eval platform {
     set_property -dict [ list \
         CONFIG.AUX_PRESENT {1} \
         CONFIG.BAR1_PRESENT {0} \
-        CONFIG.NUM_A_CLOCKS {2} \
+        CONFIG.NUM_A_CLOCKS {3} \
         CONFIG.CLOCK_A0_FREQ {125000000} \
         CONFIG.CLOCK_A1_FREQ {62500000} \
         CONFIG.CLOCK_A2_FREQ {187500000} \
