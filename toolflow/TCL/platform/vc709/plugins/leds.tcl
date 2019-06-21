@@ -36,6 +36,6 @@ namespace eval leds {
   }
 
   proc load_constraints {} {
-    read_xdc -unmanaged "$::env(TAPASCO_HOME)/platform/vc709/plugins/leds.xdc"
+    read_xdc -unmanaged "$::env(TAPASCO_HOME_TCL)/platform/vc709/plugins/leds.xdc"
   }
 }

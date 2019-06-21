@@ -20,5 +20,5 @@
 namespace eval platform {
   set platform_dirname "zcu102revd"
 
-  source $::env(TAPASCO_HOME)/platform/zynqmp/zynqmp.tcl
+  source $::env(TAPASCO_HOME_TCL)/platform/zynqmp/zynqmp.tcl
 }

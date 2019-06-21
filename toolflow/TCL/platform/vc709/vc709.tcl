@@ -25,7 +25,7 @@ namespace eval platform {
 
   set platform_dirname "vc709"
 
-  source $::env(TAPASCO_HOME)/platform/pcie/pcie_base.tcl
+  source $::env(TAPASCO_HOME_TCL)/platform/pcie/pcie_base.tcl
 
   proc create_mig_core {name} {
     puts "Creating MIG core for DDR ..."

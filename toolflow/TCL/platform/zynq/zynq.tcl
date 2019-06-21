@@ -27,13 +27,13 @@ namespace eval ::platform {
   namespace export max_masters
   namespace export get_address_map
 
-  # check if TAPASCO_HOME env var is set
-  if {![info exists ::env(TAPASCO_HOME)]} {
+  # check if TAPASCO_HOME_TCL env var is set
+  if {![info exists ::env(TAPASCO_HOME_TCL)]} {
     puts "Could not find TaPaSCo root directory, please set environment variable 'TAPASCO_HOME'."
     exit 1
   }
   # scan plugin directory
-  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/zynq/plugins" "*.tcl"] {
+  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/platform/zynq/plugins" "*.tcl"] {
     source -notrace $f
   }
 

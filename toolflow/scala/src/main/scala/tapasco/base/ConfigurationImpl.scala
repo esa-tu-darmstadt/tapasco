@@ -22,10 +22,12 @@
  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 package de.tu_darmstadt.cs.esa.tapasco.base
-import  de.tu_darmstadt.cs.esa.tapasco.{Common => TapascoCommon}
-import  de.tu_darmstadt.cs.esa.tapasco.json._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  java.nio.file._
+import de.tu_darmstadt.cs.esa.tapasco.{Common => TapascoCommon}
+import de.tu_darmstadt.cs.esa.tapasco.json._
+import de.tu_darmstadt.cs.esa.tapasco.jobs._
+import java.nio.file._
+
+import de.tu_darmstadt.cs.esa.tapasco.filemgmt.BasePathManager
 
 /**
  * Internal implementation of [[Configuration]]:
@@ -35,11 +37,11 @@ import  java.nio.file._
  **/
 private case class ConfigurationImpl (
       descPath: Path                                  = Paths.get(System.getProperty("user.dir")).resolve("default.cfg"),
-      private val _archDir: Path                      = TapascoCommon.homeDir.resolve("arch"),
-      private val _platformDir: Path                  = TapascoCommon.homeDir.resolve("platform"),
-      private val _kernelDir: Path                    = TapascoCommon.homeDir.resolve("kernel"),
-      private val _coreDir: Path                      = TapascoCommon.homeDir.resolve("core"),
-      private val _compositionDir: Path               = TapascoCommon.homeDir.resolve("bd"),
+      private val _archDir: Path                      = BasePathManager.DEFAULT_DIR_ARCHS,
+      private val _platformDir: Path                  = BasePathManager.DEFAULT_DIR_PLATFORMS,
+      private val _kernelDir: Path                    = BasePathManager.DEFAULT_DIR_KERNELS,
+      private val _coreDir: Path                      = BasePathManager.DEFAULT_DIR_CORES,
+      private val _compositionDir: Path               = BasePathManager.DEFAULT_DIR_COMPOSITIONS,
       private val _logFile: Option[Path]              = None,
       slurm: Boolean                                  = false,
       parallel: Boolean                               = false,
@@ -72,7 +74,6 @@ private case class ConfigurationImpl (
 
   // these directories must exist
   for ((d, n) <- Seq((archDir, "architectures"),
-                     (kernelDir, "kernels"),
                      (platformDir, "platforms")))
     require(mustExist(d), "%s directory %s does not exist".format(n, d.toString))
 }

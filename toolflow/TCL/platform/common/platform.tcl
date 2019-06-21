@@ -24,10 +24,10 @@ namespace eval platform {
   namespace export create
   namespace export generate
   namespace export get_address_map
-  source "$::env(TAPASCO_HOME)/platform/common/addressmap.tcl"
+  source "$::env(TAPASCO_HOME_TCL)/platform/common/addressmap.tcl"
 
   # scan plugin directory
-  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/common/plugins" "*.tcl"] {
+  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/platform/common/plugins" "*.tcl"] {
     source -notrace $f
   }
 

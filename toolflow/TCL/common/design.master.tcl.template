@@ -28,7 +28,7 @@ if {![info exists ::env(TAPASCO_HOME)]} {
 }
 
 # source base lib
-source -notrace "$::env(TAPASCO_HOME)/common/common.tcl"
+source -notrace "$::env(TAPASCO_HOME_TCL)/common/common.tcl"
 
 # event: pre-header
 tapasco::call_plugins "pre-header"
@@ -37,11 +37,11 @@ tapasco::call_plugins "pre-header"
 @@HEADER@@
 
 # source architecture-specific Tcl scripts
-source -notrace "$env(TAPASCO_HOME)/arch/common/arch.tcl"
+source -notrace "$env(TAPASCO_HOME_TCL)/arch/common/arch.tcl"
 source -notrace @@ARCHITECTURE_TCL@@
 
 # source platform-specific Tcl scripts
-source -notrace "$env(TAPASCO_HOME)/platform/common/platform.tcl"
+source -notrace "$env(TAPASCO_HOME_TCL)/platform/common/platform.tcl"
 source -notrace @@PLATFORM_TCL@@
 
 # event: post-init

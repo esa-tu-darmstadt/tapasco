@@ -33,7 +33,7 @@ namespace eval arch {
   set arch_irq_concats [list]
 
   # scan plugin directory
-  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/arch/axi4mm/plugins" "*.tcl"] {
+  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/arch/axi4mm/plugins" "*.tcl"] {
     source -notrace $f
   }
 

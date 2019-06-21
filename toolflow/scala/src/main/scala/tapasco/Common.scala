@@ -32,7 +32,9 @@ object Common {
   protected val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
 
   lazy val homeDir: Path                      = Paths.get(sys.env("TAPASCO_HOME")).toAbsolutePath
-  lazy val commonDir: Path                    = Paths.get(sys.env("TAPASCO_HOME")).resolve("common").toAbsolutePath
+  lazy val commonDir: Path                    =
+    Paths.get(sys.env("TAPASCO_HOME")).resolve("toolflow").resolve("TCL")
+      .resolve("common").toAbsolutePath
   //lazy val targetDesignFrequency: Option[Int] = sys.env.get("TAPASCO_FREQ") map (_.toInt)
 
   // FIXME implement software environment singleton for versions etc.

@@ -88,7 +88,7 @@ export_design -format ipxact -display_name {@@NAME@@} -vendor {@@VENDOR@@} -vers
 # remove .zip
 file delete [glob "@@PROJECT@@/@@SOLUTION@@/impl/ip/*.zip"]
 # replace logo
-file copy -force "$::env(TAPASCO_HOME)/common/logo.png" "@@PROJECT@@/@@SOLUTION@@/impl/ip/misc/logo.png"
+file copy -force "$::env(TAPASCO_HOME_TCL)/common/logo.png" "@@PROJECT@@/@@SOLUTION@@/impl/ip/misc/logo.png"
 if {$do_cosim > 0} {
   # add SAIF
   file copy -force "@@PROJECT@@/@@TOP@@.saif" "@@PROJECT@@/@@SOLUTION@@/impl/ip/misc/"
@@ -96,11 +96,11 @@ if {$do_cosim > 0} {
 # re-package
 set oldpwd [pwd]
 cd "@@PROJECT@@/@@SOLUTION@@/impl/ip"
-exec -ignorestderr "$::env(TAPASCO_HOME)/common/hls_patch_supported_families.sh"
+exec -ignorestderr "$::env(TAPASCO_HOME_TCL)/common/hls_patch_supported_families.sh"
 # also add subcore Tcl scripts to zip
-exec -ignorestderr "$::env(TAPASCO_HOME)/common/hls_patch_subcores.sh"
+exec -ignorestderr "$::env(TAPASCO_HOME_TCL)/common/hls_patch_subcores.sh"
 if {$do_cosim > 0} {
-  exec -ignorestderr "$::env(TAPASCO_HOME)/common/hls_patch_saif.sh"
+  exec -ignorestderr "$::env(TAPASCO_HOME_TCL)/common/hls_patch_saif.sh"
 }
 exec -ignorestderr "[pwd]/pack.sh"
 # we're done

@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-source -notrace $::env(TAPASCO_HOME)/platform/zynq/zynq.tcl
+source -notrace $::env(TAPASCO_HOME_TCL)/platform/zynq/zynq.tcl
 
 namespace eval platform {
-  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/zc706/plugins" "*.tcl"] {
+  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/platform/zc706/plugins" "*.tcl"] {
     source -notrace $f
   }
 }

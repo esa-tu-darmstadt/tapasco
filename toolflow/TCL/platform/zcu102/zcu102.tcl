@@ -20,5 +20,5 @@
 namespace eval platform {
   set platform_dirname "zcu102"
 
-  source -notrace $::env(TAPASCO_HOME)/platform/zynqmp/zynqmp.tcl
+  source -notrace $::env(TAPASCO_HOME_TCL)/platform/zynqmp/zynqmp.tcl
 }

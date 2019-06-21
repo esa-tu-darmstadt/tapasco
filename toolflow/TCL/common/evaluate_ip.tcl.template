@@ -22,7 +22,7 @@
 #
 
 # source base lib
-source -notrace "$::env(TAPASCO_HOME)/common/common.tcl"
+source -notrace "$::env(TAPASCO_HOME_TCL)/common/common.tcl"
 
 # suppress most messages except warnings and errors
 set_msg_config -severity INFO -suppress
@@ -31,7 +31,7 @@ set_param general.maxThreads 1
 create_project -in_memory -part @@PART@@
 
 # add common IP
-set_property IP_REPO_PATHS "$::env(TAPASCO_HOME)/common/ip @@BASE_DIR@@" [current_project]
+set_property IP_REPO_PATHS "$::env(TAPASCO_HOME_TCL)/common/ip @@BASE_DIR@@" [current_project]
 
 # add IP core
 update_ip_catalog

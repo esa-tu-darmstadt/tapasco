@@ -32,7 +32,7 @@ namespace eval fancontrol {
       connect_bd_net $pwm [get_bd_pins "pwmslice/Dout"]
       connect_bd_net [get_bd_pins "pwmcounter/Q"] [get_bd_pins "pwmslice/Din"]
       connect_bd_net [get_bd_pin "$ps/FCLK_CLK0"] [get_bd_pin "$cnt/CLK"]
-      add_files -fileset constrs_1 -norecurse "$::env(TAPASCO_HOME)/platform/zc706/plugins/fancontrol-zc706.xdc"
+      add_files -fileset constrs_1 -norecurse "$::env(TAPASCO_HOME_TCL)/platform/zc706/plugins/fancontrol-zc706.xdc"
     }
     return {}
   }

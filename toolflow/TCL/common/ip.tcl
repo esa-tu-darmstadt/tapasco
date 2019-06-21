@@ -4,7 +4,7 @@ namespace eval ::tapasco::ip {
   # check if we're running inside Vivado
   if {[llength [info commands version]] > 0} {
     # source IP catalog VLNVs for the current Vivado version
-    set cip [format "$::env(TAPASCO_HOME)/common/common_%s.tcl" [version -short]]
+    set cip [format "$::env(TAPASCO_HOME_TCL)/common/common_%s.tcl" [version -short]]
     if {! [file exists $cip]} {
       puts "Could not find $cip, Vivado [version -short] is not supported yet!"
       exit 1
@@ -268,7 +268,7 @@ namespace eval ::tapasco::ip {
     puts "  C_COUNTER_W: $cw"
 
     set oc [create_bd_cell -type ip -vlnv [dict get $stdcomps oled_ctrl vlnv] $name]
-    set xdc "$::env(TAPASCO_HOME)/common/ip/oled_pc/constraints/oled.xdc"
+    set xdc "$::env(TAPASCO_HOME_TCL)/common/ip/oled_pc/constraints/oled.xdc"
     read_xdc $xdc
     set_property PROCESSING_ORDER LATE [get_files $xdc]
 
@@ -391,7 +391,7 @@ namespace eval ::tapasco::ip {
     puts "  VLNV: $vlnv"
     puts "  IDs : $ids"
     puts "  sourcing JSON lib ..."
-    source -notrace "$::env(TAPASCO_HOME)/common/json_write.tcl"
+    source -notrace "$::env(TAPASCO_HOME_TCL)/common/json_write.tcl"
     package require json::write
 
     puts "  making JSON config file ..."
@@ -408,7 +408,7 @@ namespace eval ::tapasco::ip {
 
     # generate core
     set old_pwd [pwd]
-    set jar "$::env(TAPASCO_HOME)/common/ip/tapasco_status/tapasco-status.jar"
+    set jar "$::env(TAPASCO_HOME_TCL)/common/ip/tapasco_status/tapasco-status.jar"
     set cache "[get_property DIRECTORY [current_project]]/../user_ip/tapasco-status"
     if {[catch {exec -ignorestderr java -jar $jar $cache $json_file | tee ${json_file}.log >@stdout 2>@1}]} {
       puts stderr "Building TaPaSCO status core failed, see ${json_file}.log:"

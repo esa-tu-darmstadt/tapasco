@@ -23,7 +23,7 @@
 namespace eval platform {
   set platform_dirname "netfpga_sume"
 
-  source $::env(TAPASCO_HOME)/platform/pcie/pcie_base.tcl
+  source $::env(TAPASCO_HOME_TCL)/platform/pcie/pcie_base.tcl
 
   proc create_mig_core {name} {
     puts "Creating MIG core for DDR ..."
@@ -33,7 +33,7 @@ namespace eval platform {
       file delete $copy_to
     }
     puts "Copying MIG configuration to project directory"
-    file copy "$::env(TAPASCO_HOME)/platform/netfpga_sume/nf_sume_ddr3A.prj" $copy_to
+    file copy "$::env(TAPASCO_HOME_TCL)/platform/netfpga_sume/nf_sume_ddr3A.prj" $copy_to
     # create the IP core itself
     set mig_7series_0 [tapasco::ip::create_mig_core $name]
     puts "Initializing MIG settings"
@@ -116,7 +116,7 @@ namespace eval platform {
   }
 
   proc create_constraints {} {
-    set constraints_fn "$::env(TAPASCO_HOME)/platform/netfpga_sume/board.xdc"
+    set constraints_fn "$::env(TAPASCO_HOME_TCL)/platform/netfpga_sume/board.xdc"
     read_xdc $constraints_fn
     set_property PROCESSING_ORDER EARLY [get_files $constraints_fn]
   }

@@ -26,7 +26,7 @@
 # init paths
 DRIVER=tlkm
 DRIVERPATH="$TAPASCO_HOME/tlkm/"
-BITLOAD_SCRIPT="$TAPASCO_HOME/platform/pcie/module/program_pcie.tcl"
+BITLOAD_SCRIPT="$TAPASCO_HOME_TCL/platform/pcie/module/program_pcie.tcl"
 LOG_ID=$DRIVER"|""pci"
 
 show_usage() {
