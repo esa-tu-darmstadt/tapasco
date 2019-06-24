@@ -427,11 +427,10 @@ tapasco_hls:
     - source "/root/.sdkman/bin/sdkman-init.sh"
     - sdk install java
     - source $XILINX_VIVADO/settings64.sh
-    - cd /tmp
     - source setup.sh
-    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
     - ./gradlew installDist
-    - cd /tmp
+    - popd
     - tapasco -v --kernelDir ${TAPASCO_HOME_TOOLFLOW}/examples/kernel-examples hls counter -p pynq
 
 .tapasco_compose:
@@ -457,11 +456,10 @@ tapasco_hls:
     - source "/root/.sdkman/bin/sdkman-init.sh"
     - sdk install java
     - source $XILINX_VIVADO/settings64.sh
-    - cd /tmp
     - source setup.sh
-    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
     - ./gradlew installDist
-    - cd /tmp
+    - popd
     - tapasco --kernelDir ${TAPASCO_HOME_TOOLFLOW}/examples/kernel-examples hls counter -p pynq
     - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p $PLATFORM
 
