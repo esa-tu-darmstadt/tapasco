@@ -426,11 +426,13 @@ tapasco_hls:
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
     - sdk install java
-    - sdk install sbt
     - source $XILINX_VIVADO/settings64.sh
+    - cd /tmp
     - source setup.sh
-    - sbt assembly
-    - tapasco -v hls counter -p pynq
+    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - ./gradlew installDist
+    - cd /tmp
+    - tapasco -v --kernelDir ${TAPASCO_HOME_TOOLFLOW}/examples/kernel-examples hls counter -p pynq
 
 .tapasco_compose:
   stage: build_hw
@@ -454,11 +456,13 @@ tapasco_hls:
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
     - sdk install java
-    - sdk install sbt
     - source $XILINX_VIVADO/settings64.sh
+    - cd /tmp
     - source setup.sh
-    - sbt assembly
-    - tapasco hls counter -p pynq --skipEvaluation
+    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - ./gradlew installDist
+    - cd /tmp
+    - tapasco --kernelDir ${TAPASCO_HOME_TOOLFLOW}/examples/kernel-examples hls counter -p pynq
     - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p $PLATFORM
 
 tapasco_compose_17_4:
