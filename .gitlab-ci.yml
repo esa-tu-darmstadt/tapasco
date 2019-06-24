@@ -186,7 +186,7 @@ build_kernel_ubuntu_19_04_debug:
   script:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
     - source setup.sh
-    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j 1 $MODE; popd; done
+    - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd runtime/kernel; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j 1 $MODE; popd; done
   artifacts:
     paths:
       - tlkm/tlkm.ko
