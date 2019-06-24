@@ -796,8 +796,6 @@ namespace eval platform {
       puts "Locking design"
       lock_design -level routing
 
-      report_timing_summary -file $::FAAS_CL_DIR/build/reports/${::timestamp}.SH_CL_final_timing_summary.rpt
-
       set to_aws_dir "${::FAAS_CL_DIR}/build/checkpoints/to_aws"
       puts "to_aws_dir = ${to_aws_dir}"
 
