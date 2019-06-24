@@ -131,7 +131,7 @@ build_scala_tapasco_ubuntu_19_04:
   script:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
     - source setup.sh
-    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd tlkm; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j 1 $MODE; popd; done
+    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd runtime/kernel; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j 1 $MODE; popd; done
   artifacts:
     paths:
       - tlkm/tlkm.ko
