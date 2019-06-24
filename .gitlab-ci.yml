@@ -5,18 +5,17 @@ after_script:
   - echo "Done with the work"
 
 stages:
-  - software_tests
-  - build_sbt
+  - test_scala_toolflow
+  - build_scala_toolflow
   - build_kernel
   - build_runtime
   - build_hw
 
 .test_tapasco:
-  stage: software_tests
+  stage: test_scala_toolflow
   retry: 2
   variables:
     JAVA_VERSION: "8.0.212-zulu"
-    SBT_VERSION: "1.2.8"
   image: ubuntu:latest
   tags:
     - High
@@ -25,10 +24,9 @@ stages:
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
     - sdk install java $JAVA_VERSION
-    - sdk install sbt $SBT_VERSION
     - source setup.sh
-    - cd ${TAPASCO_HOME_TOOLFLOW}
-    - sbt test
+    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - ./gradlew test
 
 test_tapasco_java_8:
   variables:
@@ -50,28 +48,8 @@ test_tapasco_java_11:
     JAVA_VERSION: "11.0.2-open"
   extends: .test_tapasco
 
-test_tapasco_sbt_0_13_9:
-  variables:
-    SBT_VERSION: "0.13.9"
-  extends: .test_tapasco
-
-test_tapasco_sbt_1_0_0:
-  variables:
-    SBT_VERSION: "1.0.0"
-  extends: .test_tapasco
-
-test_tapasco_sbt_1_1_5:
-  variables:
-    SBT_VERSION: "1.1.5"
-  extends: .test_tapasco
-
-test_tapasco_sbt_1_2_8:
-  variables:
-    SBT_VERSION: "1.2.8"
-  extends: .test_tapasco
-
-.build_sbt_tapasco:
-  stage: build_sbt
+.build_scala_tapasco:
+  stage: build_scala_toolflow
   retry: 2
   tags:
     - High
@@ -79,69 +57,67 @@ test_tapasco_sbt_1_2_8:
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
     - sdk install java
-    - sdk install sbt
-    - sbt version
     - source setup.sh
-    - cd ${TAPASCO_HOME_TOOLFLOW}
-    - sbt assembly
+    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - ./gradlew installDist
 
-.build_sbt_tapasco_fedora:
+.build_scala_tapasco_fedora:
   before_script:
     - dnf -y install which unzip git zip tar findutils
-  extends: .build_sbt_tapasco
+  extends: .build_scala_tapasco
 
-build_sbt_tapasco_fedora_24:
+build_scala_tapasco_fedora_24:
   image: fedora:24
-  extends: .build_sbt_tapasco_fedora
+  extends: .build_scala_tapasco_fedora
 
-build_sbt_tapasco_fedora_25:
+build_scala_tapasco_fedora_25:
   image: fedora:25
-  extends: .build_sbt_tapasco_fedora
+  extends: .build_scala_tapasco_fedora
 
-build_sbt_tapasco_fedora_26:
+build_scala_tapasco_fedora_26:
   image: fedora:26
-  extends: .build_sbt_tapasco_fedora
+  extends: .build_scala_tapasco_fedora
 
-build_sbt_tapasco_fedora_27:
+build_scala_tapasco_fedora_27:
   image: fedora:27
-  extends: .build_sbt_tapasco_fedora
+  extends: .build_scala_tapasco_fedora
 
-build_sbt_tapasco_fedora_28:
+build_scala_tapasco_fedora_28:
   image: fedora:28
-  extends: .build_sbt_tapasco_fedora
+  extends: .build_scala_tapasco_fedora
 
-build_sbt_tapasco_fedora_29:
+build_scala_tapasco_fedora_29:
   image: fedora:29
-  extends: .build_sbt_tapasco_fedora
+  extends: .build_scala_tapasco_fedora
 
-build_sbt_tapasco_fedora_30:
+build_scala_tapasco_fedora_30:
   image: fedora:30
-  extends: .build_sbt_tapasco_fedora
+  extends: .build_scala_tapasco_fedora
 
-build_sbt_tapasco_fedora_31:
+build_scala_tapasco_fedora_31:
   image: fedora:31
-  extends: .build_sbt_tapasco_fedora
+  extends: .build_scala_tapasco_fedora
 
-.build_sbt_tapasco_ubuntu:
+.build_scala_tapasco_ubuntu:
   before_script:
     - apt-get -y update && apt-get -y install unzip git zip findutils curl
-  extends: .build_sbt_tapasco
+  extends: .build_scala_tapasco
 
-build_sbt_tapasco_ubuntu_16_04:
+build_scala_tapasco_ubuntu_16_04:
   image: ubuntu:xenial
-  extends: .build_sbt_tapasco_ubuntu
+  extends: .build_scala_tapasco_ubuntu
 
-build_sbt_tapasco_ubuntu_18_04:
+build_scala_tapasco_ubuntu_18_04:
   image: ubuntu:bionic
-  extends: .build_sbt_tapasco_ubuntu
+  extends: .build_scala_tapasco_ubuntu
 
-build_sbt_tapasco_ubuntu_18_10:
+build_scala_tapasco_ubuntu_18_10:
   image: ubuntu:cosmic
-  extends: .build_sbt_tapasco_ubuntu
+  extends: .build_scala_tapasco_ubuntu
 
-build_sbt_tapasco_ubuntu_19_04:
+build_scala_tapasco_ubuntu_19_04:
   image: ubuntu:disco
-  extends: .build_sbt_tapasco_ubuntu
+  extends: .build_scala_tapasco_ubuntu
 
 # build kernel module
 # as we are running in a docker instance, we cannot use tapasco-build-libs
