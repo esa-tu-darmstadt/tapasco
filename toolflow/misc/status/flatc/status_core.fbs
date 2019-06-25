@@ -1,0 +1,20 @@
+namespace Tapasco;
+
+table PE {
+    name: string;
+    id: uint32;
+    offset: uint64;
+    local_memory: [uint64];
+}
+
+table Platform {
+    name: string;
+    offset: uint64;
+}
+
+table Status {
+    arch_base: uint64;
+    platform_base: uint64;
+    pe: [PE];
+    platform: [Platform];
+}
