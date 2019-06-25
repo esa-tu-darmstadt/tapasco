@@ -16,13 +16,16 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.task
-import  de.tu_darmstadt.cs.esa.tapasco.util.Publisher
-import  scala.collection.JavaConverters._
-import  scala.concurrent.Future
-import  scala.util.{Failure, Success}
-import  java.util.concurrent.LinkedBlockingQueue
-import  java.time.LocalDateTime
+package tapasco.task
+
+import java.time.LocalDateTime
+import java.util.concurrent.LinkedBlockingQueue
+
+import tapasco.util.Publisher
+
+import scala.collection.JavaConverters._
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 /**
  * The Timestamped trait allows to track enqueue, start and completion times:
@@ -103,7 +106,8 @@ private class GenericTask(
 class Tasks(maxParallel: Option[Int] = None) extends Publisher {
   type Event = Tasks.Event
   import Tasks.Events._
-  private[this] final val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+
+  private[this] final val _logger = tapasco.Logging.logger(getClass)
   private[this] final implicit val _exectx = scala.concurrent.ExecutionContext.fromExecutorService(
     if (maxParallel.nonEmpty) java.util.concurrent.Executors.newFixedThreadPool(maxParallel.get)
     else                      java.util.concurrent.Executors.newCachedThreadPool()

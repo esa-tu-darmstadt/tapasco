@@ -21,8 +21,9 @@
  * @brief    Model of FPGA area estimate.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.e)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  scala.util.Properties.{lineSeparator => NL}
+package tapasco.util
+
+import scala.util.Properties.{lineSeparator => NL}
 
 /** Estimate of resource usage of a hardware design. */
 final case class ResourcesEstimate(

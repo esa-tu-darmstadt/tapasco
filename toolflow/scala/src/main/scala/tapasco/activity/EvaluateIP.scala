@@ -21,18 +21,21 @@
  * @brief    Contains the code for the out-of-context synthesis activity.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.activity
-import  de.tu_darmstadt.cs.esa.tapasco._
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.LogTrackingFileWatcher
-import  de.tu_darmstadt.cs.esa.tapasco.reports._
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  java.nio.file.{Files, Path}
-import  scala.sys.process._
+package tapasco.activity
+
+import java.nio.file.{Files, Path}
+
+import tapasco._
+import tapasco.base._
+import tapasco.filemgmt.LogTrackingFileWatcher
+import tapasco.reports._
+import tapasco.util._
+
+import scala.sys.process._
 
 /** EvaluateIP is the out-of-context synthesis activity.
   * The EvaluateIP activity performs an out-of-context synthesis and
-  * place-and-route of the given IP core and a [[base.Target]] to get an
+  * place-and-route of the given IP core and a [[Target]] to get an
   * estimate on the area utilization and max. operating frequency
   * of the design. This data can be used in design space exploration.
   * Conventions: There must be a main clock port in the top-level
@@ -40,7 +43,7 @@ import  scala.sys.process._
   */
 object EvaluateIP {
   private implicit final val logger =
-    de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+    tapasco.Logging.logger(getClass)
 
   /** Template for the XML report file (similar to Vivado HLS). */
   final val reportTemplate = Common.commonDir.resolve("ip_report.xml.template")

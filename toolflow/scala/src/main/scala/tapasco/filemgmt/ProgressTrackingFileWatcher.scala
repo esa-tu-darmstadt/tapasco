@@ -16,13 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
+package tapasco.filemgmt
 
-import de.tu_darmstadt.cs.esa.tapasco.Logging._
-import de.tu_darmstadt.cs.esa.tapasco.util.Listener
-import MultiFileWatcher._
-import Events._
-import ProgressTrackingFileWatcher._
+import tapasco.Logging._
+import tapasco.filemgmt.MultiFileWatcher.Events._
+import tapasco.filemgmt.MultiFileWatcher._
+import tapasco.filemgmt.ProgressTrackingFileWatcher._
+import tapasco.util.Listener
 
 import scala.concurrent.duration.Duration
 
@@ -35,7 +35,7 @@ import scala.concurrent.duration.Duration
   */
 class ProgressTrackingFileWatcher(_logger: Option[Logger] = None, pollInterval: Int = POLL_INTERVAL)
   extends MultiFileWatcher(POLL_INTERVAL) {
-  private[this] final val logger = _logger getOrElse de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private[this] final val logger = _logger getOrElse tapasco.Logging.logger(getClass)
 
   var currentState: Int = -1
   val start: Long = System.currentTimeMillis()

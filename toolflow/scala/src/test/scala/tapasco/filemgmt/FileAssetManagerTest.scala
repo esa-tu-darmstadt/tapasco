@@ -21,19 +21,19 @@
  * @brief    Unit tests for EntityManager.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
+package tapasco.filemgmt
 import java.nio.file._
 
-import de.tu_darmstadt.cs.esa.tapasco.base._
-import de.tu_darmstadt.cs.esa.tapasco.base.json._
-import de.tu_darmstadt.cs.esa.tapasco.util.Listener
 import org.scalatest._
 import tapasco.TaPaSCoSpec
+import tapasco.base._
+import tapasco.base.json._
+import tapasco.util.Listener
 
 class FileAssetManagerSpec extends TaPaSCoSpec with Matchers {
   private final val TAPASCO_HOME = Paths.get(sys.env("TAPASCO_HOME")).toAbsolutePath.normalize
   private final val FS_SLEEP = 500
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
 
   "Changes in the base paths" should "be reflected in the caches" in {
     var oldpath = FileAssetManager.basepath(Entities.Architectures).get

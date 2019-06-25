@@ -21,8 +21,10 @@
  * @brief    Model for Composer tool logfiles.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.activity.composers
+package tapasco.activity.composers
+
 import java.nio.file.Path
+
 import scala.io.Source
 
 /** ComposerLog is an abstract definition of a log file produced by a Composer.
@@ -30,8 +32,8 @@ import scala.io.Source
   * based log files.
   **/
 class ComposerLog(val file: Path) {
-  import ComposerLog._
   import ComposeResult._
+  import ComposerLog._
   /** Returns all lines containing error messages in log. **/
   val errors   = Source.fromFile(file.toString).getLines.zipWithIndex.filter(
       _ match { case (line, idx) => ! RE_ERROR.findFirstIn(line).isEmpty }).toSeq
@@ -58,7 +60,7 @@ class ComposerLog(val file: Path) {
   * Contains the regular expressions and a convenience constructor.
   **/
 object ComposerLog {
-  private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
+  private[this] val logger = tapasco.Logging.logger(this.getClass)
   def apply(file: Path): Option[ComposerLog] = try { Some(new ComposerLog(file)) } catch { case e: Exception =>
       logger.warn("could not read logfile " + file + ": " + e); None }
 

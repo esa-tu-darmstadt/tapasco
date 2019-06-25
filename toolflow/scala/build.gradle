@@ -38,6 +38,6 @@ dependencies {
 }
 
 application {
-    mainClassName = 'de.tu_darmstadt.cs.esa.tapasco.Tapasco'
+    mainClassName = 'tapasco.Tapasco'
     applicationDefaultJvmArgs = ['-Xms512M', '-Xmx1536M', '-Xss1M', '-XX:+CMSClassUnloadingEnabled']
 }

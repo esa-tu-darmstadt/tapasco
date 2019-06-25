@@ -16,14 +16,14 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import de.tu_darmstadt.cs.esa.tapasco.base._
-import de.tu_darmstadt.cs.esa.tapasco.base.json._
-import de.tu_darmstadt.cs.esa.tapasco.dse.Heuristics
-import fastparse.all._
+package tapasco.parser
+
 import java.nio.file._
 
-import scala.util.Try
+import fastparse.all._
+import tapasco.base._
+import tapasco.base.json._
+import tapasco.dse.Heuristics
 
 private object CommonArgParsers {
   import BasicParsers._

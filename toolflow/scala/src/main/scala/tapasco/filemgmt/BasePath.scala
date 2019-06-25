@@ -16,10 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import  de.tu_darmstadt.cs.esa.tapasco.util.Publisher
-import  scala.language.implicitConversions
-import  java.nio.file.{Files, Path}
+package tapasco.filemgmt
+
+import java.nio.file.{Files, Path}
+
+import tapasco.util.Publisher
+
+import scala.language.implicitConversions
 
 class BasePath(initialDir: Path, createOnSet: Boolean = true) extends Publisher {
   type Event = BasePath.Event

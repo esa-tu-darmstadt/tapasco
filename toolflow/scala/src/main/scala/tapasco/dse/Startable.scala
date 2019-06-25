@@ -16,8 +16,9 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.dse
-import  java.util.concurrent.CountDownLatch
+package tapasco.dse
+
+import java.util.concurrent.CountDownLatch
 
 private trait Startable {
   def start(signal: Option[CountDownLatch] = None): Unit

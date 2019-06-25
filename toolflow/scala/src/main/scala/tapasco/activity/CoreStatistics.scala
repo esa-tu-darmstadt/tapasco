@@ -16,12 +16,14 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.activity
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.base.json._
-import  de.tu_darmstadt.cs.esa.tapasco.reports._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  scala.util.Properties.{lineSeparator => NL}
+package tapasco.activity
+
+import tapasco.base._
+import tapasco.base.json._
+import tapasco.filemgmt._
+import tapasco.reports.{SynthesisReport, TimingReport}
+
+import scala.util.Properties.{lineSeparator => NL}
 
 /** CoreStatistics is an activity which collects Core data in a CSV file.
   * It is often helpful to be able to dump all out-of-context results
@@ -30,9 +32,10 @@ import  scala.util.Properties.{lineSeparator => NL}
   **/
 object CoreStatistics {
   /** Produce a CSV file containing the results.
-    * @param target Architecture + Platform combination to dump for.
+    *
+    * @param target   Architecture + Platform combination to dump for.
     * @param fileName Output filename of the CSV file.
-    * @param cfg Implicit [[base.Configuration]].
+    * @param cfg      Implicit [[Configuration]].
     * @return true, iff successful
     **/
   def apply(target: Target, fileName: String)(implicit cfg: Configuration): Boolean =

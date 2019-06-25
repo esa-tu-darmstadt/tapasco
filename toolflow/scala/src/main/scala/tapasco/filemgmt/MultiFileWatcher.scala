@@ -16,14 +16,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import scala.collection.mutable.{ArrayBuffer, Map}
-import java.nio.file.Path
+package tapasco.filemgmt
+
 import java.io.{BufferedReader, FileReader}
-import java.util.concurrent.atomic.AtomicReference
+import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
+
+import tapasco.util._
+
 import scala.collection.JavaConverters._
+import scala.collection.mutable.{ArrayBuffer, Map}
 
 /**
  * MultiFileWatcher monitors the contents of multiple files at once.
@@ -132,7 +135,7 @@ class MultiFileWatcher(pollInterval: Int = MultiFileWatcher.POLL_INTERVAL) exten
 
   private[this] var _watchThread: AtomicReference[Option[Thread]] = new AtomicReference(None)
   private[this] val _files: Map[Path, BufferedReader] = new ConcurrentHashMap().asScala
-  private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private[this] val logger = tapasco.Logging.logger(getClass)
 }
 
 /** MultiFileWatcher companion object. */

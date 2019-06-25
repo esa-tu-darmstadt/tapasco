@@ -22,13 +22,15 @@
  *           synthesis, place and route steps for the Composition.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.activity.composers
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.dse._
-import  de.tu_darmstadt.cs.esa.tapasco.reports._
+package tapasco.activity.composers
+
+import tapasco.base._
+import tapasco.dse._
+import tapasco.reports._
+
 
 /** Wrapper trait for synthesis tools: basic interface to synthesise compositions
-    using an external tool (e.g., Vivado). **/
+  * using an external tool (e.g., Vivado). **/
 trait Composer {
   import Composer._
 

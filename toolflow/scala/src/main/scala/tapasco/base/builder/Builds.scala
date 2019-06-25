@@ -16,10 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.base.builder
-import  play.api.libs.json._
-import  java.nio.file._
-import  scala.io.Source
+package tapasco.base.builder
+
+import java.nio.file._
+
+import play.api.libs.json._
+
+import scala.io.Source
 
 /**
  * The Builds trait simplifies file serializations in JSON format.

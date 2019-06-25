@@ -16,15 +16,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.slurm
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt._
-import  de.tu_darmstadt.cs.esa.tapasco.task.ResourceConsumer
-import  de.tu_darmstadt.cs.esa.tapasco.Logging._
-import  de.tu_darmstadt.cs.esa.tapasco.util.{Publisher, Template}
-import  scala.collection.JavaConverters._
-import  scala.sys.process._
-import  java.nio.file._
-import  java.nio.file.attribute.PosixFilePermission._
+package tapasco.slurm
+
+import java.nio.file._
+import java.nio.file.attribute.PosixFilePermission._
+
+import tapasco.Logging._
+import tapasco.filemgmt._
+import tapasco.task.ResourceConsumer
+import tapasco.util.{Publisher, Template}
+
+import scala.collection.JavaConverters._
+import scala.sys.process._
 
 /**
  * Primitive interface to SLURM scheduler:
@@ -32,7 +35,7 @@ import  java.nio.file.attribute.PosixFilePermission._
  * Provides methods to write the script, schedule and wait for it.
  **/
 final object Slurm extends Publisher {
-  private implicit val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private implicit val logger = tapasco.Logging.logger(getClass)
   private val SLURM_RETRIES   = 10
 
   /** Model of a SLURM job. */

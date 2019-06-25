@@ -21,14 +21,14 @@
  * @brief    Unit tests for Benchmark description file.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.base
+package tapasco.base
 import java.time.{LocalDate, LocalDateTime}
 
-import de.tu_darmstadt.cs.esa.tapasco.base.json._
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.prop.Checkers
 import tapasco.TaPaSCoSpec
+import tapasco.base.json._
 
 class BenchmarkSpec extends TaPaSCoSpec with Matchers with Checkers {
   import org.scalacheck.Prop._

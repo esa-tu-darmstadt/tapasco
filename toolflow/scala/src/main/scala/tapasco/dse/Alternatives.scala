@@ -28,13 +28,15 @@
  *           as all alternatives for an entire composition.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.dse
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  java.nio.file.Paths
+package tapasco.dse
+
+import java.nio.file.Paths
+
+import tapasco.base._
+import tapasco.filemgmt.FileAssetManager
 
 object Alternatives {
-  private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
+  private[this] val logger = tapasco.Logging.logger(this.getClass)
 
   /** Returns the ID of a given kernel name.
     * @param name Name of the kernel

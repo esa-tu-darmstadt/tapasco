@@ -1,4 +1,4 @@
-package de.tu_darmstadt.cs.esa.tapasco.reports
+package tapasco.reports
 
 import org.scalatest.Matchers
 import tapasco.TaPaSCoSpec

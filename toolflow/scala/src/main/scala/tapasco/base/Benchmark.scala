@@ -22,11 +22,13 @@
  * @todo    Scaladoc is missing.
  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import  de.tu_darmstadt.cs.esa.tapasco.util.LinearInterpolator
-import  builder._
-import  java.time.LocalDateTime
-import  java.nio.file._
+package tapasco.base
+
+import java.nio.file._
+import java.time.LocalDateTime
+
+import tapasco.base.builder._
+import tapasco.util.LinearInterpolator
 
 /** Versions of libtapasco and libplatform used to generate data. */
 final case class LibraryVersions(platform: String, tapasco: String)

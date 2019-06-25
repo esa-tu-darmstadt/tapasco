@@ -21,18 +21,21 @@
  * @brief    Task to bulk-import IP cores given in a comma-separated values file.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.jobs.executors
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  de.tu_darmstadt.cs.esa.tapasco.task._
-import  scala.util.Properties.{lineSeparator => NL}
-import  scala.util.control.Exception._
-import  scala.io.Source
-import  java.nio.file.Paths
-import  java.util.concurrent.Semaphore
+package tapasco.jobs.executors
+
+import java.nio.file.Paths
+import java.util.concurrent.Semaphore
+
+import tapasco.base._
+import tapasco.jobs._
+import tapasco.task._
+
+import scala.io.Source
+import scala.util.Properties.{lineSeparator => NL}
+import scala.util.control.Exception._
 
 private object BulkImport extends Executor[BulkImportJob] {
-  private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private[this] val logger = tapasco.Logging.logger(getClass)
   private final val headerLine =
     Seq("Zip", "ID", "Description", "Architecture", "Platform", "Avg Runtime (clock cycles)")
 

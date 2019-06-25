@@ -21,9 +21,10 @@
  * @brief    Package containing Json Reads/Writes/Formats for Json SerDes.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.e)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  play.api.libs.json._
-import  play.api.libs.functional.syntax._
+package tapasco.util
+
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
 
 package object json {
   implicit val resourcesEstimateFormat: Format[ResourcesEstimate] = (

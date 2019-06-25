@@ -16,12 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  scala.sys.process._
-import  scala.collection.mutable.ArrayBuffer
+package tapasco.util
+
+import scala.collection.mutable.ArrayBuffer
+import scala.sys.process._
 
 private[tapasco] final case class InterruptibleProcess(p: ProcessBuilder, waitMillis: Option[Int] = None) {
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
   private var result: Option[Int]         = None
   private val output: ArrayBuffer[String] = ArrayBuffer()
   private val errors: ArrayBuffer[String] = ArrayBuffer()

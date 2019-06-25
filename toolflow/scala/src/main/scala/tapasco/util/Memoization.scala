@@ -16,9 +16,11 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  java.util.WeakHashMap
-import  scala.collection.JavaConverters._
+package tapasco.util
+
+import java.util.WeakHashMap
+
+import scala.collection.JavaConverters._
 
 class Memoization[A, B](f: A => B) extends Function[A, B] {
   private val _memo = new WeakHashMap[A, B]().asScala

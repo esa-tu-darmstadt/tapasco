@@ -16,10 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  scala.util.matching.Regex
-import  java.nio.file._
+package tapasco.filemgmt
+
+import java.nio.file._
+
+import tapasco.util._
+
+import scala.util.matching.Regex
 
 /**
  * EntityCache monitors description files and keeps cached versions
@@ -47,7 +50,8 @@ trait EntityCache[T] extends Listener[DirectoryWatcher.Event] with Publisher {
  **/
 private class DefaultEntityCache[T](paths: Set[Path], val filter: Regex, build: Path => Option[T]) extends EntityCache[T] {
   import scala.collection.mutable.{Set => MSet}
-  private[this] val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+
+  private[this] val _logger = tapasco.Logging.logger(getClass)
   private val _files: MSet[Path] = findFiles(paths)
 
   /** Finds all matching files via file tree walk. **/

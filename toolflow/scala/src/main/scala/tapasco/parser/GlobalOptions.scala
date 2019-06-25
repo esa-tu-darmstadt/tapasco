@@ -16,15 +16,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.base.json._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs.json._
-import  play.api.libs.json._
-import  scala.io.Source
-import  java.nio.file._
-import  fastparse.all._
+package tapasco.parser
+
+import java.nio.file._
+
+import fastparse.all._
+import play.api.libs.json._
+import tapasco.base._
+import tapasco.base.json._
+import tapasco.jobs._
+import tapasco.jobs.json._
+
+import scala.io.Source
 
 private object GlobalOptions {
   import BasicParsers._

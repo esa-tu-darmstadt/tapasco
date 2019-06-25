@@ -16,9 +16,10 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  scala.collection.mutable.ArrayBuffer
-import  scala.language.implicitConversions
+package tapasco.util
+
+import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
 
 /** Listener receives events of type A from a [[Publisher]]. */
 trait Listener[A] {

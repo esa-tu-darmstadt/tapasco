@@ -21,26 +21,29 @@
  * @brief    Composer implementation for Vivado Design Suite.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.activity.composers
-import  de.tu_darmstadt.cs.esa.tapasco.Common
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.base.json._
-import  de.tu_darmstadt.cs.esa.tapasco.base.tcl._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.{LogTrackingFileWatcher, ProgressTrackingFileWatcher}
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  de.tu_darmstadt.cs.esa.tapasco.reports._
-import  de.tu_darmstadt.cs.esa.tapasco.dse.Heuristics
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  java.nio.file._
-import  scala.sys.process.{Process, ProcessLogger}
-import  scala.util.Properties.{lineSeparator => NL}
-import  ComposeResult._
-import  LogFormatter._
+package tapasco.activity.composers
+
+import java.nio.file._
+
+import tapasco.Common
+import tapasco.activity.composers.ComposeResult._
+import tapasco.base._
+import tapasco.base.json._
+import tapasco.base.tcl._
+import tapasco.dse.Heuristics
+import tapasco.filemgmt.{FileAssetManager, LogTrackingFileWatcher, ProgressTrackingFileWatcher}
+import tapasco.reports._
+import tapasco.util.LogFormatter._
+import tapasco.util._
+
+import scala.sys.process.{Process, ProcessLogger}
+import scala.util.Properties.{lineSeparator => NL}
 
 /** Implementation of [[Composer]] for Vivado Design Suite. */
 class VivadoComposer()(implicit cfg: Configuration) extends Composer {
   import VivadoComposer._
-  private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
+
+  private[this] val logger = tapasco.Logging.logger(this.getClass)
 
   /** @inheritdoc */
   def maxMemoryUsagePerProcess: Int = VIVADO_PROCESS_PEAK_MEM

@@ -24,17 +24,19 @@
  *           and Platforms).
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.jobs.executors
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  de.tu_darmstadt.cs.esa.tapasco.task._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  java.util.concurrent.Semaphore
+package tapasco.jobs.executors
+
+import java.util.concurrent.Semaphore
+
+import tapasco.base._
+import tapasco.filemgmt.FileAssetManager
+import tapasco.jobs._
+import tapasco.task._
+import tapasco.util._
 
 object Import extends Executor[ImportJob] {
   private[this] implicit val logger =
-    de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+    tapasco.Logging.logger(getClass)
 
   def execute(job: ImportJob)
              (implicit cfg: Configuration, tsk: Tasks): Boolean = {

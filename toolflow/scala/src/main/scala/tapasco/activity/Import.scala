@@ -25,12 +25,14 @@
  *           estimate area utilization and max. operating frequency.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.activity
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.base.json._
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  java.nio.file._
+package tapasco.activity
+
+import java.nio.file._
+
+import tapasco.base._
+import tapasco.base.json._
+import tapasco.filemgmt.FileAssetManager
+import tapasco.util._
 
 /**
  * The Import activity imports an existing IP-XACT core into the cores library
@@ -39,7 +41,7 @@ import  java.nio.file._
  **/
 object Import {
   private implicit final val logger =
-    de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+    tapasco.Logging.logger(getClass)
 
   /**
    * Import the given IP-XACT .zip file as Kernel with given id for the given target.

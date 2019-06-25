@@ -16,18 +16,20 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.task
-import  de.tu_darmstadt.cs.esa.tapasco.slurm._
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.base.json._
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  de.tu_darmstadt.cs.esa.tapasco.activity.composers._
-import  de.tu_darmstadt.cs.esa.tapasco.Logging._
-import  de.tu_darmstadt.cs.esa.tapasco.dse.Heuristics
-import  de.tu_darmstadt.cs.esa.tapasco.itapasco.common.LogFileTracker
-import  java.nio.file._
-import  scala.util.Properties.{lineSeparator => NL}
+package tapasco.task
+
+import java.nio.file._
+
+import tapasco.Logging._
+import tapasco.activity.composers._
+import tapasco.base._
+import tapasco.base.json._
+import tapasco.dse.Heuristics
+import tapasco.jobs._
+import tapasco.slurm._
+import tapasco.util._
+
+import scala.util.Properties.{lineSeparator => NL}
 
 /**
  * ComposeTask executes a single composition execution with a Composer.
@@ -45,7 +47,7 @@ class ComposeTask(composition: Composition,
                   private val effortLevel : String = "normal",
                   val onComplete: Boolean => Unit)
                  (implicit cfg: Configuration) extends Task with LogTracking {
-  private[this] implicit val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private[this] implicit val _logger = tapasco.Logging.logger(getClass)
   private[this] val _slurm = Slurm.enabled
   private[this] var _composerResult: Option[Composer.Result] = None
   private[this] val _outDir = cfg.outputDir(composition, target, designFrequency, features getOrElse Seq())
@@ -163,8 +165,10 @@ class ComposeTask(composition: Composition,
 }
 
 object ComposeTask {
+
+  import tapasco.reports._
+
   import scala.io._
-  import de.tu_darmstadt.cs.esa.tapasco.reports._
   private final val MAX_COMPOSE_HOURS = 23
   private final val RE_RESULT = """compose run .*result: ([^,]+)""".r.unanchored
   private final val RE_LOG    = """compose run .*result: \S+.*logfile: '([^']+)'""".r.unanchored

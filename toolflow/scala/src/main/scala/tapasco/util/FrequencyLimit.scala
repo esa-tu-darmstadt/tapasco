@@ -16,16 +16,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  scala.collection.mutable.Map
+package tapasco.util
+
+import tapasco.base._
+import tapasco.filemgmt.FileAssetManager
+
+import scala.collection.mutable.Map
 
 /**
  * Helper object to compute timing estimates for [[base.Core]] and [[base.Composition]] instances.
  **/
 object FrequencyLimit {
-  private[this] val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private[this] val _logger = tapasco.Logging.logger(getClass)
   private[this] val _coreMemos: Map[Configuration, Memoization[(Target, Core), Option[TimingEstimate]]] = Map()
   private[this] val _compoMemos: Map[Configuration, Memoization[(Target, Composition), Option[TimingEstimate]]] = Map()
 

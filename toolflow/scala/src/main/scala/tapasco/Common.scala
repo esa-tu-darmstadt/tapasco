@@ -21,15 +21,17 @@
  * @brief   Common classes and tools for the GenerateX classes.
  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco
-import  java.nio.file._
-import  scala.sys.process._
+package tapasco
+
+import java.nio.file._
+
+import scala.sys.process._
 
 /**
  * Contains the most basic common methods, e.g., to parse description files.
  **/
 object Common {
-  protected val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
+  protected val logger = tapasco.Logging.logger(this.getClass)
 
   lazy val homeDir: Path                      = Paths.get(sys.env("TAPASCO_HOME")).toAbsolutePath
   lazy val commonDir: Path                    =

@@ -16,21 +16,23 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.dse
-import  de.tu_darmstadt.cs.esa.tapasco.Implicits._
-import  de.tu_darmstadt.cs.esa.tapasco.json._
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.base.json._
-import  de.tu_darmstadt.cs.esa.tapasco.activity.composers.Composer
-import  de.tu_darmstadt.cs.esa.tapasco.activity.composers.json._
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  de.tu_darmstadt.cs.esa.tapasco.util.json._
-import  Exploration._
-import  Exploration.Events._
-import  Heuristics._
-import  java.nio.file.Path
-import  play.api.libs.json._
-import  play.api.libs.functional.syntax._
+package tapasco.dse
+
+import java.nio.file.Path
+
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
+import tapasco.Implicits._
+import tapasco.activity.composers.Composer
+import tapasco.activity.composers.json._
+import tapasco.base._
+import tapasco.base.json._
+import tapasco.dse.Exploration.Events._
+import tapasco.dse.Exploration.PruningReason
+import tapasco.dse.Heuristics._
+import tapasco.json._
+import tapasco.util._
+import tapasco.util.json._
 
 // scalastyle:off null
 package object json {

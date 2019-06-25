@@ -22,13 +22,14 @@
  *           out-of-context evaluation, if no report can be found.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.task
-import  de.tu_darmstadt.cs.esa.tapasco.itapasco.common.LogFileTracker
-import  de.tu_darmstadt.cs.esa.tapasco.activity
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.util.VLNV
-import  de.tu_darmstadt.cs.esa.tapasco.Logging._
-import  java.nio.file.Path
+package tapasco.task
+
+import java.nio.file.Path
+
+import tapasco.Logging._
+import tapasco.activity
+import tapasco.base._
+import tapasco.util._
 
 /**
  * The ImportTask is a schedulable job to import an existing IP-XACT core in a .zip
@@ -50,7 +51,7 @@ class ImportTask(val zip: Path,
                  val synthOptions: Option[String] = None,
                  val optimization: Int)
                 (implicit val cfg: Configuration) extends Task with LogTracking {
-  private implicit val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private implicit val logger = tapasco.Logging.logger(getClass)
   private val name = try { Some(VLNV.fromZip(zip).name) } catch { case _: Throwable => None }
   private lazy val _logFile = cfg.outputDir(name.get, t).resolve("%s.%s.import.log".format(
     zip.getFileName().toString, t.toString))

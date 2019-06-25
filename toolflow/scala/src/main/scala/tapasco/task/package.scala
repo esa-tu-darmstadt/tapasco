@@ -16,7 +16,10 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco
+
+package tapasco
+
+import tapasco.task._
 
 /**
  * Contains routines to launch parallel jobs and tasks via resource-aware scheduler.

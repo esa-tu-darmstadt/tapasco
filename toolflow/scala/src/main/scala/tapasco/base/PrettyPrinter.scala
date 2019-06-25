@@ -21,8 +21,9 @@
  * @brief   Implements pretty printing for Description subclasses.
  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import  scala.util.Properties.{lineSeparator => NL}
+package tapasco.base
+
+import scala.util.Properties.{lineSeparator => NL}
 
 private object PrettyPrinter {
   def printArchitecture(a: Architecture): String = List(

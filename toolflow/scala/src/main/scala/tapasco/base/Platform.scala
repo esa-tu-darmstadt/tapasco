@@ -21,11 +21,13 @@
  * @brief   Model: TPC Platform.
  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import  de.tu_darmstadt.cs.esa.tapasco.json._
-import  builder._
-import  json._
-import  java.nio.file._
+package tapasco.base
+
+import java.nio.file._
+
+import tapasco.base.builder._
+import tapasco.base.json._
+import tapasco.json._
 
 case class Platform (
       descPath: Path,
@@ -50,5 +52,5 @@ case class Platform (
 }
 
 object Platform extends Builds[Platform] {
-  private final val DEFAULT_SLOTCOUNT: Int = de.tu_darmstadt.cs.esa.tapasco.PLATFORM_NUM_SLOTS
+  private final val DEFAULT_SLOTCOUNT: Int = tapasco.PLATFORM_NUM_SLOTS
 }

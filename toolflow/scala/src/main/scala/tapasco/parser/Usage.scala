@@ -16,13 +16,15 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  de.tu_darmstadt.cs.esa.tapasco.PLATFORM_NUM_SLOTS
-import  FormatObject._
-import  scala.util.Properties.{lineSeparator => NL}
+package tapasco.parser
+
+import tapasco.PLATFORM_NUM_SLOTS
+import tapasco.parser.FormatObject._
+
+import scala.util.Properties.{lineSeparator => NL}
 
 object Usage {
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
   private final val BINDENT = 74
 
   def apply()(implicit fmt: Formatter[String] = StringFormatter): String = fmt(usage)

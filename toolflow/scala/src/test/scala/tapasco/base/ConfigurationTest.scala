@@ -21,16 +21,17 @@
  * @brief    Unit tests for Configuration description file.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import de.tu_darmstadt.cs.esa.tapasco.base.json._
-import de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import de.tu_darmstadt.cs.esa.tapasco.jobs._
-import de.tu_darmstadt.cs.esa.tapasco.parser.CommandLineParser
+package tapasco.base
+
 import org.scalatest._
 import tapasco.TaPaSCoSpec
+import tapasco.base.json._
+import tapasco.filemgmt.FileAssetManager
+import tapasco.jobs._
+import tapasco.parser.CommandLineParser
 
 class ConfigurationSpec extends TaPaSCoSpec with Matchers {
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
 
   "A missing Configuration file" should "throw an exception" in {
     assert(Configuration.from(jsonPath.resolve("missing.json")).isLeft)
@@ -39,7 +40,7 @@ class ConfigurationSpec extends TaPaSCoSpec with Matchers {
   "A correct Configuration file" should "be parsed to Some(Configuration)" in {
     val v = Configuration.from(jsonPath.resolve("configTest/config.json"))
     if (v.isLeft) { logger.error("{}, stacktrace: {}", v.left.get: Any, v.left.get.getStackTrace() mkString "\n") }
-    assert(v.isRight) 
+    assert(v.isRight)
   }
 
   "A correct Configuration file" should "be parsed correctly" in {

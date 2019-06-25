@@ -21,11 +21,11 @@
  * @brief    Unit tests for Kernel description file.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import de.tu_darmstadt.cs.esa.tapasco.base.Kernel.PassingConvention._
-import de.tu_darmstadt.cs.esa.tapasco.base.json._
+package tapasco.base
 import org.scalatest._
 import tapasco.TaPaSCoSpec
+import tapasco.base.Kernel.PassingConvention._
+import tapasco.base.json._
 
 class KernelSpec extends TaPaSCoSpec with Matchers {
 

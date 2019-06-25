@@ -16,16 +16,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.dse
-import  de.tu_darmstadt.cs.esa.tapasco.task._
-import  de.tu_darmstadt.cs.esa.tapasco.util.Publisher
-import  de.tu_darmstadt.cs.esa.tapasco.activity.composers.{Composer, ComposeResult}
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  scala.collection.mutable.PriorityQueue
-import  Exploration.PruningReason
-import  Exploration.PruningReasons._
-import  java.nio.file._
+package tapasco.dse
+
+import java.nio.file._
+
+import tapasco.activity.composers.{ComposeResult, Composer}
+import tapasco.base._
+import tapasco.dse.Exploration.PruningReason
+import tapasco.dse.Exploration.PruningReasons._
+import tapasco.task._
+import tapasco.util.{Publisher, _}
+
+import scala.collection.mutable.PriorityQueue
 
 trait Exploration extends Publisher {
   type Event = Exploration.Event
@@ -53,7 +55,7 @@ private class ConcreteExploration(
     val debugMode: Option[String],
     val deleteOnFail: Option[Boolean])(implicit cfg: Configuration, val tasks: Tasks) extends Exploration {
   private implicit val _exploration = this
-  private[this] val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private[this] val _logger = tapasco.Logging.logger(getClass)
   private var _result: Option[(DesignSpace.Element, Composer.Result)] = None
   private[this] final val _nextRunId = new java.util.concurrent.atomic.AtomicInteger
   private def nextRunId: Int = _nextRunId.getAndIncrement()

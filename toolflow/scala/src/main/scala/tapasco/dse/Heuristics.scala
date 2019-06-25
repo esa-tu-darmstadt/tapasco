@@ -21,12 +21,13 @@
  * @brief    Heuristic functions for the automated design space exploration.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.dse
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  de.tu_darmstadt.cs.esa.tapasco.base._
+package tapasco.dse
+
+import tapasco.base._
+import tapasco.filemgmt.FileAssetManager
 
 object Heuristics {
-  private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
+  private[this] val logger = tapasco.Logging.logger(this.getClass)
   type Frequency = Double
   type Value     = Double
   abstract class Heuristic extends Function3[Composition, Frequency, Target, Configuration => Value]

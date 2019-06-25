@@ -21,15 +21,16 @@
  * @brief    Wrapper for /proc/meminfo; retrieve info about memory configuration.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  scala.io.Source
+package tapasco.util
+
+import scala.io.Source
 
 /** Memory information entry. **/
 sealed case class MemEntry(name: String, amount: Int, unit: String)
 
 /** MemInfo class: Reads /proc/meminfo, provides dictionary access. **/
 object MemInfo {
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
   private lazy val warnOnceMaxValue = {
     logger.warn("could not read /proc/meminfo, assuming infinite memory")
     Int.MaxValue

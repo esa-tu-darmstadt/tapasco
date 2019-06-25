@@ -16,9 +16,11 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco
-import  org.slf4j.{LoggerFactory}
-import  scala.util.control.Exception._
+package tapasco
+
+import org.slf4j.LoggerFactory
+
+import scala.util.control.Exception._
 
 object Logging {
   type Logger = org.slf4j.Logger

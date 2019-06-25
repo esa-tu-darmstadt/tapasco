@@ -16,11 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  fastparse.all._
-import  java.nio.file.Path
+package tapasco.parser
+
+import java.nio.file.Path
+
+import fastparse.all._
+import tapasco.base._
+import tapasco.jobs._
 
 private object ImportParser {
   import BasicParsers._

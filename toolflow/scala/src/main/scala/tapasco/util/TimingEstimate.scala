@@ -21,7 +21,7 @@
  * @brief    Model of FPGA timing estimate.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.e)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.util
+package tapasco.util
 
 final case class TimingEstimate (clockPeriod: Double, targetPeriod: Double) extends Ordered[TimingEstimate] {
   import scala.math.Ordered.orderingToOrdered

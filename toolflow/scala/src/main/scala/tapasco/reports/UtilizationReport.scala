@@ -21,12 +21,15 @@
  * @brief    Model for parsing and evaluating utilization reports in Vivado format.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.reports
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  de.tu_darmstadt.cs.esa.tapasco.Logging._
-import  scala.util.matching._
-import  scala.io.Source
-import  java.nio.file._
+package tapasco.reports
+
+import java.nio.file._
+
+import tapasco.Logging._
+import tapasco.util._
+
+import scala.io.Source
+import scala.util.matching._
 
 final case class UtilizationReport(
     override val file: Path,
@@ -36,7 +39,7 @@ final case class UtilizationReport(
 
 object UtilizationReport {
   private implicit final val logger =
-    de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+    tapasco.Logging.logger(getClass)
   private final val LUTS_REGEX   =
     new Regex("""\| (Slice|CLB) LUTs\s+\|\s+(\d+)\s+\|\s+\d+\s+\|\s+(\d+)""", "type", "used", "available")
   private final val FF_REGEX     =

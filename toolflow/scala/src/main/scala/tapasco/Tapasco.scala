@@ -16,23 +16,27 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco
-import  base._
-import  filemgmt._
-import  task._
-import  parser._
-import  slurm._
-import  java.nio.file.Path
-import  scala.concurrent._
-import  java.util.Locale
+package tapasco
+
+import java.nio.file.Path
+import java.util.Locale
+
+import tapasco.base._
+import tapasco.filemgmt._
+import tapasco.parser._
+import tapasco.slurm._
+import tapasco.task._
+
+import scala.concurrent._
 
 object Tapasco {
-  import org.slf4j.LoggerFactory
-  import ch.qos.logback.core.FileAppender
   import ch.qos.logback.classic.LoggerContext
   import ch.qos.logback.classic.encoder.PatternLayoutEncoder
   import ch.qos.logback.classic.spi.ILoggingEvent
-  private[this] implicit val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
+  import ch.qos.logback.core.FileAppender
+  import org.slf4j.LoggerFactory
+
+  private[this] implicit val logger = tapasco.Logging.logger(this.getClass)
   private[this] val logFileAppender: FileAppender[ILoggingEvent] = new FileAppender()
   private[this] final val UNLIMITED_THREADS = 1000
 

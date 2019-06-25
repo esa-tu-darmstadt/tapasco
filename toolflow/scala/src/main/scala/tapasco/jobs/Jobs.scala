@@ -16,16 +16,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.jobs
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.dse._
-import  de.tu_darmstadt.cs.esa.tapasco.base.builder._
-import  de.tu_darmstadt.cs.esa.tapasco.task._
-import  de.tu_darmstadt.cs.esa.tapasco.activity.hls._
-import  de.tu_darmstadt.cs.esa.tapasco.activity.composers._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  executors._
-import  java.nio.file._
+package tapasco.jobs
+
+import java.nio.file._
+
+import tapasco.activity.composers._
+import tapasco.activity.hls._
+import tapasco.base._
+import tapasco.base.builder._
+import tapasco.dse._
+import tapasco.filemgmt.FileAssetManager
+import tapasco.jobs.executors.Executor
+import tapasco.task._
 
 /**
  * Abstract base class of jobs in TPC:
@@ -50,16 +52,17 @@ final case class BulkImportJob(csvFile: Path) extends Job("bulkimport")
  * The Compose job performs a single threadpool composition (i.e., synthesis
  * of a complete hardware architecture + bitstream generation). No design
  * space exploration is performed, the composition is attempted as-is with
- * a fixed design frequency. Composition is performed for each [[base.Target]],
- * i.e., each combination of [[base.Architecture]] and [[base.Platform]] given.
- * @param composition Composition to synthesize micro-architecture for.
+  * a fixed design frequency. Composition is performed for each [[Target]],
+  * i.e., each combination of [[Architecture]] and [[Platform]] given.
+  *
+  * @param composition    Composition to synthesize micro-architecture for.
  * @param designFrequency Operating frequency of PEs in the design.
  * @param _implementation Composer Implementation (e.g., Vivado).
- * @param _architectures Name list of [[base.Architecture]] instances.
- * @param _platforms Name list of [[base.Platform]] instances.
- * @param features List of [[base.Feature]] configurations for the design (opt.).
- * @param debugMode Debug mode name (opt.).
- * @param effortLevel Synthesis effort level (opt.).
+  * @param _architectures Name list of [[Architecture]] instances.
+  * @param _platforms     Name list of [[Platform]] instances.
+  * @param features       List of [[Feature]] configurations for the design (opt.).
+ * @param debugMode       Debug mode name (opt.).
+ * @param effortLevel     Synthesis effort level (opt.).
  **/
 final case class ComposeJob(
    composition: Composition,
@@ -74,38 +77,39 @@ final case class ComposeJob(
   /** Returns the selected composer tool implementation. */
   lazy val implementation: Composer.Implementation = Composer.Implementation(_implementation)
 
-  /** Returns the list of [[base.Architecture]] instances selected in this job. */
+  /** Returns the list of [[Architecture]] instances selected in this job. */
   def architectures: Set[Architecture] =
     FileAssetManager.entities.architectures filter (a => _architectures map (_.contains(a.name)) getOrElse true)
 
-  /** Returns the list of [[base.Platform]] instances selected in this job. */
+  /** Returns the list of [[Platform]] instances selected in this job. */
   def platforms: Set[Platform] =
     FileAssetManager.entities.platforms filter (p => _platforms map (_.contains(p.name)) getOrElse true)
 
-  /** Returns a list of [[base.Target]]s selected in this job. */
+  /** Returns a list of [[Target]]s selected in this job. */
   def targets: Seq[Target] =
     for { a <- architectures.toSeq.sortBy(_.name); p <- platforms.toSeq.sortBy(_.name) } yield Target(a, p)
 }
 
 /**
  * The CoreStatistics job outputs a comma-separated values (CSV) file which
- * summarizes the synthesis results for each [[base.Core]]. Data includes max.
- * operating frequency, area utilization and runtimes in clock cycles (if
+  * summarizes the synthesis results for each [[Core]]. Data includes max.
+  * operating frequency, area utilization and runtimes in clock cycles (if
  * available).
- * @param prefix Prefix for output file names: Each [[base.Target]] generates a
-                 separate output file; `prefix` may include paths.
- * @param _architectures Name list of [[base.Architecture]] instances.
- * @param _platforms Name list of [[base.Platform]] instances.
+  *
+  * @param prefix         Prefix for output file names: Each [[Target]] generates a
+  *                       separate output file; `prefix` may include paths.
+  * @param _architectures Name list of [[Architecture]] instances.
+  * @param _platforms     Name list of [[Platform]] instances.
  **/
 final case class CoreStatisticsJob(
     prefix: Option[String] = None,
     private val _architectures: Option[Seq[String]] = None,
     private val _platforms: Option[Seq[String]] = None) extends Job("corestats") {
-  /** Returns the list of [[base.Architecture]] instances selected in this job. */
+  /** Returns the list of [[Architecture]] instances selected in this job. */
   def architectures: Set[Architecture] =
     FileAssetManager.entities.architectures filter (a => _architectures map (_.contains(a.name)) getOrElse true)
 
-  /** Returns the list of [[base.Platform]] instances selected in this job. */
+  /** Returns the list of [[Platform]] instances selected in this job. */
   def platforms: Set[Platform] =
     FileAssetManager.entities.platforms filter (p => _platforms map (_.contains(p.name)) getOrElse true)
 }
@@ -116,25 +120,26 @@ final case class CoreStatisticsJob(
  * the selected `dimensions`, e.g., if frequency variation is enabled, the
  * DSE will attempt to find the highest frequency where composition succeeds
  * (timing closure). The design space can be spanned with area utilization
- * (i.e., more instances of the [[base.Core]]s), design frequency and alternatives
- * (i.e., switching between alternative implementations of a [[base.Kernel]]).
- * This design space will be ordered by the selected [[dse.Heuristics]]
+  * (i.e., more instances of the [[Core]]s), design frequency and alternatives
+  * (i.e., switching between alternative implementations of a [[Kernel]]).
+  * This design space will be ordered by the selected [[Heuristics]]
  * implementation, which encodes an optimization goal (e.g., overall job
  * throughput, high area utilization, or others).
  * The DSE will the generate _batches of [[ComposeJob]]s_ to iterate over the
  * design space with descending heuristics value and stop as soon as a
  * successful design was found. This design will be close to optimal w.r.t.
  * to given heuristic.
- * @param initialComposition Composition to start with.
- * @param initialFrequency Design frequency to start with.
- * @param dimensions [[dse.DesignSpace.Dimensions]] selected for this DSE.
- * @param heuristic Heuristic function to order the design space by.
- * @param batchSize Size of the batches (must be > 0).
- * @param basePath Optional base path for all output files generated by DSE.
- * @param _architectures Name filter for target [[base.Architecture]]s (optional).
- * @param _platforms Name filter for target [[base.Platform]]s (optional).
- * @param features List of [[base.Feature]] configurations (optional).
- * @param debugMode Debug mode name (opt.).
+  *
+  * @param initialComposition Composition to start with.
+ * @param initialFrequency    Design frequency to start with.
+  * @param dimensions         [[DesignSpace.Dimensions]] selected for this DSE.
+ * @param heuristic           Heuristic function to order the design space by.
+ * @param batchSize           Size of the batches (must be > 0).
+ * @param basePath            Optional base path for all output files generated by DSE.
+  * @param _architectures     Name filter for target [[Architecture]]s (optional).
+  * @param _platforms         Name filter for target [[Platform]]s (optional).
+  * @param features           List of [[Feature]] configurations (optional).
+ * @param debugMode           Debug mode name (opt.).
  **/
 final case class DesignSpaceExplorationJob(
     initialComposition: Composition,
@@ -148,7 +153,7 @@ final case class DesignSpaceExplorationJob(
     features: Option[Seq[Feature]] = None,
     debugMode: Option[String] = None,
     deleteProjects: Option[Boolean] = None) extends Job("dse") {
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
   // warn if dimensions are completely empty
   dimensions match {
     case DesignSpace.Dimensions(false, false, false) =>
@@ -156,18 +161,18 @@ final case class DesignSpaceExplorationJob(
     case _ => ()
   }
 
-  /** Returns the list of [[base.Architecture]] instances selected in this job. */
+  /** Returns the list of [[Architecture]] instances selected in this job. */
   def architectures: Set[Architecture] =
     FileAssetManager.entities.architectures filter (a => _architectures map (_.contains(a.name)) getOrElse true)
 
-  /** Returns the name filter for [[base.Architecture]] instances. */
+  /** Returns the name filter for [[Architecture]] instances. */
   def architectureNames: Option[Seq[String]] = _architectures
 
-  /** Returns the list of [[base.Platform]] instances selected in this job. */
+  /** Returns the list of [[Platform]] instances selected in this job. */
   def platforms: Set[Platform] =
     FileAssetManager.entities.platforms filter (p => _platforms map (_.contains(p.name)) getOrElse true)
 
-  /** Returns the name filter for [[base.Platform]] instances. */
+  /** Returns the name filter for [[Platform]] instances. */
   def platformNames: Option[Seq[String]] = _platforms
 
   /** Returns the first target (alphabetically Arch - Platform). */
@@ -182,14 +187,15 @@ final case class DesignSpaceExplorationJob(
 
 /**
  * The HighLevelSynthesis job executes an external high-level synthesis tool to
- * generate [[base.Core]] instances from a [[base.Kernel]] definition, which in turn can
+  * generate [[Core]] instances from a [[Kernel]] definition, which in turn can
  * then be used in composition of a threadpool. Will execute once for each
- * [[base.Kernel]] and [[base.Target]], i.e., each combination of [[base.Platform]] and
- * [[base.Architecture]] selected for the job.
- * @param _implementation External tool to use, see [[activity.hls.HighLevelSynthesizer.Implementation]].
- * @param _architectures Name list of [[base.Architecture]] instances.
- * @param _platforms Name list of [[base.Platform]] instances.
- * @param _kernels Name list of [[base.Kernel]] instances to synthesize.
+  * [[Kernel]] and [[Target]], i.e., each combination of [[Platform]] and
+  * [[Architecture]] selected for the job.
+  *
+  * @param _implementation External tool to use, see [[HighLevelSynthesizer.Implementation]].
+  * @param _architectures  Name list of [[Architecture]] instances.
+  * @param _platforms      Name list of [[Platform]] instances.
+  * @param _kernels        Name list of [[Kernel]] instances to synthesize.
  **/
 final case class HighLevelSynthesisJob(
     private val _implementation: String,
@@ -200,15 +206,15 @@ final case class HighLevelSynthesisJob(
   /** Returns the selected HLS tool implementation. */
   lazy val implementation: HighLevelSynthesizer.Implementation = HighLevelSynthesizer.Implementation(_implementation)
 
-  /** Returns the list of [[base.Architecture]] instances selected in this job. */
+  /** Returns the list of [[Architecture]] instances selected in this job. */
   def architectures: Set[Architecture] =
     FileAssetManager.entities.architectures filter (a => _architectures map (_.contains(a.name)) getOrElse true)
 
-  /** Returns the list of [[base.Platform]] instances selected in this job. */
+  /** Returns the list of [[Platform]] instances selected in this job. */
   def platforms: Set[Platform] =
     FileAssetManager.entities.platforms filter (p => _platforms map (_.contains(p.name)) getOrElse true)
 
-  /** Returns the list of [[base.Kernel]] instances selected in this job. */
+  /** Returns the list of [[Kernel]] instances selected in this job. */
   def kernels: Set[Kernel] =
     FileAssetManager.entities.kernels filter (k => _kernels map (_.contains(k.name)) getOrElse true)
 }
@@ -223,18 +229,19 @@ final case class HighLevelSynthesisJob(
  * cycle is assumed as a fallback). If reports are found within the .zip, or
  * in the TPC core library at the directory for the core, evaluation will be
  * skipped and the values from the reports will be used directly.
- * The core will be imported for each [[base.Target]], i.e., combination of
- * [[base.Architecture]] and [[base.Platform]] selected for this job.
- * @param zipFile Path to the .zip file.
- * @param id Identifier for the [[base.Kernel]] that is implemented by this IP
-             core (must be > 0).
- * @param description Description of the core (optional).
+  * The core will be imported for each [[Target]], i.e., combination of
+  * [[Architecture]] and [[Platform]] selected for this job.
+  *
+  * @param zipFile           Path to the .zip file.
+  * @param id                Identifier for the [[Kernel]] that is implemented by this IP
+  *                          core (must be > 0).
+  * @param description       Description of the core (optional).
  * @param averageClockCycles Clock cycles in an average job (optional).
- * @param skipEvaluation Do not perform evaluation (optional).
- * @param synthOptions Optional parameters for synth_design.
- * @param _architectures Name list of [[base.Architecture]] instances.
- * @param _platforms Name list of [[base.Platform]] instances.
- * @param _optimization Positive integer optimization level.
+  * @param skipEvaluation    Do not perform evaluation (optional).
+  * @param synthOptions      Optional parameters for synth_design.
+  * @param _architectures    Name list of [[Architecture]] instances.
+  * @param _platforms        Name list of [[Platform]] instances.
+  * @param _optimization     Positive integer optimization level.
  **/
 final case class ImportJob(
     zipFile: Path,
@@ -246,11 +253,11 @@ final case class ImportJob(
     private val _architectures: Option[Seq[String]] = None,
     private val _platforms: Option[Seq[String]] = None,
     private val _optimization: Option[Int] = None) extends Job("import") {
-  /** Returns the list of [[base.Architecture]] instances selected in this job. */
+  /** Returns the list of [[Architecture]] instances selected in this job. */
   def architectures: Set[Architecture] =
     FileAssetManager.entities.architectures filter (a => _architectures map (_.contains(a.name)) getOrElse true)
 
-  /** Returns the list of [[base.Platform]] instances selected in this job. */
+  /** Returns the list of [[Platform]] instances selected in this job. */
   def platforms: Set[Platform] =
     FileAssetManager.entities.platforms filter (p => _platforms map (_.contains(p.name)) getOrElse true)
 

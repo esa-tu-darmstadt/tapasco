@@ -23,14 +23,16 @@
  *           currently available cores.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.jobs.executors
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.task._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  java.util.concurrent.Semaphore
+package tapasco.jobs.executors
+
+import java.util.concurrent.Semaphore
+
+import tapasco.base._
+import tapasco.jobs._
+import tapasco.task._
 
 private object CoreStatistics extends Executor[CoreStatisticsJob] {
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
 
   def execute(job: CoreStatisticsJob)(implicit cfg: Configuration, tsk: Tasks): Boolean = {
     val signal = new Semaphore(0)

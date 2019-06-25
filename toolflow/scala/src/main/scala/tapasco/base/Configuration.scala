@@ -21,11 +21,13 @@
  * @brief   Model: TPC Configuration.
  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import  de.tu_darmstadt.cs.esa.tapasco.dse._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  java.nio.file._
-import  builder._
+package tapasco.base
+
+import java.nio.file._
+
+import tapasco.base.builder._
+import tapasco.dse._
+import tapasco.jobs._
 
 trait Configuration {
   def descPath: Path

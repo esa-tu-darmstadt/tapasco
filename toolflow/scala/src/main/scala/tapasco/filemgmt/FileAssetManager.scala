@@ -16,10 +16,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  java.nio.file.{Path, Paths}
+package tapasco.filemgmt
+
+import java.nio.file.{Path, Paths}
+
+import tapasco.base._
+import tapasco.util._
 
 // TODO do not use singleton for FileAssetManager
 
@@ -37,7 +39,7 @@ import  java.nio.file.{Path, Paths}
  * directly.
  **/
 final object FileAssetManager extends Publisher {
-  private val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private val _logger = tapasco.Logging.logger(getClass)
 
   /* @{ Event trait hierarchy */
   sealed trait Event

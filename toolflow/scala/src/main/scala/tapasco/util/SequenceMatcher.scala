@@ -20,9 +20,10 @@
  * @brief    Multi-line stateful regex matcher for text file parsing.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  scala.util.matching._
-import  scala.util.matching.Regex.Match
+package tapasco.util
+
+import scala.util.matching.Regex.Match
+import scala.util.matching._
 
 /** Text matching class that matches incoming line-wise text to a sequence of regular
     expressions. Helper to match multi-line stuff in text files. **/

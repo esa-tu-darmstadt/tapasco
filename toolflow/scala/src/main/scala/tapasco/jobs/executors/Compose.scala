@@ -21,15 +21,17 @@
  * @brief    Threadpool composition task.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.jobs.executors
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt._
-import  de.tu_darmstadt.cs.esa.tapasco.task._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs.{ComposeJob, HighLevelSynthesisJob}
-import  java.util.concurrent.Semaphore
+package tapasco.jobs.executors
+
+import java.util.concurrent.Semaphore
+
+import tapasco.base._
+import tapasco.filemgmt._
+import tapasco.jobs.{ComposeJob, HighLevelSynthesisJob}
+import tapasco.task._
 
 private object Compose extends Executor[ComposeJob] {
-  private implicit val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private implicit val logger = tapasco.Logging.logger(getClass)
 
   def execute(job: ComposeJob)
              (implicit cfg: Configuration, tsk: Tasks): Boolean = {

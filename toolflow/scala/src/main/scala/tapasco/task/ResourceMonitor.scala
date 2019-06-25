@@ -16,9 +16,10 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.task
-import  de.tu_darmstadt.cs.esa.tapasco.slurm._
-import  de.tu_darmstadt.cs.esa.tapasco.util.{MemInfo, FlexLicenceManagerStatus}
+package tapasco.task
+
+import tapasco.slurm._
+import tapasco.util.{FlexLicenceManagerStatus, MemInfo}
 
 /**
  * ResourceMonitors manage a fixed pool of resources and consumers working with
@@ -42,7 +43,7 @@ private class DefaultResourceMonitor extends ResourceMonitor {
   private[this] val _cpus = Runtime.getRuntime().availableProcessors()
   private[this] val _mem  = MemInfo.totalMemory
   private[this] val _cons = Set[ResourceConsumer]()
-  private val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private val logger = tapasco.Logging.logger(getClass)
 
   private[this] val _available = new ResourceConsumer {
     val cpus = _cpus

@@ -16,12 +16,14 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.activity.hls
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  java.nio.file.Path
+package tapasco.activity.hls
 
-/** A HighLevelSynthesizer produces a [[base.Core]] from a [[base.Kernel]] description.
-  * It synthesizes a reusable hardware module for a given [[base.Kernel]].
+import java.nio.file.Path
+
+import tapasco.base._
+
+/** A HighLevelSynthesizer produces a [[Core]] from a [[Kernel]] description.
+  * It synthesizes a reusable hardware module for a given [[Kernel]].
   **/
 trait HighLevelSynthesizer {
   import HighLevelSynthesizer._
@@ -43,24 +45,27 @@ trait HighLevelSynthesizer {
     cfg.outputDir(k, t).resolve("ipcore").resolve("%s_%s.zip".format(k.name, t.ad.name))
 
   /** Starts a synthesis run.
-    * @param k Kernel.
-    * @param t Target (Architecture + Platform).
-    * @param cfg Implicit Configuration.
+    *
+    * @param k      Kernel.
+    * @param target Target (Architecture + Platform).
+    * @param cfg    Implicit Configuration.
     * @return result of the synthesis run.
     **/
   def synthesize(k: Kernel, target: Target)(implicit cfg: Configuration): Result
 
   /** Removes all intermediate files for the run.
-    * @param k Kernel.
-    * @param t Target (Architecture + Platform).
-    * @param cfg Implicit Configuration.
+    *
+    * @param k      Kernel.
+    * @param target Target (Architecture + Platform).
+    * @param cfg    Implicit Configuration.
     **/
   def clean(k: Kernel, target: Target)(implicit cfg: Configuration): Unit
 
   /** Removes all output files for the run.
-    * @param k Kernel.
-    * @param t Target (Architecture + Platform).
-    * @param cfg Implicit Configuration.
+    *
+    * @param k      Kernel.
+    * @param target Target (Architecture + Platform).
+    * @param cfg    Implicit Configuration.
     **/
   def cleanAll(k: Kernel, target: Target)(implicit cfg: Configuration): Unit
 }
@@ -74,8 +79,9 @@ object HighLevelSynthesizer {
     /** Vivado HLS. */
     final case object VivadoHLS extends Implementation
     /** Construct Implementation instance from String.
+      *
       * @param name String containing name of implementation.
-      * @returns Implementation instance, or throws exception.
+      * @return Implementation instance, or throws exception.
       * @throws java.lang.Exception in case the name could not be matched.
       **/
     def apply(name: String): Implementation = name.toLowerCase match {

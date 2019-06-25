@@ -16,10 +16,11 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.jobs.executors
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.task._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
+package tapasco.jobs.executors
+
+import tapasco.base._
+import tapasco.jobs._
+import tapasco.task._
 
 trait Command[T <: Job] {
   def execute(job: T)(implicit cfg: Configuration, tsk: Tasks): Boolean

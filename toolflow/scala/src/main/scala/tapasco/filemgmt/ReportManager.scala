@@ -16,11 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.reports._
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  java.nio.file._
+package tapasco.filemgmt
+
+import java.nio.file._
+
+import tapasco.base._
+import tapasco.reports._
+import tapasco.util._
 
 /**
  * A ReportManager maintains caches for different report types in a common base
@@ -34,7 +36,7 @@ import  java.nio.file._
 class ReportManager(var _base: Path) extends Publisher {
   import Entities._
   type Event = EntityCache.Event
-  private[this] final val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private[this] final val _logger = tapasco.Logging.logger(getClass)
 
   /** Reset all caches. */
   def reset(): Unit = { _reportCaches foreach { _.clear() } }

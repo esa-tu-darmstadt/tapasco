@@ -16,10 +16,11 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  de.tu_darmstadt.cs.esa.tapasco.base.Feature
-import  de.tu_darmstadt.cs.esa.tapasco.base.Feature._
-import  fastparse.all._
+package tapasco.parser
+
+import fastparse.all._
+import tapasco.base.Feature
+import tapasco.base.Feature._
 
 private object FeatureParsers {
   import BasicParsers._

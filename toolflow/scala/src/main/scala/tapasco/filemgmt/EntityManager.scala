@@ -16,15 +16,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.base.json._
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  scala.util.matching._
-import  java.nio.file._
+package tapasco.filemgmt
+
+import java.nio.file._
+
+import tapasco.base._
+import tapasco.base.json._
+import tapasco.util._
+
+import scala.util.matching._
 
 class EntityManager(val bpm: BasePathManager) extends Publisher {
-  private val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private val _logger = tapasco.Logging.logger(getClass)
   type Event = EntityManager.Event
 
   /** Reset all caches. */

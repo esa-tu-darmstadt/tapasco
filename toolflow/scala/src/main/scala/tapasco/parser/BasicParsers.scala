@@ -16,11 +16,14 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  de.tu_darmstadt.cs.esa.tapasco.dse.Heuristics.Frequency
-import  fastparse.all._
-import  java.nio.file._
-import  scala.language.implicitConversions
+package tapasco.parser
+
+import java.nio.file._
+
+import fastparse.all._
+import tapasco.dse.Heuristics.Frequency
+
+import scala.language.implicitConversions
 
 private object BasicParsers {
   def longOption(name: String): Parser[String] = longOption(name, name)

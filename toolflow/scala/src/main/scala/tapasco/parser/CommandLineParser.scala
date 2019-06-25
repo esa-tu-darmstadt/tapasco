@@ -16,17 +16,19 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  scala.util.Properties.{lineSeparator => NL}
-import  fastparse.all._
+package tapasco.parser
+
+import fastparse.all._
+import tapasco.base._
+
+import scala.util.Properties.{lineSeparator => NL}
 
 object CommandLineParser {
   import BasicParsers._
   import GlobalOptions._
   import JobParsers._
 
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
 
   private[parser] def args: Parser[Configuration] =
     globalOptions ~ ws ~/ jobs ~ ws ~ End map { case (c, js) => c.jobs(c.jobs ++ js) }

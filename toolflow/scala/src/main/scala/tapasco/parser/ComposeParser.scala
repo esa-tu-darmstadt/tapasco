@@ -16,17 +16,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  fastparse.all._
+package tapasco.parser
+
+import fastparse.all._
+import tapasco.base._
+import tapasco.jobs._
 
 private object ComposeParser {
   import BasicParsers._
   import CommonArgParsers._
   import FeatureParsers._
 
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
 
   def compose: Parser[ComposeJob] =
     IgnoreCase("compose") ~ ws ~/ composition ~/ "@" ~ ws ~ freq ~/

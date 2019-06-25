@@ -21,8 +21,9 @@
  * @brief    Base class for diverse report files.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.reports
-import  java.nio.file.Path
+package tapasco.reports
+
+import java.nio.file.Path
 
 abstract class Report private[reports] (val file: Path)
 

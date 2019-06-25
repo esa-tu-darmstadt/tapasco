@@ -21,13 +21,13 @@
  * @brief   Model: TPC Configuration.
  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import de.tu_darmstadt.cs.esa.tapasco.{Common => TapascoCommon}
-import de.tu_darmstadt.cs.esa.tapasco.json._
-import de.tu_darmstadt.cs.esa.tapasco.jobs._
+package tapasco.base
+
 import java.nio.file._
 
-import de.tu_darmstadt.cs.esa.tapasco.filemgmt.BasePathManager
+import tapasco.filemgmt.BasePathManager
+import tapasco.jobs._
+import tapasco.json._
 
 /**
  * Internal implementation of [[Configuration]]:

@@ -21,9 +21,11 @@
  * @brief    Model for Version-Library-Vendor-Version string identifier.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  scala.util.matching.Regex
-import  java.nio.file._
+package tapasco.util
+
+import java.nio.file._
+
+import scala.util.matching.Regex
 
 /** Vendor-Library-Name-Version identifier. */
 final case class VLNV(vendor: String, library: String, name: String, version: VLNV.Version) {

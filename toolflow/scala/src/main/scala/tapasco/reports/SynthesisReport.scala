@@ -22,9 +22,11 @@
  *           (see common/ip_report.xml.template for an example).
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.reports
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  java.nio.file.Path
+package tapasco.reports
+
+import java.nio.file.Path
+
+import tapasco.util._
 
 /** Synthesis Report model. **/
 final case class SynthesisReport(
@@ -38,8 +40,9 @@ final case class SynthesisReport(
 }
 
 object SynthesisReport {
-  private[this] implicit val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
-  import de.tu_darmstadt.cs.esa.tapasco.Logging._
+  private[this] implicit val logger = tapasco.Logging.logger(this.getClass)
+
+  import tapasco.Logging._
 
   /** Extracts the area estimation from the given synthesis report file.
     * @param sr Path to file

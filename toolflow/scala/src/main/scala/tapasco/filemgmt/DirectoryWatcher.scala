@@ -16,15 +16,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import  de.tu_darmstadt.cs.esa.tapasco.util.Publisher
-import  java.nio.file._
-import  java.nio.file.StandardWatchEventKinds._
-import  java.util.concurrent.atomic.AtomicReference
-import  scala.collection.JavaConverters._
-import  scala.util.control.Exception._
-import  java.time.{Instant, LocalDateTime, ZoneOffset}
-import  java.nio.file.attribute.BasicFileAttributes
+package tapasco.filemgmt
+
+import java.nio.file.StandardWatchEventKinds._
+import java.nio.file._
+import java.nio.file.attribute.BasicFileAttributes
+import java.time.{Instant, LocalDateTime, ZoneOffset}
+import java.util.concurrent.atomic.AtomicReference
+
+import tapasco.util.Publisher
+
+import scala.collection.JavaConverters._
+import scala.util.control.Exception._
 
 /**
  * DirectoryWatcher: Publishes events on changes in directory.
@@ -48,9 +51,11 @@ sealed trait DirectoryWatcher extends Publisher {
  * @param paths Paths to monitor.
  **/
 private class DefaultDirectoryWatcher(val paths: Set[Path]) extends DirectoryWatcher {
-  import scala.collection.mutable.Map
   import DirectoryWatcher.Events._
-  private[this] val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+
+  import scala.collection.mutable.Map
+
+  private[this] val _logger = tapasco.Logging.logger(getClass)
   private[this] val _ws = FileSystems.getDefault().newWatchService()
   private[this] val _wk: Map[Path, WatchKey] = Map()
   private[this] var _watchThread: AtomicReference[Option[Thread]] = new AtomicReference(None)

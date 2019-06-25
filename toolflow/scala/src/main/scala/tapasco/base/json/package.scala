@@ -16,18 +16,22 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.base
-import  de.tu_darmstadt.cs.esa.tapasco.{PLATFORM_NUM_SLOTS => MAX_SLOTS}
-import  de.tu_darmstadt.cs.esa.tapasco.json._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs.json._
-import  play.api.libs.json._
-import  play.api.libs.json.Reads._
-import  play.api.libs.json.Writes._
-import  play.api.libs.functional.syntax._
-import  java.nio.file._
-import  scala.io.Source
-import  java.time.format.DateTimeFormatter, java.time.LocalDateTime
+package tapasco.base
+
+import java.nio.file._
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
+import play.api.libs.functional.syntax._
+import play.api.libs.json.Reads._
+import play.api.libs.json.Writes._
+import play.api.libs.json._
+import tapasco.PLATFORM_NUM_SLOTS
+import tapasco.jobs.Job
+import tapasco.jobs.json._
+import tapasco.json._
+
+import scala.io.Source
 
 /**
  * The `json` package contains implicit Reads/Writes/Formats instances to serialize and
@@ -35,7 +39,7 @@ import  java.time.format.DateTimeFormatter, java.time.LocalDateTime
  **/
 package object json {
   private def totalCountOk(c: Seq[Composition.Entry]): Boolean =
-    (c map (_.count) fold 0) (_ + _) <= MAX_SLOTS
+    (c map (_.count) fold 0) (_ + _) <= PLATFORM_NUM_SLOTS
 
   /* @{ TargetDesc */
   implicit val targetReads: Reads[TargetDesc] = (
@@ -139,7 +143,7 @@ package object json {
   /* @{ Composition.Entry */
   implicit val compositionEntryReads: Reads[Composition.Entry] = (
     (JsPath \ "Kernel").read[String] (minLength[String](1)) ~
-    (JsPath \ "Count").read[Int] (min(1) keepAnd max(MAX_SLOTS))
+      (JsPath \ "Count").read[Int](min(1) keepAnd max(PLATFORM_NUM_SLOTS))
   ) (Composition.Entry.apply _)
 
   implicit val compositionEntryWrites: Writes[Composition.Entry] = (

@@ -21,10 +21,13 @@
  * @brief    Helper functions to work with .zip files.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  de.tu_darmstadt.cs.esa.tapasco.Logging.Logger
-import  scala.util.matching._
-import  java.nio.file._
+package tapasco.util
+
+import java.nio.file._
+
+import tapasco.Logging.Logger
+
+import scala.util.matching._
 
 object ZipUtils {
   /** Unpacks all files matching the given regular expressions into a temporary directory.
@@ -36,8 +39,8 @@ object ZipUtils {
    */
   def unzipFile(zipFile: Path, regexes: Seq[Regex], exclude: Seq[Regex] = Seq(), flatten: Boolean = true)
                (implicit logger: Logger): (Path, Seq[Path]) = {
-    import java.util.zip._
     import java.io.{BufferedInputStream, BufferedOutputStream, FileInputStream, FileOutputStream}
+    import java.util.zip._
     var extracted: List[Path] = List()
     val zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zipFile.toFile)))
     // scalastyle:off null
@@ -85,8 +88,8 @@ object ZipUtils {
    *  @param files Sequence of files to pack.
    */
   def zipFile(zipFile: Path, files: Seq[Path]) {
-    import java.util.zip._
     import java.io.{BufferedOutputStream, FileOutputStream}
+    import java.util.zip._
     val zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile.toFile)))
     files foreach { f =>
       val ze = new ZipEntry(f.toFile.getName)

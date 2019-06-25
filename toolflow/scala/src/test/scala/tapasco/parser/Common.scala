@@ -16,11 +16,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  fastparse.all._
+package tapasco.parser
+
+import fastparse.all._
 
 private object Common {
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
 
   def checkParsed(p: => Parsed[_]): Boolean = try { p match {
     case _: Parsed.Success[_] => true

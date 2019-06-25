@@ -16,9 +16,11 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  FormatObject._
-import  scala.language.implicitConversions
+package tapasco.parser
+
+import tapasco.parser.FormatObject._
+
+import scala.language.implicitConversions
 
 sealed trait FormatObject {
   def /(other: FormatObject): FormatObject      = Concat(this, other)

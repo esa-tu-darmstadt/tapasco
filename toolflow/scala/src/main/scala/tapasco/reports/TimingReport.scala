@@ -20,10 +20,13 @@
  * @brief    Model for parsing and evaluating timing reports in Vivado format.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.reports
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  java.nio.file.Path
-import  scala.io.Source
+package tapasco.reports
+
+import java.nio.file.Path
+
+import tapasco.util._
+
+import scala.io.Source
 
 /** Timing Report model. **/
 final case class TimingReport(
@@ -35,7 +38,7 @@ final case class TimingReport(
     timingMet: Boolean) extends Report(file)
 
 object TimingReport {
-  private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
+  private[this] val logger = tapasco.Logging.logger(this.getClass)
 
   /** Model of a path in the design with slack value. */
   final case class TimingPath(source: String, destination: String, slack: Double)

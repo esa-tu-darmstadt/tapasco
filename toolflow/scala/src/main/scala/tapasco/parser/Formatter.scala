@@ -16,8 +16,9 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  scala.util.Properties.{lineSeparator => NL}
+package tapasco.parser
+
+import scala.util.Properties.{lineSeparator => NL}
 
 /** Generic formatter for FormatObjects. */
 trait Formatter[A] extends Function[FormatObject, A] {

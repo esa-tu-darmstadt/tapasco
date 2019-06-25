@@ -21,12 +21,12 @@
  * @brief    Unit tests for DirectoryWatcher.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
+package tapasco.filemgmt
 import java.nio.file._
 
-import de.tu_darmstadt.cs.esa.tapasco.util.Listener
 import org.scalatest._
 import tapasco.TaPaSCoSpec
+import tapasco.util.Listener
 
 class DirectoryWatcherSpec extends TaPaSCoSpec with Matchers {
   private final val FS_SLEEP = 500
@@ -92,7 +92,7 @@ class DirectoryWatcherSpec extends TaPaSCoSpec with Matchers {
 
   "Creating, modifying and deleting files in arbitrary subdirs of a watched directory" should
   "generate Create, Modify and Delete events" in {
-    val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+    val logger = tapasco.Logging.logger(getClass)
     val p = Files.createTempDirectory(Paths.get("/tmp"), "tapasco-directorywatcherspec-")
     p.toFile.deleteOnExit()
     val s = p.resolve("a").resolve("b").resolve("c")

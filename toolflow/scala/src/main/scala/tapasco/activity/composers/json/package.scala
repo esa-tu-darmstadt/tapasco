@@ -16,11 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.activity.composers
-import  de.tu_darmstadt.cs.esa.tapasco.reports._
-import  play.api.libs.json._
-import  play.api.libs.functional.syntax._
-import  java.nio.file._
+package tapasco.activity.composers
+
+import java.nio.file._
+
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
+import tapasco.reports._
 
 /** Json serializers and deserializers. */
 package object json {

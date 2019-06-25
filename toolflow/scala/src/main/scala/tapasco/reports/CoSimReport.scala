@@ -21,9 +21,11 @@
  * @brief    Model for parsing and evaluating co-simulation reports in Vivado HLS format.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.reports
-import  java.nio.file.Path
-import  scala.io.Source
+package tapasco.reports
+
+import java.nio.file.Path
+
+import scala.io.Source
 
 /** Co-Simulation Report model. **/
 final case class CoSimReport(
@@ -36,7 +38,7 @@ final case class CoSimReport(
 }
 
 object CoSimReport {
-  private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
+  private[this] val logger = tapasco.Logging.logger(this.getClass)
 
   /** Model of the simulated clock cycles counts per execution (minimal, average and maximal). */
   final case class ClockCycles(min: Int, avg: Int, max: Int)

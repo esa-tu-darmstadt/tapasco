@@ -16,9 +16,10 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.activity.hls
-import  play.api.libs.json._
-import  HighLevelSynthesizer._
+package tapasco.activity.hls
+
+import play.api.libs.json._
+import tapasco.activity.hls.HighLevelSynthesizer._
 
 package object json {
   implicit object HLSImplementationFormat extends Format[HighLevelSynthesizer.Implementation] {

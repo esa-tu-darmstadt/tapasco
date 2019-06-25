@@ -16,16 +16,16 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.task
-import  de.tu_darmstadt.cs.esa.tapasco.itapasco.common._
-import  de.tu_darmstadt.cs.esa.tapasco.dse._
-import  de.tu_darmstadt.cs.esa.tapasco.dse.log._
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt._
-import  de.tu_darmstadt.cs.esa.tapasco.activity.composers.Composer
-import  de.tu_darmstadt.cs.esa.tapasco.dse.{DesignSpace, Heuristics}
-import  de.tu_darmstadt.cs.esa.tapasco.itapasco.common.LogFileTracker
-import  java.nio.file.Paths
+package tapasco.task
+
+import java.nio.file.Paths
+
+import tapasco.activity.composers.Composer
+import tapasco.base._
+import tapasco.dse.log._
+import tapasco.dse.{DesignSpace, Heuristics, _}
+import tapasco.filemgmt._
+import tapasco.util.LogFileTracker
 
 /** Interface for design space exploration tasks. */
 trait ExplorationTask extends Task {
@@ -53,7 +53,7 @@ private class DesignSpaceExplorationTask(
     val onComplete: Boolean => Unit,
     val deleteOnFail: Option[Boolean])
     (implicit cfg: Configuration, tsk: Tasks) extends Task with LogTracking with ExplorationTask {
-  private[this] val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private[this] val _logger = tapasco.Logging.logger(getClass)
   /** Internal representation of result. **/
   private[this] var _result: Option[(DesignSpace.Element, Composer.Result)] = None
   private[this] val _bp = basePath map (p => Paths.get(p).toAbsolutePath) getOrElse {

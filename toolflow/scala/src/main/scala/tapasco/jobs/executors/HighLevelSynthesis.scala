@@ -16,16 +16,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.jobs.executors
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.Logging
-import  de.tu_darmstadt.cs.esa.tapasco.task._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  de.tu_darmstadt.cs.esa.tapasco.activity.hls.HighLevelSynthesizer
-import  de.tu_darmstadt.cs.esa.tapasco.activity.hls.HighLevelSynthesizer._
-import  de.tu_darmstadt.cs.esa.tapasco.activity.hls.HighLevelSynthesizer.Implementation._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  java.util.concurrent.Semaphore
+package tapasco.jobs.executors
+
+import java.util.concurrent.Semaphore
+
+import tapasco.Logging
+import tapasco.activity.hls.HighLevelSynthesizer
+import tapasco.activity.hls.HighLevelSynthesizer.Implementation._
+import tapasco.activity.hls.HighLevelSynthesizer._
+import tapasco.base._
+import tapasco.filemgmt.FileAssetManager
+import tapasco.jobs._
+import tapasco.task._
 
 protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
   private implicit final val logger = Logging.logger(getClass)

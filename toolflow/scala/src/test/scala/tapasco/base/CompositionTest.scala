@@ -21,12 +21,12 @@
  * @brief    Unit tests for Composition description file.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import de.tu_darmstadt.cs.esa.tapasco.base.json._
+package tapasco.base
 import org.scalacheck.Prop._
 import org.scalatest._
 import org.scalatest.prop.Checkers
 import tapasco.TaPaSCoSpec
+import tapasco.base.json._
 
 class CompositionSpec extends TaPaSCoSpec with Matchers with Checkers {
 

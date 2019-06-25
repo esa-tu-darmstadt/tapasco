@@ -16,8 +16,6 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa
-
 /** Tapasco is an automated tool flow for generating
   * threadpool architectures on FPGAs.
   *
@@ -34,6 +32,7 @@ package de.tu_darmstadt.cs.esa
   **/
 package object tapasco {
   import java.nio.file._
+
   import scala.io._
 
   private lazy val REGEX_PLATFORM_NUM_SLOTS = """define\s+PLATFORM_NUM_SLOTS\s+(\d+)""".r

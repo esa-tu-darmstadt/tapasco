@@ -21,12 +21,12 @@
  * @brief    Unit tests for BasePathManager.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
+package tapasco.filemgmt
 import java.nio.file._
 
-import de.tu_darmstadt.cs.esa.tapasco.util._
 import org.scalatest._
 import tapasco.TaPaSCoSpec
+import tapasco.util._
 
 class BasePathManagerSpec extends TaPaSCoSpec with Matchers {
   "A BasePathManager" should "generate a correct event for a change on any entity" in {

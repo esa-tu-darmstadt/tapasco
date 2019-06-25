@@ -21,10 +21,10 @@
  * @brief    Unit tests for Platform description file.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import de.tu_darmstadt.cs.esa.tapasco.base.json._
+package tapasco.base
 import org.scalatest._
 import tapasco.TaPaSCoSpec
+import tapasco.base.json._
 
 class PlatformSpec extends TaPaSCoSpec with Matchers {
 

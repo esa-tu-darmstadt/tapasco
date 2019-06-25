@@ -36,14 +36,15 @@
  *           goal in a ordering.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.dse
-import de.tu_darmstadt.cs.esa.tapasco.base._
-import de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import de.tu_darmstadt.cs.esa.tapasco.util.LogFormatter._
+package tapasco.dse
+
 import java.nio.file.Paths
 
-import Heuristics._
-import de.tu_darmstadt.cs.esa.tapasco.util.SlotOccupation
+import tapasco.base._
+import tapasco.dse.Heuristics._
+import tapasco.filemgmt.FileAssetManager
+import tapasco.util.LogFormatter._
+import tapasco.util.SlotOccupation
 
 class DesignSpace(
     bd: Composition,
@@ -54,7 +55,7 @@ class DesignSpace(
   )(implicit cfg: Configuration) {
   import scala.util.Properties.{lineSeparator => NL}
   private[this] final val DEFAULT_CLOCK_PERIOD_NS = 4           // default: 250 MHz
-  private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
+  private[this] val logger = tapasco.Logging.logger(this.getClass)
   logger.trace(Seq("DesignSpace(", dim, ")") mkString)
 
   lazy val feasibleFreqs: Seq[Double] = feasibleFreqs(bd)
@@ -143,7 +144,7 @@ class DesignSpace(
 }
 
 object DesignSpace {
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
   private final val NL = scala.util.Properties.lineSeparator
 
   final case class Dimensions(

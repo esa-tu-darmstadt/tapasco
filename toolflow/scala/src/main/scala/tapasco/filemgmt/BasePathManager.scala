@@ -16,10 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  scala.language.implicitConversions
-import  java.nio.file.{Path, Paths}
+package tapasco.filemgmt
+
+import java.nio.file.{Path, Paths}
+
+import tapasco.util._
+
+import scala.language.implicitConversions
 
 class BasePathManager(createOnSet: Boolean = true) extends Publisher {
   type Event = BasePathManager.Event
@@ -36,7 +39,7 @@ class BasePathManager(createOnSet: Boolean = true) extends Publisher {
 }
 
 object BasePathManager {
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
 
   sealed trait Event
   final case class BasePathChanged(base: Entity, path: Path) extends Event

@@ -16,21 +16,22 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.itapasco.common
+package tapasco.util
 
 /**
  * Helper methods for tracking log files.
  * Contains methods to facilitate slf4j setup to redirect logging to files.
  **/
 object LogFileTracker {
-  import org.slf4j.LoggerFactory
-  import ch.qos.logback.core.FileAppender
-  import ch.qos.logback.core.filter.Filter
   import ch.qos.logback.classic.LoggerContext
   import ch.qos.logback.classic.encoder.PatternLayoutEncoder
   import ch.qos.logback.classic.spi.ILoggingEvent
-  import de.tu_darmstadt.cs.esa.tapasco.Logging
-  private[this] val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  import ch.qos.logback.core.FileAppender
+  import ch.qos.logback.core.filter.Filter
+  import org.slf4j.LoggerFactory
+  import tapasco.Logging
+
+  private[this] val _logger = tapasco.Logging.logger(getClass)
 
   /** Implements log event filtering on thread name basis. **/
   private final class ThreadFilter(threadName: String) extends Filter[ILoggingEvent] {

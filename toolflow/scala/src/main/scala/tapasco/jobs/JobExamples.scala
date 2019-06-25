@@ -16,18 +16,20 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.jobs
-import  de.tu_darmstadt.cs.esa.tapasco.Common
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.dse._
-import  json._
-import  play.api.libs.json._
-import  java.io.FileWriter
-import  java.nio.file._
+package tapasco.jobs
+
+import java.io.FileWriter
+import java.nio.file._
+
+import play.api.libs.json._
+import tapasco.Common
+import tapasco.base._
+import tapasco.dse._
+import tapasco.jobs.json._
 
 /** Contains an example for each kind of Tapasco job.
  *  Can generate examples for their Json syntax in $TAPASCO_HOME/json-examples/jobs
- *  via the [[dump]] method.
+  * via the dump method.
  */
 object JobExamples {
   // scalastyle:off magic.number

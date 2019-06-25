@@ -16,11 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.jobs
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.task._
-import  de.tu_darmstadt.cs.esa.tapasco.Logging._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
+package tapasco.jobs
+
+import tapasco.Logging.Logger
+import tapasco.base._
+import tapasco.filemgmt.FileAssetManager
+import tapasco.task._
+
 
 // scalastyle:off structural.type
 package object executors {

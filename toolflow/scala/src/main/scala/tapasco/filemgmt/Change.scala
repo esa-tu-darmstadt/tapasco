@@ -16,7 +16,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
+package tapasco.filemgmt
+
 /** Change type represents changes in files. **/
 sealed trait Change
 /** Singleton containing all [[Change]] instances. **/

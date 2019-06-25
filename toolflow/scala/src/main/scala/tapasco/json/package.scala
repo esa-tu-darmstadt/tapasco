@@ -16,9 +16,11 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco
-import  java.nio.file._
-import  play.api.libs.json._
+package tapasco
+
+import java.nio.file._
+
+import play.api.libs.json._
 
 /** Global helpers for JSON Serialization/Deserialization. */
 package object json {

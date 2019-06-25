@@ -21,8 +21,9 @@
  * @brief   Abstract base class for configuration files in TPC.
  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import  java.nio.file._
+package tapasco.base
+
+import java.nio.file._
 
 /**
  * Abstract base class of TPC entities, which are read dynamically from files.

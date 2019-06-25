@@ -16,12 +16,14 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.dse
-import  de.tu_darmstadt.cs.esa.tapasco.task._
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  de.tu_darmstadt.cs.esa.tapasco.activity.composers._
-import  java.util.concurrent.CountDownLatch
+package tapasco.dse
+
+import java.util.concurrent.CountDownLatch
+
+import tapasco.activity.composers._
+import tapasco.base._
+import tapasco.task._
+import tapasco.util._
 
 sealed private trait Run extends Startable with Ordered[Run] {
   import scala.math.Ordered.orderingToOrdered

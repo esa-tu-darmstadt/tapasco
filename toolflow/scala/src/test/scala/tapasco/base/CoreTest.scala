@@ -21,14 +21,14 @@
  * @brief    Unit tests for Core description file.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import de.tu_darmstadt.cs.esa.tapasco.base.json._
+package tapasco.base
 import org.scalatest._
 import tapasco.TaPaSCoSpec
+import tapasco.base.json._
 
 class CoreSpec extends TaPaSCoSpec with Matchers {
   private final lazy val logger =
-    de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+    tapasco.Logging.logger(getClass)
 
   "A missing Core file" should "throw an exception" in {
     assert(Core.from(jsonPath.resolve("missing.json")).isLeft)

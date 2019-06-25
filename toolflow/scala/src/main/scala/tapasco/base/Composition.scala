@@ -21,9 +21,11 @@
  * @brief   Model: TPC Composition.
  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import  java.nio.file._
-import  builder._
+package tapasco.base
+
+import java.nio.file._
+
+import tapasco.base.builder._
 
 case class Composition (
       descPath: Path,

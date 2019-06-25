@@ -21,7 +21,7 @@
  * @brief   TPC Architecture / Platform features.
  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.base
+package tapasco.base
 
 sealed case class Feature(val name: String, val props: Feature.FMap) {
   def unapply: Option[(String, Feature.FMap)] = Some((name, props))

@@ -16,22 +16,23 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.task
-import  de.tu_darmstadt.cs.esa.tapasco.activity.hls._
-import  de.tu_darmstadt.cs.esa.tapasco.activity.hls.HighLevelSynthesizer.Implementation
-import  de.tu_darmstadt.cs.esa.tapasco.activity.hls.HighLevelSynthesizer._
-import  de.tu_darmstadt.cs.esa.tapasco.itapasco.common._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt._
-import  de.tu_darmstadt.cs.esa.tapasco.slurm._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs.HighLevelSynthesisJob
-import  de.tu_darmstadt.cs.esa.tapasco.Logging._
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.base.json._
-import  java.nio.file._
+package tapasco.task
+
+import java.nio.file._
+
+import tapasco.Logging._
+import tapasco.activity.hls.HighLevelSynthesizer.Implementation
+import tapasco.activity.hls._
+import tapasco.base._
+import tapasco.base.json._
+import tapasco.filemgmt._
+import tapasco.jobs.HighLevelSynthesisJob
+import tapasco.slurm._
+import tapasco.util._
 
 class HighLevelSynthesisTask(val k: Kernel, val t: Target, val cfg: Configuration, hls: Implementation,
     val onComplete: Boolean => Unit) extends Task with LogTracking {
-  private[this] implicit val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private[this] implicit val logger = tapasco.Logging.logger(getClass)
   private[this] var result: Option[HighLevelSynthesizer.Result] = None
   private[this] val slurm = Slurm.enabled
   private[this] val r = HighLevelSynthesizer(hls)

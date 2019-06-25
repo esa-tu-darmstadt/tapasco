@@ -16,10 +16,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.dse
-import  de.tu_darmstadt.cs.esa.tapasco.activity.composers._
-import  de.tu_darmstadt.cs.esa.tapasco.base.Configuration
-import  java.util.concurrent.CountDownLatch
+package tapasco.dse
+
+import java.util.concurrent.CountDownLatch
+
+import tapasco.activity.composers._
+import tapasco.base.Configuration
 
 sealed private trait Batch extends Startable {
   def id: Int
@@ -31,7 +33,7 @@ sealed private trait Batch extends Startable {
 private class ConcreteBatch(val id: Int, val runs: Seq[Run])
                            (implicit exploration: Exploration, configuration: Configuration) extends Batch {
   assert (runs.length > 0, "at least one run must be given per batch")
-  private[this] val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private[this] val _logger = tapasco.Logging.logger(getClass)
 
   def isFirstSuccess: Boolean = runs(0).result map (_.result.equals(ComposeResult.Success)) getOrElse false
   def result: Option[Run] = runs.find(r => r.result map (_.result.equals(ComposeResult.Success)) getOrElse false)

@@ -21,12 +21,14 @@
  * @brief   Class for needle templating.
  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  java.io._
-import  scala.collection.mutable.Map
-import  scala.io.Source
-import  scala.util.Properties
-import  scala.util.matching.Regex
+package tapasco.util
+
+import java.io._
+
+import scala.collection.mutable.Map
+import scala.io.Source
+import scala.util.Properties
+import scala.util.matching.Regex
 
 object Template {
   /** Default regex for needles. */

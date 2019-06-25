@@ -16,12 +16,15 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import  de.tu_darmstadt.cs.esa.tapasco.Logging._
-import  de.tu_darmstadt.cs.esa.tapasco.util.Listener
-import  MultiFileWatcher._, Events._
-import  LogTrackingFileWatcher._
-import  java.nio.file.Paths
+package tapasco.filemgmt
+
+import java.nio.file.Paths
+
+import tapasco.Logging._
+import tapasco.filemgmt.LogTrackingFileWatcher._
+import tapasco.filemgmt.MultiFileWatcher.Events._
+import tapasco.filemgmt.MultiFileWatcher._
+import tapasco.util.Listener
 
 /** A [[MultiFileWatcher]] which tracks a logfile:
  *  subsequent logfiles mentioned in the log (matched via regex) are tracked recursively,
@@ -31,7 +34,7 @@ import  java.nio.file.Paths
  **/
 class LogTrackingFileWatcher(_logger: Option[Logger] = None, pollInterval: Int = POLL_INTERVAL)
     extends MultiFileWatcher(POLL_INTERVAL) {
-  private[this] final val logger = _logger getOrElse de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private[this] final val logger = _logger getOrElse tapasco.Logging.logger(getClass)
 
   private lazy val listener = new Listener[Event] {
     def update(e: MultiFileWatcher.Event): Unit = e match {

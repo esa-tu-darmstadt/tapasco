@@ -21,7 +21,7 @@
  * @brief   Generic linear interpolation between abstract values.
  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.util
+package tapasco.util
 
 /** LinearInterpolator is the abstract base class for linear interpolations of arbitrary
  *  types. It defines a regular interpolation in from a data set and an interpolation

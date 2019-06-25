@@ -1,15 +1,15 @@
-package de.tu_darmstadt.cs.esa.tapasco.reports
+package tapasco.reports
 
 import java.nio.file.Path
 
-import de.tu_darmstadt.cs.esa.tapasco.util.SequenceMatcher
+import tapasco.util.SequenceMatcher
 
 import scala.io.Source
 
 final case class PortReport(override val file : Path, numMasters : Int, numSlaves : Int) extends Report(file)
 
 object PortReport {
-  private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
+  private[this] val logger = tapasco.Logging.logger(this.getClass)
 
   def apply(pr : Path) : Option[PortReport] = extract(pr)
 

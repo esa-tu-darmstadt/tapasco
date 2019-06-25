@@ -16,17 +16,19 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.jobs
-import  de.tu_darmstadt.cs.esa.tapasco.Implicits._
-import  de.tu_darmstadt.cs.esa.tapasco.json._
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.base.json._
-import  de.tu_darmstadt.cs.esa.tapasco.dse._
-import  de.tu_darmstadt.cs.esa.tapasco.dse.json._
-import  play.api.libs.json._
-import  play.api.libs.json.Reads._
-import  play.api.libs.functional.syntax._
-import  java.nio.file._
+package tapasco.jobs
+
+import java.nio.file._
+
+import play.api.libs.functional.syntax._
+import play.api.libs.json.Reads._
+import play.api.libs.json._
+import tapasco.Implicits._
+import tapasco.base._
+import tapasco.base.json._
+import tapasco.dse._
+import tapasco.dse.json._
+import tapasco.json._
 
 package object json {
   /* @{ HighLevelSynthesisJob */

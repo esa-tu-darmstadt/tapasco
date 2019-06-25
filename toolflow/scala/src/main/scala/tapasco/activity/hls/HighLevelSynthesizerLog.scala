@@ -16,10 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.activity.hls
-import  de.tu_darmstadt.cs.esa.tapasco.Logging._
-import  scala.io.Source
-import  java.nio.file._
+package tapasco.activity.hls
+
+import java.nio.file._
+
+import tapasco.Logging._
+
+import scala.io.Source
 
 /** HighLevelSynthesizerLog is the abstract model for a HLS log file.
   * It uses simple pattern matching to identify errors and warnings
@@ -30,7 +33,7 @@ import  java.nio.file._
 final case class HighLevelSynthesizerLog(file: Path) {
   import HighLevelSynthesizerLog._
   private[this] final implicit val logger =
-    de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+    tapasco.Logging.logger(getClass)
   private[this] final lazy val errMsg = "could not read HLS logfile %s: ".format(file.toString)
 
   /** All lines with errors in the log. */

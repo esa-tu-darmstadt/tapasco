@@ -16,22 +16,25 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.activity.hls
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.LogTrackingFileWatcher
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  de.tu_darmstadt.cs.esa.tapasco.Common
-import  de.tu_darmstadt.cs.esa.tapasco.Logging._
-import  scala.util.Properties.{lineSeparator => NL}
-import  scala.sys.process._
-import  scala.io.Source
-import  java.nio.file._
-import  java.io.FileWriter
+package tapasco.activity.hls
+
+import java.io.FileWriter
+import java.nio.file._
+
+import tapasco.Common
+import tapasco.Logging._
+import tapasco.base._
+import tapasco.filemgmt.LogTrackingFileWatcher
+import tapasco.util._
+
+import scala.io.Source
+import scala.sys.process._
+import scala.util.Properties.{lineSeparator => NL}
 
 private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
   import HighLevelSynthesizer._
   private[this] implicit final val logger =
-    de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+    tapasco.Logging.logger(getClass)
 
   def clean(k: Kernel, target: Target)(implicit cfg: Configuration): Unit = {
     Common.getFiles(cfg.outputDir(k, target).resolve("hls").toFile) filter (_.isFile) map (_.delete)
@@ -162,9 +165,9 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
   }
 
   private def performAdditionalSteps(k: Kernel, t: Target)(implicit cfg: Configuration): Boolean = {
-    import  scala.reflect.runtime._
-    import  scala.reflect.runtime.universe._
-    import  scala.tools.reflect.ToolBox
+    import scala.reflect.runtime._
+    import scala.reflect.runtime.universe._
+    import scala.tools.reflect.ToolBox
 
     lazy val tb = universe.runtimeMirror(this.getClass.getClassLoader).mkToolBox()
     (t.ad.additionalSteps map { step =>

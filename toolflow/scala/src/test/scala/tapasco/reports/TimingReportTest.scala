@@ -21,7 +21,7 @@
  * @brief    Unit tests for TimingReport model.
  * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-package de.tu_darmstadt.cs.esa.tapasco.reports
+package tapasco.reports
 import org.scalatest._
 import tapasco.TaPaSCoSpec
 
