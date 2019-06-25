@@ -22,8 +22,8 @@ import java.nio.file.Path
 
 import tapasco.base._
 
-/** A HighLevelSynthesizer produces a [[Core]] from a [[Kernel]] description.
-  * It synthesizes a reusable hardware module for a given [[Kernel]].
+/** A HighLevelSynthesizer produces a [[tapasco.base.Core]] from a [[tapasco.base.Kernel]] description.
+  * It synthesizes a reusable hardware module for a given [[tapasco.base.Kernel]].
   * */
 trait HighLevelSynthesizer {
 
@@ -91,7 +91,6 @@ object HighLevelSynthesizer {
       *
       * @param name String containing name of implementation.
       * @return Implementation instance, or throws exception.
-      * @throws java.lang.Exception in case the name could not be matched.
       * */
     def apply(name: String): Implementation = name.toLowerCase match {
       case "vivadohls" => Implementation.VivadoHLS

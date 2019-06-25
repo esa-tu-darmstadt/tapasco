@@ -35,7 +35,7 @@ import scala.sys.process._
 
 /** EvaluateIP is the out-of-context synthesis activity.
   * The EvaluateIP activity performs an out-of-context synthesis and
-  * place-and-route of the given IP core and a [[Target]] to get an
+  * place-and-route of the given IP core and a [[tapasco.base.Target]] to get an
   * estimate on the area utilization and max. operating frequency
   * of the design. This data can be used in design space exploration.
   * Conventions: There must be a main clock port in the top-level

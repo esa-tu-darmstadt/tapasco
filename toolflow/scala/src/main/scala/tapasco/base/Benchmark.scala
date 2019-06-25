@@ -55,7 +55,7 @@ final class LatencyInterpolator(data: Seq[InterruptLatency])
   }
 }
 
-/** Defines an interpolation on [[TransferSpeedMeasurements]]. */
+/** Defines an interpolation on [[tapasco.base.TransferSpeedMeasurement]]. */
 final class TransferSpeedInterpolator(data: Seq[TransferSpeedMeasurement])
   extends LinearInterpolator[Long, (Double, Double, Double)](data map { ts: TransferSpeedMeasurement =>
     (ts.chunkSize, (ts.read, ts.write, ts.readWrite))

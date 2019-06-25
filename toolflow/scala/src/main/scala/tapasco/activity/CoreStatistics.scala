@@ -35,7 +35,7 @@ object CoreStatistics {
     *
     * @param target   Architecture + Platform combination to dump for.
     * @param fileName Output filename of the CSV file.
-    * @param cfg      Implicit [[Configuration]].
+    * @param cfg      Implicit [[tapasco.base.Configuration]].
     * @return true, iff successful
     * */
   def apply(target: Target, fileName: String)(implicit cfg: Configuration): Boolean =

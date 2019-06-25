@@ -41,7 +41,7 @@ import tapasco.util._
   * @param onComplete         Callback function on completion of the task.
   * @param averageClockCycles Clock cycle count in an average execution of the core (optional).
   * @param skipEvaluation     Do not perform out-of-context synthesis for resource estimates, if true (optional).
-  * @param cfg                TaPaSCo [[Configuration]] (implicit).
+  * @param cfg                TaPaSCo [[tapasco.base.Configuration]] (implicit).
   **/
 class ImportTask(val zip: Path,
                  val t: Target,

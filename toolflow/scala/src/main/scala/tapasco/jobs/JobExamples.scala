@@ -28,7 +28,7 @@ import tapasco.dse._
 import tapasco.jobs.json._
 
 /** Contains an example for each kind of Tapasco job.
-  * Can generate examples for their Json syntax in $TAPASCO_HOME/json-examples/jobs
+  * Can generate examples for their Json syntax.
   * via the dump method.
   */
 object JobExamples {
