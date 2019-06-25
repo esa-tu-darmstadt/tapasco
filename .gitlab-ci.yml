@@ -460,7 +460,7 @@ tapasco_hls:
     - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
     - ./gradlew installDist
     - popd
-    - tapasco --kernelDir ${TAPASCO_HOME_TOOLFLOW}/examples/kernel-examples hls counter -p pynq
+    - tapasco --kernelDir ${TAPASCO_HOME_TOOLFLOW}/examples/kernel-examples hls counter -p $PLATFORM
     - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p $PLATFORM
 
 tapasco_compose_17_4:
