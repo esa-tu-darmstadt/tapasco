@@ -30,7 +30,7 @@ import scala.io.Source
 /** ComposerLog is an abstract definition of a log file produced by a Composer.
   * It uses simple pattern matching to identify errors and warnings in text
   * based log files.
-  * */
+  */
 class ComposerLog(val file: Path) {
 
   import ComposeResult._
@@ -61,7 +61,7 @@ class ComposerLog(val file: Path) {
 
 /** Companion object for ComposerLog.
   * Contains the regular expressions and a convenience constructor.
-  * */
+  */
 object ComposerLog {
   private[this] val logger = tapasco.Logging.logger(this.getClass)
 

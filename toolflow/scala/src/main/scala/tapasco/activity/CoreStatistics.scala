@@ -29,7 +29,7 @@ import scala.util.Properties.{lineSeparator => NL}
   * It is often helpful to be able to dump all out-of-context results
   * for all Cores into a CSV file for further analysis. This activity
   * simplifies the process of collecting data from multiple reports.
-  * */
+  */
 object CoreStatistics {
   /** Produce a CSV file containing the results.
     *
@@ -37,7 +37,7 @@ object CoreStatistics {
     * @param fileName Output filename of the CSV file.
     * @param cfg      Implicit [[tapasco.base.Configuration]].
     * @return true, iff successful
-    * */
+    */
   def apply(target: Target, fileName: String)(implicit cfg: Configuration): Boolean =
     dumpCSV(target, fileName, FileAssetManager.reports.synthReports.toSeq filter { r =>
       FileAssetManager.targetForReport(r.file).equals(target)

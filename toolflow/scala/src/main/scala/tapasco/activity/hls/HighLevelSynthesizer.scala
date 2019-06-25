@@ -24,7 +24,7 @@ import tapasco.base._
 
 /** A HighLevelSynthesizer produces a [[tapasco.base.Core]] from a [[tapasco.base.Kernel]] description.
   * It synthesizes a reusable hardware module for a given [[tapasco.base.Kernel]].
-  * */
+  */
 trait HighLevelSynthesizer {
 
   import HighLevelSynthesizer._
@@ -35,7 +35,7 @@ trait HighLevelSynthesizer {
     * @param t   Target (Architecture + Platform).
     * @param cfg Implicit Configuration.
     * @return Path to log file of this synthesis run.
-    * */
+    */
   def logFile(k: Kernel, t: Target)(implicit cfg: Configuration): Path =
     cfg.outputDir(k, t).resolve("hls").resolve("%s.log".format(t.ad.name))
 
@@ -45,7 +45,7 @@ trait HighLevelSynthesizer {
     * @param t   Target (Architecture + Platform).
     * @param cfg Implicit Configuration.
     * @return Path to .zip file of this synthesis run.
-    * */
+    */
   def outputZipFile(k: Kernel, t: Target)(implicit cfg: Configuration): Path =
     cfg.outputDir(k, t).resolve("ipcore").resolve("%s_%s.zip".format(k.name, t.ad.name))
 
@@ -55,7 +55,7 @@ trait HighLevelSynthesizer {
     * @param target Target (Architecture + Platform).
     * @param cfg    Implicit Configuration.
     * @return result of the synthesis run.
-    * */
+    */
   def synthesize(k: Kernel, target: Target)(implicit cfg: Configuration): Result
 
   /** Removes all intermediate files for the run.
@@ -63,7 +63,7 @@ trait HighLevelSynthesizer {
     * @param k      Kernel.
     * @param target Target (Architecture + Platform).
     * @param cfg    Implicit Configuration.
-    * */
+    */
   def clean(k: Kernel, target: Target)(implicit cfg: Configuration): Unit
 
   /** Removes all output files for the run.
@@ -71,7 +71,7 @@ trait HighLevelSynthesizer {
     * @param k      Kernel.
     * @param target Target (Architecture + Platform).
     * @param cfg    Implicit Configuration.
-    * */
+    */
   def cleanAll(k: Kernel, target: Target)(implicit cfg: Configuration): Unit
 }
 
@@ -91,7 +91,7 @@ object HighLevelSynthesizer {
       *
       * @param name String containing name of implementation.
       * @return Implementation instance, or throws exception.
-      * */
+      */
     def apply(name: String): Implementation = name.toLowerCase match {
       case "vivadohls" => Implementation.VivadoHLS
       case _ => throw new Exception("unknown HLS implementation: '%s'".format(name))

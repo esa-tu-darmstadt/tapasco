@@ -81,7 +81,7 @@ final class TransferSpeedInterpolator(data: Seq[TransferSpeedMeasurement])
   * @param libraryVersions  Version strings of the host's Tapasco libraries.
   * @param transferSpeed    Transfer speed (in MiB/s) across chunk sizes (bytes).
   * @param interruptLatency IRQ turnaround time (in us) across PE runtimes (clock cycles).
-  * */
+  */
 final case class Benchmark(
                             descPath: Path,
                             timestamp: LocalDateTime,

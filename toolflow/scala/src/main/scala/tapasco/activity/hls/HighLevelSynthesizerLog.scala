@@ -29,7 +29,7 @@ import scala.io.Source
   * in text-based log file of a [[HighLevelSynthesizer]].
   *
   * @param file Path to log file.
-  * */
+  */
 final case class HighLevelSynthesizerLog(file: Path) {
 
   import HighLevelSynthesizerLog._
@@ -51,7 +51,7 @@ final case class HighLevelSynthesizerLog(file: Path) {
 
 /** Companion object for HighLevelSynthesizerLog.
   * Contains the regular expressions for matching.
-  * */
+  */
 private object HighLevelSynthesizerLog {
   private final val RE_ERROR = """(?i)error""".r.unanchored
   private final val RE_WARN = """(?i)warn""".r.unanchored

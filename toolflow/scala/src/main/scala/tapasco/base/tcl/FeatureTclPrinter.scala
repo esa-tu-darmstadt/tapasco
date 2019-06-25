@@ -35,7 +35,7 @@ class FeatureTclPrinter(prefix: String = "") {
     * @param f Feature to add.
     * @return String containing Tcls commands to write f into
     *         a dict called <prefix>features.
-    * */
+    */
   def toTcl(f: Feature): String = f.props.value map {
     case (name, value) => s"$pre ${f.name} $name ${value.toTCL}"
   } mkString NL

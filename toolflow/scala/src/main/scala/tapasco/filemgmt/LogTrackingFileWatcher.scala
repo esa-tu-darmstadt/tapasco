@@ -30,9 +30,9 @@ import tapasco.util.Listener
   * subsequent logfiles mentioned in the log (matched via regex) are tracked recursively,
   * making it easy to follow complex outputs, e.g., from Vivado.
   *
-  * @param logger       Optional logger instance to use.
+  * @param _logger      Optional logger instance to use.
   * @param pollInterval Optional polling interval for files.
-  * */
+  */
 class LogTrackingFileWatcher(_logger: Option[Logger] = None, pollInterval: Int = POLL_INTERVAL)
   extends MultiFileWatcher(POLL_INTERVAL) {
   private[this] final val logger = _logger getOrElse tapasco.Logging.logger(getClass)

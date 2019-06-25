@@ -46,7 +46,7 @@ case class Composition(
     * count is increased, otherwise it is appended.
     *
     * @param e [[Composition.Entry]] with the name and number of instances of the Kernel to add.
-    * */
+    */
   def +(e: Composition.Entry): Composition = if (composition map (_.kernel) contains e.kernel) {
     // find existing entry and add the count
     this.copy(composition = this.composition map {

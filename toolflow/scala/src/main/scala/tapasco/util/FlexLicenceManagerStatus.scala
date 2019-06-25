@@ -56,7 +56,7 @@ object FlexLicenceManagerStatus {
   /** Returns a pair of total number and number of currently checked out
     * out licences for the given feature name. If lmstat is not available
     * will return infinite number of licenses for every feature.
-    * */
+    */
   def apply(feature: String): (Int, Int) = if (_has_lmstat) {
     licences getOrElse(feature, (0, 0))
   } else {

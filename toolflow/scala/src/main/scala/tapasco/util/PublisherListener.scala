@@ -59,7 +59,7 @@ trait Listener[A] {
   *    }
   *  }
   * }}}
-  * */
+  */
 trait Publisher {
   /** Type of events published by this Publisher. */
   type Event
@@ -111,7 +111,7 @@ trait Publisher {
   /** Publishes the given event.
     *
     * @param e [[Event]] to publish.
-    * */
+    */
   def publish(e: Event) {
     _listeners.synchronized {
       _listeners.toSeq

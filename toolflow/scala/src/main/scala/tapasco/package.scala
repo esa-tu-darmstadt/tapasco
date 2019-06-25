@@ -29,7 +29,7 @@
   * TPC API provides methods to query the threadpool and its
   * currently loaded composition, and to setup, launch and collect
   * jobs to be executed on the threadpool.
-  * */
+  */
 package object tapasco {
 
   import java.nio.file._

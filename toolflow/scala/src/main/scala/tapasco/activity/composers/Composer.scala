@@ -46,7 +46,7 @@ trait Composer {
     * @param features Features (optional)
     * @param cfg      implicit Configuration instance
     * @return Composer.Result with error code / additional data
-    * */
+    */
   def compose(bd: Composition, target: Target, f: Double = 0, effortLevel: String, features: Seq[Feature] = Seq())
              (implicit cfg: Configuration): Result
 
@@ -56,7 +56,7 @@ trait Composer {
     * @param target Platform and Architecture combination to synthesize for
     * @param f      target design frequency (PE speed)
     * @param cfg    implicit Configuration instance
-    * */
+    */
   def clean(bd: Composition, target: Target, f: Double = 0)(implicit cfg: Configuration): Unit
 
   /** Removes all files for the run, including results.
@@ -65,7 +65,7 @@ trait Composer {
     * @param target Platform and Architecture combination to synthesize for
     * @param f      target design frequency (PE speed)
     * @param cfg    implicit Configuration instance
-    * */
+    */
   def cleanAll(bd: Composition, target: Target, f: Double = 0)(implicit cfg: Configuration): Unit
 }
 
