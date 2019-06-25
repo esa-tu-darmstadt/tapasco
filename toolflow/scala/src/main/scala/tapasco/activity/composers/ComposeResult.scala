@@ -22,10 +22,15 @@ package tapasco.activity.composers
 sealed trait ComposeResult
 
 object ComposeResult {
+
   final case object Success extends ComposeResult
+
   final case object TimingFailure extends ComposeResult
+
   final case object Timeout extends ComposeResult
+
   final case object PlacerError extends ComposeResult
+
   final case object OtherError extends ComposeResult
 
   def apply(s: String): Option[ComposeResult] = s.toLowerCase match {

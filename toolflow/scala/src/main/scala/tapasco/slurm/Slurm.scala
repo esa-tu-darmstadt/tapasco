@@ -30,40 +30,49 @@ import scala.collection.JavaConverters._
 import scala.sys.process._
 
 /**
- * Primitive interface to SLURM scheduler:
- * Can be used to generate job scripts and schedule them on SLURM via `sbatch`.
- * Provides methods to write the script, schedule and wait for it.
- **/
+  * Primitive interface to SLURM scheduler:
+  * Can be used to generate job scripts and schedule them on SLURM via `sbatch`.
+  * Provides methods to write the script, schedule and wait for it.
+  **/
 final object Slurm extends Publisher {
   private implicit val logger = tapasco.Logging.logger(getClass)
-  private val SLURM_RETRIES   = 10
+  private val SLURM_RETRIES = 10
 
   /** Model of a SLURM job. */
   final case class Job(
-    /** Name of the job. */
-    name: String,
-    /** File name of the stdout logfile. */
-    slurmLog: String,
-    /** File name of the stderr logfile. */
-    errorLog: String,
-    /** Consumer to schedule. */
-    consumer: ResourceConsumer,
-    /** Time limit (in hours). */
-    maxHours: Int,
-    /** Sequence of commands to execute (bash). */
-    commands: Seq[String],
-    /** Optional comment. */
-    comment: Option[String] = None
-  )
+                        /** Name of the job. */
+                        name: String,
+
+                        /** File name of the stdout logfile. */
+                        slurmLog: String,
+
+                        /** File name of the stderr logfile. */
+                        errorLog: String,
+
+                        /** Consumer to schedule. */
+                        consumer: ResourceConsumer,
+
+                        /** Time limit (in hours). */
+                        maxHours: Int,
+
+                        /** Sequence of commands to execute (bash). */
+                        commands: Seq[String],
+
+                        /** Optional comment. */
+                        comment: Option[String] = None
+                      )
 
   /** Exception class for negative SLURM responses. */
   final case class SlurmException(script: String, sbatchOutput: String)
     extends Exception("SLURM exception during execution of %s, output text: '%s'".format(script, sbatchOutput))
 
   sealed trait Event
+
   final object Events {
+
     /** SLURM activation changed. */
     final case class SlurmModeEnabled(enabled: Boolean) extends Event
+
   }
 
   /** Template file for job script. */
@@ -71,7 +80,8 @@ final object Slurm extends Publisher {
   /** Default output directory for SLURM-related outputs. */
   final val slurmOutput = FileAssetManager.TAPASCO_HOME.resolve("slurm")
   /** Regular expression: Positive ACK from `sbatch`. */
-  final val slurmSubmissionAck = """[Ss]ubmitted batch job (\d+)""".r
+  final val slurmSubmissionAck =
+    """[Ss]ubmitted batch job (\d+)""".r
   /** Polling interval for `squeue`. */
   final val slurmDelay = 15000 // 15 secs
   /** Set of POSIX permissions for SLURM job scripts. */
@@ -83,10 +93,15 @@ final object Slurm extends Publisher {
   lazy val available: Boolean = "which sbatch".! == 0
 
   /** Returns true, if SLURM is available and enabled. */
-  def enabled: Boolean = Slurm.synchronized { _enabled }
+  def enabled: Boolean = Slurm.synchronized {
+    _enabled
+  }
+
   /** Enables or disables SLURM, returns new value for enabled. */
   def enabled_=(en: Boolean): Boolean = if (en && available) {
-    Slurm.synchronized { _enabled = en }
+    Slurm.synchronized {
+      _enabled = en
+    }
     publish(Events.SlurmModeEnabled(en))
     enabled
   } else {
@@ -100,13 +115,14 @@ final object Slurm extends Publisher {
   def setScriptPermissions(script: Path): Unit = Files.setPosixFilePermissions(script, slurmScriptPermissions)
 
   /**
-   * Write a SLURM job script to given file.
-   * @param job Job to execute.
-   * @param file File to write script to.
-   * @return True, iff successful.
-   **/
+    * Write a SLURM job script to given file.
+    *
+    * @param job  Job to execute.
+    * @param file File to write script to.
+    * @return True, iff successful.
+    **/
   def writeJobScript(job: Job, file: Path): Boolean = (catchDefault[Boolean](false, Seq(classOf[java.io.IOException]),
-      prefix = "could not write %s: ".format(file.toString)) _) {
+    prefix = "could not write %s: ".format(file.toString)) _) {
     // fill in template needles
     val jobScript = new Template
     jobScript("JOB_NAME") = job.name
@@ -131,10 +147,11 @@ final object Slurm extends Publisher {
   }
 
   /**
-   * Schedules a job on SLURM.
-   * @param script Job script file to schedule via `sbatch`.
-   * @return Either a positive integer (SLURM id), or an Exception.
-   **/
+    * Schedules a job on SLURM.
+    *
+    * @param script Job script file to schedule via `sbatch`.
+    * @return Either a positive integer (SLURM id), or an Exception.
+    **/
   def apply(script: Path, retries: Int = SLURM_RETRIES): Option[Int] =
     catchAllDefault[Option[Int]](None, "Slurm scheduling failed: ") {
       val cmd = "sbatch %s".format(script.toAbsolutePath().normalize().toString)
@@ -146,7 +163,9 @@ final object Slurm extends Publisher {
           // wait for 10 secs + random up to 5 secs to avoid congestion
           Thread.sleep(slurmRetryDelay + scala.util.Random.nextInt() % (slurmRetryDelay / 2))
           apply(script, retries - 1)
-        } else { throw new SlurmException(script.toString, res) }
+        } else {
+          throw new SlurmException(script.toString, res)
+        }
       } else {
         logger.debug("received SLURM id: {}", id)
         id
@@ -157,7 +176,7 @@ final object Slurm extends Publisher {
   def isRunning(id: Int): Boolean = catchAllDefault[Boolean](true, "Slurm `squeue` failed: ") {
     val squeue = "squeue -h".!!
     logger.trace("squeue output: {}", squeue)
-    ! "%d".format(id).r.findFirstIn(squeue).isEmpty
+    !"%d".format(id).r.findFirstIn(squeue).isEmpty
   }
 
   /** Wait until the given SLURM job disappears from `squeue` output. */
@@ -169,8 +188,10 @@ final object Slurm extends Publisher {
   }
 
   /** Returns a list of all SLURM job ids which are registered under the
-   *  the current user's account. */
-  def jobs(): Seq[Int] = if (! enabled) { Seq() } else {
+    * the current user's account. */
+  def jobs(): Seq[Int] = if (!enabled) {
+    Seq()
+  } else {
     catchAllDefault(Seq[Int](), "could not get squeue output: ") {
       val lines = "squeue -u %s".format(sys.env("USER")).!!
       val ids = ("""\n\s*(\d+)""".r.unanchored.findAllMatchIn(lines) map (m => m.group(1).toInt)).toSeq

@@ -17,6 +17,7 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 package tapasco.parser
+
 import fastparse.all._
 import org.scalacheck._
 import org.scalatest._
@@ -24,6 +25,7 @@ import org.scalatest.prop.Checkers
 import tapasco.TaPaSCoSpec
 
 class JobParsersSpec extends TaPaSCoSpec with Matchers with Checkers {
+
   import Common._
   import JobParsers._
   import JobParsersSpec._
@@ -31,11 +33,11 @@ class JobParsersSpec extends TaPaSCoSpec with Matchers with Checkers {
 
   "All valid jobs" should "be correctly parsed by job" in
     check(forAllNoShrink(jobGen) { h =>
-      checkParsed(P( job ~ End ).parse(h))
+      checkParsed(P(job ~ End).parse(h))
     })
   "All sequences of valid jobs" should "be correctly parsed by jobs" in
     check(forAllNoShrink(jobsGen) { h =>
-      checkParsed(P( jobs ~ End ).parse(h))
+      checkParsed(P(jobs ~ End).parse(h))
     })
 }
 

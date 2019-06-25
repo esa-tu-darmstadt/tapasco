@@ -26,11 +26,13 @@ import tapasco.reports._
 
 /** Json serializers and deserializers. */
 package object json {
+
   implicit object ComposerImplementationFormat extends Format[Composer.Implementation] {
     def reads(json: JsValue): JsResult[Composer.Implementation] = json match {
       case JsString(str) => JsSuccess(Composer.Implementation(str))
-      case _             => JsError(Seq(JsPath() -> Seq(JsonValidationError("expected.string"))))
+      case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("expected.string"))))
     }
+
     def writes(i: Composer.Implementation): JsValue = JsString(i.toString)
   }
 
@@ -42,15 +44,16 @@ package object json {
       }
       case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("expected.compose.result.string.value"))))
     }
+
     def writes(r: ComposeResult): JsValue = JsString(r.toString)
   }
 
   private def mkComposerResult(r: ComposeResult, bit: Option[String], log: Option[String], util: Option[String],
-      timing: Option[String]) = Composer.Result(
+                               timing: Option[String]) = Composer.Result(
     r,
     bit,
-    log flatMap    (f => ComposerLog(Paths.get(f))),
-    util flatMap   (f => UtilizationReport(Paths.get(f))),
+    log flatMap (f => ComposerLog(Paths.get(f))),
+    util flatMap (f => UtilizationReport(Paths.get(f))),
     timing flatMap (f => TimingReport(Paths.get(f)))
   )
 
@@ -64,9 +67,9 @@ package object json {
 
   implicit val composerResultFormat: Format[Composer.Result] = (
     (JsPath \ "Result").format[ComposeResult] ~
-    (JsPath \ "Bitstream").formatNullable[String] ~
-    (JsPath \ "Log").formatNullable[String] ~
-    (JsPath \ "UtilizationReport").formatNullable[String] ~
-    (JsPath \ "TimingReport").formatNullable[String]
-  ) (mkComposerResult _, wrComposerResult _)
+      (JsPath \ "Bitstream").formatNullable[String] ~
+      (JsPath \ "Log").formatNullable[String] ~
+      (JsPath \ "UtilizationReport").formatNullable[String] ~
+      (JsPath \ "TimingReport").formatNullable[String]
+    ) (mkComposerResult _, wrComposerResult _)
 }

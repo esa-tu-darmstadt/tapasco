@@ -25,17 +25,21 @@ import tapasco.base.Configuration
 
 sealed private trait Batch extends Startable {
   def id: Int
+
   def runs: Seq[Run]
+
   def isFirstSuccess: Boolean
+
   def result: Option[Run]
 }
 
 private class ConcreteBatch(val id: Int, val runs: Seq[Run])
                            (implicit exploration: Exploration, configuration: Configuration) extends Batch {
-  assert (runs.length > 0, "at least one run must be given per batch")
+  assert(runs.length > 0, "at least one run must be given per batch")
   private[this] val _logger = tapasco.Logging.logger(getClass)
 
   def isFirstSuccess: Boolean = runs(0).result map (_.result.equals(ComposeResult.Success)) getOrElse false
+
   def result: Option[Run] = runs.find(r => r.result map (_.result.equals(ComposeResult.Success)) getOrElse false)
 
   def start(signal: Option[CountDownLatch] = None): Unit = {

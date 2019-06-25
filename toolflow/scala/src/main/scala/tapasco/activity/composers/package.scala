@@ -25,5 +25,5 @@ package tapasco.activity
   * instantiating the Kernels (each instance is called a processing
   * element, PE) and connecting them to the host and memory.
   * Currently only Vivado Design Suite is supported as a Composer.
-  **/
+  * */
 package object composers

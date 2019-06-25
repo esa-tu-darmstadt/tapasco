@@ -17,10 +17,10 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     CoSimReport.scala
- * @brief    Model for parsing and evaluating co-simulation reports in Vivado HLS format.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file CoSimReport.scala
+  * @brief Model for parsing and evaluating co-simulation reports in Vivado HLS format.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.reports
 
 import java.nio.file.Path
@@ -29,12 +29,12 @@ import scala.io.Source
 
 /** Co-Simulation Report model. **/
 final case class CoSimReport(
-    override val file: Path,
-    latency: CoSimReport.ClockCycles,
-    interval: CoSimReport.ClockCycles) extends Report(file) {
+                              override val file: Path,
+                              latency: CoSimReport.ClockCycles,
+                              interval: CoSimReport.ClockCycles) extends Report(file) {
   require(Seq(latency.min, latency.avg, latency.max,
-              interval.min, interval.avg, interval.max) map (_ != 1) reduce (_ || _),
-          "at least one valid measure point must be found in report!")
+    interval.min, interval.avg, interval.max) map (_ != 1) reduce (_ || _),
+    "at least one valid measure point must be found in report!")
 }
 
 object CoSimReport {
@@ -44,26 +44,33 @@ object CoSimReport {
   final case class ClockCycles(min: Int, avg: Int, max: Int)
 
   object ClockCycles {
-    private def parseOptionalInt(s: String): Int = try { s.toInt } catch { case e: NumberFormatException => 1 }
+    private def parseOptionalInt(s: String): Int = try {
+      s.toInt
+    } catch {
+      case e: NumberFormatException => 1
+    }
+
     def apply(min: String, avg: String, max: String): ClockCycles =
       ClockCycles(parseOptionalInt(min), parseOptionalInt(avg), parseOptionalInt(max))
   }
 
   /** Extract min, max and average clock cycles from the co-simulation report (if available). **/
   private def extractClockCycles(sr: Path): Option[(ClockCycles, ClockCycles)] = try {
-      Source.fromFile(sr.toString)
-            .getLines
-            .map (_.split("\\|").map(_.trim))
-            .filter (l => l.length > 2 && "Pass".equals(l(2)))
-            // scalastyle:off magic.number
-            .map (l => (ClockCycles(l(3), l(4), l(5)),
-                        ClockCycles(l(6), l(7), l(8))))
-            // scalastyle:on magic.number
-            .toSeq.headOption
-    } catch { case e: Exception => {
+    Source.fromFile(sr.toString)
+      .getLines
+      .map(_.split("\\|").map(_.trim))
+      .filter(l => l.length > 2 && "Pass".equals(l(2)))
+      // scalastyle:off magic.number
+      .map(l => (ClockCycles(l(3), l(4), l(5)),
+      ClockCycles(l(6), l(7), l(8))))
+      // scalastyle:on magic.number
+      .toSeq.headOption
+  } catch {
+    case e: Exception => {
       logger.warn(Seq("Could not extract clock cycles from ", sr, ": ", e) mkString)
       None
-    }}
+    }
+  }
 
   /** Produce CoSimReport instance from file. **/
   def apply(sr: Path): Option[CoSimReport] = {

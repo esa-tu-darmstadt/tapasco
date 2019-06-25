@@ -45,7 +45,9 @@ protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
       (k, t) <- runs
     } yield new HighLevelSynthesisTask(k, t, cfg, VivadoHLS, _ => signal.release())
 
-    tasks foreach { tsk.apply _ }
+    tasks foreach {
+      tsk.apply _
+    }
 
     0 until tasks.length foreach { i =>
       signal.acquire()
@@ -57,7 +59,7 @@ protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
     val results: Seq[((Kernel, Target), Option[HighLevelSynthesizer.Result])] =
       (runs zip (tasks map (_.synthesisResult))) filter {
         case (_, Some(Success(_, _))) => true
-        case _                        => false
+        case _ => false
       }
 
     logger.trace("results: {}", results)
@@ -65,7 +67,7 @@ protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
     val importTasks = results flatMap {
       case ((k, t), Some(Success(_, zip))) => {
         logger.trace("searching for co-simulation report for {} @ {}", k.name: Any, t)
-        val rpt   = FileAssetManager.reports.cosimReport(k.name, t)
+        val rpt = FileAssetManager.reports.cosimReport(k.name, t)
         logger.trace("co-simulation report: {}", rpt)
         val avgCC = rpt map (_.latency.avg)
         logger.trace("average clock cycles: {}", avgCC)
@@ -77,7 +79,9 @@ protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
       case _ => None
     }
 
-    importTasks foreach { tsk.apply _ }
+    importTasks foreach {
+      tsk.apply _
+    }
 
     0 until importTasks.length foreach { i =>
       signal.acquire()

@@ -28,7 +28,7 @@ final case class Target(ad: Architecture, pd: Platform) {
 
 object Target {
   def fromString(a: String, p: String): Option[Target] = for {
-      ad <- (FileAssetManager.entities.architectures filter (_.name.equals(a))).headOption
-      pd <- (FileAssetManager.entities.platforms filter (_.name.equals(p))).headOption
-    } yield Target(ad, pd)
+    ad <- (FileAssetManager.entities.architectures filter (_.name.equals(a))).headOption
+    pd <- (FileAssetManager.entities.platforms filter (_.name.equals(p))).headOption
+  } yield Target(ad, pd)
 }

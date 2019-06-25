@@ -17,10 +17,10 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     json.scala
- * @brief    Package containing Json Reads/Writes/Formats for Json SerDes.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.e)
- **/
+  * @file json.scala
+  * @brief Package containing Json Reads/Writes/Formats for Json SerDes.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.e)
+  **/
 package tapasco.util
 
 import play.api.libs.functional.syntax._
@@ -29,14 +29,14 @@ import play.api.libs.json._
 package object json {
   implicit val resourcesEstimateFormat: Format[ResourcesEstimate] = (
     (__ \ "Slices").format[Int] ~
-    (__ \ "LUTs").format[Int] ~
-    (__ \ "FlipFlops").format[Int] ~
-    (__ \ "DSPs").format[Int] ~
-    (__ \ "BRAM").format[Int]
-  ) (ResourcesEstimate.apply _, unlift(ResourcesEstimate.unapply _))
+      (__ \ "LUTs").format[Int] ~
+      (__ \ "FlipFlops").format[Int] ~
+      (__ \ "DSPs").format[Int] ~
+      (__ \ "BRAM").format[Int]
+    ) (ResourcesEstimate.apply _, unlift(ResourcesEstimate.unapply _))
 
   implicit val areaEstimateFormat: Format[AreaEstimate] = (
     (__ \ "Resources").format[ResourcesEstimate] ~
-    (__ \ "Available").format[ResourcesEstimate]
-  ) (AreaEstimate.apply _, unlift(AreaEstimate.unapply _))
+      (__ \ "Available").format[ResourcesEstimate]
+    ) (AreaEstimate.apply _, unlift(AreaEstimate.unapply _))
 }

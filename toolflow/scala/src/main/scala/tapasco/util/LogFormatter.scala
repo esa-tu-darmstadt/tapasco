@@ -17,10 +17,10 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     LogFormatter.scala
- * @brief    Formats TPC objects for log output.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file LogFormatter.scala
+  * @brief Formats TPC objects for log output.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.util
 
 import tapasco.activity.composers._
@@ -40,9 +40,9 @@ object LogFormatter {
   def logformat(ce: Composer.Result): String =
     "%s, logfile: '%s', utilization report: '%s', timing report: '%s'"
       .format(ce.result,
-              ce.log map (_.file.toString) getOrElse "",
-              ce.util map (_.file.toString) getOrElse "",
-              ce.timing map (_.file.toString) getOrElse "")
+        ce.log map (_.file.toString) getOrElse "",
+        ce.util map (_.file.toString) getOrElse "",
+        ce.timing map (_.file.toString) getOrElse "")
 
   def logformat(cs: Seq[Composition.Entry]): String = "[%s]".format(cs map (logformat _) mkString ", ")
 }

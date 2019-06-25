@@ -17,11 +17,12 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     FeatureTest.scala
- * @brief    Unit tests for Features.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file FeatureTest.scala
+  * @brief Unit tests for Features.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.base
+
 import org.scalatest._
 import tapasco.TaPaSCoSpec
 import tapasco.base.json._

@@ -22,9 +22,10 @@ import fastparse.all._
 import tapasco.jobs._
 
 object BulkImportParser {
+
   import BasicParsers._
 
   def bulkimport: Parser[BulkImportJob] =
     (IgnoreCase("bulkImport") ~ ws ~/ path.opaque("path to .csv file") ~ ws)
-      .map (csv => BulkImportJob(csv))
+      .map(csv => BulkImportJob(csv))
 }

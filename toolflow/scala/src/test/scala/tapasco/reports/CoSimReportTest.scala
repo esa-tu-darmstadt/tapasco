@@ -17,11 +17,12 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     CoSimReportTest.scala
- * @brief    Unit tests for CoSimReport model.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file CoSimReportTest.scala
+  * @brief Unit tests for CoSimReport model.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.reports
+
 import org.scalatest._
 import tapasco.TaPaSCoSpec
 
@@ -40,20 +41,20 @@ class CoSimReportSpec extends TaPaSCoSpec with Matchers {
     val oc = CoSimReport(reportPath.resolve("correct-cosim1.rpt"))
     lazy val r = oc.get
     oc should not be empty
-    r.latency.min should be (279)
-    r.latency.avg should be (280)
-    r.latency.max should be (281)
-    r.interval.min should be (282)
-    r.interval.avg should be (283)
-    r.interval.max should be (284)
+    r.latency.min should be(279)
+    r.latency.avg should be(280)
+    r.latency.max should be(281)
+    r.interval.min should be(282)
+    r.interval.avg should be(283)
+    r.interval.max should be(284)
     val oc2 = CoSimReport(reportPath.resolve("correct-cosim2.rpt"))
     lazy val r2 = oc2.get
     oc2 should not be empty
-    r2.latency.min should be (1279)
-    r2.latency.avg should be (2279)
-    r2.latency.max should be (3279)
-    r2.interval.min should be (4279)
-    r2.interval.avg should be (5279)
-    r2.interval.max should be (6279)
+    r2.latency.min should be(1279)
+    r2.latency.avg should be(2279)
+    r2.latency.max should be(3279)
+    r2.interval.min should be(4279)
+    r2.interval.avg should be(5279)
+    r2.interval.max should be(6279)
   }
 }

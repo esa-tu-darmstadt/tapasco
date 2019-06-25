@@ -22,19 +22,22 @@ import fastparse.all._
 import tapasco.jobs._
 
 private object HighLevelSynthesisParser {
+
   import BasicParsers._
   import CommonArgParsers._
 
   def hls: Parser[HighLevelSynthesisJob] =
     IgnoreCase("hls") ~ ws ~/ kernels ~ ws ~/ options map { case (ks, optf) =>
       optf(HighLevelSynthesisJob(_implementation = "VivadoHLS",
-                                 _kernels = ks))
+        _kernels = ks))
     }
 
   private def kernels: Parser[Option[Seq[String]]] = (
     ((IgnoreCase("all").! ~/ ws) map (_ => None)) |
-    ((seqOne(kernel) ~/ ws) map { Some(_) })
-  ).opaque("either 'all', or a list of kernel names")
+      ((seqOne(kernel) ~/ ws) map {
+        Some(_)
+      })
+    ).opaque("either 'all', or a list of kernel names")
 
   private val jobid = identity[HighLevelSynthesisJob] _
 
@@ -48,9 +51,9 @@ private object HighLevelSynthesisParser {
   private def applyOption(opt: (String, _)): HighLevelSynthesisJob => HighLevelSynthesisJob =
     opt match {
       case ("Implementation", i: String) => _.copy(_implementation = i)
-      case ("Architectures", as: Seq[String @unchecked]) => _.copy(_architectures = Some(as))
-      case ("Platforms", ps: Seq[String @unchecked]) => _.copy(_platforms = Some(ps))
-      case ("SkipEval", se : Boolean) => _.copy(skipEvaluation = Some(se))
+      case ("Architectures", as: Seq[String@unchecked]) => _.copy(_architectures = Some(as))
+      case ("Platforms", ps: Seq[String@unchecked]) => _.copy(_platforms = Some(ps))
+      case ("SkipEval", se: Boolean) => _.copy(skipEvaluation = Some(se))
       case o => throw new Exception(s"parsed illegal option: $o")
     }
 }

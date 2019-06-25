@@ -30,17 +30,23 @@ class BasePath(initialDir: Path, createOnSet: Boolean = true) extends Publisher 
   if (createOnSet) Files.createDirectories(initialDir)
 
   def apply: Path = path
-  def get: Path   = path
-  def set(p: Path): Unit = if (! p.equals(path)) {
+
+  def get: Path = path
+
+  def set(p: Path): Unit = if (!p.equals(path)) {
     if (createOnSet) Files.createDirectories(p)
     path = p
     publish(BasePath.BasePathChanged(p))
   }
+
   override def toString(): String = path.toString()
 }
 
 object BasePath {
+
   sealed trait Event
+
   final case class BasePathChanged(path: Path) extends Event
+
   implicit def toPath(bp: BasePath): Path = bp.get
 }

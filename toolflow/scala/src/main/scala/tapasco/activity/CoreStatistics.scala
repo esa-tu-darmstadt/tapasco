@@ -29,7 +29,7 @@ import scala.util.Properties.{lineSeparator => NL}
   * It is often helpful to be able to dump all out-of-context results
   * for all Cores into a CSV file for further analysis. This activity
   * simplifies the process of collecting data from multiple reports.
-  **/
+  * */
 object CoreStatistics {
   /** Produce a CSV file containing the results.
     *
@@ -37,63 +37,67 @@ object CoreStatistics {
     * @param fileName Output filename of the CSV file.
     * @param cfg      Implicit [[Configuration]].
     * @return true, iff successful
-    **/
+    * */
   def apply(target: Target, fileName: String)(implicit cfg: Configuration): Boolean =
     dumpCSV(target, fileName, FileAssetManager.reports.synthReports.toSeq filter { r =>
       FileAssetManager.targetForReport(r.file).equals(target)
     } map (path => CoreReports(
-        path,
-        TimingReport(path.file.resolveSibling("timing.rpt")))))
+      path,
+      TimingReport(path.file.resolveSibling("timing.rpt")))))
 
   private final case class CoreReports(
-    synth: SynthesisReport,
-    timing: Option[TimingReport]
-  )
+                                        synth: SynthesisReport,
+                                        timing: Option[TimingReport]
+                                      )
 
   private def dumpCSV(target: Target, fileName: String, es: Seq[CoreReports]): Boolean = try {
     val fw = new java.io.FileWriter(fileName)
     fw.append(HEADER + NL)
-    fw.append(es map { e => Seq(
-      e.synth.file,
-      dumpArea(e.synth),
-      dumpClocks(e.synth),
-      dumpAvgClockCycles(e.synth),
-      dumpMaxDelayPath(e.timing)) mkString "," } mkString NL)
+    fw.append(es map { e =>
+      Seq(
+        e.synth.file,
+        dumpArea(e.synth),
+        dumpClocks(e.synth),
+        dumpAvgClockCycles(e.synth),
+        dumpMaxDelayPath(e.timing)) mkString ","
+    } mkString NL)
     fw.close()
     true
-  } catch { case e: Exception => false }
+  } catch {
+    case e: Exception => false
+  }
 
   private def dumpArea(r: SynthesisReport): String =
     Seq(r.area.map(_.resources.SLICE), r.area.map("%2.1f" format _.slice),
-        r.area.map(_.resources.LUT), r.area.map("%2.1f" format _.lut),
-        r.area.map(_.resources.FF), r.area.map("%2.1f" format _.ff),
-        r.area.map(_.resources.DSP), r.area.map("%2.1f" format _.dsp),
-        r.area.map(_.resources.BRAM), r.area.map("%2.1f" format _.bram)
-       ) map (_.getOrElse("N/A")) mkString ","
+      r.area.map(_.resources.LUT), r.area.map("%2.1f" format _.lut),
+      r.area.map(_.resources.FF), r.area.map("%2.1f" format _.ff),
+      r.area.map(_.resources.DSP), r.area.map("%2.1f" format _.dsp),
+      r.area.map(_.resources.BRAM), r.area.map("%2.1f" format _.bram)
+    ) map (_.getOrElse("N/A")) mkString ","
 
   private def dumpClocks(r: SynthesisReport): String =
     Seq(r.timing.map(_.clockPeriod).getOrElse(""),
-        r.timing.map(_.targetPeriod).getOrElse("")
-       ) mkString ","
+      r.timing.map(_.targetPeriod).getOrElse("")
+    ) mkString ","
 
   private def dumpAvgClockCycles(r: SynthesisReport): String =
     Core.from(r.file.getParent.resolveSibling("core.json")) map { cd =>
-        Seq(cd.averageClockCycles.getOrElse(""),
-            (for (t <- r.timing; c <- cd.averageClockCycles)
-              yield "%2.2f" format (1.0 / ((t.clockPeriod * c) / 1000000000.0f))).getOrElse("")
-           ) mkString ","
-      } getOrElse "NA,NA"
+      Seq(cd.averageClockCycles.getOrElse(""),
+        (for (t <- r.timing; c <- cd.averageClockCycles)
+          yield "%2.2f" format (1.0 / ((t.clockPeriod * c) / 1000000000.0f))).getOrElse("")
+      ) mkString ","
+    } getOrElse "NA,NA"
 
   private def dumpMaxDelayPath(r: Option[TimingReport]): String =
     Seq(r.map(_.maxDelayPath.slack),
-        r.map(_.maxDelayPath.source),
-        r.map(_.maxDelayPath.destination)
-       ) map (_ getOrElse "") mkString ","
+      r.map(_.maxDelayPath.source),
+      r.map(_.maxDelayPath.destination)
+    ) map (_ getOrElse "") mkString ","
 
   private final val HEADER = Seq(
-      "Core", "Slices", "Slices (%)", "LUT", "LUT (%)", "FF", "FF (%)",
-      "DSP", "DSP (%)", "BRAM", "BRAM (%)", "AchievedClockPeriod", "TargetClockPeriod",
-      "Average Runtime (clock cycles)", "Jobs / s",
-      "Max Delay Path Slack", "Max Delay Path Source", "Max Delay Path Destination"
-    ) mkString ","
+    "Core", "Slices", "Slices (%)", "LUT", "LUT (%)", "FF", "FF (%)",
+    "DSP", "DSP (%)", "BRAM", "BRAM (%)", "AchievedClockPeriod", "TargetClockPeriod",
+    "Average Runtime (clock cycles)", "Jobs / s",
+    "Max Delay Path Slack", "Max Delay Path Source", "Max Delay Path Destination"
+  ) mkString ","
 }

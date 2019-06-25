@@ -22,6 +22,7 @@ import fastparse.all._
 import tapasco.jobs._
 
 private object JobParsers {
+
   import BulkImportParser._
   import ComposeParser._
   import CoreStatisticsParser._

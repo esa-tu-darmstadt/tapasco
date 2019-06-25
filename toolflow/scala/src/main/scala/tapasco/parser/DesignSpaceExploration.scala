@@ -26,21 +26,23 @@ import tapasco.dse._
 import tapasco.jobs._
 
 private object DesignSpaceExplorationParser {
+
   import BasicParsers._
   import CommonArgParsers._
   import FeatureParsers._
 
   def dse: Parser[DesignSpaceExplorationJob] = (
-      IgnoreCase("explore") ~ ws ~/ composition ~/ ws ~
-        ("@" ~ ws ~/ freq ~ ws1).? ~ ws ~
-        IgnoreCase("in") ~ ws ~/ dimensions ~/ ws ~ options ~ ws
+    IgnoreCase("explore") ~ ws ~/ composition ~/ ws ~
+      ("@" ~ ws ~/ freq ~ ws1).? ~ ws ~
+      IgnoreCase("in") ~ ws ~/ dimensions ~/ ws ~ options ~ ws
     ) map { case (_, comp, optfreq, dims, optf) => optf(DesignSpaceExplorationJob(
-      initialComposition = comp,
-      initialFrequency = optfreq getOrElse 100.0,
-      dimensions = dims,
-      heuristic = Heuristics.ThroughputHeuristic,
-      batchSize = Runtime.getRuntime().availableProcessors()
-    ))}
+    initialComposition = comp,
+    initialFrequency = optfreq getOrElse 100.0,
+    dimensions = dims,
+    heuristic = Heuristics.ThroughputHeuristic,
+    batchSize = Runtime.getRuntime().availableProcessors()
+  ))
+  }
 
   private def optionsMap: Parser[Seq[(String, _)]] =
     (heuristic | batchSize | basePath | architectures | platforms | features | debugMode | delProj).rep
@@ -61,12 +63,12 @@ private object DesignSpaceExplorationParser {
 
   private def applyOption(opt: (String, _)): DesignSpaceExplorationJob => DesignSpaceExplorationJob =
     opt match {
-      case ("Architectures", as: Seq[String @unchecked]) => _.copy(_architectures = Some(as))
-      case ("Platforms", as: Seq[String @unchecked]) => _.copy(_platforms = Some(as))
+      case ("Architectures", as: Seq[String@unchecked]) => _.copy(_architectures = Some(as))
+      case ("Platforms", as: Seq[String@unchecked]) => _.copy(_platforms = Some(as))
       case ("Heuristic", h: String) => _.copy(heuristic = Heuristics(h))
       case ("BatchSize", i: Int) => _.copy(batchSize = i)
       case ("BasePath", p: Path) => _.copy(basePath = Some(p))
-      case ("Features", fs: Seq[Feature @unchecked]) => _.copy(features = Some(fs))
+      case ("Features", fs: Seq[Feature@unchecked]) => _.copy(features = Some(fs))
       case ("DebugMode", m: String) => _.copy(debugMode = Some(m))
       case ("DeleteProjects", e: Boolean) => _.copy(deleteProjects = Some(e))
       case o => throw new Exception(s"parsed illegal option: $o")

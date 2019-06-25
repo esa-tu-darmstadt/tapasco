@@ -27,13 +27,21 @@ sealed abstract class ManSection(private val n: Int, _manual: Option[String] = N
 
 // scalastyle:off magic.number
 final case object GeneralCommands extends ManSection(1)
+
 final case object SystemCalls extends ManSection(2)
+
 final case object LibraryFunctions extends ManSection(3)
+
 final case object SpecialFiles extends ManSection(4)
+
 final case object FileFormatsConventions extends ManSection(5)
+
 final case object GamesAndScreensavers extends ManSection(6)
+
 final case object Miscellanea extends ManSection(7)
+
 final case object SysAdminCommands extends ManSection(8)
+
 // scalastyle:on magic.number
 
 object ManSection {
@@ -53,5 +61,6 @@ object ManSection {
   def apply(n: Int): ManSection = numMap(n)
 
   implicit def toManSection(n: Int): ManSection = apply(n)
-  implicit def toInt(s: ManSection): Int        = s.n
+
+  implicit def toInt(s: ManSection): Int = s.n
 }

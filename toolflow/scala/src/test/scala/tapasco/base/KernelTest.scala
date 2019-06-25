@@ -17,11 +17,12 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     KernelTest.scala
- * @brief    Unit tests for Kernel description file.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file KernelTest.scala
+  * @brief Unit tests for Kernel description file.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.base
+
 import org.scalatest._
 import tapasco.TaPaSCoSpec
 import tapasco.base.Kernel.PassingConvention._
@@ -41,32 +42,32 @@ class KernelSpec extends TaPaSCoSpec with Matchers {
     val oc = Kernel.from(jsonPath.resolve("correct-kernel.json"))
     lazy val c = oc.right.get
     assert(oc.isRight)
-    c.name should equal ("sudoku")
-    c.topFunction should equal ("sudoku_solve")
-    c.files should equal (Seq(jsonPath.resolve("src/Sudoku.cpp"), jsonPath.resolve("src/Sudoku_HLS.cpp")))
-    c.testbenchFiles should equal (Seq(jsonPath.resolve("src/main.cpp"), jsonPath.resolve("hard_sudoku.txt"), jsonPath.resolve("hard_sudoku_solution.txt")))
-    c.compilerFlags should equal (Seq())
-    c.testbenchCompilerFlags should equal (Seq("-lrt"))
-    c.args.length should equal (1)
-    c.args(0).name should equal ("grid")
-    c.args(0).passingConvention should equal (ByReference)
-    c.otherDirectives should equal (Some(jsonPath.resolve("sudoku.dir")))
+    c.name should equal("sudoku")
+    c.topFunction should equal("sudoku_solve")
+    c.files should equal(Seq(jsonPath.resolve("src/Sudoku.cpp"), jsonPath.resolve("src/Sudoku_HLS.cpp")))
+    c.testbenchFiles should equal(Seq(jsonPath.resolve("src/main.cpp"), jsonPath.resolve("hard_sudoku.txt"), jsonPath.resolve("hard_sudoku_solution.txt")))
+    c.compilerFlags should equal(Seq())
+    c.testbenchCompilerFlags should equal(Seq("-lrt"))
+    c.args.length should equal(1)
+    c.args(0).name should equal("grid")
+    c.args(0).passingConvention should equal(ByReference)
+    c.otherDirectives should equal(Some(jsonPath.resolve("sudoku.dir")))
   }
 
   "A Kernel file with unknown entries" should "be parsed correctly" in {
     val oc = Kernel.from(jsonPath.resolve("correct-kernel.json"))
     lazy val c = oc.right.get
     assert(oc.isRight)
-    c.name should equal ("sudoku")
-    c.topFunction should equal ("sudoku_solve")
-    c.files should equal (Seq(jsonPath.resolve("src/Sudoku.cpp"), jsonPath.resolve("src/Sudoku_HLS.cpp")))
-    c.testbenchFiles should equal (Seq(jsonPath.resolve("src/main.cpp"), jsonPath.resolve("hard_sudoku.txt"), jsonPath.resolve("hard_sudoku_solution.txt")))
-    c.compilerFlags should equal (Seq())
-    c.testbenchCompilerFlags should equal (Seq("-lrt"))
-    c.args.length should equal (1)
-    c.args(0).name should equal ("grid")
-    c.args(0).passingConvention should equal (ByReference)
-    c.otherDirectives should equal (Some(jsonPath.resolve("sudoku.dir")))
+    c.name should equal("sudoku")
+    c.topFunction should equal("sudoku_solve")
+    c.files should equal(Seq(jsonPath.resolve("src/Sudoku.cpp"), jsonPath.resolve("src/Sudoku_HLS.cpp")))
+    c.testbenchFiles should equal(Seq(jsonPath.resolve("src/main.cpp"), jsonPath.resolve("hard_sudoku.txt"), jsonPath.resolve("hard_sudoku_solution.txt")))
+    c.compilerFlags should equal(Seq())
+    c.testbenchCompilerFlags should equal(Seq("-lrt"))
+    c.args.length should equal(1)
+    c.args(0).name should equal("grid")
+    c.args(0).passingConvention should equal(ByReference)
+    c.otherDirectives should equal(Some(jsonPath.resolve("sudoku.dir")))
   }
 
   "An invalid Kernel file" should "not be parsed" in {

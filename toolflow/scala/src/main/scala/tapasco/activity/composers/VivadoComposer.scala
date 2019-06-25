@@ -17,10 +17,10 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     VivadoComposer.scala
- * @brief    Composer implementation for Vivado Design Suite.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file VivadoComposer.scala
+  * @brief Composer implementation for Vivado Design Suite.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.activity.composers
 
 import java.nio.file._
@@ -41,15 +41,16 @@ import scala.util.Properties.{lineSeparator => NL}
 
 /** Implementation of [[Composer]] for Vivado Design Suite. */
 class VivadoComposer()(implicit cfg: Configuration) extends Composer {
+
   import VivadoComposer._
 
   private[this] val logger = tapasco.Logging.logger(this.getClass)
 
-  /** @inheritdoc */
+  /** @inheritdoc*/
   def maxMemoryUsagePerProcess: Int = VIVADO_PROCESS_PEAK_MEM
 
-  /** @inheritdoc */
-  def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, effortLevel : String, features: Seq[Feature] = Seq())
+  /** @inheritdoc*/
+  def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, effortLevel: String, features: Seq[Feature] = Seq())
              (implicit cfg: Configuration): Composer.Result = {
     logger.debug("VivadoComposer uses at most {} threads", cfg.maxThreads getOrElse "unlimited")
     // create output struct
@@ -62,12 +63,12 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     Configuration.to(cfg, files.outdir.resolve("config.json"))
     // create Tcl script
     mkTclScript(fromTemplate = Common.commonDir.resolve("design.master.tcl.template"),
-                to           = files.tclFile,
-                projectName  = Composer.mkProjectName(bd, target, f),
-                header       = makeHeader(bd, target, f, features),
-                target       = target,
-                composition  = composition(bd, target),
-                effort = effortLevel)
+      to = files.tclFile,
+      projectName = Composer.mkProjectName(bd, target, f),
+      header = makeHeader(bd, target, f, features),
+      target = target,
+      composition = composition(bd, target),
+      effort = effortLevel)
 
     logger.info("Vivado starting run {}: show progress with `vivado_progress {}`", files.runName: Any, files.logFile)
     files.logFile.toFile.delete
@@ -80,15 +81,15 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
 
     // Vivado shell command
     val vivadoCmd = Seq("vivado", "-mode", "batch", "-source", files.tclFile.toString,
-        "-notrace", "-nojournal", "-log", files.logFile.toString)
+      "-notrace", "-nojournal", "-log", files.logFile.toString)
     logger.debug("Vivado shell command: {}", vivadoCmd mkString " ")
 
     // execute Vivado (max runtime: 1 day)
     val r = InterruptibleProcess(Process(vivadoCmd, files.outdir.toFile),
-        waitMillis = Some(24 * 60 * 60 * 1000)).!(ProcessLogger(
-          stdoutString => logger.trace("Vivado: {}", stdoutString),
-          stderrString => logger.trace("Vivado ERR: {}", stderrString)
-        ))
+      waitMillis = Some(24 * 60 * 60 * 1000)).!(ProcessLogger(
+      stdoutString => logger.trace("Vivado: {}", stdoutString),
+      stderrString => logger.trace("Vivado ERR: {}", stderrString)
+    ))
 
     lt.closeAll()
     pt.closeWithReturnCode(r)
@@ -101,7 +102,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       logger.error("Vivado finished with non-zero exit code: %d for %s in '%s'"
         .format(r, files.runName, files.outdir))
       Composer.Result(files.log map (_.result) getOrElse OtherError, log = files.log,
-          util = None, timing = None)
+        util = None, timing = None)
     } else {
       // check for timing failure
       if (files.tim.isEmpty) {
@@ -113,7 +114,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     }
   }
 
-  /** @inheritdoc */
+  /** @inheritdoc*/
   def clean(bd: Composition, target: Target, f: Double = 0)(implicit cfg: Configuration): Unit = {
     cfg.outputDir(bd, target, f).resolve("microarch").toFile.deleteOnExit
     cfg.outputDir(bd, target, f).resolve("user_ip").toFile.deleteOnExit
@@ -123,7 +124,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     Common.getFiles(cfg.outputDir(bd, target, f).resolve("user_ip").toFile).filter(_.isDirectory).map(_.deleteOnExit)
   }
 
-  /** @inheritdoc */
+  /** @inheritdoc*/
   def cleanAll(bd: Composition, target: Target, f: Double = 0)(implicit cfg: Configuration): Unit = {
     Common.getFiles(cfg.outputDir(bd, target, f).toFile).filter(_.isFile).map(_.delete)
     Common.getFiles(cfg.outputDir(bd, target, f).toFile).filter(_.isDirectory).map(_.deleteOnExit)
@@ -145,21 +146,21 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
 
   /** Writes the .tcl script for Vivado. */
   private def mkTclScript(fromTemplate: Path, to: Path, projectName: String, header: String, target: Target,
-      composition: String, effort : String): Unit = {
+                          composition: String, effort: String): Unit = {
     // needles for template
     val needles: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map(
-      "PROJECT_NAME"          -> "microarch",
-      "BITSTREAM_NAME"        -> projectName,
-      "HEADER"                -> header,
-      "PRELOAD_FILES"         -> "",
-      "PART"                  -> target.pd.part,
-      "BOARD_PART"            -> (target.pd.boardPart getOrElse ""),
+      "PROJECT_NAME" -> "microarch",
+      "BITSTREAM_NAME" -> projectName,
+      "HEADER" -> header,
+      "PRELOAD_FILES" -> "",
+      "PART" -> target.pd.part,
+      "BOARD_PART" -> (target.pd.boardPart getOrElse ""),
       "BOARD_PART_REPOSITORY" -> (target.pd.boardPartRepository getOrElse ""),
-      "BOARD_PRESET"          -> (target.pd.boardPreset getOrElse ""),
-      "PLATFORM_TCL"          -> target.pd.tclLibrary.toString,
-      "ARCHITECTURE_TCL"      -> target.ad.tclLibrary.toString,
-      "COMPOSITION"           -> composition,
-      "EFFORT_LEVEL"          -> effort.toUpperCase
+      "BOARD_PRESET" -> (target.pd.boardPreset getOrElse ""),
+      "PLATFORM_TCL" -> target.pd.tclLibrary.toString,
+      "ARCHITECTURE_TCL" -> target.ad.tclLibrary.toString,
+      "COMPOSITION" -> composition,
+      "EFFORT_LEVEL" -> effort.toUpperCase
     )
 
     // write Tcl script
@@ -179,7 +180,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     // check that all cores are found, else abort
     if (cores.values map (_.isEmpty) reduce (_ || _)) {
       throw new Exception("could not find all required cores for target %s, missing: %s"
-          .format(target, cores filter (_._2.isEmpty) map (_._1) mkString ", "))
+        .format(target, cores filter (_._2.isEmpty) map (_._1) mkString ", "))
     }
 
     val elems = for {
@@ -190,11 +191,11 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
 
     val repoPaths =
       "set_property IP_REPO_PATHS \"[pwd]/user_ip " + Common.commonDir + "\" [current_project]" + NL +
-      "file delete -force [pwd]/user_ip" + NL +
-      "file mkdir [pwd]/user_ip" + NL +
-      "update_ip_catalog" + NL +
-      elems.map(_._4.toString).map(zp => "update_ip_catalog -add_ip " + zp + " -repo_path ./user_ip").mkString(NL) + NL +
-      "update_ip_catalog" + NL
+        "file delete -force [pwd]/user_ip" + NL +
+        "file mkdir [pwd]/user_ip" + NL +
+        "update_ip_catalog" + NL +
+        elems.map(_._4.toString).map(zp => "update_ip_catalog -add_ip " + zp + " -repo_path ./user_ip").mkString(NL) + NL +
+        "update_ip_catalog" + NL
 
     repoPaths + (for (i <- 0 until elems.length) yield
       List(
@@ -202,18 +203,18 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
         "dict set kernels {" + i + "} count {" + elems(i)._2 + "}",
         "dict set kernels {" + i + "} id {" + elems(i)._3.id + "}",
         ""
-     ).mkString(NL)).mkString(NL)
+      ).mkString(NL)).mkString(NL)
   }
 
   /** Produces the header section of the main Tcl file, containing several global vars. **/
   private def makeHeader(bd: Composition, target: Target, f: Heuristics.Frequency, features: Seq[Feature]): String =
     "set tapasco_freq %3.0f%s".format(f, NL) +
-    (target.pd.hostFrequency map (f => "set tapasco_host_freq %3.0f%s".format(f, NL)) getOrElse "") +
-    (target.pd.memFrequency map (f => "set tapasco_mem_freq %3.0f%s".format(f, NL)) getOrElse "") +
-    (target.pd.boardPreset map (bp => "set tapasco_board_preset %s%s".format(bp, NL)) getOrElse "") +
-    (cfg.maxThreads map (mt => "set tapasco_jobs %d%s".format(mt, NL)) getOrElse "") +
-    (cfg.maxThreads map (mt => "set_param general.maxThreads %d%s".format(mt, NL)) getOrElse "") +
-    (features.map { f => new FeatureTclPrinter().toTcl(f) } mkString NL)
+      (target.pd.hostFrequency map (f => "set tapasco_host_freq %3.0f%s".format(f, NL)) getOrElse "") +
+      (target.pd.memFrequency map (f => "set tapasco_mem_freq %3.0f%s".format(f, NL)) getOrElse "") +
+      (target.pd.boardPreset map (bp => "set tapasco_board_preset %s%s".format(bp, NL)) getOrElse "") +
+      (cfg.maxThreads map (mt => "set tapasco_jobs %d%s".format(mt, NL)) getOrElse "") +
+      (cfg.maxThreads map (mt => "set_param general.maxThreads %d%s".format(mt, NL)) getOrElse "") +
+      (features.map { f => new FeatureTclPrinter().toTcl(f) } mkString NL)
 }
 
 /** Companion object of [[VivadoComposer]]. */
@@ -226,15 +227,16 @@ object VivadoComposer {
   /** Output files and directories for a run. */
   private final case class Files(c: Composition, t: Target, f: Heuristics.Frequency, fs: Seq[Feature])
                                 (implicit cfg: Configuration) {
-    lazy val outdir: Path    = cfg.outputDir(c, t, f, fs)
-    lazy val logFile: Path   = outdir.resolve("%s.log".format(Composer.mkProjectName(c, t, f)))
-    lazy val tclFile: Path   = outdir.resolve("%s.tcl".format(t.pd.name))
-    lazy val bitFile: Path   = logFile.resolveSibling("%s.bit".format(Composer.mkProjectName(c, t, f)))
+    lazy val outdir: Path = cfg.outputDir(c, t, f, fs)
+    lazy val logFile: Path = outdir.resolve("%s.log".format(Composer.mkProjectName(c, t, f)))
+    lazy val tclFile: Path = outdir.resolve("%s.tcl".format(t.pd.name))
+    lazy val bitFile: Path = logFile.resolveSibling("%s.bit".format(Composer.mkProjectName(c, t, f)))
     lazy val runName: String = "%s with %s[F=%1.3f]".format(logformat(c), t, f)
-    lazy val timFile: Path   = logFile.resolveSibling("timing.txt")
-    lazy val utilFile: Path  = logFile.resolveSibling("utilization.txt")
-    lazy val log             = ComposerLog(logFile)
-    lazy val tim             = TimingReport(timFile)
-    lazy val util            = UtilizationReport(utilFile)
+    lazy val timFile: Path = logFile.resolveSibling("timing.txt")
+    lazy val utilFile: Path = logFile.resolveSibling("utilization.txt")
+    lazy val log = ComposerLog(logFile)
+    lazy val tim = TimingReport(timFile)
+    lazy val util = UtilizationReport(utilFile)
   }
+
 }

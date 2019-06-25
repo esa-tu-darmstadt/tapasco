@@ -17,15 +17,18 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     TimingEstimate.scala
- * @brief    Model of FPGA timing estimate.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.e)
- **/
+  * @file TimingEstimate.scala
+  * @brief Model of FPGA timing estimate.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.e)
+  **/
 package tapasco.util
 
-final case class TimingEstimate (clockPeriod: Double, targetPeriod: Double) extends Ordered[TimingEstimate] {
+final case class TimingEstimate(clockPeriod: Double, targetPeriod: Double) extends Ordered[TimingEstimate] {
+
   import scala.math.Ordered.orderingToOrdered
+
   def hasMetTiming: Boolean = clockPeriod <= targetPeriod
+
   def compare(that: TimingEstimate): Int =
-    (this.clockPeriod, this.targetPeriod) compare (that.clockPeriod, that.targetPeriod)
+    (this.clockPeriod, this.targetPeriod) compare(that.clockPeriod, that.targetPeriod)
 }

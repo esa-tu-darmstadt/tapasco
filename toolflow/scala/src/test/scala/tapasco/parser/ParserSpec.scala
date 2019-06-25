@@ -18,6 +18,7 @@
 //
 
 package tapasco.parser
+
 import fastparse.all._
 import org.scalacheck._
 import org.scalatest._
@@ -25,6 +26,7 @@ import org.scalatest.prop.Checkers
 import tapasco.TaPaSCoSpec
 
 class ParserSpec extends TaPaSCoSpec with Matchers with Checkers {
+
   import CommandLineParser._
   import Common._
   import ParserSpec._
@@ -32,7 +34,7 @@ class ParserSpec extends TaPaSCoSpec with Matchers with Checkers {
 
   "All valid command line argument strings" should "be correctly parsed" in
     check(forAllNoShrink(argsGen) { a =>
-      checkParsed(P( args ~ End ).parse(a))
+      checkParsed(P(args ~ End).parse(a))
     })
 }
 

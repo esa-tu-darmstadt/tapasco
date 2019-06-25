@@ -26,6 +26,7 @@ import tapasco.base.json._
 import tapasco.dse.Heuristics
 
 private object CommonArgParsers {
+
   import BasicParsers._
 
   def architectures: Parser[(String, Seq[String])] =
@@ -41,21 +42,22 @@ private object CommonArgParsers {
   def compositionEntry: Parser[Composition.Entry] =
     (kernel.! ~ ws1 ~ "x" ~ ws ~ posint)
       .opaque("composition entry of form <KERNEL NAME> 'x' <COUNT>")
-      .map (p => Composition.Entry(p._1, p._2))
+      .map(p => Composition.Entry(p._1, p._2))
 
   def compositionSeq: Parser[Seq[Composition.Entry]] =
     (BasicParsers.seqOne(compositionEntry) ~ ws)
       .opaque("list of composition entries of form <KERNEL NAME> 'x' <COUNT>")
 
-  def compositionBegin: Parser[Unit] = "[" ~ ws opaque("start of composition: '['")
-  def compositionEnd: Parser[Unit]   = "]" ~ ws opaque("end of composition: ']'")
+  def compositionBegin: Parser[Unit] = "[" ~ ws opaque ("start of composition: '['")
+
+  def compositionEnd: Parser[Unit] = "]" ~ ws opaque ("end of composition: ']'")
 
   def compositionFile: Parser[Composition] =
     path.opaque("path to composition Json file") map loadCompositionFromFile _
 
   def compositionSpec: Parser[Composition] =
     (compositionBegin ~/ compositionSeq ~ compositionEnd)
-      .map (c => Composition(Paths.get(""), None, composition = c))
+      .map(c => Composition(Paths.get(""), None, composition = c))
 
   def composition: Parser[(String, Composition)] =
     compositionSpec | compositionFile map (("Composition", _))
@@ -67,28 +69,28 @@ private object CommonArgParsers {
 
   def debugMode: Parser[(String, String)] =
     longOption("debugMode", "DebugMode") ~ ws ~/
-    qstring.opaque("debug mode name, any string") ~ ws
+      qstring.opaque("debug mode name, any string") ~ ws
 
-  def effortLevel : Parser[(String, String)] =
+  def effortLevel: Parser[(String, String)] =
     longOption("effortLevel", "EffortLevel") ~ ws ~/
-    string.opaque("Effort level") ~ ws
+      string.opaque("Effort level") ~ ws
 
   def delProj: Parser[(String, Boolean)] =
     (longOption("deleteProjects", "DeleteProjects") ~ ws ~/
-      ( boolstr ~ ws).?) map {case s => (s._1, s._2.getOrElse(true))}
+      (boolstr ~ ws).?) map { case s => (s._1, s._2.getOrElse(true)) }
 
-  def synthEffort : Parser[(String, String)] =
+  def synthEffort: Parser[(String, String)] =
     longOption("synthEffort", "SynthEffort") ~ ws ~/
-    string.opaque("Synthesis effort") ~ ws
+      string.opaque("Synthesis effort") ~ ws
 
   def implementation: Parser[(String, String)] =
     longOption("implementation", "Implementation") ~
-    ws ~/
-    qstring.opaque("implementation name, any string") ~/
-    ws
+      ws ~/
+      qstring.opaque("implementation name, any string") ~/
+      ws
 
   private def loadCompositionFromFile(p: Path): Composition = Composition.from(p) match {
     case Right(c) => c
-    case Left(e)  => throw e
+    case Left(e) => throw e
   }
 }

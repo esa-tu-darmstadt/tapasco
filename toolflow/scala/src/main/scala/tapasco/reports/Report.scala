@@ -17,13 +17,13 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     Report.scala
- * @brief    Base class for diverse report files.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file Report.scala
+  * @brief Base class for diverse report files.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.reports
 
 import java.nio.file.Path
 
-abstract class Report private[reports] (val file: Path)
+abstract class Report private[reports](val file: Path)
 

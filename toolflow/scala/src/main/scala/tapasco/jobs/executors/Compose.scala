@@ -17,10 +17,10 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     Compose.scala
- * @brief    Threadpool composition task.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file Compose.scala
+  * @brief Threadpool composition task.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.jobs.executors
 
 import java.util.concurrent.Semaphore
@@ -76,18 +76,20 @@ private object Compose extends Executor[ComposeJob] {
         a <- job.architectures
         t = Target(a, p)
       } yield new ComposeTask(
-          composition = job.composition,
-          designFrequency = job.designFrequency,
-          implementation = job.implementation,
-          target = t,
-          features = job.features,
-          debugMode = job.debugMode,
-          effortLevel = job.effortLevel.get,
-          onComplete = _ => signal.release(),
-          deleteOnFail = job.deleteProjects
+        composition = job.composition,
+        designFrequency = job.designFrequency,
+        implementation = job.implementation,
+        target = t,
+        features = job.features,
+        debugMode = job.debugMode,
+        effortLevel = job.effortLevel.get,
+        onComplete = _ => signal.release(),
+        deleteOnFail = job.deleteProjects
       )
 
-      composeTasks foreach { tsk.apply _ }
+      composeTasks foreach {
+        tsk.apply _
+      }
 
       0 until composeTasks.size foreach { i =>
         signal.acquire()

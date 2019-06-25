@@ -17,10 +17,10 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     BulkImport.scala
- * @brief    Task to bulk-import IP cores given in a comma-separated values file.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file BulkImport.scala
+  * @brief Task to bulk-import IP cores given in a comma-separated values file.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.jobs.executors
 
 import java.nio.file.Paths
@@ -41,8 +41,8 @@ private object BulkImport extends Executor[BulkImportJob] {
 
   def execute(job: BulkImportJob)(implicit cfg: Configuration, tsk: Tasks): Boolean = {
     val csvFile = job.csvFile.toString
-    if (! checkCsv(csvFile.toString)) {
-      throw new Exception ("File '" + csvFile + "' is not in the expected format; use CSV with this header: " +
+    if (!checkCsv(csvFile.toString)) {
+      throw new Exception("File '" + csvFile + "' is not in the expected format; use CSV with this header: " +
         NL + headerLine.mkString(", "))
     }
 
@@ -57,7 +57,9 @@ private object BulkImport extends Executor[BulkImportJob] {
       t = Target(a, p)
     } yield new ImportTask(j.zipFile, t, j.id, _ => signal.release(), j.averageClockCycles, None, None, 2)(cfg)
 
-    importTasks foreach { tsk.apply _ }
+    importTasks foreach {
+      tsk.apply _
+    }
 
     0 until importTasks.length foreach { i =>
       signal.acquire()
@@ -81,12 +83,13 @@ private object BulkImport extends Executor[BulkImportJob] {
     line <- Source.fromFile(fn).getLines.drop(1)
     fields = line.split("""\s*,\s*""")
   } yield ImportJob(
-      zipFile = Paths.get(fields(0)),
-      id = fields(1).toInt,
-      description = if (fields(2).length > 0) Some(fields(2)) else None,
-      averageClockCycles = allCatch.opt(fields(5).toInt),
-      _architectures = Some(Seq(fields(3))),
-      _platforms = Some(Seq(fields(4))))).toSeq
+    zipFile = Paths.get(fields(0)),
+    id = fields(1).toInt,
+    description = if (fields(2).length > 0) Some(fields(2)) else None,
+    averageClockCycles = allCatch.opt(fields(5).toInt),
+    _architectures = Some(Seq(fields(3))),
+    _platforms = Some(Seq(fields(4))))).toSeq
+
   // scalastyle:on magic.number
 }
 

@@ -34,32 +34,33 @@ trait ExplorationTask extends Task {
 }
 
 /**
- * Internal implementation of the design space exploration task.
- * @param m Model to associate with.
- * @param logFile File name for main log file of this DSE.
- * @param onComplete Callback function on completion.
- **/
+  * Internal implementation of the design space exploration task.
+  *
+  * @param m          Model to associate with.
+  * @param logFile    File name for main log file of this DSE.
+  * @param onComplete Callback function on completion.
+  **/
 private class DesignSpaceExplorationTask(
-    composition: Composition,
-    target: Target,
-    dimensions: DesignSpace.Dimensions,
-    designFrequency: Heuristics.Frequency,
-    heuristic: Heuristics.Heuristic,
-    batchSize: Int,
-    basePath: Option[String],
-    features: Option[Seq[Feature]],
-    logFile: Option[String],
-    debugMode: Option[String],
-    val onComplete: Boolean => Unit,
-    val deleteOnFail: Option[Boolean])
-    (implicit cfg: Configuration, tsk: Tasks) extends Task with LogTracking with ExplorationTask {
+                                          composition: Composition,
+                                          target: Target,
+                                          dimensions: DesignSpace.Dimensions,
+                                          designFrequency: Heuristics.Frequency,
+                                          heuristic: Heuristics.Heuristic,
+                                          batchSize: Int,
+                                          basePath: Option[String],
+                                          features: Option[Seq[Feature]],
+                                          logFile: Option[String],
+                                          debugMode: Option[String],
+                                          val onComplete: Boolean => Unit,
+                                          val deleteOnFail: Option[Boolean])
+                                        (implicit cfg: Configuration, tsk: Tasks) extends Task with LogTracking with ExplorationTask {
   private[this] val _logger = tapasco.Logging.logger(getClass)
   /** Internal representation of result. **/
   private[this] var _result: Option[(DesignSpace.Element, Composer.Result)] = None
   private[this] val _bp = basePath map (p => Paths.get(p).toAbsolutePath) getOrElse {
     val shortDate = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(java.time.LocalDateTime.now())
     val dsepath = FileAssetManager.TAPASCO_HOME.resolve(
-      "DSE_%s".format(shortDate).replace(" ", "_").replace("/", "-").replace(":","-")
+      "DSE_%s".format(shortDate).replace(" ", "_").replace("/", "-").replace(":", "-")
     ).normalize()
     java.nio.file.Files.createDirectories(dsepath.resolve("bd"))
     dsepath
@@ -67,7 +68,7 @@ private class DesignSpaceExplorationTask(
   // use implicit Configuration via UserConfigurationModel
   private implicit val _cfg: Configuration = cfg.compositionDir(_bp.resolve("bd"))
 
-  /** @inheritdoc */
+  /** @inheritdoc*/
   val exploration = Exploration(
     composition,
     dimensions,
@@ -80,13 +81,15 @@ private class DesignSpaceExplorationTask(
   )(_cfg, tsk)
 
   /**
-   * Launches the design space exploration.
-   **/
+    * Launches the design space exploration.
+    **/
   def job: Boolean = {
     // flag dse as running
     DesignSpaceExplorationTask.started(this)
     // setup a log file appender to log progress
-    val appender = logFile map { LogFileTracker.setupLogFileAppender _ }
+    val appender = logFile map {
+      LogFileTracker.setupLogFileAppender _
+    }
     try {
       // internal logfile is located in subdirectory for this exploration
       val logfile = new ExplorationLog
@@ -99,36 +102,42 @@ private class DesignSpaceExplorationTask(
       ExplorationLog.toFile(logfile, "%s/dse.json".format(exploration.basePath))(_cfg)
       // log the result
       _logger.info("DSE%s run %s for %s finished, result: %s;{}".format(dimensions, composition, target, result.nonEmpty),
-          result map ( res =>
-            (" best result: %s @ %1.3f, bitstream file: '%s', logfile: '%s', utilization report: '%s', " +
+        result map (res =>
+          (" best result: %s @ %1.3f, bitstream file: '%s', logfile: '%s', utilization report: '%s', " +
             "timing report: '%s'").format(
-              res._1.composition,
-              res._1.frequency,
-              res._2.bit getOrElse "",
-              res._2.log map (_.file) getOrElse "",
-              res._2.util map (_.file) getOrElse "",
-              res._2.timing map (_.file) getOrElse "")) getOrElse "")
+            res._1.composition,
+            res._1.frequency,
+            res._2.bit getOrElse "",
+            res._2.log map (_.file) getOrElse "",
+            res._2.util map (_.file) getOrElse "",
+            res._2.timing map (_.file) getOrElse "")) getOrElse "")
       // return success, if result is not empty
       result.nonEmpty
-    } catch { case ex: Throwable =>
-      _logger.error("exception: {}, stacktrace: {}", ex: Any, ex.getStackTrace mkString "\n": Any)
-      false
+    } catch {
+      case ex: Throwable =>
+        _logger.error("exception: {}, stacktrace: {}", ex: Any, ex.getStackTrace mkString "\n": Any)
+        false
     } finally {
       FileAssetManager.start()
       DesignSpaceExplorationTask.finished(this)
       // stop logfile appender
-      appender map { LogFileTracker.stopLogFileAppender _ }
+      appender map {
+        LogFileTracker.stopLogFileAppender _
+      }
     }
   }
 
-  override def canStart: Boolean = ! DesignSpaceExplorationTask.running
+  override def canStart: Boolean = !DesignSpaceExplorationTask.running
 
-  /** @inheritdoc */
+  /** @inheritdoc*/
   def description: String = "Design Space Exploration"
-  /** @inheritdoc */
+
+  /** @inheritdoc*/
   def logFiles: Set[String] = Set(logFile.toString)
+
   /** Result of the design space exploration: the 'winner'. */
   def explorationResult: Option[(DesignSpace.Element, Composer.Result)] = _result
+
   // Resources for scheduling: None
   val cpus = 0
   val memory = 0
@@ -136,8 +145,8 @@ private class DesignSpaceExplorationTask(
 }
 
 /**
- * Companion object for DesignSpaceExplorationTask: Factory method.
- **/
+  * Companion object for DesignSpaceExplorationTask: Factory method.
+  **/
 object DesignSpaceExplorationTask {
   /** Currently running instance of task. **/
   private var _task: Option[DesignSpaceExplorationTask] = None
@@ -149,7 +158,9 @@ object DesignSpaceExplorationTask {
   }
 
   /** Returns true, if a DSE task is currently running. */
-  private def running: Boolean = _task.synchronized { _task.nonEmpty }
+  private def running: Boolean = _task.synchronized {
+    _task.nonEmpty
+  }
 
   /** Notification that the given DSE task has finished. */
   private def finished(t: DesignSpaceExplorationTask) = _task.synchronized {
@@ -172,18 +183,19 @@ object DesignSpaceExplorationTask {
             deleteOnFail: Option[Boolean])
            (implicit cfg: Configuration, tsk: Tasks): ExplorationTask = {
     new DesignSpaceExplorationTask(
-        composition,
-        target,
-        dimensions,
-        designFrequency,
-        heuristic,
-        batchSize,
-        basePath,
-        features,
-        logFile,
-        debugMode,
-        onComplete,
-        deleteOnFail)
+      composition,
+      target,
+      dimensions,
+      designFrequency,
+      heuristic,
+      batchSize,
+      basePath,
+      features,
+      logFile,
+      debugMode,
+      onComplete,
+      deleteOnFail)
   }
+
   // scalastyle:on parameter.number
 }

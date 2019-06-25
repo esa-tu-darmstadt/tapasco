@@ -17,11 +17,12 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     EntityManagerTest.scala
- * @brief    Unit tests for EntityManager.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file EntityManagerTest.scala
+  * @brief Unit tests for EntityManager.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.filemgmt
+
 import java.nio.file._
 
 import org.scalatest._
@@ -75,13 +76,15 @@ class FileAssetManagerSpec extends TaPaSCoSpec with Matchers {
     Files.createFile(zip)
     val t = Target(FileAssetManager.entities.architectures.toSeq.head, FileAssetManager.entities.platforms.toSeq.head)
     val core = Core(cf, zip, "Test", 42, "0.0.1", t, None, None)
-    var updated : Boolean = false
+    var updated: Boolean = false
     val listener = new Listener[FileAssetManager.Event] {
-      override def update(e: FileAssetManager.Event): Unit = updated.synchronized{updated=true}
+      override def update(e: FileAssetManager.Event): Unit = updated.synchronized {
+        updated = true
+      }
     }
     FileAssetManager.addListener(listener)
     Core.to(core, cf)
-    while(!updated){
+    while (!updated) {
       Thread.sleep(FS_SLEEP)
     }
     assert(FileAssetManager.entities.cores.size == 1)

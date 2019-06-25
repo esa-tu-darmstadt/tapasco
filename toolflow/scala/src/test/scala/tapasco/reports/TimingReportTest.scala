@@ -17,11 +17,12 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     TimingReportTest.scala
- * @brief    Unit tests for TimingReport model.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file TimingReportTest.scala
+  * @brief Unit tests for TimingReport model.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.reports
+
 import org.scalatest._
 import tapasco.TaPaSCoSpec
 

@@ -17,9 +17,10 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 package tapasco
+
 /**
- * The activity package contains the implementation of the various different
- * activities that can be performed by TPC, e.g., importing and IP-XACT core,
- * evaluating it via out-of-context synthesis, or running a Compose run.
- **/
+  * The activity package contains the implementation of the various different
+  * activities that can be performed by TPC, e.g., importing and IP-XACT core,
+  * evaluating it via out-of-context synthesis, or running a Compose run.
+  **/
 package object activity

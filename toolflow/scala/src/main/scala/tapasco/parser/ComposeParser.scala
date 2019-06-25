@@ -23,6 +23,7 @@ import tapasco.base._
 import tapasco.jobs._
 
 private object ComposeParser {
+
   import BasicParsers._
   import CommonArgParsers._
   import FeatureParsers._
@@ -32,32 +33,33 @@ private object ComposeParser {
   def compose: Parser[ComposeJob] =
     IgnoreCase("compose") ~ ws ~/ composition ~/ "@" ~ ws ~ freq ~/
       ws ~ options ~ ws map { case (_, c, f, optf) => optf(ComposeJob(
-        composition = c,
-        designFrequency = f,
-        _implementation = "Vivado"
-      ))}
+      composition = c,
+      designFrequency = f,
+      _implementation = "Vivado"
+    ))
+    }
 
   private val jobid = identity[ComposeJob] _
 
   private def options: Parser[ComposeJob => ComposeJob] =
     (implementation | architectures | platforms | features | debugMode | effortLevel | delProj).rep
-      .map (opts => (opts map (applyOption _) fold jobid) (_ andThen _))
+      .map(opts => (opts map (applyOption _) fold jobid) (_ andThen _))
 
-  private val effortModes : Set[String] = Set("fastest", "fast", "normal",
+  private val effortModes: Set[String] = Set("fastest", "fast", "normal",
     "optimal", "aggressive_performance", "aggressive_area")
 
   private def applyOption(opt: (String, _)): ComposeJob => ComposeJob =
     opt match {
       case ("Implementation", i: String) => _.copy(_implementation = i)
-      case ("Architectures", as: Seq[String @unchecked]) => _.copy(_architectures = Some(as))
-      case ("Platforms", ps: Seq[String @unchecked]) => _.copy(_platforms = Some(ps))
-      case ("Features", fs: Seq[Feature @unchecked]) => _.copy(features = Some(fs))
+      case ("Architectures", as: Seq[String@unchecked]) => _.copy(_architectures = Some(as))
+      case ("Platforms", ps: Seq[String@unchecked]) => _.copy(_platforms = Some(ps))
+      case ("Features", fs: Seq[Feature@unchecked]) => _.copy(features = Some(fs))
       case ("DebugMode", m: String) => _.copy(debugMode = Some(m))
       case ("DeleteProjects", e: Boolean) => _.copy(deleteProjects = Some(e))
-      case ("EffortLevel", effort : String) => if(effortModes.contains(effort.toLowerCase)){
+      case ("EffortLevel", effort: String) => if (effortModes.contains(effort.toLowerCase)) {
         _.copy(effortLevel = Some(effort))
       }
-      else{
+      else {
         logger.warn(s"Unknown effort level $effort, using default normal")
         _.copy(effortLevel = Some("normal"))
       }

@@ -17,12 +17,12 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     CoreStatistics.scala
- * @brief    Command to scan the cores directory and produce spreadsheets for each
- *           platform and architecture containing the evaluation results of all
- *           currently available cores.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file CoreStatistics.scala
+  * @brief Command to scan the cores directory and produce spreadsheets for each
+  *        platform and architecture containing the evaluation results of all
+  *        currently available cores.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.jobs.executors
 
 import java.util.concurrent.Semaphore
@@ -45,7 +45,9 @@ private object CoreStatistics extends Executor[CoreStatisticsJob] {
 
     logger.info("launching {} CoreStatistics tasks ...", tasks.size)
 
-    tasks.foreach { tsk.apply _ }
+    tasks.foreach {
+      tsk.apply _
+    }
 
     0 until tasks.size foreach { i =>
       signal.acquire()

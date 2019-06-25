@@ -17,10 +17,10 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     DesignSpaceExploration.scala
- * @brief    DesignSpaceExploration executor.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file DesignSpaceExploration.scala
+  * @brief DesignSpaceExploration executor.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.jobs.executors
 
 import java.util.concurrent.Semaphore
@@ -82,7 +82,9 @@ private object DesignSpaceExploration extends Executor[DesignSpaceExplorationJob
         target = Target(a, p)
       } yield mkExplorationTask(job, target, _ => signal.release())
 
-      tasks foreach { tsk.apply _ }
+      tasks foreach {
+        tsk.apply _
+      }
 
       0 until tasks.length foreach { i =>
         signal.acquire()

@@ -33,8 +33,14 @@ import scala.io.Source
 
 class ExplorationLog extends Listener[Exploration.Event] {
   protected val log: ArrayBuffer[ExplorationLog.Entry] = new ArrayBuffer
-  def update(e: Exploration.Event): Unit = log.synchronized { log += ((LocalDateTime.now(), e)) }
-  def events: Seq[ExplorationLog.Entry] = log.synchronized { log.toSeq }
+
+  def update(e: Exploration.Event): Unit = log.synchronized {
+    log += ((LocalDateTime.now(), e))
+  }
+
+  def events: Seq[ExplorationLog.Entry] = log.synchronized {
+    log.toSeq
+  }
 }
 
 object ExplorationLog extends Publisher {
@@ -42,7 +48,9 @@ object ExplorationLog extends Publisher {
   type Entry = (LocalDateTime, Exploration.Event)
   private implicit val logger = tapasco.Logging.logger(getClass)
 
-  def apply(llog: Seq[Entry]): ExplorationLog = new ExplorationLog { this.log ++= llog }
+  def apply(llog: Seq[Entry]): ExplorationLog = new ExplorationLog {
+    this.log ++= llog
+  }
 
   def replay(elog: ExplorationLog) {
     elog.log foreach { e => publish(e._2) }
@@ -50,12 +58,12 @@ object ExplorationLog extends Publisher {
 
   def fromFile(filename: String): Option[(Configuration, ExplorationLog)] =
     catchAllDefault(None: Option[(Configuration, ExplorationLog)],
-        "error while parsing ExplorationLog: ") {
+      "error while parsing ExplorationLog: ") {
       import tapasco.base.json._
       val json = Json.parse(Source.fromFile(filename).getLines
         .mkString(scala.util.Properties.lineSeparator))
       Some(((json \ "Configuration").as[Configuration], (json \ "Events").as[ExplorationLog]))
-  }
+    }
 
   def toFile(e: ExplorationLog, filename: String)(implicit cfg: Configuration): Unit = try {
 
@@ -66,7 +74,8 @@ object ExplorationLog extends Publisher {
     val fw = new java.io.FileWriter(filename)
     fw.write(json)
     fw.close()
-  } catch { case e: Exception =>
-    logger.warn("exception while writing ExplorationLog: {}", e)
+  } catch {
+    case e: Exception =>
+      logger.warn("exception while writing ExplorationLog: {}", e)
   }
 }

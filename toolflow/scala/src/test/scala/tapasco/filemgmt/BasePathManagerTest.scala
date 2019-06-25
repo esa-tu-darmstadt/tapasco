@@ -17,11 +17,12 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     BasePathManagerTest.scala
- * @brief    Unit tests for BasePathManager.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file BasePathManagerTest.scala
+  * @brief Unit tests for BasePathManager.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.filemgmt
+
 import java.nio.file._
 
 import org.scalatest._
@@ -53,8 +54,12 @@ class BasePathManagerSpec extends TaPaSCoSpec with Matchers {
   "A BasePathManager" should "not generate events, when set path is the same" in {
     val bpm = new BasePathManager(false)
     var ok = true
-    bpm += new Listener[BasePathManager.Event] { def update(e: BasePathManager.Event): Unit = ok = false }
-    for (a <- Entities()) { bpm(a).set(bpm(a).get) }
+    bpm += new Listener[BasePathManager.Event] {
+      def update(e: BasePathManager.Event): Unit = ok = false
+    }
+    for (a <- Entities()) {
+      bpm(a).set(bpm(a).get)
+    }
     assert(ok)
   }
 
@@ -78,7 +83,7 @@ class BasePathManagerSpec extends TaPaSCoSpec with Matchers {
       }
     }
 
-    val futures = for { i <- 0 until count.get() } yield Future {
+    val futures = for {i <- 0 until count.get()} yield Future {
       var i = count.getAndDecrement()
       while (i >= 0) {
         bpm(Entities()(i % Entities().length)).set(p.resolve("%d".format(i)))

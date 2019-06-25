@@ -17,10 +17,10 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     ConfigurationTest.scala
- * @brief    Unit tests for Configuration description file.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file ConfigurationTest.scala
+  * @brief Unit tests for Configuration description file.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.base
 
 import org.scalatest._
@@ -39,7 +39,9 @@ class ConfigurationSpec extends TaPaSCoSpec with Matchers {
 
   "A correct Configuration file" should "be parsed to Some(Configuration)" in {
     val v = Configuration.from(jsonPath.resolve("configTest/config.json"))
-    if (v.isLeft) { logger.error("{}, stacktrace: {}", v.left.get: Any, v.left.get.getStackTrace() mkString "\n") }
+    if (v.isLeft) {
+      logger.error("{}, stacktrace: {}", v.left.get: Any, v.left.get.getStackTrace() mkString "\n")
+    }
     assert(v.isRight)
   }
 
@@ -58,24 +60,24 @@ class ConfigurationSpec extends TaPaSCoSpec with Matchers {
     val j3 = c.jobs(2)
     j1 match {
       case hj: HighLevelSynthesisJob =>
-        hj.architectures.map(_.name).toSet should contain only ("Arch1", "Arch3")
-        hj.platforms.map(_.name).toSet should contain only ("Plat1", "Plat2")
-        hj.kernels.map(_.name).toSet should contain only ("Kern2", "Kern3")
+        hj.architectures.map(_.name).toSet should contain only("Arch1", "Arch3")
+        hj.platforms.map(_.name).toSet should contain only("Plat1", "Plat2")
+        hj.kernels.map(_.name).toSet should contain only("Kern2", "Kern3")
       case _ => assert(false, "expected HighLevelSynthesisJob at index 0 in jobs array")
     }
     j2 match {
       case cj: ComposeJob =>
-        cj.architectures.map(_.name).toSet should contain only ("Arch1", "Arch3")
-        cj.platforms.map(_.name).toSet should contain only ("Plat1", "Plat2")
-        cj.composition.composition.head.count should be (42)
+        cj.architectures.map(_.name).toSet should contain only("Arch1", "Arch3")
+        cj.platforms.map(_.name).toSet should contain only("Plat1", "Plat2")
+        cj.composition.composition.head.count should be(42)
       case _ => assert(false, "expected ComposeJob at index 1 in jobs array")
     }
     j3 match {
       case cj: ComposeJob =>
         cj.architectures.map(_.name).toSet should contain only ("Arch3")
         cj.platforms.map(_.name).toSet should contain only ("Plat2")
-        cj.composition.description should be (Some("Inline Composition"))
-        cj.composition.composition.head.kernel should be ("Kern1")
+        cj.composition.description should be(Some("Inline Composition"))
+        cj.composition.composition.head.kernel should be("Kern1")
       case _ => assert(false, "expected ComposeJob at index 2 in jobs array")
     }
   }
@@ -91,11 +93,13 @@ class ConfigurationSpec extends TaPaSCoSpec with Matchers {
       "--platformDir", "arch",
       "--kernelDir", "platform") mkString " ")
     lazy val c = oc.right.get
-    oc.swap foreach { throw _ }
+    oc.swap foreach {
+      throw _
+    }
     assert(oc.isRight)
-    c.archDir should be (jsonPath.resolve("configTest/kernel"))
-    c.platformDir should be (jsonPath.resolve("configTest/arch"))
-    c.kernelDir should be (jsonPath.resolve("configTest/platform"))
+    c.archDir should be(jsonPath.resolve("configTest/kernel"))
+    c.platformDir should be(jsonPath.resolve("configTest/arch"))
+    c.kernelDir should be(jsonPath.resolve("configTest/platform"))
   }
 
   "Jobs in Configuration file" should "be appended by direct args" in {
@@ -103,13 +107,17 @@ class ConfigurationSpec extends TaPaSCoSpec with Matchers {
       "--configFile", jsonPath.resolve("configTest/config.json").toString,
       "corestats", "-a", "Arch1") mkString " ")
     lazy val c = oc.right.get
-    oc.swap foreach { throw _ }
+    oc.swap foreach {
+      throw _
+    }
     assert(oc.isRight)
-    c.jobs.size should be (4)
+    c.jobs.size should be(4)
     c.jobs(3) match {
       case j: CoreStatisticsJob =>
         j.architectures map (_.name) should contain only ("Arch1")
-      case j => { println(j); assert(false, "expected CoreStatisticsJob at in index 1 in jobs array") }
+      case j => {
+        println(j); assert(false, "expected CoreStatisticsJob at in index 1 in jobs array")
+      }
     }
   }
 
@@ -120,6 +128,6 @@ class ConfigurationSpec extends TaPaSCoSpec with Matchers {
     lazy val c = oc.right.get
     oc.swap foreach { e => println(e); throw e }
     assert(oc.isRight)
-    c.jobs.size should be (6)
+    c.jobs.size should be(6)
   }
 }

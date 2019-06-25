@@ -17,10 +17,10 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     EvaluateIP.scala
- * @brief    Contains the code for the out-of-context synthesis activity.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file EvaluateIP.scala
+  * @brief Contains the code for the out-of-context synthesis activity.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.activity
 
 import java.nio.file.{Files, Path}
@@ -50,9 +50,9 @@ object EvaluateIP {
   /** Template for the out-of-context synth+PnR script. */
   final val tclTemplate = Common.commonDir.resolve("evaluate_ip.tcl.template")
 
-  def captureProcessOutput(input : java.io.InputStream) : Unit = {
+  def captureProcessOutput(input: java.io.InputStream): Unit = {
     val buffer = new Array[Byte](1024)
-    val stringBuilder : StringBuilder = new StringBuilder
+    val stringBuilder: StringBuilder = new StringBuilder
     Stream.continually(input.read(buffer)).takeWhile(_ != -1).foreach(stringBuilder.append(buffer, 0, _))
     logger.debug(stringBuilder.toString())
     input.close()
@@ -60,7 +60,9 @@ object EvaluateIP {
 
   // custom ProcessIO: Write stdout and stderr to DEBUG-level log.
   private final val io = new ProcessIO(
-    stdin => {stdin.close()},
+    stdin => {
+      stdin.close()
+    },
     captureProcessOutput,
     captureProcessOutput
   )
@@ -68,18 +70,19 @@ object EvaluateIP {
   /** Managment of temporary files, directories, reports. */
   private final class Files(zipFile: Path, reportFile: Path) {
     lazy val rpt_timing = reportFile.resolveSibling("timing.rpt")
-    lazy val rpt_util   = reportFile.resolveSibling("utilization.rpt")
-    lazy val rpt_port   = reportFile.resolveSibling("port.rpt")
-    lazy val s_dcp      = reportFile.resolveSibling("out-of-context_synth.dcp")
-    lazy val i_dcp      = reportFile.resolveSibling("out-of-context_impl.dcp")
-    lazy val zip        = zipFile
-    lazy val vlnv       = VLNV.fromZip(zipFile)
-    lazy val baseDir    = Files.createTempDirectory(null)
-    lazy val logFile    = baseDir.resolve("evaluate.log")
-    lazy val tclFile    = baseDir.resolve("evaluate.tcl")
+    lazy val rpt_util = reportFile.resolveSibling("utilization.rpt")
+    lazy val rpt_port = reportFile.resolveSibling("port.rpt")
+    lazy val s_dcp = reportFile.resolveSibling("out-of-context_synth.dcp")
+    lazy val i_dcp = reportFile.resolveSibling("out-of-context_impl.dcp")
+    lazy val zip = zipFile
+    lazy val vlnv = VLNV.fromZip(zipFile)
+    lazy val baseDir = Files.createTempDirectory(null)
+    lazy val logFile = baseDir.resolve("evaluate.log")
+    lazy val tclFile = baseDir.resolve("evaluate.tcl")
   }
 
   /** Perform the evaluation.
+    *
     * @return true if successful **/
   def apply(zipFile: Path,
             targetPeriod: Double,
@@ -104,16 +107,16 @@ object EvaluateIP {
     logger.info("starting {}, output in {}", runPrefix: Any, files.logFile)
 
     val vivadoCmd = Seq("vivado",
-        "-mode", "batch",
-        "-source", files.tclFile.toString,
-        "-log", files.logFile.toString,
-        "-notrace", "-nojournal")
+      "-mode", "batch",
+      "-source", files.tclFile.toString,
+      "-log", files.logFile.toString,
+      "-notrace", "-nojournal")
 
     logger.trace("Vivado command: {}", vivadoCmd mkString " ")
 
     // execute Vivado (max runtime: 1d)
     val r = InterruptibleProcess(Process(vivadoCmd, files.baseDir.toFile),
-        waitMillis = Some((if (optimization == 42) 14 else 1) * 24 * 60 * 60 * 1000)).!(io)
+      waitMillis = Some((if (optimization == 42) 14 else 1) * 24 * 60 * 60 * 1000)).!(io)
 
     cfg.verbose foreach { _ => lt.closeAll }
 
@@ -122,7 +125,7 @@ object EvaluateIP {
     } else {
       if (r == 0) {
         logger.trace("%s: Vivado finished successfully".format(runPrefix))
-        val ur  = UtilizationReport(files.rpt_util).get
+        val ur = UtilizationReport(files.rpt_util).get
         val dpd = TimingReport(files.rpt_timing).get.dataPathDelay
         val portReport = PortReport(files.rpt_port).get
         writeXMLReport(reportFile, ur, dpd, targetPeriod, portReport.numMasters, portReport.numSlaves)
@@ -140,71 +143,73 @@ object EvaluateIP {
   }
 
   /**
-   * Writes the Tcl script for the out-of-context run.
-   * @param files [[Files]] object for this run.
-   * @param targetPart Part identifier of the target FPGA.
-   * @param targetPeriod Target operating period.
-   **/
+    * Writes the Tcl script for the out-of-context run.
+    *
+    * @param files        [[Files]] object for this run.
+    * @param targetPart   Part identifier of the target FPGA.
+    * @param targetPeriod Target operating period.
+    **/
   private def writeTclScript(files: Files,
                              targetPart: String,
                              targetPeriod: Double,
                              optimization: Int,
                              synthOptions: Option[String]): Unit = {
     val needles: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map(
-      "BASE_DIR"           -> files.baseDir.toString,
-      "ZIP_FILE"           -> files.zip.toString,
-      "VLNV"               -> files.vlnv.toString,
-      "PART"               -> targetPart,
-      "PERIOD"             -> targetPeriod.toString,
-      "REPORT_TIMING"      -> files.rpt_timing.toString,
+      "BASE_DIR" -> files.baseDir.toString,
+      "ZIP_FILE" -> files.zip.toString,
+      "VLNV" -> files.vlnv.toString,
+      "PART" -> targetPart,
+      "PERIOD" -> targetPeriod.toString,
+      "REPORT_TIMING" -> files.rpt_timing.toString,
       "REPORT_UTILIZATION" -> files.rpt_util.toString,
-      "REPORT_PORT"        -> files.rpt_port.toString,
-      "SYNTH_CHECKPOINT"   -> files.s_dcp.toString,
-      "IMPL_CHECKPOINT"    -> files.i_dcp.toString,
-      "OPTIMIZATION"       -> optimization.toString,
-      "SYNTH_OPTIONS"      -> (synthOptions getOrElse "")
+      "REPORT_PORT" -> files.rpt_port.toString,
+      "SYNTH_CHECKPOINT" -> files.s_dcp.toString,
+      "IMPL_CHECKPOINT" -> files.i_dcp.toString,
+      "OPTIMIZATION" -> optimization.toString,
+      "SYNTH_OPTIONS" -> (synthOptions getOrElse "")
     )
 
     // write Tcl script
     Template.interpolateFile(
-        Template.DEFAULT_NEEDLE,
-        tclTemplate.toString,
-        files.tclFile.toString,
-        needles)
+      Template.DEFAULT_NEEDLE,
+      tclTemplate.toString,
+      files.tclFile.toString,
+      needles)
   }
 
   /**
-   * Writes the output report in XML format (similar to Vivado HLS).
-   * @param reportFile Output file name.
-   * @param ur [[UtilizationReport]] instance.
-   * @param dataPathDelay Delay on longest combinatorial path in datapath.
-   * @param targetPeriod Target operating period.
-   **/
+    * Writes the output report in XML format (similar to Vivado HLS).
+    *
+    * @param reportFile    Output file name.
+    * @param ur            [[UtilizationReport]] instance.
+    * @param dataPathDelay Delay on longest combinatorial path in datapath.
+    * @param targetPeriod  Target operating period.
+    **/
   private def writeXMLReport(reportFile: Path, ur: UtilizationReport, dataPathDelay: Double,
-      targetPeriod: Double, masters : Int, slaves : Int): Unit = {
+                             targetPeriod: Double, masters: Int, slaves: Int): Unit = {
     val needles = scala.collection.mutable.Map[String, String](
-      "SLICE"      -> ur.used.SLICE.toString,
-      "SLICES"     -> ur.available.SLICE.toString,
-      "LUT"        -> ur.used.LUT.toString,
-      "LUTS"       -> ur.available.LUT.toString,
-      "FF"         -> ur.used.FF.toString,
-      "FFS"        -> ur.available.FF.toString,
-      "BRAM"       -> ur.used.BRAM.toString,
-      "BRAMS"      -> ur.available.BRAM.toString,
-      "DSP"        -> ur.used.DSP.toString,
-      "DSPS"       -> ur.available.DSP.toString,
-      "PERIOD"     -> targetPeriod.toString,
+      "SLICE" -> ur.used.SLICE.toString,
+      "SLICES" -> ur.available.SLICE.toString,
+      "LUT" -> ur.used.LUT.toString,
+      "LUTS" -> ur.available.LUT.toString,
+      "FF" -> ur.used.FF.toString,
+      "FFS" -> ur.available.FF.toString,
+      "BRAM" -> ur.used.BRAM.toString,
+      "BRAMS" -> ur.available.BRAM.toString,
+      "DSP" -> ur.used.DSP.toString,
+      "DSPS" -> ur.available.DSP.toString,
+      "PERIOD" -> targetPeriod.toString,
       "MIN_PERIOD" -> dataPathDelay.toString,
-      "MASTERS"    -> masters.toString,
-      "SLAVES"     -> slaves.toString
+      "MASTERS" -> masters.toString,
+      "SLAVES" -> slaves.toString
     )
 
     // write final report
     Template.interpolateFile(
-        Template.DEFAULT_NEEDLE,
-        reportTemplate.toString,
-        reportFile.toString,
-        needles
+      Template.DEFAULT_NEEDLE,
+      reportTemplate.toString,
+      reportFile.toString,
+      needles
     )
   }
 }

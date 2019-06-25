@@ -19,10 +19,11 @@
 package tapasco.util
 
 /**
- * Helper methods for tracking log files.
- * Contains methods to facilitate slf4j setup to redirect logging to files.
- **/
+  * Helper methods for tracking log files.
+  * Contains methods to facilitate slf4j setup to redirect logging to files.
+  **/
 object LogFileTracker {
+
   import ch.qos.logback.classic.LoggerContext
   import ch.qos.logback.classic.encoder.PatternLayoutEncoder
   import ch.qos.logback.classic.spi.ILoggingEvent
@@ -35,9 +36,10 @@ object LogFileTracker {
 
   /** Implements log event filtering on thread name basis. **/
   private final class ThreadFilter(threadName: String) extends Filter[ILoggingEvent] {
+
     import ch.qos.logback.core.spi.FilterReply
 
-    def decide(e: ILoggingEvent): FilterReply = if(e.getThreadName().equals(threadName)) {
+    def decide(e: ILoggingEvent): FilterReply = if (e.getThreadName().equals(threadName)) {
       FilterReply.ACCEPT
     } else {
       FilterReply.DENY
@@ -45,12 +47,13 @@ object LogFileTracker {
   }
 
   /**
-   * Setup a new logfile that is filled by a custom appender, logging only log
-   * events which occur on the calling thread.
-   * Useful for redirecting logging events on multiple threads to different files.
-   * @param file Path to the file to log to (will be created, if not existing).
-   * @return FileAppender instance that logs to the file.
-   **/
+    * Setup a new logfile that is filled by a custom appender, logging only log
+    * events which occur on the calling thread.
+    * Useful for redirecting logging events on multiple threads to different files.
+    *
+    * @param file Path to the file to log to (will be created, if not existing).
+    * @return FileAppender instance that logs to the file.
+    **/
   def setupLogFileAppender(file: String): FileAppender[ILoggingEvent] = {
     val logFileAppender: FileAppender[ILoggingEvent] = new FileAppender()
     val ctx = LoggerFactory.getILoggerFactory().asInstanceOf[LoggerContext]
@@ -80,9 +83,10 @@ object LogFileTracker {
   }
 
   /**
-   * Stops the given log file appender.
-   * @param appender Appender to stop, acquired via [[setupLogFileAppender]].
-   **/
+    * Stops the given log file appender.
+    *
+    * @param appender Appender to stop, acquired via [[setupLogFileAppender]].
+    **/
   def stopLogFileAppender(appender: FileAppender[ILoggingEvent]): Unit = {
     Logging.rootLogger.detachAppender(appender)
     appender.stop()

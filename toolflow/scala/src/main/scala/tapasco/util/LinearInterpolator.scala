@@ -17,18 +17,19 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file    LinearInterpolator.scala
- * @brief   Generic linear interpolation between abstract values.
- * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file LinearInterpolator.scala
+  * @brief Generic linear interpolation between abstract values.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.util
 
 /** LinearInterpolator is the abstract base class for linear interpolations of arbitrary
- *  types. It defines a regular interpolation in from a data set and an interpolation
- *  function on its base types A and B.
- *  @tparam A function co-domain, i.e., the ordering.
- *  @tparam B function domain, i.e., the interpolated values.
- */
+  *  types. It defines a regular interpolation in from a data set and an interpolation
+  * function on its base types A and B.
+  *
+  * @tparam A function co-domain, i.e., the ordering.
+  * @tparam B function domain, i.e., the interpolated values.
+  */
 abstract class LinearInterpolator[A <% Ordered[A], B](data: Seq[(A, B)])(implicit oa: Ordering[A]) extends Function[A, B] {
   private lazy val min = data map (_._1) min
   private lazy val max = data map (_._1) max
@@ -49,8 +50,8 @@ abstract class LinearInterpolator[A <% Ordered[A], B](data: Seq[(A, B)])(implici
   protected def interpolate(a: A, left: (A, B), right: (A, B)): B
 
   /** Find the tuple of data elements in between which the given position lies.
-   *  Corner handling: repeat last value as constant.
-   */
+    * Corner handling: repeat last value as constant.
+    */
   private def findPos(a: A, as: Seq[A] = (data map (_._1)).toSeq.sorted): (A, A) = as match {
     case ll +: lr +: ls if lr <= a => findPos(a, as.tail)
     case ll +: lr +: ls if ll <= a && lr >= a => (ll, lr)

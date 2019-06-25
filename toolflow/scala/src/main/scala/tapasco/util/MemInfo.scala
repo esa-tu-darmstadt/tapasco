@@ -17,10 +17,10 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     MemInfo.scala
- * @brief    Wrapper for /proc/meminfo; retrieve info about memory configuration.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+  * @file MemInfo.scala
+  * @brief Wrapper for /proc/meminfo; retrieve info about memory configuration.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
 package tapasco.util
 
 import scala.io.Source
@@ -38,11 +38,19 @@ object MemInfo {
   val meminfo = try {
     for (l <- Source.fromFile("/proc/meminfo").getLines.toSeq;
          m <- """^(\S*)\s*:\s+(\d+)\s*(\S+)*""".r.findFirstMatchIn(l);
-         e <- try { Some(MemEntry(m.group(1), m.group(2).toInt, if (Option(m.group(3)).nonEmpty) m.group(3) else "")) }
-              catch { case e: Exception => None }) yield e
-  } catch { case _: Exception => Seq() }
+         e <- try {
+           Some(MemEntry(m.group(1), m.group(2).toInt, if (Option(m.group(3)).nonEmpty) m.group(3) else ""))
+         }
+         catch {
+           case e: Exception => None
+         }) yield e
+  } catch {
+    case _: Exception => Seq()
+  }
 
-  def apply(regex: String): Seq[MemEntry] = meminfo filter (me => ! regex.r.findFirstIn(me.name).isEmpty)
+  def apply(regex: String): Seq[MemEntry] = meminfo filter (me => !regex.r.findFirstIn(me.name).isEmpty)
+
   def totalMemory: Int = apply("MemTotal").headOption map (_.amount) getOrElse warnOnceMaxValue
+
   def freeMemory: Int = apply("MemFree").headOption map (_.amount) getOrElse warnOnceMaxValue
 }

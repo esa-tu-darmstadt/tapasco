@@ -29,8 +29,9 @@
   * TPC API provides methods to query the threadpool and its
   * currently loaded composition, and to setup, launch and collect
   * jobs to be executed on the threadpool.
-  **/
+  * */
 package object tapasco {
+
   import java.nio.file._
 
   import scala.io._
@@ -43,7 +44,7 @@ package object tapasco {
       .resolve("platform")
       .resolve("include")
       .resolve("platform_global.h")
-    assert (f.toFile.exists, s"$f does not exist")
+    assert(f.toFile.exists, s"$f does not exist")
     REGEX_PLATFORM_NUM_SLOTS.findFirstMatchIn(Source.fromFile(f.toString) mkString "")
       .map(_.group(1).toInt)
       .getOrElse(throw new Exception("could not parse PLATFORM_NUM_SLOTS"))

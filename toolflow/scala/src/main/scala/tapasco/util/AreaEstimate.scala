@@ -17,22 +17,24 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     AreaEstimate.scala
- * @brief    Model of FPGA area estimate.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.e)
- **/
+  * @file AreaEstimate.scala
+  * @brief Model of FPGA area estimate.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.e)
+  **/
 package tapasco.util
 
 import scala.util.Properties.{lineSeparator => NL}
 
 /** Estimate of resource usage of a hardware design. */
 final case class ResourcesEstimate(
-    SLICE: Int,
-    LUT: Int,
-    FF: Int,
-    DSP: Int,
-    BRAM: Int) extends Ordered[ResourcesEstimate] {
+                                    SLICE: Int,
+                                    LUT: Int,
+                                    FF: Int,
+                                    DSP: Int,
+                                    BRAM: Int) extends Ordered[ResourcesEstimate] {
+
   import scala.math.Ordered.orderingToOrdered
+
   override def toString: String = List(
     "ResourcesEstimate: ",
     "  SLICE: " + BRAM,
@@ -43,37 +45,38 @@ final case class ResourcesEstimate(
   ).mkString(NL)
 
   def *(n: Int): ResourcesEstimate = ResourcesEstimate(
-      SLICE * n,
-      LUT * n,
-      FF * n,
-      DSP * n,
-      BRAM * n
-    )
+    SLICE * n,
+    LUT * n,
+    FF * n,
+    DSP * n,
+    BRAM * n
+  )
 
   def +(r: ResourcesEstimate): ResourcesEstimate = ResourcesEstimate(
-      SLICE + r.SLICE,
-      LUT + r.LUT,
-      FF + r.FF,
-      DSP + r.DSP,
-      BRAM + r.BRAM
-    )
+    SLICE + r.SLICE,
+    LUT + r.LUT,
+    FF + r.FF,
+    DSP + r.DSP,
+    BRAM + r.BRAM
+  )
+
   def compare(that: ResourcesEstimate): Int =
-    (this.LUT, this.FF, this.DSP, this.BRAM) compare (that.LUT, that.FF, that.DSP, that.BRAM)
+    (this.LUT, this.FF, this.DSP, this.BRAM) compare(that.LUT, that.FF, that.DSP, that.BRAM)
 }
 
 /**
- * Estimate of the area usage of a hardware design relative to the available resources.
- **/
+  * Estimate of the area usage of a hardware design relative to the available resources.
+  **/
 final case class AreaEstimate(
-    resources: ResourcesEstimate,
-    available: ResourcesEstimate) extends Ordered[AreaEstimate] {
+                               resources: ResourcesEstimate,
+                               available: ResourcesEstimate) extends Ordered[AreaEstimate] {
   private val formatter = new java.text.DecimalFormat("#.#")
 
   val slice = resources.SLICE * 100.0 / available.SLICE
   val lut = resources.LUT * 100.0 / available.LUT
   val ff = resources.FF * 100.0 / available.FF
   val dsp = resources.DSP * 100.0 / available.DSP
-  val bram = resources.BRAM  * 100.0 / available.BRAM
+  val bram = resources.BRAM * 100.0 / available.BRAM
   val utilization = lut
 
   override lazy val toString: String = List(
@@ -87,21 +90,29 @@ final case class AreaEstimate(
   ).mkString(NL)
 
   def *(n: Int): AreaEstimate = AreaEstimate(resources * n, available)
+
   def +(a: AreaEstimate): AreaEstimate = AreaEstimate(resources + a.resources, available)
-  def isFeasible: Boolean = List(slice, lut, ff, dsp, bram).map(x => x <= 100.0).reduce(_&&_)
+
+  def isFeasible: Boolean = List(slice, lut, ff, dsp, bram).map(x => x <= 100.0).reduce(_ && _)
+
   def compare(that: AreaEstimate): Int = this.resources compare that.resources
 }
 
 /**
   * Occupation of slots of a hardware design
-  * @param slots Number of occupied slots
+  *
+  * @param slots     Number of occupied slots
   * @param available Number of available slots
   */
-final case class SlotOccupation(slots : Int, available : Int) extends Ordered[SlotOccupation] {
+final case class SlotOccupation(slots: Int, available: Int) extends Ordered[SlotOccupation] {
 
   override def toString: String = "SlotOccupation: %d/%d\n".format(slots, available)
-  def *(n : Int) : SlotOccupation = SlotOccupation(slots * n, available)
-  def +(s : SlotOccupation) : SlotOccupation = SlotOccupation(slots + s.slots, available)
-  def isFeasible : Boolean = slots <= available
+
+  def *(n: Int): SlotOccupation = SlotOccupation(slots * n, available)
+
+  def +(s: SlotOccupation): SlotOccupation = SlotOccupation(slots + s.slots, available)
+
+  def isFeasible: Boolean = slots <= available
+
   override def compare(that: SlotOccupation): Int = this.slots compare that.slots
 }
