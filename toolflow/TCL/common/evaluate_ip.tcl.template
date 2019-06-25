@@ -1,0 +1,206 @@
+#
+# Copyright (C) 2014 Jens Korinth, TU Darmstadt
+#
+# This file is part of Tapasco (TPC).
+#
+# Tapasco is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Tapasco is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+#
+# @file		evaluate_ip.tcl.template
+# @brief	Tcl template to get area and timing estimates for IPXACT cores.
+# @authors	J. Korinth (jk@esa.cs.tu-darmstadt.de
+#
+
+# source base lib
+source -notrace "$::env(TAPASCO_HOME_TCL)/common/common.tcl"
+
+# suppress most messages except warnings and errors
+set_msg_config -severity INFO -suppress
+set_param general.maxThreads 1
+
+create_project -in_memory -part @@PART@@
+
+# add common IP
+set_property IP_REPO_PATHS "$::env(TAPASCO_HOME_TCL)/common/ip @@BASE_DIR@@" [current_project]
+
+# add IP core
+update_ip_catalog
+update_ip_catalog -add_ip @@ZIP_FILE@@ -repo_path @@BASE_DIR@@
+
+set pe [create_ip -module_name pe -vlnv @@VLNV@@]
+generate_target all $pe
+
+# find top
+set top [lindex [find_top] 0]
+
+# set parameters
+set opt @@OPTIMIZATION@@
+set target_opt @@OPTIMIZATION@@
+set period @@PERIOD@@
+set target_period @@PERIOD@@
+
+if {@@OPTIMIZATION@@ == 42} {
+  # activate opt and period loops
+  set opt 3
+  set target_opt 0
+  set period 0.5
+  set target_period 10.0
+}
+
+set results_file   [open [file join [file dirname "@@REPORT_TIMING@@"] "synthesis_results.tsv"] "w+"]
+puts $results_file "TT\tTF\t\O\tWNS\tOT\tOF"
+set runtimes_file [open [file join [file dirname "@@REPORT_TIMING@@"] "synthesis_runtimes.tsv"] "w+"]
+puts $runtimes_file "TT\tTF\tO\tP\tS\t\E\tD"
+
+#for {set period 0.5} {$period <= 5.0} {set period [expr $period + 0.125]} {
+for {} {$period <= $target_period} {set period [expr $period + 0.25]} {
+  for {} {$opt >= $target_opt} {incr opt -1} {
+    set synth_start [clock seconds]
+    set synth_options [list @@SYNTH_OPTIONS@@]
+    lappend synth_options {-part} {@@PART@@} {-top} $top {-mode} {out_of_context}
+
+    # synthesize and optimize netlist
+    if {$opt >= 1} {
+      lappend synth_options {-retiming} {-fanout_limit} 400 {-shreg_min_size} 5
+    }
+    if {$opt >= 2} {
+      lappend synth_options {-fsm_extraction} {one_hot} {-flatten_hierarchy} {full}
+    }
+    if {$opt >= 3} {
+      lappend synth_options {-keep_equivalent_registers} {-resource_sharing} {off} {-no_lc}
+    }
+    synth_design {*}$synth_options
+    set opt_start [clock seconds]
+    opt_design -propconst -sweep -remap
+    set synth_finish [clock seconds]
+
+    set ur [file join [file dirname "@@REPORT_UTILIZATION@@"] "synth_utilization_period${period}_opt${opt}.rpt"]
+    puts "writing utilization report $ur ..."
+    report_utilization -quiet -file $ur
+    set tr [file join [file dirname "@@REPORT_TIMING@@"] "synth_timing_period${period}_opt${opt}.rpt"]
+    puts "writing timing report summary $tr ..."
+    report_timing_summary -quiet -file $tr
+
+    puts "synth_design for O$opt took [expr $synth_finish - $opt_start] sec, opt_design took [expr $opt_start - $synth_finish] sec."
+    puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tsynth_design\t$synth_start\t$opt_start\t[expr $opt_start - $synth_start]"
+    puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\topt_design\t$opt_start\t$synth_finish\t[expr $synth_finish - $opt_start]"
+    puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\ttotal_synth\t$synth_start\t$synth_finish\t[expr $synth_finish - $synth_start]"
+
+    # read switching activity files (if any)
+    foreach saif [glob -nocomplain *.saif] {
+      read_saif $saif
+    }
+
+    # write design checkpoint
+    #write_checkpoint -force "@@SYNTH_CHECKPOINT@@.O${opt}_P${period}.dcp"
+
+    # set clock
+    set clock_ports [get_ports -filter {DIRECTION == IN && (NAME =~ *clk* || NAME =~ *CLK* || NAME =~ clock)}]
+    puts "clock_ports = $clock_ports"
+    create_clock -name clk -period $period $clock_ports
+    set pnr_start [clock seconds]
+
+    # place and route
+    set opt_directive "RuntimeOptimized"
+    if {$opt >= 1} { set opt_directive "Default" }
+    if {$opt >= 2} { set opt_directive "Explore" }
+    if {$opt >= 3} { set opt_directive "ExploreWithRemap" }
+    puts "running opt_design -directive $opt_directive ..."
+    opt_design -directive $opt_directive
+    set opt_design_finish [clock seconds]
+
+    set place_directive "RuntimeOptimized"
+    if {$opt >= 1} { set place_directive "Default" }
+    if {$opt >= 2} { set place_directive "Explore" }
+    if {$opt >= 3} { set place_directive "ExtraTimingOpt" }
+    puts "running place_design -directive $place_directive ..."
+    place_design -directive $place_directive
+    set place_design_finish [clock seconds]
+
+    set physopt1_directive "Default"
+    if {$opt >= 1} { set physopt1_directive "Explore" }
+    if {$opt >= 2} { set physopt1_directive "AggressiveExplore" }
+    if {$opt >= 3} { set physopt1_directive "AlternateFlowWithRetiming" }
+    puts "running phys_opt_design -directive $physopt1_directive ..."
+    phys_opt_design -directive $physopt1_directive
+    set physopt1_finish [clock seconds]
+
+    set route_directive "RuntimeOptimized"
+    if {$opt >= 1} { set route_directive "Default" }
+    if {$opt >= 2} { set route_directive "Explore" }
+    if {$opt >= 3} { set route_directive "MoreGlobalIterations" }
+    puts "running route_design -directive $route_directive ..."
+    route_design -directive $route_directive
+    set route_design_finish [clock seconds]
+
+    set physopt2_directive "Explore"
+    if {$opt >= 2} { set physopt2_directive "AggressiveExplore" }
+    if {$opt >= 3} { set physopt1_directive "AlternateFlowWithRetiming" }
+    if {$opt >= 2} {
+      puts "phys_opt_design -directive $physopt2_directive ..."
+      phys_opt_design -directive $physopt2_directive
+      set physopt2_finish [clock seconds]
+    }
+    set pnr_finish [clock seconds]
+
+    # report timing
+    set tr [file join [file dirname "@@REPORT_TIMING@@"] "pnr_timing_period${period}_opt${opt}.rpt"]
+    report_timing_summary -quiet -datasheet -file $tr
+    # report utilization
+    report_utilization -quiet -file [file join [file dirname "@@REPORT_UTILIZATION@@"] "pnr_utilization_period${period}_opt${opt}.rpt"]
+    set wns [tapasco::get_wns_from_timing_report $tr]
+    set clk [expr "$period - $wns"]
+
+    # write design checkpoint
+    #write_checkpoint -force "@@IMPL_CHECKPOINT@@.O${opt}_P${period}.dcp"
+
+    puts "O$opt RESULT: WNS = $wns PERIOD = $clk F = [expr 1000.0 / $clk]"
+    puts $results_file "$period\t[expr 1000.0/$period]\t$opt\t$wns\t$clk\t[expr 1000.0/$clk]"
+
+    puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tpnr_opt_design\t$pnr_start\t$opt_design_finish\t[expr $opt_design_finish - $pnr_start]"
+    puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tplace_design\t$opt_design_finish\t$place_design_finish\t[expr $place_design_finish - $opt_design_finish]"
+    puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tphys_opt_design\t$place_design_finish\t$physopt1_finish\t[expr $physopt1_finish - $place_design_finish]"
+    puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\troute_design\t$physopt1_finish\t$route_design_finish\t[expr $route_design_finish - $physopt1_finish]"
+    if {$opt >= 2} {
+      puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\tphys_opt_design2\t$route_design_finish\t$physopt2_finish\t[expr $physopt2_finish - $route_design_finish]"
+    }
+    puts $runtimes_file "$period\t[expr 1000.0/$period]\t$opt\ttotal_pnr\t$pnr_start\t$pnr_finish\t[expr $pnr_finish - $pnr_start]"
+
+    flush $runtimes_file
+    flush $results_file
+  }
+  if {$opt < 0} { set opt 3 }
+}
+
+close $runtimes_file
+close $results_file
+
+# report timing
+report_timing_summary -quiet -datasheet -file @@REPORT_TIMING@@
+# report utilization
+report_utilization -quiet -file @@REPORT_UTILIZATION@@
+
+# extract AXI interfaces
+# requires a block design
+set bd [create_bd_design bd]
+set pe [create_bd_cell pe -vlnv @@VLNV@@]
+set interfaces_file [open @@REPORT_PORT@@ "w"]
+puts @@REPORT_PORT@@
+set axi_master_ports [tapasco::get_aximm_interfaces $pe "Master"]
+set axi_slave_ports [tapasco::get_aximm_interfaces $pe "Slave"]
+puts $interfaces_file "AXI_MASTER_PORTS\t[llength $axi_master_ports]"
+puts $interfaces_file "AXI_SLAVE_PORTS\t[llength $axi_slave_ports]"
+close $interfaces_file
+
+# done!
+exit

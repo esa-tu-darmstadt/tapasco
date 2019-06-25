@@ -1,6 +1,6 @@
 The Task Parallel System Composer (TaPaSCo)
 ===========================================
-![Tapasco logo](icon/tapasco_icon.png)
+![Tapasco logo](misc/icon/tapasco_icon.png)
 
 Master Branch Status: [![pipeline status](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/badges/master/pipeline.svg)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/commits/master)
 Dev Branch Status: [![pipeline status](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/badges/develop/pipeline.svg)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/commits/develop)
