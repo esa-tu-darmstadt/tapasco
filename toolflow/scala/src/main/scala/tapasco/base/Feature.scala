@@ -17,11 +17,11 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //props
 /**
- * @file    Feature.scala
- * @brief   TPC Architecture / Platform features.
- * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.base
+  * @file Feature.scala
+  * @brief TPC Architecture / Platform features.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.base
 
 sealed case class Feature(val name: String, val props: Feature.FMap) {
   def unapply: Option[(String, Feature.FMap)] = Some((name, props))
@@ -42,39 +42,49 @@ object Feature {
   // Internel Classes for Structure
   sealed trait FValue {
     def value: Any
+
     def toTCL: String
+
     def toJson: String
   }
 
   // Corresponding to Json Object
-  case class FMap(in : Map[String, FValue]) extends FValue{
-    override def value: Map[String, FValue]  = in
-    override def toTCL:  String = {
-      val map = for{(k, v) <- in} yield s""""$k" ${v.toTCL}"""
-        map.fold("{")(_ ++ " " ++ _) + "}"
+  case class FMap(in: Map[String, FValue]) extends FValue {
+    override def value: Map[String, FValue] = in
+
+    override def toTCL: String = {
+      val map = for {(k, v) <- in} yield s""""$k" ${v.toTCL}"""
+      map.fold("{")(_ ++ " " ++ _) + "}"
     }
+
     override def toJson: String = {
-      val map = for{(k, v) <- in} yield s""""$k" : ${v.toJson}"""
-       "{"+ map.fold("")(_ ++ ", " ++_ ).drop(1) + "}"
+      val map = for {(k, v) <- in} yield s""""$k" : ${v.toJson}"""
+      "{" + map.fold("")(_ ++ ", " ++ _).drop(1) + "}"
     }
   }
 
   // Corresponding to Json Array
-  case class FList(in: List[FValue]) extends FValue{
+  case class FList(in: List[FValue]) extends FValue {
     override def value: List[FValue] = in
-    override def toTCL:  String = {
-      val list = for{j <- in}yield s"${j.toTCL}"
+
+    override def toTCL: String = {
+      val list = for {j <- in} yield s"${j.toTCL}"
       list.fold("{")(_ ++ " " ++ _) + "}"
     }
+
     override def toJson: String = {
-      val list = for{j <- in}yield s"""${j.toJson}"""
-      "["+ list.fold("")(_ ++ ", " ++ _).drop(1) + "]"
+      val list = for {j <- in} yield s"""${j.toJson}"""
+      "[" + list.fold("")(_ ++ ", " ++ _).drop(1) + "]"
     }
   }
+
   // Corresponding to any other Json Value
-  case class FString(in : String) extends FValue{
-    override def value:  String = in
-    override def toTCL:  String = s""""$in""""
+  case class FString(in: String) extends FValue {
+    override def value: String = in
+
+    override def toTCL: String = s""""$in""""
+
     override def toJson: String = s""""$in""""
   }
+
 }

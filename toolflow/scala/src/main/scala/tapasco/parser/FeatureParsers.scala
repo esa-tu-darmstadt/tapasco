@@ -16,32 +16,37 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  de.tu_darmstadt.cs.esa.tapasco.base.Feature
-import  de.tu_darmstadt.cs.esa.tapasco.base.Feature._
-import  fastparse.all._
+package tapasco.parser
+
+import fastparse.all._
+import tapasco.base.Feature
+import tapasco.base.Feature._
 
 private object FeatureParsers {
+
   import BasicParsers._
+
   def feature: Parser[Feature] =
     (qstring.opaque("feature name").! ~ ws ~/
-     featureBegin ~ ws ~/
-     (featureKeyValue ~ ws).rep ~ ws ~/
-     featureEnd ~ ws)
-        .map(p => Feature(p._1, FMap(p._2.toMap)))
+      featureBegin ~ ws ~/
+      (featureKeyValue ~ ws).rep ~ ws ~/
+      featureEnd ~ ws)
+      .map(p => Feature(p._1, FMap(p._2.toMap)))
 
   def features: Parser[(String, Seq[Feature])] =
     longOption("features", "Features") ~ ws ~/ seqOne(feature)
 
   val featureBeginChars = "{(["
-  val featureEndChars   = "})]"
-  val featureMarks      = (featureBeginChars ++ featureEndChars) map (_.toString)
-  val featureAssigns    = Seq("->", "=", ":=", ":")
+  val featureEndChars = "})]"
+  val featureMarks = (featureBeginChars ++ featureEndChars) map (_.toString)
+  val featureAssigns = Seq("->", "=", ":=", ":")
 
   def featureBegin: Parser[Unit] =
     CharIn(featureBeginChars).opaque(s"begin of feature mark, one of '$featureBeginChars'")
+
   def featureEnd: Parser[Unit] =
     CharIn(featureEndChars).opaque(s"end of feature mark, one of '$featureEndChars'")
+
   def featureAssign: Parser[Unit] = "->" | "=" | ":=" | ":"
 
   def featureKey: Parser[String] =
@@ -50,10 +55,10 @@ private object FeatureParsers {
 
   def featureVal: Parser[FString] =
     (quotedString | string(featureAssigns ++ featureMarks))
-      .opaque("feature value for given key")map(a => FString(a))
+      .opaque("feature value for given key") map (a => FString(a))
 
   def featureKeyValue: Parser[(String, FString)] =
     featureKey ~ ws ~/
-    featureAssign.opaque("feature assignment operator, one of '->', '=', ':=' or ':'") ~ ws ~/
-    featureVal ~ ws
+      featureAssign.opaque("feature assignment operator, one of '->', '=', ':=' or ':'") ~ ws ~/
+      featureVal ~ ws
 }

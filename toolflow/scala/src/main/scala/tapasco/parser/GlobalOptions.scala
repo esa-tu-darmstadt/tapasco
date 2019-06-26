@@ -16,40 +16,47 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.base.json._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs.json._
-import  play.api.libs.json._
-import  scala.io.Source
-import  java.nio.file._
-import  fastparse.all._
+package tapasco.parser
+
+import java.nio.file._
+
+import fastparse.all._
+import play.api.libs.json._
+import tapasco.base._
+import tapasco.base.json._
+import tapasco.jobs._
+import tapasco.jobs.json._
+
+import scala.io.Source
 
 private object GlobalOptions {
+
   import BasicParsers._
 
   def validOption: Parser[String] = (
-    longShortOption("h", "help")    |
-    longShortOption("v", "verbose") |
-    longShortOption("n", "dryRun")  |
-    longOption("archDir")           |
-    longOption("platformDir")       |
-    longOption("coreDir")           |
-    longOption("compositionDir")    |
-    longOption("kernelDir")         |
-    longOption("jobsFile")          |
-    longOption("configFile")        |
-    longOption("logFile")           |
-    longOption("parallel")          |
-    longOption("slurm")             |
-    longOption("maxThreads")        |
-    longOption("maxTasks")
-  ).opaque("a global option")
+    longShortOption("h", "help") |
+      longShortOption("v", "verbose") |
+      longShortOption("n", "dryRun") |
+      longOption("archDir") |
+      longOption("platformDir") |
+      longOption("coreDir") |
+      longOption("compositionDir") |
+      longOption("kernelDir") |
+      longOption("jobsFile") |
+      longOption("configFile") |
+      longOption("logFile") |
+      longOption("parallel") |
+      longOption("slurm") |
+      longOption("maxThreads") |
+      longOption("maxTasks")
+    ).opaque("a global option")
 
   def help: Parser[(String, String)] =
     (longShortOption("h", "help") | IgnoreCase("help") | IgnoreCase("usage")) ~
-    (ws1 ~ string).? map { case (h, topic) => { Usage.topic(topic); ("Help", Usage()) } }
+      (ws1 ~ string).? map { case (h, topic) => {
+      Usage.topic(topic); ("Help", Usage())
+    }
+    }
 
   def verbose: Parser[(String, String)] =
     (longShortOption("v", "verbose", Some("Verbose")) ~/ (ws1 ~ quotedString.opaque("verbose mode as quoted string")).? ~ ws)
@@ -57,12 +64,16 @@ private object GlobalOptions {
 
   def archDir: Parser[(String, Path)] =
     longOption("archDir", "Architecture") ~/ ws1 ~ path.opaque("root dir of Architectures") ~ ws
+
   def platformDir: Parser[(String, Path)] =
     longOption("platformDir", "Platform") ~/ ws1 ~ path.opaque("root dir of Platforms") ~ ws
+
   def coreDir: Parser[(String, Path)] =
     longOption("coreDir", "Core") ~/ ws1 ~ path.opaque("root dir of Cores") ~ ws
+
   def compositionDir: Parser[(String, Path)] =
     longOption("compositionDir", "Composition") ~/ ws1 ~ path.opaque("root dir of Compositions") ~ ws
+
   def kernelDir: Parser[(String, Path)] =
     longOption("kernelDir", "Kernel") ~/ ws1 ~ path.opaque("root dir of Kernels") ~ ws
 
@@ -77,6 +88,7 @@ private object GlobalOptions {
 
   def dirs: Parser[(String, Path)] =
     archDir | platformDir | kernelDir | compositionDir | coreDir
+
   def inputFiles: Parser[(String, Path)] =
     jobsFile | configFile | logFile
 
@@ -108,23 +120,24 @@ private object GlobalOptions {
     pa match {
       case a +: as => a match {
         case ("Architecture", p: Path) => mkConfig(as, Some(c getOrElse Configuration() archDir p))
-        case ("Composition", p: Path)  => mkConfig(as, Some(c getOrElse Configuration() compositionDir p))
-        case ("Core", p: Path)         => mkConfig(as, Some(c getOrElse Configuration() coreDir p))
-        case ("Kernel", p: Path)       => mkConfig(as, Some(c getOrElse Configuration() kernelDir p))
-        case ("Platform", p: Path)     => mkConfig(as, Some(c getOrElse Configuration() platformDir p))
-        case ("Slurm", e: Boolean)     => mkConfig(as, Some(c getOrElse Configuration() slurm e))
-        case ("Parallel", e: Boolean)  => mkConfig(as, Some(c getOrElse Configuration() parallel e))
-        case ("JobsFile", p: Path)     => mkConfig(as, Some(c getOrElse Configuration() jobs readJobsFile(p)))
-        case ("LogFile", p: Path)      => mkConfig(as, Some(c getOrElse Configuration() logFile Some(p)))
-        case ("ConfigFile", p: Path)   => mkConfig(as, Some(loadConfigFromFile(p)))
-        case ("DryRun", p: Path)       => mkConfig(as, Some(c getOrElse Configuration() dryRun Some(p)))
-        case ("MaxThreads", i: Int)    => mkConfig(as, Some(c getOrElse Configuration() maxThreads Some(i)))
-        case ("MaxTasks", i: Int)      => mkConfig(as, Some(c getOrElse Configuration() maxTasks Some(i)))
-        case ("Verbose", m: String)    => mkConfig(as, Some(c getOrElse Configuration() verbose Some(m)))
-        case _                         => c getOrElse Configuration()
+        case ("Composition", p: Path) => mkConfig(as, Some(c getOrElse Configuration() compositionDir p))
+        case ("Core", p: Path) => mkConfig(as, Some(c getOrElse Configuration() coreDir p))
+        case ("Kernel", p: Path) => mkConfig(as, Some(c getOrElse Configuration() kernelDir p))
+        case ("Platform", p: Path) => mkConfig(as, Some(c getOrElse Configuration() platformDir p))
+        case ("Slurm", e: Boolean) => mkConfig(as, Some(c getOrElse Configuration() slurm e))
+        case ("Parallel", e: Boolean) => mkConfig(as, Some(c getOrElse Configuration() parallel e))
+        case ("JobsFile", p: Path) => mkConfig(as, Some(c getOrElse Configuration() jobs readJobsFile(p)))
+        case ("LogFile", p: Path) => mkConfig(as, Some(c getOrElse Configuration() logFile Some(p)))
+        case ("ConfigFile", p: Path) => mkConfig(as, Some(loadConfigFromFile(p)))
+        case ("DryRun", p: Path) => mkConfig(as, Some(c getOrElse Configuration() dryRun Some(p)))
+        case ("MaxThreads", i: Int) => mkConfig(as, Some(c getOrElse Configuration() maxThreads Some(i)))
+        case ("MaxTasks", i: Int) => mkConfig(as, Some(c getOrElse Configuration() maxTasks Some(i)))
+        case ("Verbose", m: String) => mkConfig(as, Some(c getOrElse Configuration() verbose Some(m)))
+        case _ => c getOrElse Configuration()
       }
       case x => c getOrElse Configuration()
     }
+
   // scalastyle:on cyclomatic.complexity
 
   private def readJobsFile(p: Path): Seq[Job] =
@@ -135,6 +148,6 @@ private object GlobalOptions {
 
   private def loadConfigFromFile(p: Path): Configuration = Configuration.from(p) match {
     case Right(c) => c
-    case Left(e)  => throw e
+    case Left(e) => throw e
   }
 }

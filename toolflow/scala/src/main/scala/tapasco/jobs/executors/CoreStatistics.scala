@@ -17,20 +17,22 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     CoreStatistics.scala
- * @brief    Command to scan the cores directory and produce spreadsheets for each
- *           platform and architecture containing the evaluation results of all
- *           currently available cores.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.jobs.executors
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.task._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  java.util.concurrent.Semaphore
+  * @file CoreStatistics.scala
+  * @brief Command to scan the cores directory and produce spreadsheets for each
+  *        platform and architecture containing the evaluation results of all
+  *        currently available cores.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.jobs.executors
+
+import java.util.concurrent.Semaphore
+
+import tapasco.base._
+import tapasco.jobs._
+import tapasco.task._
 
 private object CoreStatistics extends Executor[CoreStatisticsJob] {
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
 
   def execute(job: CoreStatisticsJob)(implicit cfg: Configuration, tsk: Tasks): Boolean = {
     val signal = new Semaphore(0)
@@ -43,7 +45,9 @@ private object CoreStatistics extends Executor[CoreStatisticsJob] {
 
     logger.info("launching {} CoreStatistics tasks ...", tasks.size)
 
-    tasks.foreach { tsk.apply _ }
+    tasks.foreach {
+      tsk.apply _
+    }
 
     0 until tasks.size foreach { i =>
       signal.acquire()

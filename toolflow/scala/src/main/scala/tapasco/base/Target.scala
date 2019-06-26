@@ -16,8 +16,9 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.base
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
+package tapasco.base
+
+import tapasco.filemgmt.FileAssetManager
 
 final case class TargetDesc(a: String, p: String)
 
@@ -27,7 +28,7 @@ final case class Target(ad: Architecture, pd: Platform) {
 
 object Target {
   def fromString(a: String, p: String): Option[Target] = for {
-      ad <- (FileAssetManager.entities.architectures filter (_.name.equals(a))).headOption
-      pd <- (FileAssetManager.entities.platforms filter (_.name.equals(p))).headOption
-    } yield Target(ad, pd)
+    ad <- (FileAssetManager.entities.architectures filter (_.name.equals(a))).headOption
+    pd <- (FileAssetManager.entities.platforms filter (_.name.equals(p))).headOption
+  } yield Target(ad, pd)
 }

@@ -17,14 +17,15 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     LogFormatter.scala
- * @brief    Formats TPC objects for log output.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  de.tu_darmstadt.cs.esa.tapasco.activity.composers._
-import  de.tu_darmstadt.cs.esa.tapasco.base.Composition
-import  de.tu_darmstadt.cs.esa.tapasco.dse.DesignSpace
+  * @file LogFormatter.scala
+  * @brief Formats TPC objects for log output.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.util
+
+import tapasco.activity.composers._
+import tapasco.base.Composition
+import tapasco.dse.DesignSpace
 
 object LogFormatter {
   def logformat(ce: Composition.Entry): String =
@@ -39,9 +40,9 @@ object LogFormatter {
   def logformat(ce: Composer.Result): String =
     "%s, logfile: '%s', utilization report: '%s', timing report: '%s'"
       .format(ce.result,
-              ce.log map (_.file.toString) getOrElse "",
-              ce.util map (_.file.toString) getOrElse "",
-              ce.timing map (_.file.toString) getOrElse "")
+        ce.log map (_.file.toString) getOrElse "",
+        ce.util map (_.file.toString) getOrElse "",
+        ce.timing map (_.file.toString) getOrElse "")
 
   def logformat(cs: Seq[Composition.Entry]): String = "[%s]".format(cs map (logformat _) mkString ", ")
 }

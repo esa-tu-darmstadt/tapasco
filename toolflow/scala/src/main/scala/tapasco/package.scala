@@ -16,8 +16,6 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa
-
 /** Tapasco is an automated tool flow for generating
   * threadpool architectures on FPGAs.
   *
@@ -31,9 +29,11 @@ package de.tu_darmstadt.cs.esa
   * TPC API provides methods to query the threadpool and its
   * currently loaded composition, and to setup, launch and collect
   * jobs to be executed on the threadpool.
-  **/
+  */
 package object tapasco {
+
   import java.nio.file._
+
   import scala.io._
 
   private lazy val REGEX_PLATFORM_NUM_SLOTS = """define\s+PLATFORM_NUM_SLOTS\s+(\d+)""".r
@@ -44,7 +44,7 @@ package object tapasco {
       .resolve("platform")
       .resolve("include")
       .resolve("platform_global.h")
-    assert (f.toFile.exists, s"$f does not exist")
+    assert(f.toFile.exists, s"$f does not exist")
     REGEX_PLATFORM_NUM_SLOTS.findFirstMatchIn(Source.fromFile(f.toString) mkString "")
       .map(_.group(1).toInt)
       .getOrElse(throw new Exception("could not parse PLATFORM_NUM_SLOTS"))

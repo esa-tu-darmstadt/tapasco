@@ -17,16 +17,17 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     BasePathTest.scala
- * @brief    Unit tests for BasePath.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
+  * @file BasePathTest.scala
+  * @brief Unit tests for BasePath.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.filemgmt
+
 import java.nio.file._
 
-import de.tu_darmstadt.cs.esa.tapasco.util._
 import org.scalatest._
 import tapasco.TaPaSCoSpec
+import tapasco.util._
 
 class BasePathSpec extends TaPaSCoSpec with Matchers {
   "Setting a new path" should "change the path" in {
@@ -45,7 +46,7 @@ class BasePathSpec extends TaPaSCoSpec with Matchers {
     bp += new Listener[BasePath.Event] {
       def update(e: BasePath.Event): Unit = e match {
         case BasePath.BasePathChanged(`np`) => ok = true
-        case _                              => {}
+        case _ => {}
       }
     }
     bp.set(np)
@@ -83,7 +84,7 @@ class BasePathSpec extends TaPaSCoSpec with Matchers {
       }
     }
 
-    val futures = for { i <- 0 until count.get() } yield Future {
+    val futures = for {i <- 0 until count.get()} yield Future {
       var i = count.getAndDecrement()
       while (i >= 0) {
         val newpath = p.resolve("%d".format(i))
@@ -92,7 +93,9 @@ class BasePathSpec extends TaPaSCoSpec with Matchers {
       }
     }
 
-    futures foreach { scala.concurrent.Await.ready(_, scala.concurrent.duration.Duration.Inf) }
+    futures foreach {
+      scala.concurrent.Await.ready(_, scala.concurrent.duration.Duration.Inf)
+    }
 
     assert(0 until tests map { i => check(i) } reduce (_ && _))
   }

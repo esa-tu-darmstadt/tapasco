@@ -16,7 +16,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
+package tapasco.parser
+
 import fastparse.all._
 import org.scalacheck._
 import org.scalatest._
@@ -24,14 +25,16 @@ import org.scalatest.prop.Checkers
 import tapasco.TaPaSCoSpec
 
 class ComposeParserSpec extends TaPaSCoSpec with Matchers with Checkers {
+
   import ComposeParser._
   import ComposeParserSpec._
   import Prop._
+
   implicit val cfg = PropertyCheckConfiguration(minSize = 10000, sizeRange = 0)
 
   "All valid compose job specs" should "be parsed correctly by compose" in
     check(forAllNoShrink(composeGen) { cj =>
-      Common.checkParsed( P( compose ~ End ).parse(cj) )
+      Common.checkParsed(P(compose ~ End).parse(cj))
     })
 }
 

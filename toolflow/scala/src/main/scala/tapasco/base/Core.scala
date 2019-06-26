@@ -17,25 +17,27 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file    Core.scala
- * @brief   Model: TPC IP Core.
- * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import  de.tu_darmstadt.cs.esa.tapasco.json._
-import  java.nio.file._
-import  builder._
+  * @file Core.scala
+  * @brief Model: TPC IP Core.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.base
 
-case class Core (
-      descPath: Path,
-      private val _zipPath: Path,
-      name: String,
-      id: Kernel.Id,
-      version: String,
-      private val _target: TargetDesc,
-      description: Option[String],
-      averageClockCycles: Option[Int]
-    ) extends Description(descPath) {
+import java.nio.file._
+
+import tapasco.base.builder._
+import tapasco.json._
+
+case class Core(
+                 descPath: Path,
+                 private val _zipPath: Path,
+                 name: String,
+                 id: Kernel.Id,
+                 version: String,
+                 private val _target: TargetDesc,
+                 description: Option[String],
+                 averageClockCycles: Option[Int]
+               ) extends Description(descPath) {
   val zipPath: Path = resolve(_zipPath).toAbsolutePath
   require(mustExist(zipPath), "zip file %s does not exist".format(zipPath.toString))
   lazy val target: Target = _target

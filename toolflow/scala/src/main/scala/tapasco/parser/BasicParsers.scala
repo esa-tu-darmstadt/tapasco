@@ -16,16 +16,20 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  de.tu_darmstadt.cs.esa.tapasco.dse.Heuristics.Frequency
-import  fastparse.all._
-import  java.nio.file._
-import  scala.language.implicitConversions
+package tapasco.parser
+
+import java.nio.file._
+
+import fastparse.all._
+import tapasco.dse.Heuristics.Frequency
+
+import scala.language.implicitConversions
 
 private object BasicParsers {
   def longOption(name: String): Parser[String] = longOption(name, name)
+
   def longOption(name: String, retVal: String, alternatives: String*): Parser[String] =
-    (name +: alternatives) map (n => IgnoreCase("--%s".format(n)).!.map(_ => retVal)) reduce (_|_)
+    (name +: alternatives) map (n => IgnoreCase("--%s".format(n)).!.map(_ => retVal)) reduce (_ | _)
 
   def longShortOption(shortName: String, longName: String, retVal: Option[String] = None): Parser[String] =
     IgnoreCase("-%s".format(shortName)).! | IgnoreCase("--%s".format(longName)).! map (retVal getOrElse _)
@@ -50,9 +54,9 @@ private object BasicParsers {
       .opaque(s"string containing none of '$exceptionChars'")
 
   def string(exceptionStrings: Seq[String]): Parser[String] =
-    // compute exception chars as first char in each exception string
+  // compute exception chars as first char in each exception string
     string(exceptionStrings filter (_.nonEmpty) map (_.apply(0)) mkString)
-      .filter (s => (exceptionStrings map (!s.contains(_)) fold true) (_ && _))
+      .filter(s => (exceptionStrings map (!s.contains(_)) fold true) (_ && _))
       .opaque(s"string containing none of $exceptionStrings")
 
   val string: Parser[String] =
@@ -68,9 +72,9 @@ private object BasicParsers {
     (string | quotedString)
       .opaque("quoted or unquoted string")
 
-  def seq[A](p: Parser[A]): Parser[Seq[A]] = p.rep(sep=sep.~/) ~ !(sep)
+  def seq[A](p: Parser[A]): Parser[Seq[A]] = p.rep(sep = sep.~/) ~ !(sep)
 
-  def seqOne[A](p: Parser[A]): Parser[Seq[A]] = p.rep(1, sep=sep.~/) ~ !(sep)
+  def seqOne[A](p: Parser[A]): Parser[Seq[A]] = p.rep(1, sep = sep.~/) ~ !(sep)
 
   val numstr: Parser[String] = CharIn(digitChars).rep(1).!
 
@@ -82,17 +86,20 @@ private object BasicParsers {
   val signedint: Parser[Int] = signednumstr map (_.toInt) opaque "integer"
 
   val dblstr: Parser[String] =
-    (signednumstr.! ~ (CharIn(",.") ~ numstr).!.?) map { case (n, r) => n ++ r.getOrElse("")  }
+    (signednumstr.! ~ (CharIn(",.") ~ numstr).!.?) map { case (n, r) => n ++ r.getOrElse("") }
 
   val boolstr: Parser[Boolean] =
-    ("true" | "false" ).! map { _.toBoolean} opaque "boolean"
+    ("true" | "false").! map {
+      _.toBoolean
+    } opaque "boolean"
 
   val double: Parser[Double] = dblstr.map(_.toDouble)
-      .opaque("floating point number")
+    .opaque("floating point number")
 
   val frequency: Parser[Frequency] = double.opaque("frequency in MHz")
 
   implicit def toPath(s: String): Path = Paths.get(s)
+
   def tryToPath(s: String): Option[Path] = scala.util.Try(toPath(s)).toOption
 
   val path: Parser[Path] =

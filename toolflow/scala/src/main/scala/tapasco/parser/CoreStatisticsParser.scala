@@ -16,11 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  fastparse.all._
+package tapasco.parser
+
+import fastparse.all._
+import tapasco.jobs._
 
 private object CoreStatisticsParser {
+
   import BasicParsers._
   import CommonArgParsers._
 
@@ -39,8 +41,8 @@ private object CoreStatisticsParser {
   private def applyOption(opt: (String, _)): CoreStatisticsJob => CoreStatisticsJob =
     opt match {
       case ("Prefix", prefix: String) => _.copy(prefix = Some(prefix))
-      case ("Architectures", as: Seq[String @unchecked]) => _.copy(_architectures = Some(as))
-      case ("Platforms", ps: Seq[String @unchecked]) => _.copy(_platforms = Some(ps))
+      case ("Architectures", as: Seq[String@unchecked]) => _.copy(_architectures = Some(as))
+      case ("Platforms", ps: Seq[String@unchecked]) => _.copy(_platforms = Some(ps))
       case o => throw new Exception(s"parsed illegal option: $o")
     }
 }

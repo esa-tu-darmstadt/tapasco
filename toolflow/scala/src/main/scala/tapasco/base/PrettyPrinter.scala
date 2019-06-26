@@ -17,75 +17,76 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file    PrettyPrinter.scala
- * @brief   Implements pretty printing for Description subclasses.
- * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import  scala.util.Properties.{lineSeparator => NL}
+  * @file PrettyPrinter.scala
+  * @brief Implements pretty printing for Description subclasses.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.base
+
+import scala.util.Properties.{lineSeparator => NL}
 
 private object PrettyPrinter {
   def printArchitecture(a: Architecture): String = List(
-      "[Architecture @" + a.descPath + "]",
-      "Name = " + a.name,
-      "TclLibrary = " + a.tclLibrary,
-      "Description = " + a.description,
-      "valueArgTemplate = " + a.valueArgTemplate,
-      "referenceArgTemplate = " + a.referenceArgTemplate,
-      "additionalSteps = " + a.additionalSteps.mkString(" ")
-    ) mkString NL
+    "[Architecture @" + a.descPath + "]",
+    "Name = " + a.name,
+    "TclLibrary = " + a.tclLibrary,
+    "Description = " + a.description,
+    "valueArgTemplate = " + a.valueArgTemplate,
+    "referenceArgTemplate = " + a.referenceArgTemplate,
+    "additionalSteps = " + a.additionalSteps.mkString(" ")
+  ) mkString NL
 
   def printPlatform(p: Platform): String = List(
-      "[Platform @" + p.descPath + "]",
-      "Name = " + p.name,
-      "Description = " + p.description,
-      "TclLibrary = " + p.tclLibrary,
-      "Part = " + p.part,
-      "BoardPart = " + p.boardPart,
-      "BoardPreset = " + p.boardPreset,
-      "TargetUtilization = " + p.targetUtilization + "%",
-      "SlotCount = " + p.slotCount,
-      "HostFrequency = " + p.hostFrequency,
-      "MemFrequency = " + p.memFrequency
-    ) mkString NL
+    "[Platform @" + p.descPath + "]",
+    "Name = " + p.name,
+    "Description = " + p.description,
+    "TclLibrary = " + p.tclLibrary,
+    "Part = " + p.part,
+    "BoardPart = " + p.boardPart,
+    "BoardPreset = " + p.boardPreset,
+    "TargetUtilization = " + p.targetUtilization + "%",
+    "SlotCount = " + p.slotCount,
+    "HostFrequency = " + p.hostFrequency,
+    "MemFrequency = " + p.memFrequency
+  ) mkString NL
 
   def printKernelArg(ka: Kernel.Argument): String = ka.name + " " + ka.passingConvention
 
   def printKernel(k: Kernel): String = List(
-      "[Kernel @" + k.descPath + "]",
-      "Name = " + k.name,
-      "TopFunction = " + k.topFunction,
-      "Version = " + k.version,
-      "Files = " + k.files.mkString(" "),
-      "TestbenchFiles = " + k.testbenchFiles.mkString(" "),
-      "CompilerFlags = " + k.compilerFlags.mkString(" "),
-      "TestbenchCompilerFlags = " + k.testbenchCompilerFlags.mkString(" "),
-      "Args = " + k.args.map(printKernelArg).mkString(" "),
-      "OtherDirectives = " + k.otherDirectives
-    ) mkString NL
+    "[Kernel @" + k.descPath + "]",
+    "Name = " + k.name,
+    "TopFunction = " + k.topFunction,
+    "Version = " + k.version,
+    "Files = " + k.files.mkString(" "),
+    "TestbenchFiles = " + k.testbenchFiles.mkString(" "),
+    "CompilerFlags = " + k.compilerFlags.mkString(" "),
+    "TestbenchCompilerFlags = " + k.testbenchCompilerFlags.mkString(" "),
+    "Args = " + k.args.map(printKernelArg).mkString(" "),
+    "OtherDirectives = " + k.otherDirectives
+  ) mkString NL
 
   def printCompositionEntry(ce: Composition.Entry): String =
     List(ce.kernel, " x ", ce.count) mkString NL
 
   def printComposition(c: Composition): String = List(
-      "[Composition @ " + c.id + "]",
-      "Description = " + c.description,
-      "Composition = " + (c.composition map { ce => ce.kernel + " x " + ce.count } mkString ", ")
-    ) mkString NL
+    "[Composition @ " + c.id + "]",
+    "Description = " + c.description,
+    "Composition = " + (c.composition map { ce => ce.kernel + " x " + ce.count } mkString ", ")
+  ) mkString NL
 
   def printConfiguration(c: Configuration): String = List(
-      "[Configuration @" + c.descPath + "]",
-      "Verbose = " + c.verbose,
-      "KernelDir = " + c.kernelDir,
-      "CoreDir = " + c.coreDir,
-      "ArchDir = " + c.archDir,
-      "PlatformDir = " + c.platformDir,
-      "Slurm = " + c.slurm,
-      "Parallel = " + c.parallel,
-      "MaxThreads = " + (c.maxThreads getOrElse "unlimited"),
-      "MaxTasks = " + (c.maxTasks getOrElse "unlimited"),
-      "Jobs = " + c.jobs
-    ) mkString NL
+    "[Configuration @" + c.descPath + "]",
+    "Verbose = " + c.verbose,
+    "KernelDir = " + c.kernelDir,
+    "CoreDir = " + c.coreDir,
+    "ArchDir = " + c.archDir,
+    "PlatformDir = " + c.platformDir,
+    "Slurm = " + c.slurm,
+    "Parallel = " + c.parallel,
+    "MaxThreads = " + (c.maxThreads getOrElse "unlimited"),
+    "MaxTasks = " + (c.maxTasks getOrElse "unlimited"),
+    "Jobs = " + c.jobs
+  ) mkString NL
 
   def printCore(c: Core): String = List(
     "[Core @" + c.zipPath + "]",

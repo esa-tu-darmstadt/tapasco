@@ -17,28 +17,30 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     Import.scala
- * @brief    Task to add an existing IP core to the TPC catalog. Will perform
- *           evaluation of the core with the current configuration parameters
- *           (i.e., it will perform evaluation for all configured Architectures
- *           and Platforms).
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.jobs.executors
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  de.tu_darmstadt.cs.esa.tapasco.task._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  java.util.concurrent.Semaphore
+  * @file Import.scala
+  * @brief Task to add an existing IP core to the TPC catalog. Will perform
+  *        evaluation of the core with the current configuration parameters
+  *        (i.e., it will perform evaluation for all configured Architectures
+  *        and Platforms).
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.jobs.executors
+
+import java.util.concurrent.Semaphore
+
+import tapasco.base._
+import tapasco.filemgmt.FileAssetManager
+import tapasco.jobs._
+import tapasco.task._
+import tapasco.util._
 
 object Import extends Executor[ImportJob] {
   private[this] implicit val logger =
-    de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+    tapasco.Logging.logger(getClass)
 
   def execute(job: ImportJob)
              (implicit cfg: Configuration, tsk: Tasks): Boolean = {
-    if (! job.zipFile.toFile.exists) {
+    if (!job.zipFile.toFile.exists) {
       throw new Exception("Missing .zip file, or file %s does not exist".format(job.zipFile))
     }
     val signal = new Semaphore(0)
@@ -54,7 +56,9 @@ object Import extends Executor[ImportJob] {
       new ImportTask(j.zipFile, t, j.id, _ => signal.release(), avgCC, j.skipEvaluation, j.synthOptions, j.optimization)(cfg)
     }
 
-    tasks foreach { tsk.apply _ }
+    tasks foreach {
+      tsk.apply _
+    }
 
     0 until tasks.size foreach { i =>
       signal.acquire()

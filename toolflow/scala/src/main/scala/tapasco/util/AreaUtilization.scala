@@ -17,20 +17,22 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     AreaUtilization.scala
- * @brief    Helper object for computing area utilization estimations.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.e)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  scala.collection.mutable.Map
+  * @file AreaUtilization.scala
+  * @brief Helper object for computing area utilization estimations.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.e)
+  **/
+package tapasco.util
+
+import tapasco.base._
+import tapasco.filemgmt.FileAssetManager
+
+import scala.collection.mutable.Map
 
 /**
- * Helper object: Compute area utilization factors from [[base.Core]] and [[base.Composition]] instances.
- **/
+  * Helper object: Compute area utilization factors from [[base.Core]] and [[base.Composition]] instances.
+  **/
 object AreaUtilization {
-  private[this] val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private[this] val _logger = tapasco.Logging.logger(getClass)
   private[this] val _coreMemos: Map[Configuration, Memoization[(Target, Core), Option[AreaEstimate]]] = Map()
   private[this] val _compoMemos: Map[Configuration, Memoization[(Target, Composition), Option[AreaEstimate]]] = Map()
 
@@ -56,10 +58,10 @@ object AreaUtilization {
     FileAssetManager.reports.synthReport(cd.name, target) flatMap (_.area)
 
   private def computeCompositionArea(target: Target, bd: Composition)(implicit cfg: Configuration): Option[AreaEstimate] = {
-    assert (bd.composition.length > 0, "composition must not be empty")
+    assert(bd.composition.length > 0, "composition must not be empty")
     val counts = bd.composition map (_.count)
-    val cores  = bd.composition flatMap { ce => FileAssetManager.entities.core(ce.kernel, target) }
-    val areas  = cores flatMap (apply(target, _))
+    val cores = bd.composition flatMap { ce => FileAssetManager.entities.core(ce.kernel, target) }
+    val areas = cores flatMap (apply(target, _))
     // check if all required data is available
     if (cores.length < bd.composition.length) {
       _logger.warn("could not find all core base. no area estimate for composition")

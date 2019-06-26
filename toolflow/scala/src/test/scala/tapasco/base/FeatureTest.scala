@@ -17,18 +17,19 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     FeatureTest.scala
- * @brief    Unit tests for Features.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import de.tu_darmstadt.cs.esa.tapasco.base.json._
-import de.tu_darmstadt.cs.esa.tapasco.jobs._
+  * @file FeatureTest.scala
+  * @brief Unit tests for Features.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.base
+
 import org.scalatest._
 import tapasco.TaPaSCoSpec
+import tapasco.base.json._
+import tapasco.jobs._
 
 class FeatureSpec extends TaPaSCoSpec with Matchers {
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
 
   "LED Feature" should "be parsed correctly" in {
     val oc = Configuration.from(jsonPath.resolve("configTest").resolve("platform-led.json"))

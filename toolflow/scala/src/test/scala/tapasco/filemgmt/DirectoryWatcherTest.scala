@@ -17,16 +17,17 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     DirectoryWatcherTest.scala
- * @brief    Unit tests for DirectoryWatcher.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
+  * @file DirectoryWatcherTest.scala
+  * @brief Unit tests for DirectoryWatcher.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.filemgmt
+
 import java.nio.file._
 
-import de.tu_darmstadt.cs.esa.tapasco.util.Listener
 import org.scalatest._
 import tapasco.TaPaSCoSpec
+import tapasco.util.Listener
 
 class DirectoryWatcherSpec extends TaPaSCoSpec with Matchers {
   private final val FS_SLEEP = 500
@@ -91,8 +92,8 @@ class DirectoryWatcherSpec extends TaPaSCoSpec with Matchers {
   }
 
   "Creating, modifying and deleting files in arbitrary subdirs of a watched directory" should
-  "generate Create, Modify and Delete events" in {
-    val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+    "generate Create, Modify and Delete events" in {
+    val logger = tapasco.Logging.logger(getClass)
     val p = Files.createTempDirectory(Paths.get("/tmp"), "tapasco-directorywatcherspec-")
     p.toFile.deleteOnExit()
     val s = p.resolve("a").resolve("b").resolve("c")
@@ -102,12 +103,15 @@ class DirectoryWatcherSpec extends TaPaSCoSpec with Matchers {
     var ok_modify = false
     var ok_delete = false
     dw += new Listener[DirectoryWatcher.Event] {
-      def update(e: DirectoryWatcher.Event): Unit = { logger.trace("event: {}", e); e match {
-        case DirectoryWatcher.Events.Create(p) => ok_create |= p.equals(f)
-        case DirectoryWatcher.Events.Modify(p) => ok_modify |= p.equals(f)
-        case DirectoryWatcher.Events.Delete(p) => ok_delete |= p.equals(f) || f.startsWith(p)
-        case _ => {}
-      }}
+      def update(e: DirectoryWatcher.Event): Unit = {
+        logger.trace("event: {}", e);
+        e match {
+          case DirectoryWatcher.Events.Create(p) => ok_create |= p.equals(f)
+          case DirectoryWatcher.Events.Modify(p) => ok_modify |= p.equals(f)
+          case DirectoryWatcher.Events.Delete(p) => ok_delete |= p.equals(f) || f.startsWith(p)
+          case _ => {}
+        }
+      }
     }
     dw.start()
 
@@ -119,7 +123,7 @@ class DirectoryWatcherSpec extends TaPaSCoSpec with Matchers {
     Files.delete(f)
 
     var countdown = 5
-    while (countdown > 0 && (! ok_create || ! ok_modify || ! ok_delete)) {
+    while (countdown > 0 && (!ok_create || !ok_modify || !ok_delete)) {
       Thread.sleep(FS_SLEEP)
       countdown -= 1
     }

@@ -17,22 +17,24 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file    Common.scala
- * @brief   Common classes and tools for the GenerateX classes.
- * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco
-import  java.nio.file._
-import  scala.sys.process._
+  * @file Common.scala
+  * @brief Common classes and tools for the GenerateX classes.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco
+
+import java.nio.file._
+
+import scala.sys.process._
 
 /**
- * Contains the most basic common methods, e.g., to parse description files.
- **/
+  * Contains the most basic common methods, e.g., to parse description files.
+  **/
 object Common {
-  protected val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
+  protected val logger = tapasco.Logging.logger(this.getClass)
 
-  lazy val homeDir: Path                      = Paths.get(sys.env("TAPASCO_HOME")).toAbsolutePath
-  lazy val commonDir: Path                    =
+  lazy val homeDir: Path = Paths.get(sys.env("TAPASCO_HOME")).toAbsolutePath
+  lazy val commonDir: Path =
     Paths.get(sys.env("TAPASCO_HOME")).resolve("toolflow").resolve("TCL")
       .resolve("common").toAbsolutePath
   //lazy val targetDesignFrequency: Option[Int] = sys.env.get("TAPASCO_FREQ") map (_.toInt)
@@ -40,10 +42,11 @@ object Common {
   // FIXME implement software environment singleton for versions etc.
 
   def getVivadoVersion: String = try {
-      Seq("vivado", "-version", "-nolog", "-nojournal").!!
-    } catch { case ex: Exception =>
+    Seq("vivado", "-version", "-nolog", "-nojournal").!!
+  } catch {
+    case ex: Exception =>
       throw new Exception("Could not find 'vivado' in path, please make sure you sourced the scripts.")
-    }
+  }
 
   def checkEnvironment(needVivado: Boolean = false): Unit = {
     if (sys.env.get("TAPASCO_HOME").isEmpty) {

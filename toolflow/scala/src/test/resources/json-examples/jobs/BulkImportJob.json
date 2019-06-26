@@ -1,4 +1,4 @@
 {
-  "Job" : "BulkImport",
-  "CSV" : "some.csv"
+  "Job": "BulkImport",
+  "CSV": "some.csv"
 }

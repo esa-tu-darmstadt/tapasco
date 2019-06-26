@@ -17,30 +17,33 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file    Architecture.scala
- * @brief   Model: TPC Architecture.
- * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import  de.tu_darmstadt.cs.esa.tapasco.json._
-import  java.nio.file._
-import  builder._
+  * @file Architecture.scala
+  * @brief Model: TPC Architecture.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.base
 
-case class Architecture (
-      descPath: Path,
-      name: String,
-      private val _tclLibrary: Path,
-      description: String,
-      private val _valueArgTemplate: Path,
-      private val _referenceArgTemplate: Path,
-      additionalSteps: Seq[String]
-    ) extends Description(descPath) {
+import java.nio.file._
+
+import tapasco.base.builder.Builds
+import tapasco.json._
+
+
+case class Architecture(
+                         descPath: Path,
+                         name: String,
+                         private val _tclLibrary: Path,
+                         description: String,
+                         private val _valueArgTemplate: Path,
+                         private val _referenceArgTemplate: Path,
+                         additionalSteps: Seq[String]
+                       ) extends Description(descPath) {
   val tclLibrary: Path = resolve(_tclLibrary)
   val valueArgTemplate: Path = resolve(_valueArgTemplate)
   val referenceArgTemplate: Path = resolve(_referenceArgTemplate)
-  require (mustExist(tclLibrary), "Tcl library %s does not exist".format(tclLibrary.toString))
-  require (mustExist(valueArgTemplate), "value argument template %s does not exist".format(valueArgTemplate.toString))
-  require (mustExist(referenceArgTemplate), "ref argument template %s does not exist".format(referenceArgTemplate.toString))
+  require(mustExist(tclLibrary), "Tcl library %s does not exist".format(tclLibrary.toString))
+  require(mustExist(valueArgTemplate), "value argument template %s does not exist".format(valueArgTemplate.toString))
+  require(mustExist(referenceArgTemplate), "ref argument template %s does not exist".format(referenceArgTemplate.toString))
 }
 
 object Architecture extends Builds[Architecture]

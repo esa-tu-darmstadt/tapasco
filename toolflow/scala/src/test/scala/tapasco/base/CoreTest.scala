@@ -17,18 +17,19 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     CoreTest.scala
- * @brief    Unit tests for Core description file.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import de.tu_darmstadt.cs.esa.tapasco.base.json._
+  * @file CoreTest.scala
+  * @brief Unit tests for Core description file.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.base
+
 import org.scalatest._
 import tapasco.TaPaSCoSpec
+import tapasco.base.json._
 
 class CoreSpec extends TaPaSCoSpec with Matchers {
   private final lazy val logger =
-    de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+    tapasco.Logging.logger(getClass)
 
   "A missing Core file" should "throw an exception" in {
     assert(Core.from(jsonPath.resolve("missing.json")).isLeft)
@@ -43,23 +44,23 @@ class CoreSpec extends TaPaSCoSpec with Matchers {
     lazy val c = oc.right.get
     if (oc.isLeft) logger.error("parsing failed: {}", oc.left.get)
     assert(oc.isRight)
-    c.name should equal ("TestCore")
-    c.version should equal ("0.1")
-    c.id should equal (42)
-    c.description should equal (Some("A correct core description."))
-    c.zipPath.toFile.exists should be (true)
-    c.averageClockCycles should equal (Some(1234567890))
+    c.name should equal("TestCore")
+    c.version should equal("0.1")
+    c.id should equal(42)
+    c.description should equal(Some("A correct core description."))
+    c.zipPath.toFile.exists should be(true)
+    c.averageClockCycles should equal(Some(1234567890))
   }
 
   "A Core file with unknown entries" should "be parsed correctly" in {
     val oc = Core.from(jsonPath.resolve("unknown-core.json"))
     lazy val c = oc.right.get
     assert(oc.isRight)
-    c.name should equal ("TestCore")
-    c.version should equal ("0.1")
-    c.id should equal (42)
-    c.description should equal (Some("A correct core description."))
-    c.zipPath.toFile.exists should be (true)
+    c.name should equal("TestCore")
+    c.version should equal("0.1")
+    c.id should equal(42)
+    c.description should equal(Some("A correct core description."))
+    c.zipPath.toFile.exists should be(true)
   }
 
   "An invalid Core file" should "not be parsed" in {

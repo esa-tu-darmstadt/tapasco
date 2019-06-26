@@ -16,12 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.task
-import  de.tu_darmstadt.cs.esa.tapasco.slurm._
+package tapasco.task
+
+import tapasco.slurm._
 
 /**
- * ResourceConsumers advertise their usage of CPUs, Memory and licences.
- **/
+  * ResourceConsumers advertise their usage of CPUs, Memory and licences.
+  **/
 trait ResourceConsumer {
   /** Number of CPUs this consumer will use during run (max.). */
   val cpus: Int
@@ -37,9 +38,9 @@ trait ResourceConsumer {
   def +(other: ResourceConsumer): ResourceConsumer = ResourceConsumer.merge(this, other)
 
   /** Returns true, if this consumer uses more resources than other. */
-  def usesMoreThan(other: ResourceConsumer): Boolean = if (! Slurm.enabled) {
+  def usesMoreThan(other: ResourceConsumer): Boolean = if (!Slurm.enabled) {
     cpus > other.cpus ||
-    (licences.keys map { k => licences(k) > other.licences.getOrElse(k, Integer.MAX_VALUE) } fold false) (_ || _)
+      (licences.keys map { k => licences(k) > other.licences.getOrElse(k, Integer.MAX_VALUE) } fold false) (_ || _)
   } else {
     (licences.keys map { k => licences(k) > other.licences.getOrElse(k, Integer.MAX_VALUE) } fold false) (_ || _)
   }
@@ -50,11 +51,12 @@ trait ResourceConsumer {
 /** ResourceConsumer companion object. **/
 object ResourceConsumer {
   /**
-   * Create a new ResourceConsumer.
-   * @param ccpus Number of CPUs this consumer will use during run (max.).
-   * @param cmemory Number of bytes of RAM this consumer will use during run (max.).
-   * @param licences Number of licences per feature this consumer will use during run (max.).
-  **/
+    * Create a new ResourceConsumer.
+    *
+    * @param ccpus    Number of CPUs this consumer will use during run (max.).
+    * @param cmemory  Number of bytes of RAM this consumer will use during run (max.).
+    * @param licences Number of licences per feature this consumer will use during run (max.).
+    **/
   def apply(ccpus: Int, cmemory: Int, clicences: Map[String, Int]): ResourceConsumer = new ResourceConsumer {
     val cpus = ccpus
     val memory = cmemory
@@ -80,5 +82,6 @@ object ResourceConsumer {
     val memory = 0
     val licences: Map[String, Int] = Map()
   }
+
 }
 

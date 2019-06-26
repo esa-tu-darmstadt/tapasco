@@ -16,16 +16,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  scala.sys.process._
-import  scala.collection.mutable.ArrayBuffer
+package tapasco.util
+
+import scala.collection.mutable.ArrayBuffer
+import scala.sys.process._
 
 private[tapasco] final case class InterruptibleProcess(p: ProcessBuilder, waitMillis: Option[Int] = None) {
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
-  private var result: Option[Int]         = None
+  private final val logger = tapasco.Logging.logger(getClass)
+  private var result: Option[Int] = None
   private val output: ArrayBuffer[String] = ArrayBuffer()
   private val errors: ArrayBuffer[String] = ArrayBuffer()
-  private val plog: ProcessLogger         = ProcessLogger(output += _, errors += _)
+  private val plog: ProcessLogger = ProcessLogger(output += _, errors += _)
 
   private def mkThread(plogger: ProcessLogger) = new Thread(new Runnable {
     private var proc: Option[Process] = None
@@ -34,9 +35,12 @@ private[tapasco] final case class InterruptibleProcess(p: ProcessBuilder, waitMi
       try {
         proc = Some(p.run(plogger))
         result = proc map (_.exitValue())
-      } catch { case e: InterruptedException =>
-        logger.warn("thread interrupted, destroying external process")
-        proc foreach { _.destroy() }
+      } catch {
+        case e: InterruptedException =>
+          logger.warn("thread interrupted, destroying external process")
+          proc foreach {
+            _.destroy()
+          }
       }
     }
   })
@@ -48,9 +52,12 @@ private[tapasco] final case class InterruptibleProcess(p: ProcessBuilder, waitMi
       try {
         proc = Some(p.run(pio))
         result = proc map (_.exitValue())
-      } catch { case e: InterruptedException =>
-        logger.warn("thread interrupted, destroying external process")
-        proc foreach { _.destroy() }
+      } catch {
+        case e: InterruptedException =>
+          logger.warn("thread interrupted, destroying external process")
+          proc foreach {
+            _.destroy()
+          }
       }
     }
   })
@@ -81,8 +88,14 @@ object InterruptibleProcess {
   final val TIMEOUT_RETCODE = 124 // matches 'timeout' command
   // custom ProcessIO: ignore everything
   val io = new ProcessIO(
-    stdin => {stdin.close()},
-    stdout => {stdout.close()},
-    stderr => {stderr.close()}
+    stdin => {
+      stdin.close()
+    },
+    stdout => {
+      stdout.close()
+    },
+    stderr => {
+      stderr.close()
+    }
   )
 }

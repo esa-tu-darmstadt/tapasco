@@ -16,11 +16,11 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.activity
+package tapasco.activity
 
 /** Subpackage hls contains all high-level synthesis activities.
-  * A [[HighLevelSynthesizer]] can be used to synthesize a hardware
-  * module from an abstract [[base.Kernel]] description.
+  * A [[tapasco.activity.hls.HighLevelSynthesizer]] can be used to synthesize a hardware
+  * module from an abstract [[tapasco.base.Kernel]] description.
   * Currently only Vivado HLS is supported as an HLS compiler.
-  **/
+  */
 package object hls

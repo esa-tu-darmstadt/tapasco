@@ -17,11 +17,12 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     SynthesisReportTest.scala
- * @brief    Unit tests for SynthesisReport model.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.reports
+  * @file SynthesisReportTest.scala
+  * @brief Unit tests for SynthesisReport model.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.reports
+
 import org.scalatest._
 import tapasco.TaPaSCoSpec
 
@@ -42,52 +43,52 @@ class SynthesisReportSpec extends TaPaSCoSpec with Matchers {
     oc should not be empty
     r.area should not be empty
     r.timing should not be empty
-    r.area.get.resources.SLICE should be (215)
-    r.area.get.resources.LUT should be (538)
-    r.area.get.resources.FF should be (776)
-    r.area.get.resources.DSP should be (0)
-    r.area.get.resources.BRAM should be (0)
-    r.area.get.available.SLICE should be (13300)
-    r.area.get.available.LUT should be (53200)
-    r.area.get.available.FF should be (106400)
-    r.area.get.available.DSP should be (220)
-    r.area.get.available.BRAM should be (140)
-    r.timing.get.targetPeriod should be (2.2222222222222223)
-    r.timing.get.clockPeriod should be (4.836)
+    r.area.get.resources.SLICE should be(215)
+    r.area.get.resources.LUT should be(538)
+    r.area.get.resources.FF should be(776)
+    r.area.get.resources.DSP should be(0)
+    r.area.get.resources.BRAM should be(0)
+    r.area.get.available.SLICE should be(13300)
+    r.area.get.available.LUT should be(53200)
+    r.area.get.available.FF should be(106400)
+    r.area.get.available.DSP should be(220)
+    r.area.get.available.BRAM should be(140)
+    r.timing.get.targetPeriod should be(2.2222222222222223)
+    r.timing.get.clockPeriod should be(4.836)
     val oc2 = SynthesisReport(reportPath.resolve("correct-synth2.rpt"))
     lazy val r2 = oc2.get
     oc2 should not be empty
     r2.area should not be empty
     r2.timing should not be empty
-    r2.area.get.resources.SLICE should be (232)
-    r2.area.get.resources.LUT should be (542)
-    r2.area.get.resources.FF should be (781)
-    r2.area.get.resources.DSP should be (0)
-    r2.area.get.resources.BRAM should be (0)
-    r2.area.get.available.SLICE should be (54650)
-    r2.area.get.available.LUT should be (218600)
-    r2.area.get.available.FF should be (437200)
-    r2.area.get.available.DSP should be (900)
-    r2.area.get.available.BRAM should be (545)
-    r2.timing.get.targetPeriod should be (2.2222222222222223)
-    r2.timing.get.clockPeriod should be (2.65)
+    r2.area.get.resources.SLICE should be(232)
+    r2.area.get.resources.LUT should be(542)
+    r2.area.get.resources.FF should be(781)
+    r2.area.get.resources.DSP should be(0)
+    r2.area.get.resources.BRAM should be(0)
+    r2.area.get.available.SLICE should be(54650)
+    r2.area.get.available.LUT should be(218600)
+    r2.area.get.available.FF should be(437200)
+    r2.area.get.available.DSP should be(900)
+    r2.area.get.available.BRAM should be(545)
+    r2.timing.get.targetPeriod should be(2.2222222222222223)
+    r2.timing.get.clockPeriod should be(2.65)
     val oc3 = SynthesisReport(reportPath.resolve("correct-synth3.rpt"))
     lazy val r3 = oc3.get
     oc3 should not be empty
     r3.area should not be empty
     r3.timing should not be empty
-    r3.area.get.resources.SLICE should be (215)
-    r3.area.get.resources.LUT should be (543)
-    r3.area.get.resources.FF should be (779)
-    r3.area.get.resources.DSP should be (0)
-    r3.area.get.resources.BRAM should be (0)
-    r3.area.get.available.SLICE should be (108300)
-    r3.area.get.available.LUT should be (433200)
-    r3.area.get.available.FF should be (866400)
-    r3.area.get.available.DSP should be (3600)
-    r3.area.get.available.BRAM should be (1470)
-    r3.timing.get.targetPeriod should be (2.2222222222222223)
-    r3.timing.get.clockPeriod should be (2.705)
+    r3.area.get.resources.SLICE should be(215)
+    r3.area.get.resources.LUT should be(543)
+    r3.area.get.resources.FF should be(779)
+    r3.area.get.resources.DSP should be(0)
+    r3.area.get.resources.BRAM should be(0)
+    r3.area.get.available.SLICE should be(108300)
+    r3.area.get.available.LUT should be(433200)
+    r3.area.get.available.FF should be(866400)
+    r3.area.get.available.DSP should be(3600)
+    r3.area.get.available.BRAM should be(1470)
+    r3.timing.get.targetPeriod should be(2.2222222222222223)
+    r3.timing.get.clockPeriod should be(2.705)
   }
 
   "Partial SynthesisReports" should "be parsed correctly" in {
@@ -96,24 +97,24 @@ class SynthesisReportSpec extends TaPaSCoSpec with Matchers {
     oc1 should not be empty
     r1.area shouldBe empty
     r1.timing should not be empty
-    r1.timing.get.targetPeriod should be (2.2222222222222223)
-    r1.timing.get.clockPeriod should be (4.836)
+    r1.timing.get.targetPeriod should be(2.2222222222222223)
+    r1.timing.get.clockPeriod should be(4.836)
 
     val oc2 = SynthesisReport(reportPath.resolve("partial-synth2.rpt"))
     lazy val r2 = oc2.get
     oc2 should not be empty
     r2.area should not be empty
     r2.timing shouldBe empty
-    r2.area.get.resources.SLICE should be (215)
-    r2.area.get.resources.LUT should be (538)
-    r2.area.get.resources.FF should be (776)
-    r2.area.get.resources.DSP should be (0)
-    r2.area.get.resources.BRAM should be (0)
-    r2.area.get.available.SLICE should be (13300)
-    r2.area.get.available.LUT should be (53200)
-    r2.area.get.available.FF should be (106400)
-    r2.area.get.available.DSP should be (220)
-    r2.area.get.available.BRAM should be (140)
+    r2.area.get.resources.SLICE should be(215)
+    r2.area.get.resources.LUT should be(538)
+    r2.area.get.resources.FF should be(776)
+    r2.area.get.resources.DSP should be(0)
+    r2.area.get.resources.BRAM should be(0)
+    r2.area.get.available.SLICE should be(13300)
+    r2.area.get.available.LUT should be(53200)
+    r2.area.get.available.FF should be(106400)
+    r2.area.get.available.DSP should be(220)
+    r2.area.get.available.BRAM should be(140)
   }
 }
 

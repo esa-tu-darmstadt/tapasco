@@ -16,7 +16,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
+package tapasco.parser
+
 import fastparse.all._
 import org.scalacheck._
 import org.scalatest._
@@ -24,6 +25,7 @@ import org.scalatest.prop.Checkers
 import tapasco.TaPaSCoSpec
 
 class BulkImportParserSpec extends TaPaSCoSpec with Matchers with Checkers {
+
   import BulkImportParser._
   import BulkImportParserSpec._
   import Common._
@@ -31,7 +33,7 @@ class BulkImportParserSpec extends TaPaSCoSpec with Matchers with Checkers {
 
   "All valid job specs" should "be parsed correctly by bulkimport" in
     check(forAllNoShrink(bulkImportGen) { bij =>
-      checkParsed( P( bulkimport ~ End ).parse(bij) )
+      checkParsed(P(bulkimport ~ End).parse(bij))
     })
 }
 
@@ -39,7 +41,7 @@ private object BulkImportParserSpec {
   /* @{ Generators and Arbitraries */
   val bulkImportGen: Gen[String] = BasicParserSpec.join(Seq(
     BasicParserSpec.anyCase("bulkimport"),
-    for { p <- GlobalOptionsSpec.pathGen } yield p.toString
+    for {p <- GlobalOptionsSpec.pathGen} yield p.toString
   ))
   /* Generators and Arbitraries @} */
 }

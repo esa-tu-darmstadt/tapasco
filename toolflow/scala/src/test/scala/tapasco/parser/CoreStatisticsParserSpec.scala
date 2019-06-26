@@ -16,7 +16,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
+package tapasco.parser
+
 import fastparse.all._
 import org.scalacheck._
 import org.scalatest._
@@ -24,15 +25,17 @@ import org.scalatest.prop.Checkers
 import tapasco.TaPaSCoSpec
 
 class CoreStatisticsParserSpec extends TaPaSCoSpec with Matchers with Checkers {
+
   import Common._
   import CoreStatisticsParser._
   import CoreStatisticsParserSpec._
   import Prop._
+
   implicit val cfg = PropertyCheckConfiguration(minSize = 10000)
 
   "All valid CoreStat jobs" should "be parsed correctly" in
     check(forAllNoShrink(corestatsGen) { j =>
-      checkParsed(P( corestats ~ End ).parse(j))
+      checkParsed(P(corestats ~ End).parse(j))
     })
 }
 

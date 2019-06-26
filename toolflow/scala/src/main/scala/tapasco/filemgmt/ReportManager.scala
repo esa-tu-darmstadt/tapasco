@@ -16,31 +16,42 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.reports._
-import  de.tu_darmstadt.cs.esa.tapasco.util._
-import  java.nio.file._
+package tapasco.filemgmt
+
+import java.nio.file._
+
+import tapasco.base._
+import tapasco.reports._
+import tapasco.util._
 
 /**
- * A ReportManager maintains caches for different report types in a common base
- * directory: Currently co-simulation, timing and synthesis reports
- * are supported, each in an [[EntityCache]] of their own.
- *
- * To react on changes, the basePathListener and directoryListener values
- * should be registered with a [[BasePathManager]] and a [[DirectoryWatcher]].
- * @param _base Initial base path, e.g., TAPASCO_HOME/core.
- **/
+  * A ReportManager maintains caches for different report types in a common base
+  * directory: Currently co-simulation, timing and synthesis reports
+  * are supported, each in an [[EntityCache]] of their own.
+  *
+  * To react on changes, the basePathListener and directoryListener values
+  * should be registered with a [[BasePathManager]] and a [[DirectoryWatcher]].
+  *
+  * @param _base Initial base path, e.g., TAPASCO_HOME/core.
+  **/
 class ReportManager(var _base: Path) extends Publisher {
+
   import Entities._
+
   type Event = EntityCache.Event
-  private[this] final val _logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private[this] final val _logger = tapasco.Logging.logger(getClass)
 
   /** Reset all caches. */
-  def reset(): Unit = { _reportCaches foreach { _.clear() } }
+  def reset(): Unit = {
+    _reportCaches foreach {
+      _.clear()
+    }
+  }
 
   /** Clear caches and set optional new paths. */
-  def clear(p: Option[Set[Path]] = None): Unit = _reportCaches foreach { _.clear(p) }
+  def clear(p: Option[Set[Path]] = None): Unit = _reportCaches foreach {
+    _.clear(p)
+  }
 
   /* @{ Listeners */
   /** Listener for base path changes: will react to changes of Cores dir. */
@@ -48,23 +59,29 @@ class ReportManager(var _base: Path) extends Publisher {
     def update(e: BasePathManager.Event): Unit = e match {
       case BasePathManager.BasePathChanged(`Cores`, np) =>
         _base = np
-        _reportCaches foreach { _.clear(Some(Set(_base))) }
+        _reportCaches foreach {
+          _.clear(Some(Set(_base)))
+        }
       case _ => {}
     }
   }
 
   /** Listener for directory watcher events: will forward to all caches. */
   val directoryListener = new Listener[DirectoryWatcher.Event] {
-    def update(e: DirectoryWatcher.Event): Unit = _reportCaches foreach { _.update(e) }
+    def update(e: DirectoryWatcher.Event): Unit = _reportCaches foreach {
+      _.update(e)
+    }
   }
   /* Listeners @} */
 
   /* @{ report accessors */
   /** Returns all CoSimReports. **/
   def cosimReports: Set[CoSimReport] = _cosimReportCache.entities
+
   /** Returns CoSimReport for given core and target. **/
   def cosimReport(name: String, target: Target): Option[CoSimReport] =
     cosimReport(name, target.ad.name, target.pd.name)
+
   /** Returns CoSimReport for given core and Architecture/Platform combination. **/
   def cosimReport(name: String, archName: String, platformName: String): Option[CoSimReport] = {
     val bp = _base.resolve(name).resolve(archName).resolve(platformName)
@@ -79,9 +96,11 @@ class ReportManager(var _base: Path) extends Publisher {
 
   /** Returns all SynthesisReports. **/
   def synthReports: Set[SynthesisReport] = _synthReportCache.entities
+
   /** Returns SynthesisReport for given core and target. **/
   def synthReport(name: String, target: Target): Option[SynthesisReport] =
     synthReport(name, target.ad.name, target.pd.name)
+
   /** Returns SynthesisReport for given core and Architecture/Platform combination. **/
   def synthReport(name: String, archName: String, platformName: String): Option[SynthesisReport] = {
     val bp = _base.resolve(name).resolve(archName).resolve(platformName)
@@ -96,9 +115,11 @@ class ReportManager(var _base: Path) extends Publisher {
 
   /** Returns all TimingReports. **/
   def timingReports: Set[TimingReport] = _timingReportCache.entities
+
   /** Returns TimingReport for given core and target. **/
   def timingReport(name: String, target: Target): Option[TimingReport] =
     timingReport(name, target.ad.name, target.pd.name)
+
   /** Returns TimingReport for given core and Architecture/Platform combination. **/
   def timingReport(name: String, archName: String, platformName: String): Option[TimingReport] = {
     val bp = _base.resolve(name).resolve(archName).resolve(platformName)
@@ -110,17 +131,18 @@ class ReportManager(var _base: Path) extends Publisher {
     }
     files.headOption flatMap { f => _timingReportCache.apply(f).head }
   }
+
   /* @} */
 
   /** EntityCache instance for CoSimReports. **/
   private val _cosimReportCache = EntityCache(Set(_base),
-      """_cosim.rpt$""".r.unanchored, CoSimReport.apply _)
+    """_cosim.rpt$""".r.unanchored, CoSimReport.apply _)
   /** EntityCache instance for SynthesisReports. **/
   private val _synthReportCache = EntityCache(Set(_base),
-      """_export.xml$""".r.unanchored, SynthesisReport.apply _)
+    """_export.xml$""".r.unanchored, SynthesisReport.apply _)
   /** EntityCache instance for TimingReports. **/
   private val _timingReportCache = EntityCache(Set(_base),
-      """timing.rpt$""".r.unanchored, TimingReport.apply _)
+    """timing.rpt$""".r.unanchored, TimingReport.apply _)
 
   /** Internal seq of report caches. **/
   private val _reportCaches: Seq[EntityCache[_]] = Seq(
@@ -134,7 +156,9 @@ class ReportManager(var _base: Path) extends Publisher {
     def update(e: EntityCache.Event): Unit = publish(e)
   }
 
-  _reportCaches foreach { _ += _entityCacheListener }
+  _reportCaches foreach {
+    _ += _entityCacheListener
+  }
 
   def dump(osw: java.io.OutputStreamWriter): Unit = {
     import scala.util.Properties.{lineSeparator => NL}
@@ -149,4 +173,5 @@ class ReportManager(var _base: Path) extends Publisher {
     osw.append(NL)
   }
 }
+
 // vim: foldmarker=@{,@} foldmethod=marker foldlevel=0

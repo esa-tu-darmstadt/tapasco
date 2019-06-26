@@ -17,14 +17,15 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     ArchitectureTest.scala
- * @brief    Unit tests for Architecture description file.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import de.tu_darmstadt.cs.esa.tapasco.base.json._
+  * @file ArchitectureTest.scala
+  * @brief Unit tests for Architecture description file.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.base
+
 import org.scalatest._
 import tapasco.TaPaSCoSpec
+import tapasco.base.json._
 
 class ArchitectureSpec extends TaPaSCoSpec with Matchers {
 
@@ -40,20 +41,20 @@ class ArchitectureSpec extends TaPaSCoSpec with Matchers {
     val oc = Architecture.from(jsonPath.resolve("correct-arch.json"))
     lazy val c = oc.right.get
     assert(oc.isRight)
-    c.name should equal ("axi4mm")
-    c.tclLibrary should equal (jsonPath.resolve("axi4mm.tcl"))
-    c.valueArgTemplate should equal (jsonPath.resolve("valuearg.directives.template"))
-    c.referenceArgTemplate should equal (jsonPath.resolve("referencearg.directives.template"))
+    c.name should equal("axi4mm")
+    c.tclLibrary should equal(jsonPath.resolve("axi4mm.tcl"))
+    c.valueArgTemplate should equal(jsonPath.resolve("valuearg.directives.template"))
+    c.referenceArgTemplate should equal(jsonPath.resolve("referencearg.directives.template"))
   }
 
   "An Composition file with unknown entries" should "be parsed correctly" in {
     val oc = Architecture.from(jsonPath.resolve("unknown-arch.json"))
     lazy val c = oc.right.get
     assert(oc.isRight)
-    c.name should equal ("axi4mm")
-    c.tclLibrary should equal (jsonPath.resolve("axi4mm.tcl"))
-    c.valueArgTemplate should equal (jsonPath.resolve("valuearg.directives.template"))
-    c.referenceArgTemplate should equal (jsonPath.resolve("referencearg.directives.template"))
+    c.name should equal("axi4mm")
+    c.tclLibrary should equal(jsonPath.resolve("axi4mm.tcl"))
+    c.valueArgTemplate should equal(jsonPath.resolve("valuearg.directives.template"))
+    c.referenceArgTemplate should equal(jsonPath.resolve("referencearg.directives.template"))
   }
 
   "An Architecture file without a name" should "not be parsed" in {

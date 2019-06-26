@@ -17,20 +17,21 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     CoreStatisticsTask.scala
- * @brief    Task to compute a spreadsheet of evaluation results of all
- *           available cores for a given [[Target]].
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.task
-import  de.tu_darmstadt.cs.esa.tapasco.activity._
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.Logging._
+  * @file CoreStatisticsTask.scala
+  * @brief Task to compute a spreadsheet of evaluation results of all
+  *        available cores for a given [[Target]].
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.task
+
+import tapasco.Logging._
+import tapasco.activity._
+import tapasco.base._
 
 class CoreStatisticsTask(t: Target, fn: String, cfg: Configuration, val onComplete: Boolean => Unit)
-    extends Task {
+  extends Task {
   private[this] final implicit val logger =
-    de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+    tapasco.Logging.logger(getClass)
 
   def description: String = "CoreStatistics for %s".format(t.toString)
 

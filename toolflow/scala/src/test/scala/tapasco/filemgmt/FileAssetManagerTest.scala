@@ -17,23 +17,24 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     EntityManagerTest.scala
- * @brief    Unit tests for EntityManager.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.filemgmt
+  * @file EntityManagerTest.scala
+  * @brief Unit tests for EntityManager.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.filemgmt
+
 import java.nio.file._
 
-import de.tu_darmstadt.cs.esa.tapasco.base._
-import de.tu_darmstadt.cs.esa.tapasco.base.json._
-import de.tu_darmstadt.cs.esa.tapasco.util.Listener
 import org.scalatest._
 import tapasco.TaPaSCoSpec
+import tapasco.base._
+import tapasco.base.json._
+import tapasco.util.Listener
 
 class FileAssetManagerSpec extends TaPaSCoSpec with Matchers {
   private final val TAPASCO_HOME = Paths.get(sys.env("TAPASCO_HOME")).toAbsolutePath.normalize
   private final val FS_SLEEP = 500
-  private final val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(getClass)
+  private final val logger = tapasco.Logging.logger(getClass)
 
   "Changes in the base paths" should "be reflected in the caches" in {
     var oldpath = FileAssetManager.basepath(Entities.Architectures).get
@@ -75,13 +76,15 @@ class FileAssetManagerSpec extends TaPaSCoSpec with Matchers {
     Files.createFile(zip)
     val t = Target(FileAssetManager.entities.architectures.toSeq.head, FileAssetManager.entities.platforms.toSeq.head)
     val core = Core(cf, zip, "Test", 42, "0.0.1", t, None, None)
-    var updated : Boolean = false
+    var updated: Boolean = false
     val listener = new Listener[FileAssetManager.Event] {
-      override def update(e: FileAssetManager.Event): Unit = updated.synchronized{updated=true}
+      override def update(e: FileAssetManager.Event): Unit = updated.synchronized {
+        updated = true
+      }
     }
     FileAssetManager.addListener(listener)
     Core.to(core, cf)
-    while(!updated){
+    while (!updated) {
       Thread.sleep(FS_SLEEP)
     }
     assert(FileAssetManager.entities.cores.size == 1)

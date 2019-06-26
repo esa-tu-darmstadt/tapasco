@@ -17,22 +17,25 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file    FeatureTclPrinter.scala
- * @brief   Generates Tcl commands to add feature to a Tcl dict.
- * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.base.tcl
-import  de.tu_darmstadt.cs.esa.tapasco.base.Feature
-import  scala.util.Properties.{lineSeparator => NL}
+  * @file FeatureTclPrinter.scala
+  * @brief Generates Tcl commands to add feature to a Tcl dict.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.base.tcl
+
+import tapasco.base.Feature
+
+import scala.util.Properties.{lineSeparator => NL}
 
 class FeatureTclPrinter(prefix: String = "") {
   private val pre = s"dict set ${prefix}features"
 
   /** GenerateTcl commands to add feature to a Tcl dict.
+    *
     * @param f Feature to add.
     * @return String containing Tcls commands to write f into
     *         a dict called <prefix>features.
-   **/
+    */
   def toTcl(f: Feature): String = f.props.value map {
     case (name, value) => s"$pre ${f.name} $name ${value.toTCL}"
   } mkString NL

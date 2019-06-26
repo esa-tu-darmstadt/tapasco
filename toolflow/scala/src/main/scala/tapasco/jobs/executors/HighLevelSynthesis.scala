@@ -16,16 +16,18 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.jobs.executors
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.Logging
-import  de.tu_darmstadt.cs.esa.tapasco.task._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  de.tu_darmstadt.cs.esa.tapasco.activity.hls.HighLevelSynthesizer
-import  de.tu_darmstadt.cs.esa.tapasco.activity.hls.HighLevelSynthesizer._
-import  de.tu_darmstadt.cs.esa.tapasco.activity.hls.HighLevelSynthesizer.Implementation._
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  java.util.concurrent.Semaphore
+package tapasco.jobs.executors
+
+import java.util.concurrent.Semaphore
+
+import tapasco.Logging
+import tapasco.activity.hls.HighLevelSynthesizer
+import tapasco.activity.hls.HighLevelSynthesizer.Implementation._
+import tapasco.activity.hls.HighLevelSynthesizer._
+import tapasco.base._
+import tapasco.filemgmt.FileAssetManager
+import tapasco.jobs._
+import tapasco.task._
 
 protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
   private implicit final val logger = Logging.logger(getClass)
@@ -43,7 +45,9 @@ protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
       (k, t) <- runs
     } yield new HighLevelSynthesisTask(k, t, cfg, VivadoHLS, _ => signal.release())
 
-    tasks foreach { tsk.apply _ }
+    tasks foreach {
+      tsk.apply _
+    }
 
     0 until tasks.length foreach { i =>
       signal.acquire()
@@ -55,7 +59,7 @@ protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
     val results: Seq[((Kernel, Target), Option[HighLevelSynthesizer.Result])] =
       (runs zip (tasks map (_.synthesisResult))) filter {
         case (_, Some(Success(_, _))) => true
-        case _                        => false
+        case _ => false
       }
 
     logger.trace("results: {}", results)
@@ -63,7 +67,7 @@ protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
     val importTasks = results flatMap {
       case ((k, t), Some(Success(_, zip))) => {
         logger.trace("searching for co-simulation report for {} @ {}", k.name: Any, t)
-        val rpt   = FileAssetManager.reports.cosimReport(k.name, t)
+        val rpt = FileAssetManager.reports.cosimReport(k.name, t)
         logger.trace("co-simulation report: {}", rpt)
         val avgCC = rpt map (_.latency.avg)
         logger.trace("average clock cycles: {}", avgCC)
@@ -75,7 +79,9 @@ protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
       case _ => None
     }
 
-    importTasks foreach { tsk.apply _ }
+    importTasks foreach {
+      tsk.apply _
+    }
 
     0 until importTasks.length foreach { i =>
       signal.acquire()

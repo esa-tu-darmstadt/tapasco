@@ -17,13 +17,15 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     VLNV.scala
- * @brief    Model for Version-Library-Vendor-Version string identifier.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.util
-import  scala.util.matching.Regex
-import  java.nio.file._
+  * @file VLNV.scala
+  * @brief Model for Version-Library-Vendor-Version string identifier.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.util
+
+import java.nio.file._
+
+import scala.util.matching.Regex
 
 /** Vendor-Library-Name-Version identifier. */
 final case class VLNV(vendor: String, library: String, name: String, version: VLNV.Version) {
@@ -35,12 +37,17 @@ object VLNV {
 
   final case class Version(major: Int, minor: Int, revision: Option[Int]) {
     override def toString(): String =
-      if (revision.isEmpty) { List(major, minor).mkString(".") }
-      else                  { List(major, minor, revision).mkString(".") }
+      if (revision.isEmpty) {
+        List(major, minor).mkString(".")
+      }
+      else {
+        List(major, minor, revision).mkString(".")
+      }
   }
 
   object Version {
     private final val VERSION_REGEX = new Regex("""(\d+).(\d+)(.(\d+))?""")
+
     def apply(version: String): Version = version match {
       case VERSION_REGEX(major, minor, _, revision) => Version(major.toInt, minor.toInt, Option(revision).map(_.toInt))
       case invalid => throw new Exception("Invalid version string: " + invalid)

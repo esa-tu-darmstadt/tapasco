@@ -16,19 +16,23 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.activity.composers
-import  de.tu_darmstadt.cs.esa.tapasco.reports._
-import  play.api.libs.json._
-import  play.api.libs.functional.syntax._
-import  java.nio.file._
+package tapasco.activity.composers
+
+import java.nio.file._
+
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
+import tapasco.reports._
 
 /** Json serializers and deserializers. */
 package object json {
+
   implicit object ComposerImplementationFormat extends Format[Composer.Implementation] {
     def reads(json: JsValue): JsResult[Composer.Implementation] = json match {
       case JsString(str) => JsSuccess(Composer.Implementation(str))
-      case _             => JsError(Seq(JsPath() -> Seq(JsonValidationError("expected.string"))))
+      case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("expected.string"))))
     }
+
     def writes(i: Composer.Implementation): JsValue = JsString(i.toString)
   }
 
@@ -40,15 +44,16 @@ package object json {
       }
       case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("expected.compose.result.string.value"))))
     }
+
     def writes(r: ComposeResult): JsValue = JsString(r.toString)
   }
 
   private def mkComposerResult(r: ComposeResult, bit: Option[String], log: Option[String], util: Option[String],
-      timing: Option[String]) = Composer.Result(
+                               timing: Option[String]) = Composer.Result(
     r,
     bit,
-    log flatMap    (f => ComposerLog(Paths.get(f))),
-    util flatMap   (f => UtilizationReport(Paths.get(f))),
+    log flatMap (f => ComposerLog(Paths.get(f))),
+    util flatMap (f => UtilizationReport(Paths.get(f))),
     timing flatMap (f => TimingReport(Paths.get(f)))
   )
 
@@ -62,9 +67,9 @@ package object json {
 
   implicit val composerResultFormat: Format[Composer.Result] = (
     (JsPath \ "Result").format[ComposeResult] ~
-    (JsPath \ "Bitstream").formatNullable[String] ~
-    (JsPath \ "Log").formatNullable[String] ~
-    (JsPath \ "UtilizationReport").formatNullable[String] ~
-    (JsPath \ "TimingReport").formatNullable[String]
-  ) (mkComposerResult _, wrComposerResult _)
+      (JsPath \ "Bitstream").formatNullable[String] ~
+      (JsPath \ "Log").formatNullable[String] ~
+      (JsPath \ "UtilizationReport").formatNullable[String] ~
+      (JsPath \ "TimingReport").formatNullable[String]
+    ) (mkComposerResult _, wrComposerResult _)
 }

@@ -17,19 +17,21 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file    Description.scala
- * @brief   Abstract base class for configuration files in TPC.
- * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import  java.nio.file._
+  * @file Description.scala
+  * @brief Abstract base class for configuration files in TPC.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.base
+
+import java.nio.file._
 
 /**
- * Abstract base class of TPC entities, which are read dynamically from files.
- * E.g., [[Platform]], [[Architecture]], [[Kernel]] etc
- * @param descPath Path to description file.
- **/
-abstract class Description private[base] (descPath: Path) {
+  * Abstract base class of TPC entities, which are read dynamically from files.
+  * E.g., [[Platform]], [[Architecture]], [[Kernel]] etc
+  *
+  * @param descPath Path to description file.
+  **/
+abstract class Description private[base](descPath: Path) {
   override lazy val toString: String = PrettyPrinter.print(this)
 
   /** Resolves given path to absolute path via descPath (if necessary). */

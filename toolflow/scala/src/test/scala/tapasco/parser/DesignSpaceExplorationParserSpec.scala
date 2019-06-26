@@ -16,7 +16,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
+package tapasco.parser
+
 import fastparse.all._
 import org.scalacheck._
 import org.scalatest._
@@ -24,18 +25,21 @@ import org.scalatest.prop.Checkers
 import tapasco.TaPaSCoSpec
 
 class DesignSpaceExplorationParserSpec extends TaPaSCoSpec with Matchers with Checkers {
+
   import DesignSpaceExplorationParser._
   import DesignSpaceExplorationParserSpec._
   import org.scalacheck.Prop._
+
   implicit val cfg = PropertyCheckConfiguration(minSize = 50000, sizeRange = 1000)
 
   "All valid DSE jobs" should "be parsed correctly" in
     check(forAllNoShrink(dseGen) { d =>
-      Common.checkParsed(P( dse ~ End ).parse(d))
+      Common.checkParsed(P(dse ~ End).parse(d))
     })
 }
 
 private object DesignSpaceExplorationParserSpec {
+
   import BasicParserSpec._
   import CommonArgParsersSpec._
   import GlobalOptionsSpec.pathGen

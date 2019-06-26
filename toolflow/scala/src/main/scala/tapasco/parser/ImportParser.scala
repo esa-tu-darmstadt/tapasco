@@ -16,13 +16,16 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-package de.tu_darmstadt.cs.esa.tapasco.parser
-import  de.tu_darmstadt.cs.esa.tapasco.base._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  fastparse.all._
-import  java.nio.file.Path
+package tapasco.parser
+
+import java.nio.file.Path
+
+import fastparse.all._
+import tapasco.base._
+import tapasco.jobs._
 
 private object ImportParser {
+
   import BasicParsers._
   import CommonArgParsers._
 
@@ -45,7 +48,7 @@ private object ImportParser {
 
   private def avgClockCycles: Parser[(String, Int)] =
     longOption("averageClockCycles", "AvgCC") ~ ws ~/
-    posint.opaque("avg. number of clock cycles, integer > 0") ~ ws
+      posint.opaque("avg. number of clock cycles, integer > 0") ~ ws
 
   private def skipEval: Parser[(String, Boolean)] =
     (longOption("skipEvaluation", "SkipEval") ~ ws) map { case s => (s, true) }
@@ -61,8 +64,8 @@ private object ImportParser {
     case ("AvgCC", cc: Int) => _.copy(averageClockCycles = Some(cc))
     case ("SkipEval", se: Boolean) => _.copy(skipEvaluation = Some(se))
     case ("SynthOptions", so: String) => _.copy(synthOptions = Some(so))
-    case ("Architectures", as: Seq[String @unchecked]) => _.copy(_architectures = Some(as))
-    case ("Platforms", ps: Seq[String @unchecked]) => _.copy(_platforms = Some(ps))
+    case ("Architectures", as: Seq[String@unchecked]) => _.copy(_architectures = Some(as))
+    case ("Platforms", ps: Seq[String@unchecked]) => _.copy(_platforms = Some(ps))
     case ("Optimization", lvl: Int) => _.copy(_optimization = Some(lvl))
     case o => throw new Exception(s"parsed illegal option: $o")
   }

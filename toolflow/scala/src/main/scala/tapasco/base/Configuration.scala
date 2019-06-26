@@ -17,44 +17,73 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file    Configuration.scala
- * @brief   Model: TPC Configuration.
- * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import  de.tu_darmstadt.cs.esa.tapasco.dse._
-import  de.tu_darmstadt.cs.esa.tapasco.jobs._
-import  java.nio.file._
-import  builder._
+  * @file Configuration.scala
+  * @brief Model: TPC Configuration.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.base
+
+import java.nio.file._
+
+import tapasco.base.builder._
+import tapasco.dse._
+import tapasco.jobs._
 
 trait Configuration {
   def descPath: Path
+
   def descPath(p: Path): Configuration
+
   def archDir: Path
+
   def archDir(p: Path): Configuration
+
   def platformDir: Path
+
   def platformDir(p: Path): Configuration
+
   def kernelDir: Path
+
   def kernelDir(p: Path): Configuration
+
   def coreDir: Path
+
   def coreDir(p: Path): Configuration
+
   def compositionDir: Path
+
   def compositionDir(p: Path): Configuration
+
   def jobs: Seq[Job]
+
   def jobs(js: Seq[Job]): Configuration
+
   def logFile: Option[Path]
+
   def logFile(p: Option[Path]): Configuration
+
   def slurm: Boolean
+
   def slurm(enabled: Boolean): Configuration
+
   def parallel: Boolean
+
   def parallel(enabled: Boolean): Configuration
+
   def maxThreads: Option[Int]
+
   def maxThreads(mt: Option[Int]): Configuration
+
   def maxTasks: Option[Int]
+
   def maxTasks(mt: Option[Int]): Configuration
+
   def dryRun(cfg: Option[Path]): Configuration
+
   def dryRun: Option[Path]
+
   def verbose(mode: Option[String]): Configuration
+
   def verbose: Option[String]
 
   /** Returns the default output directory for the given kernel and target. */
@@ -62,8 +91,8 @@ trait Configuration {
     coreDir.resolve(kernel.name.toString).resolve(target.ad.name).resolve(target.pd.name)
 
   /** Returns the default output directory for the given composition, target and frequency.
-   *  _Example_: `arrayinit__counter/020_042/075.0/axi4mm/pynq`
-   */
+    * _Example_: `arrayinit__counter/020_042/075.0/axi4mm/pynq`
+    */
   def outputDir(composition: Composition, target: Target, freq: Heuristics.Frequency,
                 features: Seq[Feature] = Seq()): Path = compositionDir
     .resolve(target.ad.name)

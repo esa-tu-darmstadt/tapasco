@@ -17,18 +17,20 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     Heuristics.scala
- * @brief    Heuristic functions for the automated design space exploration.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.dse
-import  de.tu_darmstadt.cs.esa.tapasco.filemgmt.FileAssetManager
-import  de.tu_darmstadt.cs.esa.tapasco.base._
+  * @file Heuristics.scala
+  * @brief Heuristic functions for the automated design space exploration.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.dse
+
+import tapasco.base._
+import tapasco.filemgmt.FileAssetManager
 
 object Heuristics {
-  private[this] val logger = de.tu_darmstadt.cs.esa.tapasco.Logging.logger(this.getClass)
+  private[this] val logger = tapasco.Logging.logger(this.getClass)
   type Frequency = Double
-  type Value     = Double
+  type Value = Double
+
   abstract class Heuristic extends Function3[Composition, Frequency, Target, Configuration => Value]
 
   def apply(name: String): Heuristic = name.toLowerCase match {
@@ -38,7 +40,7 @@ object Heuristics {
 
   object ThroughputHeuristic extends Heuristic {
     private def findAverageClockCycles(kernel: String, target: Target)
-                (implicit cfg: Configuration): Int = {
+                                      (implicit cfg: Configuration): Int = {
       val cd = FileAssetManager.entities.core(kernel, target) getOrElse {
         throw new Exception("could not find core description for %s @ %s".format(kernel, target))
       }
@@ -46,8 +48,8 @@ object Heuristics {
         val report = FileAssetManager.reports.cosimReport(kernel, target)
         if (report.isEmpty) {
           logger.warn("Core description does not contain 'averageClockCycles' and " +
-              "co-simulation report could not be found, assuming one-cycle execution: " +
-              kernel + " [" + cd.descPath + "]")
+            "co-simulation report could not be found, assuming one-cycle execution: " +
+            kernel + " [" + cd.descPath + "]")
         }
         report map (_.latency.avg) getOrElse (1)
       }
@@ -57,8 +59,9 @@ object Heuristics {
       val maxClockCycles: Seq[Int] = bd.composition map (ce => findAverageClockCycles(ce.kernel, target)(cfg))
       val t = 1.0 / (freq * 1000000.0)
       val t_irq = target.pd.benchmark map (_.latency(maxClockCycles.max) / 1000000000.0) getOrElse 0.0
-      val jobsla = maxClockCycles map (_ * t + t_irq/* + t_setup*/)
+      val jobsla = maxClockCycles map (_ * t + t_irq /* + t_setup*/)
       bd.composition map (_.count) zip jobsla map (x => x._1 / x._2) reduce (_ + _)
     }
   }
+
 }

@@ -17,14 +17,15 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- * @file     PlatformTest.scala
- * @brief    Unit tests for Platform description file.
- * @authors  J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
-package de.tu_darmstadt.cs.esa.tapasco.base
-import de.tu_darmstadt.cs.esa.tapasco.base.json._
+  * @file PlatformTest.scala
+  * @brief Unit tests for Platform description file.
+  * @authors J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+  **/
+package tapasco.base
+
 import org.scalatest._
 import tapasco.TaPaSCoSpec
+import tapasco.base.json._
 
 class PlatformSpec extends TaPaSCoSpec with Matchers {
 
@@ -40,26 +41,26 @@ class PlatformSpec extends TaPaSCoSpec with Matchers {
     val oc = Platform.from(jsonPath.resolve("correct-platform.json"))
     lazy val c = oc.right.get
     assert(oc.isRight)
-    c.name should equal ("zynq")
-    c.tclLibrary should equal (jsonPath.resolve("zynq.tcl"))
-    c.part should equal ("xc7z045ffg900-2")
-    c.boardPart should equal (Some("xilinx.com:zc706:part0:1.1"))
-    c.boardPreset should equal (Some("ZC706"))
-    c.targetUtilization should equal (55)
-    c.supportedFrequencies should contain inOrderOnly (250, 200, 150, 100, 42)
+    c.name should equal("zynq")
+    c.tclLibrary should equal(jsonPath.resolve("zynq.tcl"))
+    c.part should equal("xc7z045ffg900-2")
+    c.boardPart should equal(Some("xilinx.com:zc706:part0:1.1"))
+    c.boardPreset should equal(Some("ZC706"))
+    c.targetUtilization should equal(55)
+    c.supportedFrequencies should contain inOrderOnly(250, 200, 150, 100, 42)
   }
 
   "An Platform file with unknown entries" should "be parsed correctly" in {
     val oc = Platform.from(jsonPath.resolve("unknown-platform.json"))
     lazy val c = oc.right.get
     assert(oc.isRight)
-    c.name should equal ("zynq")
-    c.tclLibrary should equal (jsonPath.resolve("zynq.tcl"))
-    c.part should equal ("xc7z045ffg900-2")
-    c.boardPart should equal (Some("xilinx.com:zc706:part0:1.1"))
-    c.boardPreset should equal (Some("ZC706"))
-    c.targetUtilization should equal (55)
-    c.supportedFrequencies should contain inOrderOnly (250, 200, 150, 100, 42)
+    c.name should equal("zynq")
+    c.tclLibrary should equal(jsonPath.resolve("zynq.tcl"))
+    c.part should equal("xc7z045ffg900-2")
+    c.boardPart should equal(Some("xilinx.com:zc706:part0:1.1"))
+    c.boardPreset should equal(Some("ZC706"))
+    c.targetUtilization should equal(55)
+    c.supportedFrequencies should contain inOrderOnly(250, 200, 150, 100, 42)
   }
 
   "An Platform file without a name" should "not be parsed" in {
@@ -79,12 +80,12 @@ class PlatformSpec extends TaPaSCoSpec with Matchers {
   "A Platform with host frequency" should "be parsed correctly" in {
     val oc = Platform.from(jsonPath.resolve("correct-platform-hostfreq.json"))
     assert(oc.isRight)
-    oc.right.get.hostFrequency should equal (Some(42.0))
+    oc.right.get.hostFrequency should equal(Some(42.0))
   }
 
   "A Platform with mem frequency" should "be parsed correctly" in {
     val oc = Platform.from(jsonPath.resolve("correct-platform-memfreq.json"))
     assert(oc.isRight)
-    oc.right.get.memFrequency should equal (Some(158.2))
+    oc.right.get.memFrequency should equal(Some(158.2))
   }
 }
