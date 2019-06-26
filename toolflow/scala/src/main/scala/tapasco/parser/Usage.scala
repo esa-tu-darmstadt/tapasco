@@ -89,7 +89,7 @@ configuration via `tapasco -n config.json`.
       Arg("--parallel", "Execute all jobs in parallel (careful!)") &
       Arg("--maxThreads NUM", "Limit internal parallelism of tasks (e.g., Vivado)" ~
         "to the given number of threads.") &
-      Arg("--maxTasks NUM", "Limit the parallelism of TaPaSCo to the given number." ~ "" +
+      Arg("--maxTasks NUM", "Limit the parallelism of TaPaSCo to the given number." ~
         "This includes the main thread, so at most NUM-1 tasks are started in addition to the main thread."))
 
   private def composition() = Section("Composition Syntax",
