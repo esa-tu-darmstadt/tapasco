@@ -70,6 +70,15 @@ final object FileAssetManager extends Publisher {
       _logger.error("FATAL: TAPASCO_HOME environment variable is not set")
       throw e
   }
+
+  lazy val TAPASCO_WORK_DIR = try {
+    Paths.get(sys.env("TAPASCO_WORK_DIR")).toAbsolutePath().normalize
+  }
+  catch {
+    case e: NoSuchElementException =>
+      _logger.error("FATAL: TAPASCO_WORK_DIR environment variable is not set")
+      throw e
+  }
   /* @} */
 
   def apply(cfg: Configuration): Unit = {

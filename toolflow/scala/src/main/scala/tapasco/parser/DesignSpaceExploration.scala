@@ -40,7 +40,7 @@ private object DesignSpaceExplorationParser {
     initialFrequency = optfreq getOrElse 100.0,
     dimensions = dims,
     heuristic = Heuristics.ThroughputHeuristic,
-    batchSize = Runtime.getRuntime().availableProcessors()
+    batchSize = None
   ))
   }
 
@@ -66,7 +66,7 @@ private object DesignSpaceExplorationParser {
       case ("Architectures", as: Seq[String@unchecked]) => _.copy(_architectures = Some(as))
       case ("Platforms", as: Seq[String@unchecked]) => _.copy(_platforms = Some(as))
       case ("Heuristic", h: String) => _.copy(heuristic = Heuristics(h))
-      case ("BatchSize", i: Int) => _.copy(batchSize = i)
+      case ("BatchSize", i: Int) => _.copy(batchSize = Some(i))
       case ("BasePath", p: Path) => _.copy(basePath = Some(p))
       case ("Features", fs: Seq[Feature@unchecked]) => _.copy(features = Some(fs))
       case ("DebugMode", m: String) => _.copy(debugMode = Some(m))

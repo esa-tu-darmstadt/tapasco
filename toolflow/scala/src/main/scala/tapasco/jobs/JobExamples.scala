@@ -51,7 +51,7 @@ object JobExamples {
     123.0,
     DesignSpace.Dimensions(true, true, false),
     Heuristics.ThroughputHeuristic,
-    16,
+    Some(16),
     Some(Paths.get("nonstandard/base/path")),
     Some(Seq("axi4mm")),
     Some(Seq("pynq", "vc709")),

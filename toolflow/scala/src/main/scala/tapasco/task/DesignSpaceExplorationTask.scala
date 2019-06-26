@@ -59,7 +59,7 @@ private class DesignSpaceExplorationTask(
   private[this] var _result: Option[(DesignSpace.Element, Composer.Result)] = None
   private[this] val _bp = basePath map (p => Paths.get(p).toAbsolutePath) getOrElse {
     val shortDate = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(java.time.LocalDateTime.now())
-    val dsepath = FileAssetManager.TAPASCO_HOME.resolve(
+    val dsepath = FileAssetManager.TAPASCO_WORK_DIR.resolve(
       "DSE_%s".format(shortDate).replace(" ", "_").replace("/", "-").replace(":", "-")
     ).normalize()
     java.nio.file.Files.createDirectories(dsepath.resolve("bd"))
