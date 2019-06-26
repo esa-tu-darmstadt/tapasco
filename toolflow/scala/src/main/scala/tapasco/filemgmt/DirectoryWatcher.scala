@@ -163,7 +163,7 @@ private class DefaultDirectoryWatcher(val paths: Set[Path]) extends DirectoryWat
     * Waits for WatchService events in blocking mode, publishes corresponding events.
     **/
   private def startWatchThread(): Boolean = {
-    val started = _watchThread.weakCompareAndSet(None, {
+    val started = _watchThread.compareAndSet(None, {
       _logger.trace("starting watchkey thread for {} ...", paths)
       Some(new Thread(new WatchThread))
     })
