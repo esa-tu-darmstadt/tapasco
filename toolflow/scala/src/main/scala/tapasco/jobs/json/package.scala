@@ -141,7 +141,7 @@ package object json {
   private val dseJobReads: Reads[Job] = (
     (JsPath \ "Job").read[String](verifying[String](_.toLowerCase equals "designspaceexploration")) ~>
       (JsPath \ "Initial Composition").read[Composition] ~
-      (JsPath \ "Initial Frequency").readNullable[Heuristics.Frequency].map(_ getOrElse 100.0) ~
+      (JsPath \ "Initial Frequency").readNullable[Heuristics.Frequency] ~
       (JsPath \ "Dimensions").read[DesignSpace.Dimensions] ~
       (JsPath \ "Heuristic").read[Heuristics.Heuristic] ~
       (JsPath \ "Batch Size").readNullable[Int](verifying[Int](_ > 0)) ~
@@ -156,7 +156,7 @@ package object json {
   implicit val dseJobWrites: Writes[DesignSpaceExplorationJob] = (
     (JsPath \ "Job").write[String] ~
       (JsPath \ "Initial Composition").write[Composition] ~
-      (JsPath \ "Initial Frequency").write[Heuristics.Frequency] ~
+      (JsPath \ "Initial Frequency").writeNullable[Heuristics.Frequency] ~
       (JsPath \ "Dimensions").write[DesignSpace.Dimensions] ~
       (JsPath \ "Heuristic").write[Heuristics.Heuristic] ~
       (JsPath \ "Batch Size").writeNullable[Int] ~

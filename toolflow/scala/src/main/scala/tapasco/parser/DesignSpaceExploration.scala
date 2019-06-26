@@ -37,7 +37,7 @@ private object DesignSpaceExplorationParser {
       IgnoreCase("in") ~ ws ~/ dimensions ~/ ws ~ options ~ ws
     ) map { case (_, comp, optfreq, dims, optf) => optf(DesignSpaceExplorationJob(
     initialComposition = comp,
-    initialFrequency = optfreq getOrElse 100.0,
+    initialFrequency = optfreq,
     dimensions = dims,
     heuristic = Heuristics.ThroughputHeuristic,
     batchSize = None

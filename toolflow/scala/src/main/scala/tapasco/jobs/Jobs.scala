@@ -145,7 +145,7 @@ final case class CoreStatisticsJob(
   **/
 final case class DesignSpaceExplorationJob(
                                             initialComposition: Composition,
-                                            initialFrequency: Heuristics.Frequency,
+                                            initialFrequency: Option[Heuristics.Frequency],
                                             dimensions: DesignSpace.Dimensions,
                                             heuristic: Heuristics.Heuristic,
                                             batchSize: Option[Int],

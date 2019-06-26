@@ -48,7 +48,7 @@ object JobExamples {
     Some(Seq("axi4mm")),
     Some(Seq("vc709", "zc706")))
   val dseJob = DesignSpaceExplorationJob(composition,
-    123.0,
+    Some(123),
     DesignSpace.Dimensions(true, true, false),
     Heuristics.ThroughputHeuristic,
     Some(16),

@@ -230,7 +230,7 @@ package object json {
     (JsPath \ "Kind").write[String] ~
       (JsPath \ "Initial Composition").write[Composition] ~
       (JsPath \ "Target").write[TargetDesc] ~
-      (JsPath \ "Initial Frequency").write[Heuristics.Frequency] ~
+      (JsPath \ "Initial Frequency").writeNullable[Heuristics.Frequency] ~
       (JsPath \ "Dimensions").write[DesignSpace.Dimensions] ~
       (JsPath \ "BatchSize").write[Int] ~
       (JsPath \ "Configuration").write[Configuration] ~
@@ -260,7 +260,7 @@ package object json {
     (JsPath \ "Kind").write[String] ~
       (JsPath \ "InitialComposition").write[Composition] ~
       (JsPath \ "Target").write[TargetDesc] ~
-      (JsPath \ "Initial Frequency").write[Heuristics.Frequency] ~
+      (JsPath \ "Initial Frequency").writeNullable[Heuristics.Frequency] ~
       (JsPath \ "Dimensions").write[DesignSpace.Dimensions] ~
       (JsPath \ "BatchSize").write[Int] ~
       (JsPath \ "Configuration").write[Configuration] ~
