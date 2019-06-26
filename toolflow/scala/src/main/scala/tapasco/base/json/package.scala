@@ -27,6 +27,7 @@ import play.api.libs.json.Reads._
 import play.api.libs.json.Writes._
 import play.api.libs.json._
 import tapasco.PLATFORM_NUM_SLOTS
+import tapasco.filemgmt.BasePathManager
 import tapasco.jobs.Job
 import tapasco.jobs.json._
 import tapasco.json._
@@ -376,11 +377,11 @@ package object json {
   /* @{ Configuration */
   implicit val configurationReads: Reads[Configuration] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
-      (JsPath \ "ArchDir").readNullable[Path].map(_ getOrElse Paths.get("arch")) ~
-      (JsPath \ "PlatformDir").readNullable[Path].map(_ getOrElse Paths.get("platform")) ~
-      (JsPath \ "KernelDir").readNullable[Path].map(_ getOrElse Paths.get("kernel")) ~
-      (JsPath \ "CoreDir").readNullable[Path].map(_ getOrElse Paths.get("core")) ~
-      (JsPath \ "CompositionDir").readNullable[Path].map(_ getOrElse Paths.get("bd")) ~
+      (JsPath \ "ArchDir").readNullable[Path].map(_ getOrElse BasePathManager.DEFAULT_DIR_ARCHS) ~
+      (JsPath \ "PlatformDir").readNullable[Path].map(_ getOrElse BasePathManager.DEFAULT_DIR_PLATFORMS) ~
+      (JsPath \ "KernelDir").readNullable[Path].map(_ getOrElse BasePathManager.DEFAULT_DIR_KERNELS) ~
+      (JsPath \ "CoreDir").readNullable[Path].map(_ getOrElse BasePathManager.DEFAULT_DIR_CORES) ~
+      (JsPath \ "CompositionDir").readNullable[Path].map(_ getOrElse BasePathManager.DEFAULT_DIR_COMPOSITIONS) ~
       (JsPath \ "LogFile").readNullable[Path] ~
       (JsPath \ "Slurm").readNullable[Boolean].map(_ getOrElse false) ~
       (JsPath \ "Parallel").readNullable[Boolean].map(_ getOrElse false) ~
