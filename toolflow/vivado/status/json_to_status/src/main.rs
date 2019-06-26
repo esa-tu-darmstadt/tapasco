@@ -217,7 +217,7 @@ fn run() -> Result<()> {
 
     let arch_base = from_hex_str(&json.BaseAddresses.Architecture.Base)?;
 
-    let platform_base = 0; //from_hex_str(&json.BaseAddresses.Platform[0].Address)?;
+    let platform_base = from_hex_str(&json.BaseAddresses.Platform.Base)?;
 
     info!(
         "Architecture start: 0x{:X}, Platform start: 0x{:X}",
