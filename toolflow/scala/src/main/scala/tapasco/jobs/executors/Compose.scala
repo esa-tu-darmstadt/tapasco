@@ -82,7 +82,7 @@ private object Compose extends Executor[ComposeJob] {
         target = t,
         features = job.features,
         debugMode = job.debugMode,
-        effortLevel = job.effortLevel.get,
+        effortLevel = job.effortLevel.getOrElse("normal"),
         onComplete = _ => signal.release(),
         deleteOnFail = job.deleteProjects
       )

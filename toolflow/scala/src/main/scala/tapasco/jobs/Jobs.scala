@@ -74,7 +74,7 @@ final case class ComposeJob(
                              private val _platforms: Option[Seq[String]] = None,
                              features: Option[Seq[Feature]] = None,
                              debugMode: Option[String] = None,
-                             effortLevel: Option[String] = Some("normal"),
+                             effortLevel: Option[String] = None,
                              deleteProjects: Option[Boolean] = None) extends Job("compose") {
   /** Returns the selected composer tool implementation. */
   lazy val implementation: Composer.Implementation = Composer.Implementation(_implementation)
