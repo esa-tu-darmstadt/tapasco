@@ -64,8 +64,8 @@ namespace eval platform {
       CONFIG.pf0_msi_enabled {false} \
       CONFIG.pf0_msix_enabled {true} \
       CONFIG.pf0_msix_cap_table_size {83} \
-      CONFIG.pf0_msix_cap_table_offset {500000} \
-      CONFIG.pf0_msix_cap_pba_offset {508000} \
+      CONFIG.pf0_msix_cap_table_offset {20000} \
+      CONFIG.pf0_msix_cap_pba_offset {28000} \
       CONFIG.comp_timeout {50ms} \
       CONFIG.pf0_interrupt_pin {NONE} \
       CONFIG.c_s_axi_supports_narrow_burst {false} \

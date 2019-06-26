@@ -474,8 +474,7 @@ namespace eval ::tapasco::ip {
     foreach {pc_name pc_base} [::platform::addressmap::get_platform_component_bases] {
       puts "$pc_name, $pc_base"
       set name $pc_name
-      set base $pc_base
-      if {$base >= [::platform::get_user_offset]} { set base [expr "$pc_base - [::platform::get_user_offset]"] }
+      set base [expr "$pc_base - [::platform::get_platform_base_address]"]
       lappend pc_bases [json::write object "Name" [json::write string $pc_name] "Address" [json::write string [format "0x%08x" $base]]]
     }
     puts "  finished address map, composing JSON ..."
@@ -501,7 +500,8 @@ namespace eval ::tapasco::ip {
       "BaseAddresses" [json::write object \
         "Architecture" [json::write object "Base" [json::write string [format "0x%08x" [::platform::get_pe_base_address]]] \
                                            "Offsets" [json::write array {*}$pe_bases]] \
-        "Platform" [json::write array {*}$pc_bases] \
+        "Platform" [json::write object "Base" [json::write string [format "0x%08x" [::platform::get_platform_base_address]]] \
+                                       "Components" [json::write array {*}$pc_bases]] \
       ] \
     ]
   }

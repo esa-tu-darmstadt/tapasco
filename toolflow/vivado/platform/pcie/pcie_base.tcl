@@ -53,6 +53,10 @@
     return 1
   }
 
+  proc get_platform_base_address {} {
+    return 0
+  }
+
   proc get_address_map {{pe_base ""}} {
     set max32 [expr "1 << 32"]
     set max64 [expr "1 << 64"]
@@ -66,10 +70,10 @@
     puts "Computing addresses for masters ..."
     foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
       switch -glob [get_property NAME $m] {
-        "M_DMA"     { foreach {base stride range comp} [list 0x00300000 0x10000 0      "PLATFORM_COMPONENT_DMA0"] {} }
-        "M_INTC"    { foreach {base stride range comp} [list 0x00500000 0x10000 0      "PLATFORM_COMPONENT_INTC0"] {} }
+        "M_DMA"     { foreach {base stride range comp} [list 0x00010000 0x10000 0      "PLATFORM_COMPONENT_DMA0"] {} }
+        "M_INTC"    { foreach {base stride range comp} [list 0x00020000 0x10000 0      "PLATFORM_COMPONENT_INTC0"] {} }
         "M_MSIX"    { foreach {base stride range comp} [list 0          0       $max64 "PLATFORM_COMPONENT_MSIX0"] {} }
-        "M_TAPASCO" { foreach {base stride range comp} [list 0x02800000 0       0      "PLATFORM_COMPONENT_STATUS"] {} }
+        "M_TAPASCO" { foreach {base stride range comp} [list 0x00000000 0x10000 0      "PLATFORM_COMPONENT_STATUS"] {} }
         "M_HOST"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_MEM_0"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_ARCH"    { set base "skip" }

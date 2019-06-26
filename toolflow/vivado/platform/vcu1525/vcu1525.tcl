@@ -97,9 +97,9 @@ namespace eval platform {
       CONFIG.coreclk_freq {500} \
       CONFIG.plltype {QPLL1} \
       CONFIG.pf0_msix_cap_table_size {83} \
-      CONFIG.pf0_msix_cap_table_offset {500000} \
+      CONFIG.pf0_msix_cap_table_offset {20000} \
       CONFIG.pf0_msix_cap_table_bir {BAR_1:0} \
-      CONFIG.pf0_msix_cap_pba_offset {508000} \
+      CONFIG.pf0_msix_cap_pba_offset {28000} \
       CONFIG.pf0_msix_cap_pba_bir {BAR_1:0} \
       CONFIG.bar_indicator {BAR_1:0} \
       CONFIG.bar0_indicator {0}

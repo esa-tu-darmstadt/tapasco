@@ -58,6 +58,13 @@ struct Component {
 
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug)]
+struct ComponentAddresses {
+    Base: String,
+    Components: Vec<Component>,
+}
+
+#[allow(non_snake_case)]
+#[derive(Deserialize, Debug)]
 struct PEAddresses {
     Base: String,
     Offsets: Vec<String>,
@@ -67,7 +74,7 @@ struct PEAddresses {
 #[derive(Deserialize, Debug)]
 struct BaseAddresses {
     Architecture: PEAddresses,
-    Platform: Vec<Component>,
+    Platform: ComponentAddresses,
 }
 
 #[allow(non_snake_case)]
@@ -265,6 +272,7 @@ fn run() -> Result<()> {
     let platforms: Vec<_> = json
         .BaseAddresses
         .Platform
+        .Components
         .iter()
         .map(|x| tapasco::PlatformArgs {
             name: Some(builder.create_string(&x.Name)),
