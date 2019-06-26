@@ -9,6 +9,7 @@ extern crate hex;
 extern crate serde;
 extern crate serde_json;
 
+use prost::Message;
 use std::u64;
 
 use common_failures::prelude::*;
@@ -23,8 +24,9 @@ use std::io::BufReader;
 
 use clap::{App, AppSettings, Arg};
 
-mod status_core_generated;
-pub use status_core_generated::*;
+pub mod status {
+    include!(concat!(env!("OUT_DIR"), "/tapasco.status.rs"));
+}
 
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug)]
@@ -180,7 +182,7 @@ fn write_mem_file(filename: &Path, data: &[u8]) -> Result<()> {
 fn run() -> Result<()> {
     env_logger::init();
 
-    let matches = App::new("libplatform_tests")
+    let matches = App::new("json_to_status")
         .setting(AppSettings::ArgRequiredElseHelp)
         .version("0.1")
         .about("Converts a JSON file describing a TaPaSCo Design into a flatbuffer binary format readable by Vivado as MEM file.")
@@ -196,6 +198,7 @@ fn run() -> Result<()> {
                 .takes_value(true)
                 .required(true),
         )
+        .arg(Arg::with_name("binary").long("--binary").short("-b").help("Output binary representation of ProtoBuf as well."))
         .get_matches();
 
     let input_file_name = matches
@@ -224,112 +227,84 @@ fn run() -> Result<()> {
         arch_base, platform_base
     );
 
-    let mut builder = flatbuffers::FlatBufferBuilder::new();
-
-    let mut pes: Vec<tapasco::PEArgs> = Vec::new();
+    let mut pes: Vec<status::Pe> = Vec::new();
     for pe in json.Composition {
         let addr = from_hex_str(&json.BaseAddresses.Architecture.Offsets[pe.SlotId as usize])?;
         if pe.Type == "Memory" {
             let last = pes
                 .last_mut()
                 .ok_or_else(|| JSONToStatusError::MemoryWithoutPE)?;
-            last.has_local_memory = true;
             last.local_memory = addr
         } else {
-            pes.push(tapasco::PEArgs {
-                name: Some(builder.create_string("UNNAMED KERNEL")),
+            pes.push(status::Pe {
+                name: "UNNAMED KERNEL".to_string(),
                 id: pe.Kernel as u32,
                 offset: addr,
-                has_local_memory: false,
                 local_memory: 0,
             });
         }
     }
 
-    let pes_built: Vec<_> = pes
-        .iter()
-        .map(|x| tapasco::PE::create(&mut builder, &x))
-        .collect();
-
-    let pes_build_done = builder.create_vector(&pes_built);
-
     let clocks: Vec<_> = json
         .Clocks
         .iter()
-        .map(|x| tapasco::ClockArgs {
-            name: Some(builder.create_string(&x.Domain)),
-            frequency_mhz: x.Frequency as u16,
+        .map(|x| status::Clock {
+            name: x.Domain.clone(),
+            frequency_mhz: x.Frequency as u32,
         })
         .collect();
-
-    let clocks: Vec<_> = clocks
-        .iter()
-        .map(|x| tapasco::Clock::create(&mut builder, &x))
-        .collect();
-
-    let clocks = builder.create_vector(&clocks);
 
     let platforms: Vec<_> = json
         .BaseAddresses
         .Platform
         .Components
         .iter()
-        .map(|x| tapasco::PlatformArgs {
-            name: Some(builder.create_string(&x.Name)),
+        .map(|x| status::Platform {
+            name: x.Name.clone(),
             offset: from_hex_str(&x.Address).unwrap(),
         })
         .collect();
 
-    let platforms: Vec<_> = platforms
-        .iter()
-        .map(|x| tapasco::Platform::create(&mut builder, &x))
-        .collect();
-
-    let platforms = builder.create_vector(&platforms);
-
     let versions: Vec<_> = json
         .Versions
         .iter()
-        .map(|x| tapasco::VersionArgs {
-            software: Some(builder.create_string(&x.Software)),
-            year: x.Year as u16,
-            release: x.Release as u16,
+        .map(|x| status::Version {
+            software: x.Software.clone(),
+            year: x.Year as u32,
+            release: x.Release as u32,
         })
         .collect();
 
-    let versions: Vec<_> = versions
-        .iter()
-        .map(|x| tapasco::Version::create(&mut builder, &x))
-        .collect();
+    let status = status::Status {
+        arch_base: arch_base,
+        platform_base: platform_base,
+        timestamp: json.Timestamp,
+        pe: pes,
+        platform: platforms,
+        clocks: clocks,
+        versions: versions,
+    };
 
-    let versions = builder.create_vector(&versions);
+    let mut buf: Vec<u8> = Vec::new();
+    status.encode(&mut buf)?;
 
-    let status = tapasco::Status::create(
-        &mut builder,
-        &tapasco::StatusArgs {
-            arch_base: arch_base,
-            platform_base: platform_base,
-            timestamp: json.Timestamp,
-            pe: Some(pes_build_done),
-            platform: Some(platforms),
-            clocks: Some(clocks),
-            versions: Some(versions),
-        },
-    );
-    builder.finish(status, None);
-    info!("Generating binary flatbuffer representation.");
-    let buf = builder.finished_data();
     info!(
-        "Successfully generated binary flatbuffer representation: {} bytes",
-        buf.len()
+        "Successfully generated binary protobuf representation: {} bytes",
+        status.encoded_len()
     );
-
     let output_file_name = matches
         .value_of("OUTPUT")
         .ok_or_else(|| JSONToStatusError::MissingOutput)?;
 
+    if matches.is_present("binary") {
+        let ofn = format!("{}.bin", output_file_name);
+        let ofp = Path::new(&ofn);
+        info!("Outputting binary as well to {}", ofn);
+        fs::write(ofp, &buf).io_read_context(ofp)?;
+    }
+
     let output_path = Path::new(output_file_name);
-    write_mem_file(output_path, buf)
+    write_mem_file(output_path, &buf)
 }
 
 quick_main!(run);

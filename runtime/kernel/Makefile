@@ -20,7 +20,9 @@ CPPFLAGS+=-Werror -I$(TAPASCO_HOME_RUNTIME)/kernel \
 				  -I$(TAPASCO_HOME_RUNTIME)/kernel/tlkm \
 				  -I$(TAPASCO_HOME_RUNTIME)/kernel/user \
 				  -I$(TAPASCO_HOME_RUNTIME)/platform/include \
-				  -I$(TAPASCO_HOME_RUNTIME)/kernel/hsa
+				  -I$(TAPASCO_HOME_RUNTIME)/kernel/hsa \
+				  -I$(TAPASCO_HOME_RUNTIME)/kernel/nanopb \
+				  -DPB_SYSTEM_HEADER=\<pb_system.h\>
 
 .PHONY:	all clean
 

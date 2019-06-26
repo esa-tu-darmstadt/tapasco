@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package tapasco.status;
+
+message PE {
+    string name = 1;
+    uint32 id = 2;
+    uint64 offset = 3;
+    uint64 local_memory = 4;
+}
+
+message Platform {
+    string name = 1;
+    uint64 offset = 2;
+}
+
+message Clock {
+    string name = 1;
+    uint32 frequency_mhz = 2;
+}
+
+message Version {
+    string software = 1;
+    uint32 year = 2;
+    uint32 release = 3;
+}
+
+message Status {
+    uint64 timestamp = 1;
+    uint64 arch_base = 2;
+    uint64 platform_base = 3;
+    repeated PE pe = 4;
+    repeated Platform platform = 5;
+    repeated Clock clocks = 6;
+    repeated Version versions = 7;
+}
