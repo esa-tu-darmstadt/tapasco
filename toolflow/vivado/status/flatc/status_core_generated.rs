@@ -44,17 +44,19 @@ impl<'a> PE<'a> {
         _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
         args: &'args PEArgs<'args>) -> flatbuffers::WIPOffset<PE<'bldr>> {
       let mut builder = PEBuilder::new(_fbb);
+      builder.add_local_memory(args.local_memory);
       builder.add_offset(args.offset);
-      if let Some(x) = args.local_memory { builder.add_local_memory(x); }
       builder.add_id(args.id);
       if let Some(x) = args.name { builder.add_name(x); }
+      builder.add_has_local_memory(args.has_local_memory);
       builder.finish()
     }
 
     pub const VT_NAME: flatbuffers::VOffsetT = 4;
     pub const VT_ID: flatbuffers::VOffsetT = 6;
     pub const VT_OFFSET: flatbuffers::VOffsetT = 8;
-    pub const VT_LOCAL_MEMORY: flatbuffers::VOffsetT = 10;
+    pub const VT_HAS_LOCAL_MEMORY: flatbuffers::VOffsetT = 10;
+    pub const VT_LOCAL_MEMORY: flatbuffers::VOffsetT = 12;
 
   #[inline]
   pub fn name(&self) -> Option<&'a str> {
@@ -69,8 +71,12 @@ impl<'a> PE<'a> {
     self._tab.get::<u64>(PE::VT_OFFSET, Some(0)).unwrap()
   }
   #[inline]
-  pub fn local_memory(&self) -> Option<flatbuffers::Vector<'a, u64>> {
-    self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<'a, u64>>>(PE::VT_LOCAL_MEMORY, None)
+  pub fn has_local_memory(&self) -> bool {
+    self._tab.get::<bool>(PE::VT_HAS_LOCAL_MEMORY, Some(false)).unwrap()
+  }
+  #[inline]
+  pub fn local_memory(&self) -> u64 {
+    self._tab.get::<u64>(PE::VT_LOCAL_MEMORY, Some(0)).unwrap()
   }
 }
 
@@ -78,7 +84,8 @@ pub struct PEArgs<'a> {
     pub name: Option<flatbuffers::WIPOffset<&'a  str>>,
     pub id: u32,
     pub offset: u64,
-    pub local_memory: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a ,  u64>>>,
+    pub has_local_memory: bool,
+    pub local_memory: u64,
 }
 impl<'a> Default for PEArgs<'a> {
     #[inline]
@@ -87,7 +94,8 @@ impl<'a> Default for PEArgs<'a> {
             name: None,
             id: 0,
             offset: 0,
-            local_memory: None,
+            has_local_memory: false,
+            local_memory: 0,
         }
     }
 }
@@ -109,8 +117,12 @@ impl<'a: 'b, 'b> PEBuilder<'a, 'b> {
     self.fbb_.push_slot::<u64>(PE::VT_OFFSET, offset, 0);
   }
   #[inline]
-  pub fn add_local_memory(&mut self, local_memory: flatbuffers::WIPOffset<flatbuffers::Vector<'b , u64>>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(PE::VT_LOCAL_MEMORY, local_memory);
+  pub fn add_has_local_memory(&mut self, has_local_memory: bool) {
+    self.fbb_.push_slot::<bool>(PE::VT_HAS_LOCAL_MEMORY, has_local_memory, false);
+  }
+  #[inline]
+  pub fn add_local_memory(&mut self, local_memory: u64) {
+    self.fbb_.push_slot::<u64>(PE::VT_LOCAL_MEMORY, local_memory, 0);
   }
   #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> PEBuilder<'a, 'b> {
@@ -215,15 +227,15 @@ impl<'a: 'b, 'b> PlatformBuilder<'a, 'b> {
   }
 }
 
-pub enum ClocksOffset {}
+pub enum ClockOffset {}
 #[derive(Copy, Clone, Debug, PartialEq)]
 
-pub struct Clocks<'a> {
+pub struct Clock<'a> {
   pub _tab: flatbuffers::Table<'a>,
 }
 
-impl<'a> flatbuffers::Follow<'a> for Clocks<'a> {
-    type Inner = Clocks<'a>;
+impl<'a> flatbuffers::Follow<'a> for Clock<'a> {
+    type Inner = Clock<'a>;
     #[inline]
     fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
         Self {
@@ -232,18 +244,18 @@ impl<'a> flatbuffers::Follow<'a> for Clocks<'a> {
     }
 }
 
-impl<'a> Clocks<'a> {
+impl<'a> Clock<'a> {
     #[inline]
     pub fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
-        Clocks {
+        Clock {
             _tab: table,
         }
     }
     #[allow(unused_mut)]
     pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr>(
         _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
-        args: &'args ClocksArgs<'args>) -> flatbuffers::WIPOffset<Clocks<'bldr>> {
-      let mut builder = ClocksBuilder::new(_fbb);
+        args: &'args ClockArgs<'args>) -> flatbuffers::WIPOffset<Clock<'bldr>> {
+      let mut builder = ClockBuilder::new(_fbb);
       if let Some(x) = args.name { builder.add_name(x); }
       builder.add_frequency_mhz(args.frequency_mhz);
       builder.finish()
@@ -254,50 +266,150 @@ impl<'a> Clocks<'a> {
 
   #[inline]
   pub fn name(&self) -> Option<&'a str> {
-    self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Clocks::VT_NAME, None)
+    self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Clock::VT_NAME, None)
   }
   #[inline]
   pub fn frequency_mhz(&self) -> u16 {
-    self._tab.get::<u16>(Clocks::VT_FREQUENCY_MHZ, Some(0)).unwrap()
+    self._tab.get::<u16>(Clock::VT_FREQUENCY_MHZ, Some(0)).unwrap()
   }
 }
 
-pub struct ClocksArgs<'a> {
+pub struct ClockArgs<'a> {
     pub name: Option<flatbuffers::WIPOffset<&'a  str>>,
     pub frequency_mhz: u16,
 }
-impl<'a> Default for ClocksArgs<'a> {
+impl<'a> Default for ClockArgs<'a> {
     #[inline]
     fn default() -> Self {
-        ClocksArgs {
+        ClockArgs {
             name: None,
             frequency_mhz: 0,
         }
     }
 }
-pub struct ClocksBuilder<'a: 'b, 'b> {
+pub struct ClockBuilder<'a: 'b, 'b> {
   fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a>,
   start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
 }
-impl<'a: 'b, 'b> ClocksBuilder<'a, 'b> {
+impl<'a: 'b, 'b> ClockBuilder<'a, 'b> {
   #[inline]
   pub fn add_name(&mut self, name: flatbuffers::WIPOffset<&'b  str>) {
-    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Clocks::VT_NAME, name);
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Clock::VT_NAME, name);
   }
   #[inline]
   pub fn add_frequency_mhz(&mut self, frequency_mhz: u16) {
-    self.fbb_.push_slot::<u16>(Clocks::VT_FREQUENCY_MHZ, frequency_mhz, 0);
+    self.fbb_.push_slot::<u16>(Clock::VT_FREQUENCY_MHZ, frequency_mhz, 0);
   }
   #[inline]
-  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> ClocksBuilder<'a, 'b> {
+  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> ClockBuilder<'a, 'b> {
     let start = _fbb.start_table();
-    ClocksBuilder {
+    ClockBuilder {
       fbb_: _fbb,
       start_: start,
     }
   }
   #[inline]
-  pub fn finish(self) -> flatbuffers::WIPOffset<Clocks<'a>> {
+  pub fn finish(self) -> flatbuffers::WIPOffset<Clock<'a>> {
+    let o = self.fbb_.end_table(self.start_);
+    flatbuffers::WIPOffset::new(o.value())
+  }
+}
+
+pub enum VersionOffset {}
+#[derive(Copy, Clone, Debug, PartialEq)]
+
+pub struct Version<'a> {
+  pub _tab: flatbuffers::Table<'a>,
+}
+
+impl<'a> flatbuffers::Follow<'a> for Version<'a> {
+    type Inner = Version<'a>;
+    #[inline]
+    fn follow(buf: &'a [u8], loc: usize) -> Self::Inner {
+        Self {
+            _tab: flatbuffers::Table { buf: buf, loc: loc },
+        }
+    }
+}
+
+impl<'a> Version<'a> {
+    #[inline]
+    pub fn init_from_table(table: flatbuffers::Table<'a>) -> Self {
+        Version {
+            _tab: table,
+        }
+    }
+    #[allow(unused_mut)]
+    pub fn create<'bldr: 'args, 'args: 'mut_bldr, 'mut_bldr>(
+        _fbb: &'mut_bldr mut flatbuffers::FlatBufferBuilder<'bldr>,
+        args: &'args VersionArgs<'args>) -> flatbuffers::WIPOffset<Version<'bldr>> {
+      let mut builder = VersionBuilder::new(_fbb);
+      if let Some(x) = args.software { builder.add_software(x); }
+      builder.add_release(args.release);
+      builder.add_year(args.year);
+      builder.finish()
+    }
+
+    pub const VT_SOFTWARE: flatbuffers::VOffsetT = 4;
+    pub const VT_YEAR: flatbuffers::VOffsetT = 6;
+    pub const VT_RELEASE: flatbuffers::VOffsetT = 8;
+
+  #[inline]
+  pub fn software(&self) -> Option<&'a str> {
+    self._tab.get::<flatbuffers::ForwardsUOffset<&str>>(Version::VT_SOFTWARE, None)
+  }
+  #[inline]
+  pub fn year(&self) -> u16 {
+    self._tab.get::<u16>(Version::VT_YEAR, Some(0)).unwrap()
+  }
+  #[inline]
+  pub fn release(&self) -> u16 {
+    self._tab.get::<u16>(Version::VT_RELEASE, Some(0)).unwrap()
+  }
+}
+
+pub struct VersionArgs<'a> {
+    pub software: Option<flatbuffers::WIPOffset<&'a  str>>,
+    pub year: u16,
+    pub release: u16,
+}
+impl<'a> Default for VersionArgs<'a> {
+    #[inline]
+    fn default() -> Self {
+        VersionArgs {
+            software: None,
+            year: 0,
+            release: 0,
+        }
+    }
+}
+pub struct VersionBuilder<'a: 'b, 'b> {
+  fbb_: &'b mut flatbuffers::FlatBufferBuilder<'a>,
+  start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
+}
+impl<'a: 'b, 'b> VersionBuilder<'a, 'b> {
+  #[inline]
+  pub fn add_software(&mut self, software: flatbuffers::WIPOffset<&'b  str>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Version::VT_SOFTWARE, software);
+  }
+  #[inline]
+  pub fn add_year(&mut self, year: u16) {
+    self.fbb_.push_slot::<u16>(Version::VT_YEAR, year, 0);
+  }
+  #[inline]
+  pub fn add_release(&mut self, release: u16) {
+    self.fbb_.push_slot::<u16>(Version::VT_RELEASE, release, 0);
+  }
+  #[inline]
+  pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> VersionBuilder<'a, 'b> {
+    let start = _fbb.start_table();
+    VersionBuilder {
+      fbb_: _fbb,
+      start_: start,
+    }
+  }
+  #[inline]
+  pub fn finish(self) -> flatbuffers::WIPOffset<Version<'a>> {
     let o = self.fbb_.end_table(self.start_);
     flatbuffers::WIPOffset::new(o.value())
   }
@@ -334,18 +446,26 @@ impl<'a> Status<'a> {
       let mut builder = StatusBuilder::new(_fbb);
       builder.add_platform_base(args.platform_base);
       builder.add_arch_base(args.arch_base);
+      builder.add_timestamp(args.timestamp);
+      if let Some(x) = args.versions { builder.add_versions(x); }
       if let Some(x) = args.clocks { builder.add_clocks(x); }
       if let Some(x) = args.platform { builder.add_platform(x); }
       if let Some(x) = args.pe { builder.add_pe(x); }
       builder.finish()
     }
 
-    pub const VT_ARCH_BASE: flatbuffers::VOffsetT = 4;
-    pub const VT_PLATFORM_BASE: flatbuffers::VOffsetT = 6;
-    pub const VT_PE: flatbuffers::VOffsetT = 8;
-    pub const VT_PLATFORM: flatbuffers::VOffsetT = 10;
-    pub const VT_CLOCKS: flatbuffers::VOffsetT = 12;
+    pub const VT_TIMESTAMP: flatbuffers::VOffsetT = 4;
+    pub const VT_ARCH_BASE: flatbuffers::VOffsetT = 6;
+    pub const VT_PLATFORM_BASE: flatbuffers::VOffsetT = 8;
+    pub const VT_PE: flatbuffers::VOffsetT = 10;
+    pub const VT_PLATFORM: flatbuffers::VOffsetT = 12;
+    pub const VT_CLOCKS: flatbuffers::VOffsetT = 14;
+    pub const VT_VERSIONS: flatbuffers::VOffsetT = 16;
 
+  #[inline]
+  pub fn timestamp(&self) -> u64 {
+    self._tab.get::<u64>(Status::VT_TIMESTAMP, Some(0)).unwrap()
+  }
   #[inline]
   pub fn arch_base(&self) -> u64 {
     self._tab.get::<u64>(Status::VT_ARCH_BASE, Some(0)).unwrap()
@@ -363,27 +483,35 @@ impl<'a> Status<'a> {
     self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<flatbuffers::ForwardsUOffset<Platform<'a>>>>>(Status::VT_PLATFORM, None)
   }
   #[inline]
-  pub fn clocks(&self) -> Option<flatbuffers::Vector<flatbuffers::ForwardsUOffset<Clocks<'a>>>> {
-    self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<flatbuffers::ForwardsUOffset<Clocks<'a>>>>>(Status::VT_CLOCKS, None)
+  pub fn clocks(&self) -> Option<flatbuffers::Vector<flatbuffers::ForwardsUOffset<Clock<'a>>>> {
+    self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<flatbuffers::ForwardsUOffset<Clock<'a>>>>>(Status::VT_CLOCKS, None)
+  }
+  #[inline]
+  pub fn versions(&self) -> Option<flatbuffers::Vector<flatbuffers::ForwardsUOffset<Version<'a>>>> {
+    self._tab.get::<flatbuffers::ForwardsUOffset<flatbuffers::Vector<flatbuffers::ForwardsUOffset<Version<'a>>>>>(Status::VT_VERSIONS, None)
   }
 }
 
 pub struct StatusArgs<'a> {
+    pub timestamp: u64,
     pub arch_base: u64,
     pub platform_base: u64,
     pub pe: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a , flatbuffers::ForwardsUOffset<PE<'a >>>>>,
     pub platform: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a , flatbuffers::ForwardsUOffset<Platform<'a >>>>>,
-    pub clocks: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a , flatbuffers::ForwardsUOffset<Clocks<'a >>>>>,
+    pub clocks: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a , flatbuffers::ForwardsUOffset<Clock<'a >>>>>,
+    pub versions: Option<flatbuffers::WIPOffset<flatbuffers::Vector<'a , flatbuffers::ForwardsUOffset<Version<'a >>>>>,
 }
 impl<'a> Default for StatusArgs<'a> {
     #[inline]
     fn default() -> Self {
         StatusArgs {
+            timestamp: 0,
             arch_base: 0,
             platform_base: 0,
             pe: None,
             platform: None,
             clocks: None,
+            versions: None,
         }
     }
 }
@@ -392,6 +520,10 @@ pub struct StatusBuilder<'a: 'b, 'b> {
   start_: flatbuffers::WIPOffset<flatbuffers::TableUnfinishedWIPOffset>,
 }
 impl<'a: 'b, 'b> StatusBuilder<'a, 'b> {
+  #[inline]
+  pub fn add_timestamp(&mut self, timestamp: u64) {
+    self.fbb_.push_slot::<u64>(Status::VT_TIMESTAMP, timestamp, 0);
+  }
   #[inline]
   pub fn add_arch_base(&mut self, arch_base: u64) {
     self.fbb_.push_slot::<u64>(Status::VT_ARCH_BASE, arch_base, 0);
@@ -409,8 +541,12 @@ impl<'a: 'b, 'b> StatusBuilder<'a, 'b> {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Status::VT_PLATFORM, platform);
   }
   #[inline]
-  pub fn add_clocks(&mut self, clocks: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Clocks<'b >>>>) {
+  pub fn add_clocks(&mut self, clocks: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Clock<'b >>>>) {
     self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Status::VT_CLOCKS, clocks);
+  }
+  #[inline]
+  pub fn add_versions(&mut self, versions: flatbuffers::WIPOffset<flatbuffers::Vector<'b , flatbuffers::ForwardsUOffset<Version<'b >>>>) {
+    self.fbb_.push_slot_always::<flatbuffers::WIPOffset<_>>(Status::VT_VERSIONS, versions);
   }
   #[inline]
   pub fn new(_fbb: &'b mut flatbuffers::FlatBufferBuilder<'a>) -> StatusBuilder<'a, 'b> {

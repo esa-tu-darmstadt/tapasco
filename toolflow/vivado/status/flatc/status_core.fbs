@@ -4,7 +4,8 @@ table PE {
     name: string;
     id: uint32;
     offset: uint64;
-    local_memory: [uint64];
+    has_local_memory: bool;
+    local_memory: uint64;
 }
 
 table Platform {
@@ -12,15 +13,23 @@ table Platform {
     offset: uint64;
 }
 
-table Clocks {
+table Clock {
     name: string;
     frequency_mhz: uint16;
 }
 
+table Version {
+    software: string;
+    year: uint16;
+    release: uint16;
+}
+
 table Status {
+    timestamp: uint64;
     arch_base: uint64;
     platform_base: uint64;
     pe: [PE];
     platform: [Platform];
-    clocks: [Clocks];
+    clocks: [Clock];
+    versions: [Version];
 }

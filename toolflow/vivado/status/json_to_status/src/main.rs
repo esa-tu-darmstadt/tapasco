@@ -104,6 +104,9 @@ pub enum JSONToStatusError {
         display = "Missing output argument. This error should've been caught be the CLI parser."
     )]
     MissingOutput,
+
+    #[fail(display = "Found local memory but no preceeding PE.")]
+    MemoryWithoutPE,
 }
 
 impl From<std::num::ParseIntError> for JSONToStatusError {
@@ -215,20 +218,103 @@ fn run() -> Result<()> {
     );
 
     let mut builder = flatbuffers::FlatBufferBuilder::new();
+
+    let mut pes: Vec<tapasco::PEArgs> = Vec::new();
+    for pe in json.Composition {
+        let addr = from_hex_str(&json.BaseAddresses.Architecture.Offsets[pe.SlotId as usize])?;
+        if pe.Type == "Memory" {
+            let last = pes
+                .last_mut()
+                .ok_or_else(|| JSONToStatusError::MemoryWithoutPE)?;
+            last.has_local_memory = true;
+            last.local_memory = addr
+        } else {
+            pes.push(tapasco::PEArgs {
+                name: Some(builder.create_string("UNNAMED KERNEL")),
+                id: pe.Kernel as u32,
+                offset: addr,
+                has_local_memory: false,
+                local_memory: 0,
+            });
+        }
+    }
+
+    let pes_built: Vec<_> = pes
+        .iter()
+        .map(|x| tapasco::PE::create(&mut builder, &x))
+        .collect();
+
+    let pes_build_done = builder.create_vector(&pes_built);
+
+    let clocks: Vec<_> = json
+        .Clocks
+        .iter()
+        .map(|x| tapasco::ClockArgs {
+            name: Some(builder.create_string(&x.Domain)),
+            frequency_mhz: x.Frequency as u16,
+        })
+        .collect();
+
+    let clocks: Vec<_> = clocks
+        .iter()
+        .map(|x| tapasco::Clock::create(&mut builder, &x))
+        .collect();
+
+    let clocks = builder.create_vector(&clocks);
+
+    let platforms: Vec<_> = json
+        .BaseAddresses
+        .Platform
+        .iter()
+        .map(|x| tapasco::PlatformArgs {
+            name: Some(builder.create_string(&x.Name)),
+            offset: from_hex_str(&x.Address).unwrap(),
+        })
+        .collect();
+
+    let platforms: Vec<_> = platforms
+        .iter()
+        .map(|x| tapasco::Platform::create(&mut builder, &x))
+        .collect();
+
+    let platforms = builder.create_vector(&platforms);
+
+    let versions: Vec<_> = json
+        .Versions
+        .iter()
+        .map(|x| tapasco::VersionArgs {
+            software: Some(builder.create_string(&x.Software)),
+            year: x.Year as u16,
+            release: x.Release as u16,
+        })
+        .collect();
+
+    let versions: Vec<_> = versions
+        .iter()
+        .map(|x| tapasco::Version::create(&mut builder, &x))
+        .collect();
+
+    let versions = builder.create_vector(&versions);
+
     let status = tapasco::Status::create(
         &mut builder,
         &tapasco::StatusArgs {
             arch_base: arch_base,
             platform_base: platform_base,
-            pe: None,
-            platform: None,
-            clocks: None,
+            timestamp: json.Timestamp,
+            pe: Some(pes_build_done),
+            platform: Some(platforms),
+            clocks: Some(clocks),
+            versions: Some(versions),
         },
     );
     builder.finish(status, None);
     info!("Generating binary flatbuffer representation.");
     let buf = builder.finished_data();
-    info!("Successfully generated binary flatbuffer representation.");
+    info!(
+        "Successfully generated binary flatbuffer representation: {} bytes",
+        buf.len()
+    );
 
     let output_file_name = matches
         .value_of("OUTPUT")
