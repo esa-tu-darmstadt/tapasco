@@ -144,7 +144,7 @@ package object json {
       (JsPath \ "Initial Frequency").readNullable[Heuristics.Frequency].map(_ getOrElse 100.0) ~
       (JsPath \ "Dimensions").read[DesignSpace.Dimensions] ~
       (JsPath \ "Heuristic").read[Heuristics.Heuristic] ~
-      (JsPath \ "Batch Size").read[Int](verifying[Int](_ > 0)) ~
+      (JsPath \ "Batch Size").readNullable[Int](verifying[Int](_ > 0)) ~
       (JsPath \ "Output Path").readNullable[Path] ~
       (JsPath \ "Architectures").readNullable[Seq[String]] ~
       (JsPath \ "Platforms").readNullable[Seq[String]] ~
@@ -159,7 +159,7 @@ package object json {
       (JsPath \ "Initial Frequency").write[Heuristics.Frequency] ~
       (JsPath \ "Dimensions").write[DesignSpace.Dimensions] ~
       (JsPath \ "Heuristic").write[Heuristics.Heuristic] ~
-      (JsPath \ "Batch Size").write[Int] ~
+      (JsPath \ "Batch Size").writeNullable[Int] ~
       (JsPath \ "Output Path").writeNullable[Path] ~
       (JsPath \ "Architectures").writeNullable[Seq[String]] ~
       (JsPath \ "Platforms").writeNullable[Seq[String]] ~

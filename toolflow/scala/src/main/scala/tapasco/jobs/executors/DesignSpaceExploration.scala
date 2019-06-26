@@ -108,7 +108,7 @@ private object DesignSpaceExploration extends Executor[DesignSpaceExplorationJob
       job.dimensions,
       job.initialFrequency,
       job.heuristic,
-      job.batchSize,
+      job.batchSize.getOrElse(cfg.maxTasks.getOrElse(Runtime.getRuntime.availableProcessors())-1),
       job.basePath map (_.toString),
       job.features,
       None, // logfile

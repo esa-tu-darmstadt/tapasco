@@ -148,7 +148,7 @@ final case class DesignSpaceExplorationJob(
                                             initialFrequency: Heuristics.Frequency,
                                             dimensions: DesignSpace.Dimensions,
                                             heuristic: Heuristics.Heuristic,
-                                            batchSize: Int,
+                                            batchSize: Option[Int],
                                             basePath: Option[Path] = None,
                                             private val _architectures: Option[Seq[String]] = None,
                                             private val _platforms: Option[Seq[String]] = None,
