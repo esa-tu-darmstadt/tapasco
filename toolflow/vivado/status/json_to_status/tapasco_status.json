@@ -1,0 +1,59 @@
+{
+    "Composition"          : [{
+        "Type"   : "Kernel",
+        "SlotId" : 0,
+        "Kernel" : 11
+    },{
+        "Type"   : "Kernel",
+        "SlotId" : 1,
+        "Kernel" : 11
+    },{
+        "Type"   : "Kernel",
+        "SlotId" : 2,
+        "Kernel" : 14
+    },{
+        "Type"   : "Kernel",
+        "SlotId" : 3,
+        "Kernel" : 14
+    }],
+    "Timestamp"            : 1561507200,
+    "InterruptControllers" : 1,
+    "Versions"             : [{
+        "Software" : "Vivado",
+        "Year"     : 2019,
+        "Release"  : 1
+    },{
+        "Software" : "TaPaSCo",
+        "Year"     : 2019,
+        "Release"  : 6
+    }],
+    "Clocks"               : [{
+        "Domain"    : "Host",
+        "Frequency" : 250
+    },{
+        "Domain"    : "Design",
+        "Frequency" : 200
+    },{
+        "Domain"    : "Memory",
+        "Frequency" : 200
+    }],
+    "Capabilities"         : {
+        "Capabilities 0" : 12
+    },
+    "BaseAddresses"        : {
+        "Architecture" : {
+            "Base"    : "0x02000000",
+            "Offsets" : ["0x00000000","0x00010000","0x00020000","0x00030000"]
+        },
+        "Platform"     : [{
+            "Name"    : "PLATFORM_COMPONENT_STATUS",
+            "Address" : "0x02800000"
+        },{
+            "Name"    : "PLATFORM_COMPONENT_INTC0",
+            "Address" : "0x00500000"
+        },{
+            "Name"    : "PLATFORM_COMPONENT_DMA0",
+            "Address" : "0x00300000"
+        }]
+    }
+}

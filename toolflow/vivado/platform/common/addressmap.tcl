@@ -74,8 +74,12 @@ namespace eval addressmap {
   }
 
   proc get_platform_component_bases {} {
+    set ret [list]
     foreach c [get_known_platform_components] {
-      lappend ret [get_platform_component $c]
+      set comp_addr [get_platform_component $c]
+      if {$comp_addr != "0"} {
+        lappend ret $c $comp_addr
+      }
     }
     puts "Platform component bases: $ret"
     return $ret

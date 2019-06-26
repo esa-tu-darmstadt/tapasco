@@ -382,14 +382,29 @@ namespace eval ::tapasco::ip {
     return $inst
   }
 
-  # Instantiates a TaPaSCo status core.
+  # Instantiates a AXI BRAM controller used as the TaPaSCo status core.
   # @param name Name of the instance.
   # @param ids  List of kernel IDs.
   proc create_tapasco_status {name {ids {}}} {
-    set vlnv [tapasco::ip::get_vlnv "tapasco_status"]
     puts "Creating custom status core ..."
-    puts "  VLNV: $vlnv"
     puts "  IDs : $ids"
+
+    # create the IP core
+    set base [tapasco::ip::create_bram_ctrl "${name}_base"]
+    set axi [tapasco::ip::create_axi_bram_ctrl $name]
+
+    set_property -dict [list CONFIG.DATA_WIDTH {64} \
+                             CONFIG.PROTOCOL {AXI4} \
+                             CONFIG.SINGLE_PORT_BRAM {1} \
+                             CONFIG.ECC_TYPE {0}] $axi
+
+    connect_bd_intf_net [get_bd_intf_pins $base/BRAM_PORTA] [get_bd_intf_pins $axi/BRAM_PORTA]
+
+    return $axi
+  }
+
+  # Generate Infrastructure as JSON file and generate COE file as BRAM source
+  proc update_tapasco_status_base {name} {
     puts "  sourcing JSON lib ..."
     source -notrace "$::env(TAPASCO_HOME_TCL)/common/json_write.tcl"
     package require json::write
@@ -406,51 +421,44 @@ namespace eval ::tapasco::ip {
       close $f
     }
 
-    # generate core
-    set old_pwd [pwd]
-    set jar "$::env(TAPASCO_HOME_TCL)/common/ip/tapasco_status/tapasco-status.jar"
-    set cache "[get_property DIRECTORY [current_project]]/../user_ip/tapasco-status"
-    if {[catch {exec -ignorestderr java -jar $jar $cache $json_file | tee ${json_file}.log >@stdout 2>@1}]} {
+    set outfile "[get_property DIRECTORY [current_project]]/statuscore.çoe"
+    if {[catch {exec -ignorestderr json_to_status $json_file $outfile | tee ${json_file}.log >@stdout 2>@1}]} {
       puts stderr "Building TaPaSCO status core failed, see ${json_file}.log:"
       puts stderr [read [open ${json_file}.log r]]
       error "Could not build status core."
     }
-    cd $old_pwd
+    puts "Wrote COE file to ${outfile}"
 
-    # parse log and add custom IP path to IP_REPO_PATHS
-    set log [read [open ${json_file}.log r]]
-    set ip_path [regsub {.*Finished, IP Core is located in ([^ \n\t]*).*} $log {\1}]
-    puts "  Path to custom IP: $ip_path"
-    update_ip_catalog -rebuild
-
-    puts "  done!"
-    # create the IP core
-    return [create_bd_cell -type ip -vlnv $vlnv $name]
+    set_property -dict [list CONFIG.Memory_Type {Single_Port_ROM} \
+                         CONFIG.Load_Init_File {true}         \
+                         CONFIG.Coe_File $outfile] [get_bd_cells -filter "NAME == ${name}_base"]
   }
 
   # Generate JSON configuration for the status core.
   proc make_status_config_json {} {
     platform::addressmap::reset
-    puts "  getting adddress map ..."
+    puts "  getting address map ..."
     set addr [platform::get_address_map [platform::get_pe_base_address]]
     set slots [list]
     set slot_id 0
     puts "  address map = $addr"
     foreach intf [dict keys $addr] {
-      puts "  processing $intf: [dict get $addr $intf kind] ..."
-      switch [dict get $addr $intf "kind"] {
-        "register" {
-          set kind [format "%d" [regsub {.*target_ip_([0-9][0-9]).*} $intf {\1}]]
-          set kid [dict get [::tapasco::get_composition] $kind id]
-          lappend slots [json::write object "Type" [json::write string "Kernel"] "SlotId" $slot_id "Kernel" $kid]
-          incr slot_id
+      if {[string match "/arch/*" "$intf"] == 1} {
+        puts "  processing $intf: [dict get $addr $intf kind] ..."
+        switch [dict get $addr $intf "kind"] {
+          "register" {
+            set kind [format "%d" [regsub {.*target_ip_([0-9][0-9]).*} $intf {\1}]]
+            set kid [dict get [::tapasco::get_composition] $kind id]
+            lappend slots [json::write object "Type" [json::write string "Kernel"] "SlotId" $slot_id "Kernel" $kid]
+            incr slot_id
+          }
+          "memory" {
+            lappend slots [json::write object "Type" [json::write string "Memory"] "SlotId" $slot_id "Bytes" [format "%d" [dict get $addr $intf "range"]]]
+            incr slot_id
+          }
+          "master" {}
+          default { error "invalid kind: [dict get $addr $intf kind]" }
         }
-        "memory" {
-          lappend slots [json::write object "Type" [json::write string "Memory"] "SlotId" $slot_id "Bytes" [format "%d" [dict get $addr $intf "range"]]]
-          incr slot_id
-        }
-        "master" {}
-        default { error "invalid kind: [dict get $addr $intf kind]" }
       }
     }
     puts "  finished composition map, composing JSON ..."
@@ -458,19 +466,17 @@ namespace eval ::tapasco::ip {
     # get PE base addresses
     set pe_bases [list]
     foreach pe_base [::platform::addressmap::get_processing_element_bases] {
-      lappend pe_bases [json::write object "Address" \
-        [json::write string [format "0x%08x" [expr "$pe_base - [::platform::get_user_offset]"]]]
-      ]
+      lappend pe_bases [json::write string [format "0x%08x" [expr "$pe_base - [::platform::get_pe_base_address]"]]]
     }
 
     # get platform component base addresses
     set pc_bases [list]
-    foreach pc_base [::platform::addressmap::get_platform_component_bases] {
+    foreach {pc_name pc_base} [::platform::addressmap::get_platform_component_bases] {
+      puts "$pc_name, $pc_base"
+      set name $pc_name
       set base $pc_base
       if {$base >= [::platform::get_user_offset]} { set base [expr "$pc_base - [::platform::get_user_offset]"] }
-      lappend pc_bases [json::write object "Address" \
-        [json::write string [format "0x%08x" $base]] \
-      ]
+      lappend pc_bases [json::write object "Name" [json::write string $pc_name] "Address" [json::write string [format "0x%08x" $base]]]
     }
     puts "  finished address map, composing JSON ..."
 
@@ -481,7 +487,7 @@ namespace eval ::tapasco::ip {
     return [json::write object \
       "Composition" [json::write array {*}$slots] \
       "Timestamp" [expr "$ts - ($ts \% 86400)"] \
-      "Interrupt Controllers" $no_intc \
+      "InterruptControllers" $no_intc \
       "Versions" [json::write array \
         [json::write object "Software" [json::write string "Vivado"] "Year" [regsub $regex [version -short] {\1}] "Release" [regsub $regex [version -short] {\2}]] \
         [json::write object "Software" [json::write string "TaPaSCo"] "Year" [regsub $regex [::tapasco::get_tapasco_version] {\1}] "Release" [regsub $regex [::tapasco::get_tapasco_version] {\2}]] \
@@ -493,7 +499,8 @@ namespace eval ::tapasco::ip {
       ] \
       "Capabilities" [json::write object "Capabilities 0" [::tapasco::get_capabilities_flags]] \
       "BaseAddresses" [json::write object \
-        "Architecture" [json::write array {*}$pe_bases] \
+        "Architecture" [json::write object "Base" [json::write string [format "0x%08x" [::platform::get_pe_base_address]]] \
+                                           "Offsets" [json::write array {*}$pe_bases]] \
         "Platform" [json::write array {*}$pc_bases] \
       ] \
     ]

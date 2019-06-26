@@ -51,15 +51,23 @@ struct Clocks {
 
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug)]
-struct Address {
+struct Component {
+    Name: String,
     Address: String,
 }
 
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug)]
+struct PEAddresses {
+    Base: String,
+    Offsets: Vec<String>,
+}
+
+#[allow(non_snake_case)]
+#[derive(Deserialize, Debug)]
 struct BaseAddresses {
-    Architecture: Vec<Address>,
-    Platform: Vec<Address>,
+    Architecture: PEAddresses,
+    Platform: Vec<Component>,
 }
 
 #[allow(non_snake_case)]
@@ -74,14 +82,14 @@ struct Design {
 
 #[derive(Debug, Fail)]
 pub enum JSONToStatusError {
-    #[fail(display = "Invalid json format for input file {}: {}", filename, err)]
+    #[fail(display = "Invalid json format for input file {}", filename)]
     JSONFormatError {
         #[fail(cause)]
         err: serde_json::Error,
         filename: String,
     },
 
-    #[fail(display = "Could not convert HEX string to u64: {}", err)]
+    #[fail(display = "Could not convert HEX string to u64")]
     HexToIntError {
         #[fail(cause)]
         err: std::num::ParseIntError,
@@ -113,6 +121,15 @@ impl From<serde_json::Error> for JSONToStatusError {
     }
 }
 
+impl JSONToStatusError {
+    fn from_filename(filename: String) -> impl Fn(serde_json::Error) -> JSONToStatusError {
+        move |x| JSONToStatusError::JSONFormatError {
+            err: x,
+            filename: filename.clone(),
+        }
+    }
+}
+
 fn from_hex_str(s: &String) -> Result<u64> {
     u64::from_str_radix(s.trim_start_matches("0x"), 16)
         .map_err(JSONToStatusError::from)
@@ -125,10 +142,24 @@ fn write_mem_file(filename: &Path, data: &[u8]) -> Result<()> {
     let mut init_vec = String::new();
     for c in hex_data.chunks(2) {
         let cstr = c.iter().cloned().collect::<String>();
-        init_vec = format!("{} {}", init_vec, cstr);
+        if init_vec.is_empty() {
+            init_vec = format!("{}", cstr);
+        } else {
+            init_vec = format!(
+                "{},
+                {}",
+                init_vec, cstr
+            );
+        }
     }
 
-    let coe_content = format!("@0000 {}", init_vec);
+    let coe_content = format!(
+        "memory_initialization_radix=16;
+    memory_initialization_vector=
+    {};
+    ",
+        init_vec
+    );
     trace!("Generated {}", coe_content);
     info!("Writing to file {:?}", filename);
     fs::write(filename, coe_content).io_read_context(filename)?;
@@ -164,19 +195,19 @@ fn run() -> Result<()> {
     let json_input = File::open(input_file_name)?;
     let json_reader = BufReader::new(json_input);
     info!("Parsing JSON file {}", input_file_name);
-    /*let json: Design = match serde_json::from_reader(json_reader) {
-        Ok(d) => d,
-        Err(e) => bail!("JSON format does not fit expected format: {}", e),
-    };*/
-    let json: Design = serde_json::from_reader(json_reader).map_err(JSONToStatusError::from)?;
+
+    let json: Design = serde_json::from_reader(json_reader).map_err(
+        JSONToStatusError::from_filename(input_file_name.to_string()),
+    )?;
+
     info!("Successfully parsed JSON file {}", input_file_name);
     trace!("{} => {:#?}", input_file_name, json);
 
     info!("Starting to build the binary representation");
 
-    let arch_base = from_hex_str(&json.BaseAddresses.Architecture[0].Address)?;
+    let arch_base = from_hex_str(&json.BaseAddresses.Architecture.Base)?;
 
-    let platform_base = from_hex_str(&json.BaseAddresses.Platform[0].Address)?;
+    let platform_base = 0; //from_hex_str(&json.BaseAddresses.Platform[0].Address)?;
 
     info!(
         "Architecture start: 0x{:X}, Platform start: 0x{:X}",
@@ -191,6 +222,7 @@ fn run() -> Result<()> {
             platform_base: platform_base,
             pe: None,
             platform: None,
+            clocks: None,
         },
     );
     builder.finish(status, None);

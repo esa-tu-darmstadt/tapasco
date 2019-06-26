@@ -12,9 +12,15 @@ table Platform {
     offset: uint64;
 }
 
+table Clocks {
+    name: string;
+    frequency_mhz: uint16;
+}
+
 table Status {
     arch_base: uint64;
     platform_base: uint64;
     pe: [PE];
     platform: [Platform];
+    clocks: [Clocks];
 }

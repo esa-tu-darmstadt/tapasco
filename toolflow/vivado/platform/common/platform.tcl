@@ -79,11 +79,8 @@ namespace eval platform {
 
   proc update_status_core {} {
     set inst [current_bd_instance]
-    current_bd_instance [tapasco::subsystem::get tapasco]
-    file delete -force "[get_property DIRECTORY [current_project]]/../user_ip/tapasco-status"
-    set status [get_bd_cells -filter "VLNV == [tapasco::ip::get_vlnv tapasco_status]"]
-    replace_bd_cell -preserve_name -preserve_configuration $status [tapasco::ip::create_tapasco_status "tapasco_status2"]
-    delete_bd_objs $status
+    current_bd_instance "tapasco"
+    tapasco::ip::update_tapasco_status_base "tapasco_status"
     current_bd_instance $inst
   }
 
@@ -108,8 +105,8 @@ namespace eval platform {
     update_ip_catalog -rebuild
     puts "  wiring ..."
     connect_bd_intf_net $port [get_bd_intf_pins -of_objects $tapasco_status -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
-    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == clk && DIR == I}]
-    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == rst && DIR == I}]
+    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == clk && DIR == I}]
+    connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] [get_bd_pins -of_objects $tapasco_status -filter {TYPE == rst && DIR == I}]
     puts "  done!"
   }
 
