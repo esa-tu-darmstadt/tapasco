@@ -56,7 +56,7 @@ namespace eval platform {
     puts "Using PCIe width $pcie_width."
   }
 
-  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME)/platform/${platform_dirname}/plugins" "*.tcl"] {
+  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/platform/${platform_dirname}/plugins" "*.tcl"] {
     source -notrace $f
   }
 
@@ -656,7 +656,7 @@ namespace eval platform {
     variable platform_dirname
 
     # TODO this needs to be generated depending on the actual clock settings!
-    set constraints_fn [file join $::env(TAPASCO_HOME) platform $platform_dirname constraints cl_clocks_aws.xdc]
+    set constraints_fn [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname constraints cl_clocks_aws.xdc]
 
     add_files -fileset constrs_1 -norecurse $constraints_fn -force
 
@@ -719,19 +719,19 @@ namespace eval platform {
       # Set TCL pre/post hooks
 
       set_property -name "STEPS.OPT_DESIGN.TCL.PRE" \
-        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname opt_design_pre.tcl]] \
+        -value [file normalize [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname opt_design_pre.tcl]] \
         -objects [get_runs [current_run -implementation]]
 
       set_property -name "STEPS.OPT_DESIGN.TCL.POST" \
-        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname opt_design_post.tcl]] \
+        -value [file normalize [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname opt_design_post.tcl]] \
         -objects [get_runs [current_run -implementation]]
 
       set_property -name "STEPS.ROUTE_DESIGN.TCL.POST" \
-        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname route_design_post.tcl]] \
+        -value [file normalize [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname route_design_post.tcl]] \
         -objects [get_runs [current_run -implementation]]
 
       set_property -name "STEPS.PLACE_DESIGN.TCL.POST" \
-        -value [file normalize [file join $::env(TAPASCO_HOME) platform $platform_dirname place_design_post.tcl]] \
+        -value [file normalize [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname place_design_post.tcl]] \
         -objects [get_runs [current_run -implementation]]
 
       return $args
