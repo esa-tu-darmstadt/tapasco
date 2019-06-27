@@ -1,0 +1,1 @@
+cd src && protoc --python_out=../print_message/ --nanopb_out=$TAPASCO_HOME_RUNTIME/kernel/nanopb status_core.proto

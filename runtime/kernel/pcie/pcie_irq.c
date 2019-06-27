@@ -21,8 +21,7 @@ irqreturn_t tlkm_pcie_slot_irq_ ## nr(int irq, void *dev_id) 		\
 { 									\
 	struct pci_dev *pdev = (struct pci_dev *)dev_id; \
 	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *) dev_get_drvdata(&pdev->dev); \
-	struct platform *p = &dev->parent->cls->platform;\
-	volatile uint32_t* msix_ack = (volatile uint32_t*) (dev->parent->mmap.plat + ((0x500000 + 0x8120) - p->plat.base)); \
+	volatile uint32_t* msix_ack = (volatile uint32_t*) (dev->parent->mmap.plat + 0x28120); \
 	BUG_ON(! dev); \
 	if (! schedule_work(&dev->irq_work[nr])) \
 		tlkm_perfc_irq_error_already_pending_inc(dev->parent->dev_id); \
@@ -41,6 +40,12 @@ int pcie_irqs_init(struct tlkm_device *dev)
 	int ret = 0, irqn, err[NUMBER_OF_INTERRUPTS];
 	BUG_ON(! dev);
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registering %d interrupts ...", NUMBER_OF_INTERRUPTS);
+#define _INTR(nr) \
+	irqn = nr + pcie_cls.npirqs; \
+	pdev->irq_mapping[irqn] = -1;
+
+	TLKM_PCIE_SLOT_INTERRUPTS
+#undef _INTR
 #define _INTR(nr) \
 	irqn = nr + pcie_cls.npirqs; \
 	if ((err[nr] = request_irq(pci_irq_vector(pdev->pdev, irqn), \
@@ -81,7 +86,7 @@ void pcie_irqs_exit(struct tlkm_device *dev)
 #define _INTR(nr) \
 	irqn = nr + pcie_cls.npirqs; \
 	if (pdev->irq_mapping[irqn] != -1) { \
-		DEVLOG(dev->dev_id, TLKM_LF_IRQ, "freeing interrupt %d with mappping %d", irqn, pdev->irq_mapping[irqn]); \
+		DEVLOG(dev->dev_id, TLKM_LF_IRQ, "freeing interrupt %d with mapping %d", irqn, pdev->irq_mapping[irqn]); \
 		free_irq(pdev->irq_mapping[irqn], pdev->pdev); \
 		pdev->irq_mapping[irqn] = -1; \
 	}

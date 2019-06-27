@@ -47,15 +47,11 @@ struct platform_regspace {
 
 struct platform {
 	struct platform_regspace	status;
-	struct platform_regspace	arch;
-	struct platform_regspace	plat;
 };
 
-#define INIT_PLATFORM(status_base, status_size, arch_base, arch_size, plat_base, plat_size) \
+#define INIT_PLATFORM(status_base, status_size) \
 	{ \
-		.status = INIT_REGSPACE((status_base), (status_size)), \
-		.arch   = INIT_REGSPACE((arch_base), (arch_size)), \
-		.plat   = INIT_REGSPACE((plat_base), (plat_size)), \
+		.status   = INIT_REGSPACE((status_base), (status_size)), \
 	}
 
 #ifdef __KERNEL__
@@ -68,6 +64,8 @@ struct platform_mmap {
 struct tlkm_device;
 struct tlkm_copy_cmd;
 
+int  tlkm_platform_status_init(struct tlkm_device *dev, struct platform_mmap *mmap);
+void tlkm_platform_status_exit(struct tlkm_device *dev, struct platform_mmap *mmap);
 int  tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap);
 void tlkm_platform_mmap_exit(struct tlkm_device *dev, struct platform_mmap *mmap);
 

@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='status_core.proto',
   package='tapasco.status',
   syntax='proto3',
-  serialized_pb=_b('\n\x11status_core.proto\x12\x0etapasco.status\"D\n\x02PE\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\r\x12\x0e\n\x06offset\x18\x03 \x01(\x04\x12\x14\n\x0clocal_memory\x18\x04 \x01(\x04\"(\n\x08Platform\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06offset\x18\x02 \x01(\x04\",\n\x05\x43lock\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\rfrequency_mhz\x18\x02 \x01(\r\":\n\x07Version\x12\x10\n\x08software\x18\x01 \x01(\t\x12\x0c\n\x04year\x18\x02 \x01(\r\x12\x0f\n\x07release\x18\x03 \x01(\r\"\xe3\x01\n\x06Status\x12\x11\n\ttimestamp\x18\x01 \x01(\x04\x12\x11\n\tarch_base\x18\x02 \x01(\x04\x12\x15\n\rplatform_base\x18\x03 \x01(\x04\x12\x1e\n\x02pe\x18\x04 \x03(\x0b\x32\x12.tapasco.status.PE\x12*\n\x08platform\x18\x05 \x03(\x0b\x32\x18.tapasco.status.Platform\x12%\n\x06\x63locks\x18\x06 \x03(\x0b\x32\x15.tapasco.status.Clock\x12)\n\x08versions\x18\x07 \x03(\x0b\x32\x17.tapasco.status.Versionb\x06proto3')
+  serialized_pb=_b('\n\x11status_core.proto\x12\x0etapasco.status\"D\n\x02PE\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\r\x12\x0e\n\x06offset\x18\x03 \x01(\x04\x12\x14\n\x0clocal_memory\x18\x04 \x01(\x04\"(\n\x08Platform\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06offset\x18\x02 \x01(\x04\",\n\x05\x43lock\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\rfrequency_mhz\x18\x02 \x01(\r\":\n\x07Version\x12\x10\n\x08software\x18\x01 \x01(\t\x12\x0c\n\x04year\x18\x02 \x01(\r\x12\x0f\n\x07release\x18\x03 \x01(\r\"(\n\nMemoryArea\x12\x0c\n\x04\x62\x61se\x18\x01 \x01(\x04\x12\x0c\n\x04size\x18\x02 \x01(\x04\"\x9b\x02\n\x06Status\x12\x11\n\ttimestamp\x18\x01 \x01(\x04\x12-\n\tarch_base\x18\x02 \x01(\x0b\x32\x1a.tapasco.status.MemoryArea\x12\x31\n\rplatform_base\x18\x03 \x01(\x0b\x32\x1a.tapasco.status.MemoryArea\x12\x1e\n\x02pe\x18\x04 \x03(\x0b\x32\x12.tapasco.status.PE\x12*\n\x08platform\x18\x05 \x03(\x0b\x32\x18.tapasco.status.Platform\x12%\n\x06\x63locks\x18\x06 \x03(\x0b\x32\x15.tapasco.status.Clock\x12)\n\x08versions\x18\x07 \x03(\x0b\x32\x17.tapasco.status.Versionb\x06proto3')
 )
 
 
@@ -198,6 +198,44 @@ _VERSION = _descriptor.Descriptor(
 )
 
 
+_MEMORYAREA = _descriptor.Descriptor(
+  name='MemoryArea',
+  full_name='tapasco.status.MemoryArea',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='base', full_name='tapasco.status.MemoryArea.base', index=0,
+      number=1, type=4, cpp_type=4, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='size', full_name='tapasco.status.MemoryArea.size', index=1,
+      number=2, type=4, cpp_type=4, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=255,
+  serialized_end=295,
+)
+
+
 _STATUS = _descriptor.Descriptor(
   name='Status',
   full_name='tapasco.status.Status',
@@ -214,15 +252,15 @@ _STATUS = _descriptor.Descriptor(
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='arch_base', full_name='tapasco.status.Status.arch_base', index=1,
-      number=2, type=4, cpp_type=4, label=1,
-      has_default_value=False, default_value=0,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='platform_base', full_name='tapasco.status.Status.platform_base', index=2,
-      number=3, type=4, cpp_type=4, label=1,
-      has_default_value=False, default_value=0,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
@@ -266,10 +304,12 @@ _STATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=256,
-  serialized_end=483,
+  serialized_start=298,
+  serialized_end=581,
 )
 
+_STATUS.fields_by_name['arch_base'].message_type = _MEMORYAREA
+_STATUS.fields_by_name['platform_base'].message_type = _MEMORYAREA
 _STATUS.fields_by_name['pe'].message_type = _PE
 _STATUS.fields_by_name['platform'].message_type = _PLATFORM
 _STATUS.fields_by_name['clocks'].message_type = _CLOCK
@@ -278,6 +318,7 @@ DESCRIPTOR.message_types_by_name['PE'] = _PE
 DESCRIPTOR.message_types_by_name['Platform'] = _PLATFORM
 DESCRIPTOR.message_types_by_name['Clock'] = _CLOCK
 DESCRIPTOR.message_types_by_name['Version'] = _VERSION
+DESCRIPTOR.message_types_by_name['MemoryArea'] = _MEMORYAREA
 DESCRIPTOR.message_types_by_name['Status'] = _STATUS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -308,6 +349,13 @@ Version = _reflection.GeneratedProtocolMessageType('Version', (_message.Message,
   # @@protoc_insertion_point(class_scope:tapasco.status.Version)
   ))
 _sym_db.RegisterMessage(Version)
+
+MemoryArea = _reflection.GeneratedProtocolMessageType('MemoryArea', (_message.Message,), dict(
+  DESCRIPTOR = _MEMORYAREA,
+  __module__ = 'status_core_pb2'
+  # @@protoc_insertion_point(class_scope:tapasco.status.MemoryArea)
+  ))
+_sym_db.RegisterMessage(MemoryArea)
 
 Status = _reflection.GeneratedProtocolMessageType('Status', (_message.Message,), dict(
   DESCRIPTOR = _STATUS,

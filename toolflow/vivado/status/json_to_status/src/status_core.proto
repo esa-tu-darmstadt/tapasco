@@ -25,10 +25,15 @@ message Version {
     uint32 release = 3;
 }
 
+message MemoryArea {
+    uint64 base = 1;
+    uint64 size = 2;
+}
+
 message Status {
     uint64 timestamp = 1;
-    uint64 arch_base = 2;
-    uint64 platform_base = 3;
+    MemoryArea arch_base = 2;
+    MemoryArea platform_base = 3;
     repeated PE pe = 4;
     repeated Platform platform = 5;
     repeated Clock clocks = 6;

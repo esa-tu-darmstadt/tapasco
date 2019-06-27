@@ -26,7 +26,7 @@
 #include "zynq_irq.h"
 
 #define ZYNQ_IRQ_BASE_IRQ					45
-#define ZYNQ_MAX_NUM_INTCS					4	
+#define ZYNQ_MAX_NUM_INTCS					4
 
 #define INTERRUPT_CONTROLLERS \
 		_INTC(0) \
@@ -119,7 +119,7 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 	rirq = ZYNQ_IRQ_BASE_IRQ + zynq_dev->parent->cls->npirqs + irqn; \
 	base = ioread32(zynq_dev->parent->mmap.status + 0x1010 + (N * 8)); \
 	if (base) { \
-		zynq_irq.intc_ ## N.base = (base - zynq_dev->parent->cls->platform.plat.base) >> 2; \
+		zynq_irq.intc_ ## N.base = (base - zynq_dev->parent->plat.base) >> 2; \
 		if (zynq_irq.intc_ ## N.base) { \
 			LOG(TLKM_LF_IRQ, "controller for IRQ #%d at 0x%08x", \
 					rirq, zynq_irq.intc_ ## N.base << 2); \

@@ -8,19 +8,22 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
-PB_BIND(PE, PE, AUTO)
+PB_BIND(tapasco_status_PE, tapasco_status_PE, AUTO)
 
 
-PB_BIND(Platform, Platform, AUTO)
+PB_BIND(tapasco_status_Platform, tapasco_status_Platform, AUTO)
 
 
-PB_BIND(Clock, Clock, AUTO)
+PB_BIND(tapasco_status_Clock, tapasco_status_Clock, AUTO)
 
 
-PB_BIND(Version, Version, AUTO)
+PB_BIND(tapasco_status_Version, tapasco_status_Version, AUTO)
 
 
-PB_BIND(Status, Status, AUTO)
+PB_BIND(tapasco_status_MemoryArea, tapasco_status_MemoryArea, AUTO)
+
+
+PB_BIND(tapasco_status_Status, tapasco_status_Status, AUTO)
 
 
 

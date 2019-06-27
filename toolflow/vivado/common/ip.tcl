@@ -421,7 +421,7 @@ namespace eval ::tapasco::ip {
       close $f
     }
 
-    set outfile "[get_property DIRECTORY [current_project]]/statuscore.çoe"
+    set outfile "[get_property DIRECTORY [current_project]]/statuscore.coe"
     if {[catch {exec -ignorestderr json_to_status $json_file $outfile | tee ${json_file}.log >@stdout 2>@1}]} {
       puts stderr "Building TaPaSCO status core failed, see ${json_file}.log:"
       puts stderr [read [open ${json_file}.log r]]

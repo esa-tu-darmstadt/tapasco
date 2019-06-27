@@ -14,24 +14,24 @@ static
 int dma_engines_init(struct tlkm_device *dev)
 {
 	int i, ret = 0, irqn = -1;
-	u64 *component;
 	u64 dma_base[TLKM_DEVICE_MAX_DMA_ENGINES] = { 0ULL, };
-	u64 status_base;
+	char dma_name[TLKM_COMPONENTS_NAME_MAX];
 	BUG_ON(! dev);
-	status_base = dev->base_offset + dev->cls->platform.status.base + TLKM_STATUS_REG_OFFSET;
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "temporarily mapping 0x%08llx - 0x%08llx ...",
-			status_base, status_base + TLKM_STATUS_SZ);
-	component = (u64 *)ioremap_nocache(status_base, TLKM_STATUS_SZ);
-	if (IS_ERR(component)) {
-		DEVERR(dev->dev_id, "could not map status core registers: %ld", PTR_ERR(component));
+
+	for(i = 0; i < TLKM_DEVICE_MAX_DMA_ENGINES; ++i) {
+		dma_addr_t addr;
+		snprintf(dma_name, TLKM_COMPONENTS_NAME_MAX, "PLATFORM_COMPONENT_DMA%d", i);
+		addr = tlkm_status_get_component_base(dev, dma_name);
+		if(addr != -1) {
+			dma_base[i] = addr;
+			DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d found at %llx", i, addr);
+		}
 	}
-	memcpy_fromio(dma_base, component + PLATFORM_COMPONENT_DMA0, TLKM_DEVICE_MAX_DMA_ENGINES);
-	iounmap(component);
 
 	for (i = 0; i < TLKM_DEVICE_MAX_DMA_ENGINES; ++i) {
 		struct dma_operations *o = &dev->dma[i].ops;
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA%d base: 0x%08llx", i, dma_base[i]);
-		if (! dma_base[i] || dma_base[i] >= (uintptr_t)-1) continue;
+		if (! dma_base[i] || dma_base[i] >= (uintptr_t) - 1) continue;
 		dma_base[i] += dev->base_offset;
 		ret = tlkm_dma_init(dev, &dev->dma[i], dma_base[i]);
 		if (ret) {
@@ -47,7 +47,7 @@ int dma_engines_init(struct tlkm_device *dev)
 		}
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d: registering write interrupt", i);
 		if (o->intr_write && o->intr_write != o->intr_read && (ret = tlkm_device_request_platform_irq(
-				dev, ++irqn, o->intr_write, &dev->dma[i]))) {
+		            dev, ++irqn, o->intr_write, &dev->dma[i]))) {
 			DEVERR(dev->dev_id, "could not register interrupt #%d: %d", irqn, ret);
 			goto err_dma_engine;
 		}
@@ -57,7 +57,7 @@ int dma_engines_init(struct tlkm_device *dev)
 	return ret;
 
 err_dma_engine:
-	for(; irqn >= 0; --irqn) {
+	for (; irqn >= 0; --irqn) {
 		tlkm_device_release_platform_irq(dev, irqn);
 	}
 	for (; i >= 0; --i) {
@@ -105,16 +105,28 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 		goto err_priv;
 	}
 
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup status I/O remap regions ...");
+	if ((ret = tlkm_platform_status_init(dev, &dev->mmap))) {
+		DEVERR(dev->dev_id, "could not map status I/O regions: %d", ret);
+		goto err_ioremap_status;
+	}
+
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "reading status core ...");
+	if ((ret = tlkm_status_init(&dev->status, dev, dev->mmap.status, 8192))) {
+		DEVERR(dev->dev_id, "could not read status core: %d", ret);
+		goto err_status;
+	}
+
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "Arch @ 0x%llx (S: %lldB) Platform @ 0x%llx (S: %lldB)", dev->status.arch_base.base, dev->status.arch_base.size
+																						 , dev->status.platform_base.base, dev->status.arch_base.size);
+
+	dev->arch = (struct platform_regspace) INIT_REGSPACE((dev->status.arch_base.base), (dev->status.arch_base.size));
+	dev->plat = (struct platform_regspace) INIT_REGSPACE((dev->status.platform_base.base), (dev->status.arch_base.size));
+
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup I/O remap regions ...");
 	if ((ret = tlkm_platform_mmap_init(dev, &dev->mmap))) {
 		DEVERR(dev->dev_id, "could not map I/O regions: %d", ret);
 		goto err_ioremap;
-	}
-
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "reading address map ...");
-	if ((ret = tlkm_status_init(&dev->status, dev, dev->base_offset + dev->cls->platform.status.base))) {
-		DEVERR(dev->dev_id, "could not initialize address map: %d", ret);
-		goto err_status;
 	}
 
 	if (dev->cls->init_subsystems) {
@@ -135,14 +147,16 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 	return ret;
 
 err_dma:
-    if (dev->cls->exit_subsystems)
-        dev->cls->exit_subsystems(dev);
+	if (dev->cls->exit_subsystems)
+		dev->cls->exit_subsystems(dev);
 err_sub:
-    tlkm_status_exit(&dev->status, dev);
-err_status:
 	tlkm_platform_mmap_exit(dev, &dev->mmap);
 err_ioremap:
-    dev->cls->destroy(dev);
+	tlkm_status_exit(&dev->status, dev);
+err_status:
+	tlkm_platform_status_exit(dev, &dev->mmap);
+err_ioremap_status:
+	dev->cls->destroy(dev);
 err_priv:
 	tlkm_control_exit(dev->ctrl);
 err_control:
@@ -159,6 +173,7 @@ void tlkm_device_exit(struct tlkm_device *dev)
 			dev->cls->exit_subsystems(dev);
 		tlkm_status_exit(&dev->status, dev);
 		dev->cls->destroy(dev);
+		tlkm_platform_status_exit(dev, &dev->mmap);
 		tlkm_platform_mmap_exit(dev, &dev->mmap);
 		tlkm_control_exit(dev->ctrl);
 		tlkm_perfc_miscdev_exit(dev);
@@ -190,9 +205,9 @@ int tlkm_device_acquire(struct tlkm_device *pdev, tlkm_access_t access)
 	}
 	if (! ret) {
 		DEVLOG(pdev->dev_id, TLKM_LF_DEVICE, "ref_cnts: excl = %zu, shared = %zu, mon = %zu",
-				pdev->ref_cnt[TLKM_ACCESS_EXCLUSIVE],
-				pdev->ref_cnt[TLKM_ACCESS_SHARED],
-				pdev->ref_cnt[TLKM_ACCESS_MONITOR]);
+		       pdev->ref_cnt[TLKM_ACCESS_EXCLUSIVE],
+		       pdev->ref_cnt[TLKM_ACCESS_SHARED],
+		       pdev->ref_cnt[TLKM_ACCESS_MONITOR]);
 		++(pdev->ref_cnt[access]);
 	}
 	mutex_unlock(&pdev->mtx);

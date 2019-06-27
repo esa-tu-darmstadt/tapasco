@@ -8,9 +8,7 @@
 #define XILINX_VENDOR_ID   		0x10EE
 #define XILINX_DEVICE_ID   		0x7038
 
-#define PCIE_DEF 			INIT_PLATFORM(0x02800000ULL, 0x00002000,  /* status */ \
-						      0x02000000ULL, 0x00800000,  /* arch */ \
-						      0x00300000ULL, 0x02000000)  /* platf */
+#define PCIE_DEF 			INIT_PLATFORM(0x0ULL, 0x00002000  /* status */)
 
 static const
 struct platform pcie_def = PCIE_DEF;

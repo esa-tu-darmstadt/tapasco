@@ -152,15 +152,17 @@ fn write_mem_file(filename: &Path, data: &[u8]) -> Result<()> {
     info!("Generating hex representation of flatbuffer");
     let hex_data: Vec<char> = hex::encode(data).chars().collect();
     let mut init_vec = String::new();
-    for c in hex_data.chunks(2) {
-        let cstr = c.iter().cloned().collect::<String>();
+    for c in hex_data.chunks(16) {
+        let b: Vec<_> = c.chunks(2).rev().into_iter().collect();
+        let joined: Vec<String> = b.iter().map(|x| x.into_iter().collect()).collect();
+        let joined = joined.join("");
         if init_vec.is_empty() {
-            init_vec = format!("{}", cstr);
+            init_vec = format!("{}", joined);
         } else {
             init_vec = format!(
                 "{},
                 {}",
-                init_vec, cstr
+                init_vec, joined
             );
         }
     }
@@ -276,8 +278,14 @@ fn run() -> Result<()> {
         .collect();
 
     let status = status::Status {
-        arch_base: arch_base,
-        platform_base: platform_base,
+        arch_base: Some(status::MemoryArea {
+            base: arch_base,
+            size: 0x100000,
+        }),
+        platform_base: Some(status::MemoryArea {
+            base: platform_base,
+            size: 0x100000,
+        }),
         timestamp: json.Timestamp,
         pe: pes,
         platform: platforms,
@@ -292,6 +300,12 @@ fn run() -> Result<()> {
         "Successfully generated binary protobuf representation: {} bytes",
         status.encoded_len()
     );
+    info!("Adding length as VARINT.");
+    let mut len_int: Vec<u8> = Vec::new();
+    prost::encoding::encode_varint(status.encoded_len() as u64, &mut len_int);
+
+    len_int.append(&mut buf);
+
     let output_file_name = matches
         .value_of("OUTPUT")
         .ok_or_else(|| JSONToStatusError::MissingOutput)?;
@@ -300,11 +314,11 @@ fn run() -> Result<()> {
         let ofn = format!("{}.bin", output_file_name);
         let ofp = Path::new(&ofn);
         info!("Outputting binary as well to {}", ofn);
-        fs::write(ofp, &buf).io_read_context(ofp)?;
+        fs::write(ofp, &len_int).io_read_context(ofp)?;
     }
 
     let output_path = Path::new(output_file_name);
-    write_mem_file(output_path, &buf)
+    write_mem_file(output_path, &len_int)
 }
 
 quick_main!(run);

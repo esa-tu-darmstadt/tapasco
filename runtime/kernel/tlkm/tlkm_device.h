@@ -29,9 +29,12 @@ struct tlkm_device {
 	int 			product_id;
 	dev_addr_t		base_offset;	/* physical base offset of bitstream */
 	struct platform_mmap 	mmap;		/* I/O remaps of register spaces */
-	struct tlkm_status	status;		/* address map information */
+	tlkm_status	status;		/* bitstream information */
+	struct platform_regspace	arch;
+	struct platform_regspace	plat;
 	struct tlkm_control	*ctrl;		/* main device file */
 	struct dma_engine	dma[TLKM_DEVICE_MAX_DMA_ENGINES];
+	tlkm_component_t components[TLKM_COMPONENT_MAX];
 #ifndef NPERFC
 	struct miscdevice	perfc_dev;	/* performance counter device */
 #endif

@@ -25,7 +25,7 @@ tlkm-objs := \
     dma/tlkm_dma.o \
     dma/blue_dma.o \
     hsa/char_device_hsa.o \
-    nanopb/pb_common.c \
-    nanopb/pb_encode.c \
-    nanopb/pb_decode.c \
-    nanopb/status_core.pb.c
+    nanopb/pb_common.o \
+    nanopb/pb_encode.o \
+    nanopb/pb_decode.o \
+    nanopb/status_core.pb.o

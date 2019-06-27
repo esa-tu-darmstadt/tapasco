@@ -286,8 +286,7 @@ static int hsa_close(struct inode *inode, struct file *filp)
 irqreturn_t intr_handler_hsa_signals(int irq, void * dev_id)
 {
 	struct tlkm_device *tlkm_dev = (struct tlkm_device *)dev_id;
-	struct platform *p = &tlkm_dev->cls->platform;
-	volatile uint32_t* msix_ack = (volatile uint32_t*) (tlkm_dev->mmap.plat + ((0x500000 + 0x8120) - p->plat.base));
+	volatile uint32_t* msix_ack = (volatile uint32_t*) (tlkm_dev->mmap.plat + 0x28120);
 	struct hsa_mmap_space *dma_mem = (struct hsa_mmap_space*)dev.dma_shared_mem;
 	uint64_t signal = dev.signal_base[HSA_SIGNAL_ADDR];
 	uint64_t *signal_kvirt = (uint64_t*)dev.kvirt_shared_mem->signals;

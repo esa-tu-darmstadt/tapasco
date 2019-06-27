@@ -7,60 +7,75 @@
 #include "tlkm_logging.h"
 #include "user/tlkm_device_ioctl_cmds.h"
 
+int tlkm_platform_status_init(struct tlkm_device *dev, struct platform_mmap *mmap)
+{
+	int retval = 0;
+	struct platform *p = &dev->cls->platform;
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%px-0x%px for status",
+	       (void *)(dev->base_offset + p->status.base),
+	       (void *)(dev->base_offset + p->status.high));
+	mmap->status = ioremap_nocache(dev->base_offset + p->status.base, p->status.size);
+	if (! mmap->status) {
+		DEVERR(dev->dev_id,
+		       "could not ioremap the AXI register space at 0x%px-0x%px",
+		       (void *)(dev->base_offset + p->status.base),
+		       (void *)(dev->base_offset + p->status.high));
+		retval = -ENOSPC;
+		goto err_status;
+	}
+
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
+	       "I/O mapped status register successfully: ST=0x%px",
+	       mmap->status);
+	return retval;
+
+err_status:
+	return retval;
+}
+
+void tlkm_platform_status_exit(struct tlkm_device *dev, struct platform_mmap *mmap)
+{
+	if (mmap->status) {
+		iounmap(mmap->status);
+		mmap->status = NULL;
+	}
+	DEVLOG(dev->dev_id, TLKM_LF_PLATFORM, "unmapped status I/O regions of '%s'", dev->name);
+}
+
 int tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap)
 {
 	int retval = 0;
-	u32 magic_id = 0;
-	struct platform *p = &dev->cls->platform;
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%px-0x%px for architecture",
-			(void *)(dev->base_offset + p->arch.base),
-			(void *)(dev->base_offset + p->arch.high));
-	mmap->arch = ioremap_nocache(dev->base_offset + p->arch.base, p->arch.size);
+	       (void *)(dev->base_offset + dev->arch.base),
+	       (void *)(dev->base_offset + dev->arch.high));
+	mmap->arch = ioremap_nocache(dev->base_offset + dev->arch.base, dev->arch.size);
 	if (! mmap->arch) {
 		DEVERR(dev->dev_id,
-				"could not ioremap the AXI register space at 0x%px-0x%px",
-				(void *)(dev->base_offset + p->arch.base),
-				(void *)(dev->base_offset + p->arch.high));
+		       "could not ioremap the AXI register space at 0x%px-0x%px",
+		       (void *)(dev->base_offset + dev->arch.base),
+		       (void *)(dev->base_offset + dev->arch.high));
 		retval = -ENOSPC;
 		goto err_arch;
 	}
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%px-0x%px for platform",
-			(void *)(dev->base_offset + p->plat.base),
-			(void *)(dev->base_offset + p->plat.high));
-	mmap->plat = ioremap_nocache(dev->base_offset + p->plat.base, p->plat.size);
+	       (void *)(dev->base_offset + dev->plat.base),
+	       (void *)(dev->base_offset + dev->plat.high));
+	mmap->plat = ioremap_nocache(dev->base_offset + dev->plat.base, dev->plat.size);
 	if (! mmap->plat) {
 		DEVERR(dev->dev_id,
-				"could not ioremap the AXI register space at 0x%px-0x%px",
-				(void *)(dev->base_offset + p->plat.base),
-				(void *)(dev->base_offset + p->plat.high));
+		       "could not ioremap the AXI register space at 0x%px-0x%px",
+		       (void *)(dev->base_offset + dev->plat.base),
+		       (void *)(dev->base_offset + dev->plat.high));
 		retval = -ENOSPC;
 		goto err_plat;
 	}
 
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "I/O mapping 0x%px-0x%px for status",
-			(void *)(dev->base_offset + p->status.base),
-			(void *)(dev->base_offset + p->status.high));
-	mmap->status = ioremap_nocache(dev->base_offset + p->status.base, p->status.size);
-	if (! mmap->status) {
-		DEVERR(dev->dev_id,
-				"could not ioremap the AXI register space at 0x%px-0x%px",
-				(void *)(dev->base_offset + p->status.base),
-				(void *)(dev->base_offset + p->status.high));
-		retval = -ENOSPC;
-		goto err_status;
-	}
-
-	magic_id = ioread32(mmap->status);
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "magic_id = 0x%08lx", (ulong)magic_id);
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
-			"I/O mapped all registers successfully: AR = 0x%px, PL = 0x%px, ST=0x%px",
-			mmap->arch, mmap->plat, mmap->status);
+	       "I/O mapped all registers successfully: AR = 0x%px, PL = 0x%px",
+	       mmap->arch, mmap->plat);
 	return retval;
 
-err_status:
-	iounmap(mmap->plat);
-	mmap->plat = NULL;
 err_plat:
 	iounmap(mmap->arch);
 	mmap->arch = NULL;
@@ -70,13 +85,15 @@ err_arch:
 
 void tlkm_platform_mmap_exit(struct tlkm_device *dev, struct platform_mmap *mmap)
 {
-	iounmap(mmap->status);
-	mmap->status = NULL;
-	iounmap(mmap->plat);
-	mmap->plat = NULL;
-	iounmap(mmap->arch);
-	mmap->arch = NULL;
-	DEVLOG(dev->dev_id, TLKM_LF_PLATFORM, "unmapped all I/O regions of '%s'", dev->name);
+	if (mmap->plat) {
+		iounmap(mmap->plat);
+		mmap->plat = NULL;
+	}
+	if (mmap->arch) {
+		iounmap(mmap->arch);
+		mmap->arch = NULL;
+	}
+	DEVLOG(dev->dev_id, TLKM_LF_PLATFORM, "unmapped remaining I/O regions of '%s'", dev->name);
 }
 
 inline
@@ -85,10 +102,10 @@ void __iomem *addr2map(struct tlkm_device *dev, dev_addr_t const addr)
 	struct platform *p = &dev->cls->platform;
 	void __iomem *ptr = NULL;
 	BUG_ON(! p);
-	if (IS_BETWEEN(addr, p->arch.base, p->arch.high)) {
-		ptr = dev->mmap.arch + (addr - p->arch.base);
-	} else if (IS_BETWEEN(addr, p->plat.base, p->plat.high)) {
-		ptr = dev->mmap.plat + (addr - p->plat.base);
+	if (IS_BETWEEN(addr, dev->arch.base, dev->arch.high)) {
+		ptr = dev->mmap.arch + (addr - dev->arch.base);
+	} else if (IS_BETWEEN(addr, dev->plat.base, dev->plat.high)) {
+		ptr = dev->mmap.plat + (addr - dev->plat.base);
 	} else if (IS_BETWEEN(addr, p->status.base, p->status.high)) {
 		ptr = dev->mmap.status + (addr - p->status.base);
 	}
@@ -108,7 +125,7 @@ long tlkm_platform_read(struct tlkm_device *dev, struct tlkm_copy_cmd *cmd)
 	memcpy_fromio(buf, ptr, cmd->length);
 	if ((ret = copy_to_user((u32 __user *)cmd->user_addr, buf, cmd->length))) {
 		DEVERR(dev->dev_id, "could not copy all bytes from 0x%px to user space 0x%px: %ld",
-				buf, cmd->user_addr, ret);
+		       buf, cmd->user_addr, ret);
 		ret = -EAGAIN;
 	}
 	kfree(buf);
@@ -128,7 +145,7 @@ long tlkm_platform_write(struct tlkm_device *dev, struct tlkm_copy_cmd *cmd)
 	buf = kzalloc(cmd->length, GFP_ATOMIC);
 	if ((ret = copy_from_user(buf, (u32 __user *)cmd->user_addr, cmd->length))) {
 		DEVERR(dev->dev_id, "could not copy all bytes from 0x%px to user space 0x%px: %ld",
-				buf, cmd->user_addr, ret);
+		       buf, cmd->user_addr, ret);
 		ret = -EAGAIN;
 		goto err;
 	}
