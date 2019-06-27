@@ -51,7 +51,7 @@ class DesignSpace(
                    target: Target,
                    val heuristic: Heuristic,
                    val dim: DesignSpace.Dimensions = DesignSpace.defaultDim,
-                   val designFrequency: Heuristics.Frequency
+                   val designFrequency: Option[Heuristics.Frequency]
                  )(implicit cfg: Configuration) {
 
   import scala.util.Properties.{lineSeparator => NL}
@@ -63,13 +63,18 @@ class DesignSpace(
   lazy val feasibleFreqs: Seq[Double] = feasibleFreqs(bd)
 
   private def feasibleFreqs(bd: Composition): Seq[Double] = if (dim.frequency) {
-    val cores = bd.composition flatMap (ce => FileAssetManager.entities.core(ce.kernel, target))
-    val srs = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
-    val cps = srs flatMap (_.timing) map (_.clockPeriod)
-    val fmax = 1000.0 / (if (cps.nonEmpty) cps.max else DEFAULT_CLOCK_PERIOD_NS)
-    target.pd.supportedFrequencies map (_.toDouble) filter (_ <= fmax) sortWith (_ > _)
+    if(designFrequency.isDefined){
+      target.pd.supportedFrequencies.map(_.toDouble).filter(_ <= designFrequency.get).sortWith(_ > _)
+    }
+    else{
+      val cores = bd.composition flatMap (ce => FileAssetManager.entities.core(ce.kernel, target))
+      val srs = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
+      val cps = srs flatMap (_.timing) map (_.clockPeriod)
+      val fmax = 1000.0 / (if (cps.nonEmpty) cps.max else DEFAULT_CLOCK_PERIOD_NS)
+      target.pd.supportedFrequencies map (_.toDouble) filter (_ <= fmax) sortWith (_ > _)
+    }
   } else {
-    Seq(designFrequency)
+    Seq(designFrequency.getOrElse(100.0))
   }
 
   lazy val feasibleCompositions: Seq[Composition] = compositions(bd)
@@ -148,8 +153,6 @@ class DesignSpace(
 }
 
 object DesignSpace {
-  private final val logger = tapasco.Logging.logger(getClass)
-  private final val NL = scala.util.Properties.lineSeparator
 
   final case class Dimensions(
                                frequency: Boolean = false,
@@ -171,60 +174,4 @@ object DesignSpace {
 
   val defaultDim = Dimensions(true, false, false)
 
-  def feasibleFreqs(target: Target, bd: Composition): Seq[Double] = {
-    val cores = bd.composition flatMap (ce => FileAssetManager.entities.core(ce.kernel, target))
-    val srs = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
-    val cps = srs flatMap (_.timing) map (_.clockPeriod)
-    val fmax = if (cps.nonEmpty) 1000.0 / cps.max else Double.PositiveInfinity
-    target.pd.supportedFrequencies map (_.toDouble) filter (_ <= fmax) sortWith (_ > _)
-  }
-
-  def feasibleCompositions(target: Target, bd: Composition): Seq[Composition] = if (bd.nonEmpty) {
-    val counts = bd.composition map (_.count)
-    val minCounts = counts map (n => Seq(java.lang.Math.round(n / counts.min.toDouble).toInt, 1).max)
-    val cores = bd.composition flatMap (ce => FileAssetManager.entities.core(ce.kernel, target))
-    val srs = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
-    val areaEstimates = srs flatMap (_.area)
-    val slotOccupations = srs map (r => SlotOccupation(r.slaves.get, target.pd.slotCount))
-    val targetUtil = target.pd.targetUtilization.toDouble
-    logger.trace("target util = " + targetUtil)
-
-    def slotUtil(counts: Seq[Int]): SlotOccupation = (slotOccupations zip counts).map(o => o._1 * o._2).reduce(_ + _)
-    // check if there is any feasible composition
-    if (!slotUtil(minCounts).isFeasible) {
-      throw new Exception("Composition infeasible! Exceeds maximal slot count of " + target.pd.slotCount
-        + " for " + target + "." + NL + bd)
-    }
-
-    def areaUtil(counts: Seq[Int]) = (areaEstimates zip counts) map (a => a._1 * a._2) reduce (_ + _)
-
-    // compute number of steps
-    val currUtil = areaUtil(minCounts).utilization
-    val df: Int = Seq(java.lang.Math.round((targetUtil - currUtil) / currUtil).toInt, 1).max
-    val currSlots = slotUtil(minCounts).slots
-    val targetSlots = target.pd.slotCount
-    val sf: Int = Math.max(Math.round(targetSlots.toDouble / currSlots.toDouble), 1).toInt
-    val steps = Math.min(sf, df)
-
-    logger.trace("minCounts = " + minCounts + " currUtil = " + currUtil)
-
-    // compute feasible sequences as multiples of minCounts
-    val seqs = (for (i <- steps to 1 by -1)
-      yield minCounts map (n => i * n)) filter (c => areaUtil(c).isFeasible && slotUtil(c).isFeasible)
-
-    logger.trace("number of feasible counts: " + seqs.length)
-    if (seqs.isEmpty) {
-      logger.warn("No feasible composition found; please check starting composition ratios: " + NL + bd)
-    }
-
-    // make sequence of CompositionEntries
-    val ces = for {
-      s <- seqs filter (_.sum <= target.pd.slotCount)
-    } yield bd.composition.map(_.kernel) zip s map (x => Composition.Entry(x._1, x._2))
-
-    // make full composition
-    ces map (Composition(Paths.get("N/A"), Some("Generated composition."), _))
-  } else {
-    Seq.empty
-  }
 }

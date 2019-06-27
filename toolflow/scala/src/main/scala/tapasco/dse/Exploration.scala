@@ -36,7 +36,7 @@ trait Exploration extends Publisher {
 
   def target: Target
 
-  def designFrequency: Heuristics.Frequency
+  def designFrequency: Option[Heuristics.Frequency]
 
   def dimensions: DesignSpace.Dimensions
 
@@ -60,7 +60,7 @@ private class ConcreteExploration(
                                    val initialComposition: Composition,
                                    val target: Target,
                                    val dimensions: DesignSpace.Dimensions,
-                                   val designFrequency: Heuristics.Frequency,
+                                   val designFrequency: Option[Heuristics.Frequency],
                                    val batchSize: Int = Exploration.MAX_BATCH_SZ,
                                    val basePath: Path,
                                    val debugMode: Option[String],
@@ -253,7 +253,7 @@ object Exploration {
   def apply(initialComposition: Composition,
             dimensions: DesignSpace.Dimensions,
             target: Target,
-            designFrequency: Heuristics.Frequency,
+            designFrequency: Option[Heuristics.Frequency],
             batchSize: Int = MAX_BATCH_SZ,
             basePath: Path,
             debugMode: Option[String] = None,
