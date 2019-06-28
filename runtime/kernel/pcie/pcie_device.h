@@ -22,11 +22,10 @@
 #include <linux/workqueue.h>
 #include <linux/version.h>
 #include "tlkm_types.h"
-#include "platform_global.h"
 #include "dma/tlkm_dma.h"
 
 #define TLKM_PLATFORM_INTERRUPTS		4
-#define TLKM_SLOT_INTERRUPTS			PLATFORM_NUM_SLOTS
+#define TLKM_SLOT_INTERRUPTS			128
 #define REQUIRED_INTERRUPTS \
 		(TLKM_PLATFORM_INTERRUPTS + TLKM_SLOT_INTERRUPTS)
 

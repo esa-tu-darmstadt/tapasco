@@ -65,7 +65,7 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 {
 	platform_res_t r;
 	platform_dev_id_t dev_id = p->dev_id;
-	platform_ctl_addr_t status = p->platform.status.base;
+	platform_ctl_addr_t status = device_regspace_status_base(p);
 #ifdef _X
 	#undef _X
 #endif
@@ -108,7 +108,7 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 				DEVERR(dev_id, "could not read platform base " PRIslot ": %s (" PRIres ")",
 						s, platform_strerror(r), r);
 				return r;
-			} 
+			}
 
 			platform_ctl_addr_t const ab = status + REG_ARCH_BASE_START + s * sizeof(uint64_t);
 			r = platform_read_ctl(p, ab, sizeof(info->base.arch[s]), &(info->base.arch[s]), 0);
@@ -116,7 +116,7 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 				DEVERR(dev_id, "could not read platform base " PRIslot ": %s (" PRIres ")",
 						s, platform_strerror(r), r);
 				return r;
-			} 
+			}
 		} else {
 			DEVERR(dev_id, "loaded bitstream does not support dynamic address map - "
 			    "please use a libplatform version < 1.5 with this bitstream");

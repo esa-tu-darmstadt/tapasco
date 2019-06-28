@@ -102,12 +102,12 @@ void __iomem *addr2map(struct tlkm_device *dev, dev_addr_t const addr)
 	struct platform *p = &dev->cls->platform;
 	void __iomem *ptr = NULL;
 	BUG_ON(! p);
-	if (IS_BETWEEN(addr, dev->arch.base, dev->arch.high)) {
-		ptr = dev->mmap.arch + (addr - dev->arch.base);
-	} else if (IS_BETWEEN(addr, dev->plat.base, dev->plat.high)) {
-		ptr = dev->mmap.plat + (addr - dev->plat.base);
-	} else if (IS_BETWEEN(addr, p->status.base, p->status.high)) {
-		ptr = dev->mmap.status + (addr - p->status.base);
+	if (addr == 0) {
+		ptr = dev->mmap.status;
+	} else if (addr == 4096) {
+		ptr = dev->mmap.arch;
+	} else if (addr == 8192) {
+		ptr = dev->mmap.plat;
 	}
 	return ptr;
 }

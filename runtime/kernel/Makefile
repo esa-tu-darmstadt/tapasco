@@ -1,7 +1,3 @@
-ifndef TAPASCO_HOME_RUNTIME
-$(error "environment variable TAPASCO_HOME_RUNTIME is not set - did you source TaPaSCo's setup.sh?")
-endif
-
 ifdef NPERFC
 $(info "environment variable NPERFC is set, building with -DNPERFC")
 CPPFLAGS+=-DNPERFC
@@ -15,22 +11,23 @@ ifeq ($(ARCH), arm)
 CROSS_COMPILE?=arm-linux-gnueabihf-
 endif
 
-CPPFLAGS+=-Werror -I$(TAPASCO_HOME_RUNTIME)/kernel \
-				  -I$(TAPASCO_HOME_RUNTIME)/kernel/device \
-				  -I$(TAPASCO_HOME_RUNTIME)/kernel/tlkm \
-				  -I$(TAPASCO_HOME_RUNTIME)/kernel/user \
-				  -I$(TAPASCO_HOME_RUNTIME)/platform/include \
-				  -I$(TAPASCO_HOME_RUNTIME)/kernel/hsa \
-				  -I$(TAPASCO_HOME_RUNTIME)/kernel/nanopb \
+MODULE_DIR := $(PWD)
+
+CPPFLAGS+=-Werror -I$(MODULE_DIR) \
+				  -I$(MODULE_DIR)/device \
+				  -I$(MODULE_DIR)/tlkm \
+				  -I$(MODULE_DIR)/user \
+				  -I$(MODULE_DIR)/hsa \
+				  -I$(MODULE_DIR)/nanopb \
 				  -DPB_SYSTEM_HEADER=\<pb_system.h\>
 
 .PHONY:	all clean
 
 all:
-	make KCPPFLAGS="$(CPPFLAGS)" -C $(LINUX_HOME) M=$(TAPASCO_HOME_RUNTIME)/kernel modules
+	make KCPPFLAGS="$(CPPFLAGS)" -C $(LINUX_HOME) M=$(MODULE_DIR) modules
 
 release:
-	make KCPPFLAGS+="$(CPPFLAGS) -DNDEBUG -O3" -C $(LINUX_HOME) M=$(TAPASCO_HOME_RUNTIME)/kernel modules
+	make KCPPFLAGS+="$(CPPFLAGS) -DNDEBUG -O3" -C $(LINUX_HOME) M=$(MODULE_DIR) modules
 
 clean:
-	make -C $(LINUX_HOME) M=$(TAPASCO_HOME_RUNTIME)/kernel clean
+	make -C $(LINUX_HOME) M=$(MODULE_DIR) clean

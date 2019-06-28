@@ -107,7 +107,7 @@ platform_res_t platform_address_get_component_base(platform_devctx_t const *ctx,
 		platform_ctl_addr_t *addr)
 {
 	if (comp_id == PLATFORM_COMPONENT_STATUS) {
-		*addr = ctx->platform.status.base;
+		*addr = device_regspace_status_base(ctx);
 		return PLATFORM_SUCCESS;
 	}
 	return platform_addr_map_get_component_base(ctx->addrmap, comp_id, addr);

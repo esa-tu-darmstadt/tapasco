@@ -4,7 +4,6 @@
 #include <linux/slab.h>
 #include <linux/gfp.h>
 #include <linux/list.h>
-#include "platform_global.h"
 #include "pcie.h"
 #include "pcie_device.h"
 #include "pcie_irq.h"

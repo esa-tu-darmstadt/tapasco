@@ -12,6 +12,13 @@ long pcie_ioctl_info(struct tlkm_device *inst, struct tlkm_device_info *info)
 }
 
 static inline
+long pcie_ioctl_size(struct tlkm_device *inst, struct tlkm_size_cmd *info)
+{
+	DEVERR(inst->dev_id, "should never be called");
+	return -EFAULT;
+}
+
+static inline
 long pcie_ioctl_alloc(struct tlkm_device *inst, struct tlkm_mm_cmd *cmd)
 {
 	DEVERR(inst->dev_id, "should never be called");

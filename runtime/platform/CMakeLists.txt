@@ -14,9 +14,6 @@ add_library(platform "common/src/platform_addr_map.c"
           "common/src/platform_version.c"
           )
 
-include(pcie/platform.cmake)
-include(zynq/platform.cmake)
-
 target_compile_definitions(platform PRIVATE -DNPERFC)
 target_compile_definitions(platform PRIVATE -DLOG_USE_COLOR)
 

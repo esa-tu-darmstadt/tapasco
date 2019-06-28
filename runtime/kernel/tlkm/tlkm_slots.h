@@ -1,7 +1,7 @@
 #ifndef TLKM_SLOT_H__
 #define TLKM_SLOT_H__
 
-#include <platform_global.h>
+#define PLATFORM_NUM_SLOTS 128
 
 #define TLKM_SLOTS \
 	_SLOT(0) \

@@ -48,6 +48,12 @@ struct tlkm_bulk_cmd {
 	struct tlkm_copy_cmd	copy;
 };
 
+struct tlkm_size_cmd {
+	size_t status;
+	size_t arch;
+	size_t platform;
+};
+
 #define TLKM_DEV_IOCTL_FN		"tlkm_%02u"
 #define TLKM_DEV_PERFC_FN		"tlkm_perfc_%02u"
 
@@ -57,6 +63,7 @@ struct tlkm_bulk_cmd {
 
 #define TLKM_DEV_IOCTL_CMDS \
 	_TLKM_DEV_IOCTL(INFO,		info,		0x01, 	struct tlkm_device_info) \
+	_TLKM_DEV_IOCTL(SIZE,		size,		0x02,	struct tlkm_size_cmd) \
 	_TLKM_DEV_IOCTL(ALLOC,		alloc,		0x10, 	struct tlkm_mm_cmd) \
 	_TLKM_DEV_IOCTL(FREE,		free,		0x11,	struct tlkm_mm_cmd) \
 	_TLKM_DEV_IOCTL(COPYTO,		copyto,		0x12,	struct tlkm_copy_cmd) \

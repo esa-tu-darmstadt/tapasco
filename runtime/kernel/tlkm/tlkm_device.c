@@ -5,7 +5,6 @@
 #include "tlkm_control.h"
 #include "tlkm_class.h"
 #include "tlkm_perfc_miscdev.h"
-#include "platform_components.h"
 
 #define TLKM_STATUS_SZ					0x1000
 #define	TLKM_STATUS_REG_OFFSET				0x1000

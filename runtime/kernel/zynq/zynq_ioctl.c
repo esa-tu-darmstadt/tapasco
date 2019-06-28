@@ -40,6 +40,13 @@ long zynq_ioctl_info(struct tlkm_device *inst, struct tlkm_device_info *info)
 }
 
 static inline
+long zynq_ioctl_size(struct tlkm_device *inst, struct tlkm_size_cmd *info)
+{
+	DEVERR(inst->dev_id, "should never be called");
+	return -EFAULT;
+}
+
+static inline
 long zynq_ioctl_alloc(struct tlkm_device *inst, struct tlkm_mm_cmd *cmd)
 {
 	struct dma_buf_t *dmab;

@@ -14,19 +14,21 @@
 #include <platform_addr_map.h>
 #include <platform_signaling.h>
 #include <platform_device_operations.h>
-#include <platform_zynq.h>
-#include <platform_pcie.h>
 #include <platform_perfc.h>
-#include <zynq/zynq.h>
-#include <pcie/pcie.h>
+
+#define PCIE_CLS_NAME			"pcie"
+#define	PCIE_MEM_SZ			    (1ULL << 32)
+
+#define ZYNQ_CLS_NAME			"zynq"
+
 
 static
 platform_res_t platform_specific_init(platform_devctx_t *devctx)
 {
 	if (! strncmp(PCIE_CLS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
-		return pcie_init(devctx);
-	} else if (! strncmp(ZYNQ_CLASS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
-		return zynq_init(devctx);
+		return default_init(devctx, PCIE_MEM_SZ);
+	} else if (! strncmp(ZYNQ_CLS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
+		return default_init(devctx, 0);
 	} else {
 		DEVERR(devctx->dev_id, "unknown device type: '%s'", devctx->dev_info.name);
 		return PERR_UNKNOWN_DEVICE;
@@ -36,11 +38,7 @@ platform_res_t platform_specific_init(platform_devctx_t *devctx)
 static
 void platform_specific_deinit(platform_devctx_t *devctx)
 {
-	if (! strncmp(PCIE_CLS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
-		pcie_deinit(devctx);
-	} else if (! strncmp(ZYNQ_CLASS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
-		zynq_deinit(devctx);
-	}
+	default_deinit(devctx);
 }
 
 static inline
@@ -49,19 +47,19 @@ void log_perfc(platform_devctx_t *devctx)
 	u32 status;
 	size_t slots_active = 0;
 	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
-        if (devctx->info.composition.kernel[s]) {
-    		platform_ctl_addr_t sb;
-		    platform_addr_map_get_slot_base(devctx->addrmap, s, &sb);
-	    	sb += 0xc;
-    		platform_read_ctl(devctx, sb, sizeof(status), &status, 0);
-		    if (sb) ++slots_active;
-        }
+		if (devctx->info.composition.kernel[s]) {
+			platform_ctl_addr_t sb;
+			platform_addr_map_get_slot_base(devctx->addrmap, s, &sb);
+			sb += 0xc;
+			platform_read_ctl(devctx, sb, sizeof(status), &status, 0);
+			if (sb) ++slots_active;
+		}
 	}
 	platform_perfc_slot_interrupts_active_set(devctx->dev_id, slots_active);
 #ifndef NPERFC
 	fprintf(stderr, "platform device #" PRIdev_id " performance counters:\n%s",
-			devctx->dev_id, platform_perfc_tostring(devctx->dev_id));
-	#define BUFSZ (1 << 12)
+	        devctx->dev_id, platform_perfc_tostring(devctx->dev_id));
+#define BUFSZ (1 << 12)
 	char *fn = perfc_file(devctx->dev_id);
 	char *buf = (char *)calloc(sizeof(*buf), BUFSZ);
 	FILE *fp = fopen(fn, "r");
@@ -79,9 +77,9 @@ void log_perfc(platform_devctx_t *devctx)
 }
 
 platform_res_t platform_devctx_init(platform_ctx_t *ctx,
-		platform_dev_id_t const dev_id,
-		platform_access_t const mode,
-		platform_devctx_t **pdctx)
+                                    platform_dev_id_t const dev_id,
+                                    platform_access_t const mode,
+                                    platform_devctx_t **pdctx)
 {
 	platform_res_t res = PLATFORM_SUCCESS;
 	char *fn = control_file(dev_id);

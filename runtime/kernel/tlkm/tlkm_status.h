@@ -3,7 +3,6 @@
 
 #include <linux/bug.h>
 #include <status_core.pb.h>
-#include "platform_components.h"
 #include "tlkm_types.h"
 struct tlkm_device;
 
