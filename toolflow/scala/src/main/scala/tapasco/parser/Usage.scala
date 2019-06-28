@@ -302,9 +302,7 @@ configuration via `tapasco -n config.json`.
         Block(I("Timing failures") ~ "affect only the given element, but generate a feedback" ~
           "element: A new design space element is generated for the same" ~
           "Composition, but with a lower target frequency. The frequency is" ~
-          "computed from the 'worst negative slack' reported by the composer tools." ~
-          "I.e., a failed Composition with 100 MHz target frequency and 0.9ns WNS" ~
-          "would give a new element with 97.74 MHz (T=10.9ns) frequency.") &
+          "reduced by 5 MHz for the next run.") &
         "" &
         Block(I("Other errors:") ~ "This encompasses all other errors, e.g., missing licenses," ~
           "system crashes, out-of-memory problems, etc.")) &

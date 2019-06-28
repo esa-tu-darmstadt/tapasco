@@ -99,10 +99,16 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       logger.error("Vivado timeout for %s in '%s'".format(files.runName, files.outdir))
       Composer.Result(Timeout, log = files.log, util = None, timing = None)
     } else if (r != 0) {
-      logger.error("Vivado finished with non-zero exit code: %d for %s in '%s'"
-        .format(r, files.runName, files.outdir))
-      Composer.Result(files.log map (_.result) getOrElse OtherError, log = files.log,
-        util = None, timing = None)
+      if(files.tim.isDefined){
+        Composer.Result(checkTimingFailure(files), Some(files.bitFile.toString),
+          files.log, files.util, files.tim)
+      }
+      else{
+        logger.error("Vivado finished with non-zero exit code: %d for %s in '%s'"
+          .format(r, files.runName, files.outdir))
+        Composer.Result(files.log map (_.result) getOrElse OtherError, log = files.log,
+          util = None, timing = None)
+      }
     } else {
       // check for timing failure
       if (files.tim.isEmpty) {
