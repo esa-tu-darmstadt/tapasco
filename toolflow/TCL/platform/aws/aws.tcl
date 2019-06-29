@@ -354,7 +354,7 @@ namespace eval platform {
     set clkwiz_design_aresetn [create_bd_pin -type "rst" -dir "O" "design_aresetn"]
 
     connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins "$f1_inst/rst_main_n_out"]
-    connect_bd_net [get_bd_pins $design_clk_wiz/clk_in1] [get_bd_pins "$f1_inst/clk_extra_a2_out"]
+    connect_bd_net [get_bd_pins $design_clk_wiz/clk_in1] [get_bd_pins "$f1_inst/clk_extra_a1_out"]
 
     # connect external design clk
     connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $clkwiz_design_aclk
@@ -562,12 +562,12 @@ namespace eval platform {
     set_property -dict [ list \
         CONFIG.AUX_PRESENT {1} \
         CONFIG.BAR1_PRESENT {0} \
-        CONFIG.NUM_A_CLOCKS {3} \
-        CONFIG.CLOCK_A0_FREQ {125000000} \
-        CONFIG.CLOCK_A1_FREQ {62500000} \
-        CONFIG.CLOCK_A2_FREQ {187500000} \
-        CONFIG.CLOCK_A3_FREQ {250000000} \
-        CONFIG.CLOCK_A_RECIPE {0} \
+        CONFIG.NUM_A_CLOCKS {2} \
+        CONFIG.CLOCK_A0_FREQ {250000000} \
+        CONFIG.CLOCK_A1_FREQ {125000000} \
+        CONFIG.CLOCK_A2_FREQ {375000000} \
+        CONFIG.CLOCK_A3_FREQ {500000000} \
+        CONFIG.CLOCK_A_RECIPE {1} \
         CONFIG.DEVICE_ID {0xF000} \
         CONFIG.PCIS_PRESENT {0} \
         CONFIG.PCIM_PRESENT {1} \
@@ -656,7 +656,7 @@ namespace eval platform {
     variable platform_dirname
 
     # TODO: Use Amazon scripts to auto-generate clock constraints?
-    set constraints_fn [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname constraints 125 cl_clocks_aws.xdc]
+    set constraints_fn [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname constraints 250 cl_clocks_aws.xdc]
 
     add_files -fileset constrs_1 -norecurse $constraints_fn -force
 
