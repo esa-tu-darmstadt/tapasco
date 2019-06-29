@@ -35,7 +35,7 @@ set_property CLOCK_DEDICATED_ROUTE ANY_CMT_COLUMN [get_nets WRAPPER_INST/SH/kern
 set_property CLOCK_DEDICATED_ROUTE ANY_CMT_COLUMN [get_nets WRAPPER_INST/SH/kernel_clks_i/clkwiz_sys_clk/inst/CLK_CORE_DRP_I/clk_inst/clk_out3]
 
 #source ${FAAS_CL_DIR}/build/constraints/aws_gen_clk_constraints.tcl
-source $::env(TAPASCO_HOME_TCL)/platform/aws/constraints/aws_gen_clk_constraints.tcl
+source $::env(TAPASCO_HOME_TCL)/platform/aws/constraints/125/aws_gen_clk_constraints.tcl
 
 source $::env(HDK_SHELL_DIR)/build/scripts/check_uram.tcl
 

@@ -655,8 +655,8 @@ namespace eval platform {
   proc create_constraints {} {
     variable platform_dirname
 
-    # TODO this needs to be generated depending on the actual clock settings!
-    set constraints_fn [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname constraints cl_clocks_aws.xdc]
+    # TODO: Use Amazon scripts to auto-generate clock constraints?
+    set constraints_fn [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname constraints 125 cl_clocks_aws.xdc]
 
     add_files -fileset constrs_1 -norecurse $constraints_fn -force
 
