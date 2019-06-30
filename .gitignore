@@ -1,6 +1,7 @@
 *.bd
 *.cfg
 *.log
+*.jou
 *.swp
 *.swo
 *.o
@@ -8,9 +9,8 @@
 **/build
 target
 /core
-/bd
+/compose
 /DSE_*
-itpc/**
 arch/**/lib
 arch/tests/json11.*
 doc/**/*.aux
@@ -33,16 +33,8 @@ platform/*/module/modules.order
 platform/zynq/include/platform_dpi.h
 bin/tapasco-debug
 bin/tapasco-benchmark
-boot/pynq
-boot/zc706
-boot/zedboard
-boot/rootfs.img
-boot/uenv/uEnv-pynq.txt
 project/build.properties
-bin/itapasco
 bin/tapasco
-bin/tapasco-logviewer
-bin/tapasco-reportviewer
 /tapasco-status-cache/
 /lib/
 .cache.mk
@@ -50,4 +42,6 @@ bin/tapasco-reportviewer
 webtalk.*
 nf_sume_ddr3A.prj
 .idea
+*.sublime-project
+*.sublime-workspace
 **.gradle
