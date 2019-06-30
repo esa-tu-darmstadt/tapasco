@@ -747,7 +747,7 @@ namespace eval platform {
         STEPS.SYNTH_DESIGN.ARGS.RETIMING true \
       ] $synth_run
 
-      set_property -name {STEPS.ROUTE_DESIGN.ARGS.MORE OPTIONS} -value -tns_cleanup -objects [get_runs impl_1]
+      # set_property -name {STEPS.ROUTE_DESIGN.ARGS.MORE OPTIONS} -value -tns_cleanup -objects [get_runs impl_1]
 
       # STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY rebuilt \
       # STEPS.SYNTH_DESIGN.ARGS.DIRECTIVE RuntimeOptimized \
@@ -793,13 +793,13 @@ namespace eval platform {
 
     proc create_tarfile {} {
 
-      set wns [get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]]
-      puts "WNS post route: ${wns}"
-      if {$wns > -0.400 && $wns < 0} {
-        puts "Running post-route phys opt design..."
-        set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
-        phys_opt_design -directive Explore
-      }
+      #set wns [get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]]
+      #puts "WNS post route: ${wns}"
+      #if {$wns > -0.400 && $wns < 0} {
+      #  puts "Running post-route phys opt design..."
+      #  #set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
+      #  phys_opt_design -directive AggressiveExplore
+      #}
 
       puts "\nwrite_bitstream disabled, creating tarfile instead..."
 
