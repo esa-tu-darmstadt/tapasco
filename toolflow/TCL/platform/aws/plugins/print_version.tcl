@@ -2,8 +2,10 @@ namespace eval helper {
   namespace export print_version
 
   proc print_version {args} {
+    set c [file join $::env(TAPASCO_HOME) .git]
     puts "----------------------------------------------------------------------"
-    puts "TaPaSCo version: [exec git rev-parse --short HEAD] @ [exec git rev-parse --abbrev-ref HEAD]"
+    puts "TaPaSCo version:"
+    puts "[exec git --git-dir $c log -1 --oneline --no-color]"
     puts "----------------------------------------------------------------------"
   }
 
