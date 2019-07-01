@@ -315,17 +315,12 @@ fn run() -> Result<()> {
     };
 
     let mut buf: Vec<u8> = Vec::new();
-    status.encode(&mut buf)?;
+    status.encode_length_delimited(&mut buf)?;
 
     info!(
         "Successfully generated binary protobuf representation: {} bytes",
         status.encoded_len()
     );
-    info!("Adding length as VARINT.");
-    let mut len_int: Vec<u8> = Vec::new();
-    prost::encoding::encode_varint(status.encoded_len() as u64, &mut len_int);
-
-    len_int.append(&mut buf);
 
     let output_file_name = matches
         .value_of("OUTPUT")
@@ -335,11 +330,11 @@ fn run() -> Result<()> {
         let ofn = format!("{}.bin", output_file_name);
         let ofp = Path::new(&ofn);
         info!("Outputting binary as well to {}", ofn);
-        fs::write(ofp, &len_int).io_read_context(ofp)?;
+        fs::write(ofp, &buf).io_read_context(ofp)?;
     }
 
     let output_path = Path::new(output_file_name);
-    write_mem_file(output_path, &len_int)
+    write_mem_file(output_path, &buf)
 }
 
 quick_main!(run);
