@@ -97,6 +97,22 @@ void tlkm_platform_mmap_exit(struct tlkm_device *dev, struct platform_mmap *mmap
 }
 
 inline
+ulong addr2map_off(struct tlkm_device *dev, dev_addr_t const addr)
+{
+	struct platform *p = &dev->cls->platform;
+	ulong ptr = -1;
+	BUG_ON(! p);
+	if (addr == 0) {
+		ptr = p->status.base;
+	} else if (addr == 4096) {
+		ptr = dev->arch.base;
+	} else if (addr == 8192) {
+		ptr = dev->plat.base;
+	}
+	return ptr;
+}
+
+inline
 void __iomem *addr2map(struct tlkm_device *dev, dev_addr_t const addr)
 {
 	struct platform *p = &dev->cls->platform;
