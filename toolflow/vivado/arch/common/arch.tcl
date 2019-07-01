@@ -5,7 +5,7 @@ namespace eval arch {
   proc next_valid_address {addr range} {
     return [expr (($addr / $range) + ($addr % $range > 0 ? 1 : 0)) * $range]
   }
-  
+
   # Returns the address map of the current composition.
   # Format: <INTF> -> <BASE ADDR> <RANGE> <KIND>
   # Kind is either memory, register or master.
@@ -27,7 +27,7 @@ namespace eval arch {
           set intf [get_bd_intf_pins -of_objects $seg]
           set range [get_property RANGE $seg]
           set offset [next_valid_address $offset $range]
-          ::platform::addressmap::add_processing_element [llength [dict keys $ret]] $offset
+          ::platform::addressmap::add_processing_element [llength [dict keys $ret]] $offset $range
           dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind register"
           incr offset $range
         }
@@ -43,7 +43,7 @@ namespace eval arch {
         } else {
           set intf [get_bd_intf_pins -of_objects $seg]
           set range [get_property RANGE $seg]
-          ::platform::addressmap::add_processing_element [llength [dict keys $ret]] $offset
+          ::platform::addressmap::add_processing_element [llength [dict keys $ret]] $offset $range
           dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind memory"
           incr offset $range
         }

@@ -34,6 +34,8 @@ struct Composition {
     Type: String,
     SlotId: u64,
     Kernel: u64,
+    Offset: String,
+    Size: String,
 }
 
 #[allow(non_snake_case)]
@@ -55,7 +57,8 @@ struct Clocks {
 #[derive(Deserialize, Debug)]
 struct Component {
     Name: String,
-    Address: String,
+    Size: String,
+    Offset: String,
 }
 
 #[allow(non_snake_case)]
@@ -67,26 +70,19 @@ struct ComponentAddresses {
 
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug)]
-struct PEAddresses {
+struct ArchitectureAddresses {
     Base: String,
-    Offsets: Vec<String>,
-}
-
-#[allow(non_snake_case)]
-#[derive(Deserialize, Debug)]
-struct BaseAddresses {
-    Architecture: PEAddresses,
-    Platform: ComponentAddresses,
+    Composition: Vec<Composition>,
 }
 
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug)]
 struct Design {
-    Composition: Vec<Composition>,
+    Architecture: ArchitectureAddresses,
     Timestamp: u64,
     Versions: Vec<Version>,
     Clocks: Vec<Clocks>,
-    BaseAddresses: BaseAddresses,
+    Platform: ComponentAddresses,
 }
 
 #[derive(Debug, Fail)]
@@ -220,9 +216,9 @@ fn run() -> Result<()> {
 
     info!("Starting to build the binary representation");
 
-    let arch_base = from_hex_str(&json.BaseAddresses.Architecture.Base)?;
+    let arch_base = from_hex_str(&json.Architecture.Base)?;
 
-    let platform_base = from_hex_str(&json.BaseAddresses.Platform.Base)?;
+    let platform_base = from_hex_str(&json.Platform.Base)?;
 
     info!(
         "Architecture start: 0x{:X}, Platform start: 0x{:X}",
@@ -230,19 +226,24 @@ fn run() -> Result<()> {
     );
 
     let mut pes: Vec<status::Pe> = Vec::new();
-    for pe in json.Composition {
-        let addr = from_hex_str(&json.BaseAddresses.Architecture.Offsets[pe.SlotId as usize])?;
+    for pe in json.Architecture.Composition {
+        let addr = from_hex_str(&pe.Offset)?;
+        let size = from_hex_str(&pe.Size)?;
         if pe.Type == "Memory" {
             let last = pes
                 .last_mut()
                 .ok_or_else(|| JSONToStatusError::MemoryWithoutPE)?;
-            last.local_memory = addr
+            last.local_memory = Some(status::MemoryArea {
+                base: addr,
+                size: size,
+            });
         } else {
             pes.push(status::Pe {
                 name: "UNNAMED KERNEL".to_string(),
                 id: pe.Kernel as u32,
                 offset: addr,
-                local_memory: 0,
+                size: size,
+                local_memory: None,
             });
         }
     }
@@ -257,13 +258,13 @@ fn run() -> Result<()> {
         .collect();
 
     let platforms: Vec<_> = json
-        .BaseAddresses
         .Platform
         .Components
         .iter()
         .map(|x| status::Platform {
             name: x.Name.clone(),
-            offset: from_hex_str(&x.Address).unwrap(),
+            offset: from_hex_str(&x.Offset).unwrap(),
+            size: from_hex_str(&x.Size).unwrap(),
         })
         .collect();
 
@@ -277,14 +278,34 @@ fn run() -> Result<()> {
         })
         .collect();
 
+    let mut max_offset = 0;
+    let mut max_size = 0;
+    for pe in &pes {
+        if pe.offset >= max_offset {
+            max_offset = pe.offset;
+            max_size = pe.size;
+        }
+    }
+    let arch_size = max_offset + max_size;
+
+    max_offset = 0;
+    max_size = 0;
+    for plat in &platforms {
+        if plat.offset >= max_offset {
+            max_offset = plat.offset;
+            max_size = plat.size;
+        }
+    }
+    let platform_size = max_offset + max_size;
+
     let status = status::Status {
         arch_base: Some(status::MemoryArea {
             base: arch_base,
-            size: 0x100000,
+            size: arch_size,
         }),
         platform_base: Some(status::MemoryArea {
             base: platform_base,
-            size: 0x100000,
+            size: platform_size,
         }),
         timestamp: json.Timestamp,
         pe: pes,

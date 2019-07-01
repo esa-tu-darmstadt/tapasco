@@ -449,11 +449,15 @@ namespace eval ::tapasco::ip {
           "register" {
             set kind [format "%d" [regsub {.*target_ip_([0-9][0-9]).*} $intf {\1}]]
             set kid [dict get [::tapasco::get_composition] $kind id]
-            lappend slots [json::write object "Type" [json::write string "Kernel"] "SlotId" $slot_id "Kernel" $kid]
+            lappend slots [json::write object "Type" [json::write string "Kernel"] "SlotId" $slot_id "Kernel" $kid \
+                                              "Offset" [json::write string [format "0x%016x" [expr "[dict get $addr $intf "offset"] - [::platform::get_pe_base_address]"]]]          \
+                                              "Size" [json::write string [format "0x%016x" [dict get $addr $intf "range"]]]]
             incr slot_id
           }
           "memory" {
-            lappend slots [json::write object "Type" [json::write string "Memory"] "SlotId" $slot_id "Bytes" [format "%d" [dict get $addr $intf "range"]]]
+            lappend slots [json::write object "Type" [json::write string "Memory"] "SlotId" $slot_id \
+                                              "Offset" [json::write string [format "0x%016x" [expr "[dict get $addr $intf "offset"] - [::platform::get_pe_base_address]"]]] \
+                                              "Size" [json::write string [format "0x%016x" [dict get $addr $intf "range"]]]]
             incr slot_id
           }
           "master" {}
@@ -463,19 +467,14 @@ namespace eval ::tapasco::ip {
     }
     puts "  finished composition map, composing JSON ..."
 
-    # get PE base addresses
-    set pe_bases [list]
-    foreach pe_base [::platform::addressmap::get_processing_element_bases] {
-      lappend pe_bases [json::write string [format "0x%08x" [expr "$pe_base - [::platform::get_pe_base_address]"]]]
-    }
-
     # get platform component base addresses
     set pc_bases [list]
-    foreach {pc_name pc_base} [::platform::addressmap::get_platform_component_bases] {
-      puts "$pc_name, $pc_base"
+    foreach {pc_name pc_base size} [::platform::addressmap::get_platform_component_bases] {
+      puts "$pc_name, $pc_base, $size"
       set name $pc_name
       set base [expr "$pc_base - [::platform::get_platform_base_address]"]
-      lappend pc_bases [json::write object "Name" [json::write string $pc_name] "Address" [json::write string [format "0x%08x" $base]]]
+      lappend pc_bases [json::write object "Name" [json::write string $pc_name] "Offset" [json::write string [format "0x%016x" $base]] \
+                          "Size" [json::write string [format "0x%016x" $size]]]
     }
     puts "  finished address map, composing JSON ..."
 
@@ -484,7 +483,6 @@ namespace eval ::tapasco::ip {
     set ts [clock seconds]
 
     return [json::write object \
-      "Composition" [json::write array {*}$slots] \
       "Timestamp" [expr "$ts - ($ts \% 86400)"] \
       "InterruptControllers" $no_intc \
       "Versions" [json::write array \
@@ -497,12 +495,10 @@ namespace eval ::tapasco::ip {
         [json::write object "Domain" [json::write string "Memory"] "Frequency" [::tapasco::get_mem_frequency]] \
       ] \
       "Capabilities" [json::write object "Capabilities 0" [::tapasco::get_capabilities_flags]] \
-      "BaseAddresses" [json::write object \
-        "Architecture" [json::write object "Base" [json::write string [format "0x%08x" [::platform::get_pe_base_address]]] \
-                                           "Offsets" [json::write array {*}$pe_bases]] \
-        "Platform" [json::write object "Base" [json::write string [format "0x%08x" [::platform::get_platform_base_address]]] \
+        "Architecture" [json::write object "Base" [json::write string [format "0x%016x" [::platform::get_pe_base_address]]] \
+                                       "Composition" [json::write array {*}$slots]] \
+        "Platform" [json::write object "Base" [json::write string [format "0x%016x" [::platform::get_platform_base_address]]] \
                                        "Components" [json::write array {*}$pc_bases]] \
-      ] \
     ]
   }
 }

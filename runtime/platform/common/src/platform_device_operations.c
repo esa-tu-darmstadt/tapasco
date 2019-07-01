@@ -23,19 +23,19 @@ typedef struct device_regs {
 
 #define DEFAULT_REGSPACE { \
 	{ \
-		.base: 0, \
-		.high: 8192, \
-		.size: 8192, \
+		.base= 0, \
+		.high= 8192, \
+		.size= 8192, \
 	}, \
 	{ \
-		.base: 0x8000000, \
-		.high: 0x8100000, \
-		.size: 0x100000, \
+		.base= 0x8000000, \
+		.high= 0x8100000, \
+		.size= 0x100000, \
 	}, \
 	{ \
-		.base: 0x10000000, \
-		.high: 0x10100000, \
-		.size: 0x100000, \
+		.base= 0x10000000, \
+		.high= 0x10100000, \
+		.size= 0x100000, \
 	} \
 }
 
@@ -49,9 +49,24 @@ typedef struct default_platform {
 	device_regs_t  			regspace;
 } default_platform_t;
 
-size_t device_regspace_status_base(const platform_devctx_t *devctx) {
+volatile void* device_regspace_status_ptr(const platform_devctx_t *devctx) {
+	default_platform_t *pp = (default_platform_t *)devctx->private_data;
+	return pp->status_map;
+}
+
+size_t device_regspace_status_size(const platform_devctx_t *devctx) {
 	default_platform_t *pp = (default_platform_t *)devctx->private_data;
 	return pp->regspace.status.size;
+}
+
+uintptr_t device_regspace_status_base(const platform_devctx_t *devctx) {
+	default_platform_t *pp = (default_platform_t *)devctx->private_data;
+	return pp->regspace.arch.base;
+}
+
+uintptr_t device_regspace_arch_base(const platform_devctx_t *devctx) {
+	default_platform_t *pp = (default_platform_t *)devctx->private_data;
+	return pp->regspace.arch.base;
 }
 
 void calc_regspace(device_regspace_t *r) {
@@ -325,6 +340,7 @@ platform_res_t request_device_size(platform_devctx_t const *devctx) {
 	DEVLOG(devctx->dev_id, LPLL_MM, "Arch %dB, Platform %dB, Status %dB.", cmd.arch, cmd.platform, cmd.status);
 	default_platform_t *pp = (default_platform_t *)devctx->private_data;
 
+	pp->regspace = (device_regs_t) DEFAULT_REGSPACE;
 	pp->regspace.arch.size = cmd.arch;
 	pp->regspace.status.size = cmd.status;
 	pp->regspace.platform.size = cmd.platform;

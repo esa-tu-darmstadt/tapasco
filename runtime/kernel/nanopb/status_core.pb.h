@@ -29,18 +29,10 @@ typedef struct _tapasco_status_MemoryArea {
 } tapasco_status_MemoryArea;
 
 
-typedef struct _tapasco_status_PE {
-    pb_callback_t name;
-    uint32_t id;
-    uint64_t offset;
-    uint64_t local_memory;
-/* @@protoc_insertion_point(struct:tapasco_status_PE) */
-} tapasco_status_PE;
-
-
 typedef struct _tapasco_status_Platform {
     pb_callback_t name;
     uint64_t offset;
+    uint64_t size;
 /* @@protoc_insertion_point(struct:tapasco_status_Platform) */
 } tapasco_status_Platform;
 
@@ -51,6 +43,16 @@ typedef struct _tapasco_status_Version {
     uint32_t release;
 /* @@protoc_insertion_point(struct:tapasco_status_Version) */
 } tapasco_status_Version;
+
+
+typedef struct _tapasco_status_PE {
+    pb_callback_t name;
+    uint32_t id;
+    uint64_t offset;
+    uint64_t size;
+    tapasco_status_MemoryArea local_memory;
+/* @@protoc_insertion_point(struct:tapasco_status_PE) */
+} tapasco_status_PE;
 
 
 typedef struct _tapasco_status_Status {
@@ -66,14 +68,14 @@ typedef struct _tapasco_status_Status {
 
 
 /* Initializer values for message structs */
-#define tapasco_status_PE_init_default           {{{NULL}, NULL}, 0, 0, 0}
-#define tapasco_status_Platform_init_default     {{{NULL}, NULL}, 0}
+#define tapasco_status_PE_init_default           {{{NULL}, NULL}, 0, 0, 0, tapasco_status_MemoryArea_init_default}
+#define tapasco_status_Platform_init_default     {{{NULL}, NULL}, 0, 0}
 #define tapasco_status_Clock_init_default        {{{NULL}, NULL}, 0}
 #define tapasco_status_Version_init_default      {{{NULL}, NULL}, 0, 0}
 #define tapasco_status_MemoryArea_init_default   {0, 0}
 #define tapasco_status_Status_init_default       {0, tapasco_status_MemoryArea_init_default, tapasco_status_MemoryArea_init_default, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
-#define tapasco_status_PE_init_zero              {{{NULL}, NULL}, 0, 0, 0}
-#define tapasco_status_Platform_init_zero        {{{NULL}, NULL}, 0}
+#define tapasco_status_PE_init_zero              {{{NULL}, NULL}, 0, 0, 0, tapasco_status_MemoryArea_init_zero}
+#define tapasco_status_Platform_init_zero        {{{NULL}, NULL}, 0, 0}
 #define tapasco_status_Clock_init_zero           {{{NULL}, NULL}, 0}
 #define tapasco_status_Version_init_zero         {{{NULL}, NULL}, 0, 0}
 #define tapasco_status_MemoryArea_init_zero      {0, 0}
@@ -84,15 +86,17 @@ typedef struct _tapasco_status_Status {
 #define tapasco_status_Clock_frequency_mhz_tag   2
 #define tapasco_status_MemoryArea_base_tag       1
 #define tapasco_status_MemoryArea_size_tag       2
-#define tapasco_status_PE_name_tag               1
-#define tapasco_status_PE_id_tag                 2
-#define tapasco_status_PE_offset_tag             3
-#define tapasco_status_PE_local_memory_tag       4
 #define tapasco_status_Platform_name_tag         1
 #define tapasco_status_Platform_offset_tag       2
+#define tapasco_status_Platform_size_tag         3
 #define tapasco_status_Version_software_tag      1
 #define tapasco_status_Version_year_tag          2
 #define tapasco_status_Version_release_tag       3
+#define tapasco_status_PE_name_tag               1
+#define tapasco_status_PE_id_tag                 2
+#define tapasco_status_PE_offset_tag             3
+#define tapasco_status_PE_size_tag               4
+#define tapasco_status_PE_local_memory_tag       5
 #define tapasco_status_Status_timestamp_tag      1
 #define tapasco_status_Status_arch_base_tag      2
 #define tapasco_status_Status_platform_base_tag  3
@@ -106,13 +110,16 @@ typedef struct _tapasco_status_Status {
 X(a, CALLBACK, SINGULAR, STRING, name, 1) \
 X(a, STATIC, SINGULAR, UINT32, id, 2) \
 X(a, STATIC, SINGULAR, UINT64, offset, 3) \
-X(a, STATIC, SINGULAR, UINT64, local_memory, 4)
+X(a, STATIC, SINGULAR, UINT64, size, 4) \
+X(a, STATIC, SINGULAR, MESSAGE, local_memory, 5)
 #define tapasco_status_PE_CALLBACK pb_default_field_callback
 #define tapasco_status_PE_DEFAULT NULL
+#define tapasco_status_PE_local_memory_MSGTYPE tapasco_status_MemoryArea
 
 #define tapasco_status_Platform_FIELDLIST(X, a) \
 X(a, CALLBACK, SINGULAR, STRING, name, 1) \
-X(a, STATIC, SINGULAR, UINT64, offset, 2)
+X(a, STATIC, SINGULAR, UINT64, offset, 2) \
+X(a, STATIC, SINGULAR, UINT64, size, 3)
 #define tapasco_status_Platform_CALLBACK pb_default_field_callback
 #define tapasco_status_Platform_DEFAULT NULL
 

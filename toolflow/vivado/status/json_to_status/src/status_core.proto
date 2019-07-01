@@ -6,12 +6,14 @@ message PE {
     string name = 1;
     uint32 id = 2;
     uint64 offset = 3;
-    uint64 local_memory = 4;
+    uint64 size = 4;
+    MemoryArea local_memory = 5;
 }
 
 message Platform {
     string name = 1;
     uint64 offset = 2;
+    uint64 size = 3;
 }
 
 message Clock {

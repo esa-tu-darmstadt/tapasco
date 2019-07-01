@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='status_core.proto',
   package='tapasco.status',
   syntax='proto3',
-  serialized_pb=_b('\n\x11status_core.proto\x12\x0etapasco.status\"D\n\x02PE\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\r\x12\x0e\n\x06offset\x18\x03 \x01(\x04\x12\x14\n\x0clocal_memory\x18\x04 \x01(\x04\"(\n\x08Platform\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06offset\x18\x02 \x01(\x04\",\n\x05\x43lock\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\rfrequency_mhz\x18\x02 \x01(\r\":\n\x07Version\x12\x10\n\x08software\x18\x01 \x01(\t\x12\x0c\n\x04year\x18\x02 \x01(\r\x12\x0f\n\x07release\x18\x03 \x01(\r\"(\n\nMemoryArea\x12\x0c\n\x04\x62\x61se\x18\x01 \x01(\x04\x12\x0c\n\x04size\x18\x02 \x01(\x04\"\x9b\x02\n\x06Status\x12\x11\n\ttimestamp\x18\x01 \x01(\x04\x12-\n\tarch_base\x18\x02 \x01(\x0b\x32\x1a.tapasco.status.MemoryArea\x12\x31\n\rplatform_base\x18\x03 \x01(\x0b\x32\x1a.tapasco.status.MemoryArea\x12\x1e\n\x02pe\x18\x04 \x03(\x0b\x32\x12.tapasco.status.PE\x12*\n\x08platform\x18\x05 \x03(\x0b\x32\x18.tapasco.status.Platform\x12%\n\x06\x63locks\x18\x06 \x03(\x0b\x32\x15.tapasco.status.Clock\x12)\n\x08versions\x18\x07 \x03(\x0b\x32\x17.tapasco.status.Versionb\x06proto3')
+  serialized_pb=_b('\n\x11status_core.proto\x12\x0etapasco.status\"n\n\x02PE\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\r\x12\x0e\n\x06offset\x18\x03 \x01(\x04\x12\x0c\n\x04size\x18\x04 \x01(\x04\x12\x30\n\x0clocal_memory\x18\x05 \x01(\x0b\x32\x1a.tapasco.status.MemoryArea\"6\n\x08Platform\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06offset\x18\x02 \x01(\x04\x12\x0c\n\x04size\x18\x03 \x01(\x04\",\n\x05\x43lock\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\rfrequency_mhz\x18\x02 \x01(\r\":\n\x07Version\x12\x10\n\x08software\x18\x01 \x01(\t\x12\x0c\n\x04year\x18\x02 \x01(\r\x12\x0f\n\x07release\x18\x03 \x01(\r\"(\n\nMemoryArea\x12\x0c\n\x04\x62\x61se\x18\x01 \x01(\x04\x12\x0c\n\x04size\x18\x02 \x01(\x04\"\x9b\x02\n\x06Status\x12\x11\n\ttimestamp\x18\x01 \x01(\x04\x12-\n\tarch_base\x18\x02 \x01(\x0b\x32\x1a.tapasco.status.MemoryArea\x12\x31\n\rplatform_base\x18\x03 \x01(\x0b\x32\x1a.tapasco.status.MemoryArea\x12\x1e\n\x02pe\x18\x04 \x03(\x0b\x32\x12.tapasco.status.PE\x12*\n\x08platform\x18\x05 \x03(\x0b\x32\x18.tapasco.status.Platform\x12%\n\x06\x63locks\x18\x06 \x03(\x0b\x32\x15.tapasco.status.Clock\x12)\n\x08versions\x18\x07 \x03(\x0b\x32\x17.tapasco.status.Versionb\x06proto3')
 )
 
 
@@ -54,9 +54,16 @@ _PE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='local_memory', full_name='tapasco.status.PE.local_memory', index=3,
+      name='size', full_name='tapasco.status.PE.size', index=3,
       number=4, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='local_memory', full_name='tapasco.status.PE.local_memory', index=4,
+      number=5, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
@@ -73,7 +80,7 @@ _PE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=37,
-  serialized_end=105,
+  serialized_end=147,
 )
 
 
@@ -98,6 +105,13 @@ _PLATFORM = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='size', full_name='tapasco.status.Platform.size', index=2,
+      number=3, type=4, cpp_type=4, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -110,8 +124,8 @@ _PLATFORM = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=107,
-  serialized_end=147,
+  serialized_start=149,
+  serialized_end=203,
 )
 
 
@@ -148,8 +162,8 @@ _CLOCK = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=149,
-  serialized_end=193,
+  serialized_start=205,
+  serialized_end=249,
 )
 
 
@@ -193,8 +207,8 @@ _VERSION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=195,
-  serialized_end=253,
+  serialized_start=251,
+  serialized_end=309,
 )
 
 
@@ -231,8 +245,8 @@ _MEMORYAREA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=255,
-  serialized_end=295,
+  serialized_start=311,
+  serialized_end=351,
 )
 
 
@@ -304,10 +318,11 @@ _STATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=298,
-  serialized_end=581,
+  serialized_start=354,
+  serialized_end=637,
 )
 
+_PE.fields_by_name['local_memory'].message_type = _MEMORYAREA
 _STATUS.fields_by_name['arch_base'].message_type = _MEMORYAREA
 _STATUS.fields_by_name['platform_base'].message_type = _MEMORYAREA
 _STATUS.fields_by_name['pe'].message_type = _PE

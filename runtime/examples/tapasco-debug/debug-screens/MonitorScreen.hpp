@@ -1,7 +1,7 @@
 /**
- *  @file	MonitorScreen.hpp
- *  @brief	Register monitor screen for tapasco-debug.
- *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+ *  @file MonitorScreen.hpp
+ *  @brief  Register monitor screen for tapasco-debug.
+ *  @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #ifndef MONITOR_SCREEN_HPP__
 #define MONITOR_SCREEN_HPP__
@@ -37,7 +37,7 @@ protected:
       else {
         y = h;
         start_col += colc;
-	start_row = (rows - 3 - h * rowc) / 2;
+        start_row = (rows - 3 - h * rowc) / 2;
       }
       ++sid;
       if (sid >= h * w) break;
@@ -45,7 +45,7 @@ protected:
     // render keyboard hints
     attron(A_REVERSE);
     mvprintw(rows - 1, cols / 2 - 24,
-        "press 'r' for peek, 'p' for poke, 'w' for poke and wait");
+             "press 'r' for peek, 'p' for poke, 'w' for poke and wait");
     attroff(A_REVERSE);
   }
 
@@ -60,31 +60,31 @@ protected:
   virtual void update() {
     for (uint32_t intc = 0; intc < intc_addr.size(); ++intc) {
       if (platform_read_ctl(tapasco.platform_device(), intc_addr[intc], sizeof(intc_isr[intc]),
-          &intc_isr[intc], PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
-	intc_isr[intc] = 0xDEADBEEF;
+                            &intc_isr[intc], PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
+        intc_isr[intc] = 0xDEADBEEF;
       }
     }
     for (slot_t *sp : slots) {
       if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x0c, 4, &sp->isr,
-          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
-	sp->isr = 0xDEADBEEF;
+                            PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
+        sp->isr = 0xDEADBEEF;
       }
       if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x10, 4, &sp->retval[0],
-          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
-	sp->retval[0] = 0xDEADBEEF;
+                            PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
+        sp->retval[0] = 0xDEADBEEF;
       }
       if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x14, 4, &sp->retval[1],
-          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
-	sp->retval[1] = 0xDEADBEEF;
+                            PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
+        sp->retval[1] = 0xDEADBEEF;
       }
       for (int i = 0; i < NUM_ARGS; ++i) {
         for (int j = 0; j < 2; ++j) {
           if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x20 + 0x10 * i + 0x04 * j, 4,
-	      &sp->argval[i * 2 + j], PLATFORM_CTL_FLAGS_NONE) !=
-	      PLATFORM_SUCCESS) {
-	    sp->argval[i * 2 + j] = 0xDEADBEEF;
+                                &sp->argval[i * 2 + j], PLATFORM_CTL_FLAGS_NONE) !=
+              PLATFORM_SUCCESS) {
+            sp->argval[i * 2 + j] = 0xDEADBEEF;
           }
-	}
+        }
       }
     }
   }
@@ -246,11 +246,6 @@ private:
 
   int check_bitstream() {
     uint32_t cnt { 0 };
-    platform_ctl_addr_t status;
-    platform_address_get_component_base(tapasco.platform_device(), PLATFORM_COMPONENT_STATUS, &status);
-    if (platform_read_ctl(tapasco.platform_device(), status + 0x04, sizeof(cnt), &cnt, PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
-      return -1;
-    }
     while (cnt > 0) {
       platform_component_t isr_addr;
       platform_ctl_addr_t intc;
@@ -267,17 +262,16 @@ private:
       --cnt;
     }
     for (int s = 0; s < 128; ++s) {
-      uint32_t id { 0 };
-      if (platform_read_ctl(tapasco.platform_device(), status + 0x100 + s * 0x10, 4, &id,
-          PLATFORM_CTL_FLAGS_NONE) == PLATFORM_SUCCESS)
-	if (id) {
-	  struct slot_t *sp = new struct slot_t;
-	  sp->slot_id = s;
-	  sp->id = id;
-	  sp->base_addr = tapasco.platform_device()->info.base.arch[s];
-	  slots.push_back(sp);
-	  ++cnt;
-	}
+      uint32_t id = tapasco.platform_device()->info.composition.kernel[s];
+
+        if (id) {
+          struct slot_t *sp = new struct slot_t;
+          sp->slot_id = s;
+          sp->id = id;
+          sp->base_addr = tapasco.platform_device()->info.base.arch[s];
+          slots.push_back(sp);
+          ++cnt;
+        }
     }
     return cnt > 0 ? 0 : -3;
   }

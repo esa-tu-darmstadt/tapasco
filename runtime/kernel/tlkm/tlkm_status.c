@@ -3,10 +3,6 @@
 #include "tlkm_device.h"
 #include <pb_decode.h>
 
-#define REG_OFFSET				0x1000
-#define REG_SZ					(NUM_COMP * sizeof(dev_addr_t))
-char test[32];
-
 bool parse_string(pb_istream_t *stream, const pb_field_t *field, void**arg) {
 	size_t bytes_to_read = 31 > stream->bytes_left ? stream->bytes_left : 31;
 	memset(*arg, 0, 32);

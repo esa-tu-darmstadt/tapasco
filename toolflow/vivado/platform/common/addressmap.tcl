@@ -54,44 +54,48 @@ namespace eval addressmap {
     return $components
   }
 
-  proc add_platform_component {name base} {
+  proc add_platform_component {name base size} {
     variable platform_components
     puts "Adding platform component $name at [format "0x%08x" $base] ..."
     if {[dict exists $platform_components $name]} {
       puts "WARNING: platform component $name already exists, overwriting!"
     }
-    dict set platform_components $name $base
+    dict set platform_components $name $base $size
   }
 
   proc get_platform_component {name} {
     variable platform_components
     if {[dict exists $platform_components $name]} {
-      set base [dict get $platform_components $name]
-      puts "  platform component $name found at $base"
-      return $base
+      set comp [dict get $platform_components $name]
+      set base [lindex $comp 0]
+      set size [lindex $comp 1]
+      puts "  platform component $name found at $base ($size B)"
+      return [list $base $size]
     }
-    return 0xFFFFFFFFF
+    return [list 0xFFFFFFFFF 0xFFFFFFFFF]
   }
 
   proc get_platform_component_bases {} {
     set ret [list]
     foreach c [get_known_platform_components] {
-      set comp_addr [get_platform_component $c]
+      set comp [get_platform_component $c]
+      set comp_addr [lindex $comp 0]
+      set size [lindex $comp 1]
       if {$comp_addr != 0xFFFFFFFFF} {
-        lappend ret $c $comp_addr
+        lappend ret $c $comp_addr $size
       }
     }
     puts "Platform component bases: $ret"
     return $ret
   }
 
-  proc add_processing_element {slot base} {
+  proc add_processing_element {slot base size} {
     variable processing_elements
-    puts "Adding processing element in slot $slot with base [format "0x%08x" $base] ..."
+    puts "Adding processing element in slot $slot with base [format "0x%08x" $base] and size $size ..."
     if {[dict exists $processing_elements $slot]} {
       puts "WARNING: processing element in slot $slot already exists, overwriting!"
     }
-    dict set processing_elements $slot $base
+    dict set processing_elements $slot $base $size
   }
 
   proc get_processing_element {slot} {
@@ -129,7 +133,7 @@ namespace eval addressmap {
       set kind [get_property USAGE $seg]
       dict set address_map $sintf "interface $sintf offset $base range $srange kind $kind"
       if {[string compare $component ""] != 0} {
-        add_platform_component $component $base
+        add_platform_component $component $base $srange
         set component [increase_component_name $component]
       }
       if {$stride == 0} { incr base $srange } else { incr base $stride }

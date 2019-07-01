@@ -26,13 +26,13 @@ class TapascoDebugMenu : public MenuScreen {
 public:
   TapascoDebugMenu() : MenuScreen("Welcome to the interactive TaPaSCo Debugger", vector<string>()),
       tapasco(true, TAPASCO_MONITOR_ACCESS) {
-    bool blue = has_blue_dma();
+    //bool blue = has_blue_dma();
     options.push_back("Show kernel map of current bitstream");
     screens.push_back(new TapascoStatusScreen(&tapasco));
-    if (tapasco.has_capability(PLATFORM_CAP0_DYNAMIC_ADDRESS_MAP)) {
-      options.push_back("Show address map of current bitstream");
-      screens.push_back(new AddressMapScreen(tapasco));
-    }
+
+    options.push_back("Show address map of current bitstream");
+    screens.push_back(new AddressMapScreen(tapasco));
+
     options.push_back("Monitor device registers");
     screens.push_back(new MonitorScreen(&tapasco));
     if (LocalMemoryScreen::has_local_memories(tapasco)) {
@@ -41,10 +41,10 @@ public:
     }
     options.push_back("Perform interrupt stress test");
     screens.push_back(new InterruptStressTestScreen(&tapasco));
-    if (blue) {
+    /*if (blue) {
       options.push_back("Monitor blue infrastructure");
       screens.push_back(new BlueDebugScreen(&tapasco));
-    }
+    }*/
     if (tapasco.has_capability(PLATFORM_CAP0_ATSPRI) && tapasco.has_capability(PLATFORM_CAP0_ATSCHECK)) {
       options.push_back("ATS/PRI direct interface");
       screens.push_back(new AtsPriScreen(&tapasco));

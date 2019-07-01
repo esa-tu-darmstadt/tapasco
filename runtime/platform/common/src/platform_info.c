@@ -24,109 +24,165 @@
 #include <platform_logging.h>
 #include <platform_addr_map.h>
 #include <platform.h>
-#include <zynq/zynq.h>
-
-#define PLATFORM_STATUS_REGISTERS \
-	_X(REG_MAGIC_ID ,		0x0000 ,	magic_id) \
-	_X(REG_NUM_INTC ,		0x0004 ,	num_intc) \
-	_X(REG_CAPS0 ,			0x0008 ,	caps0) \
-	_X(REG_VIVADO_VERSION ,		0x0010 ,	version.vivado) \
-	_X(REG_PLATFORM_VERSION ,	0x0014 ,	version.tapasco) \
-	_X(REG_COMPOSE_TS ,		0x0018 ,	compose_ts) \
-	_X(REG_HOST_CLOCK ,		0x001c ,	clock.host) \
-	_X(REG_DESIGN_CLOCK ,		0x0020 ,	clock.design) \
-	_X(REG_MEMORY_CLOCK ,		0x0024 ,	clock.memory)
-
-#ifdef _X
-	#undef _X
-#endif
-
-#define _X(constant, code, field) \
-	constant = code,
-typedef enum {
-	PLATFORM_STATUS_REGISTERS
-} platform_status_reg_t;
-#undef _X
-
-#define REG_KERNEL_ID_START					0x0100
-#define REG_LOCAL_MEM_START					0x0104
-#define REG_SLOT_OFFSET						0x0010
-#define REG_PLATFORM_BASE_START					0x1000
-#define	REG_ARCH_BASE_START \
-		(REG_PLATFORM_BASE_START + sizeof(uint64_t) * PLATFORM_NUM_SLOTS)
-
-#define STRINGIFY(f)					#f
+#include <status_core.pb.h>
+#include <pb_decode.h>
 
 static platform_info_t _info[PLATFORM_MAX_DEVS];
 
+typedef struct parser_helper {
+	platform_info_t *info;
+	platform_dev_id_t dev_id;
+	int counter;
+} parser_helper_t;
+
+uint32_t build_version(uint16_t major, uint16_t minor) {
+	return (uint32_t)major << 16 | minor;
+}
+
+bool parse_string(pb_istream_t *stream, const pb_field_t *field, void**arg) {
+	size_t bytes_to_read = 31 > stream->bytes_left ? stream->bytes_left : 31;
+	memset(*arg, 0, 32);
+	pb_read(stream, *arg, bytes_to_read);
+	return true;
+}
+
+bool kernel_helper(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+	tapasco_status_PE pe = tapasco_status_PE_init_zero;
+	parser_helper_t *helper = (parser_helper_t *)*arg;
+	platform_info_t *info = helper->info;
+	bool ret = false;
+
+	ret = pb_decode(stream, tapasco_status_PE_fields, &pe);
+
+	DEVLOG(helper->dev_id, LPLL_STATUS, "PE @ %d %x, Type %d, Local Memory %d.", helper->counter, pe.id, pe.offset, pe.local_memory);
+
+	info->base.arch[helper->counter] = pe.offset;
+	info->composition.kernel[helper->counter] = pe.id;
+
+	if (pe.local_memory.size) {
+		++helper->counter;
+		info->base.arch[helper->counter] = pe.offset;
+		info->composition.kernel[helper->counter] = 0;
+		info->base.arch[helper->counter] = pe.local_memory.base;
+		info->composition.memory[helper->counter] = pe.local_memory.size;
+	}
+
+	++helper->counter;
+
+	return ret;
+};
+
+bool version_helper(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+	tapasco_status_Version version = tapasco_status_Version_init_zero;
+	parser_helper_t *helper = (parser_helper_t *)*arg;
+	platform_info_t *info = helper->info;
+	bool ret = false;
+	char name[32];
+	version.software = (pb_callback_t) {
+		{
+			.decode = &parse_string,
+		},
+		.arg = &name
+	};
+
+	ret = pb_decode(stream, tapasco_status_Version_fields, &version);
+	if (strncmp(name, "Vivado", 32) == 0) {
+		info->version.vivado = build_version(version.year, version.release);
+	} else if (strncmp(name, "TaPaSCo", 32) == 0) {
+		info->version.tapasco = build_version(version.year, version.release);
+	} else {
+		DEVLOG(helper->dev_id, LPLL_STATUS, "Unknown program version for %s.", name);
+	}
+	return ret;
+};
+
+bool clock_helper(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+	tapasco_status_Clock clock = tapasco_status_Clock_init_zero;
+	parser_helper_t *helper = (parser_helper_t *)*arg;
+	platform_info_t *info = helper->info;
+	bool ret = false;
+	char name[32];
+	clock.name = (pb_callback_t) {
+		{
+			.decode = &parse_string,
+		},
+		.arg = &name
+	};
+
+	ret = pb_decode(stream, tapasco_status_Clock_fields, &clock);
+	if (strncmp(name, "Host", 32) == 0) {
+		info->clock.host = clock.frequency_mhz;
+	} else if (strncmp(name, "Design", 32) == 0) {
+		info->clock.design = clock.frequency_mhz;
+	} else if (strncmp(name, "Memory", 32) == 0) {
+		info->clock.memory = clock.frequency_mhz;
+	} else {
+		DEVLOG(helper->dev_id, LPLL_STATUS, "Unknown clock %s with frequency %dMHz.", name, clock.frequency_mhz);
+	}
+	return ret;
+};
+
 static
 platform_res_t read_info_from_status_core(platform_devctx_t const *p,
-		platform_info_t *info)
+        platform_info_t *info)
 {
-	platform_res_t r;
 	platform_dev_id_t dev_id = p->dev_id;
-	platform_ctl_addr_t status = device_regspace_status_base(p);
-#ifdef _X
-	#undef _X
-#endif
-#define _X(_name, _val, _field) \
-	r = platform_read_ctl(p, status + _name, sizeof(info->_field), \
-			&(info->_field), PLATFORM_CTL_FLAGS_NONE); \
-	if (r != PLATFORM_SUCCESS) { \
-		DEVERR(dev_id, "could not read " STRINGIFY(_name) ": %s (" PRIres ")", platform_strerror(r), r); \
-		return r; \
-	} \
-	DEVLOG(dev_id, LPLL_STATUS, "read " STRINGIFY(_name) ": %#08x", info->_field);
-	PLATFORM_STATUS_REGISTERS
-#undef _X
+	volatile void* status = device_regspace_status_ptr(p);
+	size_t status_size = device_regspace_status_size(p);
+
+	int parse_status;
+	pb_istream_t stream;
+	tapasco_status_Status status_core = tapasco_status_Status_init_zero;
+
+	parser_helper_t helper = {
+		.info = info,
+		.dev_id = dev_id
+	};
+
+	parser_helper_t helper_with_cntr = {
+		.info = info,
+		.dev_id = dev_id,
+		.counter = 0
+	};
+
+	status_core.clocks = (pb_callback_t) {
+		{
+			.decode = &clock_helper,
+		},
+		.arg = &helper
+	};
+
+	status_core.versions = (pb_callback_t) {
+		{
+			.decode = &version_helper,
+		},
+		.arg = &helper
+	};
+
+	status_core.pe = (pb_callback_t) {
+		{
+			.decode = &kernel_helper,
+		},
+		.arg = &helper_with_cntr
+	};
+
+	stream = pb_istream_from_buffer((void*)status, status_size);
+	parse_status = pb_decode_delimited(&stream, tapasco_status_Status_fields, &status_core);
+
+	if (!parse_status) {
+		DEVERR(dev_id, "Could not read status core: %s", PB_GET_ERROR(&stream));
+		return PERR_TLKM_ERROR;
+	}
+
+	info->magic_id = 0xe5ae1337;
+	info->num_intc = 1;
+	info->caps0 = PLATFORM_CAP0_PE_LOCAL_MEM | PLATFORM_CAP0_DYNAMIC_ADDRESS_MAP;
+	info->compose_ts = status_core.timestamp;
+
 	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
-		platform_ctl_addr_t const rk = status + REG_KERNEL_ID_START + s * REG_SLOT_OFFSET;
-		r = platform_read_ctl(p, rk, sizeof(uint32_t), &(info->composition.kernel[s]), 0);
-		if (r != PLATFORM_SUCCESS) {
-			DEVERR(dev_id, "could not read kernel id at slot " PRIslot ": %s (" PRIres ")",
-					s, platform_strerror(r), r);
-			return r;
+		if(info->composition.kernel[s] != 0 || info->composition.memory[s] != 0) {
+			info->base.arch[s] += device_regspace_arch_base(p);
 		}
-		platform_ctl_addr_t const rm = status + REG_LOCAL_MEM_START + s * REG_SLOT_OFFSET;
-		r = platform_read_ctl(p, rm, sizeof(info->composition.memory[s]),
-				&(info->composition.memory[s]), PLATFORM_CTL_FLAGS_NONE);
-		if (r != PLATFORM_SUCCESS) {
-			DEVERR(dev_id, "could not read memory at slot " PRIslot ": %s (" PRIres ")",
-					s, platform_strerror(r), r);
-			return r;
-		}
-
-		if (info->caps0 & PLATFORM_CAP0_DYNAMIC_ADDRESS_MAP) {
-			platform_ctl_addr_t const pb = status +
-					REG_PLATFORM_BASE_START +
-					s * sizeof(uint64_t);
-			r = platform_read_ctl(p, pb,
-					sizeof(info->base.platform[s]),
-					&(info->base.platform[s]),
-					PLATFORM_CTL_FLAGS_NONE);
-			if (r != PLATFORM_SUCCESS) {
-				DEVERR(dev_id, "could not read platform base " PRIslot ": %s (" PRIres ")",
-						s, platform_strerror(r), r);
-				return r;
-			}
-
-			platform_ctl_addr_t const ab = status + REG_ARCH_BASE_START + s * sizeof(uint64_t);
-			r = platform_read_ctl(p, ab, sizeof(info->base.arch[s]), &(info->base.arch[s]), 0);
-			if (r != PLATFORM_SUCCESS) {
-				DEVERR(dev_id, "could not read platform base " PRIslot ": %s (" PRIres ")",
-						s, platform_strerror(r), r);
-				return r;
-			}
-		} else {
-			DEVERR(dev_id, "loaded bitstream does not support dynamic address map - "
-			    "please use a libplatform version < 1.5 with this bitstream");
-			return PERR_INCOMPATIBLE_BITSTREAM;
-		}
-        if (info->version.tapasco < 0x7e20001) {
-			DEVERR(dev_id, "loaded bitstream is generated by Tapasco older than 2018.1 - "
-			    "please use a libplatform version < 1.5 with this bitstream");
-			return PERR_INCOMPATIBLE_BITSTREAM;
-        }
 	}
 	return PLATFORM_SUCCESS;
 }
@@ -134,27 +190,7 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 inline
 void log_device_info(platform_dev_id_t const dev_id, platform_info_t const *info)
 {
-#ifndef NDEBUG
-#ifdef _X
-	#undef _X
-#endif
-#define _X(name, value, field) \
-	DEVLOG(dev_id, LPLL_STATUS, "" STRINGIFY(field) " = %#08lx (%u)", (unsigned long)info->field, (unsigned long)info->field);
-	PLATFORM_STATUS_REGISTERS
-#undef _X
-	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
-		if (info->composition.kernel[s])
-			DEVLOG(dev_id, LPLL_STATUS, "slot #" PRIslot ": k %#08x (" PRIkernel ")",
-					s, (unsigned)info->composition.kernel[s], info->composition.kernel[s]);
-		if (info->composition.memory[s])
-			DEVLOG(dev_id, LPLL_STATUS, "slot #" PRIslot ": m %#08x (%zu)",
-					s, (unsigned)info->composition.memory[s], (size_t)info->composition.memory[s]);
-		if (info->base.platform[s])
-			DEVLOG(dev_id, LPLL_STATUS, "plat #" PRIslot ":   " PRIctl, s, info->base.platform[s]);
-		if (info->base.arch[s])
-			DEVLOG(dev_id, LPLL_STATUS, "arch #" PRIslot ":   " PRIctl, s, info->base.arch[s]);
-	}
-#endif
+
 }
 
 platform_res_t platform_info(platform_devctx_t const *ctx, platform_info_t *info)

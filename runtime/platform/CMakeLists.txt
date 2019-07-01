@@ -12,6 +12,10 @@ add_library(platform "common/src/platform_addr_map.c"
           "common/src/platform_info.c"
           "common/src/platform_perfc.c"
           "common/src/platform_version.c"
+          "common/nanopb/pb_common.c"
+          "common/nanopb/pb_encode.c"
+          "common/nanopb/pb_decode.c"
+          "common/nanopb/status_core.pb.c"
           )
 
 target_compile_definitions(platform PRIVATE -DNPERFC)
@@ -37,13 +41,15 @@ set_property(TARGET platform PROPERTY PUBLIC_HEADER
                               common/include/platform_device_operations.h
                               common/include/platform_logging.h
                               common/include/platform_perfc.h
-                              common/include/platform_signaling.h)
+                              common/include/platform_signaling.h
+                              )
 
 target_include_directories(platform PUBLIC $<INSTALL_INTERFACE:include/tapasco/platform>
                                            ${EXTRA_INCLUDES_PUBLIC}
                                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                                            PRIVATE ${EXTRA_INCLUDES_PRIVATE}
                                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/common/include>
+                                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/common/nanopb>
                                       )
 
 target_link_libraries(platform PUBLIC tlkm PRIVATE pthread atomic tapasco-common)
