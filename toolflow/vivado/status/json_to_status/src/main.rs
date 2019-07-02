@@ -275,6 +275,7 @@ fn run() -> Result<()> {
             software: x.Software.clone(),
             year: x.Year as u32,
             release: x.Release as u32,
+            extra_version: "".to_string(),
         })
         .collect();
 
@@ -284,6 +285,12 @@ fn run() -> Result<()> {
         if pe.offset >= max_offset {
             max_offset = pe.offset;
             max_size = pe.size;
+        }
+        if let Some(i) = &pe.local_memory {
+            if i.base >= max_offset {
+                max_offset = i.base;
+                max_size = i.size;
+            }
         }
     }
     let arch_size = max_offset + max_size;

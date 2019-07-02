@@ -25,6 +25,7 @@ message Version {
     string software = 1;
     uint32 year = 2;
     uint32 release = 3;
+    string extra_version = 4;
 }
 
 message MemoryArea {

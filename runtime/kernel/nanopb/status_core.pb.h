@@ -41,6 +41,7 @@ typedef struct _tapasco_status_Version {
     pb_callback_t software;
     uint32_t year;
     uint32_t release;
+    pb_callback_t extra_version;
 /* @@protoc_insertion_point(struct:tapasco_status_Version) */
 } tapasco_status_Version;
 
@@ -71,13 +72,13 @@ typedef struct _tapasco_status_Status {
 #define tapasco_status_PE_init_default           {{{NULL}, NULL}, 0, 0, 0, tapasco_status_MemoryArea_init_default}
 #define tapasco_status_Platform_init_default     {{{NULL}, NULL}, 0, 0}
 #define tapasco_status_Clock_init_default        {{{NULL}, NULL}, 0}
-#define tapasco_status_Version_init_default      {{{NULL}, NULL}, 0, 0}
+#define tapasco_status_Version_init_default      {{{NULL}, NULL}, 0, 0, {{NULL}, NULL}}
 #define tapasco_status_MemoryArea_init_default   {0, 0}
 #define tapasco_status_Status_init_default       {0, tapasco_status_MemoryArea_init_default, tapasco_status_MemoryArea_init_default, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
 #define tapasco_status_PE_init_zero              {{{NULL}, NULL}, 0, 0, 0, tapasco_status_MemoryArea_init_zero}
 #define tapasco_status_Platform_init_zero        {{{NULL}, NULL}, 0, 0}
 #define tapasco_status_Clock_init_zero           {{{NULL}, NULL}, 0}
-#define tapasco_status_Version_init_zero         {{{NULL}, NULL}, 0, 0}
+#define tapasco_status_Version_init_zero         {{{NULL}, NULL}, 0, 0, {{NULL}, NULL}}
 #define tapasco_status_MemoryArea_init_zero      {0, 0}
 #define tapasco_status_Status_init_zero          {0, tapasco_status_MemoryArea_init_zero, tapasco_status_MemoryArea_init_zero, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
 
@@ -92,6 +93,7 @@ typedef struct _tapasco_status_Status {
 #define tapasco_status_Version_software_tag      1
 #define tapasco_status_Version_year_tag          2
 #define tapasco_status_Version_release_tag       3
+#define tapasco_status_Version_extra_version_tag 4
 #define tapasco_status_PE_name_tag               1
 #define tapasco_status_PE_id_tag                 2
 #define tapasco_status_PE_offset_tag             3
@@ -132,7 +134,8 @@ X(a, STATIC, SINGULAR, UINT32, frequency_mhz, 2)
 #define tapasco_status_Version_FIELDLIST(X, a) \
 X(a, CALLBACK, SINGULAR, STRING, software, 1) \
 X(a, STATIC, SINGULAR, UINT32, year, 2) \
-X(a, STATIC, SINGULAR, UINT32, release, 3)
+X(a, STATIC, SINGULAR, UINT32, release, 3) \
+X(a, CALLBACK, SINGULAR, STRING, extra_version, 4)
 #define tapasco_status_Version_CALLBACK pb_default_field_callback
 #define tapasco_status_Version_DEFAULT NULL
 
