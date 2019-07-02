@@ -6,7 +6,7 @@
 #define ZYNQ_NAME			"xlnx,zynq-7000"
 #define ZYNQ_CLASS_NAME			"zynq"
 
-#define ZYNQ_DEF 			INIT_PLATFORM(0x77770000, 0x00002000  /* status */)
+#define ZYNQ_DEF 			INIT_PLATFORM(0x80000000, 0x00002000  /* status */)
 
 static const
 struct platform zynq_def = ZYNQ_DEF;

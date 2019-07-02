@@ -42,7 +42,11 @@ namespace eval ::platform {
   }
 
   proc get_pe_base_address {} {
-    return 0x43C00000
+    return 0x40000000
+  }
+
+  proc get_platform_base_address {} {
+    return 0x80000000
   }
 
   proc get_address_map {{pe_base ""}} {
@@ -53,8 +57,8 @@ namespace eval ::platform {
     puts "Computing addresses for masters ..."
     foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
       switch -glob [get_property NAME $m] {
-        "M_TAPASCO" { foreach {base stride range comp} [list 0x77770000 0       0 "PLATFORM_COMPONENT_STATUS"] {} }
-        "M_INTC"    { foreach {base stride range comp} [list 0x81800000 0x10000 0 "PLATFORM_COMPONENT_INTC0"] {} }
+        "M_TAPASCO" { foreach {base stride range comp} [list 0x80000000 0       0 "PLATFORM_COMPONENT_STATUS"] {} }
+        "M_INTC"    { foreach {base stride range comp} [list 0x80010000 0x10000 0 "PLATFORM_COMPONENT_INTC0"] {} }
         "M_ARCH"    { set base "skip" }
         default     { foreach {base stride range comp} [list 0 0 0 ""] {} }
       }
@@ -77,7 +81,7 @@ namespace eval ::platform {
     set freqs [::tapasco::get_frequencies]
     puts "Creating clock and reset subsystem ..."
     puts "  frequencies: $freqs"
-    
+
     set reset_in [create_bd_pin -dir I -type rst "reset_in"]
     set clk_wiz [::tapasco::ip::create_clk_wiz "clk_wiz"]
     set_property -dict [list CONFIG.USE_LOCKED {false} CONFIG.USE_RESET {false}] $clk_wiz
@@ -248,13 +252,13 @@ namespace eval ::platform {
 
     set gp0_masters [list]
     lappend gp0_masters [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv "M_ARCH"]
-    lappend gp0_masters [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv "M_TAPASCO"]
 
     set gp1_masters [list]
     lappend gp1_masters [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv "M_INTC"]
     foreach ss [::tapasco::subsystem::get_custom] {
       lappend gp1_masters [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv [format "M_%s" [string toupper $ss]]]
     }
+    lappend gp1_masters [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv "M_TAPASCO"]
 
     set gp0_ic_tree [::tapasco::create_interconnect_tree "gp0_ic_tree" [llength $gp0_masters] false]
     set gp1_ic_tree [::tapasco::create_interconnect_tree "gp1_ic_tree" [llength $gp1_masters] false]
