@@ -1,7 +1,7 @@
 /**
- *  @file	TapascoDebugMenu.hpp
- *  @brief	Main menu of tapasco-debug.
- *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+ *  @file TapascoDebugMenu.hpp
+ *  @brief  Main menu of tapasco-debug.
+ *  @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #ifndef TAPASCO_DEBUG_MENU_HPP__
 #define TAPASCO_DEBUG_MENU_HPP__
@@ -17,7 +17,7 @@
 #include "LocalMemoryScreen.hpp"
 
 extern "C" {
-  #include <platform_caps.h>
+#include <platform_caps.h>
 }
 
 using namespace tapasco;
@@ -25,8 +25,8 @@ using namespace tapasco;
 class TapascoDebugMenu : public MenuScreen {
 public:
   TapascoDebugMenu() : MenuScreen("Welcome to the interactive TaPaSCo Debugger", vector<string>()),
-      tapasco(true, TAPASCO_MONITOR_ACCESS) {
-    //bool blue = has_blue_dma();
+    tapasco(true, TAPASCO_MONITOR_ACCESS) {
+    bool blue = has_blue_dma();
     options.push_back("Show kernel map of current bitstream");
     screens.push_back(new TapascoStatusScreen(&tapasco));
 
@@ -41,10 +41,10 @@ public:
     }
     options.push_back("Perform interrupt stress test");
     screens.push_back(new InterruptStressTestScreen(&tapasco));
-    /*if (blue) {
+    if (blue) {
       options.push_back("Monitor blue infrastructure");
       screens.push_back(new BlueDebugScreen(&tapasco));
-    }*/
+    }
     if (tapasco.has_capability(PLATFORM_CAP0_ATSPRI) && tapasco.has_capability(PLATFORM_CAP0_ATSCHECK)) {
       options.push_back("ATS/PRI direct interface");
       screens.push_back(new AtsPriScreen(&tapasco));
@@ -63,8 +63,8 @@ protected:
       if (cidx < screens.size()) {
         clear();
         screens[cidx]->show();
-	clear();
-	return ERR;
+        clear();
+        return ERR;
       }
     }
     return choice;
@@ -79,9 +79,9 @@ protected:
     tapasco.info(&info);
     for (int c = PLATFORM_COMPONENT_DMA0; c <= PLATFORM_COMPONENT_DMA3; ++c) {
       if (info.base.platform[c]) {
-      	uint32_t v = 0;
+        uint32_t v = 0;
         platform_read_ctl(tapasco.platform_device(), info.base.platform[c] + DMA_ID_REG, sizeof(v), &v, PLATFORM_CTL_FLAGS_NONE);
-	if (v == BLUE_DMA_ID) return true;
+        if (v == BLUE_DMA_ID) return true;
       }
     }
     return false;
