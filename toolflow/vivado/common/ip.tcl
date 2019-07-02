@@ -455,7 +455,7 @@ namespace eval ::tapasco::ip {
             incr slot_id
           }
           "memory" {
-            lappend slots [json::write object "Type" [json::write string "Memory"] "SlotId" $slot_id \
+            lappend slots [json::write object "Type" [json::write string "Memory"] "SlotId" $slot_id "Kernel" 0 \
                                               "Offset" [json::write string [format "0x%016x" [expr "[dict get $addr $intf "offset"] - [::platform::get_pe_base_address]"]]] \
                                               "Size" [json::write string [format "0x%016x" [dict get $addr $intf "range"]]]]
             incr slot_id
