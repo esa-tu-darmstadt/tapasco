@@ -24,6 +24,9 @@ namespace eval tapasco {
 
   namespace export vivado_is_newer
   namespace export is_hls
+  namespace export get_vivado_version_major
+  namespace export get_vivado_version_minor
+  namespace export get_vivado_version_extra
   # Returns true if the vivado version running is newer or equal to the desired one
   # @param Desired Vivado Version as String, e.g. "2018.3"
   # @return 1 if [version -short] <= cmp, else 0
@@ -66,6 +69,25 @@ namespace eval tapasco {
     } else {
       eval "source " $fn "[expr {[string is space [info commands version]] ? {} : {-notrace}}]"
     }
+  }
+
+  proc get_vivado_version_full {} {
+    set regex {([0-9][0-9][0-9][0-9]).([0-9][0-9]*)(.*)}
+    set version [version -short]
+    regexp $regex $version whole_match versmajor versminor versextra
+    return [list $versmajor $versminor $versextra]
+  }
+
+  proc get_vivado_version_major {} {
+    return [lindex [get_vivado_version_full] 0]
+  }
+
+  proc get_vivado_version_minor {} {
+    return [lindex [get_vivado_version_full] 1]
+  }
+
+  proc get_vivado_version_extra {} {
+    return [lindex [get_vivado_version_full] 2]
   }
 
   source_quiet $::env(TAPASCO_HOME_TCL)/common/subsystem.tcl

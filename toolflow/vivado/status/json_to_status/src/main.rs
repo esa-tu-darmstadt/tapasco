@@ -44,6 +44,7 @@ struct Version {
     Software: String,
     Year: u64,
     Release: u64,
+    ExtraVersion: String,
 }
 
 #[allow(non_snake_case)]
@@ -275,7 +276,7 @@ fn run() -> Result<()> {
             software: x.Software.clone(),
             year: x.Year as u32,
             release: x.Release as u32,
-            extra_version: "".to_string(),
+            extra_version: x.ExtraVersion.clone(),
         })
         .collect();
 

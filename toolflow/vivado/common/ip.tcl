@@ -6,11 +6,15 @@ namespace eval ::tapasco::ip {
     # source IP catalog VLNVs for the current Vivado version
     set cip [format "$::env(TAPASCO_HOME_TCL)/common/common_%s.tcl" [version -short]]
     if {! [file exists $cip]} {
-      puts "Could not find $cip, Vivado [version -short] is not supported yet!"
-      exit 1
-    } {
-      source $cip
+      set cip_org $cip
+      set cip [format "$::env(TAPASCO_HOME_TCL)/common/common_%s.tcl" "[::tapasco::get_vivado_version_major].[::tapasco::get_vivado_version_minor]"]
+      if {! [file exists $cip]} {
+        puts "Could not find $cip_org, Vivado [version -short] is not supported yet!"
+        exit 1
+      }
     }
+
+    source $cip
   } {
     puts "Skipping IP catalog."
   }
@@ -486,8 +490,9 @@ namespace eval ::tapasco::ip {
       "Timestamp" [expr "$ts - ($ts \% 86400)"] \
       "InterruptControllers" $no_intc \
       "Versions" [json::write array \
-        [json::write object "Software" [json::write string "Vivado"] "Year" [regsub $regex [version -short] {\1}] "Release" [regsub $regex [version -short] {\2}]] \
-        [json::write object "Software" [json::write string "TaPaSCo"] "Year" [regsub $regex [::tapasco::get_tapasco_version] {\1}] "Release" [regsub $regex [::tapasco::get_tapasco_version] {\2}]] \
+        [json::write object "Software" [json::write string "Vivado"] "Year" [::tapasco::get_vivado_version_major] "Release" [::tapasco::get_vivado_version_minor] \
+                                                                     "ExtraVersion" [json::write string [::tapasco::get_vivado_version_extra]]] \
+        [json::write object "Software" [json::write string "TaPaSCo"] "Year" [regsub $regex [::tapasco::get_tapasco_version] {\1}] "Release" [regsub $regex [::tapasco::get_tapasco_version] {\2}] "ExtraVersion" [json::write string ""]] \
       ] \
       "Clocks" [json::write array \
         [json::write object "Domain" [json::write string "Host"] "Frequency" [::tapasco::get_host_frequency]] \
