@@ -36,9 +36,7 @@ set_property(TARGET platform PROPERTY PUBLIC_HEADER
                               common/include/gen_fixed_size_pool.h
                               common/include/platform_addr_map.h
                               common/include/platform_ctx.h
-                              common/include/platform_devctx.h
                               common/include/platform_devfiles.h
-                              common/include/platform_device_operations.h
                               common/include/platform_logging.h
                               common/include/platform_perfc.h
                               common/include/platform_signaling.h
