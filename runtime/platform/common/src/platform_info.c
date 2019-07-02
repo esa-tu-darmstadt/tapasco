@@ -27,6 +27,8 @@
 #include <status_core.pb.h>
 #include <pb_decode.h>
 
+extern const char *platform_component_t_str[];
+
 static platform_info_t _info[PLATFORM_MAX_DEVS];
 
 typedef struct parser_helper {
@@ -46,6 +48,37 @@ bool parse_string(pb_istream_t *stream, const pb_field_t *field, void**arg) {
 	return true;
 }
 
+bool platform_helper(pb_istream_t *stream, const pb_field_t *field, void **arg) {
+	tapasco_status_Platform platform = tapasco_status_Platform_init_zero;
+	parser_helper_t *helper = (parser_helper_t *)*arg;
+	platform_info_t *info = helper->info;
+	bool ret = false;
+
+	char name[32];
+	platform.name = (pb_callback_t) {
+		{
+			.decode = &parse_string,
+		},
+		.arg = &name
+	};
+
+	ret = pb_decode(stream, tapasco_status_Platform_fields, &platform);
+
+	DEVLOG(helper->dev_id, LPLL_STATUS, "Platform Component %s @ 0x%x S%dB.", name, platform.offset, platform.size);
+
+	int i = 0;
+	while(platform_component_t_str[i] != 0) {
+		if(strncmp(platform_component_t_str[i], name, 32) == 0) {
+			DEVLOG(helper->dev_id, LPLL_STATUS, "Found matching static platform entry.");
+			info->base.platform[i] = platform.offset;
+			break;
+		}
+		++i;
+	}
+
+	return ret;
+};
+
 bool kernel_helper(pb_istream_t *stream, const pb_field_t *field, void **arg) {
 	tapasco_status_PE pe = tapasco_status_PE_init_zero;
 	parser_helper_t *helper = (parser_helper_t *)*arg;
@@ -54,7 +87,7 @@ bool kernel_helper(pb_istream_t *stream, const pb_field_t *field, void **arg) {
 
 	ret = pb_decode(stream, tapasco_status_PE_fields, &pe);
 
-	DEVLOG(helper->dev_id, LPLL_STATUS, "PE @ %d %x, Type %d, Local Memory %d.", helper->counter, pe.id, pe.offset, pe.local_memory);
+	DEVLOG(helper->dev_id, LPLL_STATUS, "PE @ %d %x, Type %d, Local Memory %d.", helper->counter, pe.offset, pe.id, pe.local_memory);
 
 	info->base.arch[helper->counter] = pe.offset;
 	info->composition.kernel[helper->counter] = pe.id;
@@ -166,6 +199,17 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 		.arg = &helper_with_cntr
 	};
 
+	status_core.platform = (pb_callback_t) {
+		{
+			.decode = &platform_helper,
+		},
+		.arg = &helper_with_cntr
+	};
+
+	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
+		info->base.platform[s] = -1;
+	}
+
 	stream = pb_istream_from_buffer((void*)status, status_size);
 	parse_status = pb_decode_delimited(&stream, tapasco_status_Status_fields, &status_core);
 
@@ -184,6 +228,15 @@ platform_res_t read_info_from_status_core(platform_devctx_t const *p,
 			info->base.arch[s] += device_regspace_arch_base(p);
 		}
 	}
+
+	for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
+		if(info->base.platform[s] != -1) {
+			info->base.platform[s] += device_regspace_platform_base(p);
+		} else {
+			info->base.platform[s] = 0;
+		}
+	}
+
 	return PLATFORM_SUCCESS;
 }
 

@@ -61,12 +61,17 @@ size_t device_regspace_status_size(const platform_devctx_t *devctx) {
 
 uintptr_t device_regspace_status_base(const platform_devctx_t *devctx) {
 	default_platform_t *pp = (default_platform_t *)devctx->private_data;
-	return pp->regspace.arch.base;
+	return pp->regspace.status.base;
 }
 
 uintptr_t device_regspace_arch_base(const platform_devctx_t *devctx) {
 	default_platform_t *pp = (default_platform_t *)devctx->private_data;
 	return pp->regspace.arch.base;
+}
+
+uintptr_t device_regspace_platform_base(const platform_devctx_t *devctx) {
+	default_platform_t *pp = (default_platform_t *)devctx->private_data;
+	return pp->regspace.platform.base;
 }
 
 void calc_regspace(device_regspace_t *r) {

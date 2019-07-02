@@ -41,6 +41,7 @@ volatile void* device_regspace_status_ptr(const platform_devctx_t *devctx);
 uintptr_t device_regspace_status_base(const platform_devctx_t *devctx);
 size_t device_regspace_status_size(const platform_devctx_t *devctx);
 uintptr_t device_regspace_arch_base(const platform_devctx_t *devctx);
+uintptr_t device_regspace_platform_base(const platform_devctx_t *devctx);
 
 platform_res_t default_alloc_driver(platform_devctx_t *devctx,
                                     size_t const len,
