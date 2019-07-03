@@ -117,7 +117,7 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 
 #define	_INTC(N)	\
 	rirq = ZYNQ_IRQ_BASE_IRQ + zynq_dev->parent->cls->npirqs + irqn; \
-	base = ioread32(zynq_dev->parent->mmap.status + 0x1010 + (N * 8)); \
+	base = tlkm_status_get_component_base(zynq_dev->parent, "PLATFORM_COMPONENT_INTC" # N); \
 	if (base) { \
 		zynq_irq.intc_ ## N.base = (base - zynq_dev->parent->plat.base) >> 2; \
 		if (zynq_irq.intc_ ## N.base) { \
