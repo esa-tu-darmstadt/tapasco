@@ -17,11 +17,11 @@ int dma_engines_init(struct tlkm_device *dev)
 	char dma_name[TLKM_COMPONENTS_NAME_MAX];
 	BUG_ON(! dev);
 
-	for(i = 0; i < TLKM_DEVICE_MAX_DMA_ENGINES; ++i) {
+	for (i = 0; i < TLKM_DEVICE_MAX_DMA_ENGINES; ++i) {
 		dma_addr_t addr;
 		snprintf(dma_name, TLKM_COMPONENTS_NAME_MAX, "PLATFORM_COMPONENT_DMA%d", i);
 		addr = tlkm_status_get_component_base(dev, dma_name);
-		if(addr != -1) {
+		if (addr != -1) {
 			dma_base[i] = addr;
 			DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d found at %llx", i, (uint64_t)addr);
 		}
@@ -117,10 +117,10 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 	}
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "Arch @ 0x%llx (S: %lldB) Platform @ 0x%llx (S: %lldB)", dev->status.arch_base.base, dev->status.arch_base.size
-																						 , dev->status.platform_base.base, dev->status.arch_base.size);
+	       , dev->status.platform_base.base, dev->status.platform_base.size);
 
 	dev->arch = (struct platform_regspace) INIT_REGSPACE((dev->status.arch_base.base), (dev->status.arch_base.size));
-	dev->plat = (struct platform_regspace) INIT_REGSPACE((dev->status.platform_base.base), (dev->status.arch_base.size));
+	dev->plat = (struct platform_regspace) INIT_REGSPACE((dev->status.platform_base.base), (dev->status.platform_base.size));
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup I/O remap regions ...");
 	if ((ret = tlkm_platform_mmap_init(dev, &dev->mmap))) {

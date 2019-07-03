@@ -65,7 +65,7 @@ long tlkm_device_ioctl_size(struct file *fp, unsigned int ioctl,
 	}
 	ksize.status = 8192;
 	ksize.arch = kdev->status.arch_base.size;
-	ksize.platform = kdev->status.arch_base.size;
+	ksize.platform = kdev->status.platform_base.size;
 	if (copy_to_user((void __user *)size, &ksize, sizeof(ksize))) {
 		ERR("could not copy all bytes to user space");
 		return -EAGAIN;

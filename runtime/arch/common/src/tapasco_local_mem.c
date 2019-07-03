@@ -55,6 +55,10 @@ size_t get_slot_mem(tapasco_devctx_t *devctx, tapasco_slot_id_t const slot_id)
 	return devctx->info.composition.memory[slot_id];
 }
 
+static inline addr_t get_slot_base(tapasco_devctx_t *devctx, tapasco_slot_id_t const slot_id) {
+	return devctx->info.base.arch[slot_id];
+}
+
 tapasco_res_t tapasco_local_mem_init(tapasco_devctx_t *devctx,
                                      tapasco_local_mem_t **lmem)
 {

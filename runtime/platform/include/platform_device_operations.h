@@ -40,6 +40,7 @@ typedef struct platform_device_operations {
 volatile void* device_regspace_status_ptr(const platform_devctx_t *devctx);
 uintptr_t device_regspace_status_base(const platform_devctx_t *devctx);
 size_t device_regspace_status_size(const platform_devctx_t *devctx);
+volatile void* device_regspace_arch_ptr(const platform_devctx_t *devctx);
 uintptr_t device_regspace_arch_base(const platform_devctx_t *devctx);
 uintptr_t device_regspace_platform_base(const platform_devctx_t *devctx);
 

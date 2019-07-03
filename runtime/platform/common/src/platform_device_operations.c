@@ -69,6 +69,11 @@ uintptr_t device_regspace_arch_base(const platform_devctx_t *devctx) {
 	return pp->regspace.arch.base;
 }
 
+volatile void* device_regspace_arch_ptr(const platform_devctx_t *devctx) {
+	default_platform_t *pp = (default_platform_t *)devctx->private_data;
+	return pp->arch_map;
+}
+
 uintptr_t device_regspace_platform_base(const platform_devctx_t *devctx) {
 	default_platform_t *pp = (default_platform_t *)devctx->private_data;
 	return pp->regspace.platform.base;

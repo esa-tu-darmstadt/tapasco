@@ -36,9 +36,9 @@
 
 static
 tapasco_res_t tapasco_device_alloc_local(tapasco_devctx_t *devctx,
-		tapasco_handle_t *h, size_t const len,
-		tapasco_device_alloc_flag_t const flags,
-		tapasco_slot_id_t slot_id)
+        tapasco_handle_t *h, size_t const len,
+        tapasco_device_alloc_flag_t const flags,
+        tapasco_slot_id_t slot_id)
 {
 	LOG(LALL_MEM, "allocating %zd bytes of pe-local memory for slot #" PRIslot, len, slot_id);
 	return tapasco_local_mem_alloc(devctx->lmem, slot_id, len, h);
@@ -46,9 +46,9 @@ tapasco_res_t tapasco_device_alloc_local(tapasco_devctx_t *devctx,
 
 static
 tapasco_res_t tapasco_device_free_local(tapasco_devctx_t *devctx,
-		tapasco_handle_t h, size_t const len,
-		tapasco_device_alloc_flag_t const flags,
-		tapasco_slot_id_t slot_id)
+                                        tapasco_handle_t h, size_t const len,
+                                        tapasco_device_alloc_flag_t const flags,
+                                        tapasco_slot_id_t slot_id)
 {
 	LOG(LALL_MEM, "freeing %zd bytes of pe-local memory for slot #" PRIslot, len, slot_id);
 	tapasco_local_mem_dealloc(devctx->lmem, slot_id, len, h);
@@ -63,63 +63,41 @@ platform_ctl_addr_t get_slot_base(tapasco_devctx_t *devctx, tapasco_slot_id_t sl
 }
 
 tapasco_res_t tapasco_device_copy_to_local(tapasco_devctx_t *devctx,
-		void const *src,
-		tapasco_handle_t dst,
-		size_t len,
-		tapasco_device_copy_flag_t const flags,
-		tapasco_slot_id_t slot_id)
+        void const *src,
+        tapasco_handle_t dst,
+        size_t len,
+        tapasco_device_copy_flag_t const flags,
+        tapasco_slot_id_t slot_id)
 {
-	tapasco_handle_t lbase = tapasco_local_mem_get_slot_and_base(devctx->lmem, &slot_id, dst);
 	platform_devctx_t *p = devctx->pdctx;
-	platform_ctl_addr_t a = get_slot_base(devctx, slot_id);
-	LOG(LALL_MEM, "copying %zd bytes locally to " PRIhandle " of slot_id #" PRIslot ", bus address: " PRIctl,
-			len, dst, slot_id, a + (dst - lbase));
-	a += (dst - lbase);
-	uint32_t *lmem = (uint32_t *)src;
-	size_t const chs = sizeof(*lmem);
-	size_t const chn = len / chs;
-	platform_res_t res = PLATFORM_SUCCESS;
-	for (size_t i = 0; res == TAPASCO_SUCCESS && i < chn; ++i, a += chs) {
-		res = platform_write_ctl(p, a, sizeof(*lmem), &lmem[i], flags);
-	}
-	if (res != PLATFORM_SUCCESS) {
-		ERR("platform error: %s (" PRIres ")", platform_strerror(res), res);
-		return TAPASCO_ERR_PLATFORM_FAILURE;
-	}
+	volatile void * a = device_regspace_arch_ptr(p) + (get_slot_base(devctx, slot_id) - device_regspace_arch_base(p)) + dst;
+	LOG(LALL_MEM, "copying %zd bytes locally to " PRIhandle " of slot_id #" PRIslot " from 0x%llx (%llx %llx %llx %llx)",
+	    len, dst, slot_id, (uint64_t)a, get_slot_base(devctx, slot_id), device_regspace_arch_base(p), dst, tapasco_local_mem_get_slot_and_base(devctx->lmem, &slot_id, dst));
+
+	memcpy((void*)a, src, len);
 	return TAPASCO_SUCCESS;
 }
 
 tapasco_res_t tapasco_device_copy_from_local(tapasco_devctx_t *devctx,
-		tapasco_handle_t src,
-		void *dst,
-		size_t len,
-		tapasco_device_copy_flag_t const flags,
-		tapasco_slot_id_t slot_id)
+        tapasco_handle_t src,
+        void *dst,
+        size_t len,
+        tapasco_device_copy_flag_t const flags,
+        tapasco_slot_id_t slot_id)
 {
-	tapasco_handle_t lbase = tapasco_local_mem_get_slot_and_base(devctx->lmem, &slot_id, src);
 	platform_devctx_t *p = devctx->pdctx;
-	platform_ctl_addr_t a = get_slot_base(devctx, slot_id);
-	LOG(LALL_MEM, "copying %zd bytes locally from " PRIctl " of slot_id #" PRIslot ", mem address: %p",
-			len, a + (src - lbase), slot_id, dst);
-	a += (src - lbase);
-	uint32_t *lmem = (uint32_t *)dst;
-	size_t const chs = sizeof(*lmem);
-	size_t const chn = len / chs;
-	platform_res_t res = PLATFORM_SUCCESS;
-	for (size_t i = 0; res == TAPASCO_SUCCESS && i < chn; ++i, a += chs) {
-		res = platform_read_ctl(p, a, sizeof(*lmem), &lmem[i], flags);
-	}
-	if (res != PLATFORM_SUCCESS) {
-		ERR("platform error: %s (" PRIres ")", platform_strerror(res), res);
-		return TAPASCO_ERR_PLATFORM_FAILURE;
-	}
+	volatile void * a = device_regspace_arch_ptr(p) + (get_slot_base(devctx, slot_id) - device_regspace_arch_base(p)) + src;
+	LOG(LALL_MEM, "copying %zd bytes locally from " PRIhandle " of slot_id #" PRIslot " from 0x%llx",
+	    len, dst, slot_id, (uint64_t)a);
+
+	memcpy(dst, (void*)a, len);
 	return TAPASCO_SUCCESS;
 }
 
 tapasco_res_t tapasco_device_alloc(tapasco_devctx_t *devctx,
-		tapasco_handle_t *h, size_t const len,
-		tapasco_device_alloc_flag_t const flags,
-		...)
+                                   tapasco_handle_t *h, size_t const len,
+                                   tapasco_device_alloc_flag_t const flags,
+                                   ...)
 {
 	platform_devctx_t *p = devctx->pdctx;
 	platform_mem_addr_t addr;
@@ -141,9 +119,9 @@ tapasco_res_t tapasco_device_alloc(tapasco_devctx_t *devctx,
 }
 
 void tapasco_device_free(tapasco_devctx_t *devctx,
-		tapasco_handle_t handle,
-		tapasco_device_alloc_flag_t const flags,
-		...)
+                         tapasco_handle_t handle,
+                         tapasco_device_alloc_flag_t const flags,
+                         ...)
 {
 	platform_devctx_t *p = devctx->pdctx;
 	LOG(LALL_MEM, "freeing handle " PRIhandle, handle);
@@ -158,11 +136,11 @@ void tapasco_device_free(tapasco_devctx_t *devctx,
 }
 
 tapasco_res_t tapasco_device_copy_to(tapasco_devctx_t *devctx,
-		void const *src,
-		tapasco_handle_t dst,
-		size_t len,
-		tapasco_device_copy_flag_t const flags,
-		...)
+                                     void const *src,
+                                     tapasco_handle_t dst,
+                                     size_t len,
+                                     tapasco_device_copy_flag_t const flags,
+                                     ...)
 {
 	platform_devctx_t *p = devctx->pdctx;
 	LOG(LALL_MEM, "dst = " PRIhandle ", len = %zd, flags = " PRIflags, dst, len, (CSTflags) flags);
@@ -174,21 +152,21 @@ tapasco_res_t tapasco_device_copy_to(tapasco_devctx_t *devctx,
 		tapasco_slot_id_t slot_id = va_arg(ap, tapasco_slot_id_t);
 		va_end(ap);
 		return tapasco_device_copy_to_local(devctx, src, dst, len,
-				flags, slot_id);
+		                                    flags, slot_id);
 	}
 	if (flags)
 		return TAPASCO_ERR_NOT_IMPLEMENTED;
 	return platform_write_mem(p, dst, len, src, PLATFORM_MEM_FLAGS_NONE) ==
-			PLATFORM_SUCCESS ?
-			TAPASCO_SUCCESS : TAPASCO_ERR_PLATFORM_FAILURE;
+	       PLATFORM_SUCCESS ?
+	       TAPASCO_SUCCESS : TAPASCO_ERR_PLATFORM_FAILURE;
 }
 
 tapasco_res_t tapasco_device_copy_from(tapasco_devctx_t *devctx,
-		tapasco_handle_t src,
-		void *dst,
-		size_t len,
-		tapasco_device_copy_flag_t const flags,
-		...)
+                                       tapasco_handle_t src,
+                                       void *dst,
+                                       size_t len,
+                                       tapasco_device_copy_flag_t const flags,
+                                       ...)
 {
 	platform_devctx_t *p = devctx->pdctx;
 	LOG(LALL_MEM, "src = " PRIhandle ", len = %zd, flags = " PRIflags, src, len, (CSTflags) flags);
@@ -200,11 +178,11 @@ tapasco_res_t tapasco_device_copy_from(tapasco_devctx_t *devctx,
 		tapasco_slot_id_t slot_id = va_arg(ap, tapasco_slot_id_t);
 		va_end(ap);
 		return tapasco_device_copy_from_local(devctx, src, dst, len,
-				flags, slot_id);
+		                                      flags, slot_id);
 	}
 	if (flags)
 		return TAPASCO_ERR_NOT_IMPLEMENTED;
 	return platform_read_mem(p, src, len, dst, PLATFORM_MEM_FLAGS_NONE) ==
-			PLATFORM_SUCCESS ?
-			TAPASCO_SUCCESS : TAPASCO_ERR_PLATFORM_FAILURE;
+	       PLATFORM_SUCCESS ?
+	       TAPASCO_SUCCESS : TAPASCO_ERR_PLATFORM_FAILURE;
 }
