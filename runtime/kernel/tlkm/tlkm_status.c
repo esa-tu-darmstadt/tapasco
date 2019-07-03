@@ -46,7 +46,7 @@ int tlkm_status_init(tlkm_status *sta, struct tlkm_device *dev, void __iomem *st
 	};
 	BUG_ON(! dev);
 	BUG_ON(! sta);
-	DEVLOG(dev->dev_id, TLKM_LF_STATUS, "reading status core of size %lu from %p ...", status_size, status);
+	DEVLOG(dev->dev_id, TLKM_LF_STATUS, "reading status core of size %zu from %p ...", status_size, status);
 	for(i = 0; i < TLKM_COMPONENT_MAX; i += 1) {
 		memset(dev->components[i].name, 0, TLKM_COMPONENTS_NAME_MAX);
 		dev->components[i].offset = -1;
@@ -86,5 +86,5 @@ dev_addr_t tlkm_status_get_component_base(struct tlkm_device *dev, const char* c
 			return dev->components[i].offset;
 		}
 	}
-	return -1;//sta->component[c];
+	return -1;
 }

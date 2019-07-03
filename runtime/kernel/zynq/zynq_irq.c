@@ -36,13 +36,13 @@
 
 #define _INTC(N) 1 +
 #if (INTERRUPT_CONTROLLERS 0 != ZYNQ_MAX_NUM_INTCS)
-	#error "when changing maximum number of interrupt controllers, you must change " \
-			"both the INTERRUPT_CONTROLLERS and ZYNQ_MAX_NUM_INTCS macros"
+#error "when changing maximum number of interrupt controllers, you must change " \
+"both the INTERRUPT_CONTROLLERS and ZYNQ_MAX_NUM_INTCS macros"
 #endif
 #undef _INTC
 
 #ifndef STR
-	#define STR(v)						#v
+#define STR(v)						#v
 #endif
 
 typedef struct {
@@ -51,9 +51,9 @@ typedef struct {
 
 static struct {
 	struct tlkm_control *ctrl;
-	#define	_INTC(N) intc_t intc_ ## N;
+#define	_INTC(N) intc_t intc_ ## N;
 	INTERRUPT_CONTROLLERS
-	#undef _INTC
+#undef _INTC
 } zynq_irq;
 
 // one work struct per slot: ack's that slot's interrupt only
@@ -71,9 +71,9 @@ TLKM_SLOTS
 static
 void init_work_structs(void)
 {
-	#define _SLOT(N) INIT_WORK(&zynq_irq_work_slot[N], zynq_irq_work_slot_ ## N ## _func);
+#define _SLOT(N) INIT_WORK(&zynq_irq_work_slot[N], zynq_irq_work_slot_ ## N ## _func);
 	TLKM_SLOTS
-	#undef _SLOT
+#undef _SLOT
 }
 
 #define	_INTC(N) \
@@ -103,7 +103,7 @@ static
 void zynq_init_intc(struct zynq_device *zynq_dev, u32 const base)
 {
 	u32 *intc = (u32 *)zynq_dev->parent->mmap.plat + base;
-	iowrite32((u32)-1, intc + (0x08 >> 2));
+	iowrite32((u32) - 1, intc + (0x08 >> 2));
 	iowrite32((u32) 3, intc + (0x1c >> 2));
 	ioread32(intc);
 }
@@ -118,13 +118,12 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 #define	_INTC(N)	\
 	rirq = ZYNQ_IRQ_BASE_IRQ + zynq_dev->parent->cls->npirqs + irqn; \
 	base = tlkm_status_get_component_base(zynq_dev->parent, "PLATFORM_COMPONENT_INTC" # N); \
-	if (base) { \
-		zynq_irq.intc_ ## N.base = (base - zynq_dev->parent->plat.base) >> 2; \
-		if (zynq_irq.intc_ ## N.base) { \
-			LOG(TLKM_LF_IRQ, "controller for IRQ #%d at 0x%08x", \
-					rirq, zynq_irq.intc_ ## N.base << 2); \
-			zynq_init_intc(zynq_dev, zynq_irq.intc_ ## N.base); \
-		} \
+	LOG(TLKM_LF_IRQ, "INTC%d base is %d", N, base); \
+	if (base != -1) { \
+		zynq_irq.intc_ ## N.base = (base >> 2); \
+		LOG(TLKM_LF_IRQ, "controller for IRQ #%d at 0x%08llx", \
+			    			rirq, (zynq_irq.intc_ ## N.base << 2) + zynq_dev->parent->status.platform_base.base); \
+		zynq_init_intc(zynq_dev, zynq_irq.intc_ ## N.base); \
 		LOG(TLKM_LF_IRQ, "registering IRQ #%d", rirq); \
 		retval = request_irq(rirq, \
 				zynq_irq_handler_ ## N, \
@@ -168,7 +167,7 @@ int zynq_irq_request_platform_irq(struct tlkm_device *dev, int irq_no, irq_handl
 	int err = 0;
 	if (irq_no >= dev->cls->npirqs) {
 		DEVERR(dev->dev_id, "invalid platform interrupt number: %d (must be < %zd",
-				irq_no, dev->cls->npirqs);
+		       irq_no, dev->cls->npirqs);
 		return -ENXIO;
 	}
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "requesting platform irq #%d", irq_no);

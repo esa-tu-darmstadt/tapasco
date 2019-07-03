@@ -23,7 +23,7 @@ int dma_engines_init(struct tlkm_device *dev)
 		addr = tlkm_status_get_component_base(dev, dma_name);
 		if(addr != -1) {
 			dma_base[i] = addr;
-			DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d found at %llx", i, addr);
+			DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d found at %llx", i, (uint64_t)addr);
 		}
 	}
 
