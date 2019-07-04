@@ -6,6 +6,7 @@
 #ifndef SCREEN_HPP__
 #define SCREEN_HPP__
 
+#include <functional>
 #include <ncurses.h>
 #include <unistd.h>
 

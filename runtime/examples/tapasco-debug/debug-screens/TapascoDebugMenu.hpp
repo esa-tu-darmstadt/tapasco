@@ -6,6 +6,8 @@
 #ifndef TAPASCO_DEBUG_MENU_HPP__
 #define TAPASCO_DEBUG_MENU_HPP__
 
+#include <tapasco.hpp>
+
 #include "AddressMapScreen.hpp"
 #include "AtsPriScreen.hpp"
 #include "BlueDebugScreen.hpp"
@@ -14,7 +16,6 @@
 #include "MenuScreen.hpp"
 #include "MonitorScreen.hpp"
 #include "TapascoStatusScreen.hpp"
-#include <tapasco.hpp>
 
 extern "C" {
 #include <platform_caps.h>

@@ -37,6 +37,8 @@
 #define assert(...)
 #endif
 
+#include <stdint.h>
+
 /** Index type: external id of pool element. */
 typedef uint32_t fsp_idx_t;
 #define INVALID_IDX ((fsp_idx_t)(-1))

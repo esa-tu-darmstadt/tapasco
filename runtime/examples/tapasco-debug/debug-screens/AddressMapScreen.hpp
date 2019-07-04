@@ -6,8 +6,12 @@
 #ifndef ADDRESS_MAP_SCREEN_HPP__
 #define ADDRESS_MAP_SCREEN_HPP__
 
-#include "MenuScreen.hpp"
 #include <tapasco.hpp>
+#include <cstring>
+
+#include "MenuScreen.hpp"
+
+using namespace tapasco;
 
 static const char *component_names[] = {
     "STATUS", "ATSPRI", "INTC0", "INTC1", "INTC2", "INTC3", "MSIX0",
