@@ -10,23 +10,25 @@
 #include "zynq_dmamgmt.h"
 
 static const struct of_device_id zynq_ids[] = {
-	{ .compatible = ZYNQ_NAME, },
+	{
+		.compatible = ZYNQ_NAME,
+	},
 	{},
 };
 
-static struct zynq_device _zynq_dev;		// there is at most one Zynq
+static struct zynq_device _zynq_dev; // there is at most one Zynq
 
 int zynq_device_init(struct tlkm_device *inst, void *data)
 {
 #ifndef NDEBUG
-	if (! inst) {
+	if (!inst) {
 		ERR("called with NULL device instance");
 		return -EACCES;
 	}
 #endif /* NDEBUG */
 	DEVLOG(inst->dev_id, TLKM_LF_DEVICE, "initializing zynq device");
 	inst->private_data = &_zynq_dev;
-	_zynq_dev.parent   = inst;
+	_zynq_dev.parent = inst;
 
 	DEVLOG(inst->dev_id, TLKM_LF_DEVICE, "zynq successfully initialized");
 	return 0;
@@ -35,7 +37,7 @@ int zynq_device_init(struct tlkm_device *inst, void *data)
 void zynq_device_exit(struct tlkm_device *inst)
 {
 #ifndef NDEBUG
-	if (! inst) {
+	if (!inst) {
 		ERR("called with NULL device instance");
 		return;
 	}
@@ -48,7 +50,8 @@ int zynq_device_init_subsystems(struct tlkm_device *dev, void *data)
 {
 	int ret = 0;
 	if ((ret = zynq_dmamgmt_init())) {
-		DEVERR(dev->dev_id, "could not initialize DMA management: %d", ret);
+		DEVERR(dev->dev_id, "could not initialize DMA management: %d",
+		       ret);
 		goto err_dmamgmt;
 	}
 
@@ -57,7 +60,8 @@ int zynq_device_init_subsystems(struct tlkm_device *dev, void *data)
 		goto err_irq;
 	}
 
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "successfully initialized subsystems");
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
+	       "successfully initialized subsystems");
 err_dmamgmt:
 	return ret;
 
@@ -76,11 +80,12 @@ void zynq_device_exit_subsystems(struct tlkm_device *dev)
 int zynq_device_probe(struct tlkm_class *cls)
 {
 	struct tlkm_device *inst;
-	LOG(TLKM_LF_DEVICE, "searching for Xilinx Zynq-7000 series devices ...");
+	LOG(TLKM_LF_DEVICE,
+	    "searching for Xilinx Zynq-7000 series devices ...");
 	if (of_find_matching_node(NULL, zynq_ids)) {
 		LOG(TLKM_LF_DEVICE, "found Xilinx Zynq-7000");
 		inst = tlkm_bus_new_device(cls, 0, 0, NULL);
-		if (! inst)
+		if (!inst)
 			return -EFAULT;
 	} else {
 		LOG(TLKM_LF_DEVICE, "no Xilinx Zynq-7000 series device found");

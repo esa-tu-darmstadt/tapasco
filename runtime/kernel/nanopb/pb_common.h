@@ -13,10 +13,12 @@ extern "C" {
 
 /* Initialize the field iterator structure to beginning.
  * Returns false if the message type is empty. */
-bool pb_field_iter_begin(pb_field_iter_t *iter, const pb_msgdesc_t *desc, void *message);
+bool pb_field_iter_begin(pb_field_iter_t *iter, const pb_msgdesc_t *desc,
+			 void *message);
 
 /* Get a field iterator for extension field. */
-bool pb_field_iter_begin_extension(pb_field_iter_t *iter, pb_extension_t *extension);
+bool pb_field_iter_begin_extension(pb_field_iter_t *iter,
+				   pb_extension_t *extension);
 
 /* Advance the iterator to the next field.
  * Returns false when the iterator wraps back to the first field. */
@@ -31,4 +33,3 @@ bool pb_field_iter_find(pb_field_iter_t *iter, uint32_t tag);
 #endif
 
 #endif
-

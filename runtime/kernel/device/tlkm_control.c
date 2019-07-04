@@ -2,10 +2,10 @@
 #include <linux/gfp.h>
 #include <linux/fs.h>
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,11,0)
-	#include <linux/sched.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 11, 0)
+#include <linux/sched.h>
 #else
-	#include <linux/sched/signal.h>
+#include <linux/sched/signal.h>
 #endif
 #include "tlkm_logging.h"
 #include "tlkm_control.h"
@@ -17,9 +17,9 @@
 
 static const struct file_operations _tlkm_control_fops = {
 	.unlocked_ioctl = tlkm_device_ioctl,
-	.mmap           = tlkm_device_mmap,
-	.read  		= tlkm_device_read,
-	.write 		= tlkm_device_write,
+	.mmap = tlkm_device_mmap,
+	.read = tlkm_device_read,
+	.write = tlkm_device_write,
 };
 
 static int init_miscdev(struct tlkm_control *pctl)
@@ -28,8 +28,8 @@ static int init_miscdev(struct tlkm_control *pctl)
 	snprintf(fn, 16, TLKM_DEV_IOCTL_FN, pctl->dev_id);
 	DEVLOG(pctl->dev_id, TLKM_LF_CONTROL, "creating miscdevice %s", fn);
 	pctl->miscdev.minor = MISC_DYNAMIC_MINOR;
-	pctl->miscdev.name  = kstrdup(fn, GFP_KERNEL);
-	pctl->miscdev.fops  = &_tlkm_control_fops;
+	pctl->miscdev.name = kstrdup(fn, GFP_KERNEL);
+	pctl->miscdev.fops = &_tlkm_control_fops;
 	return misc_register(&pctl->miscdev);
 }
 
@@ -41,16 +41,20 @@ static void exit_miscdev(struct tlkm_control *pctl)
 	DEVLOG(pctl->dev_id, TLKM_LF_CONTROL, "destroyed miscdevice");
 }
 
-ssize_t tlkm_control_signal_slot_interrupt(struct tlkm_control *pctl, const u32 s_id)
+ssize_t tlkm_control_signal_slot_interrupt(struct tlkm_control *pctl,
+					   const u32 s_id)
 {
 	static long max_outstanding = 0;
-	BUG_ON(! pctl);
+	BUG_ON(!pctl);
 	mutex_lock(&pctl->out_mutex);
 	while (pctl->outstanding > TLKM_CONTROL_BUFFER_SZ - 2) {
 		DEVWRN(pctl->dev_id, "buffer thrashing, throttling write ...");
 		mutex_unlock(&pctl->out_mutex);
-		wait_event_interruptible(pctl->write_q, pctl->outstanding <= (TLKM_CONTROL_BUFFER_SZ / 2));
-		if (signal_pending(current)) return -ERESTARTSYS;
+		wait_event_interruptible(pctl->write_q,
+					 pctl->outstanding <=
+						 (TLKM_CONTROL_BUFFER_SZ / 2));
+		if (signal_pending(current))
+			return -ERESTARTSYS;
 		mutex_lock(&pctl->out_mutex);
 	}
 	mutex_unlock(&pctl->out_mutex);
@@ -63,22 +67,25 @@ ssize_t tlkm_control_signal_slot_interrupt(struct tlkm_control *pctl, const u32 
 	tlkm_perfc_outstanding_set(pctl->dev_id, pctl->outstanding);
 	if (pctl->outstanding > max_outstanding) {
 		max_outstanding = pctl->outstanding;
-		tlkm_perfc_outstanding_high_watermark_set(pctl->dev_id, max_outstanding);
+		tlkm_perfc_outstanding_high_watermark_set(pctl->dev_id,
+							  max_outstanding);
 	}
 #ifndef NDEBUG
 	if (pctl->outstanding >= TLKM_CONTROL_BUFFER_SZ)
-		DEVWRN(pctl->dev_id, "buffer size exceeded! expect missing data!");
+		DEVWRN(pctl->dev_id,
+		       "buffer size exceeded! expect missing data!");
 #endif
 	mutex_unlock(&pctl->out_mutex);
 	wake_up_interruptible(&pctl->read_q);
 	return sizeof(u32);
 }
 
-int  tlkm_control_init(dev_id_t dev_id, struct tlkm_control **ppctl)
+int tlkm_control_init(dev_id_t dev_id, struct tlkm_control **ppctl)
 {
 	int ret = 0;
-	struct tlkm_control *p = (struct tlkm_control *)kzalloc(sizeof(*p), GFP_KERNEL);
-	if (! p) {
+	struct tlkm_control *p =
+		(struct tlkm_control *)kzalloc(sizeof(*p), GFP_KERNEL);
+	if (!p) {
 		DEVERR(dev_id, "could not allocate struct tlkm_control");
 		return -ENOMEM;
 	}

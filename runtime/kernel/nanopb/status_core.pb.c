@@ -10,21 +10,14 @@
 
 PB_BIND(tapasco_status_PE, tapasco_status_PE, AUTO)
 
-
 PB_BIND(tapasco_status_Platform, tapasco_status_Platform, AUTO)
-
 
 PB_BIND(tapasco_status_Clock, tapasco_status_Clock, AUTO)
 
-
 PB_BIND(tapasco_status_Version, tapasco_status_Version, AUTO)
-
 
 PB_BIND(tapasco_status_MemoryArea, tapasco_status_MemoryArea, AUTO)
 
-
 PB_BIND(tapasco_status_Status, tapasco_status_Status, AUTO)
-
-
 
 /* @@protoc_insertion_point(eof) */

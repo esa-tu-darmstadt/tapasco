@@ -25,36 +25,41 @@ extern "C" {
  *    is different than from the main stream. Don't use bytes_left to compute
  *    any pointers.
  */
-struct pb_istream_s
-{
+struct pb_istream_s {
 #ifdef PB_BUFFER_ONLY
-    /* Callback pointer is not used in buffer-only configuration.
+	/* Callback pointer is not used in buffer-only configuration.
      * Having an int pointer here allows binary compatibility but
      * gives an error if someone tries to assign callback function.
      */
-    int *callback;
+	int *callback;
 #else
-    bool (*callback)(pb_istream_t *stream, pb_byte_t *buf, size_t count);
+	bool (*callback)(pb_istream_t *stream, pb_byte_t *buf, size_t count);
 #endif
 
-    void *state; /* Free field for use by callback implementation */
-    size_t bytes_left;
-    
+	void *state; /* Free field for use by callback implementation */
+	size_t bytes_left;
+
 #ifndef PB_NO_ERRMSG
-    const char *errmsg;
+	const char *errmsg;
 #endif
 };
 
 #ifndef PB_NO_ERRMSG
-#define PB_ISTREAM_EMPTY {0,0,0,0}
+#define PB_ISTREAM_EMPTY                                                       \
+	{                                                                      \
+		0, 0, 0, 0                                                     \
+	}
 #else
-#define PB_ISTREAM_EMPTY {0,0,0}
+#define PB_ISTREAM_EMPTY                                                       \
+	{                                                                      \
+		0, 0, 0                                                        \
+	}
 #endif
 
 /***************************
  * Main decoding functions *
  ***************************/
- 
+
 /* Decode a single protocol buffers message from input stream into a C structure.
  * Returns true on success, false on any failure.
  * The actual struct pointed to by dest must match the description in fields.
@@ -71,7 +76,8 @@ struct pb_istream_s
  *    stream = pb_istream_from_buffer(buffer, count);
  *    pb_decode(&stream, MyMessage_fields, &msg);
  */
-bool pb_decode(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_struct);
+bool pb_decode(pb_istream_t *stream, const pb_msgdesc_t *fields,
+	       void *dest_struct);
 
 /* Extended version of pb_decode, with several options to control
  * the decoding process:
@@ -96,16 +102,19 @@ bool pb_decode(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_stru
  *
  * Multiple flags can be combined with bitwise or (| operator)
  */
-#define PB_DECODE_NOINIT          0x01
-#define PB_DECODE_DELIMITED       0x02
-#define PB_DECODE_NULLTERMINATED  0x04
-bool pb_decode_ex(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_struct, unsigned int flags);
+#define PB_DECODE_NOINIT 0x01
+#define PB_DECODE_DELIMITED 0x02
+#define PB_DECODE_NULLTERMINATED 0x04
+bool pb_decode_ex(pb_istream_t *stream, const pb_msgdesc_t *fields,
+		  void *dest_struct, unsigned int flags);
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
-#define pb_decode_noinit(s,f,d) pb_decode_ex(s,f,d, PB_DECODE_NOINIT)
-#define pb_decode_delimited(s,f,d) pb_decode_ex(s,f,d, PB_DECODE_DELIMITED)
-#define pb_decode_delimited_noinit(s,f,d) pb_decode_ex(s,f,d, PB_DECODE_DELIMITED | PB_DECODE_NOINIT)
-#define pb_decode_nullterminated(s,f,d) pb_decode_ex(s,f,d, PB_DECODE_NULLTERMINATED)
+#define pb_decode_noinit(s, f, d) pb_decode_ex(s, f, d, PB_DECODE_NOINIT)
+#define pb_decode_delimited(s, f, d) pb_decode_ex(s, f, d, PB_DECODE_DELIMITED)
+#define pb_decode_delimited_noinit(s, f, d)                                    \
+	pb_decode_ex(s, f, d, PB_DECODE_DELIMITED | PB_DECODE_NOINIT)
+#define pb_decode_nullterminated(s, f, d)                                      \
+	pb_decode_ex(s, f, d, PB_DECODE_NULLTERMINATED)
 
 #ifdef PB_ENABLE_MALLOC
 /* Release any allocated pointer fields. If you use dynamic allocation, you should
@@ -114,7 +123,6 @@ bool pb_decode_ex(pb_istream_t *stream, const pb_msgdesc_t *fields, void *dest_s
  */
 void pb_release(const pb_msgdesc_t *fields, void *dest_struct);
 #endif
-
 
 /**************************************
  * Functions for manipulating streams *
@@ -132,14 +140,14 @@ pb_istream_t pb_istream_from_buffer(const pb_byte_t *buf, size_t bufsize);
  */
 bool pb_read(pb_istream_t *stream, pb_byte_t *buf, size_t count);
 
-
 /************************************************
  * Helper functions for writing field callbacks *
  ************************************************/
 
 /* Decode the tag for the next field in the stream. Gives the wire type and
  * field tag. At end of the message, returns false and sets eof to true. */
-bool pb_decode_tag(pb_istream_t *stream, pb_wire_type_t *wire_type, uint32_t *tag, bool *eof);
+bool pb_decode_tag(pb_istream_t *stream, pb_wire_type_t *wire_type,
+		   uint32_t *tag, bool *eof);
 
 /* Skip the field payload data, given the wire type. */
 bool pb_skip_field(pb_istream_t *stream, pb_wire_type_t wire_type);
