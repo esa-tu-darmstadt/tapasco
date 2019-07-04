@@ -6,8 +6,8 @@
 #ifndef ADDRESS_MAP_SCREEN_HPP__
 #define ADDRESS_MAP_SCREEN_HPP__
 
-#include <tapasco.hpp>
 #include <cstring>
+#include <tapasco.hpp>
 
 #include "MenuScreen.hpp"
 
