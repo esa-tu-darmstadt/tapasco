@@ -25,23 +25,23 @@
 #define PLATFORM_DEVCTX_H__
 
 #include <assert.h>
-#include <platform_types.h>
 #include <platform_device_operations.h>
+#include <platform_types.h>
 #include <tlkm_platform.h>
 
 typedef struct platform_addr_map platform_addr_map_t;
 typedef struct platform_signaling platform_signaling_t;
 
 struct platform_devctx {
-    platform_dev_id_t           dev_id;
-    int                 fd_ctrl;
-    platform_access_t           mode;
-    platform_device_info_t          dev_info;
-    platform_info_t             info;
-    platform_addr_map_t             *addrmap;
-    platform_signaling_t            *signaling;
-    platform_device_operations_t        dops;
-    void                    *private_data;
+  platform_dev_id_t dev_id;
+  int fd_ctrl;
+  platform_access_t mode;
+  platform_device_info_t dev_info;
+  platform_info_t info;
+  platform_addr_map_t *addrmap;
+  platform_signaling_t *signaling;
+  platform_device_operations_t dops;
+  void *private_data;
 };
 
 platform_res_t platform_devctx_init(platform_ctx_t *ctx,

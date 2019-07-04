@@ -22,21 +22,21 @@
 #ifndef TAPASCO_TYPES_H__
 #define TAPASCO_TYPES_H__
 
+#include <inttypes.h>
+#include <platform_caps.h>
+#include <platform_types.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <inttypes.h>
-#include <platform_types.h>
-#include <platform_caps.h>
 
-#define PE_LOCAL_FLAG					2
+#define PE_LOCAL_FLAG 2
 
 /** Shorthand for unsigned long int. */
 typedef unsigned long int ul;
 
 /** General purpose result type **/
 typedef enum {
-	/** Indicates successful operation. **/
-	TAPASCO_SUCCESS					= 1
+  /** Indicates successful operation. **/
+  TAPASCO_SUCCESS = 1
 } tapasco_binary_res_t;
 
 /** Public result type. */
@@ -59,82 +59,82 @@ typedef platform_slot_id_t tapasco_slot_id_t;
 
 /** Identifies jobs, i.e,, sets of arguments for a kernel execution. **/
 typedef ul tapasco_job_id_t;
-#define PRIjob						"%lu"
+#define PRIjob "%lu"
 
 /** Device memory location handle (opaque). **/
 typedef ul tapasco_handle_t;
-#define PRIhandle					"%#08lx"
+#define PRIhandle "%#08lx"
 
 /** default value for no flags **/
-#define NONE						0
+#define NONE 0
 
 /** Flags for device creation (implementation defined). **/
 typedef enum {
-	/** no flags **/
-	TAPASCO_DEVICE_CREATE_EXCLUSIVE			= NONE,
-	TAPASCO_DEVICE_CREATE_SHARED			= 1,
-	TAPASCO_DEVICE_CREATE_MONITOR			= 4,
+  /** no flags **/
+  TAPASCO_DEVICE_CREATE_EXCLUSIVE = NONE,
+  TAPASCO_DEVICE_CREATE_SHARED = 1,
+  TAPASCO_DEVICE_CREATE_MONITOR = 4,
 } tapasco_device_create_flag_t;
 
 /** Flags for memory allocation (implementation defined). **/
 typedef enum {
-	/** no flags **/
-	TAPASCO_DEVICE_ALLOC_FLAGS_NONE 		= NONE,
-	/** PE-local, i.e., only accessible from scheduled PE **/
-	TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL             = PE_LOCAL_FLAG,
+  /** no flags **/
+  TAPASCO_DEVICE_ALLOC_FLAGS_NONE = NONE,
+  /** PE-local, i.e., only accessible from scheduled PE **/
+  TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL = PE_LOCAL_FLAG,
 } tapasco_device_alloc_flag_t;
 
 /** Flags for bitstream loading (implementation defined). **/
 typedef enum {
-	/** no flags **/
-	TAPASCO_LOAD_BITSTREAM_FLAGS_NONE 		= NONE,
+  /** no flags **/
+  TAPASCO_LOAD_BITSTREAM_FLAGS_NONE = NONE,
 } tapasco_load_bitstream_flag_t;
 
 /** Flags for calls to tapasco_device_copy_to and tapasco_device_copy_from. **/
 typedef enum {
-	/** no flags **/
-	TAPASCO_DEVICE_COPY_FLAGS_NONE			= NONE,
-	/** wait until transfer is finished (default) **/
-	TAPASCO_DEVICE_COPY_BLOCKING			= NONE,
-	/** return immediately after transfer was scheduled **/
-	TAPASCO_DEVICE_COPY_NONBLOCKING			= 1,
-	/** copy to local memory **/
-	TAPASCO_DEVICE_COPY_PE_LOCAL            	= PE_LOCAL_FLAG
+  /** no flags **/
+  TAPASCO_DEVICE_COPY_FLAGS_NONE = NONE,
+  /** wait until transfer is finished (default) **/
+  TAPASCO_DEVICE_COPY_BLOCKING = NONE,
+  /** return immediately after transfer was scheduled **/
+  TAPASCO_DEVICE_COPY_NONBLOCKING = 1,
+  /** copy to local memory **/
+  TAPASCO_DEVICE_COPY_PE_LOCAL = PE_LOCAL_FLAG
 } tapasco_device_copy_flag_t;
 
 /** Flags for calls to tapasco_device_acquire_job_id. **/
 typedef enum {
-	/** no flags **/
-	TAPASCO_DEVICE_ACQUIRE_JOB_ID_FLAGS_NONE	= NONE,
-	/** wait until id becomes available (default) **/
-	TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING		= NONE,
-	/** fail if id is not immediately available, do not wait **/
-	TAPASCO_DEVICE_ACQUIRE_JOB_ID_NONBLOCKING	= 1,
+  /** no flags **/
+  TAPASCO_DEVICE_ACQUIRE_JOB_ID_FLAGS_NONE = NONE,
+  /** wait until id becomes available (default) **/
+  TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING = NONE,
+  /** fail if id is not immediately available, do not wait **/
+  TAPASCO_DEVICE_ACQUIRE_JOB_ID_NONBLOCKING = 1,
 } tapasco_device_acquire_job_id_flag_t;
 
 /** Flags for calls to tapasco_device_job_launch. **/
 typedef enum {
-	/** no flags **/
-	TAPASCO_DEVICE_JOB_LAUNCH_FLAGS_NONE		= NONE,
-	/** launch and wait until job is finished (default) **/
-	TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING		= NONE,
-	/** return immediately after job is scheduled **/
-	TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING		= 1,
+  /** no flags **/
+  TAPASCO_DEVICE_JOB_LAUNCH_FLAGS_NONE = NONE,
+  /** launch and wait until job is finished (default) **/
+  TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING = NONE,
+  /** return immediately after job is scheduled **/
+  TAPASCO_DEVICE_JOB_LAUNCH_NONBLOCKING = 1,
 } tapasco_device_job_launch_flag_t;
 
 /** Flags for memory transfer directions. **/
 typedef enum {
-        /** Copy to the device before launch. */
-	TAPASCO_COPY_DIRECTION_TO			= 1,
-	/** Allocate and copy from the device after launch. */
-	TAPASCO_COPY_DIRECTION_FROM			= 2,
-	/** Allocate, copy to before and back after launch. */
-	TAPASCO_COPY_DIRECTION_BOTH			= 3
+  /** Copy to the device before launch. */
+  TAPASCO_COPY_DIRECTION_TO = 1,
+  /** Allocate and copy from the device after launch. */
+  TAPASCO_COPY_DIRECTION_FROM = 2,
+  /** Allocate, copy to before and back after launch. */
+  TAPASCO_COPY_DIRECTION_BOTH = 3
 } tapasco_copy_direction_flag_t;
 
-#define COPY_TO					(TAPASCO_COPY_DIRECTION_TO)
-#define COPY_FROM				(TAPASCO_COPY_DIRECTION_FROM)
-#define COPY_BOTH				(TAPASCO_COPY_DIRECTION_BOTH)
+#define COPY_TO (TAPASCO_COPY_DIRECTION_TO)
+#define COPY_FROM (TAPASCO_COPY_DIRECTION_FROM)
+#define COPY_BOTH (TAPASCO_COPY_DIRECTION_BOTH)
 
 /** Capabilities: Optional device capabilities. **/
 typedef platform_capabilities_0_t tapasco_device_capability_t;
@@ -148,9 +148,9 @@ typedef platform_capabilities_0_t tapasco_device_capability_t;
  * the device passively during the execution of another program.
  **/
 typedef enum {
-	TAPASCO_EXCLUSIVE_ACCESS		= PLATFORM_EXCLUSIVE_ACCESS,
-	TAPASCO_SHARED_ACCESS			= PLATFORM_SHARED_ACCESS,
-	TAPASCO_MONITOR_ACCESS			= PLATFORM_MONITOR_ACCESS,
+  TAPASCO_EXCLUSIVE_ACCESS = PLATFORM_EXCLUSIVE_ACCESS,
+  TAPASCO_SHARED_ACCESS = PLATFORM_SHARED_ACCESS,
+  TAPASCO_MONITOR_ACCESS = PLATFORM_MONITOR_ACCESS,
 } tapasco_access_t;
 
 #endif /* TAPASCO_TYPES_H__ */

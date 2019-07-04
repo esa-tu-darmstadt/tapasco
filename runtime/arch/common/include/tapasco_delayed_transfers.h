@@ -27,26 +27,22 @@
 #include <tapasco_types.h>
 
 tapasco_res_t tapasco_transfer_to(tapasco_devctx_t *dev_ctx,
-		tapasco_job_id_t const j_id,
-		tapasco_transfer_t *t,
-		tapasco_slot_id_t s_id);
+                                  tapasco_job_id_t const j_id,
+                                  tapasco_transfer_t *t,
+                                  tapasco_slot_id_t s_id);
 
 tapasco_res_t tapasco_transfer_from(tapasco_devctx_t *dev_ctx,
-		tapasco_jobs_t *jobs,
-		tapasco_job_id_t const j_id,
-		tapasco_transfer_t *t,
-		tapasco_slot_id_t s_id);
+                                    tapasco_jobs_t *jobs,
+                                    tapasco_job_id_t const j_id,
+                                    tapasco_transfer_t *t,
+                                    tapasco_slot_id_t s_id);
 
-tapasco_res_t tapasco_write_arg(tapasco_devctx_t *dev_ctx,
-		tapasco_jobs_t *jobs,
-		tapasco_job_id_t const j_id,
-		tapasco_handle_t const h,
-		size_t const a);
+tapasco_res_t tapasco_write_arg(tapasco_devctx_t *dev_ctx, tapasco_jobs_t *jobs,
+                                tapasco_job_id_t const j_id,
+                                tapasco_handle_t const h, size_t const a);
 
-tapasco_res_t tapasco_read_arg(tapasco_devctx_t *dev_ctx,
-		tapasco_jobs_t *jobs,
-		tapasco_job_id_t const j_id,
-		tapasco_handle_t const h,
-		size_t const a);
+tapasco_res_t tapasco_read_arg(tapasco_devctx_t *dev_ctx, tapasco_jobs_t *jobs,
+                               tapasco_job_id_t const j_id,
+                               tapasco_handle_t const h, size_t const a);
 
 #endif /* TAPASCO_DELAYED_TRANSFERS_H__ */

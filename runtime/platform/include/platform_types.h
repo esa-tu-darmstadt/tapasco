@@ -19,28 +19,28 @@
 #ifndef PLATFORM_TYPES_H__
 #define PLATFORM_TYPES_H__
 
+#include "platform_components.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <tlkm_access.h>
 #include <tlkm_ioctl_cmds.h>
-#include "platform_components.h"
 
-#define PE_LOCAL_FLAG						2
+#define PE_LOCAL_FLAG 2
 
-typedef uint64_t						u64;
-typedef uint32_t						u32;
-typedef int64_t							s64;
-typedef int32_t							s32;
+typedef uint64_t u64;
+typedef uint32_t u32;
+typedef int64_t s64;
+typedef int32_t s32;
 
 /** Platform result enum type. */
 typedef enum {
-	/** Indicates successful operation. **/
-	PLATFORM_SUCCESS					= 1
+  /** Indicates successful operation. **/
+  PLATFORM_SUCCESS = 1
 } platform_binary_res_t;
 
 /** Public result type. */
 typedef ssize_t platform_res_t;
-#define PRIres							"%zd"
+#define PRIres "%zd"
 
 /** Platform context: opaque forward declaration. */
 typedef struct platform_ctx platform_ctx_t;
@@ -50,26 +50,26 @@ typedef struct platform_devctx platform_devctx_t;
 
 /** Platform device id type. */
 typedef uint32_t platform_dev_id_t;
-#define PRIdev							"%02u"
+#define PRIdev "%02u"
 
 /** Device register space address type (opaque). **/
 typedef uint32_t platform_ctl_addr_t;
-#define PRIctl							"%#08x"
+#define PRIctl "%#08x"
 
 /** Device memory space address type (opaque). **/
 typedef uint32_t platform_mem_addr_t;
-#define PRImem							"%#08x"
+#define PRImem "%#08x"
 
 /** Identifies a slot in the design, i.e., a Function. **/
 typedef uint32_t platform_slot_id_t;
-#define PRIslot							"%03u"
+#define PRIslot "%03u"
 
 /** Type used to identify kernels. **/
 typedef uint32_t platform_kernel_id_t;
-#define PRIkernel						"%u"
+#define PRIkernel "%u"
 
-#define CSTflags						unsigned long
-#define PRIflags						"%#08lx"
+#define CSTflags unsigned long
+#define PRIflags "%#08lx"
 
 /**
  * Device access types:
@@ -80,28 +80,28 @@ typedef uint32_t platform_kernel_id_t;
  * the device passively during the execution of another program.
  **/
 typedef enum {
-	PLATFORM_EXCLUSIVE_ACCESS 		= TLKM_ACCESS_EXCLUSIVE,
-	PLATFORM_SHARED_ACCESS			= TLKM_ACCESS_SHARED,
-	PLATFORM_MONITOR_ACCESS			= TLKM_ACCESS_MONITOR,
+  PLATFORM_EXCLUSIVE_ACCESS = TLKM_ACCESS_EXCLUSIVE,
+  PLATFORM_SHARED_ACCESS = TLKM_ACCESS_SHARED,
+  PLATFORM_MONITOR_ACCESS = TLKM_ACCESS_MONITOR,
 } platform_access_t;
 
 typedef enum {
-	/** no flags **/
-	PLATFORM_ALLOC_FLAGS_NONE 				= 0,
-	/** PE-local memory **/
-	PLATFORM_ALLOC_FLAGS_PE_LOCAL           		= PE_LOCAL_FLAG,
+  /** no flags **/
+  PLATFORM_ALLOC_FLAGS_NONE = 0,
+  /** PE-local memory **/
+  PLATFORM_ALLOC_FLAGS_PE_LOCAL = PE_LOCAL_FLAG,
 } platform_alloc_flags_t;
 
 typedef enum {
-	/** no flags **/
-	PLATFORM_CTL_FLAGS_NONE					= 0,
-	/** raw mode: no range checks, no added offsets **/
-	PLATFORM_CTL_FLAGS_RAW					= 1
+  /** no flags **/
+  PLATFORM_CTL_FLAGS_NONE = 0,
+  /** raw mode: no range checks, no added offsets **/
+  PLATFORM_CTL_FLAGS_RAW = 1
 } platform_ctl_flags_t;
 
 typedef enum {
-	/** no flags **/
-	PLATFORM_MEM_FLAGS_NONE					= 0
+  /** no flags **/
+  PLATFORM_MEM_FLAGS_NONE = 0
 } platform_mem_flags_t;
 
 typedef struct tlkm_device_info platform_device_info_t;

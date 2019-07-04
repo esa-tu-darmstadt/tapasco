@@ -19,14 +19,14 @@
 //! @file	tapasco_local_mem.h
 //! @brief	Helper methods to manage PE-local memories.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
-//! 
+//!
 #ifndef TAPASCO_LOCAL_MEM_H__
 #define TAPASCO_LOCAL_MEM_H__
 
+#include <gen_mem.h>
+#include <platform_types.h>
 #include <tapasco.h>
 #include <tapasco_pemgmt.h>
-#include <platform_types.h>
-#include <gen_mem.h>
 
 /** Forward declaration of local memory management struct (opaque). */
 typedef struct tapasco_local_mem tapasco_local_mem_t;
@@ -38,7 +38,7 @@ typedef struct tapasco_local_mem tapasco_local_mem_t;
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
 tapasco_res_t tapasco_local_mem_init(tapasco_devctx_t *dev_ctx,
-		tapasco_local_mem_t **lmem);
+                                     tapasco_local_mem_t **lmem);
 void tapasco_local_mem_deinit(tapasco_local_mem_t *lmem);
 
 /**
@@ -51,9 +51,8 @@ void tapasco_local_mem_deinit(tapasco_local_mem_t *lmem);
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
 tapasco_res_t tapasco_local_mem_alloc(tapasco_local_mem_t *lmem,
-		tapasco_slot_id_t slot_id,
-		size_t const sz,
-		tapasco_handle_t *h);
+                                      tapasco_slot_id_t slot_id,
+                                      size_t const sz, tapasco_handle_t *h);
 
 /**
  * Deallocates local memory previously allocated with @tapasco_local_mem_alloc
@@ -65,9 +64,8 @@ tapasco_res_t tapasco_local_mem_alloc(tapasco_local_mem_t *lmem,
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
 void tapasco_local_mem_dealloc(tapasco_local_mem_t *lmem,
-		tapasco_slot_id_t slot_id,
-		tapasco_handle_t h,
-		size_t sz);
+                               tapasco_slot_id_t slot_id, tapasco_handle_t h,
+                               size_t sz);
 
 /**
  * Returns the number of bytes of memory in given slot id.
@@ -76,7 +74,7 @@ void tapasco_local_mem_dealloc(tapasco_local_mem_t *lmem,
  * @return number of bytes > 0 if memory controller is in slot, 0 otherwise
  **/
 size_t tapasco_local_mem_get_size(tapasco_local_mem_t *lmem,
-		tapasco_slot_id_t const slot_id);
+                                  tapasco_slot_id_t const slot_id);
 
 /**
  * Returns the number of free bytes of memory in given slot id.
@@ -85,7 +83,7 @@ size_t tapasco_local_mem_get_size(tapasco_local_mem_t *lmem,
  * @return available number of bytes.
  **/
 size_t tapasco_local_mem_get_free(tapasco_local_mem_t *lmem,
-		tapasco_slot_id_t const slot_id);
+                                  tapasco_slot_id_t const slot_id);
 
 /**
  * Returns the base address in PE-local memory space for memory at given slot.
@@ -94,9 +92,8 @@ size_t tapasco_local_mem_get_free(tapasco_local_mem_t *lmem,
  * @param elem address in PE-local memory space to find the slot and base for.
  * @return return base address of memory controller managing elem
  **/
-tapasco_handle_t tapasco_local_mem_get_slot_and_base(
-		tapasco_local_mem_t *lmem,
-		tapasco_slot_id_t *slot_id,
-		addr_t const elem);
+tapasco_handle_t tapasco_local_mem_get_slot_and_base(tapasco_local_mem_t *lmem,
+                                                     tapasco_slot_id_t *slot_id,
+                                                     addr_t const elem);
 
 #endif /* TAPASCO_LOCAL_MEM_H__ */

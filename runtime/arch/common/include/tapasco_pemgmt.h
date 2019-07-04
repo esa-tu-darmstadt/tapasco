@@ -17,15 +17,15 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file	tapasco_pemgmt.h
-//! @brief	Defines a micro API to access the pes available in a 
+//! @brief	Defines a micro API to access the pes available in a
 //!             hardware threadpool, perform enumeration, locking etc.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
 #ifndef TAPASCO_PEMGMT_H__
 #define TAPASCO_PEMGMT_H__
 
-#include <tapasco_types.h>
 #include <tapasco_global.h>
+#include <tapasco_types.h>
 
 /** Implementation defined functions struct. (opaque) */
 typedef struct tapasco_pemgmt tapasco_pemgmt_t;
@@ -37,7 +37,7 @@ typedef struct tapasco_pemgmt tapasco_pemgmt_t;
  * @return TAPASCO_SUCCESS if successful.
  **/
 tapasco_res_t tapasco_pemgmt_init(const tapasco_devctx_t *dev_ctx,
-		tapasco_pemgmt_t **pes);
+                                  tapasco_pemgmt_t **pes);
 
 /**
  * Releases the given function struct an allocated memory.
@@ -46,13 +46,13 @@ tapasco_res_t tapasco_pemgmt_init(const tapasco_devctx_t *dev_ctx,
 void tapasco_pemgmt_deinit(tapasco_pemgmt_t *pes);
 
 /**
- * Supporting function: Perform initial setup of the system, e.g., activate 
+ * Supporting function: Perform initial setup of the system, e.g., activate
  * interrupts at each kernel instance, etc.
  * @param dev_ctx device context.
  * @param ctx functions context.
  **/
 void tapasco_pemgmt_setup_system(tapasco_devctx_t *dev_ctx,
-		tapasco_pemgmt_t *ctx);
+                                 tapasco_pemgmt_t *ctx);
 
 /**
  * Reserves a slot containing an instance of the given function (if possible).
@@ -61,7 +61,7 @@ void tapasco_pemgmt_setup_system(tapasco_devctx_t *dev_ctx,
  * @return slot_id >= 0 if successful, < 0 otherwise.
  **/
 tapasco_slot_id_t tapasco_pemgmt_acquire_pe(tapasco_pemgmt_t *ctx,
-		tapasco_kernel_id_t const k_id);
+                                            tapasco_kernel_id_t const k_id);
 
 /**
  * Releases a previously acquired slot.
@@ -69,7 +69,7 @@ tapasco_slot_id_t tapasco_pemgmt_acquire_pe(tapasco_pemgmt_t *ctx,
  * @param s_id slot identifier.
  */
 void tapasco_pemgmt_release_pe(tapasco_pemgmt_t *ctx,
-		tapasco_slot_id_t const s_id);
+                               tapasco_slot_id_t const s_id);
 
 /**
  * Returns the number of available instances of the kernel with the given
@@ -79,7 +79,7 @@ void tapasco_pemgmt_release_pe(tapasco_pemgmt_t *ctx,
  * @param Number of processing elements currently configured (0 if none).
  **/
 size_t tapasco_pemgmt_count(tapasco_pemgmt_t const *ctx,
-		tapasco_kernel_id_t const k_id);
+                            tapasco_kernel_id_t const k_id);
 
 /**
  * Prepares the given job for the execution of the job by transferring
@@ -90,8 +90,8 @@ size_t tapasco_pemgmt_count(tapasco_pemgmt_t const *ctx,
  * @return TAPASCO_SUCCESS if successful, an error code otherwise.
  **/
 tapasco_res_t tapasco_pemgmt_prepare_pe(tapasco_devctx_t *dev_ctx,
-		tapasco_job_id_t const j_id,
-		tapasco_slot_id_t const slot_id);
+                                        tapasco_job_id_t const j_id,
+                                        tapasco_slot_id_t const slot_id);
 
 /**
  * Starts execution of PE in given slot.
@@ -99,7 +99,7 @@ tapasco_res_t tapasco_pemgmt_prepare_pe(tapasco_devctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS if successful, an error code otherwise.
  **/
 tapasco_res_t tapasco_pemgmt_start_pe(tapasco_devctx_t *dev_ctx,
-		tapasco_slot_id_t const slot_id);
+                                      tapasco_slot_id_t const slot_id);
 
 /**
  * Bottom half of job launch: Retrieves the arguments for the given
@@ -110,6 +110,6 @@ tapasco_res_t tapasco_pemgmt_start_pe(tapasco_devctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS if successful, an error code otherwise.
  **/
 tapasco_res_t tapasco_pemgmt_finish_pe(tapasco_devctx_t *dev_ctx,
-		tapasco_job_id_t const j_id);
+                                       tapasco_job_id_t const j_id);
 
 #endif /* TAPASCO_PEMGMT_H__ */

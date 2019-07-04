@@ -6,18 +6,21 @@
 #ifndef MONITOR_SCREEN_HPP__
 #define MONITOR_SCREEN_HPP__
 
-#include <tapasco.hpp>
 #include "MenuScreen.hpp"
+#include <tapasco.hpp>
 
 class MonitorScreen : public MenuScreen {
 public:
-  MonitorScreen(Tapasco *tapasco) : MenuScreen("TaPaSCo Monitor", vector<string>()), tapasco(*tapasco) {
+  MonitorScreen(Tapasco *tapasco)
+      : MenuScreen("TaPaSCo Monitor", vector<string>()), tapasco(*tapasco) {
     delay_us = 250;
     int r = check_bitstream();
-    if (r) throw r;
+    if (r)
+      throw r;
   }
   virtual ~MonitorScreen() {
-    for (slot_t *sp : slots) delete sp;
+    for (slot_t *sp : slots)
+      delete sp;
   }
 
 protected:
@@ -40,7 +43,8 @@ protected:
         start_row = (rows - 3 - h * rowc) / 2;
       }
       ++sid;
-      if (sid >= h * w) break;
+      if (sid >= h * w)
+        break;
     }
     // render keyboard hints
     attron(A_REVERSE);
@@ -50,38 +54,47 @@ protected:
   }
 
   virtual int perform(const int choice) {
-    if (static_cast<char>(choice) == 'r') return peek();
-    if (static_cast<char>(choice) == 'p') return poke();
-    if (static_cast<char>(choice) == 'w') return poke_and_wait();
-    if (choice == ERR) delay();
+    if (static_cast<char>(choice) == 'r')
+      return peek();
+    if (static_cast<char>(choice) == 'p')
+      return poke();
+    if (static_cast<char>(choice) == 'w')
+      return poke_and_wait();
+    if (choice == ERR)
+      delay();
     return choice;
   }
 
   virtual void update() {
     for (uint32_t intc = 0; intc < intc_addr.size(); ++intc) {
-      if (platform_read_ctl(tapasco.platform_device(), intc_addr[intc], sizeof(intc_isr[intc]),
-                            &intc_isr[intc], PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
+      if (platform_read_ctl(tapasco.platform_device(), intc_addr[intc],
+                            sizeof(intc_isr[intc]), &intc_isr[intc],
+                            PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
         intc_isr[intc] = 0xDEADBEEF;
       }
     }
     for (slot_t *sp : slots) {
-      if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x0c, 4, &sp->isr,
+      if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x0c, 4,
+                            &sp->isr,
                             PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
         sp->isr = 0xDEADBEEF;
       }
-      if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x10, 4, &sp->retval[0],
+      if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x10, 4,
+                            &sp->retval[0],
                             PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
         sp->retval[0] = 0xDEADBEEF;
       }
-      if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x14, 4, &sp->retval[1],
+      if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x14, 4,
+                            &sp->retval[1],
                             PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
         sp->retval[1] = 0xDEADBEEF;
       }
       for (int i = 0; i < NUM_ARGS; ++i) {
         for (int j = 0; j < 2; ++j) {
-          if (platform_read_ctl(tapasco.platform_device(), sp->base_addr + 0x20 + 0x10 * i + 0x04 * j, 4,
-                                &sp->argval[i * 2 + j], PLATFORM_CTL_FLAGS_NONE) !=
-              PLATFORM_SUCCESS) {
+          if (platform_read_ctl(tapasco.platform_device(),
+                                sp->base_addr + 0x20 + 0x10 * i + 0x04 * j, 4,
+                                &sp->argval[i * 2 + j],
+                                PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
             sp->argval[i * 2 + j] = 0xDEADBEEF;
           }
         }
@@ -90,7 +103,7 @@ protected:
   }
 
 private:
-  static constexpr int NUM_ARGS { 5 };
+  static constexpr int NUM_ARGS{5};
   struct slot_t {
     uint32_t slot_id;
     uint32_t id;
@@ -109,9 +122,11 @@ private:
     attron(A_REVERSE);
     mvprintw(start_row, start_col, "ISR:");
     attroff(A_REVERSE);
-    if (slot->isr) attron(COLOR_PAIR(1));
+    if (slot->isr)
+      attron(COLOR_PAIR(1));
     mvprintw(start_row++, start_col + 4, "   %8u", slot->isr);
-    if (slot->isr) attroff(COLOR_PAIR(1));
+    if (slot->isr)
+      attroff(COLOR_PAIR(1));
     attron(A_REVERSE);
     mvprintw(start_row, start_col, "RET:");
     attroff(A_REVERSE);
@@ -128,8 +143,8 @@ private:
 
   int peek() {
     char tmp[255];
-    platform_ctl_addr_t addr { 0x43c0000c };
-    uint32_t val { 0 };
+    platform_ctl_addr_t addr{0x43c0000c};
+    uint32_t val{0};
     int c = ERR;
     clear();
     nocbreak();
@@ -152,7 +167,8 @@ private:
       c = getch();
       chr = static_cast<char>(c);
       if (chr == 'y') {
-        platform_read_ctl(tapasco.platform_device(), addr, sizeof(val), &val, PLATFORM_CTL_FLAGS_NONE);
+        platform_read_ctl(tapasco.platform_device(), addr, sizeof(val), &val,
+                          PLATFORM_CTL_FLAGS_NONE);
         mvprintw(rows / 2 + 1, (cols - 25) / 2 + 10, "0x%08x", val);
         mvprintw(rows / 2 + 2, (cols - 25) / 2, "                 ");
       }
@@ -165,8 +181,8 @@ private:
 
   int poke() {
     char tmp[255];
-    platform_ctl_addr_t addr { 0x43c0000c };
-    uint32_t val { 0 };
+    platform_ctl_addr_t addr{0x43c0000c};
+    uint32_t val{0};
     int c;
     clear();
     nocbreak();
@@ -193,7 +209,8 @@ private:
       c = getch();
       char chr = static_cast<char>(c);
       if (chr == 'y')
-        platform_write_ctl(tapasco.platform_device(), addr, sizeof(val), &val, PLATFORM_CTL_FLAGS_NONE);
+        platform_write_ctl(tapasco.platform_device(), addr, sizeof(val), &val,
+                           PLATFORM_CTL_FLAGS_NONE);
     } while (c == ERR);
     clear();
     return ERR;
@@ -201,8 +218,8 @@ private:
 
   int poke_and_wait() {
     char tmp[255];
-    platform_ctl_addr_t addr { 0x43c0000c };
-    uint32_t val { 0 }, job { 0 };
+    platform_ctl_addr_t addr{0x43c0000c};
+    uint32_t val{0}, job{0};
     int c;
     clear();
     nocbreak();
@@ -238,25 +255,36 @@ private:
       /*char chr = static_cast<char>(c);
       // FIXME reimplement with PAPI 1.5?
       if (chr == 'y')
-        platform_write_ctl_and_wait(tapasco.platform_device(), addr, sizeof(val), &val, job, PLATFORM_CTL_FLAGS_NONE);*/
+        platform_write_ctl_and_wait(tapasco.platform_device(), addr,
+      sizeof(val), &val, job, PLATFORM_CTL_FLAGS_NONE);*/
     } while (c == ERR);
     clear();
     return ERR;
   }
 
   int check_bitstream() {
-    uint32_t cnt { 0 };
+    uint32_t cnt{0};
     while (cnt > 0) {
       platform_component_t isr_addr;
       platform_ctl_addr_t intc;
       switch (cnt) {
-      case 4: isr_addr = PLATFORM_COMPONENT_INTC3; break;
-      case 3: isr_addr = PLATFORM_COMPONENT_INTC2; break;
-      case 2: isr_addr = PLATFORM_COMPONENT_INTC1; break;
-      case 1: isr_addr = PLATFORM_COMPONENT_INTC0; break;
-      default: return cnt * -10;
+      case 4:
+        isr_addr = PLATFORM_COMPONENT_INTC3;
+        break;
+      case 3:
+        isr_addr = PLATFORM_COMPONENT_INTC2;
+        break;
+      case 2:
+        isr_addr = PLATFORM_COMPONENT_INTC1;
+        break;
+      case 1:
+        isr_addr = PLATFORM_COMPONENT_INTC0;
+        break;
+      default:
+        return cnt * -10;
       }
-      platform_address_get_component_base(tapasco.platform_device(), isr_addr, &intc);
+      platform_address_get_component_base(tapasco.platform_device(), isr_addr,
+                                          &intc);
       cerr << intc << endl;
       intc_addr.push_back(intc);
       --cnt;
@@ -264,14 +292,14 @@ private:
     for (int s = 0; s < 128; ++s) {
       uint32_t id = tapasco.platform_device()->info.composition.kernel[s];
 
-        if (id) {
-          struct slot_t *sp = new struct slot_t;
-          sp->slot_id = s;
-          sp->id = id;
-          sp->base_addr = tapasco.platform_device()->info.base.arch[s];
-          slots.push_back(sp);
-          ++cnt;
-        }
+      if (id) {
+        struct slot_t *sp = new struct slot_t;
+        sp->slot_id = s;
+        sp->id = id;
+        sp->base_addr = tapasco.platform_device()->info.base.arch[s];
+        slots.push_back(sp);
+        ++cnt;
+      }
     }
     return cnt > 0 ? 0 : -3;
   }

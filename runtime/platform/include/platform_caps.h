@@ -23,20 +23,20 @@
 #ifndef PLATFORM_CAPS_H__
 #define PLATFORM_CAPS_H__
 
-/** 
+/**
  * NOTE: the enum definitions are parsed by a rather primitive regex in Tcl; so
  * make sure not to use any references or complex expressions, the tcl expr
  * command must be able to interpret the RHS. Especially, take care to keep the
  * trailing ',', even on the last item.
  **/
 typedef enum {
-	PLATFORM_CAP0_ATSPRI 			   	= (1 << 0),
-	PLATFORM_CAP0_ATSCHECK 				= (1 << 1),
-	PLATFORM_CAP0_PE_LOCAL_MEM 			= (1 << 2),
-	PLATFORM_CAP0_DYNAMIC_ADDRESS_MAP		= (1 << 3),
+  PLATFORM_CAP0_ATSPRI = (1 << 0),
+  PLATFORM_CAP0_ATSCHECK = (1 << 1),
+  PLATFORM_CAP0_PE_LOCAL_MEM = (1 << 2),
+  PLATFORM_CAP0_DYNAMIC_ADDRESS_MAP = (1 << 3),
 } platform_capabilities_0_t;
 
-#define PLATFORM_VERSION_MAJOR(v) 			((v) >> 16)
-#define PLATFORM_VERSION_MINOR(v) 			((v) & 0xFFFF)
+#define PLATFORM_VERSION_MAJOR(v) ((v) >> 16)
+#define PLATFORM_VERSION_MINOR(v) ((v)&0xFFFF)
 
 #endif /* PLATFORM_CAPS_H__ */

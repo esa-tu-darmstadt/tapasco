@@ -32,38 +32,35 @@ void tapasco_logging_deinit(void) {}
 
 static FILE *logfile = 0;
 
-int tapasco_logging_init(void)
-{
-	static int is_initialized = 0;
-	if (! is_initialized) {
-		is_initialized = 1;
+int tapasco_logging_init(void) {
+  static int is_initialized = 0;
+  if (!is_initialized) {
+    is_initialized = 1;
 
-		char const *lgf = getenv("LIBTAPASCO_LOGFILE");
-		logfile = lgf ? fopen(lgf, "w+") : 0;
+    char const *lgf = getenv("LIBTAPASCO_LOGFILE");
+    logfile = lgf ? fopen(lgf, "w+") : 0;
 
-		if (lgf && !logfile) {
-			logfile = 0;
-			WRN("could not open logfile '%s'!\n", lgf);
-		}
+    if (lgf && !logfile) {
+      logfile = 0;
+      WRN("could not open logfile '%s'!\n", lgf);
+    }
 
-		if(logfile) {
-			log_set_quiet(1);
-			log_set_fp(logfile);
-		}
-
-	}
-	return 1;
+    if (logfile) {
+      log_set_quiet(1);
+      log_set_fp(logfile);
+    }
+  }
+  return 1;
 }
 
-void tapasco_logging_deinit(void)
-{
-	log_set_fp(NULL);
+void tapasco_logging_deinit(void) {
+  log_set_fp(NULL);
 
-	if (logfile != NULL && logfile != stderr) {
-		fflush(logfile);
-		fclose(logfile);
-	}
-	logfile = NULL;
+  if (logfile != NULL && logfile != stderr) {
+    fflush(logfile);
+    fclose(logfile);
+  }
+  logfile = NULL;
 }
 
 #endif

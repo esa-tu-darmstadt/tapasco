@@ -33,22 +33,22 @@
 #include <stdlib.h>
 #endif /* __cplusplus */
 
+#include <platform.h>
+#include <platform_caps.h>
+#include <platform_info.h>
+#include <tapasco_context.h>
 #include <tapasco_errors.h>
 #include <tapasco_global.h>
 #include <tapasco_types.h>
-#include <tapasco_context.h>
-#include <platform.h>
-#include <platform_info.h>
-#include <platform_caps.h>
 
-#define TAPASCO_VERSION_MAJOR(v) 				((v) >> 16)
-#define TAPASCO_VERSION_MINOR(v) 				((v) & 0xFFFF)
+#define TAPASCO_VERSION_MAJOR(v) ((v) >> 16)
+#define TAPASCO_VERSION_MINOR(v) ((v)&0xFFFF)
 
 /** @defgroup version Version Info
  *  @{
  **/
 
-#define TAPASCO_API_VERSION					"1.6"
+#define TAPASCO_API_VERSION "1.6"
 
 /**
  * Returns the version string of the library.
@@ -64,7 +64,6 @@ tapasco_res_t tapasco_check_version(const char *const version);
 
 /** @} **/
 
-
 /** @defgroup aux Auxiliary Functions
  *  @{
  **/
@@ -77,7 +76,6 @@ tapasco_res_t tapasco_check_version(const char *const version);
 const char *const tapasco_strerror(tapasco_res_t const res);
 
 /** @} **/
-
 
 /** @defgroup devmgmt Device Management
  *  @{
@@ -97,9 +95,8 @@ tapasco_res_t _tapasco_init(const char *const version, tapasco_ctx_t **pctx);
  * @param pctx pointer to context pointer (will be set on success)
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
-inline static tapasco_res_t tapasco_init(tapasco_ctx_t **pctx)
-{
-	return _tapasco_init(TAPASCO_API_VERSION, pctx);
+inline static tapasco_res_t tapasco_init(tapasco_ctx_t **pctx) {
+  return _tapasco_init(TAPASCO_API_VERSION, pctx);
 }
 
 /**
@@ -118,13 +115,12 @@ void tapasco_deinit(tapasco_ctx_t *ctx);
  *             PLATFORM_MAX_DEVS instances.
  * @return TAPASCO_SUCCESS if successful, an error code otherwise.
  **/
-static inline
-tapasco_res_t tapasco_enum_devices(tapasco_ctx_t *ctx,
-		size_t *num_devices,
-		platform_device_info_t **devs)
-{
-	return platform_enum_devices(ctx->pctx, num_devices, devs) == PLATFORM_SUCCESS ?
-			TAPASCO_SUCCESS : (tapasco_res_t)TAPASCO_ERR_PLATFORM_FAILURE;
+static inline tapasco_res_t
+tapasco_enum_devices(tapasco_ctx_t *ctx, size_t *num_devices,
+                     platform_device_info_t **devs) {
+  return platform_enum_devices(ctx->pctx, num_devices, devs) == PLATFORM_SUCCESS
+             ? TAPASCO_SUCCESS
+             : (tapasco_res_t)TAPASCO_ERR_PLATFORM_FAILURE;
 }
 
 /**
@@ -137,9 +133,9 @@ tapasco_res_t tapasco_enum_devices(tapasco_ctx_t *ctx,
  * @return TAPASCO_SUCCESS if sucessful, an error code otherwise
  **/
 tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx,
-		tapasco_dev_id_t const dev_id,
-		tapasco_devctx_t **pdev_ctx,
-		tapasco_device_create_flag_t const flags);
+                                    tapasco_dev_id_t const dev_id,
+                                    tapasco_devctx_t **pdev_ctx,
+                                    tapasco_device_create_flag_t const flags);
 
 /**
  * Device deinit: called once for each valid tapasco_devctx_t to release
@@ -156,7 +152,8 @@ void tapasco_destroy_device(tapasco_ctx_t *ctx, tapasco_devctx_t *dev_ctx);
  * @param info struct to fill with data
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
-tapasco_res_t tapasco_device_info(tapasco_devctx_t *dev_ctx, platform_info_t *info);
+tapasco_res_t tapasco_device_info(tapasco_devctx_t *dev_ctx,
+                                  platform_info_t *info);
 
 /**
  * Returns the number of instances of kernel k_id in the currently loaded
@@ -167,7 +164,7 @@ tapasco_res_t tapasco_device_info(tapasco_devctx_t *dev_ctx, platform_info_t *in
  *         0 if kernel is unavailable
  **/
 size_t tapasco_device_kernel_pe_count(tapasco_devctx_t *dev_ctx,
-		tapasco_kernel_id_t const k_id);
+                                      tapasco_kernel_id_t const k_id);
 
 /**
  * Checks if the specified capability is available in the current bitstream.
@@ -176,7 +173,7 @@ size_t tapasco_device_kernel_pe_count(tapasco_devctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS, if available, an error code otherwise
  **/
 tapasco_res_t tapasco_device_has_capability(tapasco_devctx_t *dev_ctx,
-		tapasco_device_capability_t cap);
+                                            tapasco_device_capability_t cap);
 
 /**
  * Get the processing element op. frequency of the currently loaded bitstream.
@@ -185,7 +182,7 @@ tapasco_res_t tapasco_device_has_capability(tapasco_devctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_design_clk(tapasco_devctx_t *dev_ctx,
-		uint32_t *freq);
+                                        uint32_t *freq);
 
 /**
  * Get the host interface frequency of the currently loaded bitstream.
@@ -194,7 +191,7 @@ tapasco_res_t tapasco_device_design_clk(tapasco_devctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_host_clk(tapasco_devctx_t *dev_ctx,
-		uint32_t *freq);
+                                      uint32_t *freq);
 
 /**
  * Get the memory interface frequency of the currently loaded bitstream.
@@ -202,8 +199,7 @@ tapasco_res_t tapasco_device_host_clk(tapasco_devctx_t *dev_ctx,
  * @param freq output frequency var
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
-tapasco_res_t tapasco_device_mem_clk(tapasco_devctx_t *dev_ctx,
-		uint32_t *freq);
+tapasco_res_t tapasco_device_mem_clk(tapasco_devctx_t *dev_ctx, uint32_t *freq);
 
 /**
  * Get the Vivado version with which the currently loaded bitstream was built.
@@ -211,8 +207,8 @@ tapasco_res_t tapasco_device_mem_clk(tapasco_devctx_t *dev_ctx,
  * @param version output version var
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
-tapasco_res_t tapasco_get_vivado_version(tapasco_devctx_t* dev_ctx,
-		uint32_t *version);
+tapasco_res_t tapasco_get_vivado_version(tapasco_devctx_t *dev_ctx,
+                                         uint32_t *version);
 
 /**
  * Get the TaPaSCo version with which the currently loaded bitstream was built.
@@ -221,7 +217,7 @@ tapasco_res_t tapasco_get_vivado_version(tapasco_devctx_t* dev_ctx,
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
 tapasco_res_t tapasco_get_tapasco_version(tapasco_devctx_t *dev_ctx,
-		uint32_t *version);
+                                          uint32_t *version);
 
 /**
  * Get the epoch timestamp of the time when the currently loaded bitstream was
@@ -230,8 +226,7 @@ tapasco_res_t tapasco_get_tapasco_version(tapasco_devctx_t *dev_ctx,
  * @param timestampt output version var
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
-tapasco_res_t tapasco_get_compose_ts(tapasco_devctx_t *dev_ctx,
-		uint32_t *ts);
+tapasco_res_t tapasco_get_compose_ts(tapasco_devctx_t *dev_ctx, uint32_t *ts);
 
 /**
  * Loads the bitstream from the given file to the device.
@@ -241,9 +236,8 @@ tapasco_res_t tapasco_get_compose_ts(tapasco_devctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS if sucessful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_load_bitstream_from_file(
-		tapasco_devctx_t *dev_ctx,
-		char const *filename,
-		tapasco_load_bitstream_flag_t const flags);
+    tapasco_devctx_t *dev_ctx, char const *filename,
+    tapasco_load_bitstream_flag_t const flags);
 
 /**
  * Loads a bitstream to the given device.
@@ -253,13 +247,12 @@ tapasco_res_t tapasco_device_load_bitstream_from_file(
  * @param flags bitstream loading flags
  * @return TAPASCO_SUCCESS if sucessful, an error code otherwise
  **/
-tapasco_res_t tapasco_device_load_bitstream(tapasco_devctx_t *dev_ctx,
-		size_t const len,
-		void const *data,
-		tapasco_load_bitstream_flag_t const flags);
+tapasco_res_t
+tapasco_device_load_bitstream(tapasco_devctx_t *dev_ctx, size_t const len,
+                              void const *data,
+                              tapasco_load_bitstream_flag_t const flags);
 
 /** @} **/
-
 
 /** @defgroup data Data Management and Transfer
  *  @{
@@ -274,10 +267,9 @@ tapasco_res_t tapasco_device_load_bitstream(tapasco_devctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS if successful, error code otherwise
  **/
 tapasco_res_t tapasco_device_alloc(tapasco_devctx_t *dev_ctx,
-		tapasco_handle_t *handle,
-		size_t const len,
-		tapasco_device_alloc_flag_t const flags,
-		...);
+                                   tapasco_handle_t *handle, size_t const len,
+                                   tapasco_device_alloc_flag_t const flags,
+                                   ...);
 
 /**
  * Frees a previously allocated chunk of device memory.
@@ -285,10 +277,8 @@ tapasco_res_t tapasco_device_alloc(tapasco_devctx_t *dev_ctx,
  * @param handle memory chunk handle returned by @see tapasco_alloc
  * @param flags device memory allocation flags
  **/
-void tapasco_device_free(tapasco_devctx_t *dev_ctx,
-		tapasco_handle_t handle,
-		tapasco_device_alloc_flag_t const flags,
-		...);
+void tapasco_device_free(tapasco_devctx_t *dev_ctx, tapasco_handle_t handle,
+                         tapasco_device_alloc_flag_t const flags, ...);
 
 /**
  * Copys memory from main memory to the FPGA device.
@@ -299,12 +289,10 @@ void tapasco_device_free(tapasco_devctx_t *dev_ctx,
  * @param flags	flags for copy operation, e.g., TAPASCO_COPY_NONBLOCKING
  * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
  **/
-tapasco_res_t tapasco_device_copy_to(tapasco_devctx_t *dev_ctx,
-		void const *src,
-		tapasco_handle_t dst,
-		size_t len,
-		tapasco_device_copy_flag_t const flags,
-		...);
+tapasco_res_t tapasco_device_copy_to(tapasco_devctx_t *dev_ctx, void const *src,
+                                     tapasco_handle_t dst, size_t len,
+                                     tapasco_device_copy_flag_t const flags,
+                                     ...);
 
 /**
  * Copys memory from FPGA device memory to main memory.
@@ -316,14 +304,12 @@ tapasco_res_t tapasco_device_copy_to(tapasco_devctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_copy_from(tapasco_devctx_t *dev_ctx,
-		tapasco_handle_t src,
-		void *dst,
-		size_t len,
-		tapasco_device_copy_flag_t const flags,
-		...);
+                                       tapasco_handle_t src, void *dst,
+                                       size_t len,
+                                       tapasco_device_copy_flag_t const flags,
+                                       ...);
 
 /** @} **/
-
 
 /** @defgroup exec Execution Control
  *  @{
@@ -340,10 +326,10 @@ tapasco_res_t tapasco_device_copy_from(tapasco_devctx_t *dev_ctx,
  *        @see tapasco_device_acquire_job_id_flag_t for options
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
-tapasco_res_t tapasco_device_acquire_job_id(tapasco_devctx_t *dev_ctx,
-		tapasco_job_id_t *j_id,
-		tapasco_kernel_id_t const k_id,
-		tapasco_device_acquire_job_id_flag_t flags);
+tapasco_res_t
+tapasco_device_acquire_job_id(tapasco_devctx_t *dev_ctx, tapasco_job_id_t *j_id,
+                              tapasco_kernel_id_t const k_id,
+                              tapasco_device_acquire_job_id_flag_t flags);
 
 /**
  * Releases a job id obtained via @see tapasco_acquire_job_id. Does not affect
@@ -353,7 +339,7 @@ tapasco_res_t tapasco_device_acquire_job_id(tapasco_devctx_t *dev_ctx,
  * @param job_id job id to release
  **/
 void tapasco_device_release_job_id(tapasco_devctx_t *dev_ctx,
-		tapasco_job_id_t const job_id);
+                                   tapasco_job_id_t const job_id);
 
 /**
  * Launches the given job and releases its id (does not affect alloc'ed handles,
@@ -364,9 +350,10 @@ void tapasco_device_release_job_id(tapasco_devctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS if execution was successful and results can be
  *         retrieved, an error code otherwise
  **/
-tapasco_res_t tapasco_device_job_launch(tapasco_devctx_t *dev_ctx,
-		tapasco_job_id_t const job_id,
-		tapasco_device_job_launch_flag_t const flags);
+tapasco_res_t
+tapasco_device_job_launch(tapasco_devctx_t *dev_ctx,
+                          tapasco_job_id_t const job_id,
+                          tapasco_device_job_launch_flag_t const flags);
 
 /**
  * Waits for the given job and returns after it has finished.
@@ -376,7 +363,7 @@ tapasco_res_t tapasco_device_job_launch(tapasco_devctx_t *dev_ctx,
            otherwise.
  **/
 tapasco_res_t tapasco_device_job_collect(tapasco_devctx_t *dev_ctx,
-		tapasco_job_id_t const job_id);
+                                         tapasco_job_id_t const job_id);
 
 /**
  * Sets the arg_idx'th argument of kernel k_id to arg_value.
@@ -388,8 +375,9 @@ tapasco_res_t tapasco_device_job_collect(tapasco_devctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_job_set_arg(tapasco_devctx_t *dev_ctx,
-		tapasco_job_id_t const job_id, size_t arg_idx,
-		size_t const arg_len, void const *arg_value);
+                                         tapasco_job_id_t const job_id,
+                                         size_t arg_idx, size_t const arg_len,
+                                         void const *arg_value);
 
 /**
  * Sets the arg_idx'th argument of kernel k_id to trigger an automatic
@@ -406,11 +394,11 @@ tapasco_res_t tapasco_device_job_set_arg(tapasco_devctx_t *dev_ctx,
  * @param flags copy direction flags, see @tapasco_copy_direction_flag_t.
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
-tapasco_res_t tapasco_device_job_set_arg_transfer(tapasco_devctx_t *dev_ctx,
-		tapasco_job_id_t const job_id, size_t arg_idx,
-		size_t const arg_len, void *arg_value,
-		tapasco_device_alloc_flag_t const flags,
-		tapasco_copy_direction_flag_t const dir_flags);
+tapasco_res_t tapasco_device_job_set_arg_transfer(
+    tapasco_devctx_t *dev_ctx, tapasco_job_id_t const job_id, size_t arg_idx,
+    size_t const arg_len, void *arg_value,
+    tapasco_device_alloc_flag_t const flags,
+    tapasco_copy_direction_flag_t const dir_flags);
 
 /**
  * Gets the value of the arg_idx'th argument of kernel k_id.
@@ -422,8 +410,9 @@ tapasco_res_t tapasco_device_job_set_arg_transfer(tapasco_devctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS if successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_job_get_arg(tapasco_devctx_t *dev_ctx,
-		tapasco_job_id_t const job_id, size_t arg_idx,
-		size_t const arg_len, void *arg_value);
+                                         tapasco_job_id_t const job_id,
+                                         size_t arg_idx, size_t const arg_len,
+                                         void *arg_value);
 /**
  * Retrieves the return value of job with the given id to ret_value.
  * @param dev_ctx device context
@@ -433,11 +422,11 @@ tapasco_res_t tapasco_device_job_get_arg(tapasco_devctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS if sucessful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_job_get_return(tapasco_devctx_t *dev_ctx,
-		tapasco_job_id_t const job_id, size_t const ret_len,
-		void *ret_value);
+                                            tapasco_job_id_t const job_id,
+                                            size_t const ret_len,
+                                            void *ret_value);
 
 /** @} **/
-
 
 #endif /* TAPASCO_H__ */
 /* vim: set foldmarker=@{,@} foldlevel=0 foldmethod=marker : */

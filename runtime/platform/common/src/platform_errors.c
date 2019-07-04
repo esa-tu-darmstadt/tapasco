@@ -24,20 +24,17 @@
 #include <platform_errors.h>
 
 #ifdef _X
-	#undef _X
+#undef _X
 #endif
 
 #define _X(constant, code, msg) msg,
-static const char *const _err_msg[] = {
-	"success",
-	PLATFORM_ERRORS
-};
+static const char *const _err_msg[] = {"success", PLATFORM_ERRORS};
 #undef _X
 
-const char *const platform_strerror(platform_res_t const res)
-{
-	static unsigned long const _l = (unsigned long)-PERR_SENTINEL;
-	unsigned long const i = (unsigned long) -res;
-	if (i >= _l) return "unknown error";
-	return _err_msg[i];
+const char *const platform_strerror(platform_res_t const res) {
+  static unsigned long const _l = (unsigned long)-PERR_SENTINEL;
+  unsigned long const i = (unsigned long)-res;
+  if (i >= _l)
+    return "unknown error";
+  return _err_msg[i];
 }

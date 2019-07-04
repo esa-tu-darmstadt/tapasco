@@ -6,15 +6,17 @@
 #ifndef MENU_SCREEN_HPP__
 #define MENU_SCREEN_HPP__
 
-#include <vector>
 #include "Screen.hpp"
+#include <vector>
 
 using namespace std;
 
-class MenuScreen: public Screen {
+class MenuScreen : public Screen {
 public:
-  MenuScreen(const string& title, const vector<string>& options): options(options), title(title) {}
+  MenuScreen(const string &title, const vector<string> &options)
+      : options(options), title(title) {}
   virtual ~MenuScreen() {}
+
 protected:
   virtual void render() {
     size_t max_len = 0;
@@ -27,7 +29,7 @@ protected:
     int k = 0;
     mvprintw(r++, (cols - title.length()) / 2, title.c_str());
     r++;
-    for (auto const& opt : options)
+    for (auto const &opt : options)
       mvprintw(r++, c, "(%c) %s", text_keys[k++], opt.c_str());
     r++;
     mvprintw(r++, (cols - text_press_key.length()) / 2, text_press_key.c_str());
@@ -48,14 +50,14 @@ protected:
     return keys().find(static_cast<char>(choice));
   }
 
-  virtual const string& keys() { return text_keys; }
+  virtual const string &keys() { return text_keys; }
 
   MenuScreen() {}
-  MenuScreen(MenuScreen& other) {}
+  MenuScreen(MenuScreen &other) {}
   vector<string> options;
   const string title;
-  const string text_press_key { "--- Press key to select ---" };
-  const string text_keys { "1234567890abcdefghijklmnopqrstuvwxyz" };
+  const string text_press_key{"--- Press key to select ---"};
+  const string text_keys{"1234567890abcdefghijklmnopqrstuvwxyz"};
 };
 
 #endif /* MENU_SCREEN_HPP__ */

@@ -28,36 +28,42 @@
 #include "platform_types.h"
 
 #ifdef _PC
-	#undef _PC
+#undef _PC
 #endif
 
-#define PLATFORM_PERFC_COUNTERS \
-	_PC(signals_received) \
-	_PC(waiting_for_slot) \
-	_PC(slot_interrupts_active) \
-	_PC(sem_wait_error) \
-	_PC(sem_post_error)
+#define PLATFORM_PERFC_COUNTERS                                                \
+  _PC(signals_received)                                                        \
+  _PC(waiting_for_slot)                                                        \
+  _PC(slot_interrupts_active)                                                  \
+  _PC(sem_wait_error)                                                          \
+  _PC(sem_post_error)
 
 #ifndef NPERFC
-	const char *platform_perfc_tostring(platform_dev_id_t const dev_id);
-	#define _PC(name) \
-	void platform_perfc_ ## name ## _inc(platform_dev_id_t dev_id); \
-	void platform_perfc_ ## name ## _add(platform_dev_id_t dev_id, int const v); \
-	long platform_perfc_ ## name ## _get(platform_dev_id_t dev_id); \
-	void platform_perfc_ ## name ## _set(platform_dev_id_t dev_id, int const v); \
+const char *platform_perfc_tostring(platform_dev_id_t const dev_id);
+#define _PC(name)                                                              \
+  void platform_perfc_##name##_inc(platform_dev_id_t dev_id);                  \
+  void platform_perfc_##name##_add(platform_dev_id_t dev_id, int const v);     \
+  long platform_perfc_##name##_get(platform_dev_id_t dev_id);                  \
+  void platform_perfc_##name##_set(platform_dev_id_t dev_id, int const v);
 
-	PLATFORM_PERFC_COUNTERS
-	#undef _PC
+PLATFORM_PERFC_COUNTERS
+#undef _PC
 #else /* NPERFC */
-	static inline
-	const char *platform_perfc_tostring(platform_dev_id_t const dev_id) { return ""; }
-	#define _PC(name) \
-	inline static void platform_perfc_ ## name ## _inc(platform_dev_id_t dev_id) {} \
-	inline static void platform_perfc_ ## name ## _add(platform_dev_id_t dev_id, int const v) {} \
-	inline static long platform_perfc_ ## name ## _get(platform_dev_id_t dev_id) { return 0; } \
-	inline static void platform_perfc_ ## name ## _set(platform_dev_id_t dev_id, int const v) {}
+static inline const char *
+platform_perfc_tostring(platform_dev_id_t const dev_id) {
+  return "";
+}
+#define _PC(name)                                                              \
+  inline static void platform_perfc_##name##_inc(platform_dev_id_t dev_id) {}  \
+  inline static void platform_perfc_##name##_add(platform_dev_id_t dev_id,     \
+                                                 int const v) {}               \
+  inline static long platform_perfc_##name##_get(platform_dev_id_t dev_id) {   \
+    return 0;                                                                  \
+  }                                                                            \
+  inline static void platform_perfc_##name##_set(platform_dev_id_t dev_id,     \
+                                                 int const v) {}
 
-	PLATFORM_PERFC_COUNTERS
-	#undef _PC
+PLATFORM_PERFC_COUNTERS
+#undef _PC
 #endif /* NPERFC */
 #endif /* PLATFORM_PERFC_H__ */
