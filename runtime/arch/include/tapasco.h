@@ -27,15 +27,10 @@
 #ifndef TAPASCO_H__
 #define TAPASCO_H__
 
-#ifdef __cplusplus
-#include <cstdlib>
-#else
-#include <stdlib.h>
-#endif /* __cplusplus */
-
 #include <platform.h>
 #include <platform_caps.h>
 #include <platform_info.h>
+#include <stdlib.h>
 #include <tapasco_context.h>
 #include <tapasco_errors.h>
 #include <tapasco_global.h>
