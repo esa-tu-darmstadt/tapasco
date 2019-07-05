@@ -25,7 +25,7 @@
 
 #include "tlkm_types.h"
 
-#define ZYNQ_DMAMGMT_POOLSZ		 	1024U
+#define ZYNQ_DMAMGMT_POOLSZ 1024U
 
 typedef u64 handle_t;
 
@@ -33,7 +33,7 @@ struct dma_buf_t {
 	size_t len;
 	unsigned long handle;
 	dma_addr_t dma_addr;
-	void * kvirt_addr;
+	void *kvirt_addr;
 };
 
 int zynq_dmamgmt_init(void);

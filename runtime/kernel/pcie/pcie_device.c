@@ -4,7 +4,6 @@
 #include <linux/slab.h>
 #include <linux/gfp.h>
 #include <linux/list.h>
-#include "platform_global.h"
 #include "pcie.h"
 #include "pcie_device.h"
 #include "pcie_irq.h"
@@ -13,8 +12,9 @@
 #include "tlkm_bus.h"
 #include "char_device_hsa.h"
 
-#define TLKM_DEV_ID(pdev) \
-	(((struct tlkm_pcie_device *)dev_get_drvdata(&(pdev)->dev))->parent->dev_id)
+#define TLKM_DEV_ID(pdev)                                                      \
+	(((struct tlkm_pcie_device *)dev_get_drvdata(&(pdev)->dev))            \
+		 ->parent->dev_id)
 
 /**
  * @brief Enables pcie-device and claims/remaps neccessary bar resources
@@ -26,7 +26,7 @@ static int claim_device(struct tlkm_pcie_device *pdev)
 	int err = 0;
 	dev_id_t const did = pdev->parent->dev_id;
 	struct pci_dev *dev = pdev->pdev;
-	BUG_ON(! dev);
+	BUG_ON(!dev);
 
 	/* wake up the pci device */
 	err = pci_enable_device(dev);
@@ -41,23 +41,26 @@ static int claim_device(struct tlkm_pcie_device *pdev)
 	/* setup BAR memory regions */
 	err = pci_request_regions(dev, TLKM_PCI_NAME);
 	if (err) {
-		DEVWRN(did, "failed to setup bar regions for pci device %d", err);
+		DEVWRN(did, "failed to setup bar regions for pci device %d",
+		       err);
 		goto error_pci_req;
 	}
 
 	dev_set_drvdata(&dev->dev, pdev);
 
 	/* read out pci bar 0 settings */
-	pdev->phy_addr_bar0 	= pci_resource_start(dev, 0);
-	pdev->phy_len_bar0	= pci_resource_len(dev, 0);
-	pdev->phy_flags_bar0	= pci_resource_flags(dev, 0);
+	pdev->phy_addr_bar0 = pci_resource_start(dev, 0);
+	pdev->phy_len_bar0 = pci_resource_len(dev, 0);
+	pdev->phy_flags_bar0 = pci_resource_flags(dev, 0);
 
 	DEVLOG(did, TLKM_LF_PCIE, "PCI bar 0: address= 0x%zx length: 0x%zx",
-	       (size_t) pdev->phy_addr_bar0, (size_t) pdev->phy_len_bar0);
+	       (size_t)pdev->phy_addr_bar0, (size_t)pdev->phy_len_bar0);
 
 	pdev->parent->base_offset = pdev->phy_addr_bar0;
 	DEVLOG(did, TLKM_LF_PCIE, "status core base: 0x%8p => 0x%8p",
-	       (void*) pcie_cls.platform.status.base, (void*) pcie_cls.platform.status.base + pdev->parent->base_offset);
+	       (void *)pcie_cls.platform.status.base,
+	       (void *)pcie_cls.platform.status.base +
+		       pdev->parent->base_offset);
 
 	return 0;
 
@@ -87,10 +90,12 @@ static int configure_device(struct pci_dev *pdev)
 	       pcie_get_mps(pdev), pcie_get_readrq(pdev));
 
 	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))) {
-		DEVLOG(id, TLKM_LF_PCIE, "dma_set_mask: using 64 bit DMA addresses");
+		DEVLOG(id, TLKM_LF_PCIE,
+		       "dma_set_mask: using 64 bit DMA addresses");
 		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
 	} else if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(32))) {
-		DEVLOG(id, TLKM_LF_PCIE, "dma_set_mask: using 32 bit DMA addresses");
+		DEVLOG(id, TLKM_LF_PCIE,
+		       "dma_set_mask: using 32 bit DMA addresses");
 		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
 	} else {
 		DEVERR(id, "no suitable DMA bitmask available");
@@ -112,22 +117,18 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 
 	for (i = 0; i < REQUIRED_INTERRUPTS; i++) {
 		pdev->irq_mapping[i] = -1;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
 		pdev->msix_entries[i].entry = i;
 #endif
 	}
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
-	err = pci_enable_msix_range(dev,
-	                            pdev->msix_entries,
-	                            REQUIRED_INTERRUPTS,
-	                            REQUIRED_INTERRUPTS);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
+	err = pci_enable_msix_range(dev, pdev->msix_entries,
+				    REQUIRED_INTERRUPTS, REQUIRED_INTERRUPTS);
 #else
 	/* set up MSI interrupt vector to max size */
-	err = pci_alloc_irq_vectors(dev,
-	                            REQUIRED_INTERRUPTS,
-	                            REQUIRED_INTERRUPTS,
-	                            PCI_IRQ_MSIX);
+	err = pci_alloc_irq_vectors(dev, REQUIRED_INTERRUPTS,
+				    REQUIRED_INTERRUPTS, PCI_IRQ_MSIX);
 #endif
 
 	if (err <= 0) {
@@ -147,12 +148,11 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 static void release_msi(struct tlkm_pcie_device *pdev)
 {
 	pcie_irqs_exit(pdev->parent);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,8,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
 	pci_disable_msix(pdev->pdev);
 #else
 	pci_free_irq_vectors(pdev->pdev);
 #endif
-
 }
 
 static void report_link_status(struct tlkm_pcie_device *pdev)
@@ -163,18 +163,29 @@ static void report_link_status(struct tlkm_pcie_device *pdev)
 
 	pcie_capability_read_word(dev, PCI_EXP_LNKSTA, &ctrl_reg);
 
-	pdev->link_width = (ctrl_reg & PCI_EXP_LNKSTA_NLW) >> PCI_EXP_LNKSTA_NLW_SHIFT;
+	pdev->link_width =
+		(ctrl_reg & PCI_EXP_LNKSTA_NLW) >> PCI_EXP_LNKSTA_NLW_SHIFT;
 	pdev->link_speed = ctrl_reg & PCI_EXP_LNKSTA_CLS;
 
 	switch (pdev->link_speed) {
-	case PCI_EXP_LNKSTA_CLS_8_0GB:	gts = 80;	break;
-	case PCI_EXP_LNKSTA_CLS_5_0GB:	gts = 50;	break;
-	case PCI_EXP_LNKSTA_CLS_2_5GB:	gts = 25;	break;
-	default: 		 	gts =  0;	break;
+	case PCI_EXP_LNKSTA_CLS_8_0GB:
+		gts = 80;
+		break;
+	case PCI_EXP_LNKSTA_CLS_5_0GB:
+		gts = 50;
+		break;
+	case PCI_EXP_LNKSTA_CLS_2_5GB:
+		gts = 25;
+		break;
+	default:
+		gts = 0;
+		break;
 	}
 
-	DEVLOG(pdev->parent->dev_id, TLKM_LF_PCIE, "PCIe link width: x%d", pdev->link_width);
-	DEVLOG(pdev->parent->dev_id, TLKM_LF_PCIE, "PCIe link speed: %d.%d GT/s", gts / 10, gts % 10);
+	DEVLOG(pdev->parent->dev_id, TLKM_LF_PCIE, "PCIe link width: x%d",
+	       pdev->link_width);
+	DEVLOG(pdev->parent->dev_id, TLKM_LF_PCIE,
+	       "PCIe link speed: %d.%d GT/s", gts / 10, gts % 10);
 
 	tlkm_perfc_link_speed_set(pdev->parent->dev_id, pdev->link_speed);
 	tlkm_perfc_link_width_set(pdev->parent->dev_id, pdev->link_width);
@@ -185,10 +196,8 @@ int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	struct tlkm_device *dev;
 	LOG(TLKM_LF_PCIE, "found TaPaSCo PCIe device, registering ...");
 	dev = tlkm_bus_new_device((struct tlkm_class *)&pcie_cls,
-	                          XILINX_VENDOR_ID,
-	                          XILINX_DEVICE_ID,
-	                          pdev);
-	if (! dev) {
+				  XILINX_VENDOR_ID, XILINX_DEVICE_ID, pdev);
+	if (!dev) {
 		ERR("could not add device to bus");
 		return -ENOMEM;
 	}
@@ -197,9 +206,10 @@ int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 void tlkm_pcie_remove(struct pci_dev *pdev)
 {
-	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *)dev_get_drvdata(&pdev->dev);
+	struct tlkm_pcie_device *dev =
+		(struct tlkm_pcie_device *)dev_get_drvdata(&pdev->dev);
 	LOG(TLKM_LF_PCIE, "removing TaPaSCo PCIe device ...");
-	if(dev) {
+	if (dev) {
 		tlkm_bus_delete_device(dev->parent);
 	}
 }
@@ -209,11 +219,11 @@ int pcie_device_create(struct tlkm_device *dev, void *data)
 	int ret = 0;
 	struct pci_dev *pci_dev = (struct pci_dev *)data;
 	struct tlkm_pcie_device *pdev;
-	BUG_ON(! dev);
-	BUG_ON(! pci_dev);
+	BUG_ON(!dev);
+	BUG_ON(!pci_dev);
 
 	pdev = (struct tlkm_pcie_device *)kzalloc(sizeof(*pdev), GFP_KERNEL);
-	if (! pdev) {
+	if (!pdev) {
 		DEVERR(dev->dev_id, "could not allocate private data struct");
 		ret = -ENOMEM;
 		goto err_pd;
@@ -248,8 +258,9 @@ err_pd:
 void pcie_device_destroy(struct tlkm_device *dev)
 {
 	if (dev) {
-		struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
-		BUG_ON(! pdev);
+		struct tlkm_pcie_device *pdev =
+			(struct tlkm_pcie_device *)dev->private_data;
+		BUG_ON(!pdev);
 		release_msi(pdev);
 		release_device(pdev);
 		kfree(pdev);
@@ -262,19 +273,23 @@ void pcie_device_destroy(struct tlkm_device *dev)
 int pcie_device_init_subsystems(struct tlkm_device *dev, void *data)
 {
 	int ret = 0;
-	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)dev->private_data;
 	DEVLOG(dev->dev_id, TLKM_LF_PCIE, "claiming MSI-X interrupts ...");
 	if ((ret = claim_msi(pdev))) {
-		DEVERR(dev->dev_id, "failed to claim MSI-X interrupts: %d", ret);
+		DEVERR(dev->dev_id, "failed to claim MSI-X interrupts: %d",
+		       ret);
 		goto pcie_subsystem_err;
 	}
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "initializing HSA subsystems");
-	if((ret = char_hsa_register(dev))) {
-		DEVERR(dev->dev_id, "failed to initialize HSA subsystem: %d", ret);
+	if ((ret = char_hsa_register(dev))) {
+		DEVERR(dev->dev_id, "failed to initialize HSA subsystem: %d",
+		       ret);
 		goto pcie_subsystem_err;
 	}
 
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "successfully initialized subsystems");
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
+	       "successfully initialized subsystems");
 
 	return 0;
 pcie_subsystem_err:
@@ -283,24 +298,33 @@ pcie_subsystem_err:
 
 void pcie_device_exit_subsystems(struct tlkm_device *dev)
 {
-	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)dev->private_data;
 	char_hsa_unregister();
 	release_msi(pdev);
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "exited subsystems");
 }
 
-int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size)
+int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct tlkm_device *dev,
+				    void **buffer, void **dev_handle,
+				    dma_direction_t direction, size_t size)
 {
-	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)dev->private_data;
 	// We should really allocate memory and not misuse the void* as dma_addr_t
 	// Should be the same size on most systems, however
-	dma_addr_t *handle = (dma_addr_t*)dev_handle;
+	dma_addr_t *handle = (dma_addr_t *)dev_handle;
 	int err = 0;
 	*buffer = kmalloc(size, 0);
-	DEVLOG(dev_id, TLKM_LF_DEVICE, "Allocated %zd bytes at kernel address %p trying to map into DMA space...", size, *buffer);
+	DEVLOG(dev_id, TLKM_LF_DEVICE,
+	       "Allocated %zd bytes at kernel address %p trying to map into DMA space...",
+	       size, *buffer);
 	if (*buffer) {
 		memset(*buffer, 0, size);
-		*handle = dma_map_single(&pdev->pdev->dev, *buffer, size, direction == FROM_DEV ? DMA_FROM_DEVICE : DMA_TO_DEVICE);
+		*handle =
+			dma_map_single(&pdev->pdev->dev, *buffer, size,
+				       direction == FROM_DEV ? DMA_FROM_DEVICE :
+							       DMA_TO_DEVICE);
 		if (dma_mapping_error(&pdev->pdev->dev, *handle)) {
 			DEVERR(dev_id, "DMA Mapping error");
 			err = -EFAULT;
@@ -310,18 +334,25 @@ int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct tlkm_device *dev, vo
 		err = -EFAULT;
 	}
 
-	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapped buffer to device address %p", (void*) *handle);
+	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapped buffer to device address %p",
+	       (void *)*handle);
 
 	return err;
 }
 
-void pcie_device_dma_free_buffer(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size)
+void pcie_device_dma_free_buffer(dev_id_t dev_id, struct tlkm_device *dev,
+				 void **buffer, void **dev_handle,
+				 dma_direction_t direction, size_t size)
 {
-	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
-	dma_addr_t *handle = (dma_addr_t*)dev_handle;
-	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapped buffer to device address %p", (void*) *handle);
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)dev->private_data;
+	dma_addr_t *handle = (dma_addr_t *)dev_handle;
+	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapped buffer to device address %p",
+	       (void *)*handle);
 	if (*handle) {
-		dma_unmap_single(&pdev->pdev->dev, *handle, size, direction == FROM_DEV ? DMA_FROM_DEVICE : DMA_TO_DEVICE);
+		dma_unmap_single(&pdev->pdev->dev, *handle, size,
+				 direction == FROM_DEV ? DMA_FROM_DEVICE :
+							 DMA_TO_DEVICE);
 		*handle = 0;
 	}
 	if (*buffer) {
@@ -330,18 +361,36 @@ void pcie_device_dma_free_buffer(dev_id_t dev_id, struct tlkm_device *dev, void*
 	}
 }
 
-inline int pcie_device_dma_sync_buffer_cpu(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size) {
-	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
-	dma_addr_t *handle = (dma_addr_t*)dev_handle;
-	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapping buffer %p for cpu", *dev_handle);
-	dma_sync_single_for_cpu(&pdev->pdev->dev, *handle, size, direction == FROM_DEV ? DMA_FROM_DEVICE : DMA_TO_DEVICE);
+inline int pcie_device_dma_sync_buffer_cpu(dev_id_t dev_id,
+					   struct tlkm_device *dev,
+					   void **buffer, void **dev_handle,
+					   dma_direction_t direction,
+					   size_t size)
+{
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)dev->private_data;
+	dma_addr_t *handle = (dma_addr_t *)dev_handle;
+	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapping buffer %p for cpu",
+	       *dev_handle);
+	dma_sync_single_for_cpu(&pdev->pdev->dev, *handle, size,
+				direction == FROM_DEV ? DMA_FROM_DEVICE :
+							DMA_TO_DEVICE);
 	return 0;
 }
 
-inline int pcie_device_dma_sync_buffer_dev(dev_id_t dev_id, struct tlkm_device *dev, void** buffer, void **dev_handle, dma_direction_t direction, size_t size) {
-	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
-	dma_addr_t *handle = (dma_addr_t*)dev_handle;
-	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapping buffer %p for device", *dev_handle);
-	dma_sync_single_for_device(&pdev->pdev->dev, *handle, size, direction == FROM_DEV ? DMA_FROM_DEVICE : DMA_TO_DEVICE);
+inline int pcie_device_dma_sync_buffer_dev(dev_id_t dev_id,
+					   struct tlkm_device *dev,
+					   void **buffer, void **dev_handle,
+					   dma_direction_t direction,
+					   size_t size)
+{
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)dev->private_data;
+	dma_addr_t *handle = (dma_addr_t *)dev_handle;
+	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapping buffer %p for device",
+	       *dev_handle);
+	dma_sync_single_for_device(&pdev->pdev->dev, *handle, size,
+				   direction == FROM_DEV ? DMA_FROM_DEVICE :
+							   DMA_TO_DEVICE);
 	return 0;
 }

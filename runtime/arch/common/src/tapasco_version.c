@@ -25,13 +25,9 @@
 #include <tapasco.h>
 #include <tapasco_errors.h>
 
-const char *const tapasco_version()
-{
-	return TAPASCO_API_VERSION;
-}
+const char *const tapasco_version() { return TAPASCO_API_VERSION; }
 
-tapasco_res_t tapasco_check_version(const char *const version)
-{
-	return strcmp(TAPASCO_API_VERSION, version) ?
-			TAPASCO_ERR_VERSION_MISMATCH : TAPASCO_SUCCESS;
+tapasco_res_t tapasco_check_version(const char *const version) {
+  return strcmp(TAPASCO_API_VERSION, version) ? TAPASCO_ERR_VERSION_MISMATCH
+                                              : TAPASCO_SUCCESS;
 }

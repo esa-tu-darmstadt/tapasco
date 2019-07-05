@@ -25,100 +25,102 @@
 //! @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
 #include <errno.h>
-#include <string.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <string.h>
 #include <tapasco.h>
+#include <unistd.h>
 
 static tapasco_ctx_t *ctx;
 static tapasco_devctx_t *dev;
 
 static void check(int const result) {
-	if (! result) {
-		fprintf(stderr, "fatal error: %s\n", strerror(errno));
-		tapasco_destroy_device(ctx, dev);
-		tapasco_deinit(ctx);
-		exit(errno);
-	}
+  if (!result) {
+    fprintf(stderr, "fatal error: %s\n", strerror(errno));
+    tapasco_destroy_device(ctx, dev);
+    tapasco_deinit(ctx);
+    exit(errno);
+  }
 }
 
 static void check_fpga(tapasco_res_t const result) {
-	if (result != TAPASCO_SUCCESS) {
-		fprintf(stderr, "fpga fatal error: %s\n", tapasco_strerror(result));
-		tapasco_destroy_device(ctx, dev);
-		tapasco_deinit(ctx);
-		exit(result);
-	}
+  if (result != TAPASCO_SUCCESS) {
+    fprintf(stderr, "fpga fatal error: %s\n", tapasco_strerror(result));
+    tapasco_destroy_device(ctx, dev);
+    tapasco_deinit(ctx);
+    exit(result);
+  }
 }
 
 void init_array(int *arr, size_t sz) {
-	for (size_t i = 0; i < sz; ++i)
-		arr[i] = i;
+  for (size_t i = 0; i < sz; ++i)
+    arr[i] = i;
 }
 
 int compare_arrays(int const *arr, int const *rarr, size_t const sz) {
-	int errs = 0;
-	for (size_t i = 0; i < sz; ++i) {
-		if (rarr[i] != arr[i]) {
-			fprintf(stderr, "wrong data: arr[%zd] = %d != %d = rarr[%zd]\n",
-			        i, arr[i], rarr[i], i);
-			++errs;
-		}
-	}
-	return errs;
+  int errs = 0;
+  for (size_t i = 0; i < sz; ++i) {
+    if (rarr[i] != arr[i]) {
+      fprintf(stderr, "wrong data: arr[%zd] = %d != %d = rarr[%zd]\n", i,
+              arr[i], rarr[i], i);
+      ++errs;
+    }
+  }
+  return errs;
 }
 
 int main(int argc, char **argv) {
-	int errs = 0;
-	size_t arr_szs[] = { 1, 2, 8, 10, 16, 1024, 2048, 4096, 8192, 16384 };
+  int errs = 0;
+  size_t arr_szs[] = {1, 2, 8, 10, 16, 1024, 2048, 4096, 8192, 16384};
 
-	// initialize threadpool
-	check_fpga(tapasco_init(&ctx));
-	check_fpga(tapasco_create_device(ctx, 0, &dev, 0));
+  // initialize threadpool
+  check_fpga(tapasco_init(&ctx));
+  check_fpga(tapasco_create_device(ctx, 0, &dev, 0));
 
-	for (int s = 0; s < sizeof(arr_szs) / sizeof(*arr_szs) && errs == 0; ++s) {
-		printf("Checking array size %zd (%zd byte) ...\n",
-		       arr_szs[s], arr_szs[s] * sizeof(int));
-		// allocate and fill array
-		int *arr = (int *)malloc(arr_szs[s] * sizeof(int));
-		check(arr != NULL);
-		init_array(arr, arr_szs[s]);
-		// allocate array for read data
-		int *rarr = (int *)malloc(arr_szs[s] * sizeof(int));
+  for (int s = 0; s < sizeof(arr_szs) / sizeof(*arr_szs) && errs == 0; ++s) {
+    printf("Checking array size %zd (%zd byte) ...\n", arr_szs[s],
+           arr_szs[s] * sizeof(int));
+    // allocate and fill array
+    int *arr = (int *)malloc(arr_szs[s] * sizeof(int));
+    check(arr != NULL);
+    init_array(arr, arr_szs[s]);
+    // allocate array for read data
+    int *rarr = (int *)malloc(arr_szs[s] * sizeof(int));
 
-		// get fpga handle
-		tapasco_handle_t h;
-		tapasco_device_alloc(dev, &h, arr_szs[s] * sizeof(int), 0);
-		printf("handle = 0x%08lx\n", (unsigned long)h);
+    // get fpga handle
+    tapasco_handle_t h;
+    tapasco_device_alloc(dev, &h, arr_szs[s] * sizeof(int), 0);
+    printf("handle = 0x%08lx\n", (unsigned long)h);
 
-		// copy data to and back
-		printf("sizeof(arr) %zd, sizeof(rarr) %zd\n", sizeof(arr), sizeof(rarr));
-		check_fpga(tapasco_device_copy_to(dev, arr, h, arr_szs[s] * sizeof(int), 0));
-		check_fpga(tapasco_device_copy_from(dev, h, rarr, arr_szs[s] * sizeof(int), 0));
+    // copy data to and back
+    printf("sizeof(arr) %zd, sizeof(rarr) %zd\n", sizeof(arr), sizeof(rarr));
+    check_fpga(
+        tapasco_device_copy_to(dev, arr, h, arr_szs[s] * sizeof(int), 0));
+    check_fpga(
+        tapasco_device_copy_from(dev, h, rarr, arr_szs[s] * sizeof(int), 0));
 
-		tapasco_device_free(dev, h, 0);
+    tapasco_device_free(dev, h, 0);
 
-		int merr = compare_arrays(arr, rarr, arr_szs[s]);
-		errs = + merr;
+    int merr = compare_arrays(arr, rarr, arr_szs[s]);
+    errs = +merr;
 
-		if (! merr)
-			printf("Array size %zd (%zd byte) ok!\n",
-			       arr_szs[s], arr_szs[s] * sizeof(int));
-		else
-			fprintf(stderr, "FAILURE: array size %zd (%zd byte) not ok.\n",
-			        arr_szs[s], arr_szs[s] * sizeof(int));
+    if (!merr)
+      printf("Array size %zd (%zd byte) ok!\n", arr_szs[s],
+             arr_szs[s] * sizeof(int));
+    else
+      fprintf(stderr, "FAILURE: array size %zd (%zd byte) not ok.\n",
+              arr_szs[s], arr_szs[s] * sizeof(int));
 
-		free(arr);
-		free(rarr);
-	}
+    free(arr);
+    free(rarr);
+  }
 
-	if (! errs)
-		printf("\nSUCCESS\n");
-	else
-		fprintf(stderr, "\nFAILURE\n");
+  if (!errs)
+    printf("\nSUCCESS\n");
+  else
+    fprintf(stderr, "\nFAILURE\n");
 
-	// release device
-	tapasco_destroy_device(ctx, dev);
-	tapasco_deinit(ctx);
-	return errs;
+  // release device
+  tapasco_destroy_device(ctx, dev);
+  tapasco_deinit(ctx);
+  return errs;
 }

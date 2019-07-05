@@ -31,24 +31,20 @@
 
 typedef uint32_t addr_t;
 
-#define INVALID_ADDRESS 			((addr_t)(-1))
+#define INVALID_ADDRESS ((addr_t)(-1))
 
 typedef struct block {
-	addr_t base;
-	size_t range;
-	struct block *next;
+  addr_t base;
+  size_t range;
+  struct block *next;
 } block_t;
 
-extern
-block_t *gen_mem_create(addr_t const base, size_t const range);
+extern block_t *gen_mem_create(addr_t const base, size_t const range);
 
-extern
-addr_t gen_mem_malloc(block_t **root, size_t const length);
+extern addr_t gen_mem_malloc(block_t **root, size_t const length);
 
-extern
-addr_t gen_mem_next_base(block_t *root);
+extern addr_t gen_mem_next_base(block_t *root);
 
-extern
-void gen_mem_free(block_t **root, addr_t const p, size_t const length);
+extern void gen_mem_free(block_t **root, addr_t const p, size_t const length);
 
 #endif /* GEN_MEM_H__ */

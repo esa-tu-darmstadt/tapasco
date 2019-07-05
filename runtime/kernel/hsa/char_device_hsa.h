@@ -37,25 +37,25 @@
 #define HSA_MEMORY_BASE_ADDR 0x0001000000000000
 
 #define HSA_ARBITER_BASE_ADDR 0x0000
-#define HSA_ARBITER_SIZE      0x1000
+#define HSA_ARBITER_SIZE 0x1000
 
 #define HSA_ARBITER_REGISTER_HOST_ADDR 0
-#define HSA_ARBITER_REGISTER_READ_INDEX_ADDR (8/8)
-#define HSA_ARBITER_REGISTER_FPGA_ADDR (16/8)
-#define HSA_ARBITER_REGISTER_QUEUE_SIZE (40/8)
-#define HSA_ARBITER_REGISTER_UPDATE_RATE (48/8)
-#define HSA_ARBITER_REGISTER_PASID_ADDR (64/8)
-#define HSA_ARBITER_REGISTER_WRITE_INDEX_ADDR (72/8)
+#define HSA_ARBITER_REGISTER_READ_INDEX_ADDR (8 / 8)
+#define HSA_ARBITER_REGISTER_FPGA_ADDR (16 / 8)
+#define HSA_ARBITER_REGISTER_QUEUE_SIZE (40 / 8)
+#define HSA_ARBITER_REGISTER_UPDATE_RATE (48 / 8)
+#define HSA_ARBITER_REGISTER_PASID_ADDR (64 / 8)
+#define HSA_ARBITER_REGISTER_WRITE_INDEX_ADDR (72 / 8)
 
-#define HSA_ARBITER_REGISTER_ID (24/8)
+#define HSA_ARBITER_REGISTER_ID (24 / 8)
 #define HSA_ARBITER_ID 0xE5A0024
 
 #define HSA_SIGNAL_BASE_ADDR 0x1000
-#define HSA_SIGNAL_SIZE      0x1000
+#define HSA_SIGNAL_SIZE 0x1000
 
 #define HSA_SIGNAL_ACK 0
-#define HSA_SIGNAL_ADDR (0x80/8)
-#define HSA_SIGNAL_REGISTER_ID (24/8)
+#define HSA_SIGNAL_ADDR (0x80 / 8)
+#define HSA_SIGNAL_REGISTER_ID (24 / 8)
 #define HSA_SIGNAL_ID 0xE5A0025
 
 #define TLKM_HSA_NAME "HSA_AQL_QUEUE"
@@ -66,26 +66,26 @@
 
 /* struct array to hold data over multiple fops-calls */
 struct priv_data_struct {
-    struct hsa_mmap_space * kvirt_shared_mem;
+	struct hsa_mmap_space *kvirt_shared_mem;
 
-    dma_addr_t dma_shared_mem;
+	dma_addr_t dma_shared_mem;
 
-    uint8_t signal_allocated[HSA_SIGNALS];
+	uint8_t signal_allocated[HSA_SIGNALS];
 
-    struct tlkm_device *dev;
+	struct tlkm_device *dev;
 
-    uint64_t *signal_base;
-    uint64_t *arbiter_base;
+	uint64_t *signal_base;
+	uint64_t *arbiter_base;
 
-    atomic64_t device_opened;
-    struct mutex ioctl_mutex;
+	atomic64_t device_opened;
+	struct mutex ioctl_mutex;
 
-    struct cdev cdev;
-    struct class *dev_class;
+	struct cdev cdev;
+	struct class *dev_class;
 
-    void* dummy_kvirt;
-    dma_addr_t dummy_dma;
-    size_t dummy_mem_size;
+	void *dummy_kvirt;
+	dma_addr_t dummy_dma;
+	size_t dummy_mem_size;
 };
 
 int char_hsa_register(struct tlkm_device *tlkm_dev);

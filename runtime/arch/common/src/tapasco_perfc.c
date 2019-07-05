@@ -22,57 +22,51 @@
 //!             unified TaPaSCo application library.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#include <stdio.h>
 #include "tapasco_perfc.h"
+#include <stdio.h>
 
 #ifndef NPERFC
 
-#define TAPASCO_MAX_DEVS				32
+#define TAPASCO_MAX_DEVS 32
 
-static
-struct tapasco_perfc_t {
-#define _PC(NAME) 	_Atomic(long int) pc_ ## NAME[TAPASCO_MAX_DEVS];
-	TAPASCO_PERFC_COUNTERS
+static struct tapasco_perfc_t {
+#define _PC(NAME) _Atomic(long int) pc_##NAME[TAPASCO_MAX_DEVS];
+  TAPASCO_PERFC_COUNTERS
 #undef _PC
 } tapasco_perfc;
 
-#define _PC(name) \
-void tapasco_perfc_ ## name ## _inc(tapasco_dev_id_t dev_id) \
-{ \
-	tapasco_perfc.pc_ ## name[dev_id]++; \
-} \
-\
-void tapasco_perfc_ ## name ## _add(tapasco_dev_id_t dev_id, int const v) \
-{ \
-	tapasco_perfc.pc_ ## name[dev_id] += v; \
-} \
-\
-long int tapasco_perfc_ ## name ## _get(tapasco_dev_id_t dev_id) \
-{ \
-	return tapasco_perfc.pc_ ## name[dev_id]; \
-} \
-\
-void tapasco_perfc_ ## name ## _set(tapasco_dev_id_t dev_id, int const v) \
-{ \
-	tapasco_perfc.pc_ ## name[dev_id] = v; \
-}
+#define _PC(name)                                                              \
+  void tapasco_perfc_##name##_inc(tapasco_dev_id_t dev_id) {                   \
+    tapasco_perfc.pc_##name[dev_id]++;                                         \
+  }                                                                            \
+                                                                               \
+  void tapasco_perfc_##name##_add(tapasco_dev_id_t dev_id, int const v) {      \
+    tapasco_perfc.pc_##name[dev_id] += v;                                      \
+  }                                                                            \
+                                                                               \
+  long int tapasco_perfc_##name##_get(tapasco_dev_id_t dev_id) {               \
+    return tapasco_perfc.pc_##name[dev_id];                                    \
+  }                                                                            \
+                                                                               \
+  void tapasco_perfc_##name##_set(tapasco_dev_id_t dev_id, int const v) {      \
+    tapasco_perfc.pc_##name[dev_id] = v;                                       \
+  }
 
 TAPASCO_PERFC_COUNTERS
 #undef _PC
 
 #ifndef STR
-	#define	STR(v)			#v
+#define STR(v) #v
 #endif
 
-const char *tapasco_perfc_tostring(tapasco_dev_id_t const dev_id)
-{
-	static char _buf[1024];
+const char *tapasco_perfc_tostring(tapasco_dev_id_t const dev_id) {
+  static char _buf[1024];
 #define _PC(name) "%39s:\t%8ld\n"
-	const char *const fmt = TAPASCO_PERFC_COUNTERS "\n%c";
+  const char *const fmt = TAPASCO_PERFC_COUNTERS "\n%c";
 #undef _PC
-#define _PC(name) STR(name), tapasco_perfc_ ## name ## _get(dev_id),
-	snprintf(_buf, 1024, fmt, TAPASCO_PERFC_COUNTERS 0);
-	return _buf;
+#define _PC(name) STR(name), tapasco_perfc_##name##_get(dev_id),
+  snprintf(_buf, 1024, fmt, TAPASCO_PERFC_COUNTERS 0);
+  return _buf;
 }
 
 #endif

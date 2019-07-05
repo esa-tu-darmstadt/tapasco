@@ -32,15 +32,22 @@
 #include "zynq_device.h"
 #include "zynq_dmamgmt.h"
 
-static inline
-long zynq_ioctl_info(struct tlkm_device *inst, struct tlkm_device_info *info)
+static inline long zynq_ioctl_info(struct tlkm_device *inst,
+				   struct tlkm_device_info *info)
 {
 	DEVERR(inst->dev_id, "should never be called");
 	return -EFAULT;
 }
 
-static inline
-long zynq_ioctl_alloc(struct tlkm_device *inst, struct tlkm_mm_cmd *cmd)
+static inline long zynq_ioctl_size(struct tlkm_device *inst,
+				   struct tlkm_size_cmd *info)
+{
+	DEVERR(inst->dev_id, "should never be called");
+	return -EFAULT;
+}
+
+static inline long zynq_ioctl_alloc(struct tlkm_device *inst,
+				    struct tlkm_mm_cmd *cmd)
 {
 	struct dma_buf_t *dmab;
 	dma_addr_t dma_addr;
@@ -49,25 +56,29 @@ long zynq_ioctl_alloc(struct tlkm_device *inst, struct tlkm_mm_cmd *cmd)
 		return -EINVAL;
 	}
 	if (cmd->dev_addr >= 0 && (dmab = zynq_dmamgmt_get(cmd->dev_addr))) {
-		DEVWRN(inst->dev_id, "buffer with id %ld is already allocated, aborting", (long)cmd->dev_addr);
+		DEVWRN(inst->dev_id,
+		       "buffer with id %ld is already allocated, aborting",
+		       (long)cmd->dev_addr);
 		return -EINVAL;
 	}
 
 	dma_addr = zynq_dmamgmt_alloc(cmd->sz, NULL);
-	if (! dma_addr) {
+	if (!dma_addr) {
 		DEVWRN(inst->dev_id, "allocation failed: len = %zu", cmd->sz);
 		return -ENOMEM;
 	}
-	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "alloc: len = %zu, dma = %pad", cmd->sz, &dma_addr);
+	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "alloc: len = %zu, dma = %pad",
+	       cmd->sz, &dma_addr);
 	cmd->dev_addr = dma_addr;
 	tlkm_perfc_total_alloced_mem_add(inst->dev_id, cmd->sz);
 	return 0;
 }
 
-static inline
-long zynq_ioctl_free(struct tlkm_device *inst, struct tlkm_mm_cmd *cmd)
+static inline long zynq_ioctl_free(struct tlkm_device *inst,
+				   struct tlkm_mm_cmd *cmd)
 {
-	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "free: len = %zu, dma = %pad", cmd->sz, &cmd->dev_addr);
+	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "free: len = %zu, dma = %pad",
+	       cmd->sz, &cmd->dev_addr);
 	if (cmd->dev_addr >= 0) {
 		zynq_dmamgmt_dealloc_dma(cmd->dev_addr);
 		cmd->dev_addr = -1;
@@ -76,32 +87,42 @@ long zynq_ioctl_free(struct tlkm_device *inst, struct tlkm_mm_cmd *cmd)
 	return 0;
 }
 
-static inline
-long zynq_ioctl_copyto(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
+static inline long zynq_ioctl_copyto(struct tlkm_device *inst,
+				     struct tlkm_copy_cmd *cmd)
 {
 	struct dma_buf_t *dmab;
-	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "copyto: len = %zu, dma = %pad, p = 0x%px",
-			cmd->length, &cmd->dev_addr, cmd->user_addr);
+	DEVLOG(inst->dev_id, TLKM_LF_IOCTL,
+	       "copyto: len = %zu, dma = %pad, p = 0x%px", cmd->length,
+	       &cmd->dev_addr, cmd->user_addr);
 	// allocate, if necessary
-	if (cmd->dev_addr < 0 || ! (dmab = zynq_dmamgmt_get(zynq_dmamgmt_get_id(cmd->dev_addr)))) {
+	if (cmd->dev_addr < 0 ||
+	    !(dmab = zynq_dmamgmt_get(zynq_dmamgmt_get_id(cmd->dev_addr)))) {
 		int ret;
-		struct tlkm_mm_cmd mm_cmd = { .sz = cmd->length, };
+		struct tlkm_mm_cmd mm_cmd = {
+			.sz = cmd->length,
+		};
 		mm_cmd.dev_addr = -1;
-		DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "allocating %zu bytes for transfer", cmd->length);
+		DEVLOG(inst->dev_id, TLKM_LF_IOCTL,
+		       "allocating %zu bytes for transfer", cmd->length);
 		ret = zynq_ioctl_alloc(inst, &mm_cmd);
 		cmd->dev_addr = mm_cmd.dev_addr;
-		if (ret) return ret;
+		if (ret)
+			return ret;
 	}
-	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "cmd->dev_addr = %pad", &cmd->dev_addr);
+	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "cmd->dev_addr = %pad",
+	       &cmd->dev_addr);
 	dmab = zynq_dmamgmt_get(zynq_dmamgmt_get_id(cmd->dev_addr));
-	if (! dmab || ! dmab->kvirt_addr) {
+	if (!dmab || !dmab->kvirt_addr) {
 		DEVERR(inst->dev_id, "something went wrong in the allocation");
 		return -ENOMEM;
 	}
-	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "dmab->kvirt_addr = 0x%px, dmab->dma_addr = %pad",
-			dmab->kvirt_addr, &dmab->dma_addr);
-	if (copy_from_user(dmab->kvirt_addr, (void __user *) cmd->user_addr, cmd->length)) {
-		DEVWRN(inst->dev_id, "could not copy all bytes from user space");
+	DEVLOG(inst->dev_id, TLKM_LF_IOCTL,
+	       "dmab->kvirt_addr = 0x%px, dmab->dma_addr = %pad",
+	       dmab->kvirt_addr, &dmab->dma_addr);
+	if (copy_from_user(dmab->kvirt_addr, (void __user *)cmd->user_addr,
+			   cmd->length)) {
+		DEVWRN(inst->dev_id,
+		       "could not copy all bytes from user space");
 		return -EACCES;
 	}
 	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "copyto finished successfully");
@@ -109,19 +130,23 @@ long zynq_ioctl_copyto(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
 	return 0;
 }
 
-static inline
-long zynq_ioctl_copyfrom(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
+static inline long zynq_ioctl_copyfrom(struct tlkm_device *inst,
+				       struct tlkm_copy_cmd *cmd)
 {
 	struct dma_buf_t *dmab;
-	DEVLOG(inst->dev_id, TLKM_LF_DEVICE, "copyfrom: len = %zu, dma = %pad, p = 0x%px",
-			cmd->length, &cmd->dev_addr, cmd->user_addr);
+	DEVLOG(inst->dev_id, TLKM_LF_DEVICE,
+	       "copyfrom: len = %zu, dma = %pad, p = 0x%px", cmd->length,
+	       &cmd->dev_addr, cmd->user_addr);
 	dmab = zynq_dmamgmt_get(zynq_dmamgmt_get_id(cmd->dev_addr));
-	if (! dmab || ! dmab->kvirt_addr) {
-		DEVERR(inst->dev_id, "could not get dma buffer with dma = %pad", &cmd->dev_addr);
-			return -EINVAL;
+	if (!dmab || !dmab->kvirt_addr) {
+		DEVERR(inst->dev_id, "could not get dma buffer with dma = %pad",
+		       &cmd->dev_addr);
+		return -EINVAL;
 	}
-	if (copy_to_user((void __user *) cmd->user_addr, dmab->kvirt_addr, cmd->length)) {
-		DEVWRN(inst->dev_id, "could not copy all bytes from user space");
+	if (copy_to_user((void __user *)cmd->user_addr, dmab->kvirt_addr,
+			 cmd->length)) {
+		DEVWRN(inst->dev_id,
+		       "could not copy all bytes from user space");
 		return -EACCES;
 	}
 	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "copyfrom finished successfully");
@@ -129,67 +154,75 @@ long zynq_ioctl_copyfrom(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
 	return 0;
 }
 
-static inline
-long zynq_ioctl_alloc_copyto(struct tlkm_device *inst, struct tlkm_bulk_cmd *cmd)
+static inline long zynq_ioctl_alloc_copyto(struct tlkm_device *inst,
+					   struct tlkm_bulk_cmd *cmd)
 {
 	long ret = 0;
 	if ((ret = zynq_ioctl_alloc(inst, &cmd->mm))) {
-		DEVERR(inst->dev_id, "could not allocate memory for bulk alloc+copyto: %ld", ret);
+		DEVERR(inst->dev_id,
+		       "could not allocate memory for bulk alloc+copyto: %ld",
+		       ret);
 		return ret;
 	}
 	cmd->copy.dev_addr = cmd->mm.dev_addr;
 	if ((ret = zynq_ioctl_copyto(inst, &cmd->copy))) {
-		DEVERR(inst->dev_id, "failed to copy memory to %pad: %ld", &cmd->mm.dev_addr, ret);
+		DEVERR(inst->dev_id, "failed to copy memory to %pad: %ld",
+		       &cmd->mm.dev_addr, ret);
 		return ret;
 	}
 	return 0;
 }
 
-static inline
-long zynq_ioctl_copyfrom_free(struct tlkm_device *inst, struct tlkm_bulk_cmd *cmd)
+static inline long zynq_ioctl_copyfrom_free(struct tlkm_device *inst,
+					    struct tlkm_bulk_cmd *cmd)
 {
 	long ret = 0;
 	if ((ret = zynq_ioctl_copyfrom(inst, &cmd->copy))) {
-		DEVERR(inst->dev_id, "failed to copy from 0x%08llx: %ld", (u64)cmd->mm.dev_addr, ret);
+		DEVERR(inst->dev_id, "failed to copy from 0x%08llx: %ld",
+		       (u64)cmd->mm.dev_addr, ret);
 		return ret;
 	}
 	cmd->mm.dev_addr = cmd->copy.dev_addr;
 	if ((ret = zynq_ioctl_free(inst, &cmd->mm))) {
-		DEVERR(inst->dev_id, "failed to free device memory at 0x%08llx: %ld",
-				(u64)cmd->mm.dev_addr, ret);
+		DEVERR(inst->dev_id,
+		       "failed to free device memory at 0x%08llx: %ld",
+		       (u64)cmd->mm.dev_addr, ret);
 		return ret;
 	}
 	return 0;
 }
 
-static inline
-long zynq_ioctl_read(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
+static inline long zynq_ioctl_read(struct tlkm_device *inst,
+				   struct tlkm_copy_cmd *cmd)
 {
 	return tlkm_platform_read(inst, cmd);
 }
 
-static inline
-long zynq_ioctl_write(struct tlkm_device *inst, struct tlkm_copy_cmd *cmd)
+static inline long zynq_ioctl_write(struct tlkm_device *inst,
+				    struct tlkm_copy_cmd *cmd)
 {
 	return tlkm_platform_write(inst, cmd);
 }
 
-long zynq_ioctl(struct tlkm_device *inst, unsigned int ioctl, unsigned long data)
+long zynq_ioctl(struct tlkm_device *inst, unsigned int ioctl,
+		unsigned long data)
 {
 	int ret = -ENXIO;
-#define _TLKM_DEV_IOCTL(NAME, name, id, dt) \
-	if (ioctl == TLKM_DEV_IOCTL_ ## NAME) { \
-		dt d; \
-		if (copy_from_user(&d, (void __user *)data, sizeof(dt))) { \
-			DEVERR(inst->dev_id, "could not copy ioctl data from user space"); \
-			return -EFAULT; \
-		} \
-		ret = zynq_ioctl_ ## name(inst, &d); \
-		if (copy_to_user((void __user *)data, &d, sizeof(dt))) { \
-			DEVERR(inst->dev_id, "could not copy ioctl data to user space"); \
-			return -EFAULT; \
-		} \
-		return ret; \
+#define _TLKM_DEV_IOCTL(NAME, name, id, dt)                                    \
+	if (ioctl == TLKM_DEV_IOCTL_##NAME) {                                  \
+		dt d;                                                          \
+		if (copy_from_user(&d, (void __user *)data, sizeof(dt))) {     \
+			DEVERR(inst->dev_id,                                   \
+			       "could not copy ioctl data from user space");   \
+			return -EFAULT;                                        \
+		}                                                              \
+		ret = zynq_ioctl_##name(inst, &d);                             \
+		if (copy_to_user((void __user *)data, &d, sizeof(dt))) {       \
+			DEVERR(inst->dev_id,                                   \
+			       "could not copy ioctl data to user space");     \
+			return -EFAULT;                                        \
+		}                                                              \
+		return ret;                                                    \
 	}
 	TLKM_DEV_IOCTL_CMDS
 #undef _TLKM_DEV_IOCTL

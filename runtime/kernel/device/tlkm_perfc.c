@@ -28,33 +28,32 @@
 
 #ifndef NPERFC
 
-static
-struct tlkm_perfc_t {
-#define _PC(NAME) 	atomic_t pc_ ## NAME[TLKM_DEVS_SZ];
+static struct tlkm_perfc_t {
+#define _PC(NAME) atomic_t pc_##NAME[TLKM_DEVS_SZ];
 	TLKM_PERFC_COUNTERS
 } tlkm_perfc;
 
 #undef _PC
-#define _PC(name) \
-void tlkm_perfc_ ## name ## _inc(dev_id_t dev_id) \
-{ \
-	atomic_inc(&tlkm_perfc.pc_ ## name[dev_id]); \
-} \
-\
-void tlkm_perfc_ ## name ## _add(dev_id_t dev_id, int const v) \
-{ \
-	atomic_add(v, &tlkm_perfc.pc_ ## name[dev_id]); \
-} \
-\
-int tlkm_perfc_ ## name ## _get(dev_id_t dev_id) \
-{ \
-	return atomic_read(&tlkm_perfc.pc_ ## name[dev_id]); \
-} \
-\
-void tlkm_perfc_ ## name ## _set(dev_id_t dev_id, int const v) \
-{ \
-	atomic_set(&tlkm_perfc.pc_ ## name[dev_id], v); \
-}
+#define _PC(name)                                                              \
+	void tlkm_perfc_##name##_inc(dev_id_t dev_id)                          \
+	{                                                                      \
+		atomic_inc(&tlkm_perfc.pc_##name[dev_id]);                     \
+	}                                                                      \
+                                                                               \
+	void tlkm_perfc_##name##_add(dev_id_t dev_id, int const v)             \
+	{                                                                      \
+		atomic_add(v, &tlkm_perfc.pc_##name[dev_id]);                  \
+	}                                                                      \
+                                                                               \
+	int tlkm_perfc_##name##_get(dev_id_t dev_id)                           \
+	{                                                                      \
+		return atomic_read(&tlkm_perfc.pc_##name[dev_id]);             \
+	}                                                                      \
+                                                                               \
+	void tlkm_perfc_##name##_set(dev_id_t dev_id, int const v)             \
+	{                                                                      \
+		atomic_set(&tlkm_perfc.pc_##name[dev_id], v);                  \
+	}
 
 TLKM_PERFC_COUNTERS
 #undef _PC

@@ -28,8 +28,7 @@
 #include "tlkm_bus.h"
 #include "tlkm_ioctl.h"
 
-static
-int __init tlkm_module_init(void)
+static int __init tlkm_module_init(void)
 {
 	int ret = 0;
 	LOG(TLKM_LF_MODULE, "TaPaSCo loadable kernel module v" TLKM_VERSION);
@@ -42,8 +41,7 @@ int __init tlkm_module_init(void)
 	return ret;
 }
 
-static
-void __exit tlkm_module_exit(void)
+static void __exit tlkm_module_exit(void)
 {
 	tlkm_bus_exit();
 	LOG(TLKM_LF_MODULE, "TaPaSCo loadable kernel module unloaded.");
@@ -56,6 +54,7 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("J. Korinth <jk@esa.cs.tu-darmstadt.de>");
 MODULE_AUTHOR("J. Hofmann <jah@esa.cs.tu-darmstadt.de>");
 MODULE_AUTHOR("D. de la Chevallerie <dc@esa.cs.tu-darmstadt.de>");
-MODULE_DESCRIPTION("Unified device driver for TaPaSCo - the Task Parallel System Composer.");
+MODULE_DESCRIPTION(
+	"Unified device driver for TaPaSCo - the Task Parallel System Composer.");
 MODULE_VERSION(TLKM_VERSION);
 MODULE_ALIAS("tapasco");

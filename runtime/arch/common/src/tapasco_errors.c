@@ -24,19 +24,17 @@
 #include <tapasco_types.h>
 
 #ifdef _X
-	#undef _X
+#undef _X
 #endif
 
 #define _X(constant, code, msg) msg,
-static const char *const _err_msg[] = {
-	TAPASCO_ERRORS
-};
+static const char *const _err_msg[] = {TAPASCO_ERRORS};
 #undef _X
 
-const char *const tapasco_strerror(tapasco_res_t const res)
-{
-	static unsigned long const _l = (unsigned long)-TAPASCO_ERR_SENTINEL;
-	unsigned long const i = (unsigned long) -res;
-	if (i >= _l) return "unknown error";
-	return _err_msg[i];
+const char *const tapasco_strerror(tapasco_res_t const res) {
+  static unsigned long const _l = (unsigned long)-TAPASCO_ERR_SENTINEL;
+  unsigned long const i = (unsigned long)-res;
+  if (i >= _l)
+    return "unknown error";
+  return _err_msg[i];
 }
