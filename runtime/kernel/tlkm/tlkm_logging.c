@@ -28,7 +28,7 @@
 #ifndef NDEBUG
 
 ulong tlkm_logging_flags = 0xFFFFFFFF;
-module_param(tlkm_logging_flags, ulong, S_IRUGO|S_IWUSR|S_IWGRP);
+module_param(tlkm_logging_flags, ulong, S_IRUGO | S_IWUSR | S_IWGRP);
 MODULE_PARM_DESC(tlkm_logging_flags, "bitfield, activates subsystem logging");
 
 #endif /* NDEBUG */

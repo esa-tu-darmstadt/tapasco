@@ -24,22 +24,20 @@
 #define __TIMER_H__
 
 #ifdef __APPLE__
-#include <stdint.h>
 #include <mach/mach_time.h>
+#include <stdint.h>
 
 static mach_timebase_info_data_t _tb;
 
-#define TIMER_INIT()	mach_timebase_info(&_tb);
+#define TIMER_INIT() mach_timebase_info(&_tb);
 
-#define TIMER_START(name) \
-	uint64_t ts_start_##name = mach_absolute_time();
+#define TIMER_START(name) uint64_t ts_start_##name = mach_absolute_time();
 
-#define TIMER_STOP(name) \
-	uint64_t ts_stop_##name = mach_absolute_time();
+#define TIMER_STOP(name) uint64_t ts_stop_##name = mach_absolute_time();
 
-#define TIMER_USECS(name) \
-	(uint64_t)((double)(ts_stop_##name - ts_start_##name) * \
-			(double)_tb.numer / (double)_tb.denom / (double)1e3)
+#define TIMER_USECS(name)                                                      \
+  (uint64_t)((double)(ts_stop_##name - ts_start_##name) * (double)_tb.numer /  \
+             (double)_tb.denom / (double)1e3)
 
 #else
 #include <stdint.h>
@@ -47,33 +45,29 @@ static mach_timebase_info_data_t _tb;
 
 static struct timespec _tb;
 
-#define TIMER_INIT() \
-	clock_getres(CLOCK_MONOTONIC, &_tb)
+#define TIMER_INIT() clock_getres(CLOCK_MONOTONIC, &_tb)
 
-#define TIMER_START(name) \
-	struct timespec tp_start_##name; \
-	clock_gettime(CLOCK_MONOTONIC, &tp_start_##name);
+#define TIMER_START(name)                                                      \
+  struct timespec tp_start_##name;                                             \
+  clock_gettime(CLOCK_MONOTONIC, &tp_start_##name);
 
-#define TIMER_STOP(name) \
-	struct timespec tp_stop_##name; \
-	clock_gettime(CLOCK_MONOTONIC, &tp_stop_##name); \
+#define TIMER_STOP(name)                                                       \
+  struct timespec tp_stop_##name;                                              \
+  clock_gettime(CLOCK_MONOTONIC, &tp_stop_##name);
 
-#define TIMER_USECS(name) \
-	tp_diff_usecs(&tp_stop_##name, &tp_start_##name)
+#define TIMER_USECS(name) tp_diff_usecs(&tp_stop_##name, &tp_start_##name)
 
-static inline
-unsigned long long tp_diff_usecs(struct timespec *stop, struct timespec *start)
-{
-	if (stop->tv_nsec < start->tv_nsec) {
-		return (stop->tv_sec - 1 - start->tv_sec) * 1000000ULL +
-				(1000000000ULL + stop->tv_nsec - start->tv_nsec) / 1000ULL;
-	} else {
-		return (stop->tv_sec - start->tv_sec) * 1000000ULL +
-				(stop->tv_nsec - start->tv_nsec) / 1000ULL;
-	}
+static inline unsigned long long tp_diff_usecs(struct timespec *stop,
+                                               struct timespec *start) {
+  if (stop->tv_nsec < start->tv_nsec) {
+    return (stop->tv_sec - 1 - start->tv_sec) * 1000000ULL +
+           (1000000000ULL + stop->tv_nsec - start->tv_nsec) / 1000ULL;
+  } else {
+    return (stop->tv_sec - start->tv_sec) * 1000000ULL +
+           (stop->tv_nsec - start->tv_nsec) / 1000ULL;
+  }
 }
 
 #endif
 
 #endif /* __TIMER_H__ */
-

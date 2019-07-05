@@ -24,4 +24,8 @@ tlkm-objs := \
     pcie/pcie_ioctl.o \
     dma/tlkm_dma.o \
     dma/blue_dma.o \
-    hsa/char_device_hsa.o
+    hsa/char_device_hsa.o \
+    nanopb/pb_common.o \
+    nanopb/pb_encode.o \
+    nanopb/pb_decode.o \
+    nanopb/status_core.pb.o

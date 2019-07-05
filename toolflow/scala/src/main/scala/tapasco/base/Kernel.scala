@@ -25,6 +25,7 @@ package tapasco.base
 
 import java.nio.file._
 
+import play.api.libs.json.{JsError, JsValue, Reads}
 import tapasco.base.builder._
 import tapasco.json._
 
@@ -77,5 +78,6 @@ object Kernel extends Builds[Kernel] {
                              name: String,
                              passingConvention: PassingConvention
                            )
+
 
 }

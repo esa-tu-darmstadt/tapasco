@@ -21,17 +21,13 @@
  *  @brief	Common implementations of the PAPI version info functions.
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#include <string.h>
 #include <platform.h>
 #include <platform_errors.h>
+#include <string.h>
 
-const char *const platform_version()
-{
-	return PLATFORM_API_VERSION;
-}
+const char *const platform_version() { return PLATFORM_API_VERSION; }
 
-platform_res_t platform_check_version(const char *const version)
-{
-	return strcmp(PLATFORM_API_VERSION, version) ?
-			PERR_VERSION_MISMATCH : PLATFORM_SUCCESS;
+platform_res_t platform_check_version(const char *const version) {
+  return strcmp(PLATFORM_API_VERSION, version) ? PERR_VERSION_MISMATCH
+                                               : PLATFORM_SUCCESS;
 }

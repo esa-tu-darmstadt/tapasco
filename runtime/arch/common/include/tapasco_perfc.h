@@ -28,38 +28,44 @@
 #include "tapasco_types.h"
 
 #ifdef _PC
-	#undef _PC
+#undef _PC
 #endif
 
-#define TAPASCO_PERFC_COUNTERS \
-	_PC(job_id_high_watermark) \
-	_PC(pe_high_watermark) \
-	_PC(jobs_launched) \
-	_PC(jobs_completed) \
-	_PC(pe_acquired) \
-	_PC(pe_released) \
-	_PC(waiting_for_job)
+#define TAPASCO_PERFC_COUNTERS                                                 \
+  _PC(job_id_high_watermark)                                                   \
+  _PC(pe_high_watermark)                                                       \
+  _PC(jobs_launched)                                                           \
+  _PC(jobs_completed)                                                          \
+  _PC(pe_acquired)                                                             \
+  _PC(pe_released)                                                             \
+  _PC(waiting_for_job)
 
 #ifndef NPERFC
-	const char *tapasco_perfc_tostring(tapasco_dev_id_t const dev_id);
-	#define _PC(name) \
-	void tapasco_perfc_ ## name ## _inc(tapasco_dev_id_t dev_id); \
-	void tapasco_perfc_ ## name ## _add(tapasco_dev_id_t dev_id, int const v); \
-	long tapasco_perfc_ ## name ## _get(tapasco_dev_id_t dev_id); \
-	void tapasco_perfc_ ## name ## _set(tapasco_dev_id_t dev_id, int const v); \
+const char *tapasco_perfc_tostring(tapasco_dev_id_t const dev_id);
+#define _PC(name)                                                              \
+  void tapasco_perfc_##name##_inc(tapasco_dev_id_t dev_id);                    \
+  void tapasco_perfc_##name##_add(tapasco_dev_id_t dev_id, int const v);       \
+  long tapasco_perfc_##name##_get(tapasco_dev_id_t dev_id);                    \
+  void tapasco_perfc_##name##_set(tapasco_dev_id_t dev_id, int const v);
 
-	TAPASCO_PERFC_COUNTERS
-	#undef _PC
+TAPASCO_PERFC_COUNTERS
+#undef _PC
 #else /* NPERFC */
-	static inline
-	const char *tapasco_perfc_tostring(tapasco_dev_id_t const dev_id) { return ""; }
-	#define _PC(name) \
-	inline static void tapasco_perfc_ ## name ## _inc(tapasco_dev_id_t dev_id) {} \
-	inline static void tapasco_perfc_ ## name ## _add(tapasco_dev_id_t dev_id, int const v) {} \
-	inline static long tapasco_perfc_ ## name ## _get(tapasco_dev_id_t dev_id) { return 0; } \
-	inline static void tapasco_perfc_ ## name ## _set(tapasco_dev_id_t dev_id, int const v) {}
+static inline const char *
+tapasco_perfc_tostring(tapasco_dev_id_t const dev_id) {
+  return "";
+}
+#define _PC(name)                                                              \
+  inline static void tapasco_perfc_##name##_inc(tapasco_dev_id_t dev_id) {}    \
+  inline static void tapasco_perfc_##name##_add(tapasco_dev_id_t dev_id,       \
+                                                int const v) {}                \
+  inline static long tapasco_perfc_##name##_get(tapasco_dev_id_t dev_id) {     \
+    return 0;                                                                  \
+  }                                                                            \
+  inline static void tapasco_perfc_##name##_set(tapasco_dev_id_t dev_id,       \
+                                                int const v) {}
 
-	TAPASCO_PERFC_COUNTERS
-	#undef _PC
+TAPASCO_PERFC_COUNTERS
+#undef _PC
 #endif /* NPERFC */
 #endif /* TAPASCO_PERFC_H__ */

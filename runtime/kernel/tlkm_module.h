@@ -25,6 +25,6 @@
 #ifndef TLKM_MODULE_H__
 #define TLKM_MODULE_H__
 
-#define TLKM_VERSION					"2.0"
+#define TLKM_VERSION "3.0"
 
 #endif /* TLKM_MODULE_H__ */

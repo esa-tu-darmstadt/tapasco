@@ -5,16 +5,16 @@
 #include "pcie/pcie_device.h"
 
 static const struct pci_device_id tlkm_pcie_id[] = {
-	{ PCI_DEVICE( XILINX_VENDOR_ID , XILINX_DEVICE_ID ) },
+	{ PCI_DEVICE(XILINX_VENDOR_ID, XILINX_DEVICE_ID) },
 	{},
 };
 
 // struct representation of functions above similiar to fops
 static struct pci_driver tlkm_pcie_driver = {
-	.name			= TLKM_PCI_NAME,
-	.id_table		= tlkm_pcie_id,
-	.probe			= tlkm_pcie_probe,
-	.remove			= tlkm_pcie_remove,
+	.name = TLKM_PCI_NAME,
+	.id_table = tlkm_pcie_id,
+	.probe = tlkm_pcie_probe,
+	.remove = tlkm_pcie_remove,
 };
 
 int pcie_init(struct tlkm_class *cls)

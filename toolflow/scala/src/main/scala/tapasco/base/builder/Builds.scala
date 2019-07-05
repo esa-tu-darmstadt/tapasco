@@ -33,6 +33,28 @@ import scala.io.Source
   * json lib documentation for details).
   */
 private[tapasco] trait Builds[A] {
+
+  private def buildPathString(nodes: List[PathNode]): String = nodes.map(
+    x => "\"" + x.toString.replace("/", "") + "\""
+  ).mkString("/")
+
+  def errorHandling(json:JsValue, error: JsError): Unit = {
+    val _logger = tapasco.Logging.logger(getClass)
+    val origin = (json \ "DescPath").get.toString()
+    for(entry <- error.errors) {
+      val path = buildPathString(entry._1.path)
+      val prefix = "Json Error in File %s at Json-Path %s:".format(origin, path)
+      entry._2.foreach(x => x.messages.foreach {
+        case "error.path.missing" => _logger.warn("%s Entry is missing.".format(prefix))
+        case "error.expected.jsstring" => _logger.warn("%s Should be a String.".format(prefix))
+        case "error.expected.jsnumber" => _logger.warn("%s Should be a Number.".format(prefix))
+        case "error.expected.jsarray" => _logger.warn("%s Should be an Array.".format(prefix))
+        case s: String => _logger.warn("%s %s".format(prefix, s))
+      })
+    }
+  }
+
+
   /**
     * Deserialize instance from a Json tree.
     *
@@ -44,7 +66,10 @@ private[tapasco] trait Builds[A] {
   def from(json: JsValue)(implicit sourcePath: Option[Path] = None, r: Reads[A]): Either[Throwable, A] =
     Json.fromJson[A](json) match {
       case s: JsSuccess[A] => Right(s.get)
-      case e: JsError => Left(new Exception(e.toString))
+      case e: JsError => {
+        errorHandling(json, e)
+        Left(new Exception(e.toString))
+      }
     }
 
   /**

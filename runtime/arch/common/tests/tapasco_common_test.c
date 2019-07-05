@@ -17,33 +17,33 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 //! @file	tapasco_common_test.c
-//! @brief	Basic check test suite implementation for arch/common unit tests.
+//! @brief	Basic check test suite implementation for arch/common unit
+//! tests.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#include <stdlib.h>
-#include <check.h>
-#include <tapasco_logging.h>
 #include "tapasco_jobs_test.h"
 #include "tapasco_pemgmt_test.h"
+#include <check.h>
+#include <stdlib.h>
+#include <tapasco_logging.h>
 
-int main(void)
-{
-	TCase *testcases[] = {
-		jobs_testcase(),
-		pemgmt_testcase(),
-	};
+int main(void) {
+  TCase *testcases[] = {
+      jobs_testcase(),
+      pemgmt_testcase(),
+  };
 
-	Suite *s = suite_create("tapasco_common");
-	for (int tc = 0; tc < sizeof(testcases) / sizeof(*testcases); ++tc)
-		suite_add_tcase(s, testcases[tc]);
+  Suite *s = suite_create("tapasco_common");
+  for (int tc = 0; tc < sizeof(testcases) / sizeof(*testcases); ++tc)
+    suite_add_tcase(s, testcases[tc]);
 
-	int number_failed = 0;
-	tapasco_logging_init();
-	SRunner *sr = srunner_create(s);
-	srunner_run_all(sr, CK_VERBOSE);
-	number_failed = srunner_ntests_failed(sr);
-	srunner_free(sr);
-	tapasco_logging_deinit();
+  int number_failed = 0;
+  tapasco_logging_init();
+  SRunner *sr = srunner_create(s);
+  srunner_run_all(sr, CK_VERBOSE);
+  number_failed = srunner_ntests_failed(sr);
+  srunner_free(sr);
+  tapasco_logging_deinit();
 
-	return number_failed == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+  return number_failed == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

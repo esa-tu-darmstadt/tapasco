@@ -31,28 +31,28 @@
 #endif
 #include <stdatomic.h>
 
-#define TAGGED_PTR(VAR) struct gs_tagged_ptr_t VAR __attribute__ ((aligned(16)))
+#define TAGGED_PTR(VAR) struct gs_tagged_ptr_t VAR __attribute__((aligned(16)))
 
-/** 
- * Tagged pointer struct: contains pointer + update counter. 
+/**
+ * Tagged pointer struct: contains pointer + update counter.
  * Basic idea: use atomic instructions for full size of struct, in case
  * of x86_64 16 byte, on 32bit archs like armv7 8 byte.
  **/
-struct gs_tagged_ptr_t { 
-	struct gs_e_t *p __attribute__ ((aligned(16)));
-	unsigned long int tc __attribute__ ((packed));
+struct gs_tagged_ptr_t {
+  struct gs_e_t *p __attribute__((aligned(16)));
+  unsigned long int tc __attribute__((packed));
 };
 
 /** Stack element type. */
 struct gs_e_t {
-	struct gs_e_t *next;
-	void *data;
+  struct gs_e_t *next;
+  void *data;
 };
 
 /** Stack type. */
 struct gs_t {
-	_Atomic(struct gs_tagged_ptr_t) free;
-}; 
+  _Atomic(struct gs_tagged_ptr_t) free;
+};
 
 /**
  * Pops the top-most element from the stack.
@@ -60,22 +60,22 @@ struct gs_t {
  * @return void pointer to element data.
  **/
 static inline void *gs_pop(struct gs_t *stack) {
-	TAGGED_PTR(old);
-	volatile TAGGED_PTR(n);
-	void *ret = NULL;
-	do {	
-		old = stack->free;
-		n.tc = old.tc + 1;
-		if (old.p) {
-			ret = old.p->data; 
-			n.p = old.p->next;
-		} else {
-			ret = n.p = NULL;
-		}
-	} while (! atomic_compare_exchange_strong(&stack->free, &old, n));
-	if (ret)
-		free(old.p);
-	return ret;
+  TAGGED_PTR(old);
+  volatile TAGGED_PTR(n);
+  void *ret = NULL;
+  do {
+    old = stack->free;
+    n.tc = old.tc + 1;
+    if (old.p) {
+      ret = old.p->data;
+      n.p = old.p->next;
+    } else {
+      ret = n.p = NULL;
+    }
+  } while (!atomic_compare_exchange_strong(&stack->free, &old, n));
+  if (ret)
+    free(old.p);
+  return ret;
 }
 
 /**
@@ -84,16 +84,16 @@ static inline void *gs_pop(struct gs_t *stack) {
  * @param elem void pointer ot element data.
  **/
 static inline void gs_push(struct gs_t *stack, void *elem) {
-	TAGGED_PTR(old);
-	TAGGED_PTR(n);
-	struct gs_e_t *e = malloc(sizeof(*e));
-	e->data = elem;
-	do {
-		old = stack->free;
-		n.tc = old.tc + 1;
-		n.p = e;
-		e->next = old.p;
-	} while (! atomic_compare_exchange_strong(&stack->free, &old, n));
+  TAGGED_PTR(old);
+  TAGGED_PTR(n);
+  struct gs_e_t *e = malloc(sizeof(*e));
+  e->data = elem;
+  do {
+    old = stack->free;
+    n.tc = old.tc + 1;
+    n.p = e;
+    e->next = old.p;
+  } while (!atomic_compare_exchange_strong(&stack->free, &old, n));
 }
 
 #endif /* __GEN_STACK_H__ */

@@ -47,7 +47,6 @@ struct gq_t;
 
 /** @} **/
 
-
 /** @defgroup ops FIFO operations
  *  @{
  **/
@@ -67,7 +66,6 @@ void gq_enqueue(struct gq_t *q, void *v);
 void *gq_dequeue(struct gq_t *q);
 
 /** @} **/
-
 
 /** @defgroup init Intialization
  *  @{

@@ -6,13 +6,11 @@
 struct tlkm_bus;
 struct tlkm_class;
 
-int  tlkm_bus_init(void);
+int tlkm_bus_init(void);
 void tlkm_bus_exit(void);
 
-struct tlkm_device *tlkm_bus_new_device(struct tlkm_class *cls,
-		int vendor_id,
-		int product_id,
-		void *data);
+struct tlkm_device *tlkm_bus_new_device(struct tlkm_class *cls, int vendor_id,
+					int product_id, void *data);
 void tlkm_bus_delete_device(struct tlkm_device *dev);
 
 void tlkm_bus_enumerate(void);

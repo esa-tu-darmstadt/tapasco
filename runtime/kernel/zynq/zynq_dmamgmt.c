@@ -33,7 +33,8 @@ static inline void init_dma_buf_t(struct dma_buf_t *buf, fsp_idx_t const idx)
 	buf->kvirt_addr = NULL;
 }
 
-MAKE_FIXED_SIZE_POOL(dmabuf, ZYNQ_DMAMGMT_POOLSZ, struct dma_buf_t, init_dma_buf_t)
+MAKE_FIXED_SIZE_POOL(dmabuf, ZYNQ_DMAMGMT_POOLSZ, struct dma_buf_t,
+		     init_dma_buf_t)
 
 static struct dmabuf_fsp_t _dmabuf;
 
@@ -50,7 +51,8 @@ static inline ssize_t find_dma_addr(dma_addr_t const addr)
 int zynq_dmamgmt_init(void)
 {
 	dmabuf_fsp_init(&_dmabuf);
-	LOG(TLKM_LF_DMAMGMT, "DMA buffer management initialized: size = %u", ZYNQ_DMAMGMT_POOLSZ);
+	LOG(TLKM_LF_DMAMGMT, "DMA buffer management initialized: size = %u",
+	    ZYNQ_DMAMGMT_POOLSZ);
 	return 0;
 }
 
@@ -75,33 +77,35 @@ dma_addr_t zynq_dmamgmt_alloc(size_t const len, handle_t *hid)
 		WRN("internal pool depleted: could not allocate a buffer!");
 		return 0;
 	}
-	_dmabuf.elems[id].kvirt_addr = dma_alloc_coherent(
-			NULL, len, &_dmabuf.elems[id].dma_addr,
-			GFP_KERNEL | __GFP_MEMALLOC);
-	if (! _dmabuf.elems[id].kvirt_addr) {
+	_dmabuf.elems[id].kvirt_addr =
+		dma_alloc_coherent(NULL, len, &_dmabuf.elems[id].dma_addr,
+				   GFP_KERNEL | __GFP_MEMALLOC);
+	if (!_dmabuf.elems[id].kvirt_addr) {
 		WRN("could not allocate DMA buffer of size %zu byte!", len);
 		dmabuf_fsp_put(&_dmabuf, id);
 		return 0;
 	}
 	_dmabuf.elems[id].len = len;
-	LOG(TLKM_LF_DMAMGMT, "len = %zu, kvirt_addr = 0x%08lx, dma_addr = 0x%08lx",
-			len, (unsigned long)_dmabuf.elems[id].kvirt_addr,
-			(unsigned long)_dmabuf.elems[id].dma_addr);
-	if (hid) *hid = id;
+	LOG(TLKM_LF_DMAMGMT,
+	    "len = %zu, kvirt_addr = 0x%08lx, dma_addr = 0x%08lx", len,
+	    (unsigned long)_dmabuf.elems[id].kvirt_addr,
+	    (unsigned long)_dmabuf.elems[id].dma_addr);
+	if (hid)
+		*hid = id;
 	return _dmabuf.elems[id].dma_addr;
 }
 
 int zynq_dmamgmt_dealloc(handle_t const id)
 {
 	if (id < ZYNQ_DMAMGMT_POOLSZ && _dmabuf.elems[id].kvirt_addr) {
-		LOG(TLKM_LF_DMAMGMT, "id = %llu, len = %zd, kvirt_addr = 0x%08lx, dma_addr = 0x%08lx",
-				id, _dmabuf.elems[id].len,
-				(unsigned long)_dmabuf.elems[id].kvirt_addr,
-				(unsigned long)_dmabuf.elems[id].dma_addr);
-		dma_free_coherent(NULL,
-				_dmabuf.elems[id].len,
-				_dmabuf.elems[id].kvirt_addr,
-				_dmabuf.elems[id].dma_addr);
+		LOG(TLKM_LF_DMAMGMT,
+		    "id = %llu, len = %zd, kvirt_addr = 0x%08lx, dma_addr = 0x%08lx",
+		    id, _dmabuf.elems[id].len,
+		    (unsigned long)_dmabuf.elems[id].kvirt_addr,
+		    (unsigned long)_dmabuf.elems[id].dma_addr);
+		dma_free_coherent(NULL, _dmabuf.elems[id].len,
+				  _dmabuf.elems[id].kvirt_addr,
+				  _dmabuf.elems[id].dma_addr);
 		init_dma_buf_t(&_dmabuf.elems[id], id);
 	} else {
 		WRN("illegal id %llu, no deallocation", id);
@@ -116,14 +120,14 @@ int zynq_dmamgmt_dealloc_dma(dma_addr_t const addr)
 	return zynq_dmamgmt_dealloc(find_dma_addr(addr));
 }
 
-inline
-struct dma_buf_t *zynq_dmamgmt_get(handle_t const id)
+inline struct dma_buf_t *zynq_dmamgmt_get(handle_t const id)
 {
-	return (id >= ZYNQ_DMAMGMT_POOLSZ || ! _dmabuf.locked[id]) ?  NULL : &_dmabuf.elems[id];
+	return (id >= ZYNQ_DMAMGMT_POOLSZ || !_dmabuf.locked[id]) ?
+		       NULL :
+		       &_dmabuf.elems[id];
 }
 
-inline
-ssize_t zynq_dmamgmt_get_id(dma_addr_t const addr)
+inline ssize_t zynq_dmamgmt_get_id(dma_addr_t const addr)
 {
 	return find_dma_addr(addr);
 }

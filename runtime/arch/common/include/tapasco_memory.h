@@ -35,9 +35,9 @@
  * @return TAPASCO_SUCCESS if successful, error code otherwise
  **/
 tapasco_res_t tapasco_device_alloc(tapasco_devctx_t *dev_ctx,
-		tapasco_handle_t *handle, size_t const len,
-		tapasco_device_alloc_flag_t const flags,
-		...);
+                                   tapasco_handle_t *handle, size_t const len,
+                                   tapasco_device_alloc_flag_t const flags,
+                                   ...);
 
 /**
  * Frees a previously allocated chunk of device memory.
@@ -45,10 +45,8 @@ tapasco_res_t tapasco_device_alloc(tapasco_devctx_t *dev_ctx,
  * @param handle memory chunk handle returned by @see tapasco_alloc
  * @param flags device memory allocation flags
  **/
-void tapasco_device_free(tapasco_devctx_t *dev_ctx,
-		tapasco_handle_t handle,
-		tapasco_device_alloc_flag_t const flags,
-		...);
+void tapasco_device_free(tapasco_devctx_t *dev_ctx, tapasco_handle_t handle,
+                         tapasco_device_alloc_flag_t const flags, ...);
 
 /**
  * Copys memory from main memory to the FPGA device.
@@ -60,9 +58,9 @@ void tapasco_device_free(tapasco_devctx_t *dev_ctx,
  * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_copy_to(tapasco_devctx_t *dev_ctx, void const *src,
-		tapasco_handle_t dst, size_t len,
-		tapasco_device_copy_flag_t const flags,
-		...);
+                                     tapasco_handle_t dst, size_t len,
+                                     tapasco_device_copy_flag_t const flags,
+                                     ...);
 
 /**
  * Copys memory from FPGA device memory to main memory.
@@ -74,10 +72,10 @@ tapasco_res_t tapasco_device_copy_to(tapasco_devctx_t *dev_ctx, void const *src,
  * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
  **/
 tapasco_res_t tapasco_device_copy_from(tapasco_devctx_t *dev_ctx,
-		tapasco_handle_t src,
-		void *dst, size_t len,
-		tapasco_device_copy_flag_t const flags,
-		...);
+                                       tapasco_handle_t src, void *dst,
+                                       size_t len,
+                                       tapasco_device_copy_flag_t const flags,
+                                       ...);
 
 /**
  * Copys data from main memory to PE-local memory in the given slot.
@@ -89,12 +87,11 @@ tapasco_res_t tapasco_device_copy_from(tapasco_devctx_t *dev_ctx,
  * @param slot_id PE-local memory slot
  * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
  **/
-tapasco_res_t tapasco_device_copy_to_local(tapasco_devctx_t *dev_ctx,
-		void const *src,
-		tapasco_handle_t dst,
-		size_t len,
-		tapasco_device_copy_flag_t const flags,
-		tapasco_slot_id_t slot_id);
+tapasco_res_t
+tapasco_device_copy_to_local(tapasco_devctx_t *dev_ctx, void const *src,
+                             tapasco_handle_t dst, size_t len,
+                             tapasco_device_copy_flag_t const flags,
+                             tapasco_slot_id_t slot_id);
 
 /**
  * Copys data from PE-local memory in the given slot to main memory.
@@ -106,11 +103,8 @@ tapasco_res_t tapasco_device_copy_to_local(tapasco_devctx_t *dev_ctx,
  * @param slot_id PE-local memory slot
  * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
  **/
-tapasco_res_t tapasco_device_copy_from_local(tapasco_devctx_t *dev_ctx,
-		tapasco_handle_t src,
-		void *dst,
-		size_t len,
-		tapasco_device_copy_flag_t const flags,
-		tapasco_slot_id_t slot_id);
+tapasco_res_t tapasco_device_copy_from_local(
+    tapasco_devctx_t *dev_ctx, tapasco_handle_t src, void *dst, size_t len,
+    tapasco_device_copy_flag_t const flags, tapasco_slot_id_t slot_id);
 
 #endif /* TAPASCO_MEMORY_H__ */

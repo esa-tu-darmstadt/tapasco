@@ -20,6 +20,7 @@ package tapasco
 
 import java.nio.file._
 
+import play.api.libs.json.Reads.{filter, seq}
 import play.api.libs.json._
 
 /** Global helpers for JSON Serialization/Deserialization. */
@@ -45,4 +46,26 @@ package object json {
 
   /** Simple predicate: Path must exist in filesystem. */
   def mustExist(p: Path): Boolean = p.toFile.exists
+
+  /**
+    * Verification Functions to enable error messages for json Parsing.
+    */
+
+  /**
+    * Log Error if x <= 0.
+    */
+  val greaterZeroIntValidation = filter[Int](JsonValidationError("Value musst be greater than zero."))(x => x > 0)
+
+  /**
+    * Log Error if x.length < 1
+    */
+  val nonEmptyStringValidation = filter[String](JsonValidationError("String must be non-empty."))(x => x.length > 0)
+
+  val pathExistsValidation = filter[Path](JsonValidationError("File or Dir does not exist."))(x => mustExist(x.toAbsolutePath))
+  val pathsExistValidation = seq[Path](pathExistsValidation)
+
+  val nonEmptyStringsValidation = seq[String](nonEmptyStringValidation)
+
+
+
 }

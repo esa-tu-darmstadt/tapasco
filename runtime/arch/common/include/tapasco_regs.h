@@ -32,16 +32,16 @@
 
 /** Named control registers at each PE. */
 typedef enum {
-	/** Control register (start). */
-	TAPASCO_REG_CTRL,
-	/** Interrupt enable register. */
-	TAPASCO_REG_IER,
-	/** Global interrupt enable register. */
-	TAPASCO_REG_GIER,
-	/** Function interrupt acknowledge register. */
-	TAPASCO_REG_IAR,
-	/** Register with return value of function. */
-	TAPASCO_REG_RET
+  /** Control register (start). */
+  TAPASCO_REG_CTRL,
+  /** Interrupt enable register. */
+  TAPASCO_REG_IER,
+  /** Global interrupt enable register. */
+  TAPASCO_REG_GIER,
+  /** Function interrupt acknowledge register. */
+  TAPASCO_REG_IAR,
+  /** Register with return value of function. */
+  TAPASCO_REG_RET
 } tapasco_reg_t;
 
 /**
@@ -52,10 +52,9 @@ typedef enum {
  * @param arg_idx Index of argument.
  * @return Register space address of arg register.
  **/
-tapasco_handle_t tapasco_regs_arg_register(
-		tapasco_devctx_t const *dev_ctx,
-		tapasco_slot_id_t const slot_id,
-		size_t const arg_idx);
+tapasco_handle_t tapasco_regs_arg_register(tapasco_devctx_t const *dev_ctx,
+                                           tapasco_slot_id_t const slot_id,
+                                           size_t const arg_idx);
 
 /**
  * Returns the register space address of the given named register of the
@@ -66,7 +65,7 @@ tapasco_handle_t tapasco_regs_arg_register(
  * @return Register space address > 0 if found.
  **/
 tapasco_handle_t tapasco_regs_named_register(tapasco_devctx_t const *dev_ctx,
-		tapasco_slot_id_t const slot_id,
-		tapasco_reg_t const reg);
+                                             tapasco_slot_id_t const slot_id,
+                                             tapasco_reg_t const reg);
 
 #endif /* TAPASCO_REGS_H__ */

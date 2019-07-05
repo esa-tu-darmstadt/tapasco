@@ -39,6 +39,9 @@ import scala.io.Source
   * deserialize basic TPC entities to and from Json format.
   **/
 package object json {
+
+
+
   private def totalCountOk(c: Seq[Composition.Entry]): Boolean =
     (c map (_.count) fold 0) (_ + _) <= PLATFORM_NUM_SLOTS
 
@@ -57,7 +60,7 @@ package object json {
   /* @{ Architecture */
   implicit val reads: Reads[Architecture] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
-      (JsPath \ "Name").read[String] ~
+      (JsPath \ "Name").read[String](nonEmptyStringValidation) ~
       (JsPath \ "TclLibrary").readNullable[Path].map(_ getOrElse Paths.get("test")) ~
       (JsPath \ "Description").readNullable[String].map(_ getOrElse "") ~
       (JsPath \ "ValueArgTemplate").readNullable[Path].map(_ getOrElse Paths.get("valuearg.directives.template")) ~
@@ -177,9 +180,9 @@ package object json {
   implicit val coreReads: Reads[Core] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
       (JsPath \ "ZipFile").read[Path] ~
-      (JsPath \ "Name").read[String](minLength[String](1)) ~
-      (JsPath \ "Id").read[Kernel.Id](min(1)) ~
-      (JsPath \ "Version").read[String](minLength[String](1)) ~
+      (JsPath \ "Name").read[String](nonEmptyStringValidation) ~
+      (JsPath \ "Id").read[Kernel.Id](greaterZeroIntValidation) ~
+      (JsPath \ "Version").read[String](nonEmptyStringValidation) ~
       (JsPath \ "Target").read[TargetDesc] ~
       (JsPath \ "Description").readNullable[String] ~
       (JsPath \ "AverageClockCycles").readNullable[Int]
@@ -295,7 +298,7 @@ package object json {
   }
 
   implicit val kernelArgumentReads: Reads[Kernel.Argument] = (
-    (JsPath \ "Name").read[String](minLength[String](1)) ~
+    (JsPath \ "Name").read[String](nonEmptyStringValidation) ~
       (JsPath \ "Passing").readNullable[Kernel.PassingConvention].map(_ getOrElse Kernel.PassingConvention.ByValue)
     ) (Kernel.Argument.apply _)
   implicit val kernelArgumentWrites: Writes[Kernel.Argument] = (
@@ -305,13 +308,13 @@ package object json {
   /* Kernel.Argument @} */
 
   /* @{ Kernel */
-  implicit val kernelReads: Reads[Kernel] = (
+  implicit def kernelReads(implicit sourcePath: Path): Reads[Kernel] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
-      (JsPath \ "Name").read[String](verifying[String](_.length > 0)) ~
-      (JsPath \ "TopFunction").read[String](verifying[String](_.length > 0)) ~
-      (JsPath \ "Id").read[Kernel.Id](verifying[Kernel.Id](_ > 0)) ~
-      (JsPath \ "Version").read[String](verifying[String](_.length > 0)) ~
-      (JsPath \ "Files").read[Seq[Path]](verifying[Seq[Path]](_.length > 0)) ~
+      (JsPath \ "Name").read[String](nonEmptyStringValidation)~
+      (JsPath \ "TopFunction").read[String](nonEmptyStringValidation) ~
+      (JsPath \ "Id").read[Int](greaterZeroIntValidation) ~
+      (JsPath \ "Version").read[String](nonEmptyStringValidation) ~
+      (JsPath \ "Files").read[Seq[Path]](pathsExistValidation) ~
       (JsPath \ "TestbenchFiles").readNullable[Seq[Path]].map(_ getOrElse Seq()) ~
       (JsPath \ "Description").readNullable[String] ~
       (JsPath \ "CompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
