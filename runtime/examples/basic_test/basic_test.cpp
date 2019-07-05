@@ -30,14 +30,14 @@
  *              BEWARE OF HORRIBLE CODE AHEAD...
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
-#include <iostream>
-#include <vector>
-#include <future>
+#include <assert.h>
 #include <atomic>
 #include <cstdlib>
-#include <unistd.h>
-#include <assert.h>
+#include <future>
+#include <iostream>
 #include <tapasco.hpp>
+#include <unistd.h>
+#include <vector>
 
 #define TEST_1
 #define TEST_2
@@ -45,11 +45,11 @@
 
 using namespace std;
 
-#define SZ			256
-#define RUNS			100000
-#define T1_KID			11
-#define T2_KID			10
-#define T3_KID			 9
+#define SZ 256
+#define RUNS 100000
+#define T1_KID 11
+#define T2_KID 10
+#define T3_KID 9
 
 static tapasco::Tapasco Tapasco;
 static atomic<int> runs;
@@ -57,8 +57,7 @@ typedef int run_block[SZ];
 
 // #define CPU_EXECUTION 1
 /******************************************************************************/
-bool test1_execute(int *arr)
-{
+bool test1_execute(int *arr) {
   int run;
   while ((run = runs--) >= 0) {
     run_block *z = reinterpret_cast<run_block *>(&arr[run * SZ]);
@@ -66,22 +65,21 @@ bool test1_execute(int *arr)
     for (int i = 0; i < SZ; ++i)
       (*z)[i] = i;
 #else
-    if (Tapasco.launch_no_return(T1_KID, tapasco::OutOnly<run_block>{z}) != tapasco::TAPASCO_SUCCESS)
+    if (Tapasco.launch_no_return(T1_KID, tapasco::OutOnly<run_block>{z}) !=
+        tapasco::TAPASCO_SUCCESS)
       return false;
 #endif
   }
   return true;
 }
 
-static void test1_prepare(int *arr)
-{
+static void test1_prepare(int *arr) {
   for (size_t j = 0; j < RUNS; ++j)
     for (size_t i = 0; i < SZ; ++i)
       arr[j * SZ + i] = -1;
 }
 
-static int test1_check(int *arr)
-{
+static int test1_check(int *arr) {
   int errs = 0;
   for (int i = 0; i < SZ; ++i) {
     if (arr[i] != i) {
@@ -93,14 +91,12 @@ static int test1_check(int *arr)
 }
 
 /******************************************************************************/
-static void test2_prepare(int *arr, size_t sz)
-{
+static void test2_prepare(int *arr, size_t sz) {
   for (size_t i = 0; i < sz; ++i)
     arr[i] = i;
 }
 
-int test2_execute(int *arr)
-{
+int test2_execute(int *arr) {
   int run;
   int result = 0;
   while ((run = runs--) >= 0) {
@@ -127,14 +123,12 @@ static bool test2_check(int *arr, size_t sz, int res) {
 }
 
 /******************************************************************************/
-static void test3_prepare(int *arr, size_t sz, size_t bsz)
-{
+static void test3_prepare(int *arr, size_t sz, size_t bsz) {
   for (size_t i = 0; i < sz; ++i)
     arr[i] = i % bsz;
 }
 
-void test3_execute(int *arr)
-{
+void test3_execute(int *arr) {
   int run;
   while ((run = runs--) >= 0) {
     run_block *z = reinterpret_cast<run_block *>(&arr[run * SZ]);
@@ -149,21 +143,19 @@ void test3_execute(int *arr)
   }
 }
 
-static unsigned int test3_check(int *arr, size_t sz)
-{
+static unsigned int test3_check(int *arr, size_t sz) {
   unsigned int errs = 0;
   for (int i = 0; i < (int)sz; ++i) {
     if (arr[i] != i + 42) {
-      fprintf(stderr, "wrong data at %d: %d, should be %d\n",
-          i, arr[i], i + 42);
+      fprintf(stderr, "wrong data at %d: %d, should be %d\n", i, arr[i],
+              i + 42);
       ++errs;
     }
   }
   return errs;
 }
 /******************************************************************************/
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   int retval = 0;
   unsigned int tc = 1; // sysconf(_SC_NPROCESSORS_CONF);
 #ifndef CPU_EXECUTION
@@ -173,14 +165,14 @@ int main(int argc, char **argv)
     return 1;
   }
   const uint32_t cnt[] = {
-       Tapasco.func_instance_count(T1_KID),
-       Tapasco.func_instance_count(T2_KID),
-       Tapasco.func_instance_count(T3_KID),
+      Tapasco.func_instance_count(T1_KID),
+      Tapasco.func_instance_count(T2_KID),
+      Tapasco.func_instance_count(T3_KID),
   };
   cout << "Instance counts" << endl
-       << "  arrayinit   : " <<  cnt[0] << endl
-       << "  arraysum    : " <<  cnt[1] << endl
-       << "  arrayupdate : " <<  cnt[2] << endl;
+       << "  arrayinit   : " << cnt[0] << endl
+       << "  arraysum    : " << cnt[1] << endl
+       << "  arrayupdate : " << cnt[2] << endl;
 
   if (cnt[0] == 0 || cnt[1] == 0 || cnt[2] == 0) {
     cerr << "ERROR: missing at least one of the required kernels!" << endl;
@@ -188,7 +180,7 @@ int main(int argc, char **argv)
   }
 #endif
 
-  int *arr { new int[SZ * RUNS] };
+  int *arr{new int[SZ * RUNS]};
   test1_prepare(arr);
 
   if (argc >= 2)
@@ -197,13 +189,13 @@ int main(int argc, char **argv)
   cout << "Using threadpool with " << tc << " threads." << endl;
   runs = RUNS - 1;
 
-  int result { 0 };
+  int result{0};
   /****************************************************************************/
 #ifdef TEST_1
-  vector<future<bool> > tp;
+  vector<future<bool>> tp;
   for (unsigned int i = 0; i < tc; ++i)
     tp.push_back(async(launch::async, test1_execute, arr));
-  for (auto& f : tp)
+  for (auto &f : tp)
     retval += f.get() ? 0 : 1;
   for (unsigned int i = 0; i < RUNS; ++i) {
     int err = test1_check(&arr[i * SZ]);
@@ -214,26 +206,27 @@ int main(int argc, char **argv)
 
   /****************************************************************************/
 #ifdef TEST_2
-  vector<future<int> > tp2;
+  vector<future<int>> tp2;
   runs = RUNS - 1;
   test2_prepare(arr, SZ * RUNS);
   for (unsigned int i = 0; i < tc; ++i)
     tp2.push_back(async(launch::async, test2_execute, arr));
-  for (auto& f : tp2)
+  for (auto &f : tp2)
     result += f.get();
-  cout << "Test 2 " << (test2_check(arr, SZ * RUNS, result) ? " ok." : " NOT OK!") << endl;
+  cout << "Test 2 "
+       << (test2_check(arr, SZ * RUNS, result) ? " ok." : " NOT OK!") << endl;
   retval += test2_check(arr, SZ * RUNS, result) ? 0 : 1;
 #endif
 
   /****************************************************************************/
 #ifdef TEST_3
-  vector<future<void> > tp3;
+  vector<future<void>> tp3;
   runs = RUNS - 1;
   result = 0;
   test3_prepare(arr, SZ * RUNS, SZ);
   for (unsigned int i = 0; i < tc; ++i)
     tp3.push_back(async(launch::async, test3_execute, arr));
-  for (auto& f : tp3)
+  for (auto &f : tp3)
     f.get();
   for (unsigned int i = 0; i < RUNS; ++i) {
     int errs = test3_check(&arr[i * SZ], SZ);

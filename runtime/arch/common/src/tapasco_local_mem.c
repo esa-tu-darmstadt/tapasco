@@ -130,14 +130,12 @@ inline size_t tapasco_local_mem_get_free(tapasco_local_mem_t *lmem,
   return lmem->as[slot_id].high - gen_mem_next_base(lmem->lmem[slot_id]);
 }
 
-inline tapasco_handle_t tapasco_local_mem_get_slot_and_base(
-    tapasco_local_mem_t *lmem, tapasco_slot_id_t *slot_id, addr_t const elem) {
-  while (!lmem->lmem[*slot_id] || elem > lmem->as[*slot_id].high) {
-    ++(*slot_id);
+inline tapasco_slot_id_t tapasco_local_mem_get_slot(tapasco_devctx_t *devctx,
+                                                    tapasco_slot_id_t slot_id) {
+  while (slot_id < PLATFORM_NUM_SLOTS &&
+         devctx->info.composition.memory[slot_id] == 0) {
+    ++slot_id;
   }
-  DEVLOG(lmem->dev_id, LALL_MEM,
-         "local mem high address of slot_id #" PRIslot
-         " (0x%08lx) < elem address (0x%08lx)",
-         *slot_id, (unsigned long)*slot_id, (unsigned long)elem);
-  return lmem->as[*slot_id].base;
+
+  return slot_id;
 }

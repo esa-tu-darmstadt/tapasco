@@ -61,17 +61,26 @@ tapasco_res_t tapasco_device_copy_to_local(
     tapasco_devctx_t *devctx, void const *src, tapasco_handle_t dst, size_t len,
     tapasco_device_copy_flag_t const flags, tapasco_slot_id_t slot_id) {
   platform_devctx_t *p = devctx->pdctx;
-  volatile void *a =
-      device_regspace_arch_ptr(p) +
-      (get_slot_base(devctx, slot_id) - device_regspace_arch_base(p)) + dst;
+
+  tapasco_slot_id_t lmem_slot_id = tapasco_local_mem_get_slot(devctx, slot_id);
+
+  uintptr_t ptr_a_calc = (uintptr_t)device_regspace_arch_ptr(p) +
+                         ((uintptr_t)get_slot_base(devctx, lmem_slot_id) -
+                          (uintptr_t)device_regspace_arch_base(p)) +
+                         (uintptr_t)dst;
+  volatile uint64_t *a = (volatile uint64_t *)ptr_a_calc;
+
   LOG(LALL_MEM,
       "copying %zd bytes locally to " PRIhandle " of slot_id #" PRIslot
-      " from 0x%llx (%llx %llx %llx %llx)",
-      len, dst, slot_id, (uint64_t)a, get_slot_base(devctx, slot_id),
-      device_regspace_arch_base(p), dst,
-      tapasco_local_mem_get_slot_and_base(devctx->lmem, &slot_id, dst));
+      " from 0x%llx",
+      len, dst, lmem_slot_id, (uint64_t)a);
 
-  memcpy((void *)a, src, len);
+  uint64_t *src_ptr = (uint64_t *)src;
+  for (size_t i = 0; i < len; i += sizeof(uint64_t)) {
+    *a = *src_ptr;
+    ++a;
+    ++src_ptr;
+  }
   return TAPASCO_SUCCESS;
 }
 
@@ -79,15 +88,25 @@ tapasco_res_t tapasco_device_copy_from_local(
     tapasco_devctx_t *devctx, tapasco_handle_t src, void *dst, size_t len,
     tapasco_device_copy_flag_t const flags, tapasco_slot_id_t slot_id) {
   platform_devctx_t *p = devctx->pdctx;
-  volatile void *a =
-      device_regspace_arch_ptr(p) +
-      (get_slot_base(devctx, slot_id) - device_regspace_arch_base(p)) + src;
+
+  tapasco_slot_id_t lmem_slot_id = tapasco_local_mem_get_slot(devctx, slot_id);
+
+  uintptr_t ptr_a_calc = (uintptr_t)device_regspace_arch_ptr(p) +
+                         ((uintptr_t)get_slot_base(devctx, lmem_slot_id) -
+                          (uintptr_t)device_regspace_arch_base(p)) +
+                         (uintptr_t)dst;
+  volatile uint64_t *a = (volatile uint64_t *)ptr_a_calc;
   LOG(LALL_MEM,
       "copying %zd bytes locally from " PRIhandle " of slot_id #" PRIslot
       " from 0x%llx",
-      len, dst, slot_id, (uint64_t)a);
+      len, dst, lmem_slot_id, (uint64_t)a);
 
-  memcpy(dst, (void *)a, len);
+  uint64_t *dst_ptr = (uint64_t *)dst;
+  for (size_t i = 0; i < len; i += sizeof(uint64_t)) {
+    *dst_ptr = *a;
+    ++a;
+    ++dst_ptr;
+  }
   return TAPASCO_SUCCESS;
 }
 

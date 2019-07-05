@@ -92,8 +92,7 @@ size_t tapasco_local_mem_get_free(tapasco_local_mem_t *lmem,
  * @param elem address in PE-local memory space to find the slot and base for.
  * @return return base address of memory controller managing elem
  **/
-tapasco_handle_t tapasco_local_mem_get_slot_and_base(tapasco_local_mem_t *lmem,
-                                                     tapasco_slot_id_t *slot_id,
-                                                     addr_t const elem);
+tapasco_slot_id_t tapasco_local_mem_get_slot(tapasco_devctx_t *devctx,
+                                             tapasco_slot_id_t slot_id);
 
 #endif /* TAPASCO_LOCAL_MEM_H__ */
