@@ -68,18 +68,31 @@ tapasco_res_t tapasco_device_copy_to_local(
                          ((uintptr_t)get_slot_base(devctx, lmem_slot_id) -
                           (uintptr_t)device_regspace_arch_base(p)) +
                          (uintptr_t)dst;
-  volatile uint64_t *a = (volatile uint64_t *)ptr_a_calc;
+  volatile uint8_t *a = (volatile uint8_t *)ptr_a_calc;
 
   LOG(LALL_MEM,
       "copying %zd bytes locally to " PRIhandle " of slot_id #" PRIslot
       " from 0x%llx",
       len, dst, lmem_slot_id, (uint64_t)a);
 
-  uint64_t *src_ptr = (uint64_t *)src;
-  for (size_t i = 0; i < len; i += sizeof(uint64_t)) {
-    *a = *src_ptr;
-    ++a;
-    ++src_ptr;
+  uint8_t *src_ptr = (uint8_t *)src;
+  size_t chunk_size = 0;
+  for (size_t i = 0; i < len; i += chunk_size) {
+    if ((len - i) >= sizeof(uint64_t)) {
+      *(uint64_t *)a = *(uint64_t *)src_ptr;
+      chunk_size = sizeof(uint64_t);
+    } else if ((len - i) >= sizeof(uint32_t)) {
+      *(uint32_t *)a = *(uint32_t *)src_ptr;
+      chunk_size = sizeof(uint32_t);
+    } else if ((len - i) >= sizeof(uint16_t)) {
+      *(uint16_t *)a = *(uint16_t *)src_ptr;
+      chunk_size = sizeof(uint16_t);
+    } else {
+      *a = *src_ptr;
+      chunk_size = sizeof(uint8_t);
+    }
+    a += chunk_size;
+    src_ptr += chunk_size;
   }
   return TAPASCO_SUCCESS;
 }
@@ -94,18 +107,31 @@ tapasco_res_t tapasco_device_copy_from_local(
   uintptr_t ptr_a_calc = (uintptr_t)device_regspace_arch_ptr(p) +
                          ((uintptr_t)get_slot_base(devctx, lmem_slot_id) -
                           (uintptr_t)device_regspace_arch_base(p)) +
-                         (uintptr_t)dst;
-  volatile uint64_t *a = (volatile uint64_t *)ptr_a_calc;
+                         (uintptr_t)src;
+  volatile uint8_t *a = (volatile uint8_t *)ptr_a_calc;
   LOG(LALL_MEM,
       "copying %zd bytes locally from " PRIhandle " of slot_id #" PRIslot
       " from 0x%llx",
       len, dst, lmem_slot_id, (uint64_t)a);
 
-  uint64_t *dst_ptr = (uint64_t *)dst;
-  for (size_t i = 0; i < len; i += sizeof(uint64_t)) {
-    *dst_ptr = *a;
-    ++a;
-    ++dst_ptr;
+  uint8_t *dst_ptr = (uint8_t *)dst;
+  size_t chunk_size = 0;
+  for (size_t i = 0; i < len; i += chunk_size) {
+    if ((len - i) >= sizeof(uint64_t)) {
+      *(uint64_t *)dst_ptr = *(uint64_t *)a;
+      chunk_size = sizeof(uint64_t);
+    } else if ((len - i) >= sizeof(uint32_t)) {
+      *(uint32_t *)dst_ptr = *(uint32_t *)a;
+      chunk_size = sizeof(uint32_t);
+    } else if ((len - i) >= sizeof(uint16_t)) {
+      *(uint16_t *)dst_ptr = *(uint16_t *)a;
+      chunk_size = sizeof(uint16_t);
+    } else {
+      *dst_ptr = *a;
+      chunk_size = sizeof(uint8_t);
+    }
+    a += chunk_size;
+    dst_ptr += chunk_size;
   }
   return TAPASCO_SUCCESS;
 }
