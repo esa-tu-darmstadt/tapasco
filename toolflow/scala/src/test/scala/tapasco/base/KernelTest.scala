@@ -63,7 +63,8 @@ class KernelSpec extends TaPaSCoSpec with Matchers {
     c.name should equal("sudoku")
     c.topFunction should equal("sudoku_solve")
     c.files should equal(Seq(correctKernel.resolve("src/Sudoku.cpp"), correctKernel.resolve("src/Sudoku_HLS.cpp")))
-    c.testbenchFiles should equal(Seq(correctKernel.resolve("src/main.cpp"), correctKernel.resolve("hard_sudoku.txt"), correctKernel.resolve("hard_sudoku_solution.txt")))
+    c.testbenchFiles should equal(Seq(correctKernel.resolve("src/main.cpp"), correctKernel.resolve("hard_sudoku.txt"),
+      correctKernel.resolve("hard_sudoku_solution.txt")))
     c.compilerFlags should equal(Seq())
     c.testbenchCompilerFlags should equal(Seq("-lrt"))
     c.args.length should equal(1)

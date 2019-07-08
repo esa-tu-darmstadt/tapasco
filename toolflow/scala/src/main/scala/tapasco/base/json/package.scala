@@ -312,7 +312,7 @@ package object json {
       (JsPath \ "Id").read[Int](greaterZeroIntValidation) ~
       (JsPath \ "Version").read[String](nonEmptyStringValidation) ~
       (JsPath \ "Files").read[Seq[Path]](pathsExistValidation(sourcePath)) ~
-      (JsPath \ "TestbenchFiles").readNullable[Seq[Path]].map(_ getOrElse Seq()) ~
+      (JsPath \ "TestbenchFiles").readNullable[Seq[Path]](pathsExistValidation(sourcePath)).map(_ getOrElse Seq()) ~
       (JsPath \ "Description").readNullable[String] ~
       (JsPath \ "CompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
       (JsPath \ "TestbenchCompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~

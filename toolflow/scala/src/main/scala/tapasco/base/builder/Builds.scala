@@ -38,8 +38,7 @@ private[tapasco] trait Builds[A] {
     x => "\"" + x.toString.replace("/", "") + "\""
   ).mkString("/")
 
-  def errorHandling(json:JsValue, error: JsError): Unit = {
-    println(error)
+  def errorHandling(json:JsValue, error: JsError, basePath: Option[Path] = None): Unit = {
     val _logger = tapasco.Logging.logger(getClass)
     val origin = (json \ "DescPath").get.toString()
     for(entry <- error.errors) {
@@ -50,6 +49,11 @@ private[tapasco] trait Builds[A] {
         case "error.expected.jsstring" => _logger.warn("%s Should be a String.".format(prefix))
         case "error.expected.jsnumber" => _logger.warn("%s Should be a Number.".format(prefix))
         case "error.expected.jsarray" => _logger.warn("%s Should be an Array.".format(prefix))
+        case "error.expected.FileOrDirExists" => {
+          var offending = entry._1.read[String].reads(json).get
+          if(basePath.isDefined) offending = basePath.get.resolve(offending).toAbsolutePath.normalize().toString
+          _logger.warn("%s File or Dir %s does not exist.".format(prefix, offending))
+        }
         case s: String => _logger.warn("%s %s".format(prefix, s))
       })
     }
@@ -64,12 +68,11 @@ private[tapasco] trait Builds[A] {
     * @param r          Reads[R] instance to parse Json (implicit).
     * @return Either the instance, or an exception detailing the error.
     **/
-  def from(json: JsValue)(implicit sourcePath: Option[Path] = None, r: Reads[A]): Either[Throwable, A] =
+  def from(json: JsValue, basePath: Option[Path] = None)(implicit sourcePath: Option[Path] = None, r: Reads[A]): Either[Throwable, A] =
     Json.fromJson[A](json) match {
       case s: JsSuccess[A] => Right(s.get)
       case e: JsError => {
-        errorHandling(json, e)
-        println("Leftie")
+        errorHandling(json, e, basePath)
         Left(new Exception(e.toString))
       }
     }
@@ -89,7 +92,7 @@ private[tapasco] trait Builds[A] {
       // read from file
       Source.fromFile(p.toString).getLines.mkString)
       .transform(JsPath.json.update(pathTransformer)) // inject artificial key 'DescPath'
-      .get
+      .get, Some(p)
     )
   } catch {
     case e: Exception => Left(e)
