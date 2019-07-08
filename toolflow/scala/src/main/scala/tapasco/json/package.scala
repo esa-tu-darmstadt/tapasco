@@ -61,8 +61,13 @@ package object json {
     */
   val nonEmptyStringValidation = filter[String](JsonValidationError("String must be non-empty."))(x => x.length > 0)
 
-  val pathExistsValidation = filter[Path](JsonValidationError("File or Dir does not exist."))(x => mustExist(x.toAbsolutePath))
-  val pathsExistValidation = seq[Path](pathExistsValidation)
+  def pathExistsValidation(basePath: Path):Reads[Path] =
+    filter[Path](JsonValidationError("File or Dir does not exist."))(x => {
+      val filePath = basePath.resolve(x).toAbsolutePath
+      val r = mustExist(filePath)
+      r
+    })
+  def pathsExistValidation(basePath: Path):Reads[Seq[Path]] = seq[Path](pathExistsValidation(basePath))
 
   val nonEmptyStringsValidation = seq[String](nonEmptyStringValidation)
 

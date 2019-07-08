@@ -39,6 +39,7 @@ private[tapasco] trait Builds[A] {
   ).mkString("/")
 
   def errorHandling(json:JsValue, error: JsError): Unit = {
+    println(error)
     val _logger = tapasco.Logging.logger(getClass)
     val origin = (json \ "DescPath").get.toString()
     for(entry <- error.errors) {
@@ -68,6 +69,7 @@ private[tapasco] trait Builds[A] {
       case s: JsSuccess[A] => Right(s.get)
       case e: JsError => {
         errorHandling(json, e)
+        println("Leftie")
         Left(new Exception(e.toString))
       }
     }

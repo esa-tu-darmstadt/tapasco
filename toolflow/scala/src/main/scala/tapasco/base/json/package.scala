@@ -39,9 +39,6 @@ import scala.io.Source
   * deserialize basic TPC entities to and from Json format.
   **/
 package object json {
-
-
-
   private def totalCountOk(c: Seq[Composition.Entry]): Boolean =
     (c map (_.count) fold 0) (_ + _) <= PLATFORM_NUM_SLOTS
 
@@ -60,7 +57,7 @@ package object json {
   /* @{ Architecture */
   implicit val reads: Reads[Architecture] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
-      (JsPath \ "Name").read[String](nonEmptyStringValidation) ~
+      (JsPath \ "Name").read[String] ~
       (JsPath \ "TclLibrary").readNullable[Path].map(_ getOrElse Paths.get("test")) ~
       (JsPath \ "Description").readNullable[String].map(_ getOrElse "") ~
       (JsPath \ "ValueArgTemplate").readNullable[Path].map(_ getOrElse Paths.get("valuearg.directives.template")) ~
@@ -180,9 +177,9 @@ package object json {
   implicit val coreReads: Reads[Core] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
       (JsPath \ "ZipFile").read[Path] ~
-      (JsPath \ "Name").read[String](nonEmptyStringValidation) ~
-      (JsPath \ "Id").read[Kernel.Id](greaterZeroIntValidation) ~
-      (JsPath \ "Version").read[String](nonEmptyStringValidation) ~
+      (JsPath \ "Name").read[String](minLength[String](1)) ~
+      (JsPath \ "Id").read[Kernel.Id](min(1)) ~
+      (JsPath \ "Version").read[String](minLength[String](1)) ~
       (JsPath \ "Target").read[TargetDesc] ~
       (JsPath \ "Description").readNullable[String] ~
       (JsPath \ "AverageClockCycles").readNullable[Int]
@@ -308,13 +305,27 @@ package object json {
   /* Kernel.Argument @} */
 
   /* @{ Kernel */
-  implicit def kernelReads(implicit sourcePath: Path): Reads[Kernel] = (
+  def validatingKernelReads(sourcePath: Path): Reads[Kernel] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
       (JsPath \ "Name").read[String](nonEmptyStringValidation)~
       (JsPath \ "TopFunction").read[String](nonEmptyStringValidation) ~
       (JsPath \ "Id").read[Int](greaterZeroIntValidation) ~
       (JsPath \ "Version").read[String](nonEmptyStringValidation) ~
-      (JsPath \ "Files").read[Seq[Path]](pathsExistValidation) ~
+      (JsPath \ "Files").read[Seq[Path]](pathsExistValidation(sourcePath)) ~
+      (JsPath \ "TestbenchFiles").readNullable[Seq[Path]].map(_ getOrElse Seq()) ~
+      (JsPath \ "Description").readNullable[String] ~
+      (JsPath \ "CompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
+      (JsPath \ "TestbenchCompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
+      (JsPath \ "Arguments").read[Seq[Kernel.Argument]] ~
+      (JsPath \ "OtherDirectives").readNullable[Path](pathExistsValidation(sourcePath))
+    ) (Kernel.apply _)
+  implicit val kernelReads: Reads[Kernel] = (
+    (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
+      (JsPath \ "Name").read[String]~
+      (JsPath \ "TopFunction").read[String] ~
+      (JsPath \ "Id").read[Int] ~
+      (JsPath \ "Version").read[String] ~
+      (JsPath \ "Files").read[Seq[Path]] ~
       (JsPath \ "TestbenchFiles").readNullable[Seq[Path]].map(_ getOrElse Seq()) ~
       (JsPath \ "Description").readNullable[String] ~
       (JsPath \ "CompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~

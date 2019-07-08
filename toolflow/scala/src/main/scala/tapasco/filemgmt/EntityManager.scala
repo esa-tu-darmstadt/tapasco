@@ -130,7 +130,7 @@ class EntityManager(val bpm: BasePathManager) extends Publisher {
 
   private def buildCore(p: Path): Option[Core] = checkBuild("Core", p, Core.from(p).toOption)
 
-  private def buildKernel(p: Path): Option[Kernel] = checkBuild("Kernel", p, Kernel.from(p)(kernelReads(p)).toOption)
+  private def buildKernel(p: Path): Option[Kernel] = checkBuild("Kernel", p, Kernel.from(p)(validatingKernelReads(p)).toOption)
 
   private def buildPlatform(p: Path): Option[Platform] = checkBuild("Platform", p, Platform.from(p).toOption)
 
