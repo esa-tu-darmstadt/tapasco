@@ -41,6 +41,8 @@ typedef struct block {
 
 extern block_t *gen_mem_create(addr_t const base, size_t const range);
 
+extern void gen_mem_destroy(block_t **root);
+
 extern addr_t gen_mem_malloc(block_t **root, size_t const length);
 
 extern addr_t gen_mem_next_base(block_t *root);

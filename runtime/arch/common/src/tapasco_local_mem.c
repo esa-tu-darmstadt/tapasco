@@ -38,6 +38,7 @@ typedef struct {
 
 struct tapasco_local_mem {
   tapasco_dev_id_t dev_id;
+  tapasco_devctx_t *devctx;
   address_space_t as[PLATFORM_NUM_SLOTS];
   block_t *lmem[PLATFORM_NUM_SLOTS];
 };
@@ -67,6 +68,7 @@ tapasco_res_t tapasco_local_mem_init(tapasco_devctx_t *devctx,
   if (!*lmem)
     return TAPASCO_ERR_OUT_OF_MEMORY;
   (*lmem)->dev_id = devctx->id;
+  (*lmem)->devctx = devctx;
   addr_t base = 0;
   for (tapasco_slot_id_t idx = 0; idx < TAPASCO_NUM_SLOTS; ++idx) {
     size_t const sz = get_slot_mem(devctx, idx);
@@ -95,29 +97,25 @@ void tapasco_local_mem_deinit(tapasco_local_mem_t *lmem) {
 tapasco_res_t tapasco_local_mem_alloc(tapasco_local_mem_t *lmem,
                                       tapasco_slot_id_t slot_id,
                                       size_t const sz, tapasco_handle_t *h) {
-  *h = INVALID_ADDRESS;
-  do {
-    ++slot_id;
-    *h = gen_mem_malloc(&lmem->lmem[slot_id], sz);
-  } while (*h == INVALID_ADDRESS && lmem->lmem[slot_id]);
+  tapasco_slot_id_t slot_id_local =
+      tapasco_local_mem_get_slot(lmem->devctx, slot_id);
+  *h = gen_mem_malloc(&lmem->lmem[slot_id_local], sz);
 
   DEVLOG(lmem->dev_id, LALL_MEM,
          "request to allocate %zd bytes for slot_id #" PRIslot "-> " PRIhandle,
-         sz, slot_id, *h);
+         sz, slot_id_local, *h);
   return *h != INVALID_ADDRESS ? TAPASCO_SUCCESS : TAPASCO_ERR_OUT_OF_MEMORY;
 }
 
 void tapasco_local_mem_dealloc(tapasco_local_mem_t *lmem,
-                               tapasco_slot_id_t slot_id, tapasco_handle_t h,
-                               size_t sz) {
+                               tapasco_slot_id_t slot_id, size_t sz,
+                               tapasco_handle_t h) {
+  tapasco_slot_id_t slot_id_local =
+      tapasco_local_mem_get_slot(lmem->devctx, slot_id);
   DEVLOG(lmem->dev_id, LALL_MEM,
          "request to free %zd bytes at slot_id #" PRIslot ": " PRIhandle, sz,
-         slot_id, h);
-  ++slot_id;
-  while (lmem->lmem[slot_id] && h > lmem->as[slot_id].high)
-    slot_id++;
-  if (lmem->lmem[slot_id])
-    gen_mem_free(&lmem->lmem[slot_id], h, sz);
+         slot_id_local, h);
+  gen_mem_free(&lmem->lmem[slot_id_local], h, sz);
 }
 
 inline size_t tapasco_local_mem_get_size(tapasco_local_mem_t *lmem,
