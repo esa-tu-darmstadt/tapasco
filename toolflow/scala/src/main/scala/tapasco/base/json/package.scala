@@ -36,14 +36,14 @@ import scala.io.Source
 
 /**
   * The `json` package contains implicit Reads/Writes/Formats instances to serialize and
-  * deserialize basic TPC entities to and from Json format.
+  * deserialize basic TaPaSCo entities to and from Json format.
   **/
 package object json {
   private def totalCountOk(c: Seq[Composition.Entry]): Boolean =
     (c map (_.count) fold 0) (_ + _) <= PLATFORM_NUM_SLOTS
 
   /* @{ TargetDesc */
-  implicit val targetReads: Reads[TargetDesc] = (
+  implicit val validatingTargetReads: Reads[TargetDesc] = (
     (JsPath \ "Architecture").read[String] ~
       (JsPath \ "Platform").read[String]
     ) (TargetDesc.apply _)
@@ -55,16 +55,17 @@ package object json {
   /* TargetDesc @} */
 
   /* @{ Architecture */
-  implicit val reads: Reads[Architecture] = (
+  def validatingArchitectureReads: Reads[Architecture] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
-      (JsPath \ "Name").read[String] ~
+      (JsPath \ "Name").read[String](minimumLength(length = 1)) ~
       (JsPath \ "TclLibrary").readNullable[Path].map(_ getOrElse Paths.get("test")) ~
       (JsPath \ "Description").readNullable[String].map(_ getOrElse "") ~
       (JsPath \ "ValueArgTemplate").readNullable[Path].map(_ getOrElse Paths.get("valuearg.directives.template")) ~
       (JsPath \ "ReferenceArgTemplate").readNullable[Path].map(_ getOrElse Paths.get("referencearg.directives.template")) ~
       (JsPath \ "AdditionalSteps").readNullable[Seq[String]].map(_ getOrElse Seq())
     ) (Architecture.apply _)
-  implicit val writes: Writes[Architecture] = (
+
+  implicit val architecturesWrites: Writes[Architecture] = (
     (JsPath \ "DescPath").write[Path].transform((js: JsObject) => js - "DescPath") ~
       (JsPath \ "Name").write[String] ~
       (JsPath \ "TclLibrary").write[Path] ~
@@ -146,9 +147,9 @@ package object json {
   /* Benchmark @} */
 
   /* @{ Composition.Entry */
-  implicit val compositionEntryReads: Reads[Composition.Entry] = (
-    (JsPath \ "Kernel").read[String](minLength[String](1)) ~
-      (JsPath \ "Count").read[Int](min(1) keepAnd max(PLATFORM_NUM_SLOTS))
+  implicit val validatingCompositionEntryReads: Reads[Composition.Entry] = (
+    (JsPath \ "Kernel").read[String](minimumLength(length = 1)) ~
+      (JsPath \ "Count").read[Int](withinBounds(lowerBound = 1, upperBound = PLATFORM_NUM_SLOTS))
     ) (Composition.Entry.apply _)
 
   implicit val compositionEntryWrites: Writes[Composition.Entry] = (
@@ -158,7 +159,7 @@ package object json {
   /* Composition.Entry @} */
 
   /* @{ Composition */
-  implicit val compositionReads: Reads[Composition] = (
+  implicit val validatingCompositionReads: Reads[Composition] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
       (JsPath \ "Description").readNullable[String] ~
       (JsPath \ "Composition").read[Seq[Composition.Entry]]

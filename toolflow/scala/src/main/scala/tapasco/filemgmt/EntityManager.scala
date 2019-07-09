@@ -121,7 +121,7 @@ class EntityManager(val bpm: BasePathManager) extends Publisher {
     build
   }
 
-  private def buildArch(p: Path): Option[Architecture] = checkBuild("Architecture", p, Architecture.from(p).toOption)
+  private def buildArch(p: Path): Option[Architecture] = checkBuild("Architecture", p, Architecture.from(p)(validatingArchitectureReads).toOption)
 
   private def buildComposition(p: Path): Option[Composition] = checkBuild("Composition", p, Composition.from(p).toOption)
 

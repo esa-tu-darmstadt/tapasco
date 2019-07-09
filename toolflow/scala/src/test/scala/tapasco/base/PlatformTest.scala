@@ -29,6 +29,8 @@ import tapasco.base.json._
 
 class PlatformSpec extends TaPaSCoSpec with Matchers {
 
+  implicit val platformReads = validatingPlatformReads(jsonPath)
+
   "A missing Platform file" should "throw an exception" in {
     assert(Platform.from(jsonPath.resolve("missing.json")).isLeft)
   }
@@ -46,7 +48,6 @@ class PlatformSpec extends TaPaSCoSpec with Matchers {
     c.part should equal("xc7z045ffg900-2")
     c.boardPart should equal(Some("xilinx.com:zc706:part0:1.1"))
     c.boardPreset should equal(Some("ZC706"))
-    c.targetUtilization should equal(55)
     c.supportedFrequencies should contain inOrderOnly(250, 200, 150, 100, 42)
   }
 
@@ -59,7 +60,6 @@ class PlatformSpec extends TaPaSCoSpec with Matchers {
     c.part should equal("xc7z045ffg900-2")
     c.boardPart should equal(Some("xilinx.com:zc706:part0:1.1"))
     c.boardPreset should equal(Some("ZC706"))
-    c.targetUtilization should equal(55)
     c.supportedFrequencies should contain inOrderOnly(250, 200, 150, 100, 42)
   }
 

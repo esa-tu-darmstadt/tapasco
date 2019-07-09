@@ -89,8 +89,12 @@ package object json {
     x => List("by value", "by reference").contains(x)
   )
 
+  /**
+    * Ensure that the Kernel ID is valid, eg greater 0.
+    *
+    * @return
+    */
   def isValidKernelId: Reads[Kernel.Id] = filter[Kernel.Id](JsonValidationError("Kernel IDs must be greater or equal to 1."))(
     x => x >= 1
   )
-
 }

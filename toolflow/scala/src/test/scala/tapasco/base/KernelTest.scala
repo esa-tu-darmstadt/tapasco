@@ -32,22 +32,25 @@ class KernelSpec extends TaPaSCoSpec with Matchers {
 
   val correctKernel = jsonPath.resolve("kernel/correctKernel")
 
+  implicit val kernelReads = validatingKernelReads(correctKernel)
+
   "A missing Kernel file" should "throw an exception" in {
     assert(Kernel.from(correctKernel.resolve("missing.json")).isLeft)
   }
 
   "A correct Kernel file" should "be parsed to Right(Kernel)" in {
-    assert(Kernel.from(correctKernel.resolve("correct-kernel.json"))(validatingKernelReads(correctKernel)).isRight)
+    assert(Kernel.from(correctKernel.resolve("correct-kernel.json")).isRight)
   }
 
   "A correct Kernel file" should "be parsed correctly" in {
-    val oc = Kernel.from(correctKernel.resolve("correct-kernel.json"))(validatingKernelReads(correctKernel))
+    val oc = Kernel.from(correctKernel.resolve("correct-kernel.json"))
     lazy val c = oc.right.get
     assert(oc.isRight)
     c.name should equal("sudoku")
     c.topFunction should equal("sudoku_solve")
     c.files should equal(Seq(correctKernel.resolve("src/Sudoku.cpp"), correctKernel.resolve("src/Sudoku_HLS.cpp")))
-    c.testbenchFiles should equal(Seq(correctKernel.resolve("src/main.cpp"), correctKernel.resolve("hard_sudoku.txt"), correctKernel.resolve("hard_sudoku_solution.txt")))
+    c.testbenchFiles should equal(
+      Seq(correctKernel.resolve("src/main.cpp"), correctKernel.resolve("hard_sudoku.txt"), correctKernel.resolve("hard_sudoku_solution.txt")))
     c.compilerFlags should equal(Seq())
     c.testbenchCompilerFlags should equal(Seq("-lrt"))
     c.args.length should equal(1)
@@ -57,7 +60,7 @@ class KernelSpec extends TaPaSCoSpec with Matchers {
   }
 
   "A Kernel file with unknown entries" should "be parsed correctly" in {
-    val oc = Kernel.from(correctKernel.resolve("correct-kernel.json"))(validatingKernelReads(correctKernel))
+    val oc = Kernel.from(correctKernel.resolve("correct-kernel.json"))
     lazy val c = oc.right.get
     assert(oc.isRight)
     c.name should equal("sudoku")
