@@ -91,7 +91,7 @@ class DesignSpace(
     val srs = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
     val areaEstimates = srs flatMap (_.area)
     val slotOccupations = srs map (r => SlotOccupation(r.slaves.get, target.pd.slotCount))
-    val targetUtil = target.pd.targetUtilization.toDouble
+    val targetUtil = 99
     logger.trace("target util = " + targetUtil)
 
     def slotUtil(counts: Seq[Int]): SlotOccupation = (slotOccupations zip counts).map(o => o._1 * o._2).reduce(_ + _)

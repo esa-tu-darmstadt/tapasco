@@ -84,10 +84,8 @@ class EntityManager(val bpm: BasePathManager) extends Publisher {
 
   /* @{ Listeners */
   /** Listener for directory watcher events: will forward to all caches. */
-  val directoryListener = new Listener[DirectoryWatcher.Event] {
-    def update(e: DirectoryWatcher.Event): Unit = Entities() foreach { ent =>
-      if (e.path.startsWith(bpm.basepath(ent))) _caches(ent).update(e)
-    }
+  val directoryListener: Listener[DirectoryWatcher.Event] = (e: DirectoryWatcher.Event) => Entities() foreach { ent =>
+    if (e.path.startsWith(bpm.basepath(ent))) _caches(ent).update(e)
   }
 
   private val _entityCacheListener = new Listener[EntityCache.Event] {
@@ -101,8 +99,8 @@ class EntityManager(val bpm: BasePathManager) extends Publisher {
       case EntityCache.Events.Cleared(ec, nps) =>
         _logger.trace("received Cleared({}, {})", ec: Any, nps: Any)
         val entity = _caches find { case (_, c) => c equals ec }
-        if (!entity.isEmpty) {
-          entity foreach { case (e, _) => publish(Cleared(e)) }
+        if (entity.isDefined) {
+          entity foreach { case (ee, _) => publish(Cleared(ee)) }
         }
     }
   }
@@ -120,7 +118,6 @@ class EntityManager(val bpm: BasePathManager) extends Publisher {
 
   /** Issue warning for failed builds (at least once). */
   private def checkBuild[T](kind: String, p: Path, build: Option[T]): Option[T] = {
-    if (build.isEmpty) _logger.warn("could not build {} from file: '{}'", kind: Any, p)
     build
   }
 
@@ -128,27 +125,27 @@ class EntityManager(val bpm: BasePathManager) extends Publisher {
 
   private def buildComposition(p: Path): Option[Composition] = checkBuild("Composition", p, Composition.from(p).toOption)
 
-  private def buildCore(p: Path): Option[Core] = checkBuild("Core", p, Core.from(p).toOption)
+  private def buildCore(p: Path): Option[Core] = checkBuild("Core", p, Core.from(p)(validatingCoreReads(p.getParent)).toOption)
 
   private def buildKernel(p: Path): Option[Kernel] = checkBuild("Kernel", p, Kernel.from(p)(validatingKernelReads(p.getParent)).toOption)
 
-  private def buildPlatform(p: Path): Option[Platform] = checkBuild("Platform", p, Platform.from(p).toOption)
+  private def buildPlatform(p: Path): Option[Platform] = checkBuild("Platform", p, Platform.from(p)(validatingPlatformReads(p.getParent)).toOption)
 
   /** EntityCache instance for Architectures. **/
   private val _archCache = EntityCache(Set(bpm.basepath(Entities.Architectures)),
-    _filters(Entities.Architectures), buildArch _)
+    _filters(Entities.Architectures), buildArch)
   /** EntityCache instance for Compositions. **/
   private val _compositionCache = EntityCache(Set(bpm.basepath(Entities.Compositions)),
-    _filters(Entities.Compositions), buildComposition _)
+    _filters(Entities.Compositions), buildComposition)
   /** EntityCache instance for Cores. **/
   private val _coreCache = EntityCache(Set(bpm.basepath(Entities.Cores)),
-    _filters(Entities.Cores), buildCore _)
+    _filters(Entities.Cores), buildCore)
   /** EntityCache instance for Kernels. **/
   private val _kernelCache = EntityCache(Set(bpm.basepath(Entities.Kernels)),
-    _filters(Entities.Kernels), buildKernel _)
+    _filters(Entities.Kernels), buildKernel)
   /** EntityCache instance for Platforms. **/
   private val _platformCache = EntityCache(Set(bpm.basepath(Entities.Platforms)),
-    _filters(Entities.Platforms), buildPlatform _)
+    _filters(Entities.Platforms), buildPlatform)
 
   /** Internal map of description caches. **/
   private val _caches: Map[Entity, EntityCache[_]] = Map(
@@ -161,10 +158,8 @@ class EntityManager(val bpm: BasePathManager) extends Publisher {
 
   _caches.values foreach { c => c += _entityCacheListener }
 
-  bpm += new Listener[BasePathManager.Event] {
-    def update(e: BasePathManager.Event): Unit = e match {
-      case BasePathManager.BasePathChanged(base, path) => _caches(base).clear(Some(Set(path)))
-    }
+  bpm += {
+    case BasePathManager.BasePathChanged(base, path) => _caches(base).clear(Some(Set(path)))
   }
 
   def dump(osw: java.io.OutputStreamWriter): Unit = {

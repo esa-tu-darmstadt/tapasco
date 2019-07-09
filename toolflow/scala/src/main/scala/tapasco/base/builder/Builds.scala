@@ -49,6 +49,8 @@ private[tapasco] trait Builds[A] {
         case "error.expected.jsstring" => _logger.warn("%s Should be a String.".format(prefix))
         case "error.expected.jsnumber" => _logger.warn("%s Should be a Number.".format(prefix))
         case "error.expected.jsarray" => _logger.warn("%s Should be an Array.".format(prefix))
+        case "expected.jsstring.for.passing.convention" =>
+          _logger.warn("%s Must be valid Passing Convention (\"by value\" or \"by reference\").".format(prefix))
         case "error.expected.FileOrDirExists" => {
           var offending = entry._1.read[String].reads(json).get
           if(basePath.isDefined) offending = basePath.get.resolve(offending).toAbsolutePath.normalize().toString

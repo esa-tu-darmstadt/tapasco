@@ -5,6 +5,5 @@
 	"Part" : "xc7z045ffg900-2",
 	"BoardPart" : "xilinx.com:zc706:part0:1.1",
 	"BoardPreset" : "ZC706",
-	"TargetUtilization" : 97,
 	"Benchmark" : "zc706.benchmark"
 }

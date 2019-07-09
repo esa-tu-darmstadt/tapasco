@@ -51,7 +51,7 @@ package object json {
   implicit val targetWrites: Writes[TargetDesc] = (
     (JsPath \ "Architecture").write[String] ~
       (JsPath \ "Platform").write[String]
-    ) (unlift(TargetDesc.unapply _))
+    ) (unlift(TargetDesc.unapply))
   /* TargetDesc @} */
 
   /* @{ Architecture */
@@ -72,7 +72,7 @@ package object json {
       (JsPath \ "ValueArgTemplate").write[Path] ~
       (JsPath \ "ReferenceArgTemplate").write[Path] ~
       (JsPath \ "AdditionalSteps").write[Seq[String]]
-    ) (unlift(Architecture.unapply _))
+    ) (unlift(Architecture.unapply))
   /* Architecture @}*/
 
   /* @{ Benchmark */
@@ -80,14 +80,13 @@ package object json {
 
   implicit object FormatsLocalDateTime extends Format[LocalDateTime] {
     def reads(json: JsValue): JsResult[LocalDateTime] = json match {
-      case JsString(s) => {
+      case JsString(s) =>
         try {
           JsSuccess(LocalDateTime.parse(s, dtf))
         }
         catch {
-          case e: Exception => JsError(Seq(JsPath() -> Seq(JsonValidationError("validation.error.expected.date"))))
+          case _: Exception => JsError(Seq(JsPath() -> Seq(JsonValidationError("validation.error.expected.date"))))
         }
-      }
       case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("validation.error.expected.jsstring"))))
     }
 
@@ -97,7 +96,7 @@ package object json {
   implicit val libraryVersionsFormat: Format[LibraryVersions] = (
     (JsPath \ "Platform API").format[String] ~
       (JsPath \ "Tapasco API").format[String]
-    ) (LibraryVersions.apply _, unlift(LibraryVersions.unapply _))
+    ) (LibraryVersions.apply, unlift(LibraryVersions.unapply))
 
   implicit val hostFormat: Format[Host] = (
     (JsPath \ "Machine").format[String] ~
@@ -105,26 +104,26 @@ package object json {
       (JsPath \ "Operating System").format[String] ~
       (JsPath \ "Release").format[String] ~
       (JsPath \ "Version").format[String]
-    ) (Host.apply _, unlift(Host.unapply _))
+    ) (Host.apply, unlift(Host.unapply))
 
   implicit val transferSpeedMeasurementFormat: Format[TransferSpeedMeasurement] = (
     (JsPath \ "Chunk Size").format[Long] ~
       (JsPath \ "Read").format[Double] ~
       (JsPath \ "Write").format[Double] ~
       (JsPath \ "ReadWrite").format[Double]
-    ) (TransferSpeedMeasurement.apply _, unlift(TransferSpeedMeasurement.unapply _))
+    ) (TransferSpeedMeasurement.apply, unlift(TransferSpeedMeasurement.unapply))
 
   implicit val interruptLatencyFormat: Format[InterruptLatency] = (
     (JsPath \ "Cycle Count").format[Long] ~
       (JsPath \ "Avg Latency").format[Double] ~
       (JsPath \ "Min Latency").format[Double] ~
       (JsPath \ "Max Latency").format[Double]
-    ) (InterruptLatency.apply _, unlift(InterruptLatency.unapply _))
+    ) (InterruptLatency.apply, unlift(InterruptLatency.unapply))
 
   implicit val jobThroughputFormat: Format[JobThroughput] = (
     (JsPath \ "Number of threads").format[Int] ~
       (JsPath \ "Jobs per second").format[Double]
-    ) (JobThroughput.apply _, unlift(JobThroughput.unapply _))
+    ) (JobThroughput.apply, unlift(JobThroughput.unapply))
 
   implicit val benchmarkReads: Reads[Benchmark] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
@@ -143,7 +142,7 @@ package object json {
       (JsPath \ "Transfer Speed").write[Seq[TransferSpeedMeasurement]] ~
       (JsPath \ "Interrupt Latency").write[Seq[InterruptLatency]] ~
       (JsPath \ "Job Throughput").write[Seq[JobThroughput]]
-    ) (unlift(Benchmark.unapply _))
+    ) (unlift(Benchmark.unapply))
   /* Benchmark @} */
 
   /* @{ Composition.Entry */
@@ -155,7 +154,7 @@ package object json {
   implicit val compositionEntryWrites: Writes[Composition.Entry] = (
     (JsPath \ "Kernel").write[String] ~
       (JsPath \ "Count").write[Int]
-    ) (unlift(Composition.Entry.unapply _))
+    ) (unlift(Composition.Entry.unapply))
   /* Composition.Entry @} */
 
   /* @{ Composition */
@@ -170,16 +169,16 @@ package object json {
     (JsPath \ "DescPath").write[Path].transform((js: JsObject) => js - "DescPath") ~
       (JsPath \ "Description").writeNullable[String] ~
       (JsPath \ "Composition").write[Seq[Composition.Entry]]
-    ) (unlift(Composition.unapply _))
+    ) (unlift(Composition.unapply))
   /* Composition @} */
 
   /* @{ Core */
-  implicit val coreReads: Reads[Core] = (
+  def validatingCoreReads(sourcePath: Path): Reads[Core] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
-      (JsPath \ "ZipFile").read[Path] ~
-      (JsPath \ "Name").read[String](minLength[String](1)) ~
-      (JsPath \ "Id").read[Kernel.Id](min(1)) ~
-      (JsPath \ "Version").read[String](minLength[String](1)) ~
+      (JsPath \ "ZipFile").read[Path](pathExistsValidation(sourcePath)) ~
+      (JsPath \ "Name").read[String](minimumLength(length = 1)) ~
+      (JsPath \ "Id").read[Kernel.Id](isValidKernelId) ~
+      (JsPath \ "Version").read[String](minimumLength(length = 1)) ~
       (JsPath \ "Target").read[TargetDesc] ~
       (JsPath \ "Description").readNullable[String] ~
       (JsPath \ "AverageClockCycles").readNullable[Int]
@@ -193,7 +192,7 @@ package object json {
       (JsPath \ "Target").write[TargetDesc] ~
       (JsPath \ "Description").writeNullable[String] ~
       (JsPath \ "AverageClockCycles").writeNullable[Int]
-    ) (unlift(Core.unapply _))
+    ) (unlift(Core.unapply))
   /* Core @} */
 
   /* @{ Features */
@@ -202,92 +201,86 @@ package object json {
       (JsPath \ "Properties").read[Feature.FMap].orElse(readsFeatureFromFile)
     ) (Feature.apply _)
 
-  lazy val readsFeatureFromFile: Reads[Feature.FMap] = new Reads[Feature.FMap] {
-    def reads(json: JsValue): JsResult[Feature.FMap] = {
-      val temp = (json \ "ConfigFile").validate[Path]
+  lazy val readsFeatureFromFile: Reads[Feature.FMap] = (json: JsValue) => {
+    val temp = (json \ "ConfigFile").validate[Path]
 
-      temp.asEither match {
-        case Right(s) => readMapFromFile(s)
-        case Left(e) => new JsError(e)
-      }
+    temp.asEither match {
+      case Right(s) => readMapFromFile(s)
+      case Left(e) => new JsError(e)
     }
   }
 
   // Read a Feature Config from an External Json File
   def readMapFromFile(p: Path): JsResult[Feature.FMap] = {
-    val tmp = Source.fromFile(p.toString).getLines.mkString
+    val source = Source.fromFile(p.toString)
+    val tmp = source.getLines.mkString
+    source.close()
     Json.parse(tmp).validate[Feature.FMap]
   }
 
-  implicit lazy val readsFeatureMap: Reads[Feature.FMap] = new Reads[Feature.FMap] {
-    def reads(json: JsValue): JsResult[Feature.FMap] = {
-      val temp = json.validate[Map[String, Feature.FValue]]
-      val result: JsResult[Feature.FMap] = temp.asEither match {
-        case Right(s) => new JsSuccess[Feature.FMap](Feature.FMap(s.toMap))
-        case Left(e) => new JsError(e)
-      }
-      result
+  implicit lazy val readsFeatureMap: Reads[Feature.FMap] = (json: JsValue) => {
+    val temp = json.validate[Map[String, Feature.FValue]]
+    val result: JsResult[Feature.FMap] = temp.asEither match {
+      case Right(s) => new JsSuccess[Feature.FMap](Feature.FMap(s))
+      case Left(e) => new JsError(e)
     }
+    result
   }
 
-  implicit val readsFeatureList: Reads[Feature.FList] = new Reads[Feature.FList] {
-    def reads(json: JsValue): JsResult[Feature.FList] = {
-      val temp = json.validate[Seq[Feature.FValue]]
+  implicit val readsFeatureList: Reads[Feature.FList] = (json: JsValue) => {
+    val temp = json.validate[Seq[Feature.FValue]]
 
-      val result: JsResult[Feature.FList] = temp.asEither match {
-        case Right(s) => new JsSuccess[Feature.FList](Feature.FList(s.toList))
-        case Left(e) => new JsError(e)
-      }
-      result
+    val result: JsResult[Feature.FList] = temp.asEither match {
+      case Right(s) => new JsSuccess[Feature.FList](Feature.FList(s.toList))
+      case Left(e) => new JsError(e)
     }
+    result
   }
 
   // All non Object or Arrays are Strings for our Implementation
-  implicit val readsFeatureString: Reads[Feature.FString] = new Reads[Feature.FString] {
-    def reads(json: JsValue): JsResult[Feature.FString] = {
-      val temp = json match {
-        case s: JsString => s.validate[String]
-        case i: JsNumber => i.validate[Double]
-        case b: JsBoolean => b.validate[Boolean]
-        case _ => new JsSuccess[String]("null")
-      }
-
-      val result = temp.asEither match {
-        case Right(s) => new JsSuccess[Feature.FString](Feature.FString(s"${s}"))
-        case Left(e) => new JsError(e)
-      }
-
-      result
+  implicit val readsFeatureString: Reads[Feature.FString] = (json: JsValue) => {
+    val temp = json match {
+      case s: JsString => s.validate[String]
+      case i: JsNumber => i.validate[Double]
+      case b: JsBoolean => b.validate[Boolean]
+      case _ => new JsSuccess[String]("null")
     }
+
+    val result = temp.asEither match {
+      case Right(s) => new JsSuccess[Feature.FString](Feature.FString(s"$s"))
+      case Left(e) => new JsError(e)
+    }
+
+    result
   }
 
-  implicit val readsFeatureValue: Reads[Feature.FValue] = new Reads[Feature.FValue] {
-    def reads(json: JsValue): JsResult[Feature.FValue] = {
-      val temp: JsResult[Feature.FValue] = json match {
-        case m: JsObject => m.validate[Feature.FMap]
-        case l: JsArray => l.validate[Feature.FList]
-        case x: JsValue => x.validate[Feature.FString]
-      }
-      temp
+  implicit val readsFeatureValue: Reads[Feature.FValue] = (json: JsValue) => {
+    val temp: JsResult[Feature.FValue] = json match {
+      case m: JsObject => m.validate[Feature.FMap]
+      case l: JsArray => l.validate[Feature.FList]
+      case x: JsValue => x.validate[Feature.FString]
     }
+    temp
   }
-
 
   implicit val writesFeature: Writes[Feature] = (
     (JsPath \ "Feature").write[String] ~
       (JsPath \ "Properties").write[Feature.FMap]
-    ) (unlift(Feature.unapply _))
+    ) (unlift(Feature.unapply))
   //Converts the FMap to a JsonObject
-  implicit lazy val writesFeatureMap: Writes[Feature.FMap] = new Writes[Feature.FMap] {
-    def writes(myMap: Feature.FMap) = Json.parse(myMap.toJson)
-  }
+  implicit lazy val writesFeatureMap: Writes[Feature.FMap] = (myMap: Feature.FMap) => Json.parse(myMap.toJson)
 
   /* Features @} */
 
   /* @{ Kernel.Argument */
   implicit object kernelPassingConventionFormat extends Format[Kernel.PassingConvention] {
     def reads(json: JsValue): JsResult[Kernel.PassingConvention] = json match {
-      case JsString(str) => JsSuccess(Kernel.PassingConvention(str))
+      case JsString(str) =>
+        if(List("by reference", "by value").contains(str)){
+          JsSuccess(Kernel.PassingConvention(str))
+        } else {
+          JsError(Seq(JsPath() -> Seq(JsonValidationError("expected.jsstring.for.passing.convention"))))
+        }
       case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("expected.jsstring.for.passing.convention"))))
     }
 
@@ -295,22 +288,22 @@ package object json {
   }
 
   implicit val kernelArgumentReads: Reads[Kernel.Argument] = (
-    (JsPath \ "Name").read[String](nonEmptyStringValidation) ~
+    (JsPath \ "Name").read[String](minimumLength(length = 1)) ~
       (JsPath \ "Passing").readNullable[Kernel.PassingConvention].map(_ getOrElse Kernel.PassingConvention.ByValue)
     ) (Kernel.Argument.apply _)
   implicit val kernelArgumentWrites: Writes[Kernel.Argument] = (
     (JsPath \ "Name").write[String] ~
       (JsPath \ "Passing").write[Kernel.PassingConvention]
-    ) (unlift(Kernel.Argument.unapply _))
+    ) (unlift(Kernel.Argument.unapply))
   /* Kernel.Argument @} */
 
   /* @{ Kernel */
   def validatingKernelReads(sourcePath: Path): Reads[Kernel] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
-      (JsPath \ "Name").read[String](nonEmptyStringValidation)~
-      (JsPath \ "TopFunction").read[String](nonEmptyStringValidation) ~
+      (JsPath \ "Name").read[String](minimumLength(length = 1))~
+      (JsPath \ "TopFunction").read[String](minimumLength(length = 1)) ~
       (JsPath \ "Id").read[Int](greaterZeroIntValidation) ~
-      (JsPath \ "Version").read[String](nonEmptyStringValidation) ~
+      (JsPath \ "Version").read[String](minimumLength(length = 1)) ~
       (JsPath \ "Files").read[Seq[Path]](pathsExistValidation(sourcePath)) ~
       (JsPath \ "TestbenchFiles").readNullable[Seq[Path]](pathsExistValidation(sourcePath)).map(_ getOrElse Seq()) ~
       (JsPath \ "Description").readNullable[String] ~
@@ -318,20 +311,6 @@ package object json {
       (JsPath \ "TestbenchCompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
       (JsPath \ "Arguments").read[Seq[Kernel.Argument]] ~
       (JsPath \ "OtherDirectives").readNullable[Path](pathExistsValidation(sourcePath))
-    ) (Kernel.apply _)
-  implicit val kernelReads: Reads[Kernel] = (
-    (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
-      (JsPath \ "Name").read[String]~
-      (JsPath \ "TopFunction").read[String] ~
-      (JsPath \ "Id").read[Int] ~
-      (JsPath \ "Version").read[String] ~
-      (JsPath \ "Files").read[Seq[Path]] ~
-      (JsPath \ "TestbenchFiles").readNullable[Seq[Path]].map(_ getOrElse Seq()) ~
-      (JsPath \ "Description").readNullable[String] ~
-      (JsPath \ "CompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
-      (JsPath \ "TestbenchCompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
-      (JsPath \ "Arguments").read[Seq[Kernel.Argument]] ~
-      (JsPath \ "OtherDirectives").readNullable[Path]
     ) (Kernel.apply _)
   implicit val kernelWrites: Writes[Kernel] = (
     (JsPath \ "DescPath").write[Path].transform((js: JsObject) => js - "DescPath") ~
@@ -346,24 +325,26 @@ package object json {
       (JsPath \ "TestbenchCompilerFlags").write[Seq[String]] ~
       (JsPath \ "Arguments").write[Seq[Kernel.Argument]] ~
       (JsPath \ "OtherDirectives").writeNullable[Path]
-    ) (unlift(Kernel.unapply _))
+    ) (unlift(Kernel.unapply))
   /* Kernel @} */
 
   /* @{ Platform */
   // scalastyle:off magic.number
-  implicit def platformReads: Reads[Platform] = (
+  def validatingPlatformReads(sourcePath: Path): Reads[Platform] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
-      (JsPath \ "Name").read[String](minLength[String](1)) ~
-      (JsPath \ "TclLibrary").read[Path] ~
-      (JsPath \ "Part").read[String](minLength[String](1)) ~
-      (JsPath \ "BoardPart").readNullable[String](minLength[String](4)) ~
-      (JsPath \ "BoardPreset").readNullable[String](minLength[String](4)) ~
-      (JsPath \ "BoardPartRepository").readNullable[String](minLength[String](4)) ~
-      (JsPath \ "TargetUtilization").read[Int](min(5) keepAnd max(100)) ~
-      (JsPath \ "SupportedFrequencies").readNullable[Seq[Int]](minLength[Seq[Int]](1)).map(_ getOrElse (50 to 450 by 5)) ~
-      (JsPath \ "SlotCount").readNullable[Int](min(1) keepAnd max(255)) ~
-      (JsPath \ "Description").readNullable[String](minLength[String](1)) ~
-      (JsPath \ "Benchmark").readNullable[Path] ~
+      (JsPath \ "Name").read[String](minimumLength(length = 1)) ~
+      (JsPath \ "TclLibrary").read[Path](pathExistsValidation(sourcePath)) ~
+      (JsPath \ "Part").read[String](minimumLength(length = 4)) ~
+      (JsPath \ "BoardPart").readNullable[String](minimumLength(length = 4)) ~
+      (JsPath \ "BoardPreset").readNullable[String](minimumLength(length = 4)) ~
+      (JsPath \ "BoardPartRepository").readNullable[String](minimumLength(length = 4)) ~
+      (JsPath \ "SupportedFrequencies").readNullable[Seq[Int]].map(
+        x => if (x.isDefined && x.get.nonEmpty) x.get else 50 to 450 by 5
+        // If Seq is present in Json and non-empty use it, else use default.
+      ) ~
+      (JsPath \ "SlotCount").readNullable[Int](withinBounds(lowerBound = 1, upperBound = 255)) ~
+      (JsPath \ "Description").readNullable[String](minimumLength(length = 1)) ~
+      (JsPath \ "Benchmark").readNullable[Path](pathExistsValidation(sourcePath)) ~
       (JsPath \ "HostFrequency").readNullable[Double] ~
       (JsPath \ "MemFrequency").readNullable[Double]
     ) (Platform.apply _)
@@ -377,14 +358,13 @@ package object json {
       (JsPath \ "BoardPart").writeNullable[String] ~
       (JsPath \ "BoardPreset").writeNullable[String] ~
       (JsPath \ "BoardPartRepository").writeNullable[String] ~
-      (JsPath \ "TargetUtilization").write[Int] ~
       (JsPath \ "SupportedFrequencies").write[Seq[Int]] ~
       (JsPath \ "SlotCount").writeNullable[Int] ~
       (JsPath \ "Description").writeNullable[String] ~
       (JsPath \ "Benchmark").writeNullable[Path] ~
       (JsPath \ "HostFrequency").writeNullable[Double] ~
       (JsPath \ "MemFrequency").writeNullable[Double]
-    ) (unlift(Platform.unapply _))
+    ) (unlift(Platform.unapply))
 
   /* Platform @} */
 
@@ -420,7 +400,7 @@ package object json {
       (JsPath \ "DryRun").writeNullable[Path].transform((js: JsObject) => js - "DryRun") ~
       (JsPath \ "Verbose").writeNullable[String] ~
       (JsPath \ "Jobs").write[Seq[Job]]
-    ) (unlift(ConfigurationImpl.unapply _))
+    ) (unlift(ConfigurationImpl.unapply))
 
   implicit object ConfigurationWrites extends Writes[Configuration] {
     def writes(c: Configuration): JsValue = c match {
