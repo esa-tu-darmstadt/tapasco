@@ -48,7 +48,6 @@ class PlatformSpec extends TaPaSCoSpec with Matchers {
     c.part should equal("xc7z045ffg900-2")
     c.boardPart should equal(Some("xilinx.com:zc706:part0:1.1"))
     c.boardPreset should equal(Some("ZC706"))
-    c.supportedFrequencies should contain inOrderOnly(250, 200, 150, 100, 42)
   }
 
   "An Platform file with unknown entries" should "be parsed correctly" in {
@@ -60,7 +59,6 @@ class PlatformSpec extends TaPaSCoSpec with Matchers {
     c.part should equal("xc7z045ffg900-2")
     c.boardPart should equal(Some("xilinx.com:zc706:part0:1.1"))
     c.boardPreset should equal(Some("ZC706"))
-    c.supportedFrequencies should contain inOrderOnly(250, 200, 150, 100, 42)
   }
 
   "An Platform file without a name" should "not be parsed" in {

@@ -339,10 +339,6 @@ package object json {
       (JsPath \ "BoardPart").readNullable[String](minimumLength(length = 4)) ~
       (JsPath \ "BoardPreset").readNullable[String](minimumLength(length = 4)) ~
       (JsPath \ "BoardPartRepository").readNullable[String](minimumLength(length = 4)) ~
-      (JsPath \ "SupportedFrequencies").readNullable[Seq[Int]].map(
-        x => if (x.isDefined && x.get.nonEmpty) x.get else 50 to 450 by 5
-        // If Seq is present in Json and non-empty use it, else use default.
-      ) ~
       (JsPath \ "SlotCount").readNullable[Int](withinBounds(lowerBound = 1, upperBound = 255)) ~
       (JsPath \ "Description").readNullable[String](minimumLength(length = 1)) ~
       (JsPath \ "Benchmark").readNullable[Path](pathExistsValidation(sourcePath)) ~
@@ -359,7 +355,6 @@ package object json {
       (JsPath \ "BoardPart").writeNullable[String] ~
       (JsPath \ "BoardPreset").writeNullable[String] ~
       (JsPath \ "BoardPartRepository").writeNullable[String] ~
-      (JsPath \ "SupportedFrequencies").write[Seq[Int]] ~
       (JsPath \ "SlotCount").writeNullable[Int] ~
       (JsPath \ "Description").writeNullable[String] ~
       (JsPath \ "Benchmark").writeNullable[Path] ~

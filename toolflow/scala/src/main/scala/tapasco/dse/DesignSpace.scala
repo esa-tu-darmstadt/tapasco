@@ -64,14 +64,14 @@ class DesignSpace(
 
   private def feasibleFreqs(bd: Composition): Seq[Double] = if (dim.frequency) {
     if(designFrequency.isDefined){
-      target.pd.supportedFrequencies.map(_.toDouble).filter(_ <= designFrequency.get).sortWith(_ > _)
+      (50 to designFrequency.get.toInt by 5).map(_.toDouble) sortWith (_ > _)
     }
     else{
       val cores = bd.composition flatMap (ce => FileAssetManager.entities.core(ce.kernel, target))
       val srs = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
       val cps = srs flatMap (_.timing) map (_.clockPeriod)
       val fmax = 1000.0 / (if (cps.nonEmpty) cps.max else DEFAULT_CLOCK_PERIOD_NS)
-      target.pd.supportedFrequencies map (_.toDouble) filter (_ <= fmax) sortWith (_ > _)
+      (50 to fmax.toInt by 5).map(_.toDouble) sortWith (_ > _) sortWith (_ > _)
     }
   } else {
     Seq(designFrequency.getOrElse(100.0))
