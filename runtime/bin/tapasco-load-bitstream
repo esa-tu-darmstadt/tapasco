@@ -13,7 +13,7 @@ parser.add_argument('--mode', help='select the operation to be performed (defaul
 args = parser.parse_args()
 
 if not os.path.exists(args.bitstream):
-	sys.exit('ERROR: {0} could not be opened'.format(args.bitstream))
+	sys.exit('ERROR: {} could not be opened'.format(args.bitstream))
 
 if not 'TAPASCO_PLATFORM' in os.environ:
 	print('Environment variable TAPASCO_PLATFORM is not set, guessing Platform ...')
@@ -23,9 +23,9 @@ if not 'TAPASCO_PLATFORM' in os.environ:
 		os.environ['TAPASCO_PLATFORM'] = 'pcie'
 
 if args.verbose:
-	print 'Bitstream: {0}'.format(args.bitstream)
-	print 'Reload Driver: {0}'.format(str(args.reload_driver))
-	print 'Platform: {0}'.format(os.environ['TAPASCO_PLATFORM'])
+	print('Bitstream: {}'.format(args.bitstream))
+	print('Reload Driver: {}'.format(str(args.reload_driver)))
+	print('Platform: {}'.format(os.environ['TAPASCO_PLATFORM']))
 
 path = 'module/'
 reld = '-d' if args.reload_driver else ''
