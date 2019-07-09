@@ -1,12 +1,12 @@
 {
-
+	"Description" : "Simple counter, raises interrupt after specified clock cycles.",
 	"Name" : "counter",
-	"Id" : "0",
-	"Version" : 2,
+	"Id" : 14,
+	"Version" : "0.9",
 	"TopFunction" : "counter",
-	"Files" : ["counter.cp"],
+	"Files" : ["counter.cpp"],
 	"CompilerFlags" : [ "-Wall", "-std=c++0x" ],
 	"TestbenchFiles" : ["counter.cpp"],
 	"TestbenchCompilerFlags" : [ "-Wall", "-std=c++0x" ],
-	"Arguments" : [1,2]
+	"Arguments" : [ {"Name" : "clock_cycles"} ]
 }
