@@ -10,7 +10,7 @@
     "Some",
     "stuff"
   ],
-  "MaxDesignFrequency" : 100.0,
+  "MaximumDesignFrequency": 200.0,
   "TargetUtilization": 55,
   "SlotCount": 64,
   "SupportedFrequencies": [

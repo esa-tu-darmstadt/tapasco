@@ -7,5 +7,5 @@
   "BoardPreset": "ZC706",
   "TargetUtilization": 55,
   "SlotCount": 64,
-  "MaxDesignFrequency" : 100.0
+  "MaximumDesignFrequency": 200.0
 }
