@@ -29,6 +29,9 @@ import tapasco.base.json._
 
 class PlatformSpec extends TaPaSCoSpec with Matchers {
 
+  /**
+    * Defines the required Reads[Platform] as an implicit.
+    */
   implicit val platformReads = validatingPlatformReads(jsonPath)
 
   "A missing Platform file" should "throw an exception" in {

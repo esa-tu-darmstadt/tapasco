@@ -29,16 +29,21 @@ import tapasco.base.json._
 
 class ArchitectureSpec extends TaPaSCoSpec with Matchers {
 
+  /**
+    * Defines the required Reads[Architecture] as an implicit.
+    */
+  implicit val archReads = validatingArchitectureReads
+
   "A missing Architecture file" should "throw an exception" in {
-    assert(Architecture.from(jsonPath.resolve("missing.json"))(validatingArchitectureReads).isLeft)
+    assert(Architecture.from(jsonPath.resolve("missing.json")).isLeft)
   }
 
   "A correct Architecture file" should "be parsed to Right" in {
-    assert(Architecture.from(jsonPath.resolve("correct-arch.json"))(validatingArchitectureReads).isRight)
+    assert(Architecture.from(jsonPath.resolve("correct-arch.json")).isRight)
   }
 
   "A correct Architecture file" should "be parsed correctly" in {
-    val oc = Architecture.from(jsonPath.resolve("correct-arch.json"))(validatingArchitectureReads)
+    val oc = Architecture.from(jsonPath.resolve("correct-arch.json"))
     lazy val c = oc.right.get
     assert(oc.isRight)
     c.name should equal("axi4mm")
@@ -48,7 +53,7 @@ class ArchitectureSpec extends TaPaSCoSpec with Matchers {
   }
 
   "An Composition file with unknown entries" should "be parsed correctly" in {
-    val oc = Architecture.from(jsonPath.resolve("unknown-arch.json"))(validatingArchitectureReads)
+    val oc = Architecture.from(jsonPath.resolve("unknown-arch.json"))
     lazy val c = oc.right.get
     assert(oc.isRight)
     c.name should equal("axi4mm")
@@ -58,12 +63,12 @@ class ArchitectureSpec extends TaPaSCoSpec with Matchers {
   }
 
   "An Architecture file without a name" should "not be parsed" in {
-    val oc = Architecture.from(jsonPath.resolve("invalid-arch.json"))(validatingArchitectureReads)
+    val oc = Architecture.from(jsonPath.resolve("invalid-arch.json"))
     assert(oc.isLeft)
   }
 
   "An Architecture file with missing files" should "be parsed as Left" in {
-    val oc = Architecture.from(jsonPath.resolve("missing-file-arch.json"))(validatingArchitectureReads)
+    val oc = Architecture.from(jsonPath.resolve("missing-file-arch.json"))
     assert(oc.isLeft)
   }
 }

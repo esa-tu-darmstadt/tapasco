@@ -32,6 +32,9 @@ class KernelSpec extends TaPaSCoSpec with Matchers {
 
   val correctKernel = jsonPath.resolve("kernel/correctKernel")
 
+  /**
+    * Defines the required Reads[Kernel] as an implicit.
+    */
   implicit val kernelReads = validatingKernelReads(correctKernel)
 
   "A missing Kernel file" should "throw an exception" in {
