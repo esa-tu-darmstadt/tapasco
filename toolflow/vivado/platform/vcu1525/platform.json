@@ -6,5 +6,6 @@
 	"BoardPart" : "xilinx.com:vcu1525:part0:1.0",
 	"BoardPreset" : "VCU1525",
 	"HostFrequency": 250.0,
-	"MemFrequency": 300.0
+	"MemFrequency": 300.0,
+	"MaximumDesignFrequency" : 200.0
 }

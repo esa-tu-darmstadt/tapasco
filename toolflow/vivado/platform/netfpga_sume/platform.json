@@ -4,5 +4,6 @@
 	"TclLibrary" : "netfpga_sume.tcl",
 	"Part" : "xc7vx690tffg1761-3",
 	"HostFrequency": 250.0,
-	"MemFrequency": 200.0
+	"MemFrequency": 200.0,
+	"MaximumDesignFrequency" : 200.0
 }

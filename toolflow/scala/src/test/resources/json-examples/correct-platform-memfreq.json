@@ -6,5 +6,6 @@
   "BoardPart": "xilinx.com:zc706:part0:1.1",
   "BoardPreset": "ZC706",
   "SlotCount": 64,
-  "MemFrequency": 158.2
+  "MemFrequency": 158.2,
+  "MaxDesignFrequency" : 100.0
 }

@@ -56,7 +56,6 @@ class DesignSpace(
 
   import scala.util.Properties.{lineSeparator => NL}
 
-  private[this] final val DEFAULT_CLOCK_PERIOD_NS = 4 // default: 250 MHz
   private[this] val logger = tapasco.Logging.logger(this.getClass)
   logger.trace(Seq("DesignSpace(", dim, ")") mkString)
 
@@ -64,16 +63,20 @@ class DesignSpace(
 
   private def feasibleFreqs(bd: Composition): Seq[Double] = if (dim.frequency) {
     if(designFrequency.isDefined){
-      (50 to designFrequency.get.toInt by 5).map(_.toDouble) sortWith (_ > _)
+      val maximumFrequency = Math.min(designFrequency.get.toInt, target.pd.maxDesignFrequency.toInt)
+      (50 to maximumFrequency by 5).map(_.toDouble) sortWith (_ > _)
     }
     else{
       val cores = bd.composition flatMap (ce => FileAssetManager.entities.core(ce.kernel, target))
       val srs = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
       val cps = srs flatMap (_.timing) map (_.clockPeriod)
-      val fmax = 1000.0 / (if (cps.nonEmpty) cps.max else DEFAULT_CLOCK_PERIOD_NS)
+      val fmax = if (cps.nonEmpty) 1000.0 / cps.max else target.pd.maxDesignFrequency
       (50 to fmax.toInt by 5).map(_.toDouble) sortWith (_ > _) sortWith (_ > _)
     }
   } else {
+    if(designFrequency.isEmpty) {
+      logger.warn("Since no Design Frequency was given, it will default to 100MHz.")
+    }
     Seq(designFrequency.getOrElse(100.0))
   }
 

@@ -5,5 +5,6 @@
 	"Part" : "xc7z045ffg900-2",
 	"BoardPart" : "xilinx.com:zc706:part0:1.1",
 	"BoardPreset" : "ZC706",
-	"Benchmark" : "zc706.benchmark"
+	"Benchmark" : "zc706.benchmark",
+	"MaximumDesignFrequency" : 200.0
 }

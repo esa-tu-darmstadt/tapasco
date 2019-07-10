@@ -107,7 +107,7 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
         Source.fromFile(odf.toString).getLines.mkString(NL)
       }) getOrElse ""
     tmpl("HEADER") = Seq(
-      "set tapasco_freq " + t.pd.hostFrequency,
+      "set tapasco_freq " + t.pd.maxDesignFrequency,
       "source " + Common.commonDir.resolve("common.tcl").toString
     ).mkString(NL)
     tmpl("PROJECT") = t.ad.name

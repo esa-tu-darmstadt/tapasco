@@ -6,5 +6,6 @@
 	"BoardPart" : "xilinx.com:zcu102:part0:3.1",
 	"BoardPreset" : "ZCU102",
     	"HostFrequency": 300.0,
-    	"MemFrequency": 300.0
+    	"MemFrequency": 300.0,
+	"MaximumDesignFrequency" : 200.0
 }

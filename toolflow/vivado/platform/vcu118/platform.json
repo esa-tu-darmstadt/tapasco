@@ -6,5 +6,6 @@
 	"BoardPart" : "xilinx.com:vcu118:part0:2.0",
 	"BoardPreset" : "VCU118",
 	"HostFrequency": 250.0,
-	"MemFrequency": 300.0
+	"MemFrequency": 300.0,
+	"MaximumDesignFrequency" : 200.0
 }
