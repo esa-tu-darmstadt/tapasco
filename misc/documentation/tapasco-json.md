@@ -14,7 +14,8 @@ As a User, kernels are generally the only json-Files relevant. They are necessar
 Table of Contents
 -----------------
 
-    1. [kernel.json](#kernels)
+  1. [kernel.json](#kernels)
+  2. [platform.json](#platforms)
     
     
 kernel.json <a name="kernels"/>
@@ -37,4 +38,13 @@ If a File does not provide all the non-optional fields, this will result in erro
 
 platform.json <a name="platforms"/>
 -------------
-The platform.json File contains all required platform-data. It has several uses inside TaPaSCo, from providing hard limits to Frequencies as well as keeping required Files
+The platform.json File contains all required platform-data. It has several uses inside TaPaSCo, from providing hard limits to Frequencies as well as keeping references to required Files containing TCL-templates, etc.
+The following attributes are relevant:
+
+* Name : The Name of the platform (eg. "pynq")
+* TclLibrary : The Path to a TCL-File required for generating the surrounding architecture. (eg. "pynq.tcl")
+* Part : The Partname of the chip used on the platform
+* MaximumDesignFrequency: Double value indicating the maximum achievable Frequency on this Platform.
+* BoardPart : (Optional) The identification of the Board.
+* Benchmark : (Optional) Path to a Benchmark file
+* Description : (Optional) Description of the Platform, eg. "Pynq-Z1 Python Productivity for Zynq"
