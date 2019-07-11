@@ -33,4 +33,8 @@ The kernel.json File contains all relevant information about a HLS-Target. It te
 * TestbenchCompilerFlags : (Optional) Compiler Flags for use with Cosimulation
 * OtherDirectives : (Optional) additional File containing Directives for the Synthesis.
 
-If a F
+If a File does not provide all the non-optional fields, this will result in errors and is thus not accepted by TaPaSCo.
+
+platform.json <a name="platforms"/>
+-------------
+The platform.json File contains all required platform-data. It has several uses inside TaPaSCo, from providing hard limits to Frequencies as well as keeping required Files

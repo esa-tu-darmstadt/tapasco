@@ -39,6 +39,8 @@ object Heuristics {
   }
 
   object ThroughputHeuristic extends Heuristic {
+
+    private[this] var initialized = false
     private def findAverageClockCycles(kernel: String, target: Target)
                                       (implicit cfg: Configuration): Int = {
       val cd = FileAssetManager.entities.core(kernel, target) getOrElse {
@@ -46,7 +48,7 @@ object Heuristics {
       }
       cd.averageClockCycles.getOrElse {
         val report = FileAssetManager.reports.cosimReport(kernel, target)
-        if (report.isEmpty) {
+        if (report.isEmpty && !initialized) { //This warning is only printed once due to initialized.
           logger.warn("Core description does not contain 'averageClockCycles' and " +
             "co-simulation report could not be found, assuming one-cycle execution: " +
             kernel + " [" + cd.descPath + "]")
@@ -60,6 +62,7 @@ object Heuristics {
       val t = 1.0 / (freq * 1000000.0)
       val t_irq = target.pd.benchmark map (_.latency(maxClockCycles.max) / 1000000000.0) getOrElse 0.0
       val jobsla = maxClockCycles map (_ * t + t_irq /* + t_setup*/)
+      initialized = true
       bd.composition map (_.count) zip jobsla map (x => x._1 / x._2) reduce (_ + _)
     }
   }

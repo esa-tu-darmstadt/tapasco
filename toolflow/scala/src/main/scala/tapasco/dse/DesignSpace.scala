@@ -70,14 +70,15 @@ class DesignSpace(
       val cores = bd.composition flatMap (ce => FileAssetManager.entities.core(ce.kernel, target))
       val srs = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
       val cps = srs flatMap (_.timing) map (_.clockPeriod)
-      val fmax = if (cps.nonEmpty) 1000.0 / cps.max else target.pd.maxDesignFrequency
+      val fmax = if (cps.nonEmpty) Math.min(1000.0 / cps.max, target.pd.maxDesignFrequency) else target.pd.maxDesignFrequency
       (50 to fmax.toInt by 5).map(_.toDouble) sortWith (_ > _) sortWith (_ > _)
     }
   } else {
+    val maxDesignFreq = target.pd.maxDesignFrequency
     if(designFrequency.isEmpty) {
-      logger.warn("Since no Design Frequency was given, it will default to 100MHz.")
+      logger.warn("Since no Design Frequency was given, it will default to the platforms max. Design Frequency which is %sMHz.".format(maxDesignFreq))
     }
-    Seq(designFrequency.getOrElse(100.0))
+    Seq(designFrequency.getOrElse(maxDesignFreq))
   }
 
   lazy val feasibleCompositions: Seq[Composition] = compositions(bd)
