@@ -61,6 +61,18 @@ class DesignSpace(
 
   lazy val feasibleFreqs: Seq[Double] = feasibleFreqs(bd)
 
+  /**
+    * Determines a Sequence of potentially feasible Frequencies, depending on the composition and dimensions of the DSE.
+    * If frequency is used as dimension of the DSE, this sequence is Limited by either the Maximum Design Frequency of the platform,
+    * the potential frequency evaluated by the Out-Of-Context Evaluation or by the given frequency ("@ 200 MHz"). The smallest of these
+    * values is used to prevent evaluation of completely unachievable Frequencies. This is the upper limit. From the lower limit of
+    * 50, all frequencies are enumerated by an increment of 5 MHz.
+    * If freq. is not a dimension of the DSE, the given Frequency ("@ 200 MHz") is used. If this was not given, it defaults to the
+    * Maximum Design Frequency of the Platform.
+    *
+    * @param bd Composition
+    * @return List of feasible Frequencies.
+    */
   private def feasibleFreqs(bd: Composition): Seq[Double] = if (dim.frequency) {
     if(designFrequency.isDefined){
       val maximumFrequency = Math.min(designFrequency.get.toInt, target.pd.maxDesignFrequency.toInt)

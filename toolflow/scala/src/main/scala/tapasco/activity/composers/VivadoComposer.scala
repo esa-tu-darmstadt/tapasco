@@ -118,9 +118,17 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     Common.getFiles(cfg.outputDir(bd, target, f).toFile).filter(_.isDirectory).foreach(_.deleteOnExit)
   }
 
+  /**
+    * Ensures that the given frequency is viable for the given Platform by potentially reducing it to the maximum of
+    * the Platform if it is exceeded.
+    *
+    * @param f        Frequency
+    * @param platform Platform
+    * @return resulting Frequency
+    */
   private def checkFrequency(f: Heuristics.Frequency, platform: Platform): Heuristics.Frequency = {
     if (f > platform.maxDesignFrequency) {
-      logger.warn("Design Frequency exceeded the maximum and was set to %sMHz.".format(platform.maxDesignFrequency))
+      logger.warn("Design Frequency exceeded the maximum and was reduced to %sMHz.".format(platform.maxDesignFrequency))
       platform.maxDesignFrequency
     } else {
       f
