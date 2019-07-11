@@ -199,13 +199,19 @@ namespace eval arch {
       set ic_s [expr "$ic_s + [llength $slaves] * $no_inst"]
     }
 
-    set in1 [tapasco::create_interconnect_tree "in1" $ic_s false]
-
-    puts "Creating interconnects toward peripherals ..."
-    puts "  $ic_s slaves to connect to host"
-
     set out_port [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_ARCH"]
-    connect_bd_intf_net $out_port [get_bd_intf_pins -of_objects $in1 -filter {NAME == "S000_AXI"}]
+
+    if {$ic_s == 1} {
+      puts "Connecting one slave to host"
+      return $out_port
+    } {
+      set in1 [tapasco::create_interconnect_tree "in1" $ic_s false]
+
+      puts "Creating interconnects toward peripherals ..."
+      puts "  $ic_s slaves to connect to host"
+
+      connect_bd_intf_net $out_port [get_bd_intf_pins -of_objects $in1 -filter {NAME == "S000_AXI"}]
+    }
 
     return $in1
   }
@@ -221,6 +227,9 @@ namespace eval arch {
     set conn 0
 
     set ms [get_bd_intf_pins -of_objects $periph_ics -filter {MODE == "Master" && VLNV == "xilinx.com:interface:aximm_rtl:1.0"}]
+    if {[llength $ms] == 0 && [get_property CLASS $periph_ics] == "bd_intf_pin"} {
+      set ms $periph_ics
+    }
     set ss [get_bd_intf_pins -of_objects $ips -filter {MODE == "Slave" && VLNV == "xilinx.com:interface:aximm_rtl:1.0"}]
 
     puts "  ms = $ms"
@@ -364,7 +373,7 @@ namespace eval arch {
 
   # Connect internal reset lines.
   proc arch_connect_resets {} {
-    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "interconnect"] \
+    connect_bd_net -quiet [tapasco::subsystem::get_port "design" "rst" "interconnect"] \
       [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && NAME =~ *interconnect_aresetn && DIR == I"]
     connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects [get_bd_cells -of_objects [current_bd_instance .]] -filter "TYPE == rst && NAME =~ *peripheral_aresetn && DIR == I"] \

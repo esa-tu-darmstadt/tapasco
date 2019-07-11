@@ -143,6 +143,8 @@ platform_res_t default_dealloc_host(platform_devctx_t *devctx,
   default_platform_t *pp = (default_platform_t *)devctx->private_data;
   if (pp) {
     pthread_mutex_lock(&pp->mem_mtx);
+    // TODO: This will always fail as length is 0
+    // Won't fix for now as all of this API has to be replaced anyway...
     gen_mem_free(&pp->mem, addr, 0);
     pthread_mutex_unlock(&pp->mem_mtx);
   } else {

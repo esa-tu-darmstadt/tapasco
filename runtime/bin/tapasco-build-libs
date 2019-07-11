@@ -25,15 +25,15 @@ debug_flags  = '-DCMAKE_BUILD_TYPE=Debug' if debug else '-DCMAKE_BUILD_TYPE=Rele
 
 shared_flags = '-DBUILD_SHARED_LIBS:BOOL={}'.format('ON' if args.shared else 'OFF')
 
-print 'Build mode: ' + args.mode
+print('Build mode: {}'.format(args.mode))
 
-mdir = '%s/bin'         % os.environ['TAPASCO_HOME_RUNTIME']
-mdir = '%s/kernel'        % os.environ['TAPASCO_HOME_RUNTIME']
-pdir = '%s/platform/build'  % os.environ['TAPASCO_HOME_RUNTIME']
-adir = '%s/arch/build'      % os.environ['TAPASCO_HOME_RUNTIME']
-tdir = '%s/arch/tests/build'    % os.environ['TAPASCO_HOME_RUNTIME']
-ldir = '%s/lib'         % os.environ['TAPASCO_HOME_RUNTIME']
-bdir   = os.environ['TAPASCO_WORK_DIR'] + '/build'
+mdir = '{}/bin'.format(os.environ['TAPASCO_HOME_RUNTIME'])
+mdir = '{}/kernel'.format(os.environ['TAPASCO_HOME_RUNTIME'])
+pdir = '{}/platform/build'.format(os.environ['TAPASCO_HOME_RUNTIME'])
+adir = '{}/arch/build'.format(os.environ['TAPASCO_HOME_RUNTIME'])
+tdir = '{}/arch/tests/build'.format(os.environ['TAPASCO_HOME_RUNTIME'])
+ldir = '{}/lib'.format(os.environ['TAPASCO_HOME_RUNTIME'])
+bdir   = '{}/build'.format(os.environ['TAPASCO_WORK_DIR'])
 
 if clean or args.rebuild:
     subprocess.call(['rm -rf %s' % bdir], shell=True)

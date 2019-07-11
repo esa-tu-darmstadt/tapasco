@@ -42,6 +42,16 @@ int roundUp(int numToRound, int multiple) {
   return (numToRound + multiple - 1) & -multiple;
 }
 
+void print_chain(block_t *root) {
+    block_t *cur = root;
+    GEN_MEM_LOG("CHAIN ");
+    while(cur != NULL) {
+        GEN_MEM_LOG("%X (%zdB) -> ", cur->base, cur->range);
+        cur = cur->next;
+    }
+    GEN_MEM_LOG("NULL\n");
+}
+
 block_t *gen_mem_create(addr_t const base, size_t const range) {
   assert(base % sizeof(addr_t) == 0 ||
          "base address in gen_mem_create must be aligned with word size");
@@ -55,6 +65,16 @@ block_t *gen_mem_create(addr_t const base, size_t const range) {
   b->range = range;
   b->next = NULL;
   return b;
+}
+
+void gen_mem_destroy(block_t **root) {
+    block_t *cur = *root;
+    while(cur != NULL) {
+        block_t *nxt = cur->next;
+        free(cur);
+        cur = nxt;
+    }
+    *root = NULL;
 }
 
 addr_t gen_mem_next_base(block_t *root) {
@@ -71,23 +91,32 @@ addr_t gen_mem_next_base(block_t *root) {
 addr_t gen_mem_malloc(block_t **root, size_t const l) {
   assert(root || "argument to gen_mem_malloc may not be NULL");
   assert(l > 0 || "length must be > 0");
+  print_chain(*root);
   size_t const length = roundUp(l, GEN_MEM_ALIGNMENT);
   block_t *prv = *root, *nxt = *root;
-  while (nxt != NULL && nxt->range < length) {
+  while (prv != NULL && prv->range < length) {
     prv = nxt;
     nxt = nxt->next;
   }
-  if (!nxt)
+  if (!prv)
     return INVALID_ADDRESS;
-  addr_t const base = nxt->base;
-  nxt->base += length;
-  nxt->range -= length;
+  if(prv->next == NULL) {
+    block_t *nb = (block_t *)malloc(sizeof(*nb));
+    nxt = nb;
+    prv->next = nb;
+    nb->base = prv->base + length;
+    nb->range = prv->range - length;
+    nb->next = NULL;
+  }
+  addr_t const base = prv->base;
+  prv->range = 0;
   GEN_MEM_LOG("alloc'ed 0x%08lx - 0x%08lx\n", (unsigned long)base,
               base + length);
-  if (nxt->range == 0 && nxt != *root) {
+  if (nxt->range == 0 && nxt->next != NULL && nxt != *root) {
     prv->next = nxt->next;
     free(nxt);
   }
+  print_chain(*root);
   return base;
 }
 
@@ -95,31 +124,38 @@ void gen_mem_free(block_t **root, addr_t const p, size_t const l) {
   assert(root || "argument to gen_mem_free may not be NULL");
   GEN_MEM_LOG("freeing 0x%08lx - 0x%08lx\n", (unsigned long)p,
               p + roundUp(l, GEN_MEM_ALIGNMENT));
+  if(l == 0) {
+    GEN_MEM_LOG("Can't free empty range\n");
+    return;
+  }
   block_t *prv = *root, *nxt = *root;
   while (nxt != NULL && nxt->base + nxt->range <= p) {
     prv = nxt;
     nxt = nxt->next;
   }
+  print_chain(*root);
   GEN_MEM_LOG("prv: 0x%08lx - 0x%08lx\n", (unsigned long)prv->base,
               prv->base + prv->range);
   GEN_MEM_LOG("nxt: 0x%08lx - 0x%08lx\n", (unsigned long)nxt->base,
               nxt->base + nxt->range);
-  size_t const length = nxt->range;
+  size_t const length = roundUp(l, GEN_MEM_ALIGNMENT);
   if (prv->base + prv->range == p) {
     prv->range += length;
-    if (prv->next && prv->base + prv->range == prv->next->base) {
+    if (prv->next && (prv->base + prv->range == prv->next->base)) {
       block_t *del = prv->next;
       prv->range += del->range;
       prv->next = del->next;
       free(del);
     }
     GEN_MEM_LOG("merging prv\n");
+    print_chain(*root);
     return;
   }
   if (nxt != NULL && p + length == nxt->base) {
     nxt->base -= length;
     nxt->range += length;
     GEN_MEM_LOG("merging nxt\n");
+    print_chain(*root);
     return;
   }
   GEN_MEM_LOG("inserting new\n");
@@ -136,4 +172,5 @@ void gen_mem_free(block_t **root, addr_t const p, size_t const l) {
     nb->next = prv->next;
     prv->next = nb;
   }
+  print_chain(*root);
 }
