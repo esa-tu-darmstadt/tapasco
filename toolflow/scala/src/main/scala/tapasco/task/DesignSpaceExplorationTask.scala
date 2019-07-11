@@ -60,7 +60,10 @@ private class DesignSpaceExplorationTask(
   private[this] val _bp = basePath map (p => Paths.get(p).toAbsolutePath) getOrElse {
     val shortDate = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(java.time.LocalDateTime.now())
     val dsepath = FileAssetManager.TAPASCO_WORK_DIR.resolve(
-      "DSE_%s".format(shortDate).replace(" ", "_").replace("/", "-").replace(":", "-")
+      "DSE_%s-%s-%s_%s".format(target.ad.name, target.pd.name, composition.toString, shortDate)
+        .replace(" ", "_")
+        .replace("/", "-")
+        .replace(":", "-")
     ).normalize()
     java.nio.file.Files.createDirectories(dsepath.resolve("bd"))
     dsepath
@@ -68,7 +71,7 @@ private class DesignSpaceExplorationTask(
   // use implicit Configuration via UserConfigurationModel
   private implicit val _cfg: Configuration = cfg.compositionDir(_bp.resolve("bd"))
 
-  /** @inheritdoc*/
+  /** @inheritdoc */
   val exploration = Exploration(
     composition,
     dimensions,
@@ -129,10 +132,10 @@ private class DesignSpaceExplorationTask(
 
   override def canStart: Boolean = !DesignSpaceExplorationTask.running
 
-  /** @inheritdoc*/
+  /** @inheritdoc */
   def description: String = "Design Space Exploration"
 
-  /** @inheritdoc*/
+  /** @inheritdoc */
   def logFiles: Set[String] = Set(logFile.toString)
 
   /** Result of the design space exploration: the 'winner'. */

@@ -8,5 +8,5 @@
 	"Benchmark" : "zcu102revd.benchmark",
     	"HostFrequency": 250.0,
 	"MemFrequency": 250.0,
-	"MaximumDesignFrequency" : 200.0
+	"MaximumDesignFrequency" : 1000.0
 }

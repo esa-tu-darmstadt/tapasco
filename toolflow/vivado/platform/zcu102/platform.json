@@ -7,5 +7,5 @@
 	"BoardPreset" : "ZCU102",
     	"HostFrequency": 300.0,
     	"MemFrequency": 300.0,
-	"MaximumDesignFrequency" : 200.0
+	"MaximumDesignFrequency" : 1000.0
 }
