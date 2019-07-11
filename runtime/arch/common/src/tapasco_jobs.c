@@ -167,14 +167,14 @@ inline tapasco_res_t tapasco_jobs_get_arg(tapasco_jobs_t *jobs,
                                           size_t const arg_len,
                                           void *arg_value) {
   assert(jobs);
-#ifndef NDEBUG
-  if (arg_len != sizeof(uint32_t) && arg_len != sizeof(uint64_t))
+
+  if (arg_len != sizeof(uint8_t) && arg_len != sizeof(uint16_t) && arg_len != sizeof(uint32_t) && arg_len != sizeof(uint64_t))
     return TAPASCO_ERR_INVALID_ARG_SIZE;
   if (arg_idx >= TAPASCO_JOB_MAX_ARGS)
     return TAPASCO_ERR_INVALID_ARG_INDEX;
   if (j_id - JOB_ID_OFFSET > TAPASCO_JOBS_Q_SZ)
     return TAPASCO_ERR_JOB_ID_NOT_FOUND;
-#endif
+
   memcpy(arg_value, &jobs->q.elems[j_id - JOB_ID_OFFSET].args[arg_idx],
          arg_len);
   return TAPASCO_SUCCESS;
@@ -186,14 +186,14 @@ inline tapasco_res_t tapasco_jobs_set_arg(tapasco_jobs_t *jobs,
                                           size_t const arg_len,
                                           void const *arg_value) {
   assert(jobs);
-#ifndef NDEBUG
-  if (arg_len != sizeof(uint32_t) && arg_len != sizeof(uint64_t))
+
+  if (arg_len != sizeof(uint8_t) && arg_len != sizeof(uint16_t) && arg_len != sizeof(uint32_t) && arg_len != sizeof(uint64_t))
     return TAPASCO_ERR_INVALID_ARG_SIZE;
   if (arg_idx >= TAPASCO_JOB_MAX_ARGS)
     return TAPASCO_ERR_INVALID_ARG_INDEX;
   if (j_id - JOB_ID_OFFSET > TAPASCO_JOBS_Q_SZ)
     return TAPASCO_ERR_JOB_ID_NOT_FOUND;
-#endif
+
   if (arg_len == sizeof(uint32_t)) {
     const uint32_t v = *(uint32_t const *)arg_value;
     // printf("tapasco_jobs_set_arg: v = %d\n", v);
@@ -217,12 +217,12 @@ tapasco_jobs_set_arg_transfer(tapasco_jobs_t *jobs, tapasco_job_id_t const j_id,
                               tapasco_device_alloc_flag_t const flags,
                               tapasco_copy_direction_flag_t const dir_flags) {
   assert(jobs);
-#ifndef NDEBUG
+
   if (arg_idx >= TAPASCO_JOB_MAX_ARGS)
     return TAPASCO_ERR_INVALID_ARG_INDEX;
   if (j_id - JOB_ID_OFFSET > TAPASCO_JOBS_Q_SZ)
     return TAPASCO_ERR_JOB_ID_NOT_FOUND;
-#endif
+
   jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].len = arg_len;
   jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].data = arg_value;
   jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].flags = flags;
@@ -237,12 +237,12 @@ inline tapasco_res_t tapasco_jobs_set_return(tapasco_jobs_t *jobs,
                                              size_t const ret_len,
                                              void const *ret_value) {
   assert(jobs);
-#ifndef NDEBUG
+
   if (ret_len != sizeof(uint32_t) && ret_len != sizeof(uint64_t))
     return TAPASCO_ERR_INVALID_ARG_SIZE;
   if (j_id - JOB_ID_OFFSET > TAPASCO_JOBS_Q_SZ)
     return TAPASCO_ERR_JOB_ID_NOT_FOUND;
-#endif
+
   if (ret_len == sizeof(uint32_t)) {
     const uint32_t v = *(uint32_t const *)ret_value;
     jobs->q.elems[j_id - JOB_ID_OFFSET].ret.ret32 = v;
