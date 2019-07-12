@@ -40,7 +40,11 @@
   }
 
   proc get_pe_base_address {} {
-    return 0x00A1000000
+    return 0x00A0000000
+  }
+
+  proc get_platform_base_address {} {
+    return 0x00B0000000
   }
 
   proc get_address_map {{pe_base ""}} {
@@ -51,8 +55,8 @@
     puts "Computing addresses for masters ..."
     foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
       switch -glob [get_property NAME $m] {
-        "M_TAPASCO" { foreach {base stride range comp} [list 0x00A0000000 0       0 "PLATFORM_COMPONENT_STATUS"] {} }
-        "M_INTC"    { foreach {base stride range comp} [list 0x00B0000000 0x10000 0 "PLATFORM_COMPONENT_INTC0"] {} }
+        "M_TAPASCO" { foreach {base stride range comp} [list 0x00B0000000 0       0 "PLATFORM_COMPONENT_STATUS"] {} }
+        "M_INTC"    { foreach {base stride range comp} [list 0x00B0010000 0x10000 0 "PLATFORM_COMPONENT_INTC0"] {} }
         "M_ARCH"    { set base "skip" }
         default     { foreach {base stride range comp} [list 0 0 0 ""] {} }
       }
@@ -266,13 +270,13 @@
 
     set gp0_masters [list]
     lappend gp0_masters [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv "M_ARCH"]
-    lappend gp0_masters [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv "M_TAPASCO"]
 
     set gp1_masters [list]
     lappend gp1_masters [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv "M_INTC"]
     foreach ss [::tapasco::subsystem::get_custom] {
       lappend gp1_masters [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv [format "M_%s" [string toupper $ss]]]
     }
+    lappend gp1_masters [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv "M_TAPASCO"]
 
     set gp0_ic_tree [::tapasco::create_interconnect_tree "gp0_ic_tree" [llength $gp0_masters] false]
     set gp1_ic_tree [::tapasco::create_interconnect_tree "gp1_ic_tree" [llength $gp1_masters] false]
