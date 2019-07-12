@@ -3,7 +3,7 @@
 	"Description" : "Xilinx Virtex UltraScale+ FPGA VCU118 Evaluation Kit",
 	"TclLibrary" : "vcu118.tcl",
 	"Part" : "xcvu9p-flga2104-2L-e",
-	"BoardPart" : "xilinx.com:vcu118:part0:2.0",
+	"BoardPart" : "xilinx.com:vcu118:part0",
 	"BoardPreset" : "VCU118",
 	"TargetUtilization" : 90,
 	"Benchmark" : "vcu118.benchmark",

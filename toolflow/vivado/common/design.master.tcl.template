@@ -56,7 +56,10 @@ if {"@@BOARD_PART@@" != ""} {
   if {"@@BOARD_PART_REPOSITORY@@" != ""} {
     set_property BOARD_PART_REPO_PATHS "@@BOARD_PART_REPOSITORY@@" [current_project]
   }
-  set_property board_part {@@BOARD_PART@@} [current_project]
+  set parts [get_board_parts -filter {NAME =~ "@@BOARD_PART@@*"}]
+  set part [lindex $parts [expr [llength $parts] - 1]]
+  puts "Selected board part $part"
+  set_property board_part $part [current_project]
 }
 
 # configure message limits:

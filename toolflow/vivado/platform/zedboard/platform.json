@@ -3,7 +3,7 @@
 	"Description" : "zedboard Platform",
 	"TclLibrary" : "zedboard.tcl",
 	"Part" : "xc7z020clg484-1",
-	"BoardPart" : "em.avnet.com:zedboard:part0:1.3",
+	"BoardPart" : "em.avnet.com:zedboard:part0",
 	"BoardPreset" : "ZedBoard",
 	"TargetUtilization" : 97,
 	"Benchmark" : "zedboard.benchmark"
