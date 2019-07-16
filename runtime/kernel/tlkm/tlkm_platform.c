@@ -12,37 +12,37 @@
 
 static int aws_ec2_configure_axi_intc(struct tlkm_device *dev, struct platform_mmap *mmap)
 {
-	struct platform *p = &dev->cls->platform;
-	uint32_t val;
-	int i;
-	void* __iomem intc_base;
+	// struct platform *p = &dev->cls->platform;
+	// uint32_t val;
+	// int i;
+	// void* __iomem intc_base;
 
-	for (i = 0; i < 4; i++) {
-		DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "Testing for interrupt controller %d", i);
+	// for (i = 0; i < 4; i++) {
+	// 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "Testing for interrupt controller %d", i);
 
-		intc_base = mmap->plat + 0x6000 + i * 0x2000 - p->plat.base;
+	// 	intc_base = mmap->plat + 0x6000 + i * 0x2000 - p->plat.base;
 
-		val = ioread32(intc_base + 0x08);
-		if (val) {
-			DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "AXI interrupt controller %d already enabled or not found", i);
-		} else {
-			DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "Enable AXI interrupt controller %d", i);
+	// 	val = ioread32(intc_base + 0x08);
+	// 	if (val) {
+	// 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "AXI interrupt controller %d already enabled or not found", i);
+	// 	} else {
+	// 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "Enable AXI interrupt controller %d", i);
 
-			// set interrupt enable register (try to enable all interrupts)
-			iowrite32(0xffffffff, intc_base + 0x08);
-			// set master enable register (master enable + hardware interrupt enable)
-			iowrite32(0xffffffff, intc_base + 0x1c);
-			wmb();
+	// 		// set interrupt enable register (try to enable all interrupts)
+	// 		iowrite32(0xffffffff, intc_base + 0x08);
+	// 		// set master enable register (master enable + hardware interrupt enable)
+	// 		iowrite32(0xffffffff, intc_base + 0x1c);
+	// 		wmb();
 
-			val = ioread32(intc_base + 0x08);
-			if (!val) {
-				DEVWRN(dev->dev_id, "AXI interrupt controller %d: No interrupt enabled", i);
-			} else {
-				DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "AXI interrupt controller %d enabled, IER = %x", i, val);
-			}
-		}
-	}
-	return 0;
+	// 		val = ioread32(intc_base + 0x08);
+	// 		if (!val) {
+	// 			DEVWRN(dev->dev_id, "AXI interrupt controller %d: No interrupt enabled", i);
+	// 		} else {
+	// 			DEVLOG(dev->dev_id, TLKM_LF_DEVICE,  "AXI interrupt controller %d enabled, IER = %x", i, val);
+	// 		}
+	// 	}
+	// }
+	// return 0;
 }
 
 int tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap)
