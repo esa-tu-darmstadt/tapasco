@@ -42,7 +42,7 @@ static int aws_ec2_configure_axi_intc(struct tlkm_device *dev, struct platform_m
 	// 		}
 	// 	}
 	// }
-	// return 0;
+	return 0;
 }
 
 int tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap)
