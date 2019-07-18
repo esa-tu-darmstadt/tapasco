@@ -96,19 +96,18 @@ void aws_ec2_tlkm_pcie_slot_irq_work_ ## nr(struct work_struct *work) \
 	uint32_t isr; \
 	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *)container_of(work, struct tlkm_pcie_device, irq_work[nr]); \
 	struct platform *p = &dev->parent->cls->platform; \
-	/* read ISR (interrupt status register) -- TODO read more than once? */ \
-	/*while ((*/isr = ioread32(dev->parent->mmap.plat + 0x10000 + 0x8100 + 36 + 4 * nr - p->plat.base); /*)) {*/ \
-		do { \
-			/* Returns one plus the index of the least significant 1-bit of x, or if x is zero, returns zero. */ \
-			const uint32_t slot = __builtin_ffs(isr) - 1; \
-            if (unlikely(!slot)) { \
-                DEVERR(dev->parent->dev_id, "Interrupt received, but ISR %d is empty", nr); \
-                break; \
-            } \
-			tlkm_control_signal_slot_interrupt(dev->parent->ctrl, nr * 32 + slot); \
-			isr ^= (1U << slot); \
-		} while (isr); \
-	/*}*/ \
+	/* read ISR (interrupt status register) */ \
+	isr = ioread32(dev->parent->mmap.plat + 0x10000 + 0x8100 + 36 + 4 * nr - p->plat.base); \
+	if (unlikely(!isr)) { \
+		DEVERR(dev->parent->dev_id, "Interrupt received, but ISR %d is empty", nr); \
+		return; \
+	} \
+	do { \
+		/* Returns one plus the index of the least significant 1-bit of x, or if x is zero, returns zero. */ \
+		const uint32_t slot = __builtin_ffs(isr) - 1; \
+		tlkm_control_signal_slot_interrupt(dev->parent->ctrl, nr * 32 + slot); \
+		isr ^= (1U << slot); \
+	} while (isr); \
 } \
 \
 irqreturn_t aws_ec2_tlkm_pcie_slot_irq_ ## nr(int irq, void *dev_id) \
