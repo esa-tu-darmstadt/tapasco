@@ -62,7 +62,7 @@ namespace eval platform {
     # create PCIe core
     set axi_pcie3_0 [tapasco::ip::create_axi_pcie3_0 "axi_pcie3_0"]
     set pcie_properties [list \
-      CONFIG.SYS_RST_N_BOARD_INTERFACE {pcie_perst} \
+      CONFIG.SYS_RST_N_BOARD_INTERFACE {pcie_perstn} \
       CONFIG.axi_data_width {256_bit} \
       CONFIG.pcie_blk_locn {X0Y1} \
       CONFIG.pf0_bar0_64bit {true} \

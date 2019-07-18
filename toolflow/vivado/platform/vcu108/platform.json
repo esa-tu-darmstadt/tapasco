@@ -3,7 +3,7 @@
 	"Description" : "Xilinx Virtex UltraScale FPGA VCU108 Evaluation Kit",
 	"TclLibrary" : "vcu108.tcl",
 	"Part" : "xcvu095-ffva2104-2-e",
-	"BoardPart" : "xilinx.com:vcu108:part0:1.3",
+	"BoardPart" : "xilinx.com:vcu108:part0",
 	"BoardPreset" : "VCU108",
 	"HostFrequency": 250.0,
 	"MemFrequency": 300.0,

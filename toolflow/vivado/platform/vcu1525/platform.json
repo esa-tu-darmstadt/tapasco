@@ -3,7 +3,7 @@
 	"Description" : "Xilinx Virtex UltraScale+ FPGA VCU1525 Acceleration Development Kit",
 	"TclLibrary" : "vcu1525.tcl",
 	"Part" : "xcvu9p-fsgd2104-2L-e",
-	"BoardPart" : "xilinx.com:vcu1525:part0:1.0",
+	"BoardPart" : "xilinx.com:vcu1525:part0",
 	"BoardPreset" : "VCU1525",
 	"HostFrequency": 250.0,
 	"MemFrequency": 300.0,

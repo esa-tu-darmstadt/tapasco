@@ -3,7 +3,7 @@
 	"Description" : "Alveo U250 Data Center Accelerator Card",
 	"TclLibrary" : "AU250.tcl",
 	"Part" : "xcu250-figd2104-2L-e",
-	"BoardPart" : "xilinx.com:au250:part0:1.0",
+	"BoardPart" : "xilinx.com:au250:part0",
 	"BoardPreset" : "AU250",
 	"HostFrequency": 250.0,
 	"MemFrequency": 300.0,
