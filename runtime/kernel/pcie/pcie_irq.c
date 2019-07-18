@@ -101,6 +101,10 @@ void aws_ec2_tlkm_pcie_slot_irq_work_ ## nr(struct work_struct *work) \
 		do { \
 			/* Returns one plus the index of the least significant 1-bit of x, or if x is zero, returns zero. */ \
 			const uint32_t slot = __builtin_ffs(isr) - 1; \
+            if (unlikely(!slot)) { \
+                DEVERR(dev->parent->dev_id, "Interrupt received, but ISR %d is empty", nr); \
+                break; \
+            } \
 			tlkm_control_signal_slot_interrupt(dev->parent->ctrl, nr * 32 + slot); \
 			isr ^= (1U << slot); \
 		} while (isr); \
