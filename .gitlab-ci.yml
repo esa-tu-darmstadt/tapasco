@@ -425,7 +425,7 @@ tapasco_hls:
     - which vivado_hls
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java
+    - sdk install java 11.0.4-zulu
     - source $XILINX_VIVADO/settings64.sh
     - source setup.sh
     - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
@@ -454,7 +454,7 @@ tapasco_hls:
     - which vivado_hls
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java
+    - sdk install java 11.0.4-zulu
     - source $XILINX_VIVADO/settings64.sh
     - source setup.sh
     - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
