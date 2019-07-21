@@ -29,8 +29,8 @@
 #include <unistd.h>
 
 // should exceed size of L2 cache to prevent caching effects
-#define RANDOM_DATA_SZ					(64 * 1024 * 1024)
-#define DEFAULT_LOGS					10000000
-#define DEFAULT_THREADS					(sysconf(_SC_NPROCESSORS_CONF))
+#define RANDOM_DATA_SZ (64 * 1024 * 1024)
+#define DEFAULT_LOGS 10000000
+#define DEFAULT_THREADS (sysconf(_SC_NPROCESSORS_CONF))
 
 #endif /* TAPASCO_LOGGING_TEST_H__ */

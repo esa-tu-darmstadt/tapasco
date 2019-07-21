@@ -27,13 +27,13 @@
 
 #include "tlkm_device.h"
 
-int  tlkm_perfc_miscdev_init(struct tlkm_device *dev);
+int tlkm_perfc_miscdev_init(struct tlkm_device *dev);
 void tlkm_perfc_miscdev_exit(struct tlkm_device *dev);
 
 #else /* NPERFC */
 
-#define  tlkm_perfc_miscdev_init(...)				(0)
-#define  tlkm_perfc_miscdev_exit(...)
+#define tlkm_perfc_miscdev_init(...) (0)
+#define tlkm_perfc_miscdev_exit(...)
 
 #endif /* NPERFC */
 #endif /* TLKM_PERFC_MISCDEV_H__ */

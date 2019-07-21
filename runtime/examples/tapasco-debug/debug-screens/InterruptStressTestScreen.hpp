@@ -6,24 +6,27 @@
 #ifndef INTERRUPT_STRESS_TEST_SCREEN_HPP__
 #define INTERRUPT_STRESS_TEST_SCREEN_HPP__
 
+#include "MenuScreen.hpp"
 #include <stack>
 #include <tapasco.hpp>
-#include "MenuScreen.hpp"
 
 using namespace std;
 using namespace tapasco;
 
 class InterruptStressTestScreen : public MenuScreen {
 public:
-  InterruptStressTestScreen(Tapasco *tapasco) : MenuScreen("Interrupt stress test", vector<string>()), tapasco(tapasco) {
+  InterruptStressTestScreen(Tapasco *tapasco)
+      : MenuScreen("Interrupt stress test", vector<string>()),
+        tapasco(tapasco) {
     delay_us = 250000;
     check_bitstream();
   }
   virtual ~InterruptStressTestScreen() {
-    while (threads.size() > 0) pop();
+    while (threads.size() > 0)
+      pop();
   }
 
-  static constexpr tapasco_kernel_id_t COUNTER_ID { 14 };
+  static constexpr tapasco_kernel_id_t COUNTER_ID{14};
 
 protected:
   virtual void render() {
@@ -38,42 +41,67 @@ protected:
 
     erase();
 
-    print_reversed([&](){mvprintw(start_r, (cols - title.length()) / 2, title.c_str());});
-    print_reversed([&](){mvprintw(start_r + height, (cols - bottom.length()) / 2, bottom.c_str());});
+    print_reversed([&]() {
+      mvprintw(start_r, (cols - title.length()) / 2, title.c_str());
+    });
+    print_reversed([&]() {
+      mvprintw(start_r + height, (cols - bottom.length()) / 2, bottom.c_str());
+    });
 
     for (size_t t = 0; t < threads.size(); ++t) {
       snprintf(tmp, 128, "%03zu:", t);
-      print_reversed([&](){mvprintw(start_r + 2 + t % 32, start_c + t / 32 * col_w, tmp);});
+      print_reversed([&]() {
+        mvprintw(start_r + 2 + t % 32, start_c + t / 32 * col_w, tmp);
+      });
       snprintf(tmp, 128, "%11u", *(counters[t]));
       mvprintw(start_r + 2 + t % 32, start_c + t / 32 * col_w + 5, tmp);
     }
   }
 
   virtual int perform(const int choice) {
-    if (static_cast<char>(choice) == '+') { push(); return ERR; }
-    if (static_cast<char>(choice) == '-') { pop(); return ERR; }
-    if (static_cast<char>(choice) == 'j') { for (int i = 8; i > 0; --i) push(); return ERR; }
-    if (static_cast<char>(choice) == 'k') { for (int i = 8; i > 0; --i) pop(); return ERR; }
-    if (choice == ERR) delay();
+    if (static_cast<char>(choice) == '+') {
+      push();
+      return ERR;
+    }
+    if (static_cast<char>(choice) == '-') {
+      pop();
+      return ERR;
+    }
+    if (static_cast<char>(choice) == 'j') {
+      for (int i = 8; i > 0; --i)
+        push();
+      return ERR;
+    }
+    if (static_cast<char>(choice) == 'k') {
+      for (int i = 8; i > 0; --i)
+        pop();
+      return ERR;
+    }
+    if (choice == ERR)
+      delay();
     return choice;
   }
 
   virtual void update() {
     for (int i = 0; i < 128; ++i) {
-      if (! avail[i]) continue;
+      if (!avail[i])
+        continue;
       platform_ctl_addr_t base;
       platform_address_get_slot_base(tapasco->platform_device(), i, &base);
-      if (platform_read_ctl(tapasco->platform_device(), base + 0x20, 4, &cycles[i],
-          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
-	cycles[i] = 0xDEADBEEF;
+      if (platform_read_ctl(tapasco->platform_device(), base + 0x20, 4,
+                            &cycles[i],
+                            PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
+        cycles[i] = 0xDEADBEEF;
       }
-      if (platform_read_ctl(tapasco->platform_device(), base + 0x10, 4, &retval[i],
-          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
-	retval[i] = 0xDEADBEEF;
+      if (platform_read_ctl(tapasco->platform_device(), base + 0x10, 4,
+                            &retval[i],
+                            PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
+        retval[i] = 0xDEADBEEF;
       }
-      if (platform_read_ctl(tapasco->platform_device(), base + 0x0c, 4, &intrdy[i],
-          PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
-	intrdy[i] = 0xDEADBEEF;
+      if (platform_read_ctl(tapasco->platform_device(), base + 0x0c, 4,
+                            &intrdy[i],
+                            PLATFORM_CTL_FLAGS_NONE) != PLATFORM_SUCCESS) {
+        intrdy[i] = 0xDEADBEEF;
       }
     }
   }
@@ -84,16 +112,17 @@ protected:
     stop.push_back(new bool);
     *stop.back() = false;
     auto f = [](bool *stop, uint32_t *c, Tapasco *tapasco) {
-      while (! *stop) {
+      while (!*stop) {
         (*c)++;
-	// up to 50ms delay
-	tapasco_res_t r = tapasco->launch(14, static_cast<uint32_t>(rand() % 5000000))();
-	if (r != TAPASCO_SUCCESS)
-	  throw Tapasco::tapasco_error(r);
+        // up to 50ms delay
+        tapasco_res_t r =
+            tapasco->launch(14, static_cast<uint32_t>(rand() % 5000000))();
+        if (r != TAPASCO_SUCCESS)
+          throw Tapasco::tapasco_error(r);
       }
       return true;
     };
-    thread t {f, stop.back(), counters.back(), tapasco};
+    thread t{f, stop.back(), counters.back(), tapasco};
     threads.push(move(t));
   }
 
@@ -110,6 +139,7 @@ protected:
       clear();
     }
   }
+
 private:
   bool check_bitstream() {
     platform_info_t info;
@@ -117,7 +147,8 @@ private:
     if (r != PLATFORM_SUCCESS)
       throw new Tapasco::tapasco_error(TAPASCO_ERR_PLATFORM_FAILURE);
     for (platform_slot_id_t s = 0; s < PLATFORM_NUM_SLOTS; ++s) {
-      if (info.composition.kernel[s] == COUNTER_ID) return true;
+      if (info.composition.kernel[s] == COUNTER_ID)
+        return true;
     }
     return false;
   }
@@ -125,7 +156,7 @@ private:
   stack<thread> threads;
   vector<uint32_t *> counters;
   vector<bool *> stop;
-  bool     avail [128];
+  bool avail[128];
   uint32_t cycles[128];
   uint32_t retval[128];
   uint32_t intrdy[128];

@@ -26,9 +26,9 @@
 #include "tlkm_types.h"
 #include "tlkm_access.h"
 
-#define TLKM_DEVNAME_SZ					30
-#define TLKM_VERSION_SZ					30
-#define TLKM_DEVS_SZ					10
+#define TLKM_DEVNAME_SZ 30
+#define TLKM_VERSION_SZ 30
+#define TLKM_DEVS_SZ 10
 
 #ifndef __KERNEL__
 #include <sys/ioctl.h>
@@ -39,41 +39,43 @@
 
 typedef u32 dev_id_t;
 typedef struct tlkm_device_info {
-	dev_id_t		dev_id;
-	u32  			vendor_id;
-	u32  			product_id;
-	char 			name[TLKM_DEVNAME_SZ];
+	dev_id_t dev_id;
+	u32 vendor_id;
+	u32 product_id;
+	char name[TLKM_DEVNAME_SZ];
 } tlkm_device_info_t;
 
 struct tlkm_ioctl_version_cmd {
-	char			version[TLKM_VERSION_SZ];
+	char version[TLKM_VERSION_SZ];
 };
 
 struct tlkm_ioctl_enum_devices_cmd {
-	size_t			num_devs;
-	tlkm_device_info_t 	devs[10];
+	size_t num_devs;
+	tlkm_device_info_t devs[10];
 };
 
 struct tlkm_ioctl_device_cmd {
-	dev_id_t		dev_id;
-	tlkm_access_t		access;
+	dev_id_t dev_id;
+	tlkm_access_t access;
 };
 
-#define TLKM_IOCTL_FN			"tlkm"
+#define TLKM_IOCTL_FN "tlkm"
 
 #ifdef _TLKM_IOCTL
-	#undef _TLKM_IOCTL
+#undef _TLKM_IOCTL
 #endif
 
-#define TLKM_IOCTL_CMDS \
-	_TLKM_IOCTL(VERSION,		version,	1, 	struct tlkm_ioctl_version_cmd) \
-	_TLKM_IOCTL(ENUM_DEVICES,	enum_devices,	2, 	struct tlkm_ioctl_enum_devices_cmd) \
-	_TLKM_IOCTL(CREATE_DEVICE, 	create_device, 	3, 	struct tlkm_ioctl_device_cmd) \
-	_TLKM_IOCTL(DESTROY_DEVICE, 	destroy_device,	4, 	struct tlkm_ioctl_device_cmd)
+#define TLKM_IOCTL_CMDS                                                        \
+	_TLKM_IOCTL(VERSION, version, 1, struct tlkm_ioctl_version_cmd)        \
+	_TLKM_IOCTL(ENUM_DEVICES, enum_devices, 2,                             \
+		    struct tlkm_ioctl_enum_devices_cmd)                        \
+	_TLKM_IOCTL(CREATE_DEVICE, create_device, 3,                           \
+		    struct tlkm_ioctl_device_cmd)                              \
+	_TLKM_IOCTL(DESTROY_DEVICE, destroy_device, 4,                         \
+		    struct tlkm_ioctl_device_cmd)
 
 enum {
-#define _TLKM_IOCTL(NAME, name, id, dt) \
-	TLKM_IOCTL_ ## NAME = _IOWR('t', id, dt),
+#define _TLKM_IOCTL(NAME, name, id, dt) TLKM_IOCTL_##NAME = _IOWR('t', id, dt),
 	TLKM_IOCTL_CMDS
 #undef _X
 };

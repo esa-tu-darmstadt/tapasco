@@ -30,16 +30,16 @@
 #ifndef PLATFORM_API_H__
 #define PLATFORM_API_H__
 
+#include <platform_devctx.h>
 #include <platform_errors.h>
 #include <platform_global.h>
 #include <platform_types.h>
-#include <platform_devctx.h>
 
 /** @defgroup version Version Info
  *  @{
  **/
 
-#define PLATFORM_API_VERSION				"1.6"
+#define PLATFORM_API_VERSION "1.6"
 
 /**
  * Returns the version string of the library.
@@ -55,7 +55,6 @@ platform_res_t platform_check_version(const char *const version);
 
 /** @} **/
 
-
 /** @defgroup platform_mgmt Auxiliary Functions
  *  @{
  **/
@@ -68,7 +67,6 @@ platform_res_t platform_check_version(const char *const version);
 const char *const platform_strerror(platform_res_t res);
 
 /** @} **/
-
 
 /** @defgroup platform_mgmt Platform management
  *  @{
@@ -87,9 +85,8 @@ platform_res_t _platform_init(const char *const version, platform_ctx_t **ctx);
  * Initialize platform.
  * @return PLATFORM_SUCCESS if ok, error code otherwise
  **/
-inline static platform_res_t platform_init(platform_ctx_t **ctx)
-{
-	return _platform_init(PLATFORM_API_VERSION, ctx);
+inline static platform_res_t platform_init(platform_ctx_t **ctx) {
+  return _platform_init(PLATFORM_API_VERSION, ctx);
 }
 
 /** Deinitializer. **/
@@ -101,9 +98,8 @@ void platform_deinit(platform_ctx_t *ctx);
  * @param num_devices number of devices (out param)
  * @param devs pointer to array of device structs (out param)
  **/
-platform_res_t platform_enum_devices(platform_ctx_t *ctx,
-		size_t *num_devices,
-		platform_device_info_t **devs);
+platform_res_t platform_enum_devices(platform_ctx_t *ctx, size_t *num_devices,
+                                     platform_device_info_t **devs);
 
 /**
  * Retrieve info about the given device.
@@ -113,20 +109,20 @@ platform_res_t platform_enum_devices(platform_ctx_t *ctx,
  * @return PLATFORM_SUCCESS, if successful, an error code otherwise.
  **/
 platform_res_t platform_device_info(platform_ctx_t *ctx,
-		platform_dev_id_t const dev_id,
-		platform_device_info_t *info);
+                                    platform_dev_id_t const dev_id,
+                                    platform_device_info_t *info);
 /**
  * Acquire the selected device and initialize the given device context.
  * @param ctx platform context
  * @param dev_id device id
- * @param mode device access type 
+ * @param mode device access type
  * @param devctx device context to initialize (may be NULL)
  * @return PLATFORM_SUCCESS, if successful, an error code otherwise.
  **/
-platform_res_t platform_create_device(platform_ctx_t *ctx, 
-		platform_dev_id_t const dev_id,
-		platform_access_t const mode,
-		platform_devctx_t **pdctx);
+platform_res_t platform_create_device(platform_ctx_t *ctx,
+                                      platform_dev_id_t const dev_id,
+                                      platform_access_t const mode,
+                                      platform_devctx_t **pdctx);
 
 /**
  * Destroy the given device context and release the selected device.
@@ -140,10 +136,12 @@ void platform_destroy_device(platform_ctx_t *ctx, platform_devctx_t *pdctx);
  * @param ctx platform context
  * @param dev_id device id
  **/
-void platform_destroy_device_by_id(platform_ctx_t *ctx, platform_dev_id_t const dev_id);
+void platform_destroy_device_by_id(platform_ctx_t *ctx,
+                                   platform_dev_id_t const dev_id);
 
 /** Retrieves an info struct from the hardware. **/
-platform_res_t platform_info(platform_devctx_t const *ctx, platform_info_t *info);
+platform_res_t platform_info(platform_devctx_t const *ctx,
+                             platform_info_t *info);
 
 /** @} **/
 
@@ -158,15 +156,12 @@ platform_res_t platform_info(platform_devctx_t const *ctx, platform_info_t *info
  * @param addr Address of memory (out).
  * @return PLATFORM_SUCCESS, if allocation succeeded.
  **/
-static inline
-platform_res_t platform_alloc(platform_devctx_t *ctx,
-		size_t const len,
-		platform_mem_addr_t *addr,
-		platform_alloc_flags_t const flags)
-{
-	assert(ctx);
-	assert(ctx->dops.alloc);
-	return ctx->dops.alloc(ctx, len, addr, flags);
+static inline platform_res_t
+platform_alloc(platform_devctx_t *ctx, size_t const len,
+               platform_mem_addr_t *addr, platform_alloc_flags_t const flags) {
+  assert(ctx);
+  assert(ctx->dops.alloc);
+  return ctx->dops.alloc(ctx, len, addr, flags);
 }
 
 /**
@@ -174,14 +169,12 @@ platform_res_t platform_alloc(platform_devctx_t *ctx,
  * @param ctx Platform context
  * @param addr Address of memory.
  **/
-static inline
-platform_res_t platform_dealloc(platform_devctx_t *ctx,
-		platform_mem_addr_t const addr,
-		platform_alloc_flags_t const flags)
-{
-	assert(ctx);
-	assert(ctx->dops.dealloc);
-	return ctx->dops.dealloc(ctx, addr, flags);
+static inline platform_res_t
+platform_dealloc(platform_devctx_t *ctx, platform_mem_addr_t const addr,
+                 platform_alloc_flags_t const flags) {
+  assert(ctx);
+  assert(ctx->dops.dealloc);
+  return ctx->dops.dealloc(ctx, addr, flags);
 }
 
 /**
@@ -192,16 +185,13 @@ platform_res_t platform_dealloc(platform_devctx_t *ctx,
  * @param data Preallocated memory to read into.
  * @return PLATFORM_SUCCESS if read was valid, an error code otherwise.
  **/
-static inline
-platform_res_t platform_read_mem(platform_devctx_t const *ctx,
-		platform_mem_addr_t const addr,
-		size_t const len,
-		void *data,
-		platform_mem_flags_t const flags)
-{
-	assert(ctx);
-	assert(ctx->dops.read_mem);
-	return ctx->dops.read_mem(ctx, addr, len, data, flags);
+static inline platform_res_t
+platform_read_mem(platform_devctx_t const *ctx, platform_mem_addr_t const addr,
+                  size_t const len, void *data,
+                  platform_mem_flags_t const flags) {
+  assert(ctx);
+  assert(ctx->dops.read_mem);
+  return ctx->dops.read_mem(ctx, addr, len, data, flags);
 }
 
 /**
@@ -212,16 +202,13 @@ platform_res_t platform_read_mem(platform_devctx_t const *ctx,
  * @param data Data to write.
  * @return PLATFORM_SUCCESS if write succeeded, an error code otherwise.
  **/
-static inline
-platform_res_t platform_write_mem(platform_devctx_t const *ctx,
-		platform_mem_addr_t const addr,
-		size_t const len,
-		void const *data,
-		platform_mem_flags_t const flags)
-{
-	assert(ctx);
-	assert(ctx->dops.write_mem);
-	return ctx->dops.write_mem(ctx, addr, len, data, flags);
+static inline platform_res_t
+platform_write_mem(platform_devctx_t const *ctx, platform_mem_addr_t const addr,
+                   size_t const len, void const *data,
+                   platform_mem_flags_t const flags) {
+  assert(ctx);
+  assert(ctx->dops.write_mem);
+  return ctx->dops.write_mem(ctx, addr, len, data, flags);
 }
 
 /**
@@ -232,16 +219,13 @@ platform_res_t platform_write_mem(platform_devctx_t const *ctx,
  * @param data Preallocated memory to read into.
  * @return PLATFORM_SUCCESS if read was valid, an error code otherwise.
  **/
-static inline
-platform_res_t platform_read_ctl(platform_devctx_t const *ctx,
-		platform_ctl_addr_t const addr,
-		size_t const len,
-		void *data,
-		platform_ctl_flags_t const flags)
-{
-	assert(ctx);
-	assert(ctx->dops.read_ctl);
-	return ctx->dops.read_ctl(ctx, addr, len, data, flags);
+static inline platform_res_t
+platform_read_ctl(platform_devctx_t const *ctx, platform_ctl_addr_t const addr,
+                  size_t const len, void *data,
+                  platform_ctl_flags_t const flags) {
+  assert(ctx);
+  assert(ctx->dops.read_ctl);
+  return ctx->dops.read_ctl(ctx, addr, len, data, flags);
 }
 
 /**
@@ -252,16 +236,13 @@ platform_res_t platform_read_ctl(platform_devctx_t const *ctx,
  * @param data Pointer to block of no_of_bytes bytes of data to write.
  * @return PLATFORM_SUCCESS if write succeeded, an error code otherwise.
  **/
-static inline
-platform_res_t platform_write_ctl(platform_devctx_t const *ctx,
-		platform_ctl_addr_t const addr,
-		size_t const len,
-		void const *data,
-		platform_ctl_flags_t const flags)
-{
-	assert(ctx);
-	assert(ctx->dops.write_ctl);
-	return ctx->dops.write_ctl(ctx, addr, len, data, flags);
+static inline platform_res_t
+platform_write_ctl(platform_devctx_t const *ctx, platform_ctl_addr_t const addr,
+                   size_t const len, void const *data,
+                   platform_ctl_flags_t const flags) {
+  assert(ctx);
+  assert(ctx->dops.write_ctl);
+  return ctx->dops.write_ctl(ctx, addr, len, data, flags);
 }
 
 /**
@@ -273,7 +254,7 @@ platform_res_t platform_write_ctl(platform_devctx_t const *ctx,
  * not possible (platform-dependent).
  **/
 platform_res_t platform_wait_for_slot(platform_devctx_t *ctx,
-		const platform_slot_id_t slot);
+                                      const platform_slot_id_t slot);
 
 /** @} **/
 
@@ -289,8 +270,8 @@ platform_res_t platform_wait_for_slot(platform_devctx_t *ctx,
  * @return Slot bus address
  **/
 platform_res_t platform_address_get_slot_base(platform_devctx_t const *ctx,
-		platform_slot_id_t const slot_id,
-		platform_ctl_addr_t *addr);
+                                              platform_slot_id_t const slot_id,
+                                              platform_ctl_addr_t *addr);
 
 /**
  * Returns the base address for the given platform infrastructure component.
@@ -299,9 +280,10 @@ platform_res_t platform_address_get_slot_base(platform_devctx_t const *ctx,
  * @param addr Address var (output)
  * @return Component bus address, or 0
  **/
-platform_res_t platform_address_get_component_base(platform_devctx_t const *ctx,
-		platform_component_t const comp_id,
-		platform_ctl_addr_t *addr);
+platform_res_t
+platform_address_get_component_base(platform_devctx_t const *ctx,
+                                    platform_component_t const comp_id,
+                                    platform_ctl_addr_t *addr);
 /** @} **/
 
 #endif /* PLATFORM_API_H__ */

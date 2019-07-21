@@ -24,7 +24,6 @@
 #define TLKM_PLATFORM_H__
 
 #include <tlkm_types.h>
-#include <platform_global.h>
 
 #define IS_BETWEEN(a, l, h) (((a) >= (l) && (a) < (h)))
 
@@ -34,47 +33,50 @@
 #endif
 
 struct platform_regspace {
-	uintptr_t			base;
-	uintptr_t			high;
-	size_t				size;
+	uintptr_t base;
+	uintptr_t high;
+	size_t size;
 };
 
-#define INIT_REGSPACE(BASE, SIZE)	{ \
-	.base				= (BASE), \
-	.size				= (SIZE), \
-	.high				= ((BASE) + (SIZE) - 1), \
-}
+#define INIT_REGSPACE(BASE, SIZE)                                              \
+	{                                                                      \
+		.base = (BASE), .size = (SIZE), .high = ((BASE) + (SIZE)-1),   \
+	}
 
 struct platform {
-	struct platform_regspace	status;
-	struct platform_regspace	arch;
-	struct platform_regspace	plat;
+	struct platform_regspace status;
 };
 
-#define INIT_PLATFORM(status_base, status_size, arch_base, arch_size, plat_base, plat_size) \
-	{ \
-		.status = INIT_REGSPACE((status_base), (status_size)), \
-		.arch   = INIT_REGSPACE((arch_base), (arch_size)), \
-		.plat   = INIT_REGSPACE((plat_base), (plat_size)), \
+#define INIT_PLATFORM(status_base, status_size)                                \
+	{                                                                      \
+		.status = INIT_REGSPACE((status_base), (status_size)),         \
 	}
 
 #ifdef __KERNEL__
 struct platform_mmap {
-	void __iomem			*status;
-	void __iomem			*arch;
-	void __iomem			*plat;
+	void __iomem *status;
+	void __iomem *arch;
+	void __iomem *plat;
 };
 
 struct tlkm_device;
 struct tlkm_copy_cmd;
 
-int  tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap);
-void tlkm_platform_mmap_exit(struct tlkm_device *dev, struct platform_mmap *mmap);
+int tlkm_platform_status_init(struct tlkm_device *dev,
+			      struct platform_mmap *mmap);
+void tlkm_platform_status_exit(struct tlkm_device *dev,
+			       struct platform_mmap *mmap);
+int tlkm_platform_mmap_init(struct tlkm_device *dev,
+			    struct platform_mmap *mmap);
+void tlkm_platform_mmap_exit(struct tlkm_device *dev,
+			     struct platform_mmap *mmap);
 
 long tlkm_platform_read(struct tlkm_device *dev, struct tlkm_copy_cmd *cmd);
 long tlkm_platform_write(struct tlkm_device *dev, struct tlkm_copy_cmd *cmd);
 
+ulong addr2map_off(struct tlkm_device *dev, dev_addr_t const addr);
 void __iomem *addr2map(struct tlkm_device *dev, dev_addr_t const addr);
+
 #endif /* __KERNEL__ */
 
 #endif /* TLKM_PLATFORM_H__ */

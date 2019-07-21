@@ -19,39 +19,38 @@
 //! @file	tapasco_device.h
 //! @brief	Device context struct and helper methods.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
-//! 
+//!
 #ifndef TAPASCO_DEVICE_H__
 #define TAPASCO_DEVICE_H__
 
-#include <tapasco_types.h>
-#include <tapasco_pemgmt.h>
-#include <tapasco_local_mem.h>
-#include <tapasco_jobs.h>
 #include <platform_types.h>
+#include <tapasco_jobs.h>
+#include <tapasco_local_mem.h>
+#include <tapasco_pemgmt.h>
+#include <tapasco_types.h>
 
 struct tapasco_devctx {
-	tapasco_dev_id_t 		id;
-	platform_info_t			info;
-	tapasco_pemgmt_t 		*pemgmt;
-	tapasco_jobs_t 			*jobs;
-	tapasco_local_mem_t 		*lmem;
-	platform_ctx_t			*pctx;
-	platform_devctx_t 		*pdctx;
-	void				*private_data;
+  tapasco_dev_id_t id;
+  platform_info_t info;
+  tapasco_pemgmt_t *pemgmt;
+  tapasco_jobs_t *jobs;
+  tapasco_local_mem_t *lmem;
+  platform_ctx_t *pctx;
+  platform_devctx_t *pdctx;
+  void *private_data;
 };
 
 tapasco_res_t tapasco_create_device(tapasco_ctx_t *ctx,
-		tapasco_dev_id_t const dev_id,
-		tapasco_devctx_t **pdev_ctx,
-		tapasco_device_create_flag_t const flags);
+                                    tapasco_dev_id_t const dev_id,
+                                    tapasco_devctx_t **pdev_ctx,
+                                    tapasco_device_create_flag_t const flags);
 void tapasco_destroy_device(tapasco_ctx_t *ctx, tapasco_devctx_t *dev_ctx);
 
-static inline
-uint32_t tapasco_device_func_instance_count(tapasco_devctx_t *dev_ctx,
-		tapasco_kernel_id_t const k_id)
-{
-	assert(dev_ctx);
-	return tapasco_pemgmt_count(dev_ctx->pemgmt, k_id);
-}	
+static inline uint32_t
+tapasco_device_func_instance_count(tapasco_devctx_t *dev_ctx,
+                                   tapasco_kernel_id_t const k_id) {
+  assert(dev_ctx);
+  return tapasco_pemgmt_count(dev_ctx->pemgmt, k_id);
+}
 
 #endif /* TAPASCO_DEVICE_H__ */

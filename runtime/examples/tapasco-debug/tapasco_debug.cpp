@@ -22,16 +22,15 @@
  *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 
-#include <iostream>
 #include "debug-screens/TapascoDebugMenu.hpp"
+#include <iostream>
 
 extern "C" {
 void tapasco_logging_deinit(void);
 void platform_logging_deinit(void);
 }
 
-static void init_ncurses()
-{
+static void init_ncurses() {
   initscr();
   noecho();
   cbreak();
@@ -41,13 +40,9 @@ static void init_ncurses()
   init_pair(1, COLOR_WHITE, COLOR_RED);
 }
 
-static void exit_ncurses()
-{
-  endwin();
-}
+static void exit_ncurses() { endwin(); }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
   srand(time(NULL));
 
   try {
@@ -60,7 +55,7 @@ int main(int argc, char *argv[])
     cerr << "Error code: " << e << endl;
   } catch (tapasco::Tapasco::tapasco_error &e) {
     exit_ncurses();
-    cerr << "TaPaSCo error: " <<  e.what() << endl;
+    cerr << "TaPaSCo error: " << e.what() << endl;
   } catch (runtime_error &e) {
     exit_ncurses();
     cerr << "Unknown error occurred." << endl;

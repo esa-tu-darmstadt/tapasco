@@ -22,55 +22,49 @@
 //!             unified TaPaSCo application library.
 //! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
-#include <stdio.h>
 #include "platform_perfc.h"
+#include <stdio.h>
 
 #ifndef NPERFC
 
-static
-struct platform_perfc_t {
-#define _PC(NAME) 	_Atomic(long int) pc_ ## NAME[PLATFORM_MAX_DEVS];
-	PLATFORM_PERFC_COUNTERS
+static struct platform_perfc_t {
+#define _PC(NAME) _Atomic(long int) pc_##NAME[PLATFORM_MAX_DEVS];
+  PLATFORM_PERFC_COUNTERS
 #undef _PC
 } platform_perfc;
 
-#define _PC(name) \
-void platform_perfc_ ## name ## _inc(platform_dev_id_t dev_id) \
-{ \
-	platform_perfc.pc_ ## name[dev_id]++; \
-} \
-\
-void platform_perfc_ ## name ## _add(platform_dev_id_t dev_id, int const v) \
-{ \
-	platform_perfc.pc_ ## name[dev_id] += v; \
-} \
-\
-long int platform_perfc_ ## name ## _get(platform_dev_id_t dev_id) \
-{ \
-	return platform_perfc.pc_ ## name[dev_id]; \
-} \
-\
-void platform_perfc_ ## name ## _set(platform_dev_id_t dev_id, int const v) \
-{ \
-	platform_perfc.pc_ ## name[dev_id] = v; \
-}
+#define _PC(name)                                                              \
+  void platform_perfc_##name##_inc(platform_dev_id_t dev_id) {                 \
+    platform_perfc.pc_##name[dev_id]++;                                        \
+  }                                                                            \
+                                                                               \
+  void platform_perfc_##name##_add(platform_dev_id_t dev_id, int const v) {    \
+    platform_perfc.pc_##name[dev_id] += v;                                     \
+  }                                                                            \
+                                                                               \
+  long int platform_perfc_##name##_get(platform_dev_id_t dev_id) {             \
+    return platform_perfc.pc_##name[dev_id];                                   \
+  }                                                                            \
+                                                                               \
+  void platform_perfc_##name##_set(platform_dev_id_t dev_id, int const v) {    \
+    platform_perfc.pc_##name[dev_id] = v;                                      \
+  }
 
 PLATFORM_PERFC_COUNTERS
 #undef _PC
 
 #ifndef STR
-	#define	STR(v)			#v
+#define STR(v) #v
 #endif
 
-const char *platform_perfc_tostring(platform_dev_id_t const dev_id)
-{
-	static char _buf[1024];
+const char *platform_perfc_tostring(platform_dev_id_t const dev_id) {
+  static char _buf[1024];
 #define _PC(name) "%40s:\t%8ld\n"
-	const char *const fmt = PLATFORM_PERFC_COUNTERS "\n%c";
+  const char *const fmt = PLATFORM_PERFC_COUNTERS "\n%c";
 #undef _PC
-#define _PC(name) STR(name), platform_perfc_ ## name ## _get(dev_id),
-	snprintf(_buf, 1024, fmt, PLATFORM_PERFC_COUNTERS 0);
-	return _buf;
+#define _PC(name) STR(name), platform_perfc_##name##_get(dev_id),
+  snprintf(_buf, 1024, fmt, PLATFORM_PERFC_COUNTERS 0);
+  return _buf;
 }
 
 #endif

@@ -66,7 +66,7 @@ object BasePathManager {
   }
 
   /** Default directory: Architectures. **/
-  final val DEFAULT_DIR_ARCHS = TAPASCO_HOME.resolve("toolflow").resolve("TCL").resolve("arch")
+  final val DEFAULT_DIR_ARCHS = TAPASCO_HOME.resolve("toolflow").resolve("vivado").resolve("arch")
 
   /** Default directory: Bitstreams. **/
   final val DEFAULT_DIR_COMPOSITIONS = TAPASCO_WORK_DIR.resolve("compose")
@@ -78,7 +78,7 @@ object BasePathManager {
   final val DEFAULT_DIR_KERNELS = TAPASCO_WORK_DIR.resolve("kernel")
 
   /** Default directory: Platforms. **/
-  final val DEFAULT_DIR_PLATFORMS = TAPASCO_HOME.resolve("toolflow").resolve("TCL").resolve("platform")
+  final val DEFAULT_DIR_PLATFORMS = TAPASCO_HOME.resolve("toolflow").resolve("vivado").resolve("platform")
 
   /** Map of default directories for entities. */
   lazy final val defaultDirectory: Map[Entity, (Path, Boolean)] = Map(
