@@ -121,7 +121,7 @@ int tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap)
 	if (dev->vendor_id == AWS_EC2_VENDOR_ID && dev->product_id == AWS_EC2_DEVICE_ID) {
 		retval = aws_ec2_configure_axi_intc(dev, mmap);
 		if (retval) {
-			goto err_status;
+			goto err_plat;
 		}
 	}
 

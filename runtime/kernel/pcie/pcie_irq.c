@@ -114,9 +114,9 @@ void aws_ec2_tlkm_pcie_slot_irq_work_ ## nr(struct work_struct *work) \
 { \
 	uint32_t isr; \
 	struct tlkm_pcie_device *dev = (struct tlkm_pcie_device *)container_of(work, struct tlkm_pcie_device, irq_work[nr]); \
-	struct platform *p = &dev->parent->cls->platform; \
+	/*struct platform *p = &dev->parent->cls->platform;*/ \
 	/* read ISR (interrupt status register) */ \
-	isr = ioread32(dev->parent->mmap.plat + 0x10000 + 0x8100 + 36 + 4 * nr - p->plat.base); \
+	isr = dev->ack_register[1 + nr]; \
 	if (unlikely(!isr)) { \
 		DEVERR(dev->parent->dev_id, "Interrupt received, but ISR %d is empty", nr); \
 		return; \
@@ -147,8 +147,12 @@ int aws_ec2_pcie_irqs_init(struct tlkm_device *dev)
 	struct tlkm_pcie_device *pdev = (struct tlkm_pcie_device *)dev->private_data;
 
 	int ret = 0, irqn, err[4] = { [0 ... 3] = 1 };
-
 	BUG_ON(! dev);
+	pdev->ack_register =
+		(volatile uint32_t *)(dev->mmap.plat +
+				      tlkm_status_get_component_base(
+					      dev, "PLATFORM_COMPONENT_INTC0") +
+				      0x8120);
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registering %d interrupts ...", 4);
 #define _INTR(nr) \
 	irqn = nr + pcie_cls.npirqs; \
