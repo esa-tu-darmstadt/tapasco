@@ -68,6 +68,10 @@ namespace eval platform {
     return 1
   }
 
+  proc get_platform_base_address {} {
+    return 0
+  }
+
   proc get_address_map {{pe_base ""}} {
     set max32 [expr "1 << 32"]
     set max64 [expr "1 << 64"]
@@ -525,22 +529,22 @@ namespace eval platform {
     connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
       [get_bd_pins $out_ic/ACLK] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == clk}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == clk}]
 
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
-      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == clk}] \
-      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == clk}]
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == clk}]
 
     connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
       [get_bd_pins $out_ic/ARESETN] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == rst}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == rst}]
 
     connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
-      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == rst}] \
-      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == rst}]
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == rst}]
 
     # set axi_conv [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_converter:2.1 "axi_protocol_converter"]
     # set_property -dict [list \
