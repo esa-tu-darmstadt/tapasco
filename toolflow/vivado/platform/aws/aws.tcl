@@ -465,7 +465,7 @@ namespace eval platform {
     connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
       [get_bd_pins $ddr_ic/ACLK] \
       [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00_* && TYPE == clk}] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M00_* && TYPE == clk}]
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M* && TYPE == clk}]
 
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
       [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == clk}]
@@ -473,7 +473,7 @@ namespace eval platform {
     connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
       [get_bd_pins $ddr_ic/ARESETN] \
       [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00* && TYPE == rst}] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M00_* && TYPE == rst}]
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M* && TYPE == rst}]
 
     connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == rst}]
@@ -660,10 +660,10 @@ namespace eval platform {
         CONFIG.DEVICE_ID {0xF000} \
         CONFIG.PCIS_PRESENT {0} \
         CONFIG.PCIM_PRESENT {1} \
-        CONFIG.DDR_A_PRESENT {0} \
-        CONFIG.DDR_B_PRESENT {0} \
+        CONFIG.DDR_A_PRESENT {1} \
+        CONFIG.DDR_B_PRESENT {1} \
         CONFIG.DDR_C_PRESENT {1} \
-        CONFIG.DDR_D_PRESENT {0} \
+        CONFIG.DDR_D_PRESENT {1} \
         CONFIG.OCL_PRESENT {1} \
         CONFIG.SDA_PRESENT {0} \
     ] $f1_inst
