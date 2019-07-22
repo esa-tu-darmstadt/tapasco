@@ -1,10 +1,10 @@
-puts "Running opt_design post hook..."
+puts "Running place_design post hook..."
 
 if {[info exist FAAS_CL_DIR] eq 0} {
   if {[info exist ::env(FAAS_CL_DIR)]} {
     set FAAS_CL_DIR $::env(FAAS_CL_DIR)
   } else {
-    send_msg_id "opt_design_post 0-1" ERROR "FAAS_CL_DIR environment varaiable not set"
+    send_msg_id "place_design_post 0-1" ERROR "FAAS_CL_DIR environment varaiable not set"
   }
 }
 
