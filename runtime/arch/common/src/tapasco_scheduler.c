@@ -44,7 +44,7 @@ tapasco_res_t tapasco_scheduler_launch(tapasco_devctx_t *devctx,
   for (size_t a = 0; a < num_args; ++a) {
     tapasco_transfer_t *t = tapasco_jobs_get_arg_transfer(devctx->jobs, j_id, a);
 
-    if (!(t->flags & TAPASCO_DEVICE_COPY_PE_LOCAL)) {
+    if (t->len && !(t->flags & TAPASCO_DEVICE_COPY_PE_LOCAL)) {
       if ((r = tapasco_transfer_to(devctx, j_id, t, 0)) != TAPASCO_SUCCESS) {
         DEVLOG(devctx->id, LALL_SCHEDULER, "Failed to preload transfer");
       } else {

@@ -225,6 +225,8 @@ tapasco_res_t tapasco_pemgmt_prepare_pe(tapasco_devctx_t *devctx,
             TAPASCO_SUCCESS) {
           return r;
         }
+      } else {
+        DEVLOG(devctx->id, LALL_PEMGMT, "Using preloaded data for argument %zd at handle " PRIhandle, a, slot_id);
       }
       DEVLOG(devctx->id, LALL_PEMGMT,
              "job " PRIjob ": writing handle to arg #%zd (" PRIhandle ")", j_id,
