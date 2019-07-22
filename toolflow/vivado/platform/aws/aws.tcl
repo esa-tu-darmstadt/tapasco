@@ -173,7 +173,7 @@ namespace eval platform {
     connect_bd_net $dma_irq_read [get_bd_pin -of_objects $irq_concat_dma -filter {NAME == "In0"}]
     connect_bd_net $dma_irq_write [get_bd_pin -of_objects $irq_concat_dma -filter {NAME == "In1"}]
     puts "Unused Interrupts: 2, 3 are tied to 0"
-    set irq_unused [tapasco::ip::create_constant "irq_unused" 1 0]
+    set irq_unused [tapasco::ip::create_constant "irq_unused_dma" 1 0]
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] \
       [get_bd_pin -of_objects $irq_concat_dma -filter {NAME == "In2"}]
     connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] \
@@ -182,6 +182,12 @@ namespace eval platform {
     for {set i 0} {$i < [llength $irqs]} {incr i} {
       set port [create_bd_pin -from 31 -to 0 -dir I -type intr "intr_$i"]
       connect_bd_net $port [get_bd_pin -of_objects $irq_concat_design -filter "NAME == In$i"]
+    }
+    if {$i < 4} {
+      set unused [tapasco::ip::create_constant "irq_unused_design" 32 0]
+      for {set j $i} {$j < 4} {incr j} {
+        connect_bd_net [get_bd_pins $unused/dout] [get_bd_pin -of_objects $irq_concat_design -filter "NAME == In$j"]
+      }
     }
 
     # connect internal clocks
