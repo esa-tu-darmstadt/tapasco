@@ -227,6 +227,7 @@ tapasco_jobs_set_arg_transfer(tapasco_jobs_t *jobs, tapasco_job_id_t const j_id,
   jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].data = arg_value;
   jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].flags = flags;
   jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].dir_flags = dir_flags;
+  jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].preloaded = 0;
   if (jobs->q.elems[j_id - JOB_ID_OFFSET].args_len < arg_idx + 1)
     jobs->q.elems[j_id - JOB_ID_OFFSET].args_len = arg_idx + 1;
   return TAPASCO_SUCCESS;
