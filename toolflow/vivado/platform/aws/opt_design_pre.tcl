@@ -11,7 +11,7 @@ if {[info exist FAAS_CL_DIR] eq 0} {
 set top top_sp
 set timestamp $::env(timestamp)
 
-write_checkpoint -force $FAAS_CL_DIR/build/checkpoints/CL.post_synth_inline.dcp
+#write_checkpoint -force $FAAS_CL_DIR/build/checkpoints/CL.post_synth_inline.dcp
 
 report_property [current_design]
 
@@ -39,6 +39,6 @@ source $::env(TAPASCO_HOME_TCL)/platform/aws/constraints/250/aws_gen_clk_constra
 
 source $::env(HDK_SHELL_DIR)/build/scripts/check_uram.tcl
 
-write_checkpoint -force $FAAS_CL_DIR/build/checkpoints/${timestamp}.SH_CL.post_link_design.dcp
+#write_checkpoint -force $FAAS_CL_DIR/build/checkpoints/${timestamp}.SH_CL.post_link_design.dcp
 
 # vim: set expandtab ts=2 sw=2:

@@ -15,6 +15,6 @@ source [file join $::env(HDK_SHELL_DIR) hlx build scripts subscripts apply_debug
 set_param hd.clockRoutingWireReduction false
 
 set timestamp $::env(timestamp)
-write_checkpoint -force $FAAS_CL_DIR/build/checkpoints/${timestamp}.SH_CL.post_opt.dcp
+#write_checkpoint -force $FAAS_CL_DIR/build/checkpoints/${timestamp}.SH_CL.post_opt.dcp
 
 # vim: set expandtab ts=2 sw=2:

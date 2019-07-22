@@ -8,9 +8,9 @@ if {[info exist FAAS_CL_DIR] eq 0} {
   }
 }
 
-report_design_analysis -congestion
+#report_design_analysis -congestion
 
 set timestamp $::env(timestamp)
-write_checkpoint -force $FAAS_CL_DIR/build/checkpoints/${timestamp}.SH_CL.post_place.dcp
+#write_checkpoint -force $FAAS_CL_DIR/build/checkpoints/${timestamp}.SH_CL.post_place.dcp
 
 # vim: set expandtab ts=2 sw=2:

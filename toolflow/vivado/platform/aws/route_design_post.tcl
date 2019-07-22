@@ -11,7 +11,7 @@ if {[info exist FAAS_CL_DIR] eq 0} {
 # TODO this checkpoint may be useless because it is overwritten later in the flow (create_tarfile)
 
 set timestamp $::env(timestamp)
-write_checkpoint -force $FAAS_CL_DIR/build/checkpoints/to_aws/${timestamp}.SH_CL_routed.dcp -encrypt
+#write_checkpoint -force $FAAS_CL_DIR/build/checkpoints/to_aws/${timestamp}.SH_CL_routed.dcp -encrypt
 
 # Generate debug probes file
 write_debug_probes -force -no_partial_ltxfile -file $FAAS_CL_DIR/build/checkpoints/to_aws/${timestamp}.debug_probes.ltx
