@@ -297,23 +297,28 @@ namespace eval platform {
 
     # Connect DMA engine and architecture to local memory
 
-    set ddr_ic [tapasco::ip::create_axi_ic "ddr_ic" 2 [llength $ddr_available]]
+    set ddr_ic [tapasco::ip::create_axi_sc "ddr_ic" 2 [llength $ddr_available]]
+    set_property -dict [list CONFIG.NUM_CLKS {2}] $ddr_ic
+    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins $ddr_ic/aclk1]
+    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] [get_bd_pins $ddr_ic/aclk]
 
-    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
-      [get_bd_pins $ddr_ic/ACLK] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00_* && TYPE == clk}] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M* && TYPE == clk}]
+    # set ddr_ic [tapasco::ip::create_axi_ic "ddr_ic" 2 [llength $ddr_available]]
 
-    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == clk}]
+    # connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
+    #   [get_bd_pins $ddr_ic/ACLK] \
+    #   [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00_* && TYPE == clk}] \
+    #   [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M* && TYPE == clk}]
 
-    connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
-      [get_bd_pins $ddr_ic/ARESETN] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00* && TYPE == rst}] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M* && TYPE == rst}]
+    # connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
+    #   [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == clk}]
 
-    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == rst}]
+    # connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
+    #   [get_bd_pins $ddr_ic/ARESETN] \
+    #   [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00* && TYPE == rst}] \
+    #   [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M* && TYPE == rst}]
+
+    # connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
+    #   [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == rst}]
 
     set num_ddr 0
     foreach x $ddr_available {
@@ -625,6 +630,8 @@ namespace eval platform {
       ] $synth_run
 
       # set_property -name {STEPS.ROUTE_DESIGN.ARGS.MORE OPTIONS} -value -tns_cleanup -objects [get_runs impl_1]
+
+      validate_bd_design -force
 
       return $args
     }
