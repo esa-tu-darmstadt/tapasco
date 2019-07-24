@@ -351,7 +351,7 @@ namespace eval tapasco {
       for {set i 0} {$i < $n} {incr i} {
         set rest_ports [expr "$nports - $i * 16"]
         set rest_ports [expr "min($rest_ports, 16)"]
-        set nic [ip::create_axi_ic [format "ic_%03d" $ic_n] [expr "$masters ? $rest_ports : 1"] [expr "$masters ? 1 : $rest_ports"]]
+        set nic [ip::create_axi_sc [format "ic_%03d" $ic_n] [expr "$masters ? $rest_ports : 1"] [expr "$masters ? 1 : $rest_ports"]]
         incr ic_n
         lappend curr_ics $nic
       }
@@ -420,17 +420,19 @@ namespace eval tapasco {
     puts "  last stage: $last_stage"
     if {$masters} {
       # connect all non-slave clocks to main clock, and only slave clocks to secondary clock
-      connect_bd_net $main_aclk [get_bd_pins -filter {TYPE == "clk" && DIR == "I" && NAME !~ "S*_ACLK"} -of_objects $last_stage]
-      connect_bd_net $scnd_aclk [get_bd_pins -filter {TYPE == "clk" && DIR == "I" && NAME =~ "S*_ACLK"} -of_objects $last_stage]
+      #connect_bd_net $main_aclk [get_bd_pins -filter {TYPE == "clk" && DIR == "I" && NAME !~ "S*_ACLK"} -of_objects $last_stage]
+      #connect_bd_net $scnd_aclk [get_bd_pins -filter {TYPE == "clk" && DIR == "I" && NAME =~ "S*_ACLK"} -of_objects $last_stage]
+      connect_bd_net $main_aclk [get_bd_pins $last_stage/aclk]
     } {
       # connect all non-master clocks to main clock, and only master clocks to secondary clock
-      connect_bd_net $main_aclk [get_bd_pins -filter {TYPE == "clk" && DIR == "I" && NAME !~ "M*_ACLK"} -of_objects $last_stage]
-      connect_bd_net $scnd_aclk [get_bd_pins -filter {TYPE == "clk" && DIR == "I" && NAME =~ "M*_ACLK"} -of_objects $last_stage]
+      #connect_bd_net $main_aclk [get_bd_pins -filter {TYPE == "clk" && DIR == "I" && NAME !~ "M*_ACLK"} -of_objects $last_stage]
+      #connect_bd_net $scnd_aclk [get_bd_pins -filter {TYPE == "clk" && DIR == "I" && NAME =~ "M*_ACLK"} -of_objects $last_stage]
+      connect_bd_net $main_aclk [get_bd_pins $last_stage/aclk]
     }
     # now connect all resets
-    connect_bd_net $main_ic_arstn [get_bd_pins -filter {TYPE == "rst" && DIR == "I" && NAME == "ARESETN"} -of_objects [get_bd_cells "$group/*"]]
-    connect_bd_net $m_p_arstn [get_bd_pins -filter {TYPE == "rst" && DIR == "I" && NAME =~ "M*_ARESETN"} -of_objects $last_stage]
-    connect_bd_net $s_p_arstn [get_bd_pins -filter {TYPE == "rst" && DIR == "I" && NAME =~ "S*_ARESETN"} -of_objects $last_stage]
+    #connect_bd_net $main_ic_arstn [get_bd_pins -filter {TYPE == "rst" && DIR == "I" && NAME == "ARESETN"} -of_objects [get_bd_cells "$group/*"]]
+    #connect_bd_net $m_p_arstn [get_bd_pins -filter {TYPE == "rst" && DIR == "I" && NAME =~ "M*_ARESETN"} -of_objects $last_stage]
+    #connect_bd_net $s_p_arstn [get_bd_pins -filter {TYPE == "rst" && DIR == "I" && NAME =~ "S*_ARESETN"} -of_objects $last_stage]
 
     current_bd_instance $instance
     return $group
