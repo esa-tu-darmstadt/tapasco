@@ -36,6 +36,8 @@ typedef enum {
   PLATFORM_COMPONENT_DMA2,
   /** DMA engine #3. **/
   PLATFORM_COMPONENT_DMA3,
+  /** AXI GPIO controller for memory status (on EC2) **/
+  PLATFORM_COMPONENT_MEM_GPIO
 } platform_component_t;
 
 #endif /* PLATFORM_COMPONENTS_H__ */

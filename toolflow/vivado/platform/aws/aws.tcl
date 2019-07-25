@@ -84,6 +84,7 @@ namespace eval platform {
         "M_INTC"    { foreach {base stride range comp} [list 0x00010000 0x2000 0      "PLATFORM_COMPONENT_INTC0"] {} }
         "M_MSIX"    { foreach {base stride range comp} [list 0          0       $max64 "PLATFORM_COMPONENT_MSIX0"] {} }
         "M_TAPASCO" { foreach {base stride range comp} [list 0x00000000 0       0      "PLATFORM_COMPONENT_STATUS"] {} }
+        "M_MEM_GPIO" { foreach {base stride range comp} [list 0x00002000 0       0      "PLATFORM_COMPONENT_MEM_GPIO"] {} }
         "M_HOST"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_MEM_0"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_ARCH"    { set base "skip" }
@@ -202,6 +203,7 @@ namespace eval platform {
   proc create_subsystem_memory {} {
     set m_axi_mem [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_HOST"]
     set s_axi_ddma [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DMA"]
+    set s_axi_gpio [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_GPIO"]
 
     set pcie_aclk [tapasco::subsystem::get_port "host" "clk"]
 
@@ -209,6 +211,15 @@ namespace eval platform {
 
     set irq_read [create_bd_pin -type "intr" -dir "O" "dma_irq_read"]
     set irq_write [create_bd_pin -type "intr" -dir "O" "dma_irq_write"]
+
+    set ddr_ready [create_bd_pin -type "undef" -dir "I" "ddr_ready"]
+
+    set gpio [tapasco::ip::create_axi_gpio "axi_gpio"]
+    set_property -dict [list CONFIG.C_GPIO_WIDTH {4} CONFIG.C_ALL_INPUTS {1}] $gpio
+    connect_bd_net $ddr_ready [get_bd_pins "$gpio/gpio_io_i"]
+    connect_bd_intf_net $s_axi_gpio [get_bd_intf_pins "$gpio/S_AXI"]
+    connect_bd_net [get_bd_pins $gpio/s_axi_aclk] [tapasco::subsystem::get_port "host" "clk"]
+    connect_bd_net [get_bd_pins $gpio/s_axi_aresetn] [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
 
     set dma [tapasco::ip::create_bluedma_x16 "dma"]
     connect_bd_net [get_bd_pins $dma/IRQ_read] $irq_read
@@ -253,6 +264,7 @@ namespace eval platform {
     set m_intc [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_INTC"]
     set m_tapasco [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_TAPASCO"]
     set m_dma [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DMA"]
+    set m_mem_gpio [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_MEM_GPIO"]
     set pcie_aclk [create_bd_pin -type "clk" -dir "O" "pcie_aclk"]
     set pcie_aresetn [create_bd_pin -type "rst" -dir "O" "pcie_aresetn"]
 
@@ -286,6 +298,18 @@ namespace eval platform {
     # connect external design clk
     connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $clkwiz_design_aclk
     connect_bd_net [get_bd_pins $design_clk_wiz/locked] $clkwiz_design_aresetn
+
+    # DDR training status
+    set ddr_ready [create_bd_pin -type "undef" -dir O "ddr_ready"]
+
+    set ddr_concat [tapasco::ip::create_xlconcat "ddr_ready_concat" 4]
+
+    connect_bd_net [get_bd_pins $f1_inst/ddra_is_ready] [get_bd_pins $ddr_concat/In0]
+    connect_bd_net [get_bd_pins $f1_inst/ddrb_is_ready] [get_bd_pins $ddr_concat/In1]
+    connect_bd_net [get_bd_pins $f1_inst/ddrc_is_ready] [get_bd_pins $ddr_concat/In2]
+    connect_bd_net [get_bd_pins $f1_inst/ddrd_is_ready] [get_bd_pins $ddr_concat/In3]
+
+    connect_bd_net [get_bd_pins $ddr_concat/dout] $ddr_ready
 
     # Connect DDR ports (DDR C is inside the Shell and should always be available)
     set ddr_available {}
@@ -345,7 +369,7 @@ namespace eval platform {
 
     # connect_bd_intf_net [get_bd_intf_pins "$out_ic/S00_AXI"] [get_bd_intf_pins "$f1_inst/M_AXI_OCL"]
 
-    set out_ic [tapasco::ip::create_axi_ic "out_ic" 1 4]
+    set out_ic [tapasco::ip::create_axi_ic "out_ic" 1 5]
 
     set_property -dict [list \
       CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
@@ -356,13 +380,15 @@ namespace eval platform {
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M01_AXI}] $m_tapasco
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M02_AXI}] $m_dma
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M03_AXI}] $m_intc
+    connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M04_AXI}] $m_mem_gpio
 
     connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
       [get_bd_pins $out_ic/ACLK] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == clk}] \
-      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == clk}]
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == clk}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M04_* && TYPE == clk}]
 
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == clk}]
@@ -372,7 +398,8 @@ namespace eval platform {
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == rst}] \
-      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == rst}]
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == rst}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME =~ M04_* && TYPE == rst}]
 
     connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == rst}]
