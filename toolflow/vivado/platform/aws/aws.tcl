@@ -738,6 +738,11 @@ namespace eval platform {
         exit 1
       }
     }
+
+    proc post_addr_map {} {
+      # Debug failed address mapping
+      save_bd_design
+    }
   }
 
   # End plugins
@@ -748,6 +753,7 @@ namespace eval platform {
   tapasco::register_plugin "platform::aws_plugins::pre_synth" "pre-synth"
   tapasco::register_plugin "platform::aws_plugins::post_synth" "post-synth"
   tapasco::register_plugin "platform::aws_plugins::create_tarfile" "post-impl"
+  # tapasco::register_plugin "platform::aws_plugins::post_addr_map" "post-address-map"
 
 }
 
