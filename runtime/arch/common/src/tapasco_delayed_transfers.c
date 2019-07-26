@@ -16,9 +16,9 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-/** @file	tapasco_delayed_transfers.c
- *  @brief	Functions for delayed memory transfers.
- *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+/** @file tapasco_delayed_transfers.c
+ *  @brief  Functions for delayed memory transfers.
+ *  @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #include <platform.h>
 #include <tapasco.h>

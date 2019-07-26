@@ -17,8 +17,8 @@
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
 /**
- *  @file	tapasco_pemgmt.c
- *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+ *  @file tapasco_pemgmt.c
+ *  @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #include <assert.h>
 #include <gen_stack.h>
@@ -220,13 +220,15 @@ tapasco_res_t tapasco_pemgmt_prepare_pe(tapasco_devctx_t *devctx,
     if (t->len > 0) {
       DEVLOG(devctx->id, LALL_PEMGMT,
              "job " PRIjob ": transferring %zd byte arg #%zd", j_id, t->len, a);
-      if(t->preloaded == 0) {
+      if (t->preloaded == 0) {
         if ((r = tapasco_transfer_to(devctx, j_id, t, slot_id)) !=
             TAPASCO_SUCCESS) {
           return r;
         }
       } else {
-        DEVLOG(devctx->id, LALL_PEMGMT, "Using preloaded data for argument %zd at handle " PRIhandle, a, slot_id);
+        DEVLOG(devctx->id, LALL_PEMGMT,
+               "Using preloaded data for argument %zd at handle " PRIhandle, a,
+               t->handle);
       }
       DEVLOG(devctx->id, LALL_PEMGMT,
              "job " PRIjob ": writing handle to arg #%zd (" PRIhandle ")", j_id,

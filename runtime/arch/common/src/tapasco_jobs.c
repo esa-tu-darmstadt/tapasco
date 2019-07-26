@@ -168,7 +168,8 @@ inline tapasco_res_t tapasco_jobs_get_arg(tapasco_jobs_t *jobs,
                                           void *arg_value) {
   assert(jobs);
 
-  if (arg_len != sizeof(uint8_t) && arg_len != sizeof(uint16_t) && arg_len != sizeof(uint32_t) && arg_len != sizeof(uint64_t))
+  if (arg_len != sizeof(uint8_t) && arg_len != sizeof(uint16_t) &&
+      arg_len != sizeof(uint32_t) && arg_len != sizeof(uint64_t))
     return TAPASCO_ERR_INVALID_ARG_SIZE;
   if (arg_idx >= TAPASCO_JOB_MAX_ARGS)
     return TAPASCO_ERR_INVALID_ARG_INDEX;
@@ -187,7 +188,8 @@ inline tapasco_res_t tapasco_jobs_set_arg(tapasco_jobs_t *jobs,
                                           void const *arg_value) {
   assert(jobs);
 
-  if (arg_len != sizeof(uint8_t) && arg_len != sizeof(uint16_t) && arg_len != sizeof(uint32_t) && arg_len != sizeof(uint64_t))
+  if (arg_len != sizeof(uint8_t) && arg_len != sizeof(uint16_t) &&
+      arg_len != sizeof(uint32_t) && arg_len != sizeof(uint64_t))
     return TAPASCO_ERR_INVALID_ARG_SIZE;
   if (arg_idx >= TAPASCO_JOB_MAX_ARGS)
     return TAPASCO_ERR_INVALID_ARG_INDEX;

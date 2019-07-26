@@ -22,27 +22,28 @@
  **/
 #include <assert.h>
 #include <platform.h>
+#include <tapasco_delayed_transfers.h>
 #include <tapasco_device.h>
 #include <tapasco_logging.h>
 #include <tapasco_pemgmt.h>
 #include <tapasco_perfc.h>
 #include <tapasco_regs.h>
 #include <tapasco_scheduler.h>
-#include <tapasco_delayed_transfers.h>
 #include <unistd.h>
 
 tapasco_res_t tapasco_scheduler_launch(tapasco_devctx_t *devctx,
                                        tapasco_job_id_t const j_id) {
   assert(devctx->jobs);
   tapasco_kernel_id_t const k_id =
-    tapasco_jobs_get_kernel_id(devctx->jobs, j_id);
+      tapasco_jobs_get_kernel_id(devctx->jobs, j_id);
   tapasco_slot_id_t slot_id;
   tapasco_res_t r;
 
   DEVLOG(devctx->id, LALL_SCHEDULER, "Preloading transfers for Job %d", j_id);
   size_t const num_args = tapasco_jobs_arg_count(devctx->jobs, j_id);
   for (size_t a = 0; a < num_args; ++a) {
-    tapasco_transfer_t *t = tapasco_jobs_get_arg_transfer(devctx->jobs, j_id, a);
+    tapasco_transfer_t *t =
+        tapasco_jobs_get_arg_transfer(devctx->jobs, j_id, a);
 
     if (t->len && !(t->flags & TAPASCO_DEVICE_COPY_PE_LOCAL)) {
       if ((r = tapasco_transfer_to(devctx, j_id, t, 0)) != TAPASCO_SUCCESS) {
@@ -51,7 +52,9 @@ tapasco_res_t tapasco_scheduler_launch(tapasco_devctx_t *devctx,
         t->preloaded = 1;
       }
     } else {
-      DEVLOG(devctx->id, LALL_SCHEDULER, "Can not preload local memory");
+      if (t->flags & TAPASCO_DEVICE_COPY_PE_LOCAL) {
+        DEVLOG(devctx->id, LALL_SCHEDULER, "Can not preload local memory");
+      }
     }
   }
 
@@ -100,12 +103,12 @@ tapasco_res_t tapasco_scheduler_launch(tapasco_devctx_t *devctx,
 }
 
 inline tapasco_res_t tapasco_device_job_collect(tapasco_devctx_t *devctx,
-    tapasco_job_id_t const job_id) {
+                                                tapasco_job_id_t const job_id) {
   return tapasco_scheduler_finish_job(devctx, job_id);
 }
 
 tapasco_res_t tapasco_scheduler_finish_job(tapasco_devctx_t *devctx,
-    tapasco_job_id_t const j_id) {
+                                           tapasco_job_id_t const j_id) {
   platform_res_t pr;
   const tapasco_slot_id_t slot_id = tapasco_jobs_get_slot(devctx->jobs, j_id);
   DEVLOG(devctx->id, LALL_SCHEDULER,
