@@ -314,18 +314,20 @@ namespace eval tapasco {
     # special case: bypass (not necessary; only for performance, Tcl is slow)
     if {$totalOut == 1} {
       puts "  building 1-on-1 bypass"
-      set bic [ip::create_axi_ic "bic" 1 1]
+      #set bic [ip::create_axi_ic "bic" 1 1]
       set m [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" "M000_AXI"]
       set s [create_bd_intf_pin -mode Slave -vlnv "xilinx.com:interface:aximm_rtl:1.0" "S000_AXI"]
-      connect_bd_intf_net $s [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Slave"} -of_objects $bic]
-      connect_bd_intf_net [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Master"} -of_objects $bic] $m
+      #onnect_bd_intf_net $s [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Slave"} -of_objects $bic]
+      #connect_bd_intf_net [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Master"} -of_objects $bic] $m
 
-      connect_bd_net $m_aclk [get_bd_pins -filter {NAME =~ "M*_ACLK"} -of_objects $bic]
-      connect_bd_net $s_aclk [get_bd_pins -filter {NAME =~ "S*_ACLK"} -of_objects $bic]
-      connect_bd_net $m_p_arstn [get_bd_pins -filter {NAME =~ "M*_ARESETN"} -of_objects $bic]
-      connect_bd_net $s_p_arstn [get_bd_pins -filter {NAME =~ "S*_ARESETN"} -of_objects $bic]
-      connect_bd_net $main_aclk [get_bd_pins -filter {NAME == "ACLK"} -of_objects $bic]
-      connect_bd_net $main_ic_arstn [get_bd_pins -filter {NAME == "ARESETN"} -of_objects $bic]
+      connect_bd_intf_net $m $s
+
+      #connect_bd_net $m_aclk [get_bd_pins -filter {NAME =~ "M*_ACLK"} -of_objects $bic]
+      #connect_bd_net $s_aclk [get_bd_pins -filter {NAME =~ "S*_ACLK"} -of_objects $bic]
+      #connect_bd_net $m_p_arstn [get_bd_pins -filter {NAME =~ "M*_ARESETN"} -of_objects $bic]
+      #connect_bd_net $s_p_arstn [get_bd_pins -filter {NAME =~ "S*_ARESETN"} -of_objects $bic]
+      #connect_bd_net $main_aclk [get_bd_pins -filter {NAME == "ACLK"} -of_objects $bic]
+      #connect_bd_net $main_ic_arstn [get_bd_pins -filter {NAME == "ARESETN"} -of_objects $bic]
       current_bd_instance $instance
       return $group
     }

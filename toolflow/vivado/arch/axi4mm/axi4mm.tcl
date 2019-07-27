@@ -128,7 +128,6 @@ namespace eval arch {
   proc arch_create_mem_interconnects {composition outs} {
     variable arch_mem_ports
     set no_kinds [llength [dict keys $composition]]
-    set ic_m 0
     set m_total 0
 
     # determine number of masters from composition
@@ -136,8 +135,6 @@ namespace eval arch {
       set no_inst [dict get $composition $i count]
       set example [get_bd_cells [format "target_ip_%02d_000" $i]]
       set masters [tapasco::get_aximm_interfaces $example]
-      set ic_m [expr "$ic_m + [llength $masters] * $no_inst"]
-
       set m_total [expr "$m_total + [llength $masters] * $no_inst"]
     }
 
@@ -160,6 +157,11 @@ namespace eval arch {
       lappend ic_ports [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" [format "M_MEM_%d" $i]]
       lappend mdist 0
     }
+
+    puts "COMPOSITION: $composition"
+    puts "OUTS: $outs"
+    puts "IC_PORTS: $ic_ports"
+    puts "MDIST: $mdist"
 
     # distribute masters round-robin on all output ports: mdist holds
     # number of masters for each port
@@ -388,6 +390,10 @@ namespace eval arch {
   proc create {{mgroups 0}} {
     variable arch_mem_ics
     variable arch_host_ics
+
+    set mgroups [list 1 1 1 1 1 1 1 1]
+
+    puts "MGROUPS: $mgroups"
 
     if {$mgroups == 0} {
       set mgroups [platform::max_masters]

@@ -87,6 +87,13 @@ namespace eval platform {
         "M_MEM_GPIO" { foreach {base stride range comp} [list 0x00002000 0       0      "PLATFORM_COMPONENT_MEM_GPIO"] {} }
         "M_HOST"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_MEM_0"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
+        "M_MEM_1"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
+        "M_MEM_2"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
+        "M_MEM_3"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
+        "M_MEM_4"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
+        "M_MEM_5"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
+        "M_MEM_6"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
+        "M_MEM_7"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_ARCH"    { set base "skip" }
         "M_DDR"    { foreach {base stride range comp} [list 0 0 0 ""] {} }
         default     { if { [dict exists $extra_masters [get_property NAME $m]] } {
@@ -275,6 +282,11 @@ namespace eval platform {
     # create instances of shell
     set f1_inst [create_f1_shell]
 
+    set oldCurInst [current_bd_instance .]
+    current_bd_instance "/arch"
+    set arch_axi_m [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Master"}]
+    current_bd_instance $oldCurInst
+
     connect_bd_net $irq_input [get_bd_pins "$f1_inst/irq_req"]
     connect_bd_net $ack_output [get_bd_pins "$f1_inst/irq_ack"]
 
@@ -321,10 +333,10 @@ namespace eval platform {
 
     # Connect DMA engine and architecture to local memory
 
-    set ddr_ic [tapasco::ip::create_axi_sc "ddr_ic" 2 [llength $ddr_available]]
+    set ddr_ic [tapasco::ip::create_axi_sc "ddr_ic" [expr "1 + [llength $arch_axi_m]"] [llength $ddr_available]]
     set_property -dict [list CONFIG.NUM_CLKS {2}] $ddr_ic
-    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins $ddr_ic/aclk1]
-    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] [get_bd_pins $ddr_ic/aclk]
+    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins $ddr_ic/aclk]
+    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] [get_bd_pins $ddr_ic/aclk1]
 
     # set ddr_ic [tapasco::ip::create_axi_ic "ddr_ic" 2 [llength $ddr_available]]
 
@@ -354,8 +366,10 @@ namespace eval platform {
     set s_ddr [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DDR"]
     connect_bd_intf_net [get_bd_intf_pins "$ddr_ic/S00_AXI"] $s_ddr
 
-    set s_axi_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0"]
-    connect_bd_intf_net [get_bd_intf_pins "$ddr_ic/S01_AXI"] $s_axi_mem
+    for {set i 0} {$i < [llength $arch_axi_m]} {incr i} {
+      set s_axi_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 [format "S_MEM_%d" $i]]
+      connect_bd_intf_net [get_bd_intf_pins [format "$ddr_ic/S%02d_AXI" [expr "$i + 1"]]] $s_axi_mem
+    }
 
     # Connect configuration AXI ports (connected to 32 MB BAR provided by the Shell)
 
@@ -780,7 +794,7 @@ namespace eval platform {
   tapasco::register_plugin "platform::aws_plugins::pre_synth" "pre-synth"
   tapasco::register_plugin "platform::aws_plugins::post_synth" "post-synth"
   tapasco::register_plugin "platform::aws_plugins::create_tarfile" "post-impl"
-  # tapasco::register_plugin "platform::aws_plugins::post_addr_map" "post-address-map"
+  tapasco::register_plugin "platform::aws_plugins::post_addr_map" "post-address-map"
 
 }
 
