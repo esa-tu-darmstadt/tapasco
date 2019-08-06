@@ -177,8 +177,7 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,
 		DEVERR(dma->dev_id,
 		       "Transfer is not properly aligned for dma engine. All transfers have to be aligned to %d bytes.",
 		       dma->alignment);
-		err = -EAGAIN;
-		goto copy_err;
+		return -EAGAIN;
 	}
 
 	mutex_lock(&dma->wq_mutex);
