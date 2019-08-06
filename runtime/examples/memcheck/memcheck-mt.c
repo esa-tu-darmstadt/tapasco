@@ -113,7 +113,7 @@ static void *test_thread(void *p) {
       merr += 1;
     }
     __atomic_add_fetch(&errs, merr, __ATOMIC_SEQ_CST);
-    tapasco_device_free(dev, h, 0);
+    tapasco_device_free(dev, h, arr_szs[s] * sizeof(int), 0);
 
     if (!merr)
       /*printf("%ld: Array size %zd (%zd byte) ok!\n",
