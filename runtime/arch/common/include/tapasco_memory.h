@@ -46,7 +46,8 @@ tapasco_res_t tapasco_device_alloc(tapasco_devctx_t *dev_ctx,
  * @param flags device memory allocation flags
  **/
 void tapasco_device_free(tapasco_devctx_t *dev_ctx, tapasco_handle_t handle,
-                         tapasco_device_alloc_flag_t const flags, ...);
+                         size_t len, tapasco_device_alloc_flag_t const flags,
+                         ...);
 
 /**
  * Copys memory from main memory to the FPGA device.

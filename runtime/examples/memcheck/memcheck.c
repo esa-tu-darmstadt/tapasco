@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
     check_fpga(
         tapasco_device_copy_from(dev, h, rarr, arr_szs[s] * sizeof(int), 0));
 
-    tapasco_device_free(dev, h, 0);
+    tapasco_device_free(dev, h, arr_szs[s] * sizeof(int), 0);
 
     int merr = compare_arrays(arr, rarr, arr_szs[s]);
     errs = +merr;

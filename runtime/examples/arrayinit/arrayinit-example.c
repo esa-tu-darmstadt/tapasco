@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
                                            TAPASCO_DEVICE_COPY_BLOCKING));
     unsigned int errs = check_array(&arr[SZ * run], SZ);
     printf("\nRUN %d %s\n", run, errs == 0 ? "OK" : "NOT OK");
-    tapasco_device_free(dev, h, 0);
+    tapasco_device_free(dev, h, SZ * sizeof(int), 0);
     tapasco_device_release_job_id(dev, j_id);
   }
 

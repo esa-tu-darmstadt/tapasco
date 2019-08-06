@@ -9,7 +9,7 @@ typedef struct platform_device_operations {
   platform_res_t (*alloc)(platform_devctx_t *devctx, size_t const len,
                           platform_mem_addr_t *addr,
                           platform_alloc_flags_t const flags);
-  platform_res_t (*dealloc)(platform_devctx_t *devctx,
+  platform_res_t (*dealloc)(platform_devctx_t *devctx, size_t const len,
                             platform_mem_addr_t const addr,
                             platform_alloc_flags_t const flags);
   platform_res_t (*read_mem)(platform_devctx_t const *devctx,
@@ -44,6 +44,7 @@ platform_res_t default_alloc_driver(platform_devctx_t *devctx, size_t const len,
                                     platform_alloc_flags_t const flags);
 
 platform_res_t default_dealloc_driver(platform_devctx_t *devctx,
+                                      size_t const len,
                                       platform_mem_addr_t const addr,
                                       platform_alloc_flags_t const flags);
 
@@ -51,7 +52,7 @@ platform_res_t default_alloc_host(platform_devctx_t *devctx, size_t const len,
                                   platform_mem_addr_t *addr,
                                   platform_alloc_flags_t const flags);
 
-platform_res_t default_dealloc_host(platform_devctx_t *devctx,
+platform_res_t default_dealloc_host(platform_devctx_t *devctx, size_t const len,
                                     platform_mem_addr_t const addr,
                                     platform_alloc_flags_t const flags);
 
