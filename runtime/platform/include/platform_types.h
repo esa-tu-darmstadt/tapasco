@@ -22,6 +22,7 @@
 #include "platform_components.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <tlkm_access.h>
 #include <tlkm_ioctl_cmds.h>
 

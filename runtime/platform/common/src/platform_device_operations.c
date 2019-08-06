@@ -99,7 +99,8 @@ platform_res_t default_alloc_driver(platform_devctx_t *devctx, size_t const len,
   return PLATFORM_SUCCESS;
 }
 
-platform_res_t default_dealloc_driver(platform_devctx_t *devctx, size_t const len,
+platform_res_t default_dealloc_driver(platform_devctx_t *devctx,
+                                      size_t const len,
                                       platform_mem_addr_t const addr,
                                       platform_alloc_flags_t const flags) {
   DEVLOG(devctx->dev_id, LPLL_MM,

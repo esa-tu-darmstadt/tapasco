@@ -161,8 +161,9 @@ tapasco_res_t tapasco_device_alloc(tapasco_devctx_t *devctx,
   return TAPASCO_ERR_OUT_OF_MEMORY;
 }
 
-void tapasco_device_free(tapasco_devctx_t *devctx, tapasco_handle_t handle, size_t len,
-                         tapasco_device_alloc_flag_t const flags, ...) {
+void tapasco_device_free(tapasco_devctx_t *devctx, tapasco_handle_t handle,
+                         size_t len, tapasco_device_alloc_flag_t const flags,
+                         ...) {
   platform_devctx_t *p = devctx->pdctx;
   LOG(LALL_MEM, "freeing handle " PRIhandle, handle);
   if (flags & TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL) {

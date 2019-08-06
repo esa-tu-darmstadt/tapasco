@@ -43,13 +43,13 @@ int roundUp(int numToRound, int multiple) {
 }
 
 void print_chain(block_t *root) {
-    block_t *cur = root;
-    GEN_MEM_LOG("CHAIN ");
-    while(cur != NULL) {
-        GEN_MEM_LOG("%X (%zdB) -> ", cur->base, cur->range);
-        cur = cur->next;
-    }
-    GEN_MEM_LOG("NULL\n");
+  block_t *cur = root;
+  GEN_MEM_LOG("CHAIN ");
+  while (cur != NULL) {
+    GEN_MEM_LOG("%X (%zdB) -> ", cur->base, cur->range);
+    cur = cur->next;
+  }
+  GEN_MEM_LOG("NULL\n");
 }
 
 block_t *gen_mem_create(addr_t const base, size_t const range) {
@@ -68,13 +68,13 @@ block_t *gen_mem_create(addr_t const base, size_t const range) {
 }
 
 void gen_mem_destroy(block_t **root) {
-    block_t *cur = *root;
-    while(cur != NULL) {
-        block_t *nxt = cur->next;
-        free(cur);
-        cur = nxt;
-    }
-    *root = NULL;
+  block_t *cur = *root;
+  while (cur != NULL) {
+    block_t *nxt = cur->next;
+    free(cur);
+    cur = nxt;
+  }
+  *root = NULL;
 }
 
 addr_t gen_mem_next_base(block_t *root) {
@@ -100,7 +100,7 @@ addr_t gen_mem_malloc(block_t **root, size_t const l) {
   }
   if (!prv)
     return INVALID_ADDRESS;
-  if(prv->next == NULL) {
+  if (prv->next == NULL) {
     block_t *nb = (block_t *)malloc(sizeof(*nb));
     nxt = nb;
     prv->next = nb;
@@ -124,7 +124,7 @@ void gen_mem_free(block_t **root, addr_t const p, size_t const l) {
   assert(root || "argument to gen_mem_free may not be NULL");
   GEN_MEM_LOG("freeing 0x%08lx - 0x%08lx\n", (unsigned long)p,
               p + roundUp(l, GEN_MEM_ALIGNMENT));
-  if(l == 0) {
+  if (l == 0) {
     GEN_MEM_LOG("Can't free empty range\n");
     return;
   }
