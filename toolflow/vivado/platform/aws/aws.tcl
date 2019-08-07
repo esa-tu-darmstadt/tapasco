@@ -333,7 +333,7 @@ namespace eval platform {
 
     # Memory ILA
 
-    set ila [tapasco::ip::create_system_ila "memory_ila" 4 4096]
+    #set ila [tapasco::ip::create_system_ila "memory_ila" 4 4096]
     #set_property -dict [list CONFIG.C_SLOT_0_MAX_RD_BURSTS {4} \
     #                    CONFIG.C_SLOT_0_MAX_WR_BURSTS {4} \
     #                    CONFIG.C_SLOT_1_MAX_RD_BURSTS {4} \
@@ -343,12 +343,12 @@ namespace eval platform {
     #                    CONFIG.C_SLOT_3_MAX_RD_BURSTS {4} \
     #                    CONFIG.C_SLOT_3_MAX_WR_BURSTS {4} \
     #                    ] $ila
-    connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_0_AXI] [get_bd_intf_pins "$f1_inst/S_AXI_DDRA"]
-    connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_1_AXI] [get_bd_intf_pins "$f1_inst/S_AXI_DDRB"]
-    connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_2_AXI] [get_bd_intf_pins "$f1_inst/S_AXI_DDRC"]
-    connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_3_AXI] [get_bd_intf_pins "$f1_inst/S_AXI_DDRD"]
-    connect_bd_net [get_bd_pins $ila/clk] [tapasco::subsystem::get_port "host" "clk"]
-    connect_bd_net [get_bd_pins $ila/resetn] [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
+    #connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_0_AXI] [get_bd_intf_pins "$f1_inst/S_AXI_DDRA"]
+    #connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_1_AXI] [get_bd_intf_pins "$f1_inst/S_AXI_DDRB"]
+    #connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_2_AXI] [get_bd_intf_pins "$f1_inst/S_AXI_DDRC"]
+    #connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_3_AXI] [get_bd_intf_pins "$f1_inst/S_AXI_DDRD"]
+    #connect_bd_net [get_bd_pins $ila/clk] [tapasco::subsystem::get_port "host" "clk"]
+    #connect_bd_net [get_bd_pins $ila/resetn] [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
 
     # Connect DMA engine and architecture to local memory
 
