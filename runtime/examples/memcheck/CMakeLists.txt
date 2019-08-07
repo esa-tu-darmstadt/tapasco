@@ -9,7 +9,7 @@ find_package(TapascoPlatform REQUIRED)
 find_package(Tapasco REQUIRED)
 endif(NOT TARGET tapasco)
 
-add_executable(memcheck memcheck.c)
+add_executable(memcheck memcheck.cpp)
 set_tapasco_defaults(memcheck)
 target_link_libraries(memcheck PRIVATE tapasco tlkm platform tapasco-common)
 
