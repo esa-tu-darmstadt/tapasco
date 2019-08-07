@@ -25,8 +25,10 @@
 //! @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
 //!
 #include <iostream>
-#include <tapasco.hpp>
 #include <vector>
+#include <algorithm>
+
+#include <tapasco.hpp>
 
 using namespace tapasco;
 
@@ -53,22 +55,21 @@ int compare_arrays(const std::vector<int> &arr, const std::vector<int> &rarr,
 
 int main(int argc, char **argv) {
   int errs = 0;
-  int max_pow = 20;
+  int max_pow = 28;
 
   Tapasco tapasco;
 
   for (int s = 0; s < max_pow && errs == 0; ++s) {
     size_t len = 1 << s;
     std::cout << "Checking array size " << len << "B" << std::endl;
-    auto arr = init_array(len / sizeof(int));
+    size_t elements = std::max((size_t)1, len / sizeof(int));
+    auto arr = init_array(elements);
 
-    std::vector<int> rarr(len / 4, 42);
+    std::vector<int> rarr(elements, 42);
 
     // get fpga handle
     tapasco_handle_t h;
     tapasco.alloc(h, len, (tapasco_device_alloc_flag_t)0);
-    std::cout << "handle = 0x" << std::hex << (unsigned long)h << std::dec
-              << std::endl;
 
     // copy data to and back
     tapasco.copy_to(arr.data(), h, len, (tapasco_device_copy_flag_t)0);
@@ -76,7 +77,7 @@ int main(int argc, char **argv) {
 
     tapasco.free(h, len, (tapasco_device_alloc_flag_t)0);
 
-    int merr = compare_arrays(arr, rarr, len);
+    int merr = compare_arrays(arr, rarr, elements);
     errs = +merr;
 
     if (!merr)
