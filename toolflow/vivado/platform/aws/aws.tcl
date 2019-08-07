@@ -354,8 +354,8 @@ namespace eval platform {
 
     set ddr_ic [tapasco::ip::create_axi_sc "ddr_ic" [expr "1 + [llength $arch_axi_m]"] [llength $ddr_available]]
     set_property -dict [list CONFIG.NUM_CLKS {2}] $ddr_ic
-    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins $ddr_ic/aclk]
-    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] [get_bd_pins $ddr_ic/aclk1]
+    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins $ddr_ic/aclk1]
+    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] [get_bd_pins $ddr_ic/aclk]
 
     # set ddr_ic [tapasco::ip::create_axi_ic "ddr_ic" 2 [llength $ddr_available]]
 
