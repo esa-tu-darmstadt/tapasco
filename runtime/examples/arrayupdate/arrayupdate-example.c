@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
     printf("TPC output for run %d: %d\n", run, r);
     unsigned int errs = check_arrays(&arr[SZ * run], &golden_arr[SZ * run], SZ);
     printf("\nRUN %d %s\n", run, errs == 0 ? "OK" : "NOT OK");
-    tapasco_device_free(dev, h, 0);
+    tapasco_device_free(dev, h, SZ * sizeof(int), 0);
     tapasco_device_release_job_id(dev, j_id);
   }
 

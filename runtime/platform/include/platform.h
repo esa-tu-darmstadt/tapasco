@@ -171,10 +171,10 @@ platform_alloc(platform_devctx_t *ctx, size_t const len,
  **/
 static inline platform_res_t
 platform_dealloc(platform_devctx_t *ctx, platform_mem_addr_t const addr,
-                 platform_alloc_flags_t const flags) {
+                 size_t const len, platform_alloc_flags_t const flags) {
   assert(ctx);
   assert(ctx->dops.dealloc);
-  return ctx->dops.dealloc(ctx, addr, flags);
+  return ctx->dops.dealloc(ctx, len, addr, flags);
 }
 
 /**

@@ -111,7 +111,7 @@ private:
         bytes += chunk_sz;
       }
     }
-    tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+    tapasco.free(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
     return r;
   }
 
@@ -133,7 +133,7 @@ private:
         bytes += chunk_sz;
       }
     }
-    tapasco.free(h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+    tapasco.free(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
     return r;
   }
 
