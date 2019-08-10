@@ -313,22 +313,18 @@ namespace eval platform {
 
     # DDR training status
     set ddr_ready [create_bd_pin -type "undef" -dir O "ddr_ready"]
-
     set ddr_concat [tapasco::ip::create_xlconcat "ddr_ready_concat" 4]
-
-    connect_bd_net [get_bd_pins $f1_inst/ddra_is_ready] [get_bd_pins $ddr_concat/In0]
-    connect_bd_net [get_bd_pins $f1_inst/ddrb_is_ready] [get_bd_pins $ddr_concat/In1]
-    connect_bd_net [get_bd_pins $f1_inst/ddrc_is_ready] [get_bd_pins $ddr_concat/In2]
-    connect_bd_net [get_bd_pins $f1_inst/ddrd_is_ready] [get_bd_pins $ddr_concat/In3]
-
     connect_bd_net [get_bd_pins $ddr_concat/dout] $ddr_ready
 
     # Connect DDR ports (DDR C is inside the Shell and should always be available)
     set ddr_available {}
+    set i 0
     foreach x {A B C D} {
       if {[get_property "CONFIG.DDR_${x}_PRESENT" $f1_inst] eq 1} {
         set ddr_available [lappend ddr_available $x]
+        connect_bd_net [get_bd_pins "$f1_inst/ddr[string tolower $x]_is_ready"] [get_bd_pins "$ddr_concat/In${i}"]
       }
+      incr i
     }
 
     # Memory ILA
