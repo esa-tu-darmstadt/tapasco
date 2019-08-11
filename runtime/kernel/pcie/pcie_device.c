@@ -353,6 +353,7 @@ void pcie_device_destroy(struct tlkm_device *dev)
 int pcie_device_init_subsystems(struct tlkm_device *dev, void *data)
 {
 	int ret = 0;
+	uint32_t status, c;
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
 
@@ -360,13 +361,12 @@ int pcie_device_init_subsystems(struct tlkm_device *dev, void *data)
 		dev, "PLATFORM_COMPONENT_MEM_GPIO");
 	if (gpio_base != -1) {
 		volatile uint32_t *ddr_ready = (dev->mmap.plat + gpio_base);
-		DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
-		       "DDR memory training status: %u", ddr_ready[0]);
-		if ((ddr_ready[0] & 0xf) != 0xf) {
-			DEVERR(dev->dev_id,
-			       "at least one memory channel is not ready");
-			ret = -EFAULT;
-			goto pcie_subsystem_err;
+		status = ddr_ready[0];
+		for (c = 0; c < 4; c++) {
+			if (!(status & (1 << c))) {
+				DEVWRN(dev->dev_id,
+				       "memory channel %c is not available or not ready", 65 + c);
+			}
 		}
 	}
 
