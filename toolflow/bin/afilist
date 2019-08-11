@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+
+"""
+Helper script for listing own AFIs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Prints out a table with all (max. 100) AFIs that were
+generated using the currenlty logged in AWS account.
+
+:Copyright: 2019 Micha Ober
+"""
+
+from tabulate import tabulate
+import boto3
+
+ec2 = boto3.client('ec2')
+
+response = ec2.describe_fpga_images(
+    DryRun=False,
+    Owners=[
+        'self',
+    ],
+    MaxResults=100
+)
+
+data = [[d['FpgaImageId'],
+         d['FpgaImageGlobalId'],
+         d['State']['Code'],
+         d['Name'],
+         d['ShellVersion'],
+         d['CreateTime'].strftime('%Y-%m-%d'),
+         d['Public']
+         ] for d in response['FpgaImages']]
+
+header = ['FpgaImageId','FpgaImageGlobalId','State','Name','ShellVer','CreateTime','Public']
+
+data.sort(key=lambda k:k[3])
+print(tabulate(data, header, tablefmt='github'))
+
