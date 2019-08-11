@@ -291,25 +291,80 @@ namespace eval platform {
     connect_bd_net $ack_output [get_bd_pins "$f1_inst/irq_ack"]
 
     # create clocking wizard instance and ports
-    set design_clk_wiz [tapasco::ip::create_clk_wiz design_clk_wiz]
-    set_property -dict [list CONFIG.CLK_OUT1_PORT {design_clk} \
-                        CONFIG.USE_SAFE_CLOCK_STARTUP {false} \
-                        CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
-                        CONFIG.USE_LOCKED {true} \
-                        CONFIG.USE_RESET {true} \
-                        CONFIG.RESET_TYPE {ACTIVE_LOW} \
-                        CONFIG.RESET_PORT {resetn} \
-                        ] $design_clk_wiz
+    #     0   1   2   3
+    # A: 250 125 375 500
+    # B: 450 225
+    # C: 150 200
+
+    switch [tapasco::get_design_frequency] {
+      "250" {
+          set clk_group "a"
+          set clk_port "0"
+      }
+      "125" {
+          set clk_group "a"
+          set clk_port "1"
+      }
+      "375" {
+          set clk_group "a"
+          set clk_port "2"
+      }
+      "500" {
+          set clk_group "a"
+          set clk_port "3"
+      }
+      "450" {
+          set clk_group "b"
+          set clk_port "0"
+      }
+      "225" {
+          set clk_group "b"
+          set clk_port "1"
+      }
+      "150" {
+          set clk_group "c"
+          set clk_port "0"
+      }
+      "200" {
+          set clk_group "c"
+          set clk_port "1"
+      }
+    }
 
     set clkwiz_design_aclk [create_bd_pin -type "clk" -dir "O" "design_aclk"]
     set clkwiz_design_aresetn [create_bd_pin -type "rst" -dir "O" "design_aresetn"]
 
-    connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins "$f1_inst/rst_main_n_out"]
-    connect_bd_net [get_bd_pins $design_clk_wiz/clk_in1] [get_bd_pins "$f1_inst/clk_extra_a1_out"]
+    if {[info exist clk_group] eq 0} {
+      set design_clk_wiz [tapasco::ip::create_clk_wiz design_clk_wiz]
+      set_property -dict [list CONFIG.CLK_OUT1_PORT {design_clk} \
+                          CONFIG.USE_SAFE_CLOCK_STARTUP {false} \
+                          CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
+                          CONFIG.USE_LOCKED {true} \
+                          CONFIG.USE_RESET {true} \
+                          CONFIG.RESET_TYPE {ACTIVE_LOW} \
+                          CONFIG.RESET_PORT {resetn} \
+                          ] $design_clk_wiz
 
-    # connect external design clk
-    connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $clkwiz_design_aclk
-    connect_bd_net [get_bd_pins $design_clk_wiz/locked] $clkwiz_design_aresetn
+      connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins "$f1_inst/rst_main_n_out"]
+      connect_bd_net [get_bd_pins $design_clk_wiz/clk_in1] [get_bd_pins "$f1_inst/clk_extra_a1_out"]
+
+      # connect external design clk
+      connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $clkwiz_design_aclk
+      connect_bd_net [get_bd_pins $design_clk_wiz/locked] $clkwiz_design_aresetn
+    } else {
+      set_property -dict [list \
+          "CONFIG.NUM_[string toupper $clk_group]_CLOCKS" [expr "$clk_port + 1"] \
+          CONFIG.CLOCK_B_RECIPE {2} \
+          CONFIG.CLOCK_C_RECIPE {1} \
+      ] $f1_inst
+
+      if {$clk_group == "a" && $clk_port == "0"} {
+        connect_bd_net [get_bd_pins "$f1_inst/clk_main_a0_out"] $clkwiz_design_aclk
+      } else {
+        connect_bd_net [get_bd_pins "$f1_inst/clk_extra_${clk_group}${clk_port}_out"] $clkwiz_design_aclk
+      }
+      connect_bd_net [get_bd_pins "$f1_inst/rst_main_n_out"] $clkwiz_design_aresetn
+    }
 
     # DDR training status
     set ddr_ready [create_bd_pin -type "undef" -dir O "ddr_ready"]
@@ -513,10 +568,6 @@ namespace eval platform {
         CONFIG.AUX_PRESENT {1} \
         CONFIG.BAR1_PRESENT {0} \
         CONFIG.NUM_A_CLOCKS {2} \
-        CONFIG.CLOCK_A0_FREQ {250000000} \
-        CONFIG.CLOCK_A1_FREQ {125000000} \
-        CONFIG.CLOCK_A2_FREQ {375000000} \
-        CONFIG.CLOCK_A3_FREQ {500000000} \
         CONFIG.CLOCK_A_RECIPE {1} \
         CONFIG.DEVICE_ID {0xF000} \
         CONFIG.PCIS_PRESENT {0} \
@@ -557,9 +608,12 @@ namespace eval platform {
       set ::hdk_version 1.0.0
     }
 
-    set ::clock_recipe_a [get_property CONFIG.CLOCK_A_RECIPE [get_bd_cells $f1_inst]]
-    set ::clock_recipe_b [get_property CONFIG.CLOCK_B_RECIPE [get_bd_cells $f1_inst]]
-    set ::clock_recipe_c [get_property CONFIG.CLOCK_C_RECIPE [get_bd_cells $f1_inst]]
+    # set ::clock_recipe_a [get_property CONFIG.CLOCK_A_RECIPE [get_bd_cells $f1_inst]]
+    # set ::clock_recipe_b [get_property CONFIG.CLOCK_B_RECIPE [get_bd_cells $f1_inst]]
+    # set ::clock_recipe_c [get_property CONFIG.CLOCK_C_RECIPE [get_bd_cells $f1_inst]]
+    set ::clock_recipe_a "1"
+    set ::clock_recipe_b "2"
+    set ::clock_recipe_c "1"
 
     set ::device_id [get_property CONFIG.DEVICE_ID [get_bd_cells $f1_inst]]
     set ::vendor_id [get_property CONFIG.VENDOR_ID [get_bd_cells $f1_inst]]
