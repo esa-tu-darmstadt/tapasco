@@ -53,6 +53,8 @@ parser.add_argument('tarfile',
 parser.add_argument('name', help='name of the AFI')
 parser.add_argument('--dry-run', default=False, action='store_true',
     help='dry run operation')
+parser.add_argument('--no-wait', default=False, action='store_true',
+    help='do not wait for AFI generation to complete')
 parser.add_argument('--verbose', default=False, action='store_true',
     help='be more talkative')
 parser.add_argument('--description', default=False,
@@ -102,7 +104,8 @@ response = ec2.meta.client.create_fpga_image(
 print('FpgaImageGlobalId = {}'.format(response['FpgaImageGlobalId']))
 print('FpgaImageId       = {}'.format(response['FpgaImageId']))
 
-if shutil.which('wait_for_afi.py') is not None:
-    subprocess.call(['wait_for_afi.py', '--afi', response['FpgaImageId']])
+if not args.no_wait:
+    if shutil.which('wait_for_afi.py') is not None:
+        subprocess.call(['wait_for_afi.py', '--afi', response['FpgaImageId']])
 
 # vim: set expandtab ts=4 sw=4:

@@ -26,13 +26,13 @@ response = ec2.describe_fpga_images(
 data = [[d['FpgaImageId'],
          d['FpgaImageGlobalId'],
          d['State']['Code'],
-         d['Name'],
-         d['ShellVersion'],
+         (d['Name'][:30] + '..') if len(d['Name']) > 30 else d['Name'],
+         d.get('ShellVersion', 'n/a'),
          d['CreateTime'].strftime('%Y-%m-%d'),
          d['Public']
          ] for d in response['FpgaImages']]
 
-header = ['FpgaImageId','FpgaImageGlobalId','State','Name','ShellVer','CreateTime','Public']
+header = ['FpgaImageId','FpgaImageGlobalId','State','Name','ShellVer','Created','Public']
 
 data.sort(key=lambda k:k[3])
 print(tabulate(data, header, tablefmt='github'))
