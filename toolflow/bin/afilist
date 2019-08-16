@@ -10,18 +10,39 @@ generated using the currenlty logged in AWS account.
 :Copyright: 2019 Micha Ober
 """
 
+import argparse
 from tabulate import tabulate
 import boto3
 
 ec2 = boto3.client('ec2')
+
+parser = argparse.ArgumentParser(description='Helper script to list generated AFIs')
+parser.add_argument('--name', help='Filter AFIs by name.')
+args = parser.parse_args()
+
+filters = []
+if args.name is not None:
+    filters.extend([
+        {
+            'Name': 'name',
+            'Values': [
+                f'*{args.name}*'
+            ]
+        },
+    ])
 
 response = ec2.describe_fpga_images(
     DryRun=False,
     Owners=[
         'self',
     ],
+    Filters=filters,
     MaxResults=100
 )
+
+if not response.get('FpgaImages', False):
+    print('No AFIs found.')
+    exit()
 
 data = [[d['FpgaImageId'],
          d['FpgaImageGlobalId'],
