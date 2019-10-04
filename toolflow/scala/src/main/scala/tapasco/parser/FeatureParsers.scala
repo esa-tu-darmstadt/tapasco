@@ -29,7 +29,7 @@ private object FeatureParsers {
   def feature: Parser[Feature] =
     (qstring.opaque("feature name").! ~ ws ~/
       featureBegin ~ ws ~/
-      commaSeparatedKeyVal ~/
+      commaSeparatedKeyVal ~ ws ~/
       featureEnd ~ ws)
       .map(p => Feature(p._1, FMap(p._2.toMap)))
 
@@ -42,7 +42,7 @@ private object FeatureParsers {
   val featureAssigns = Seq("->", "=", ":=", ":")
 
   def commaSeparatedKeyVal: Parser[Seq[(String, FString)]] =
-    ((featureKeyValue ~ "," ~ ws) | (featureKeyValue)).rep
+    featureKeyValue.rep(sep = ws~","~ws~/)
 
   def featureBegin: Parser[Unit] =
     CharIn(featureBeginChars).opaque(s"begin of feature mark, one of '$featureBeginChars'")
