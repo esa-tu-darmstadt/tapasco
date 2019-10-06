@@ -63,11 +63,12 @@ Basic Setup
     TaPaSCo setup script via `. setup.sh` or `source setup.sh`.
     You need to do this every time you use TaPaSCo (or put it into your
     `~/.bashrc` or `~/.profile`).
-2.  Build TaPaSCo: ```bash
+2.  Build TaPaSCo: 
+    ```bash
     cd toolflow/scala
     ./gradlew installDist
     ```
-3.  _Optional_: Run TaPaSCo unit tests: `sbt test`
+3.  _Optional_: Run TaPaSCo unit tests from `toolflow/scala`: `gradle check`
 4.  _Optional_: Generate sample configuration file: `tapasco -n config.json`
     TaPaSCo should exit immediately and `config.json` will include a full
     configuration that can be read with `--configFile`, including one example
@@ -79,15 +80,15 @@ When everything completed successfully, **TaPaSCo is ready to use!**
 Build a TaPaSCo design
 ----------------------
 1.  Import your kernels
-    *   HDL flow: `tapasco import <ZIP> as <ID>`
-    *   HLS flow: `tapasco hls <KERNELS>`
+    *   HDL flow: `tapasco import <ZIP> as <ID> -p <PLATFORM>`
+    *   HLS flow: `tapasco --kernelDir path/to/kernels hls <KERNELS> -p <PLATFORM>`
 2.  Create a composition: `tapasco compose [<KERNEL> x <COUNT>] @ <NUM> MHz -p <PLATFORM>`
 3.  Load the bitstream: `tapasco-load-bitstream <BITSTREAM>`
 4.  Implement your host software
     *   C API
     *   C++ API
 
-You can get more information about commands with `tapasco help <COMMAND>`.
+You can get more information about commands with `tapasco --help` and the corresponding subpages with `tapasco --help <TOPIC>`
 
 Acknowledgements
 ----------------
