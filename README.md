@@ -23,11 +23,11 @@ To use TaPaSCo, you'll need working installations of
 
 *   Vivado Design Suite 2017.4 or newer
 *   Java SDK 8 - 11
-*   sbt 0.13.x or newer (use [SDKMAN!](http://sdkman.io/) for easy installation)
 *   git
 *   python
 *   GCC newer than 5.x.x for C++11 support
 *   *OPTIONAL:* libncurses for the tapasco-debug application
+*   *OPTIONAL:* Local Installation of gradle 5.0+, if you do not want to use the included wrapper.
 *   Ubuntu
     ```bash
     sudo apt-get -y update && sudo apt-get -y install unzip git zip findutils curl build-essential \
@@ -35,7 +35,6 @@ To use TaPaSCo, you'll need working installations of
     curl -s "https://get.sdkman.io" | bash
     source "$HOME/.sdkman/bin/sdkman-init.sh"
     sdk install java
-    sdk install sbt
     ```
 *   Fedora
     ```bash
@@ -44,7 +43,6 @@ To use TaPaSCo, you'll need working installations of
     curl -s "https://get.sdkman.io" | bash
     source "$HOME/.sdkman/bin/sdkman-init.sh"
     sdk install java
-    sdk install sbt
     ```
 
 If you want to use the High-Level Synthesis flow for generating custom IP
@@ -54,27 +52,27 @@ cores, you'll also need:
 
 Check that at least the following are in your `$PATH`:
 
-*   `sbt`
 *   `vivado`
 *   `git`
 *   `bash`
-*   \[`vivado_hls`\]
+*   \[`vivado_hls`\] - Since Vivado 2018.1 this is included in `vivado`
 
 Basic Setup
 -------------------
 1.  Open a terminal in the main directory of the repository and source the
-    TaPaSCo setup script via `. setup.sh`.
+    TaPaSCo setup script via `. setup.sh` or `source setup.sh`.
     You need to do this every time you use TaPaSCo (or put it into your
     `~/.bashrc` or `~/.profile`).
-2.  Build TaPaSCo: `sbt compile` (this may take a while, `sbt` needs to fetch
-    all dependencies etc. once).
-2.  Create the necessary jar files with `sbt assembly`.
-4.  _Optional_: Run TaPaSCo unit tests: `sbt test`
-5.  _Optional_: Generate sample configuration file: `tapasco -n config.json`
+2.  Build TaPaSCo: ```bash
+    cd toolflow/scala
+    ./gradlew installDist
+    ```
+3.  _Optional_: Run TaPaSCo unit tests: `sbt test`
+4.  _Optional_: Generate sample configuration file: `tapasco -n config.json`
     TaPaSCo should exit immediately and `config.json` will include a full
     configuration that can be read with `--configFile`, including one example
     for each kind of job.
-6.  Build libraries and _tlkm_ kernel module: `tapasco-build-libs`
+5.  Build libraries and _tlkm_ kernel module: `tapasco-build-libs`
 
 When everything completed successfully, **TaPaSCo is ready to use!**
 
