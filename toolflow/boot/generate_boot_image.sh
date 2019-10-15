@@ -1,36 +1,38 @@
 #!/bin/bash
 BOARD=${1:-zedboard}
-VERSION=${2:-2016.4}
+VERSION=${2:-2019.1}
 IMGSIZE=${3:-7534}
 SDCARD=${4:-}
-DIR="$BOARD/$VERSION"
+JOBCOUNT=4
+SCRIPTDIR="$(dirname $(readlink -f $0))"
+DIR="$SCRIPTDIR/$BOARD/$VERSION"
 LOGDIR="$DIR/logs"
 CROSS_COMPILE=${CROSS_COMPILE:=arm-linux-gnueabihf-}
-ROOTFS_IMG="$PWD/rootfs.img"
+ROOTFS_IMG="$SCRIPTDIR/rootfs.img"
 PYNQ_VERSION="pynq_z1_v2.1"
-PYNQ_IMAGE="$PWD/pynq/$PYNQ_VERSION.zip"
+PYNQ_IMAGE="$SCRIPTDIR/pynq/$PYNQ_VERSION.zip"
 PYNQ_IMAGE_URL="http://files.digilent.com/Products/PYNQ/$PYNQ_VERSION.img.zip"
 UDEV_RULES="$TAPASCO_HOME/platform/zynq/module/99-tapasco.rules"
 OUTPUT_IMAGE="$DIR/${BOARD}_${VERSION}.img"
 OPENSSL_URL="https://www.openssl.org/source/old/1.0.2/openssl-1.0.2n.tar.gz"
-OPENSSL="$PWD/oldopenssl"
+OPENSSL="$SCRIPTDIR/oldopenssl"
 OPENSSL_TAR="$OPENSSL/openssl.tar.gz"
 ### LOGFILES ###################################################################
-FETCH_LINUX_LOG="$PWD/$LOGDIR/fetch-linux.log"
-FETCH_UBOOT_LOG="$PWD/$LOGDIR/fetch-uboot.log"
-FETCH_PYNQ_IMG_LOG="$PWD/pynq/fetch-pynq-img.log"
-FETCH_OPENSSL_LOG="$PWD/$LOGDIR/fetch-openssl.log"
-BUILD_LINUX_LOG="$PWD/$LOGDIR/build-linux.log"
-BUILD_UBOOT_LOG="$PWD/$LOGDIR/build-uboot.log"
-BUILD_SSBL_LOG="$PWD/$LOGDIR/build-ssbl.log"
-BUILD_UIMAGE_LOG="$PWD/$LOGDIR/build-uimage.log"
-BUILD_FSBL_LOG="$PWD/$LOGDIR/build-fsbl.log"
-BUILD_BOOTBIN_LOG="$PWD/$LOGDIR/build-bootbin.log"
-BUILD_DEVICETREE_LOG="$PWD/$LOGDIR/build-devicetree.log"
-BUILD_OUTPUT_IMAGE_LOG="$PWD/$LOGDIR/build-output-image.log"
-PREPARE_SD_LOG="$PWD/$LOGDIR/prepare-sd.log"
-EXTRACT_BL_LOG="$PWD/pynq/extract-bl.log"
-EXTRACT_RFS_LOG="$PWD/pynq/extract-rfs.log"
+FETCH_LINUX_LOG="$LOGDIR/fetch-linux.log"
+FETCH_UBOOT_LOG="$LOGDIR/fetch-uboot.log"
+FETCH_PYNQ_IMG_LOG="$SCRIPTDIR/pynq/fetch-pynq-img.log"
+FETCH_OPENSSL_LOG="$LOGDIR/fetch-openssl.log"
+BUILD_LINUX_LOG="$LOGDIR/build-linux.log"
+BUILD_UBOOT_LOG="$LOGDIR/build-uboot.log"
+BUILD_SSBL_LOG="$LOGDIR/build-ssbl.log"
+BUILD_UIMAGE_LOG="$LOGDIR/build-uimage.log"
+BUILD_FSBL_LOG="$LOGDIR/build-fsbl.log"
+BUILD_BOOTBIN_LOG="$LOGDIR/build-bootbin.log"
+BUILD_DEVICETREE_LOG="$LOGDIR/build-devicetree.log"
+BUILD_OUTPUT_IMAGE_LOG="$LOGDIR/build-output-image.log"
+PREPARE_SD_LOG="$LOGDIR/prepare-sd.log"
+EXTRACT_BL_LOG="$SCRIPTDIR/pynq/extract-bl.log"
+EXTRACT_RFS_LOG="$SCRIPTDIR/pynq/extract-rfs.log"
 
 HOSTCFLAGS=-I$OPENSSL/include
 HOSTLDFLAGS="-L$OPENSSL/lib -lssl -lcrypto -ldl"
@@ -154,9 +156,9 @@ fetch_pynq_image () {
 		curl -s $PYNQ_IMAGE_URL -o $PYNQ_IMAGE ||
 		return $(error_ret "$LINENO: could not fetch $PYNQ_IMAGE_URL")
 	fi
-	if [[ ! -f $PWD/pynq/$IMG ]]; then
+	if [[ ! -f $SCRIPTDIR/pynq/$IMG ]]; then
 		echo "Unzipping $PYNQ_IMAGE to extract $IMG ..."
-		pushd $PWD/pynq &&
+		pushd $SCRIPTDIR/pynq &&
 		unzip -u $PYNQ_IMAGE &&
 		popd > /dev/null
 	fi
@@ -164,8 +166,8 @@ fetch_pynq_image () {
 
 extract_pynq_bl () {
 	IMG=${PYNQ_VERSION}.img
-	if [[ ! -f $PWD/pynq/BOOT.BIN ]]; then
-		pushd $PWD/pynq &> /dev/null
+	if [[ ! -f $SCRIPTDIR/pynq/BOOT.BIN ]]; then
+		pushd $SCRIPTDIR/pynq &> /dev/null
 		mkdir -p img ||
 			return $(error_ret "$LINENO: could not create img dir")
 		dusudo mount -oloop,offset=1M $IMG img ||
@@ -187,7 +189,7 @@ extract_pynq_bl () {
 		echo "$DIR/BOOT.BIN already exists, skipping."
 	fi
 	if [[ ! -f $DIR/devicetree.dtb ]]; then
-		$DIR/linux-xlnx/scripts/dtc/dtc -I dts -O dtb -o $DIR/devicetree.dtb $PWD/pynq/devicetree.dts ||
+		$DIR/linux-xlnx/scripts/dtc/dtc -I dts -O dtb -o $DIR/devicetree.dtb $SCRIPTDIR/pynq/devicetree.dts ||
 			return $(error_ret "$LINENO: could not build devicetree")
 	else
 		echo "$DIR/devicetree.dtb already exists, skipping."
@@ -198,7 +200,7 @@ extract_pynq_bl () {
 extract_pynq_rootfs () {
 	IMG=${PYNQ_VERSION}.img
 	if [[ ! -f $ROOTFS_IMG ]]; then
-		IMG=$PWD/pynq/${PYNQ_VERSION}.img
+		IMG=$SCRIPTDIR/pynq/${PYNQ_VERSION}.img
 		START=$(fdisk -l $IMG | awk 'END { print $2 }')
 		COUNT=$(fdisk -l $IMG | awk 'END { print $4 }')
 		echo "Extracting root image from $IMG, start=$START and count = $COUNT"
@@ -211,10 +213,11 @@ extract_pynq_rootfs () {
 
 build_openssl () {
 	if [[ ! -f $OPENSSL/lib/libssl.a ]]; then
-		$(cd $OPENSSL/openssl-1.0.2n &&
-			./config --prefix=$OPENSSL &&
-			make -j &&
-			make install) || return $(error_ret "$LINENO: could not build OpenSSL")
+		cd $OPENSSL/openssl-1.0.2n
+		make distclean
+		./config --prefix=$OPENSSL || return $(error_ret "$LINENO: could not configure OpenSSL")
+		make -j $JOBCOUNT || return $(error_ret "$LINENO: could not build OpenSSL")
+		make install || return $(error_ret "$LINENO: could not install OpenSSL")
 	else
 		echo "$OPENSSL/libssl.a already exists, skipping"
 	fi
@@ -238,9 +241,10 @@ build_u-boot () {
 				return $(error_ret "unknown board: $BOARD")
 				;;
 		esac
-		make -C $DIR/u-boot-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG ||
+		cd $DIR/u-boot-xlnx
+		make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG ||
 			return $(error_ret "$LINENO: could make defconfig $DEFCONFIG")
-		make -C $DIR/u-boot-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" tools ||
+		make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" tools -j $JOBCOUNT ||
 			return $(error_ret "$LINENO: could not build u-boot tools")
 	else
 		echo "$DIR/u-boot-xlnx/tools/mkimage already exists, skipping."
@@ -251,12 +255,13 @@ build_linux () {
 	if [[ ! -e $DIR/linux-xlnx/arch/arm/boot/Image ]]; then
 		echo "Building linux $VERSION .."
 		DEFCONFIG=tapasco_zynq_defconfig
-		CONFIGFILE="$PWD/configs/tapasco_zynq_defconfig"
+		CONFIGFILE="$SCRIPTDIR/configs/tapasco_zynq_defconfig"
 		cp $CONFIGFILE $DIR/linux-xlnx/arch/arm/configs/ ||
 			return $(error_ret "$LINENO: could not copy config")
-		make -C $DIR/linux-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG ||
+		cd $DIR/linux-xlnx
+		make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG ||
 			return $(error_ret "$LINENO: could not make defconfig")
-		make -C $DIR/linux-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm -j ||
+		make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm -j $JOBCOUNT ||
 			return $(error_ret "$LINENO: could not build kernel")
 	else
 		echo "$DIR/linux-xlnx/arch/arm/boot/Image already exists, skipping."
@@ -266,8 +271,9 @@ build_linux () {
 build_ssbl () {
 	if [[ ! -e $DIR/u-boot-xlnx/u-boot ]]; then
 		echo "Building second stage boot loader ..."
-		DTC=$PWD/$DIR/linux-xlnx/scripts/dtc/dtc
-		make -C $DIR/u-boot-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm DTC=$DTC HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" u-boot ||
+		DTC=$DIR/linux-xlnx/scripts/dtc/dtc
+		cd $DIR/u-boot-xlnx
+			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm DTC=$DTC HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" u-boot ||
 			return $(error_ret "$LINENO: could not build u-boot")
 	else
 		echo "$DIR/u-boot-xlnx/u-boot already exists, skipping."
@@ -279,7 +285,9 @@ build_ssbl () {
 build_uimage () {
 	if [[ ! -e $DIR/linux-xlnx/arch/arm/boot/uImage ]]; then
 		echo "Building uImage ..."
-		make -C $DIR/linux-xlnx CROSS_COMPILE=$CROSS_COMPILE ARCH=arm PATH=$PATH:$PWD/$DIR/u-boot-xlnx/tools UIMAGE_LOADADDR=0x8000 uImage ||
+		cd $DIR/linux-xlnx
+		export PATH=$PATH:$DIR/u-boot-xlnx/tools 
+		make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm UIMAGE_LOADADDR=0x8000 uImage -j $JOBCOUNT ||
 			return $(error_ret "$LINENO: could not build uImage")
 	else
 		echo "$DIR/linux-xlnx/arch/arm/boot/uImage already exists, skipping."
@@ -361,10 +369,10 @@ EOF
 
 build_bootbin () {
 	echo "Building BOOT.BIN ..."
-	cat > $PWD/$DIR/bootimage.bif << EOF
+	cat > $DIR/bootimage.bif << EOF
 image : {
-	[bootloader]$PWD/$DIR/fsbl/executable.elf
-	$PWD/$DIR/u-boot-xlnx/u-boot.elf
+	[bootloader]$DIR/fsbl/executable.elf
+	$DIR/u-boot-xlnx/u-boot.elf
 }
 EOF
 	bootgen -image $DIR/bootimage.bif -w on -o $DIR/BOOT.BIN ||
@@ -377,19 +385,19 @@ build_devtree () {
 	case $BOARD in
 		"zedboard")
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
-			cat $PWD/misc/zynq-7000.dtsi.patch | patch $DIR/zynq-7000.dtsi &&
+			cat $SCRIPTDIR/misc/zynq-7000.dtsi.patch | patch $DIR/zynq-7000.dtsi &&
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
 			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zed.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
 			echo >> $DIR/devicetree.dts
-			echo "/include/ \"$PWD/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
+			echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
 			;;
 		"zc706")
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
-			cat $PWD/misc/zynq-7000.dtsi.patch | patch $DIR/zynq-7000.dtsi &&
+			cat $SCRIPTDIR/misc/zynq-7000.dtsi.patch | patch $DIR/zynq-7000.dtsi &&
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
 			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zed.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
 			echo >> $DIR/devicetree.dts
-			echo "/include/ \"$PWD/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
+			echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
 			;;
 	esac
 	$DIR/linux-xlnx/scripts/dtc/dtc -I dts -O dtb -o $DIR/devicetree.dtb $DIR/devicetree.dts ||
@@ -517,7 +525,7 @@ copy_files_to_root () {
 	dusudo sh -c "echo export PATH=\\\$PATH:\\\$TAPASCO_HOME/bin >> $TO/home/xilinx/.bashrc" ||
 		echo >&2 "$LINENO: WARNING: could not set env PATH."
 	echo "Replacing rc.local ... "
-	dusudo sh -c "cp --no-preserve=ownership $PWD/misc/rc.local $TO/etc/rc.local" ||
+	dusudo sh -c "cp --no-preserve=ownership $SCRIPTDIR/misc/rc.local $TO/etc/rc.local" ||
 		echo >&2 "$LINENO: WARNING: could not copy rc.local"
 	if [[ $IMGSIZE -gt 4096 ]]; then
 		echo "Copying linux tree to /linux-xlnx ..."
