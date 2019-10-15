@@ -310,7 +310,7 @@ build_kernel_fedora_31_debug:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
   artifacts:
     paths:
-      - build/tapasco-*-Linux.rpm
+      - build/tapasco-2018.2.1-Linux.rpm
   extends: .build_tapasco
 
 build_tapasco_fedora_24:
@@ -386,7 +386,7 @@ build_tapasco_fedora_31_debug:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
   artifacts:
     paths:
-      - build/tapasco-*-Linux.deb
+      - build/tapasco-2018.2.1-Linux.deb
   extends: .build_tapasco
 
 build_tapasco_ubuntu_16_04:
