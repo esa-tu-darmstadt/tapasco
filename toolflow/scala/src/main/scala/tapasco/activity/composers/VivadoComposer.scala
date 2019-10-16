@@ -84,9 +84,9 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       "-notrace", "-nojournal", "-log", files.logFile.toString)
     logger.debug("Vivado shell command: {}", vivadoCmd mkString " ")
 
-    // execute Vivado (max runtime: 1 day)
+    // execute Vivado (max runtime: 48 hours)
     val r = InterruptibleProcess(Process(vivadoCmd, files.outdir.toFile),
-      waitMillis = Some(24 * 60 * 60 * 1000)).!(ProcessLogger(
+      waitMillis = Some(VIVADO_RUN_TIMEOUT * 60 * 60 * 1000)).!(ProcessLogger(
       stdoutString => logger.trace("Vivado: {}", stdoutString),
       stderrString => logger.trace("Vivado ERR: {}", stderrString)
     ))
@@ -227,6 +227,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
 object VivadoComposer {
   /** peak memory requirements **/
   final val VIVADO_PROCESS_PEAK_MEM: Int = 15
+  /** maximum runtime */
+  final val VIVADO_RUN_TIMEOUT : Int = 48
   /** Slack threshold for WNS relaxation. */
   final val SLACK_THRESHOLD: Double = -0.3
 
