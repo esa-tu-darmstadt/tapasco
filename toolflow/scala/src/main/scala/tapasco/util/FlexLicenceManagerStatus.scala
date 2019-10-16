@@ -26,7 +26,7 @@ import scala.sys.process._
   * licenses / features. If lmstat is not found, delivers default values.
   **/
 object FlexLicenceManagerStatus {
-  private[this] val _has_lmstat = "sh -c 'which lmstat > /dev/null 2>&1'".! == 0
+  private[this] val _has_lmstat = "sh -c which lmstat > /dev/null 2>&1".! == 0
 
   /**
     * Returns a map of license/features names to a pair of Ints representing
