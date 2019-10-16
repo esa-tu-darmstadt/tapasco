@@ -19,7 +19,6 @@
 package tapasco.parser
 
 import tapasco.PLATFORM_NUM_SLOTS
-import tapasco.activity.composers.VivadoComposer
 import tapasco.parser.FormatObject._
 
 import scala.util.Properties.{lineSeparator => NL}
@@ -185,7 +184,7 @@ configuration via `tapasco -n config.json`.
           Arg("aggressive_area", "maximal optimization for area"))) &
       "" &
       s"NOTE: Currently the  total number of PEs must be <= ${PLATFORM_NUM_SLOTS}." &
-      s"IMPORTANT: The maximum runtime of a compose job is limited to ${VivadoComposer.VIVADO_RUN_TIMEOUT}")
+      s"IMPORTANT: The maximum runtime of a compose job is limited is limited dependent on the platform.")
 
   private def corestats() = Section("Core Statistics Job",
     Block("Evaluation helper job that automatically gathres the out-of-context results" ~
@@ -345,7 +344,7 @@ configuration via `tapasco -n config.json`.
           "configured Kernel directory (see `tapasco -h globals`). Each kernel" ~
           "requires a description in a simple Json format, examples can be found" ~
           "in $TAPASCO_HOME/kernel.", BINDENT)) &
-      s"IMPORTANT: The maximum runtime of a single design-space entity run is limited to ${VivadoComposer.VIVADO_RUN_TIMEOUT}")
+      s"IMPORTANT: The maximum runtime of a single design-space entity run is limited dependent on the platform.")
 
   // scalastyle:on method.length
 
