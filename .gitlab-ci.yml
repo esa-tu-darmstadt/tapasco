@@ -15,7 +15,7 @@ stages:
   stage: test_scala_toolflow
   retry: 2
   variables:
-    JAVA_VERSION: "8.0.222-zulu"
+    JAVA_VERSION: "8.0.232-zulu"
   image: ubuntu:latest
   tags:
     - High
@@ -30,7 +30,7 @@ stages:
 
 test_tapasco_java_8:
   variables:
-    JAVA_VERSION: "8.0.222-zulu"
+    JAVA_VERSION: "8.0.232-zulu"
   extends: .test_tapasco
 
 test_tapasco_java_9:
@@ -45,7 +45,7 @@ test_tapasco_java_10:
 
 test_tapasco_java_11:
   variables:
-    JAVA_VERSION: "11.0.2-open"
+    JAVA_VERSION: "11.0.5-zulu"
   extends: .test_tapasco
 
 .build_scala_tapasco:
