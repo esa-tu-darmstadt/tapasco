@@ -1,0 +1,7 @@
+bootargs=console=ttyPS0,115200 root=/dev/mmcblk0p2 rootwait rw earlyprintk
+ethaddr=00:0a:35:00:01:20
+kernel_load_address=0x3000000
+kernel_image=uImage
+devicetree_load_address=0x2A00000
+devicetree_image=devicetree.dtb
+sdboot=if mmcinfo; then load mmc 0 ${kernel_load_address} ${kernel_image} && load mmc 0 ${devicetree_load_address} ${devicetree_image} && bootm ${kernel_load_address} - ${devicetree_load_address}; fi

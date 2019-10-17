@@ -15,7 +15,7 @@ stages:
   stage: test_scala_toolflow
   retry: 2
   variables:
-    JAVA_VERSION: "8.0.222-zulu"
+    JAVA_VERSION: "8.0.232-zulu"
   image: ubuntu:latest
   tags:
     - High
@@ -30,7 +30,7 @@ stages:
 
 test_tapasco_java_8:
   variables:
-    JAVA_VERSION: "8.0.222-zulu"
+    JAVA_VERSION: "8.0.232-zulu"
   extends: .test_tapasco
 
 test_tapasco_java_9:
@@ -45,7 +45,7 @@ test_tapasco_java_10:
 
 test_tapasco_java_11:
   variables:
-    JAVA_VERSION: "11.0.2-open"
+    JAVA_VERSION: "11.0.5-zulu"
   extends: .test_tapasco
 
 .build_scala_tapasco:
@@ -56,7 +56,7 @@ test_tapasco_java_11:
   script:
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java 11.0.4-zulu
+    - sdk install java 11.0.5-zulu
     - source setup.sh
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
     - ./gradlew installDist
@@ -425,7 +425,7 @@ tapasco_hls:
     - which vivado_hls
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java 11.0.4-zulu
+    - sdk install java 11.0.5-zulu
     - source $XILINX_VIVADO/settings64.sh
     - source setup.sh
     - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
@@ -454,7 +454,7 @@ tapasco_hls:
     - which vivado_hls
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java 11.0.4-zulu
+    - sdk install java 11.0.5-zulu
     - source $XILINX_VIVADO/settings64.sh
     - source setup.sh
     - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
