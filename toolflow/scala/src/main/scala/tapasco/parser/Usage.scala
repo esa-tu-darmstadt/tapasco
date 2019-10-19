@@ -171,10 +171,10 @@ configuration via `tapasco -n config.json`.
         Arg("--deleteProjects (true | false)?", "Spefify whether project files are deleted or kept" &
           """default: true""") &
         Arg("--debugMode NAME", "dry run, no composition is executed; modes:") &
-        Indent(Arg("  r", "generate random result values") &
-          Arg("  f", "generate only timing failures") &
-          Arg("  p", "generate only placer errors") &
-          Arg("  o", "generate only other errors")) &
+        Indent(Arg("r", "generate random result values") &
+          Arg("t", "generate only timing failures") &
+          Arg("p", "generate only placer errors") &
+          Arg("o", "generate only other errors")) &
         Arg("--effortLevel EFFORT", "set effort level for synthesis and PnR; levels:") &
         Indent(Arg("fastest", "lowest effort, minimal runtime") &
           Arg("fast", "slightly slower, but still short runtime") &
@@ -183,7 +183,7 @@ configuration via `tapasco -n config.json`.
           Arg("aggressive_performance", "maximal optimization for performance") &
           Arg("aggressive_area", "maximal optimization for area"))) &
       "" &
-      "NOTE: Currently the  total number of PEs must be <= ${PLATFORM_NUM_SLOTS}.")
+      "NOTE: Currently the total number of PEs must be <= ${PLATFORM_NUM_SLOTS}.")
 
   private def corestats() = Section("Core Statistics Job",
     Block("Evaluation helper job that automatically gathres the out-of-context results" ~
