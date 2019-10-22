@@ -96,4 +96,5 @@ buildDeb {
 buildRpm {
     arch = X86_64
     requires("java-latest-openjdk", "8.0", GREATER | EQUAL)
+    requires("which")
 }
