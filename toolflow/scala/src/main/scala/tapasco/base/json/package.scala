@@ -351,7 +351,8 @@ package object json {
       (JsPath \ "Description").readNullable[String](minLength[String](1)) ~
       (JsPath \ "Benchmark").readNullable[Path] ~
       (JsPath \ "HostFrequency").readNullable[Double] ~
-      (JsPath \ "MemFrequency").readNullable[Double]
+      (JsPath \ "MemFrequency").readNullable[Double] ~
+      (JsPath \ "ImplementationTimeout").readNullable[Int]
     ) (Platform.apply _)
 
   // scalastyle:on magic.number
@@ -369,7 +370,8 @@ package object json {
       (JsPath \ "Description").writeNullable[String] ~
       (JsPath \ "Benchmark").writeNullable[Path] ~
       (JsPath \ "HostFrequency").writeNullable[Double] ~
-      (JsPath \ "MemFrequency").writeNullable[Double]
+      (JsPath \ "MemFrequency").writeNullable[Double] ~
+      (JsPath \ "ImplementationTimeout").writeNullable[Int]
     ) (unlift(Platform.unapply _))
 
   /* Platform @} */

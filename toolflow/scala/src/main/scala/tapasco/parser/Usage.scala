@@ -183,7 +183,8 @@ configuration via `tapasco -n config.json`.
           Arg("aggressive_performance", "maximal optimization for performance") &
           Arg("aggressive_area", "maximal optimization for area"))) &
       "" &
-      "NOTE: Currently the total number of PEs must be <= ${PLATFORM_NUM_SLOTS}.")
+      s"NOTE: Currently the  total number of PEs must be <= ${PLATFORM_NUM_SLOTS}." &
+      s"IMPORTANT: The maximum runtime of a compose job is limited is limited dependent on the platform.")
 
   private def corestats() = Section("Core Statistics Job",
     Block("Evaluation helper job that automatically gathres the out-of-context results" ~
@@ -342,7 +343,8 @@ configuration via `tapasco -n config.json`.
         Block("All HLS kernels are located in the directories below the currently" ~
           "configured Kernel directory (see `tapasco -h globals`). Each kernel" ~
           "requires a description in a simple Json format, examples can be found" ~
-          "in $TAPASCO_HOME/kernel.", BINDENT)))
+          "in $TAPASCO_HOME/kernel.", BINDENT)) &
+      s"IMPORTANT: The maximum runtime of a single design-space entity run is limited dependent on the platform.")
 
   // scalastyle:on method.length
 

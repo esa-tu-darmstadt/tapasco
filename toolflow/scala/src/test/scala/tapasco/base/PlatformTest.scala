@@ -48,6 +48,7 @@ class PlatformSpec extends TaPaSCoSpec with Matchers {
     c.boardPreset should equal(Some("ZC706"))
     c.targetUtilization should equal(55)
     c.supportedFrequencies should contain inOrderOnly(250, 200, 150, 100, 42)
+    c.implTimeout should equal(Some(42))
   }
 
   "An Platform file with unknown entries" should "be parsed correctly" in {
