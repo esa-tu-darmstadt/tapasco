@@ -86,3 +86,9 @@ ospackage {
     from("../os-package")
 
 }
+
+buildDeb {
+    arch = "amd64"
+    multiArch = MultiArch.FOREIGN
+    recommends("default-jre")
+}
