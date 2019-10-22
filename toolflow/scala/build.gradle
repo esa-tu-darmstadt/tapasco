@@ -90,5 +90,10 @@ ospackage {
 buildDeb {
     arch = "amd64"
     multiArch = MultiArch.FOREIGN
-    recommends("default-jre")
+    requires("default-jre")
+}
+
+buildRpm {
+    arch = X86_64
+    requires("java-latest-openjdk", "8.0", GREATER | EQUAL)
 }
