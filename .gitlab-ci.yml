@@ -48,23 +48,21 @@ test_tapasco_java_11:
     JAVA_VERSION: "11.0.5-zulu"
   extends: .test_tapasco
 
-.build_scala_tapasco:
+.build_scala_tapasco_fedora:
   stage: build_scala_toolflow
   retry: 2
   tags:
     - High
+  before_script:
+    - dnf -y install which java-latest-openjdk
   script:
-    - curl -s "https://get.sdkman.io" | bash
-    - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java 11.0.5-zulu
     - source setup.sh
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
     - ./gradlew installDist
-
-.build_scala_tapasco_fedora:
-  before_script:
-    - dnf -y install which unzip git zip tar findutils
-  extends: .build_scala_tapasco
+    - ./gradlew buildRPM
+  artifacts:
+    paths:
+      - toolflow/scala/build/distributions/tapasco-2019-10.x86_64.rpm
 
 build_scala_tapasco_fedora_24:
   image: fedora:24
@@ -99,9 +97,20 @@ build_scala_tapasco_fedora_31:
   extends: .build_scala_tapasco_fedora
 
 .build_scala_tapasco_ubuntu:
+  stage: build_scala_toolflow
+  retry: 2
+  tags:
+    - High
   before_script:
-    - apt-get -y update && apt-get -y install unzip git zip findutils curl
-  extends: .build_scala_tapasco
+    - dnf -y install default-jdk
+  script:
+    - source setup.sh
+    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - ./gradlew installDist
+    - ./gradlew buildRPM
+  artifacts:
+    paths:
+      - toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb
 
 build_scala_tapasco_ubuntu_16_04:
   image: ubuntu:xenial
