@@ -69,7 +69,7 @@ protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
         logger.trace("searching for co-simulation report for {} @ {}", k.name: Any, t)
         val rpt = FileAssetManager.reports.cosimReport(k.name, t)
         logger.trace("co-simulation report: {}", rpt)
-        val avgCC = rpt map (_.latency.avg)
+        val avgCC = rpt map (_.latency.avg.toLong)
         logger.trace("average clock cycles: {}", avgCC)
         if (avgCC.isEmpty && k.testbenchFiles.length > 0) {
           logger.warn("executed HLS with co-sim for {}, but no co-simulation report was found", k)

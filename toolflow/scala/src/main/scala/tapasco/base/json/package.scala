@@ -182,7 +182,7 @@ package object json {
       (JsPath \ "Version").read[String](minLength[String](1)) ~
       (JsPath \ "Target").read[TargetDesc] ~
       (JsPath \ "Description").readNullable[String] ~
-      (JsPath \ "AverageClockCycles").readNullable[Int]
+      (JsPath \ "AverageClockCycles").readNullable[Long]
     ) (Core.apply _)
   implicit val coreWrites: Writes[Core] = (
     (JsPath \ "DescPath").write[Path].transform((js: JsObject) => js - "DescPath") ~
@@ -192,7 +192,7 @@ package object json {
       (JsPath \ "Version").write[String] ~
       (JsPath \ "Target").write[TargetDesc] ~
       (JsPath \ "Description").writeNullable[String] ~
-      (JsPath \ "AverageClockCycles").writeNullable[Int]
+      (JsPath \ "AverageClockCycles").writeNullable[Long]
     ) (unlift(Core.unapply _))
   /* Core @} */
 
