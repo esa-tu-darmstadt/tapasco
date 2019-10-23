@@ -137,7 +137,7 @@ final object FileAssetManager extends Publisher {
           _dirs.synchronized {
             _dirs += base -> path
           }
-          if (base equals Entities.Cores) reports.clear(Some(Set(path)))
+          if (base equals Entities.Cores) reports.basePathListener.update(BasePathManager.BasePathChanged(Entities.Cores, path))
           restartWatcher()
           publish(Events.BasePathChanged(base, path))
       }
