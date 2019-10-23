@@ -38,7 +38,8 @@ case class Platform(
                      boardPreset: Option[String],
                      boardPartRepository: Option[String],
                      targetUtilization: Int,
-                     supportedFrequencies: Seq[Int],
+                     private val _supportedFrequencies: Option[Seq[Int]],
+                     maxFrequency : Int,
                      private val _slotCount: Option[Int],
                      description: Option[String],
                      private val _benchmark: Option[Path],
@@ -49,6 +50,7 @@ case class Platform(
   val tclLibrary: Path = resolve(_tclLibrary)
   val benchmark: Option[Benchmark] = _benchmark flatMap (p => Benchmark.from(resolve(p)).toOption)
   val slotCount: Int = _slotCount getOrElse Platform.DEFAULT_SLOTCOUNT
+  val supportedFrequencies : Seq[Int] = _supportedFrequencies.getOrElse(50 to maxFrequency by 5)
   require(mustExist(tclLibrary), "Tcl library %s does not exist".format(tclLibrary.toString))
 }
 
