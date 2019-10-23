@@ -87,10 +87,14 @@ build_scala_tapasco_fedora_28:
 build_scala_tapasco_fedora_29:
   image: fedora:29
   extends: .build_scala_tapasco_fedora
+  before_script:
+    - dnf -y install which findutils java-11-openjdk
 
 build_scala_tapasco_fedora_30:
   image: fedora:30
   extends: .build_scala_tapasco_fedora
+  before_script:
+    - dnf -y install which findutils java-11-openjdk
 
 build_scala_tapasco_fedora_31:
   image: fedora:31
