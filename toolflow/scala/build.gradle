@@ -85,6 +85,13 @@ ospackage {
 
     from("../os-package")
 
+    from("../../runtime/platform/include"){
+        into "runtime/platform/include"
+        include "platform_caps.h"
+        include "platform_global.h"
+        include "platform_components.h"
+    }
+
 }
 
 buildDeb {
