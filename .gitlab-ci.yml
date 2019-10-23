@@ -102,7 +102,7 @@ build_scala_tapasco_fedora_31:
   tags:
     - High
   before_script:
-    - apt-get -y install default-jdk findutils
+    - apt-get -y update && apt-get -y install default-jdk findutils
   script:
     - source setup.sh
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
