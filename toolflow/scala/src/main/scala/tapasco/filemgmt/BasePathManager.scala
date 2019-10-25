@@ -65,8 +65,17 @@ object BasePathManager {
       throw e
   }
 
+  /** Base directory of TaPaSCo TCL files for Vivado, set by TAPASCO_HOME_TCL environmment variable. **/
+  final private val TAPASCO_HOME_TCL = try {
+    Paths.get(sys.env("TAPASCO_HOME_TCL")).toAbsolutePath().normalize
+  } catch {
+    case e: NoSuchElementException =>
+      logger.error("FATAL: TAPASCO_HOME_TCL environment variable is not set")
+      throw e
+  }
+
   /** Default directory: Architectures. **/
-  final val DEFAULT_DIR_ARCHS = TAPASCO_HOME.resolve("toolflow").resolve("vivado").resolve("arch")
+  final val DEFAULT_DIR_ARCHS = TAPASCO_HOME_TCL.resolve("arch")
 
   /** Default directory: Bitstreams. **/
   final val DEFAULT_DIR_COMPOSITIONS = TAPASCO_WORK_DIR.resolve("compose")
@@ -78,7 +87,7 @@ object BasePathManager {
   final val DEFAULT_DIR_KERNELS = TAPASCO_WORK_DIR.resolve("kernel")
 
   /** Default directory: Platforms. **/
-  final val DEFAULT_DIR_PLATFORMS = TAPASCO_HOME.resolve("toolflow").resolve("vivado").resolve("platform")
+  final val DEFAULT_DIR_PLATFORMS = TAPASCO_HOME_TCL.resolve("platform")
 
   /** Map of default directories for entities. */
   lazy final val defaultDirectory: Map[Entity, (Path, Boolean)] = Map(

@@ -35,14 +35,6 @@ namespace eval addressmap {
     set processing_elements [dict create]
   }
 
-  proc get_num_slots {} {
-    set f [open "$::env(TAPASCO_HOME_RUNTIME)/platform/include/platform_global.h" "r"]
-    set c [read $f]
-    close $f
-    regexp {define\s+PLATFORM_NUM_SLOTS\s+(\d+)} $c _ num_slots
-    return $num_slots
-  }
-
   proc get_known_platform_components {} {
     set f [open "$::env(TAPASCO_HOME_RUNTIME)/platform/include/platform_components.h" "r"]
     set fl [split [read $f] "\n"]

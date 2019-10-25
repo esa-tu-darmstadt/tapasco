@@ -44,9 +44,12 @@ package object tapasco {
       .resolve("platform")
       .resolve("include")
       .resolve("platform_global.h")
-    assert(f.toFile.exists, s"$f does not exist")
-    REGEX_PLATFORM_NUM_SLOTS.findFirstMatchIn(Source.fromFile(f.toString) mkString "")
-      .map(_.group(1).toInt)
-      .getOrElse(throw new Exception("could not parse PLATFORM_NUM_SLOTS"))
+    if(f.toFile.exists()){
+      REGEX_PLATFORM_NUM_SLOTS.findFirstMatchIn(Source.fromFile(f.toString) mkString "")
+        .map(_.group(1).toInt)
+        .getOrElse(throw new Exception("could not parse PLATFORM_NUM_SLOTS"))
+    }
+    // If platform_global.h is not found, assume 128 as the default number of slots.
+    else 128
   }
 }
