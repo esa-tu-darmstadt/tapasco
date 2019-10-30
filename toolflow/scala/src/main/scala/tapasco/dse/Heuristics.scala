@@ -40,7 +40,7 @@ object Heuristics {
 
   object ThroughputHeuristic extends Heuristic {
     private def findAverageClockCycles(kernel: String, target: Target)
-                                      (implicit cfg: Configuration): Int = {
+                                      (implicit cfg: Configuration): Long = {
       val cd = FileAssetManager.entities.core(kernel, target) getOrElse {
         throw new Exception("could not find core description for %s @ %s".format(kernel, target))
       }
@@ -56,7 +56,7 @@ object Heuristics {
     }
 
     def apply(bd: Composition, freq: Frequency, target: Target): Configuration => Value = cfg => {
-      val maxClockCycles: Seq[Int] = bd.composition map (ce => findAverageClockCycles(ce.kernel, target)(cfg))
+      val maxClockCycles: Seq[Long] = bd.composition map (ce => findAverageClockCycles(ce.kernel, target)(cfg))
       val t = 1.0 / (freq * 1000000.0)
       val t_irq = target.pd.benchmark map (_.latency(maxClockCycles.max) / 1000000000.0) getOrElse 0.0
       val jobsla = maxClockCycles map (_ * t + t_irq /* + t_setup*/)
