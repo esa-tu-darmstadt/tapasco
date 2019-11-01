@@ -58,7 +58,7 @@ test_tapasco_java_11:
   script:
     - mkdir build && cd build && ../tapasco-init.sh && source tapasco-setup.sh
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
-    - ./gradlew installDist
+    - tapasco-build-toolflow
     - ./gradlew buildRPM
   artifacts:
     paths:
@@ -110,7 +110,7 @@ build_scala_tapasco_fedora_31:
   script:
     - mkdir build && cd build && ../tapasco-init.sh && source tapasco-setup.sh
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
-    - ./gradlew installDist
+    - tapasco-build-toolflow
     - ./gradlew buildRPM
   artifacts:
     paths:
@@ -442,7 +442,7 @@ tapasco_hls:
     - source $XILINX_VIVADO/settings64.sh
     - mkdir build && cd build && ../tapasco-init.sh && source tapasco-setup.sh
     - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
-    - ./gradlew installDist
+    - tapasco-build-toolflow
     - popd
     - tapasco -v --kernelDir ${TAPASCO_HOME_TOOLFLOW}/examples/kernel-examples hls counter -p pynq
 
@@ -471,7 +471,7 @@ tapasco_hls:
     - source $XILINX_VIVADO/settings64.sh
     - mkdir build && cd build && ../tapasco-init.sh && source tapasco-setup.sh
     - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
-    - ./gradlew installDist
+    - tapasco-build-toolflow
     - popd
     - tapasco --kernelDir ${TAPASCO_HOME_TOOLFLOW}/examples/kernel-examples hls counter -p $PLATFORM
     - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p $PLATFORM
