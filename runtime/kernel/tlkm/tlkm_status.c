@@ -31,9 +31,11 @@ bool add_component(pb_istream_t *stream, const pb_field_t *field, void **arg)
 
 	ret = pb_decode(stream, tapasco_status_Platform_fields, &plat);
 	help->dev->components[help->cntr].offset = plat.offset;
-	DEVLOG(0, TLKM_LF_STATUS, "Detected component %s @ %lx",
+	help->dev->components[help->cntr].size = plat.size;
+	DEVLOG(0, TLKM_LF_STATUS, "Detected component %s @ %lx with size %llx",
 	       help->dev->components[help->cntr].name,
-	       help->dev->components[help->cntr].offset);
+	       help->dev->components[help->cntr].offset,
+	       help->dev->components[help->cntr].size);
 	++help->cntr;
 
 	return ret;
@@ -90,6 +92,18 @@ dev_addr_t tlkm_status_get_component_base(struct tlkm_device *dev,
 		if (strncmp(c, dev->components[i].name,
 			    TLKM_COMPONENTS_NAME_MAX) == 0) {
 			return dev->components[i].offset;
+		}
+	}
+	return -1;
+}
+
+u64 tlkm_status_get_component_size(struct tlkm_device *dev, const char *c)
+{
+	int i;
+	for (i = 0; i < TLKM_COMPONENT_MAX; ++i) {
+		if (strncmp(c, dev->components[i].name,
+			    TLKM_COMPONENTS_NAME_MAX) == 0) {
+			return dev->components[i].size;
 		}
 	}
 	return -1;
