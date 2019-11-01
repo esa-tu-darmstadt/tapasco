@@ -24,7 +24,7 @@ stages:
     - curl -s "https://get.sdkman.io" | bash
     - source "/root/.sdkman/bin/sdkman-init.sh"
     - sdk install java $JAVA_VERSION
-    - mkdir build && cd build && ../tapasco-init.sh && source tapasco-setup.sh
+    - ./tapasco-init.sh && source tapasco-setup.sh
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
     - ./gradlew test
 
@@ -56,7 +56,7 @@ test_tapasco_java_11:
   before_script:
     - dnf -y install which java-openjdk findutils
   script:
-    - mkdir build && cd build && ../tapasco-init.sh && source tapasco-setup.sh
+    - ./tapasco-init.sh && source tapasco-setup.sh
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
     - tapasco-build-toolflow
     - ./gradlew buildRPM
@@ -108,7 +108,7 @@ build_scala_tapasco_fedora_31:
   before_script:
     - apt-get -y update && apt-get -y install default-jdk findutils
   script:
-    - mkdir build && cd build && ../tapasco-init.sh && source tapasco-setup.sh
+    - ./tapasco-init.sh && source tapasco-setup.sh
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
     - tapasco-build-toolflow
     - ./gradlew buildRPM
@@ -143,7 +143,7 @@ build_scala_tapasco_ubuntu_19_04:
     - Normal
   script:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
-    - mkdir build && cd build && ../tapasco-init.sh && source tapasco-setup.sh
+    - ./tapasco-init.sh && source tapasco-setup.sh
     - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd runtime/kernel; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j 1 $MODE; popd; done
   artifacts:
     paths:
@@ -198,7 +198,7 @@ build_kernel_ubuntu_19_04_debug:
     - Normal
   script:
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel
-    - mkdir build && cd build && ../tapasco-init.sh && source tapasco-setup.sh
+    - ./tapasco-init.sh && source tapasco-setup.sh
     - for d in `ls /usr/src/kernels/`; do echo "Building for linux headers in $d"; pushd runtime/kernel; make LINUX_HOME="/usr/src/kernels/$d" clean && make LINUX_HOME=/usr/src/kernels/$d -j 1 $MODE; popd; done
   artifacts:
     paths:
@@ -292,7 +292,7 @@ build_kernel_fedora_31_debug:
   tags:
     - Normal
   script:
-    - mkdir build && cd build && ../tapasco-init.sh && source tapasco-setup.sh
+    - ./tapasco-init.sh && source tapasco-setup.sh
     - tapasco-build-libs --mode=$MODE --skip_driver
     - cd build && make package
 
@@ -440,7 +440,7 @@ tapasco_hls:
     - source "/root/.sdkman/bin/sdkman-init.sh"
     - sdk install java 11.0.5-zulu
     - source $XILINX_VIVADO/settings64.sh
-    - mkdir build && cd build && ../tapasco-init.sh && source tapasco-setup.sh
+    - ./tapasco-init.sh && source tapasco-setup.sh
     - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
     - tapasco-build-toolflow
     - popd
@@ -469,7 +469,7 @@ tapasco_hls:
     - source "/root/.sdkman/bin/sdkman-init.sh"
     - sdk install java 11.0.5-zulu
     - source $XILINX_VIVADO/settings64.sh
-    - mkdir build && cd build && ../tapasco-init.sh && source tapasco-setup.sh
+    - ./tapasco-init.sh && source tapasco-setup.sh
     - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
     - tapasco-build-toolflow
     - popd
