@@ -441,10 +441,8 @@ tapasco_hls:
     - sdk install java 11.0.5-zulu
     - source $XILINX_VIVADO/settings64.sh
     - ./tapasco-init.sh && source tapasco-setup.sh
-    - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
     - tapasco-build-toolflow
-    - popd
-    - tapasco -v --kernelDir ${TAPASCO_HOME_TOOLFLOW}/examples/kernel-examples hls counter -p pynq
+    - tapasco -v hls counter -p pynq
 
 .tapasco_compose:
   stage: build_hw
@@ -470,10 +468,8 @@ tapasco_hls:
     - sdk install java 11.0.5-zulu
     - source $XILINX_VIVADO/settings64.sh
     - ./tapasco-init.sh && source tapasco-setup.sh
-    - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
     - tapasco-build-toolflow
-    - popd
-    - tapasco --kernelDir ${TAPASCO_HOME_TOOLFLOW}/examples/kernel-examples hls counter -p $PLATFORM
+    - tapasco hls counter -p $PLATFORM
     - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p $PLATFORM
 
 tapasco_compose_17_4:
