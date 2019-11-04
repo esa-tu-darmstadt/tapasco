@@ -2,6 +2,11 @@
 #include <iostream>
 #include <vector>
 
+#ifdef _OPENMP
+#include <omp.h>
+#include <sstream>
+#endif
+
 #include <tapasco.hpp>
 
 using namespace tapasco;
@@ -33,7 +38,20 @@ int main(int argc, char **argv) {
 
   Tapasco tapasco;
 
-  for (int s = 0; s < max_pow && errs == 0; ++s) {
+  int threads = 1;
+
+#ifdef _OPENMP
+  if (argc > 1) {
+    std::stringstream s(argv[1]);
+    s >> threads;
+  }
+  omp_set_num_threads(threads);
+#endif
+
+  std::cout << "Using " << threads << " threads." << std::endl;
+
+#pragma omp parallel for reduction(+ : errs)
+  for (int s = 0; s < max_pow; ++s) {
     size_t len = 1 << s;
     std::cout << "Checking array size " << len << "B" << std::endl;
     size_t elements = std::max((size_t)1, len / sizeof(int));
