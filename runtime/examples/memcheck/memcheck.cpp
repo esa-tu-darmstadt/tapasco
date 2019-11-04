@@ -50,7 +50,9 @@ int main(int argc, char **argv) {
 
   std::cout << "Using " << threads << " threads." << std::endl;
 
+#ifdef _OPENMP
 #pragma omp parallel for reduction(+ : errs)
+#endif
   for (int s = 0; s < max_pow; ++s) {
     size_t len = 1 << s;
     std::cout << "Checking array size " << len << "B" << std::endl;
