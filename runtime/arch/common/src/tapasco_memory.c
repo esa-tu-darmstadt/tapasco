@@ -72,8 +72,8 @@ tapasco_res_t tapasco_device_copy_to_local(
 
   LOG(LALL_MEM,
       "copying %zd bytes locally to " PRIhandle " of slot_id #" PRIslot
-      " from 0x%llx",
-      len, dst, lmem_slot_id, (uint64_t)a);
+      " from 0x%zx",
+      len, dst, lmem_slot_id, (size_t)a);
 
   uint8_t *src_ptr = (uint8_t *)src;
   size_t chunk_size = 0;
@@ -111,8 +111,8 @@ tapasco_res_t tapasco_device_copy_from_local(
   volatile uint8_t *a = (volatile uint8_t *)ptr_a_calc;
   LOG(LALL_MEM,
       "copying %zd bytes locally from " PRIhandle " of slot_id #" PRIslot
-      " from 0x%llx",
-      len, dst, lmem_slot_id, (uint64_t)a);
+      " from 0x%zx",
+      len, dst, lmem_slot_id, (size_t)a);
 
   uint8_t *dst_ptr = (uint8_t *)dst;
   size_t chunk_size = 0;

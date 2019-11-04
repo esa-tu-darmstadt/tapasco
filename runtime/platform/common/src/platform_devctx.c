@@ -23,7 +23,7 @@
 
 static platform_res_t platform_specific_init(platform_devctx_t *devctx) {
   if (!strncmp(PCIE_CLS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
-    return default_init(devctx, PCIE_MEM_SZ);
+    return default_init(devctx, (platform_mem_addr_t)PCIE_MEM_SZ);
   } else if (!strncmp(ZYNQ_CLS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
     return default_init(devctx, 0);
   } else {
