@@ -17,7 +17,7 @@ add_executable(arrayinit-cpp arrayinit-example.cpp)
 set_tapasco_defaults(arrayinit-cpp)
 target_link_libraries(arrayinit-cpp tapasco pthread platform tlkm)
 
-install(TARGETS arrayinit-cpp
+install(TARGETS arrayinit arrayinit-cpp
         ARCHIVE  DESTINATION share/Tapasco/bin/
         LIBRARY  DESTINATION share/Tapasco/bin/
         RUNTIME  DESTINATION share/Tapasco/bin/)
