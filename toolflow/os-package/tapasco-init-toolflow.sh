@@ -4,7 +4,7 @@ else
     echo "Creating tapasco-setup-toolflow.sh"
 
     export TAPASCO_HOME=/opt/tapasco
-    export TAPASCO_HOME_TOOLFLOW=${TAPASCO_HOME}/toolflow
+    export TAPASCO_HOME_TOOLFLOW=${TAPASCO_HOME}
     export TAPASCO_HOME_TCL=${TAPASCO_HOME_TOOLFLOW}/vivado
     export TAPASCO_HOME_RUNTIME=${TAPASCO_HOME}/runtime
     export TAPASCO_WORK_DIR=$PWD
