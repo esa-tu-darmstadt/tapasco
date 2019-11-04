@@ -13,7 +13,11 @@ add_executable(arrayupdate arrayupdate-example.c)
 set_tapasco_defaults(arrayupdate)
 target_link_libraries(arrayupdate tapasco pthread platform tlkm)
 
-install(TARGETS arrayupdate
+add_executable(arrayupdate-cpp arrayupdate-example.cpp)
+set_tapasco_defaults(arrayupdate-cpp)
+target_link_libraries(arrayupdate-cpp tapasco pthread platform tlkm)
+
+install(TARGETS arrayupdate arrayupdate-cpp
         ARCHIVE  DESTINATION share/Tapasco/bin/
         LIBRARY  DESTINATION share/Tapasco/bin/
         RUNTIME  DESTINATION share/Tapasco/bin/)
