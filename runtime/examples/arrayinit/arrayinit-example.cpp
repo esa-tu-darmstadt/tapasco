@@ -1,0 +1,75 @@
+// Tapasco is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Tapasco is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+//
+#include <tapasco.hpp>
+#include <iostream>
+#include <array>
+
+#define SZ 256
+#define RUNS 25
+
+typedef int32_t element_type;
+constexpr int ARRAYINIT_ID = 11;
+
+static uint64_t check_array(std::array<element_type, SZ> &arr) {
+    unsigned int errs = 0;
+    for (int i = 0; i < (int)arr.size(); ++i) {
+        if (arr[i] != i) {
+            std::cerr << "ERROR: Value at " << i << " is " << arr[i] << std::endl;
+            ++errs;
+        }
+    }
+    return errs;
+}
+
+int main(int argc, char **argv) {
+    // initialize TaPaSCo
+    tapasco::Tapasco tapasco;
+
+    uint64_t errs = 0;
+
+    // check arrayinit instance count
+    uint64_t instances = tapasco_device_kernel_pe_count(tapasco.device(), ARRAYINIT_ID);
+    std::cout << "Got " << instances << " arrayinit instances.";
+    if(!instances) {
+        std::cout << "Need at least one arrayinit instance to run.";
+        exit(1);
+    }
+
+    for (int run = 0; run < RUNS; ++run) {
+        // Generate array for arrayinit output
+        std::array<element_type, SZ> result;
+        result.fill(-1);
+        // Wrap the array to be TaPaSCo compatible
+        auto result_buffer_pointer = tapasco::makeWrappedPointer(result.data(), result.size() * sizeof(element_type));
+        // Data will be copied back from the device only, no data will be moved to the device
+        auto result_buffer_out = tapasco::makeOutOnly(result_buffer_pointer);
+
+        // Launch the job
+        // Arrayinit takes only one parameter: The location of the array. It will always initialize 256 Int`s.
+        auto job = tapasco.launch(ARRAYINIT_ID, result_buffer_out);
+
+        // Wait for job completion. Will block execution until the job is done.
+        job();
+
+        errs += check_array(result);
+        std::cout << "RUN " << run << " " << (errs == 0 ? "OK" : "NOT OK");
+    }
+
+    if (!errs)
+        std::cout << "Arrayinit finished without errors." << std::endl;
+    else
+        std::cerr << "Arrayinit finished wit errors." << std::endl;
+
+    return errs;
+}
