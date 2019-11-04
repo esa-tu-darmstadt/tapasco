@@ -8,8 +8,6 @@
 #include "blue_dma.h"
 #include "pcie/pcie_device.h"
 
-#define DMA_SZ 0x10000
-
 typedef struct {
 	size_t cpy_sz;
 	ssize_t t_id;
@@ -41,7 +39,8 @@ static const struct dma_operations tlkm_dma_ops[] = {
 	}
 };
 
-int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
+int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase,
+		  u64 size)
 {
 	dev_id_t dev_id = dev->dev_id;
 	int i = 0;
@@ -62,11 +61,11 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 	dma->ack_register = NULL;
 
 	DEVLOG(dev_id, TLKM_LF_DMA, "I/O remapping 0x%px - 0x%px...", base,
-	       base + DMA_SZ - 1);
-	dma->regs = ioremap_nocache((resource_size_t)base, DMA_SZ);
+	       base + size - 1);
+	dma->regs = ioremap_nocache((resource_size_t)base, size);
 	if (dma->regs == 0 || IS_ERR(dma->regs)) {
 		DEVERR(dev_id, "failed to map 0x%p - 0x%p: %lx", base,
-		       base + DMA_SZ - 1, PTR_ERR(dma->regs));
+		       base + size - 1, PTR_ERR(dma->regs));
 		ret = EIO;
 		goto err_dma_ioremap;
 	}
@@ -304,8 +303,8 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr,
 					 chunks[current_buffer].cpy_sz)) {
 				DEVERR(dma->dev_id,
 				       "could not copy data to user");
-					err = -EAGAIN;
-					goto copy_err;
+				err = -EAGAIN;
+				goto copy_err;
 			}
 			chunks[current_buffer].usr_addr = 0;
 		}

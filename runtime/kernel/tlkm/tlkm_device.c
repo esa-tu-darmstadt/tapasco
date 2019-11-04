@@ -15,6 +15,9 @@ static int dma_engines_init(struct tlkm_device *dev)
 	u64 dma_base[TLKM_DEVICE_MAX_DMA_ENGINES] = {
 		0ULL,
 	};
+	u64 dma_size[TLKM_DEVICE_MAX_DMA_ENGINES] = {
+		0ULL,
+	};
 	char dma_name[TLKM_COMPONENTS_NAME_MAX];
 	BUG_ON(!dev);
 
@@ -25,8 +28,11 @@ static int dma_engines_init(struct tlkm_device *dev)
 		addr = tlkm_status_get_component_base(dev, dma_name);
 		if (addr != -1) {
 			dma_base[i] = addr;
+			dma_size[i] =
+				tlkm_status_get_component_size(dev, dma_name);
 			DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
-			       "DMA #%d found at %llx", i, (uint64_t)addr);
+			       "DMA #%d found at %llx with size %llx", i,
+			       (uint64_t)addr, (uint64_t)dma_size[i]);
 		}
 	}
 
@@ -37,7 +43,8 @@ static int dma_engines_init(struct tlkm_device *dev)
 		if (!dma_base[i] || dma_base[i] >= (uintptr_t)-1)
 			continue;
 		dma_base[i] += dev->base_offset;
-		ret = tlkm_dma_init(dev, &dev->dma[i], dma_base[i]);
+		ret = tlkm_dma_init(dev, &dev->dma[i], dma_base[i],
+				    dma_size[i]);
 		if (ret) {
 			DEVERR(dev->dev_id, "failed to initialize DMA%d: %d", i,
 			       ret);
