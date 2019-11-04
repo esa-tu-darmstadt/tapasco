@@ -436,9 +436,15 @@ tapasco_hls:
     - source $XILINX_VIVADO/settings64.sh
     - which vivado
     - which vivado_hls
-    - dnf -y install toolflow/scala/build/distributions/tapasco-2019-10.x86_64.rpm
-    - source /opt/tapasco/tapasco-setup.sh
-    - tapasco -v hls counter -p pynq
+    - curl -s "https://get.sdkman.io" | bash
+    - source "/root/.sdkman/bin/sdkman-init.sh"
+    - sdk install java 11.0.5-zulu
+    - source $XILINX_VIVADO/settings64.sh
+    - source setup.sh
+    - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - ./gradlew installDist
+    - popd
+    - tapasco -v --kernelDir ${TAPASCO_HOME_TOOLFLOW}/examples/kernel-examples hls counter -p pynq
 
 .tapasco_compose:
   stage: build_hw
