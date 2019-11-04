@@ -445,7 +445,8 @@ tapasco_hls:
     - which vivado
     - which vivado_hls
     - dnf -y install toolflow/scala/build/distributions/tapasco-2019-10.x86_64.rpm
-    - source /opt/tapasco/tapasco-setup.sh
+    - /opt/tapasco/tapasco-init-toolflow.sh
+    - source tapasco-setup-toolflow.sh
     - tapasco -v hls counter -p pynq
 
 .tapasco_compose:
@@ -470,7 +471,8 @@ tapasco_hls:
     - which vivado
     - which vivado_hls
     - dnf -y install toolflow/scala/build/distributions/tapasco-2019-10.x86_64.rpm
-    - source /opt/tapasco/tapasco-setup.sh
+    - /opt/tapasco/tapasco-init-toolflow.sh
+    - source tapasco-setup-toolflow.sh
     - tapasco hls counter -p $PLATFORM --skipEvaluation
     - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p $PLATFORM
 
