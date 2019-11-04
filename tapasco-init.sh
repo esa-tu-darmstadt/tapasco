@@ -1,5 +1,3 @@
-#!/bin/sh
-
 if [ -n "$BASH_VERSION" ]; then
     command -v xargs > /dev/null || { echo >&2 "ERROR: xargs program not available."; }
 

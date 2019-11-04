@@ -1,5 +1,3 @@
-#!/bin/sh
-
 if [ -f "tapasco-setup-toolflow.sh" ]; then
     echo "tapasco-setup-toolflow.sh already exists."
 else
