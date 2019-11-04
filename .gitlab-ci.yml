@@ -14,6 +14,7 @@ stages:
 .test_tapasco:
   stage: test_scala_toolflow
   retry: 2
+  dependencies: []
   variables:
     JAVA_VERSION: "8.0.232-zulu"
   image: ubuntu:latest
@@ -51,6 +52,7 @@ test_tapasco_java_11:
 .build_scala_tapasco_fedora:
   stage: build_scala_toolflow
   retry: 2
+  dependencies: []
   tags:
     - High
   before_script:
@@ -103,6 +105,7 @@ build_scala_tapasco_fedora_31:
 .build_scala_tapasco_ubuntu:
   stage: build_scala_toolflow
   retry: 2
+  dependencies: []
   tags:
     - High
   before_script:
@@ -137,6 +140,7 @@ build_scala_tapasco_ubuntu_19_04:
 .build_kernel_ubuntu:
   stage: build_kernel
   retry: 2
+  dependencies: []
   variables:
     MODE: "release"
   tags:
@@ -192,6 +196,7 @@ build_kernel_ubuntu_19_04_debug:
 .build_kernel_fedora:
   stage: build_kernel
   retry: 2
+  dependencies: []
   variables:
     MODE: "release"
   tags:
@@ -289,6 +294,7 @@ build_kernel_fedora_31_debug:
   retry: 2
   variables:
     MODE: "release"
+  dependencies: []
   tags:
     - Normal
   script:
@@ -429,6 +435,8 @@ tapasco_hls:
   tags:
     - CAD
   image: fedora:28
+  dependencies:
+    - build_scala_tapasco_fedora_28
   before_script:
     - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++
     - ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
@@ -436,14 +444,8 @@ tapasco_hls:
     - source $XILINX_VIVADO/settings64.sh
     - which vivado
     - which vivado_hls
-    - curl -s "https://get.sdkman.io" | bash
-    - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java 11.0.5-zulu
-    - source $XILINX_VIVADO/settings64.sh
-    - source setup.sh
-    - pushd ${TAPASCO_HOME_TOOLFLOW}/scala
-    - ./gradlew installDist
-    - popd
+    - dnf -y install toolflow/scala/build/distributions/tapasco-2019-10.x86_64.rpm
+    - source /opt/tapasco/setup.sh
     - tapasco -v --kernelDir ${TAPASCO_HOME_TOOLFLOW}/examples/kernel-examples hls counter -p pynq
 
 .tapasco_compose:
@@ -458,6 +460,8 @@ tapasco_hls:
     - CAD
     - High
   image: fedora:28
+  dependencies:
+    - build_scala_tapasco_fedora_28
   before_script:
     - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++ python
     - ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
