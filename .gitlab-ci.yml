@@ -14,6 +14,7 @@ stages:
 .test_tapasco_ubuntu:
   stage: test_scala_toolflow
   retry: 2
+  dependencies: []
   tags:
     - High
   script:
@@ -89,6 +90,7 @@ test_tapasco_fedora_31:
 .build_scala_tapasco_fedora:
   stage: build_scala_toolflow
   retry: 2
+  dependencies: []
   tags:
     - High
   before_script:
@@ -141,6 +143,7 @@ build_scala_tapasco_fedora_31:
 .build_scala_tapasco_ubuntu:
   stage: build_scala_toolflow
   retry: 2
+  dependencies: []
   tags:
     - High
   before_script:
@@ -149,7 +152,7 @@ build_scala_tapasco_fedora_31:
     - ./tapasco-init.sh && source tapasco-setup.sh
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
     - tapasco-build-toolflow
-    - ./gradlew buildRPM
+    - ./gradlew buildDEB
   artifacts:
     paths:
       - toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb
@@ -175,6 +178,7 @@ build_scala_tapasco_ubuntu_19_04:
 .build_kernel_ubuntu:
   stage: build_kernel
   retry: 2
+  dependencies: []
   variables:
     MODE: "release"
   tags:
@@ -230,6 +234,7 @@ build_kernel_ubuntu_19_04_debug:
 .build_kernel_fedora:
   stage: build_kernel
   retry: 2
+  dependencies: []
   variables:
     MODE: "release"
   tags:
@@ -327,6 +332,7 @@ build_kernel_fedora_31_debug:
   retry: 2
   variables:
     MODE: "release"
+  dependencies: []
   tags:
     - Normal
   script:
@@ -458,35 +464,32 @@ build_tapasco_ubuntu_19_04_debug:
   image: ubuntu:disco
   extends: .build_tapasco_ubuntu
 
-tapasco_hls:
+tapasco_compose_ubuntu:
   stage: build_hw
   variables:
-    VIVADO_VERSION: "2018.2"
+    VIVADO_VERSION: "2019.1"
     XILINX_VIVADO: "/opt/cad/xilinx/vivado/Vivado/${VIVADO_VERSION}"
     XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
   tags:
     - CAD
-  image: fedora:28
-  before_script:
-    - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++
-    - ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
+  image: ubuntu:disco
+  dependencies:
+    - build_scala_tapasco_ubuntu_19_04
   script:
     - source $XILINX_VIVADO/settings64.sh
-    - which vivado
-    - which vivado_hls
-    - curl -s "https://get.sdkman.io" | bash
-    - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java 11.0.5-zulu
-    - source $XILINX_VIVADO/settings64.sh
-    - ./tapasco-init.sh && source tapasco-setup.sh
-    - tapasco-build-toolflow
+    - apt-get -y update
+    - apt-get -y install libtinfo5 build-essential
+    - apt -y install ./toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb
+    - /opt/tapasco/tapasco-init-toolflow.sh
+    - source tapasco-setup-toolflow.sh
     - tapasco -v hls counter -p pynq
+    - tapasco -v -maxThreads 3 compose [counter x 3] @ 100 MHz -p pynq
 
 .tapasco_compose:
   stage: build_hw
   retry: 2
   variables:
-    VIVADO_VERSION: "2018.2"
+    VIVADO_VERSION: "2019.1"
     XILINX_VIVADO: "/opt/cad/xilinx/vivado/Vivado/${VIVADO_VERSION}"
     XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
     PLATFORM: "pynq"
@@ -494,6 +497,8 @@ tapasco_hls:
     - CAD
     - High
   image: fedora:28
+  dependencies:
+    - build_scala_tapasco_fedora_28
   before_script:
     - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++ python
     - ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
@@ -501,13 +506,10 @@ tapasco_hls:
     - source $XILINX_VIVADO/settings64.sh
     - which vivado
     - which vivado_hls
-    - curl -s "https://get.sdkman.io" | bash
-    - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java 11.0.5-zulu
-    - source $XILINX_VIVADO/settings64.sh
-    - ./tapasco-init.sh && source tapasco-setup.sh
-    - tapasco-build-toolflow
-    - tapasco hls counter -p $PLATFORM
+    - dnf -y install toolflow/scala/build/distributions/tapasco-2019-10.x86_64.rpm
+    - /opt/tapasco/tapasco-init-toolflow.sh
+    - source tapasco-setup-toolflow.sh
+    - tapasco hls counter -p $PLATFORM --skipEvaluation
     - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p $PLATFORM
 
 tapasco_compose_17_4:
