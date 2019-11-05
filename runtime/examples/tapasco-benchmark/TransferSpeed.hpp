@@ -175,12 +175,8 @@ private:
   void transfer(volatile atomic<bool> &stop, size_t const chunk_sz,
                 long opmask) {
     std::vector<uint8_t> data_read(chunk_sz);
-    // for (auto &i : data_read)
-    //  i = rand();
 
     std::vector<uint8_t> data_write(chunk_sz);
-    // for (auto &i : data_write)
-    //  i = rand();
 
     std::thread readthread(&TransferSpeed::do_read, this, std::ref(stop),
                            chunk_sz, opmask, data_read.data());
