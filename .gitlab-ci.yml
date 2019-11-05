@@ -39,7 +39,7 @@ test_tapasco_ubuntu_19_04:
   extends: .test_tapasco_ubuntu
 
 .test_tapasco_fedora:
-  stage: build_scala_toolflow
+  stage: test_scala_toolflow
   retry: 2
   tags:
     - High
