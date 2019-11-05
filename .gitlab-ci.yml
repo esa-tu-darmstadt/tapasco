@@ -135,8 +135,8 @@ build_scala_tapasco_ubuntu_19_04:
   image: ubuntu:disco
   extends: .build_scala_tapasco_ubuntu
 
- build kernel module
- as we are running in a docker instance, we cannot use tapasco-build-libs
+# build kernel module
+# as we are running in a docker instance, we cannot use tapasco-build-libs
 .build_kernel_ubuntu:
   stage: build_kernel
   retry: 2
