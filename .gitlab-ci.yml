@@ -114,7 +114,7 @@ stages:
     - ./tapasco-init.sh && source tapasco-setup.sh
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
     - tapasco-build-toolflow
-    - ./gradlew buildRPM
+    - ./gradlew buildDEB
   artifacts:
     paths:
       - toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb
