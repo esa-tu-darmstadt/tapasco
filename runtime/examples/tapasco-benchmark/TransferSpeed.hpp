@@ -42,12 +42,33 @@ public:
 
     bytes = 0;
 
-    auto tstart{high_resolution_clock::now()};
-    duration<double> d{high_resolution_clock::now() - tstart};
+    read_ready = false;
+    write_ready = false;
+    main_ready = false;
+
     future<void> f{
         async(launch::async, [&]() { transfer(stop, chunk_sz, opmask); })};
+
+    while (!stop.load() && !(read_ready.load() && write_ready.load())) {
+      usleep(10000);
+    }
+
+    main_ready = true;
+
+    if (stop.load()) {
+      std::cout << "Failed to initalize chunk size of " << cs / 1024.0
+                << "MiB. Most likely too large." << std::endl;
+      return 0;
+    }
+
+    auto tstart{high_resolution_clock::now()};
+    duration<double> d{high_resolution_clock::now() - tstart};
     double delta = 0.0;
     do {
+      b = bytes.load() / (1024.0 * 1024.0);
+      d = high_resolution_clock::now() - tstart;
+      delta = fabs(cavg.update(b / d.count()));
+
       std::ios_base::fmtflags coutf(cout.flags());
       if (cs <= 1024) {
         std::cout << "\rChunk size: " << std::dec << std::fixed << std::setw(10)
@@ -63,9 +84,6 @@ public:
                 << std::setprecision(3) << cavg() << " MiB/s" << std::flush;
       cout.flags(coutf);
       usleep(10000);
-      b = bytes.load() / (1024.0 * 1024.0);
-      d = high_resolution_clock::now() - tstart;
-      delta = fabs(cavg.update(b / d.count()));
     } while (((!fast && delta > 0.1) || cavg.size() < 100 ||
               (bytes.load() <= 2 * chunk_sz)));
 
@@ -95,14 +113,24 @@ public:
 private:
   tapasco_res_t do_read(volatile atomic<bool> &stop, size_t const chunk_sz,
                         long opmask, uint8_t *data) {
-    if (!(opmask & OP_COPYFROM))
+    if (!(opmask & OP_COPYFROM)) {
+      read_ready = true;
       return TAPASCO_SUCCESS;
+    }
     tapasco_handle_t h;
     tapasco_res_t r{
         tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE)};
+
+    read_ready = true;
+
     if (r != TAPASCO_SUCCESS) {
+      stop = true;
       return r;
     }
+
+    while (!main_ready.load())
+      usleep(10);
+
     while (!stop.load()) {
       r = tapasco.copy_from(h, data, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING);
       if (r != TAPASCO_SUCCESS) {
@@ -117,14 +145,21 @@ private:
 
   tapasco_res_t do_write(volatile atomic<bool> &stop, size_t const chunk_sz,
                          long opmask, uint8_t *data) {
-    if (!(opmask & OP_COPYTO))
+    if (!(opmask & OP_COPYTO)) {
+      write_ready = true;
       return TAPASCO_SUCCESS;
+    }
     tapasco_handle_t h;
     tapasco_res_t r{
         tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE)};
+    write_ready = true;
+
     if (r != TAPASCO_SUCCESS) {
+      stop = true;
       return r;
     }
+    while (!main_ready.load())
+      usleep(10);
     while (!stop.load()) {
       r = tapasco.copy_to(data, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING);
       if (r != TAPASCO_SUCCESS) {
@@ -140,12 +175,8 @@ private:
   void transfer(volatile atomic<bool> &stop, size_t const chunk_sz,
                 long opmask) {
     std::vector<uint8_t> data_read(chunk_sz);
-    for (auto &i : data_read)
-      i = rand();
 
     std::vector<uint8_t> data_write(chunk_sz);
-    for (auto &i : data_write)
-      i = rand();
 
     std::thread readthread(&TransferSpeed::do_read, this, std::ref(stop),
                            chunk_sz, opmask, data_read.data());
@@ -164,6 +195,9 @@ private:
   }
 
   atomic<uint64_t> bytes{0};
+  atomic<bool> read_ready{false};
+  atomic<bool> write_ready{false};
+  atomic<bool> main_ready{false};
   Tapasco &tapasco;
   bool fast;
 };
