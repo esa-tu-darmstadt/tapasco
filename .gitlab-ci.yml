@@ -483,7 +483,7 @@ tapasco_compose_ubuntu:
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
     - tapasco -v hls counter -p pynq
-    - tapasco -v -maxThreads 3 compose [counter x 3] @ 100 MHz -p pynq
+    - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p pynq
 
 .tapasco_compose:
   stage: build_hw
