@@ -439,8 +439,7 @@ tapasco_hls:
     - build_scala_tapasco_ubuntu_19_04
   script:
     - source $XILINX_VIVADO/settings64.sh
-    - dpkg -i toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb
-    - apt-get -y install -f
+    - apt -y install ./toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
     - tapasco -v hls counter -p pynq
