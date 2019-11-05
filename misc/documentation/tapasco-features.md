@@ -53,8 +53,10 @@ FanControl {
 ## PCIe based platforms
 
 #### Cache
-Add a Xilinx System Cache to the memory subsystem. Size is configurable and can be forced to overwrite AXI cache signals.
-The first entry of the options is the default value.
+Add a Xilinx System Cache to the memory subsystem. Configuration options are:
+* Cache size in bytes (default: 32768)
+* Associativity (default: 2)
+* Overwrite AXI cache signals to always allocate on read / write (force_allocate_read or force_allocate_write, disabled by default)
 ```
 Cache {
   enabled: false | true

@@ -43,7 +43,6 @@ namespace eval system_cache {
 			}
 
 			# remove existing connection
-			save_bd_design
 			delete_bd_objs [get_bd_intf_nets -of_objects [get_memory_port]]
 			# connect mig_ic master to cache_l2
 			connect_bd_intf_net [get_platform_port] [get_bd_intf_pins $cache/S0_AXI_GEN]
