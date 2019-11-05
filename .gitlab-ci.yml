@@ -11,42 +11,80 @@ stages:
   - build_runtime
   - build_hw
 
-.test_tapasco:
+.test_tapasco_ubuntu:
   stage: test_scala_toolflow
   retry: 2
-  variables:
-    JAVA_VERSION: "8.0.232-zulu"
-  image: ubuntu:latest
   tags:
     - High
   script:
-    - apt-get -y update && apt-get -y install unzip git zip findutils curl
-    - curl -s "https://get.sdkman.io" | bash
-    - source "/root/.sdkman/bin/sdkman-init.sh"
-    - sdk install java $JAVA_VERSION
+    - apt-get -y update && apt-get -y install unzip git zip findutils curl default-jdk
     - ./tapasco-init.sh && source tapasco-setup.sh
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
     - ./gradlew test
 
-test_tapasco_java_8:
-  variables:
-    JAVA_VERSION: "8.0.232-zulu"
-  extends: .test_tapasco
+test_tapasco_ubuntu_16_04:
+  image: ubuntu:xenial
+  extends: .test_tapasco_ubuntu
 
-test_tapasco_java_9:
-  variables:
-    JAVA_VERSION: "9.0.7-zulu"
-  extends: .test_tapasco
+test_tapasco_ubuntu_18_04:
+  image: ubuntu:bionic
+  extends: .test_tapasco_ubuntu
 
-test_tapasco_java_10:
-  variables:
-    JAVA_VERSION: "10.0.2-zulu"
-  extends: .test_tapasco
+test_tapasco_ubuntu_18_10:
+  image: ubuntu:cosmic
+  extends: .test_tapasco_ubuntu
 
-test_tapasco_java_11:
-  variables:
-    JAVA_VERSION: "11.0.5-zulu"
-  extends: .test_tapasco
+test_tapasco_ubuntu_19_04:
+  image: ubuntu:disco
+  extends: .test_tapasco_ubuntu
+
+.test_tapasco_fedora:
+  stage: test_scala_toolflow
+  retry: 2
+  tags:
+    - High
+  before_script:
+    - dnf -y install which java-openjdk findutils
+  script:
+    - ./tapasco-init.sh && source tapasco-setup.sh
+    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - ./gradlew test
+
+test_tapasco_fedora_24:
+  image: fedora:24
+  extends: .test_tapasco_fedora
+
+test_tapasco_fedora_25:
+  image: fedora:25
+  extends: .test_tapasco_fedora
+
+test_tapasco_fedora_26:
+  image: fedora:26
+  extends: .test_tapasco_fedora
+
+test_tapasco_fedora_27:
+  image: fedora:27
+  extends: .test_tapasco_fedora
+
+test_tapasco_fedora_28:
+  image: fedora:28
+  extends: .test_tapasco_fedora
+
+test_tapasco_fedora_29:
+  image: fedora:29
+  extends: .test_tapasco_fedora
+  before_script:
+    - dnf -y install which findutils java-11-openjdk
+
+test_tapasco_fedora_30:
+  image: fedora:30
+  extends: .test_tapasco_fedora
+  before_script:
+  - dnf -y install which findutils java-11-openjdk
+
+test_tapasco_fedora_31:
+  image: fedora:31
+  extends: .test_tapasco_fedora
 
 .build_scala_tapasco_fedora:
   stage: build_scala_toolflow
