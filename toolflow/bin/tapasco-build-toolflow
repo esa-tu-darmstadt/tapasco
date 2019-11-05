@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ -z ${TAPASCO_HOME_TOOLFLOW} ]; then
+    echo "Please prepare TaPaSCo first by sourcing tapasco-setup.sh"
+else
+    cd ${TAPASCO_HOME_TOOLFLOW}/scala
+    ./gradlew installDist
+fi

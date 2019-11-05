@@ -1,0 +1,12 @@
+{
+	"Name" : "zcu102",
+	"Description" : "Xilinx Zynq UltraScale+ MPSoC ZCU102 Evaluation Kit",
+	"TclLibrary" : "zcu102.tcl",
+	"Part" : "xczu9eg-ffvb1156-2-e",
+	"BoardPart" : "xilinx.com:zcu102:part0",
+	"BoardPreset" : "ZCU102",
+	"TargetUtilization" : 97,
+	"Benchmark" : "zcu102.benchmark",
+    "HostFrequency": 300.0,
+    "MemFrequency": 300.0
+}

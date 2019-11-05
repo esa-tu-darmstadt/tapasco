@@ -1,6 +1,6 @@
 The Task Parallel System Composer (TaPaSCo)
 ===========================================
-![Tapasco logo](icon/tapasco_icon.png)
+![Tapasco logo](misc/icon/tapasco_icon.png)
 
 Master Branch Status: [![pipeline status](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/badges/master/pipeline.svg)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/commits/master)
 Dev Branch Status: [![pipeline status](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/badges/develop/pipeline.svg)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/commits/develop)
@@ -113,29 +113,29 @@ We provided pre-compiled packages for many popular Linux distributions. All pack
 ### Ubuntu 16.04
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_ubuntu_16_04)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_ubuntu_16_04_debug)
-[Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.deb?job=build_tapasco_ubuntu_16_04)
-[Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.deb?job=build_tapasco_ubuntu_16_04_debug)
+[Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.deb?job=build_tapasco_ubuntu_16_04)
+[Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.deb?job=build_tapasco_ubuntu_16_04_debug)
 
 ### Ubuntu 18.04
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_ubuntu_18_04)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_ubuntu_18_04_debug)
-[Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.deb?job=build_tapasco_ubuntu_18_04)
-[Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.deb?job=build_tapasco_ubuntu_18_04_debug)
+[Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.deb?job=build_tapasco_ubuntu_18_04)
+[Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.deb?job=build_tapasco_ubuntu_18_04_debug)
 
 ### Fedora 27
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_27)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_27_debug)
-[Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_27)
-[Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_27_debug)
+[Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.rpm?job=build_tapasco_fedora_27)
+[Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.rpm?job=build_tapasco_fedora_27_debug)
 
 ### Fedora 28
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_28)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_28_debug)
-[Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_28)
-[Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_28_debug)
+[Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.rpm?job=build_tapasco_fedora_28)
+[Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.rpm?job=build_tapasco_fedora_28_debug)
 
 ### Fedora 29
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_29)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/tlkm/tlkm.ko?job=build_kernel_fedora_29_debug)
-[Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_29)
-[Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2018.2.1-Linux.rpm?job=build_tapasco_fedora_29_debug)
+[Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.rpm?job=build_tapasco_fedora_29)
+[Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.6.0-Linux.rpm?job=build_tapasco_fedora_29_debug)
