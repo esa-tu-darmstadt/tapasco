@@ -73,10 +73,14 @@ test_tapasco_fedora_28:
 test_tapasco_fedora_29:
   image: fedora:29
   extends: .test_tapasco_fedora
+  before_script:
+    - dnf -y install which findutils java-11-openjdk
 
 test_tapasco_fedora_30:
   image: fedora:30
   extends: .test_tapasco_fedora
+  before_script:
+  - dnf -y install which findutils java-11-openjdk
 
 test_tapasco_fedora_31:
   image: fedora:31
