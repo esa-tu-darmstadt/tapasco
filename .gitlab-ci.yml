@@ -440,6 +440,7 @@ tapasco_hls:
   script:
     - source $XILINX_VIVADO/settings64.sh
     - apt-get -y update
+    - apt-get -y install libtinfo5
     - apt -y install ./toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
