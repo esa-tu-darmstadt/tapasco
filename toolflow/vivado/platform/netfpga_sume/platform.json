@@ -3,7 +3,8 @@
 	"Description" : "Virtex-7 FPGA Development Board",
 	"TclLibrary" : "netfpga_sume.tcl",
 	"Part" : "xc7vx690tffg1761-3",
+	"TargetUtilization" : 90,
+	"Benchmark" : "netfpga_sume.benchmark",
 	"HostFrequency": 250.0,
-	"MemFrequency": 233.1,
-	"MaximumDesignFrequency" : 1000.0
+	"MemFrequency": 233.1
 }

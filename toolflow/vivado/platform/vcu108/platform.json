@@ -5,7 +5,8 @@
 	"Part" : "xcvu095-ffva2104-2-e",
 	"BoardPart" : "xilinx.com:vcu108:part0",
 	"BoardPreset" : "VCU108",
+	"TargetUtilization" : 90,
+	"Benchmark" : "vcu108.benchmark",
 	"HostFrequency": 250.0,
-	"MemFrequency": 300.0,
-	"MaximumDesignFrequency" : 1000.0
+	"MemFrequency": 300.0
 }

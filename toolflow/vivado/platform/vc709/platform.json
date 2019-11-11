@@ -5,7 +5,8 @@
 	"Part" : "xc7vx690tffg1761-2",
 	"BoardPart" : "xilinx.com:vc709:part0",
 	"BoardPreset" : "VC709",
+	"TargetUtilization" : 90,
+	"Benchmark" : "vc709.benchmark",
 	"HostFrequency": 250.0,
-	"MemFrequency": 200.0,
-	"MaximumDesignFrequency" : 1000.0
+	"MemFrequency": 200.0
 }

@@ -5,7 +5,8 @@
 	"Part" : "xcvu9p-flga2104-2L-e",
 	"BoardPart" : "xilinx.com:vcu118:part0",
 	"BoardPreset" : "VCU118",
+	"TargetUtilization" : 90,
+	"Benchmark" : "vcu118.benchmark",
 	"HostFrequency": 250.0,
-	"MemFrequency": 300.0,
-	"MaximumDesignFrequency" : 1000.0
+	"MemFrequency": 300.0
 }

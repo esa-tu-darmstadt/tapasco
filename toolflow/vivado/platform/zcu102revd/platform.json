@@ -5,8 +5,8 @@
 	"Part" : "xczu9eg-ffvb1156-2L-e-es1",
 	"BoardPart" : "xilinx.com:zcu102:part0",
 	"BoardPreset" : "ZCU102",
+	"TargetUtilization" : 97,
 	"Benchmark" : "zcu102revd.benchmark",
-    	"HostFrequency": 250.0,
-	"MemFrequency": 250.0,
-	"MaximumDesignFrequency" : 1000.0
+    "HostFrequency": 250.0,
+    "MemFrequency": 250.0
 }

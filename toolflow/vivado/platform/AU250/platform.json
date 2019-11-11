@@ -5,7 +5,8 @@
 	"Part" : "xcu250-figd2104-2L-e",
 	"BoardPart" : "xilinx.com:au250:part0",
 	"BoardPreset" : "AU250",
+	"TargetUtilization" : 90,
+	"Benchmark" : "AU250.benchmark",
 	"HostFrequency": 250.0,
-	"MemFrequency": 300.0,
-	"MaximumDesignFrequency" : 1000.0
+	"MemFrequency": 300.0
 }
