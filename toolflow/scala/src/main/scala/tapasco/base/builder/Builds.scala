@@ -53,7 +53,9 @@ private[tapasco] trait Builds[A] {
           _logger.warn("%s Must be valid Passing Convention (\"by value\" or \"by reference\").".format(prefix))
         case "error.expected.FileOrDirExists" => {
           var offending = entry._1.read[String].reads(json).get
-          if(basePath.isDefined) offending = basePath.get.resolve(offending).toAbsolutePath.normalize().toString
+          if(basePath.isDefined) {
+            offending = basePath.get.getParent.resolve(offending).toAbsolutePath.toString
+          }
           _logger.warn("%s File or Dir %s does not exist.".format(prefix, offending))
         }
         case s: String => _logger.warn("%s %s".format(prefix, s))
