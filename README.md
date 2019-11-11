@@ -28,25 +28,9 @@ To use TaPaSCo, you'll need working installations of
 *   GCC newer than 5.x.x for C++11 support
 *   *OPTIONAL:* libncurses for the tapasco-debug application
 *   *OPTIONAL:* Local Installation of gradle 5.0+, if you do not want to use the included wrapper.
-*   Ubuntu
-    ```bash
-    sudo apt-get -y update && sudo apt-get -y install unzip git zip findutils curl build-essential \
-        linux-headers-generic python cmake libelf-dev libncurses-dev rpm
-    curl -s "https://get.sdkman.io" | bash
-    source "$HOME/.sdkman/bin/sdkman-init.sh"
-    sdk install java
-    ```
-*   Fedora
-    ```bash
-    sudo dnf -y install which unzip git zip tar findutils kernel-devel make gcc gcc-c++ \
-        elfutils-libelf-devel cmake ncurses-devel python libatomic rpm-build
-    curl -s "https://get.sdkman.io" | bash
-    source "$HOME/.sdkman/bin/sdkman-init.sh"
-    sdk install java
-    ```
 
 If you want to use the High-Level Synthesis flow for generating custom IP
-cores, you'll also need:
+cores, you will also need:
 
 *   Vivado HLS 2017.4+
 
@@ -59,16 +43,18 @@ Check that at least the following are in your `$PATH`:
 
 Basic Setup
 -------------------
-1.  Open a terminal in the main directory of the repository and source the
-    TaPaSCo setup script via `. setup.sh` or `source setup.sh`.
-    You need to do this every time you use TaPaSCo (or put it into your
-    `~/.bashrc` or `~/.profile`).
-2.  Build TaPaSCo: 
+1.	Create or open a folder, which you would like to use as your TaPaSCo workspace.
+	Within this folder, source the TaPaSCo-Initialization-Script which is located in
+	`path/to/tapasco/tapasco-init.sh`. This will setup your current folder as `TAPASCO_WORK_DIR`.
+	It will also create the file `tapasco-setup.sh` within your workdir.
+2.	Source `tapasco-setup.sh`.
+3.  Build TaPaSCo: 
     ```bash
+    cd path/to/tapasco
     cd toolflow/scala
     ./gradlew installDist
     ```
-3.  _Optional_: Run TaPaSCo unit tests from `toolflow/scala`: `gradle check`
+3.  _Optional_: Run TaPaSCo unit tests from `path/to/tapasco/toolflow/scala`: `gradle check`
 4.  _Optional_: Generate sample configuration file: `tapasco -n config.json`
     TaPaSCo should exit immediately and `config.json` will include a full
     configuration that can be read with `--configFile`, including one example
@@ -77,10 +63,13 @@ Basic Setup
 
 When everything completed successfully, **TaPaSCo is ready to use!**
 
+Whenever you want to use TaPaSCo in the future, just source the corresponding workspace using the `tapasco-setup.sh`.
+This also allows you to have multiple independent TaPaSCo-Workspaces.
+
 Build a TaPaSCo design
 ----------------------
 1.  Import your kernels
-    *   HDL flow: `tapasco import <ZIP> as <ID> -p <PLATFORM>`
+    *   HDL flow: `tapasco import path/to/ZIP as <ID> -p <PLATFORM>`
     *   HLS flow: `tapasco --kernelDir path/to/kernels hls <KERNELS> -p <PLATFORM>`
 2.  Create a composition: `tapasco compose [<KERNEL> x <COUNT>] @ <NUM> MHz -p <PLATFORM>`
 3.  Load the bitstream: `tapasco-load-bitstream <BITSTREAM>`
