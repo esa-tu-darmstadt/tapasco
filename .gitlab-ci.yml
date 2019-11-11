@@ -332,13 +332,14 @@ build_kernel_fedora_31_debug:
   retry: 2
   variables:
     MODE: "release"
+    TARGET: ""
   dependencies: []
   tags:
     - Normal
   script:
     - ./tapasco-init.sh && source tapasco-setup.sh
-    - tapasco-build-libs --mode=$MODE --skip_driver
-    - cd build && make package
+    - tapasco-build-libs --mode=$MODE --target=$TARGET --skip_driver
+    - cd build* && make package
 
 .build_tapasco_fedora:
   before_script:
@@ -440,6 +441,14 @@ build_tapasco_ubuntu_19_04:
   image: ubuntu:disco
   extends: .build_tapasco_ubuntu
 
+build_tapasco_ubuntu_19_04_cross:
+  variables:
+    TARGET: "zynq"
+  image: ubuntu:disco
+  before_script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+  extends: .build_tapasco_ubuntu
+
 build_tapasco_ubuntu_16_04_debug:
   variables:
     MODE: "debug"
@@ -462,6 +471,15 @@ build_tapasco_ubuntu_19_04_debug:
   variables:
     MODE: "debug"
   image: ubuntu:disco
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_19_04_cross_debug:
+  variables:
+    MODE: "debug"
+    TARGET: "zynq"
+  image: ubuntu:disco
+  before_script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
   extends: .build_tapasco_ubuntu
 
 tapasco_compose_ubuntu:
