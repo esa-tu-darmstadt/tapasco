@@ -128,9 +128,9 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     * @return resulting Frequency
     */
   private def checkFrequency(f: Heuristics.Frequency, platform: Platform): Heuristics.Frequency = {
-    if (f > platform.maxDesignFrequency) {
-      logger.warn("Design Frequency exceeded the maximum and was reduced to %sMHz.".format(platform.maxDesignFrequency))
-      platform.maxDesignFrequency
+    if (f > platform.maxFrequency) {
+      logger.warn("Design Frequency exceeded the maximum and was reduced to %sMHz.".format(platform.maxFrequency))
+      platform.maxFrequency
     } else {
       f
     }

@@ -75,18 +75,18 @@ class DesignSpace(
     */
   private def feasibleFreqs(bd: Composition): Seq[Double] = if (dim.frequency) {
     if(designFrequency.isDefined){
-      val maximumFrequency = Math.min(designFrequency.get.toInt, target.pd.maxDesignFrequency.toInt)
+      val maximumFrequency = Math.min(designFrequency.get.toInt, target.pd.maxFrequency.toInt)
       (50 to maximumFrequency by 5).map(_.toDouble) sortWith (_ > _)
     }
     else{
       val cores = bd.composition flatMap (ce => FileAssetManager.entities.core(ce.kernel, target))
       val srs = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
       val cps = srs flatMap (_.timing) map (_.clockPeriod)
-      val fmax = if (cps.nonEmpty) Math.min(1000.0 / cps.max, target.pd.maxDesignFrequency) else target.pd.maxDesignFrequency
+      val fmax = if (cps.nonEmpty) Math.min(1000.0 / cps.max, target.pd.maxFrequency) else target.pd.maxFrequency
       (50 to fmax.toInt by 5).map(_.toDouble) sortWith (_ > _) sortWith (_ > _)
     }
   } else {
-    val maxDesignFreq = target.pd.maxDesignFrequency
+    val maxDesignFreq = target.pd.maxFrequency
     if(designFrequency.isEmpty) {
       logger.warn("Since no Design Frequency was given, it will default to the platforms max. Design Frequency which is %sMHz.".format(maxDesignFreq))
     }
