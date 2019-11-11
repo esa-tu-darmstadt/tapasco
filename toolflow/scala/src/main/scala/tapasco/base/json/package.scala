@@ -203,12 +203,14 @@ package object json {
       (JsPath \ "Properties").read[Feature.FMap].orElse(readsFeatureFromFile)
     ) (Feature.apply _)
 
-  lazy val readsFeatureFromFile: Reads[Feature.FMap] = (json: JsValue) => {
-    val temp = (json \ "ConfigFile").validate[Path]
+  lazy val readsFeatureFromFile: Reads[Feature.FMap] = new Reads[Feature.FMap] {
+    def reads(json: JsValue): JsResult[Feature.FMap] = {
+      val temp = (json \ "ConfigFile").validate[Path]
 
-    temp.asEither match {
-      case Right(s) => readMapFromFile(s)
-      case Left(e) => new JsError(e)
+      temp.asEither match {
+        case Right(s) => readMapFromFile(s)
+        case Left(e) => new JsError(e)
+      }
     }
   }
 

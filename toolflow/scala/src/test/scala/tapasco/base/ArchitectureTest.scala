@@ -29,6 +29,11 @@ import tapasco.base.json._
 
 class ArchitectureSpec extends TaPaSCoSpec with Matchers {
 
+  /**
+    * Defines the required Reads[Architecture] as an implicit.
+    */
+  implicit val archReads = validatingArchitectureReads
+
   "A missing Architecture file" should "throw an exception" in {
     assert(Architecture.from(jsonPath.resolve("missing.json")).isLeft)
   }
