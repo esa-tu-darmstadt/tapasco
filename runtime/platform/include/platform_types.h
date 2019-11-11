@@ -22,6 +22,7 @@
 #include "platform_components.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <tlkm_access.h>
 #include <tlkm_ioctl_cmds.h>
 
@@ -57,7 +58,7 @@ typedef uint32_t platform_ctl_addr_t;
 #define PRIctl "%#08x"
 
 /** Device memory space address type (opaque). **/
-typedef uint32_t platform_mem_addr_t;
+typedef uint64_t platform_mem_addr_t;
 #define PRImem "%#08x"
 
 /** Identifies a slot in the design, i.e., a Function. **/

@@ -100,13 +100,14 @@ platform_res_t default_alloc_driver(platform_devctx_t *devctx, size_t const len,
 }
 
 platform_res_t default_dealloc_driver(platform_devctx_t *devctx,
+                                      size_t const len,
                                       platform_mem_addr_t const addr,
                                       platform_alloc_flags_t const flags) {
   DEVLOG(devctx->dev_id, LPLL_MM,
          "freeing memory at " PRImem " with flags " PRIflags, addr,
          (CSTflags)flags);
   struct tlkm_mm_cmd cmd = {
-      .sz = 0,
+      .sz = len,
       .dev_addr = addr,
   };
   long ret = ioctl(devctx->fd_ctrl, TLKM_DEV_IOCTL_FREE, &cmd);
@@ -137,15 +138,13 @@ platform_res_t default_alloc_host(platform_devctx_t *devctx, size_t const len,
   return PLATFORM_SUCCESS;
 }
 
-platform_res_t default_dealloc_host(platform_devctx_t *devctx,
+platform_res_t default_dealloc_host(platform_devctx_t *devctx, size_t const len,
                                     platform_mem_addr_t const addr,
                                     platform_alloc_flags_t const flags) {
   default_platform_t *pp = (default_platform_t *)devctx->private_data;
   if (pp) {
     pthread_mutex_lock(&pp->mem_mtx);
-    // TODO: This will always fail as length is 0
-    // Won't fix for now as all of this API has to be replaced anyway...
-    gen_mem_free(&pp->mem, addr, 0);
+    gen_mem_free(&pp->mem, addr, len);
     pthread_mutex_unlock(&pp->mem_mtx);
   } else {
     return PERR_TLKM_ERROR;
@@ -363,7 +362,7 @@ platform_res_t request_device_size(platform_devctx_t const *devctx) {
   return PLATFORM_SUCCESS;
 }
 
-platform_res_t default_init(platform_devctx_t *devctx, size_t offboard_memory) {
+platform_res_t default_init(platform_devctx_t *devctx, platform_mem_addr_t offboard_memory) {
   default_platform_t *pp =
       (default_platform_t *)malloc(sizeof(default_platform_t));
   if (!pp)

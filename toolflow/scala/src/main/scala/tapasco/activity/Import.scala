@@ -55,7 +55,7 @@ object Import {
     * @param skipEval Do not perform out-of-context synthesis for resource estimation (optional).
     * @param cfg      Implicit [[base.Configuration]].
     **/
-  def apply(zip: Path, id: Kernel.Id, t: Target, acc: Option[Int], skipEval: Option[Boolean],
+  def apply(zip: Path, id: Kernel.Id, t: Target, acc: Option[Long], skipEval: Option[Boolean],
             optimization: Int, synthOptions: Option[String] = None)
            (implicit cfg: Configuration): Boolean = {
     // get VLNV from the file

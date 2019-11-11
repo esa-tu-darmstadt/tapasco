@@ -184,7 +184,7 @@
     set irq_read [create_bd_pin -type "intr" -dir "O" "dma_irq_read"]
     set irq_write [create_bd_pin -type "intr" -dir "O" "dma_irq_write"]
 
-    # create instances of cores: MIG core, DMA, system cache
+    # create instances of cores: MIG core, DMA
     set mig [create_mig_core "mig"]
 
     variable pcie_width
@@ -199,26 +199,7 @@
     set mig_ic [tapasco::ip::create_axi_sc "mig_ic" 2 1]
     tapasco::ip::connect_sc_default_clocks $mig_ic "mem"
 
-    # FIXME this belongs into a plugin
-    set cache_en [tapasco::is_feature_enabled "Cache"]
-    if {$cache_en} {
-      set cf [tapasco::get_feature "Cache"]
-      puts "Platform configured w/L2 Cache, implementing ..."
-      set cache [tapasco::ip::create_axi_cache "cache_l2" 1 \
-          [dict get [tapasco::get_feature "Cache"] "size"] \
-          [dict get [tapasco::get_feature "Cache"] "associativity"]]
-      # set slave port width to 512bit, otherwise uses (not working) width conversion in SmartConnect
-      set_property CONFIG.C_S0_AXI_GEN_DATA_WIDTH {512} $cache
-
-      # connect mig_ic master to cache_l2
-      connect_bd_intf_net [get_bd_intf_pins mig_ic/M00_AXI] [get_bd_intf_pins $cache/S0_AXI_GEN]
-      # connect cache_l2 to MIG
-      connect_bd_intf_net [get_bd_intf_pins $cache/M0_AXI] [get_bd_intf_pins -regexp mig/(C0_DDR4_)?S_AXI]
-    } {
-      puts "Platform configured w/o L2 Cache"
-      # no cache - connect directly to MIG
-      connect_bd_intf_net [get_bd_intf_pins mig_ic/M00_AXI] [get_bd_intf_pins -regexp mig/(C0_DDR4_)?S_AXI]
-    }
+    connect_bd_intf_net [get_bd_intf_pins mig_ic/M00_AXI] [get_bd_intf_pins -regexp mig/(C0_DDR4_)?S_AXI]
 
     # AXI connections:
     # connect dma 32bit to mig_ic
@@ -270,13 +251,6 @@
         connect_bd_net [get_bd_pins $ddr_rst_inverter/Res] $ddr_aresetn
     } else {
         connect_bd_net $ddr_aresetn [get_bd_pins -regexp mig/(c0_ddr4_)?ui_clk_sync_rst]
-    }
-
-    # FIXME belongs into plugin
-    # connect cache clk/rst if configured
-    if {$cache_en} {
-      connect_bd_net $ddr_clk [get_bd_pins $cache/ACLK]
-      connect_bd_net $ddr_p_aresetn [get_bd_pins $cache/ARESETN]
     }
 
   }

@@ -108,7 +108,8 @@ int main(int argc, char **argv) {
     check_tapasco(tapasco_device_job_get_return(dev, j_id, sizeof(r), &r));
     printf("FPGA output for run %d: %d\n", run, r);
     printf("\nRUN %d %s\n", run, r == golden ? "OK" : "NOT OK");
-    tapasco_device_free(dev, h, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+    tapasco_device_free(dev, h, SZ * sizeof(int),
+                        TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
     tapasco_device_release_job_id(dev, j_id);
   }
 

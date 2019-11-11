@@ -41,11 +41,11 @@ object CoSimReport {
   private[this] val logger = tapasco.Logging.logger(this.getClass)
 
   /** Model of the simulated clock cycles counts per execution (minimal, average and maximal). */
-  final case class ClockCycles(min: Int, avg: Int, max: Int)
+  final case class ClockCycles(min: Long, avg: Long, max: Long)
 
   object ClockCycles {
-    private def parseOptionalInt(s: String): Int = try {
-      s.toInt
+    private def parseOptionalInt(s: String): Long = try {
+      s.toLong
     } catch {
       case e: NumberFormatException => 1
     }

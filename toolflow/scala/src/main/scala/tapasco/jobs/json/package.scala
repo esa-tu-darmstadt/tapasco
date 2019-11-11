@@ -57,7 +57,7 @@ package object json {
       (JsPath \ "Zip").read[Path] ~
       (JsPath \ "Id").read[Int](verifying[Int](_ > 0)) ~
       (JsPath \ "Description").readNullable[String] ~
-      (JsPath \ "Average Clock Cycles").readNullable[Int](verifying[Int](_ > 0)) ~
+      (JsPath \ "Average Clock Cycles").readNullable[Long](verifying[Long](_ > 0L)) ~
       (JsPath \ "Skip Evaluation").readNullable[Boolean] ~
       (JsPath \ "Synth Options").readNullable[String] ~
       (JsPath \ "Architectures").readNullable[Seq[String]] ~
@@ -70,7 +70,7 @@ package object json {
       (JsPath \ "Zip").write[Path] ~
       (JsPath \ "Id").write[Int] ~
       (JsPath \ "Description").writeNullable[String] ~
-      (JsPath \ "Average Clock Cycles").writeNullable[Int] ~
+      (JsPath \ "Average Clock Cycles").writeNullable[Long] ~
       (JsPath \ "Skip Evaluation").writeNullable[Boolean] ~
       (JsPath \ "Synth Options").writeNullable[String] ~
       (JsPath \ "Architectures").writeNullable[Seq[String]] ~

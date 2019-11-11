@@ -8,8 +8,6 @@
 #include "blue_dma.h"
 #include "pcie/pcie_device.h"
 
-#define DMA_SZ 0x10000
-
 typedef struct {
 	size_t cpy_sz;
 	ssize_t t_id;
@@ -41,7 +39,8 @@ static const struct dma_operations tlkm_dma_ops[] = {
 	}
 };
 
-int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
+int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase,
+		  u64 size)
 {
 	dev_id_t dev_id = dev->dev_id;
 	int i = 0;
@@ -62,11 +61,11 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase)
 	dma->ack_register = NULL;
 
 	DEVLOG(dev_id, TLKM_LF_DMA, "I/O remapping 0x%px - 0x%px...", base,
-	       base + DMA_SZ - 1);
-	dma->regs = ioremap_nocache((resource_size_t)base, DMA_SZ);
+	       base + size - 1);
+	dma->regs = ioremap_nocache((resource_size_t)base, size);
 	if (dma->regs == 0 || IS_ERR(dma->regs)) {
 		DEVERR(dev_id, "failed to map 0x%p - 0x%p: %lx", base,
-		       base + DMA_SZ - 1, PTR_ERR(dma->regs));
+		       base + size - 1, PTR_ERR(dma->regs));
 		ret = EIO;
 		goto err_dma_ioremap;
 	}
@@ -170,6 +169,7 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,
 	struct tlkm_device *dev = dma->dev;
 	size_t cpy_sz = len;
 	int i;
+	int err;
 	int current_buffer = 0;
 	ssize_t t_ids[TLKM_DMA_CHUNKS];
 	if ((dev_addr % dma->alignment) != 0) {
@@ -178,6 +178,9 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,
 		       dma->alignment);
 		return -EAGAIN;
 	}
+
+	mutex_lock(&dma->wq_mutex);
+
 	for (i = 0; i < TLKM_DMA_CHUNKS; ++i) {
 		t_ids[i] = 0;
 	}
@@ -198,7 +201,8 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,
 					     t_ids[current_buffer])) {
 			DEVWRN(dma->dev_id,
 			       "got killed while hanging in waiting queue");
-			return -EACCES;
+			err = -EACCES;
+			goto copy_err;
 		}
 
 		dma->ops.buffer_cpu(dev->dev_id, dev,
@@ -208,7 +212,8 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,
 		if (copy_from_user(dma->dma_buf_write[current_buffer], usr_addr,
 				   cpy_sz)) {
 			DEVERR(dma->dev_id, "could not copy data from user");
-			return -EAGAIN;
+			err = -EAGAIN;
+			goto copy_err;
 		} else {
 			dma->ops.buffer_dev(
 				dev->dev_id, dev,
@@ -232,12 +237,18 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,
 			    atomic64_read(&dma->wq_processed) >= t_ids[i])) {
 			DEVWRN(dma->dev_id,
 			       "got killed while hanging in waiting queue");
-			return -EACCES;
+			err = -EACCES;
+			goto copy_err;
 		}
 	}
 
 	tlkm_perfc_dma_writes_add(dma->dev_id, len);
+	mutex_unlock(&dma->wq_mutex);
 	return len;
+
+copy_err:
+	mutex_unlock(&dma->wq_mutex);
+	return err;
 }
 
 ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr,
@@ -245,7 +256,7 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr,
 {
 	struct tlkm_device *dev = dma->dev;
 	size_t cpy_sz = len;
-	int i;
+	int i, err;
 	int current_buffer = 0;
 	chunk_data_t chunks[TLKM_DMA_CHUNKS];
 	if ((dev_addr % dma->alignment) != 0) {
@@ -254,6 +265,9 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr,
 		       dma->alignment);
 		return -EAGAIN;
 	}
+
+	mutex_lock(&dma->rq_mutex);
+
 	for (i = 0; i < TLKM_DMA_CHUNKS; ++i) {
 		chunks[i].t_id = 0;
 		chunks[i].usr_addr = 0;
@@ -275,7 +289,8 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr,
 					     chunks[current_buffer].t_id)) {
 			DEVWRN(dma->dev_id,
 			       "got killed while hanging in waiting queue");
-			return -EACCES;
+			err = -EACCES;
+			goto copy_err;
 		}
 		if (chunks[current_buffer].usr_addr != 0) {
 			dma->ops.buffer_cpu(
@@ -288,7 +303,8 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr,
 					 chunks[current_buffer].cpy_sz)) {
 				DEVERR(dma->dev_id,
 				       "could not copy data to user");
-				return -EAGAIN;
+				err = -EAGAIN;
+				goto copy_err;
 			}
 			chunks[current_buffer].usr_addr = 0;
 		}
@@ -317,7 +333,8 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr,
 					     chunks[i].t_id)) {
 			DEVWRN(dma->dev_id,
 			       "got killed while hanging in waiting queue");
-			return -EACCES;
+			err = -EACCES;
+			goto copy_err;
 		}
 
 		if (chunks[i].usr_addr != 0) {
@@ -330,12 +347,18 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr,
 					 chunks[i].cpy_sz)) {
 				DEVERR(dma->dev_id,
 				       "could not copy data to user");
-				return -EAGAIN;
+				err = -EAGAIN;
+				goto copy_err;
 			}
 			chunks[i].usr_addr = 0;
 		}
 	}
 
 	tlkm_perfc_dma_reads_add(dma->dev_id, len);
+	mutex_unlock(&dma->rq_mutex);
 	return len;
+
+copy_err:
+	mutex_unlock(&dma->rq_mutex);
+	return err;
 }

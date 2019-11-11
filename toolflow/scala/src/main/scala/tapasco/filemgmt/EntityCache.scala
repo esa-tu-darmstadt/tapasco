@@ -19,6 +19,7 @@
 package tapasco.filemgmt
 
 import java.nio.file._
+import java.util
 
 import tapasco.util._
 
@@ -73,7 +74,13 @@ private class DefaultEntityCache[T](paths: Set[Path], val filter: Regex, build: 
     }
     (paths map { d =>
       try {
-        Files.walkFileTree(d.toAbsolutePath, visitor); visitor.files
+        if(filter.findFirstIn("kernel.json").isDefined){
+          // Only follow symlinks if looking for kernels. Else this can take forever when folders contain unexpected links.
+          Files.walkFileTree(d.toAbsolutePath, util.EnumSet.of(FileVisitOption.FOLLOW_LINKS), 2, visitor)
+        } else {
+          Files.walkFileTree(d.toAbsolutePath, visitor)
+        }
+        visitor.files
       }
       catch {
         case ex: java.io.IOException => MSet[Path]()

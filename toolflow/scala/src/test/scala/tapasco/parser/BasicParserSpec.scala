@@ -158,6 +158,11 @@ private object BasicParserSpec {
     sep <- sepCharGen
   } yield s"$ws1$sep$ws2"
 
+  val commaSepStringGen : Gen[String] = for {
+    ws1 <- wsStringGen
+    ws2 <- wsStringGen
+  } yield s"$ws1,$ws2"
+
   def interleave[A](as: Seq[A], bs: Seq[A]): Seq[A] = (as, bs) match {
     case (Seq(), bs) => bs
     case (as, Seq()) => as

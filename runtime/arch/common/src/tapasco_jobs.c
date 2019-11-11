@@ -168,7 +168,8 @@ inline tapasco_res_t tapasco_jobs_get_arg(tapasco_jobs_t *jobs,
                                           void *arg_value) {
   assert(jobs);
 
-  if (arg_len != sizeof(uint8_t) && arg_len != sizeof(uint16_t) && arg_len != sizeof(uint32_t) && arg_len != sizeof(uint64_t))
+  if (arg_len != sizeof(uint8_t) && arg_len != sizeof(uint16_t) &&
+      arg_len != sizeof(uint32_t) && arg_len != sizeof(uint64_t))
     return TAPASCO_ERR_INVALID_ARG_SIZE;
   if (arg_idx >= TAPASCO_JOB_MAX_ARGS)
     return TAPASCO_ERR_INVALID_ARG_INDEX;
@@ -187,7 +188,8 @@ inline tapasco_res_t tapasco_jobs_set_arg(tapasco_jobs_t *jobs,
                                           void const *arg_value) {
   assert(jobs);
 
-  if (arg_len != sizeof(uint8_t) && arg_len != sizeof(uint16_t) && arg_len != sizeof(uint32_t) && arg_len != sizeof(uint64_t))
+  if (arg_len != sizeof(uint8_t) && arg_len != sizeof(uint16_t) &&
+      arg_len != sizeof(uint32_t) && arg_len != sizeof(uint64_t))
     return TAPASCO_ERR_INVALID_ARG_SIZE;
   if (arg_idx >= TAPASCO_JOB_MAX_ARGS)
     return TAPASCO_ERR_INVALID_ARG_INDEX;
@@ -227,6 +229,7 @@ tapasco_jobs_set_arg_transfer(tapasco_jobs_t *jobs, tapasco_job_id_t const j_id,
   jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].data = arg_value;
   jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].flags = flags;
   jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].dir_flags = dir_flags;
+  jobs->q.elems[j_id - JOB_ID_OFFSET].transfers[arg_idx].preloaded = 0;
   if (jobs->q.elems[j_id - JOB_ID_OFFSET].args_len < arg_idx + 1)
     jobs->q.elems[j_id - JOB_ID_OFFSET].args_len = arg_idx + 1;
   return TAPASCO_SUCCESS;

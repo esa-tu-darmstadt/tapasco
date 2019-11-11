@@ -182,7 +182,7 @@ package object json {
       (JsPath \ "Version").read[String](minimumLength(length = 1)) ~
       (JsPath \ "Target").read[TargetDesc] ~
       (JsPath \ "Description").readNullable[String] ~
-      (JsPath \ "AverageClockCycles").readNullable[Int]
+      (JsPath \ "AverageClockCycles").readNullable[Long]
     ) (Core.apply _)
   implicit val coreWrites: Writes[Core] = (
     (JsPath \ "DescPath").write[Path].transform((js: JsObject) => js - "DescPath") ~
@@ -192,7 +192,7 @@ package object json {
       (JsPath \ "Version").write[String] ~
       (JsPath \ "Target").write[TargetDesc] ~
       (JsPath \ "Description").writeNullable[String] ~
-      (JsPath \ "AverageClockCycles").writeNullable[Int]
+      (JsPath \ "AverageClockCycles").writeNullable[Long]
     ) (unlift(Core.unapply))
   /* Core @} */
 
@@ -333,18 +333,20 @@ package object json {
   // scalastyle:off magic.number
   def validatingPlatformReads(sourcePath: Path): Reads[Platform] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
-      (JsPath \ "Name").read[String](minimumLength(length = 1)) ~
-      (JsPath \ "TclLibrary").read[Path](pathExistsValidation(sourcePath)) ~
-      (JsPath \ "Part").read[String](minimumLength(length = 4)) ~
-      (JsPath \ "BoardPart").readNullable[String](minimumLength(length = 4)) ~
-      (JsPath \ "BoardPreset").readNullable[String](minimumLength(length = 4)) ~
-      (JsPath \ "BoardPartRepository").readNullable[String](minimumLength(length = 4)) ~
-      (JsPath \ "SlotCount").readNullable[Int](withinBounds(lowerBound = 1, upperBound = 255)) ~
-      (JsPath \ "Description").readNullable[String](minimumLength(length = 1)) ~
-      (JsPath \ "Benchmark").readNullable[Path](pathExistsValidation(sourcePath)) ~
+      (JsPath \ "Name").read[String](minLength[String](1)) ~
+      (JsPath \ "TclLibrary").read[Path] ~
+      (JsPath \ "Part").read[String](minLength[String](1)) ~
+      (JsPath \ "BoardPart").readNullable[String](minLength[String](4)) ~
+      (JsPath \ "BoardPreset").readNullable[String](minLength[String](4)) ~
+      (JsPath \ "BoardPartRepository").readNullable[String](minLength[String](4)) ~
+      (JsPath \ "SupportedFrequencies").readNullable[Seq[Int]](minLength[Seq[Int]](1)) ~
+      (JsPath \ "MaximumFrequency").readNullable[Int].map(_.getOrElse(450)) ~
+      (JsPath \ "SlotCount").readNullable[Int](min(1) keepAnd max(255)) ~
+      (JsPath \ "Description").readNullable[String](minLength[String](1)) ~
+      (JsPath \ "Benchmark").readNullable[Path] ~
       (JsPath \ "HostFrequency").readNullable[Double] ~
       (JsPath \ "MemFrequency").readNullable[Double] ~
-      (JsPath \ "MaximumDesignFrequency").read[Double]
+      (JsPath \ "ImplementationTimeout").readNullable[Int]
     ) (Platform.apply _)
 
   // scalastyle:on magic.number
@@ -356,12 +358,14 @@ package object json {
       (JsPath \ "BoardPart").writeNullable[String] ~
       (JsPath \ "BoardPreset").writeNullable[String] ~
       (JsPath \ "BoardPartRepository").writeNullable[String] ~
+      (JsPath \ "SupportedFrequencies").writeNullable[Seq[Int]] ~
+      (JsPath \ "MaximumFrequency").write[Int] ~
       (JsPath \ "SlotCount").writeNullable[Int] ~
       (JsPath \ "Description").writeNullable[String] ~
       (JsPath \ "Benchmark").writeNullable[Path] ~
       (JsPath \ "HostFrequency").writeNullable[Double] ~
       (JsPath \ "MemFrequency").writeNullable[Double] ~
-      (JsPath \ "MaximumDesignFrequency").write[Double]
+      (JsPath \ "ImplementationTimeout").writeNullable[Int]
     ) (unlift(Platform.unapply))
 
   /* Platform @} */

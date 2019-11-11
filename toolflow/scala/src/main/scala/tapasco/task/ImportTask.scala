@@ -47,7 +47,7 @@ class ImportTask(val zip: Path,
                  val t: Target,
                  val id: Kernel.Id,
                  val onComplete: Boolean => Unit,
-                 val averageClockCycles: Option[Int] = None,
+                 val averageClockCycles: Option[Long] = None,
                  val skipEvaluation: Option[Boolean] = None,
                  val synthOptions: Option[String] = None,
                  val optimization: Int)

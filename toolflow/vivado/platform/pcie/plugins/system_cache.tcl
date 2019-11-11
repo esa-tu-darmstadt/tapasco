@@ -1,6 +1,5 @@
-#!/bin/bash
 #
-# Copyright (C) 2014 Jens Korinth, TU Darmstadt
+# Copyright (C) 2019 Carsten Heinz, TU Darmstadt
 #
 # This file is part of Tapasco (TPC).
 #
@@ -17,8 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
-FILENAME=$1
-CSV=$FILENAME.csv
-PDF=$FILENAME.pdf
 
-cat job-speed.gnuplot | sed "s/<CSV>/$CSV/g" | sed "s/<PDF>/$PDF/g" | gnuplot
+namespace eval system_cache {
+	proc get_platform_port {} {
+		return [get_bd_intf_pins mig_ic/M00_AXI]
+	}
+
+	proc get_memory_port {} {
+		return [get_bd_intf_pins -regexp mig/(C0_DDR4_)?S_AXI]
+	}
+}

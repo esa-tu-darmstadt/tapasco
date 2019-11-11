@@ -273,9 +273,9 @@ struct Tapasco {
    * Frees a previously allocated chunk of device memory.
    * @param handle memory chunk handle returned by @see alloc
    **/
-  void free(tapasco_handle_t const handle,
+  void free(tapasco_handle_t const handle, size_t const len,
             tapasco_device_alloc_flag_t const flags) const noexcept {
-    tapasco_device_free(devctx, handle, flags);
+    tapasco_device_free(devctx, handle, len, flags);
   }
 
   /**

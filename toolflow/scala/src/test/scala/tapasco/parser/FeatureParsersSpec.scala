@@ -68,7 +68,7 @@ private object FeatureParsersSpec {
   }
 
   def featureKVs(n: Int): Gen[String] =
-    BasicParserSpec.join(0 until n map { _ => featureKeyValueGen })
+    BasicParserSpec.join(0 until n map { _ => featureKeyValueGen }, BasicParserSpec.commaSepStringGen)
 
   val featureGen: Gen[String] = for {
     begin <- featureBeginGen

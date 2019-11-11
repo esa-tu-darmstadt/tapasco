@@ -72,8 +72,9 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
 
     val vivadoCmd = Seq("vivado", "-mode", "batch", "-source", files.tclFile.toString, "-notrace", "-nojournal", "-log", files.logFile.toString)
     logger.debug("Vivado shell command: {}", vivadoCmd mkString " ")
+    // execute Vivado (max runtime defined by platform, defaults to 24 hours)
     val r = InterruptibleProcess(Process(vivadoCmd, files.outdir.toFile),
-      waitMillis = Some(24 * 60 * 60 * 1000)).!(ProcessLogger(
+      waitMillis = Some(target.pd.implTimeout.getOrElse(24) * 60 * 60 * 1000)).!(ProcessLogger(
       stdoutString => logger.trace("Vivado: {}", stdoutString),
       stderrString => logger.trace("Vivado ERR: {}", stderrString)
     ))

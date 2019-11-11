@@ -16,9 +16,9 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 //
-/** @file	tapasco_delayed_transfers.c
- *  @brief	Functions for delayed memory transfers.
- *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+/** @file tapasco_delayed_transfers.c
+ *  @brief  Functions for delayed memory transfers.
+ *  @author J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
  **/
 #include <platform.h>
 #include <tapasco.h>
@@ -73,7 +73,7 @@ tapasco_res_t tapasco_transfer_from(tapasco_devctx_t *devctx,
   }
   LOG(LALL_TRANSFERS, "job %lu: freeing buffer with length %zd bytes",
       (unsigned long)j_id, (unsigned long)t->len);
-  tapasco_device_free(devctx, t->handle, t->flags, s_id, t->len);
+  tapasco_device_free(devctx, t->handle, t->len, t->flags, s_id);
   return res;
 }
 

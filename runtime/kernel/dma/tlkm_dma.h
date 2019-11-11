@@ -75,7 +75,8 @@ struct dma_engine {
 	volatile uint32_t *ack_register;
 };
 
-int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 base);
+int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 base,
+		  u64 size);
 void tlkm_dma_exit(struct dma_engine *dma);
 
 ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,

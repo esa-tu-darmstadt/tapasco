@@ -211,7 +211,16 @@ namespace eval tapasco {
   # Returns a dictionary with the configuration of given feature (if it exists).
   proc get_feature {feature} {
     global features
-    if {[info exists features]} { return [dict get $features $feature] } { return [dict create] }
+    if {[info exists features] && [dict exists $features $feature]} { return [dict get $features $feature] } { return [dict create] }
+  }
+
+  # Returns a configuration option within a feature. Default value of boolean false can be overwritten.
+  proc get_feature_option {feature option {default_value false}} {
+    set config [get_feature $feature]
+    if {[dict exists $config $option]} {
+      return [dict get $config $option]
+    }
+    return $default_value
   }
 
   # Returns true, if given feature is configured and enabled.
@@ -314,7 +323,7 @@ namespace eval tapasco {
     # special case: bypass (not necessary; only for performance, Tcl is slow)
     if {$totalOut == 1} {
       puts "  building 1-on-1 bypass"
-      set bic [ip::create_axi_ic "bic" 1 1]
+      set bic [ip::create_axi_ic "ic_000" 1 1]
       set m [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" "M000_AXI"]
       set s [create_bd_intf_pin -mode Slave -vlnv "xilinx.com:interface:aximm_rtl:1.0" "S000_AXI"]
       connect_bd_intf_net $s [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Slave"} -of_objects $bic]

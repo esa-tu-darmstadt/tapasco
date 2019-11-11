@@ -72,8 +72,8 @@ tapasco_res_t tapasco_device_copy_to_local(
 
   LOG(LALL_MEM,
       "copying %zd bytes locally to " PRIhandle " of slot_id #" PRIslot
-      " from 0x%llx",
-      len, dst, lmem_slot_id, (uint64_t)a);
+      " from 0x%zx",
+      len, dst, lmem_slot_id, (size_t)a);
 
   uint8_t *src_ptr = (uint8_t *)src;
   size_t chunk_size = 0;
@@ -111,8 +111,8 @@ tapasco_res_t tapasco_device_copy_from_local(
   volatile uint8_t *a = (volatile uint8_t *)ptr_a_calc;
   LOG(LALL_MEM,
       "copying %zd bytes locally from " PRIhandle " of slot_id #" PRIslot
-      " from 0x%llx",
-      len, dst, lmem_slot_id, (uint64_t)a);
+      " from 0x%zx",
+      len, dst, lmem_slot_id, (size_t)a);
 
   uint8_t *dst_ptr = (uint8_t *)dst;
   size_t chunk_size = 0;
@@ -162,18 +162,19 @@ tapasco_res_t tapasco_device_alloc(tapasco_devctx_t *devctx,
 }
 
 void tapasco_device_free(tapasco_devctx_t *devctx, tapasco_handle_t handle,
-                         tapasco_device_alloc_flag_t const flags, ...) {
+                         size_t len, tapasco_device_alloc_flag_t const flags,
+                         ...) {
   platform_devctx_t *p = devctx->pdctx;
   LOG(LALL_MEM, "freeing handle " PRIhandle, handle);
   if (flags & TAPASCO_DEVICE_ALLOC_FLAGS_PE_LOCAL) {
     va_list ap;
     va_start(ap, flags);
     tapasco_slot_id_t slot_id = va_arg(ap, tapasco_slot_id_t);
-    size_t len = va_arg(ap, size_t);
     va_end(ap);
     tapasco_device_free_local(devctx, handle, len, flags, slot_id);
+  } else {
+    platform_dealloc(p, handle, len, PLATFORM_ALLOC_FLAGS_NONE);
   }
-  platform_dealloc(p, handle, PLATFORM_ALLOC_FLAGS_NONE);
 }
 
 tapasco_res_t tapasco_device_copy_to(tapasco_devctx_t *devctx, void const *src,

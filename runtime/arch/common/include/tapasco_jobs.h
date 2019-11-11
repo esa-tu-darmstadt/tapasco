@@ -56,6 +56,7 @@ struct tapasco_transfer {
   tapasco_device_alloc_flag_t flags;
   tapasco_copy_direction_flag_t dir_flags;
   tapasco_handle_t handle;
+  uint8_t preloaded;
 };
 typedef struct tapasco_transfer tapasco_transfer_t;
 
