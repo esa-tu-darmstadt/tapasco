@@ -36,41 +36,73 @@ cores, you will also need:
 
 Check that at least the following are in your `$PATH`:
 
-*   `vivado`
+*   `vivado` - If not source `path/to/vivado/settings64.sh`
 *   `git`
 *   `bash`
 *   \[`vivado_hls`\] - Since Vivado 2018.1 this is included in `vivado`
 
-Basic Setup
--------------------
-1.	Create or open a folder, which you would like to use as your TaPaSCo workspace.
-	Within this folder, source the TaPaSCo-Initialization-Script which is located in
-	`path/to/tapasco/tapasco-init.sh`. This will setup your current folder as `TAPASCO_WORK_DIR`.
-	It will also create the file `tapasco-setup.sh` within your workdir.
-2.	Source `tapasco-setup.sh`.
-3.  Build TaPaSCo: 
-    ```bash
-    cd path/to/tapasco
-    cd toolflow/scala
-    ./gradlew installDist
-    ```
-3.  _Optional_: Run TaPaSCo unit tests from `path/to/tapasco/toolflow/scala`: `gradle check`
-4.  _Optional_: Generate sample configuration file: `tapasco -n config.json`
-    TaPaSCo should exit immediately and `config.json` will include a full
-    configuration that can be read with `--configFile`, including one example
-    for each kind of job.
-5.  Build libraries and _tlkm_ kernel module: `tapasco-build-libs`
+When using *Ubuntu*, ensure that the following packages are installed:
 
-When everything completed successfully, **TaPaSCo is ready to use!**
+* unzip
+* zip
+* git
+* findutils
+* curl
+* default-jdk
+
+When using *Fedora*, ensure that the following packages are installed:
+
+* which
+* java-openjdk
+* findutils
+
+
+
+TaPaSCo-Toolflow Setup
+----------------------
+
+Using the prebuilt packages, the setup of TaPaSCo is very easy:
+
+1.  Create or open a folder, which you would like to use as your TaPaSCo workspace.
+    Within this folder, source the TaPaSCo-Initialization-Script which is located in
+    `path/to/tapasco/tapasco-init.sh`. This will setup your current folder as `TAPASCO_WORK_DIR`.
+    It will also create the file `tapasco-setup.sh` within your workdir. 
+2.	Source `tapasco-setup.sh`.
+
+If you want to use a specific (pre-release) version or branch, you can do the following:
+
+1.  Clone TaPaSCo: `git clone https://github.com/esa-tu-darmstadt/tapasco.git`
+2.  _Optionally_ Checkout a corresponding branch: `git checkout <BRANCH>`
+3.  Create or open a folder, which you would like to use as your TaPaSCo workspace.
+    Within this folder, source the TaPaSCo-Initialization-Script `tapasco-init.sh` which is located in the root-folder 
+    of your cloned repo. This will setup your current folder as `TAPASCO_WORK_DIR`.
+    It will also create the file `tapasco-setup.sh` within your workdir.
+4.  Source `tapasco-setup.sh` to setup the TaPaSCo-Environment.
+5.  Build the TaPaSCo-Toolflow using `tapasco-build-toolflow`.
 
 Whenever you want to use TaPaSCo in the future, just source the corresponding workspace using the `tapasco-setup.sh`.
 This also allows you to have multiple independent TaPaSCo-Workspaces.
 
+TaPaSCo-Runtime Setup
+---------------------
+
+If you want to use a specific (pre-release) version or branch, you can do the following:
+
+1.  Clone TaPaSCo: `git clone https://github.com/esa-tu-darmstadt/tapasco.git`
+2.  _Optionally_ Checkout a corresponding branch: `git checkout <BRANCH>`
+3.  Create or open a folder, which you would like to use as your TaPaSCo workspace.
+    Within this folder, source the TaPaSCo-Initialization-Script `tapasco-init.sh` which is located in the root-folder 
+    of your cloned repo. This will setup your current folder as `TAPASCO_WORK_DIR`.
+    It will also create the file `tapasco-setup.sh` within your workdir.
+4.  Source `tapasco-setup.sh` to setup the TaPaSCo-Environment.
+5.  Build the TaPaSCo-Toolflow using `tapasco-build-libs`.
+
+
 Build a TaPaSCo design
 ----------------------
 1.  Import your kernels
-    *   HDL flow: `tapasco import path/to/ZIP as <ID> -p <PLATFORM>`
-    *   HLS flow: `tapasco --kernelDir path/to/kernels hls <KERNELS> -p <PLATFORM>`
+    *   HDL flow: `tapasco import path/to/ZIP as <ID> -p <PLATFORM>` will import the corresponding ZIP file as a new HDL-based core. The Kernel-ID is set from <ID> and the optional flag `-p <PLATFORM>` determines for which platform the kernel will be available. If it is omitted, it will be made available for all platforms which may take a lot of time.
+    *   HLS flow: `tapasco hls <KERNEL> -p <PLATFORM>` will perform hls according to the `kernel.json`. The resulting HLS-based core will be made available for the platform given by `-p <PLATFORM>`. Again, `-p` can be omitted. HLS-Kernels are generally located in `$TAPASCO_WORKDIR/kernel`. If you want to add kernels you can create either symlink or copy them into the folder. Additionally, the folder can be temporarily changed using the optional `--kernelDir path/to/kernels` flag like this: `tapasco --kernelDir path/to/kernels hls <KERNEL> -p <PLATFORM>`
 2.  Create a composition: `tapasco compose [<KERNEL> x <COUNT>] @ <NUM> MHz -p <PLATFORM>`
 3.  Load the bitstream: `tapasco-load-bitstream <BITSTREAM>`
 4.  Implement your host software
