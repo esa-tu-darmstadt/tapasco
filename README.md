@@ -65,8 +65,8 @@ Using the prebuilt packages, the setup of TaPaSCo is very easy:
 
 1.  Create or open a folder, which you would like to use as your TaPaSCo workspace.
     Within this folder, source the TaPaSCo-Initialization-Script which is located in
-    `path/to/tapasco/tapasco-init.sh`. This will setup your current folder as `TAPASCO_WORK_DIR`.
-    It will also create the file `tapasco-setup.sh` within your workdir. 
+    `/opt/tapasco/tapasco-init-toolflow.sh`. This will setup your current folder as `TAPASCO_WORK_DIR`.
+    It will also create the file `tapasco-setup.sh` within your current directory. 
 2.	Source `tapasco-setup.sh`.
 
 If you want to use a specific (pre-release) version or branch, you can do the following:
@@ -97,9 +97,10 @@ If you want to use a specific (pre-release) version or branch, you can do the fo
 4.  Source `tapasco-setup.sh` to setup the TaPaSCo-Environment.
 5.  Build the TaPaSCo-Toolflow using `tapasco-build-libs`.
 
+All of this is not necessary when using the prebuilt packages. In that case, the corresponding libraries and files are installed as usual for your OS.
 
-Build a TaPaSCo design
-----------------------
+Getting Started - Build a TaPaSCo design
+----------------------------------------
 1.  Import your kernels
     *   HDL flow: `tapasco import path/to/ZIP as <ID> -p <PLATFORM>` will import the corresponding ZIP file as a new HDL-based core. The Kernel-ID is set from <ID> and the optional flag `-p <PLATFORM>` determines for which platform the kernel will be available. If it is omitted, it will be made available for all platforms which may take a lot of time.
     *   HLS flow: `tapasco hls <KERNEL> -p <PLATFORM>` will perform hls according to the `kernel.json`. The resulting HLS-based core will be made available for the platform given by `-p <PLATFORM>`. Again, `-p` can be omitted. HLS-Kernels are generally located in `$TAPASCO_WORKDIR/kernel`. If you want to add kernels you can create either symlink or copy them into the folder. Additionally, the folder can be temporarily changed using the optional `--kernelDir path/to/kernels` flag like this: `tapasco --kernelDir path/to/kernels hls <KERNEL> -p <PLATFORM>`
@@ -110,6 +111,16 @@ Build a TaPaSCo design
     *   C++ API
 
 You can get more information about commands with `tapasco --help` and the corresponding subpages with `tapasco --help <TOPIC>`
+
+
+Getting Started - Build a Software-Interface
+--------------------------------------------
+1.  Design your Accelerator using HLS/HDL according to the previous section.
+2.  Load your bitstream: `tapasco-load-bitstream my-design.bit --reload-driver`. To do this, you have to source `vivado` and `tapasco-setup.sh`.
+3.  Write a C/C++ executable that interfaces with your design accordingly. To get a better understanding of this, you might want to refer to the collection of examples and the corresponding README which is located in `$TAPASCO_HOME/runtime/examples`
+4.  Build and Compile your Software.
+
+
 
 Acknowledgements
 ----------------
