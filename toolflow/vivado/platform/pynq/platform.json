@@ -1,9 +1,9 @@
 {
 	"Name" : "pynq",
 	"Description" : "PyNQ-Z1 Python Productivity for Zynq",
-	"TclLibrary" : "pynq.tcl",
+	"TclLibrary" : "pynq.stcl",
 	"Part" : "xc7z020clg400-1",
     "BoardPart" : "digilentinc.com:arty-z7-20:part0",
-    "Benchmark": "pynq.benchmark",
-	"MaximumDesignFrequency" : 1000.0
+    "Benchmark": "pynq.benchsmark",
+	"MaximumDesignFrequency" : 1000
 }

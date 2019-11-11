@@ -78,5 +78,4 @@ object Kernel extends Builds[Kernel] {
                              passingConvention: PassingConvention
                            )
 
-
 }

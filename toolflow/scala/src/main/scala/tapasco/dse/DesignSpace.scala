@@ -56,41 +56,25 @@ class DesignSpace(
 
   import scala.util.Properties.{lineSeparator => NL}
 
+  private[this] final val DEFAULT_CLOCK_PERIOD_NS = 4 // default: 250 MHz
   private[this] val logger = tapasco.Logging.logger(this.getClass)
   logger.trace(Seq("DesignSpace(", dim, ")") mkString)
 
   lazy val feasibleFreqs: Seq[Double] = feasibleFreqs(bd)
 
-  /**
-    * Determines a Sequence of potentially feasible Frequencies, depending on the composition and dimensions of the DSE.
-    * If frequency is used as dimension of the DSE, this sequence is Limited by either the Maximum Design Frequency of the platform,
-    * the potential frequency evaluated by the Out-Of-Context Evaluation or by the given frequency ("@ 200 MHz"). The smallest of these
-    * values is used to prevent evaluation of completely unachievable Frequencies. This is the upper limit. From the lower limit of
-    * 50, all frequencies are enumerated by an increment of 5 MHz.
-    * If freq. is not a dimension of the DSE, the given Frequency ("@ 200 MHz") is used. If this was not given, it defaults to the
-    * Maximum Design Frequency of the Platform.
-    *
-    * @param bd Composition
-    * @return List of feasible Frequencies.
-    */
   private def feasibleFreqs(bd: Composition): Seq[Double] = if (dim.frequency) {
     if(designFrequency.isDefined){
-      val maximumFrequency = Math.min(designFrequency.get.toInt, target.pd.maxFrequency.toInt)
-      (50 to maximumFrequency by 5).map(_.toDouble) sortWith (_ > _)
+      target.pd.supportedFrequencies.map(_.toDouble).filter(_ <= designFrequency.get).sortWith(_ > _)
     }
     else{
       val cores = bd.composition flatMap (ce => FileAssetManager.entities.core(ce.kernel, target))
       val srs = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
       val cps = srs flatMap (_.timing) map (_.clockPeriod)
-      val fmax = if (cps.nonEmpty) Math.min(1000.0 / cps.max, target.pd.maxFrequency) else target.pd.maxFrequency
-      (50 to fmax.toInt by 5).map(_.toDouble) sortWith (_ > _) sortWith (_ > _)
+      val fmax = 1000.0 / (if (cps.nonEmpty) cps.max else DEFAULT_CLOCK_PERIOD_NS)
+      target.pd.supportedFrequencies map (_.toDouble) filter (_ <= fmax) sortWith (_ > _)
     }
   } else {
-    val maxDesignFreq = target.pd.maxFrequency
-    if(designFrequency.isEmpty) {
-      logger.warn("Since no Design Frequency was given, it will default to the platforms max. Design Frequency which is %sMHz.".format(maxDesignFreq))
-    }
-    Seq(designFrequency.getOrElse(maxDesignFreq))
+    Seq(designFrequency.getOrElse(100.0))
   }
 
   lazy val feasibleCompositions: Seq[Composition] = compositions(bd)
@@ -107,7 +91,7 @@ class DesignSpace(
     val srs = cores flatMap { c: Core => FileAssetManager.reports.synthReport(c.name, target) }
     val areaEstimates = srs flatMap (_.area)
     val slotOccupations = srs map (r => SlotOccupation(r.slaves.get, target.pd.slotCount))
-    val targetUtil = 99
+    val targetUtil = target.pd.targetUtilization.toDouble
     logger.trace("target util = " + targetUtil)
 
     def slotUtil(counts: Seq[Int]): SlotOccupation = (slotOccupations zip counts).map(o => o._1 * o._2).reduce(_ + _)

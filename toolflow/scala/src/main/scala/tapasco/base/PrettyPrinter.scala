@@ -44,6 +44,7 @@ private object PrettyPrinter {
     "Part = " + p.part,
     "BoardPart = " + p.boardPart,
     "BoardPreset = " + p.boardPreset,
+    "TargetUtilization = " + p.targetUtilization + "%",
     "SlotCount = " + p.slotCount,
     "HostFrequency = " + p.hostFrequency,
     "MemFrequency = " + p.memFrequency

@@ -71,7 +71,7 @@ private class DesignSpaceExplorationTask(
   // use implicit Configuration via UserConfigurationModel
   private implicit val _cfg: Configuration = cfg.compositionDir(_bp.resolve("bd"))
 
-  /** @inheritdoc */
+  /** @inheritdoc*/
   val exploration = Exploration(
     composition,
     dimensions,
@@ -132,10 +132,10 @@ private class DesignSpaceExplorationTask(
 
   override def canStart: Boolean = !DesignSpaceExplorationTask.running
 
-  /** @inheritdoc */
+  /** @inheritdoc*/
   def description: String = "Design Space Exploration"
 
-  /** @inheritdoc */
+  /** @inheritdoc*/
   def logFiles: Set[String] = Set(logFile.toString)
 
   /** Result of the design space exploration: the 'winner'. */

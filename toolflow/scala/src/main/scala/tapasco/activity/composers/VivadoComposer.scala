@@ -53,13 +53,23 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
   def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, effortLevel: String, features: Seq[Feature] = Seq())
              (implicit cfg: Configuration): Composer.Result = {
     logger.debug("VivadoComposer uses at most {} threads", cfg.maxThreads getOrElse "unlimited")
+    // create output struct
     val frequency = checkFrequency(f, target.pd)
     val files = VivadoComposer.Files(bd, target, frequency, features)
+    // create log tracker
     val lt = new LogTrackingFileWatcher(Some(logger))
+    // create output directory
     java.nio.file.Files.createDirectories(files.outdir)
+    // dump configuration
     Configuration.to(cfg, files.outdir.resolve("config.json"))
-    mkTclScript(fromTemplate = Common.commonDir.resolve("design.master.tcl.template"), to = files.tclFile, projectName = Composer.mkProjectName(bd, target, frequency),
-      header = makeHeader(bd, target, frequency, features), target = target, composition = composition(bd, target), effort = effortLevel)
+    // create Tcl script
+    mkTclScript(fromTemplate = Common.commonDir.resolve("design.master.tcl.template"),
+      to = files.tclFile,
+      projectName = Composer.mkProjectName(bd, target, frequency),
+      header = makeHeader(bd, target, frequency, features),
+      target = target,
+      composition = composition(bd, target),
+      effort = effortLevel)
 
     logger.info("Vivado starting run {}: show progress with `vivado_progress {}`", files.runName: Any, files.logFile)
     files.logFile.toFile.delete
@@ -70,8 +80,11 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     val pt = new ProgressTrackingFileWatcher(Some(logger))
     pt += files.logFile
 
-    val vivadoCmd = Seq("vivado", "-mode", "batch", "-source", files.tclFile.toString, "-notrace", "-nojournal", "-log", files.logFile.toString)
+    // Vivado shell command
+    val vivadoCmd = Seq("vivado", "-mode", "batch", "-source", files.tclFile.toString,
+      "-notrace", "-nojournal", "-log", files.logFile.toString)
     logger.debug("Vivado shell command: {}", vivadoCmd mkString " ")
+
     // execute Vivado (max runtime defined by platform, defaults to 24 hours)
     val r = InterruptibleProcess(Process(vivadoCmd, files.outdir.toFile),
       waitMillis = Some(target.pd.implTimeout.getOrElse(24) * 60 * 60 * 1000)).!(ProcessLogger(
@@ -82,18 +95,23 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     lt.closeAll()
     pt.closeWithReturnCode(r)
 
-    if (r == InterruptibleProcess.TIMEOUT_RETCODE) { // check retcode
+    // check retcode
+    if (r == InterruptibleProcess.TIMEOUT_RETCODE) {
       logger.error("Vivado timeout for %s in '%s'".format(files.runName, files.outdir))
       Composer.Result(Timeout, log = files.log, util = None, timing = None)
     } else if (r != 0) {
       if(files.tim.isDefined){
-        Composer.Result(checkTimingFailure(files), Some(files.bitFile.toString), files.log, files.util, files.tim)
+        Composer.Result(checkTimingFailure(files), Some(files.bitFile.toString),
+          files.log, files.util, files.tim)
       }
       else{
-        logger.error("Vivado finished with non-zero exit code: %d for %s in '%s'".format(r, files.runName, files.outdir))
-        Composer.Result(files.log map (_.result) getOrElse OtherError, log = files.log, util = None, timing = None)
+        logger.error("Vivado finished with non-zero exit code: %d for %s in '%s'"
+          .format(r, files.runName, files.outdir))
+        Composer.Result(files.log map (_.result) getOrElse OtherError, log = files.log,
+          util = None, timing = None)
       }
-    } else { // check for timing failure
+    } else {
+      // check for timing failure
       if (files.tim.isEmpty) {
         throw new Exception("could not parse timing report: '%s'".format(files.timFile.toString))
       } else {
@@ -105,8 +123,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
 
   /** @inheritdoc*/
   def clean(bd: Composition, target: Target, f: Double = 0)(implicit cfg: Configuration): Unit = {
-    cfg.outputDir(bd, target, f).resolve("microarch").toFile.deleteOnExit()
-    cfg.outputDir(bd, target, f).resolve("user_ip").toFile.deleteOnExit()
+    cfg.outputDir(bd, target, f).resolve("microarch").toFile.deleteOnExit
+    cfg.outputDir(bd, target, f).resolve("user_ip").toFile.deleteOnExit
     Common.getFiles(cfg.outputDir(bd, target, f).resolve("microarch").toFile).filter(_.isFile).map(_.delete)
     Common.getFiles(cfg.outputDir(bd, target, f).resolve("microarch").toFile).filter(_.isDirectory).foreach(_.deleteOnExit)
     Common.getFiles(cfg.outputDir(bd, target, f).resolve("user_ip").toFile).filter(_.isFile).map(_.delete)
@@ -203,7 +221,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
         elems.map(_._4.toString).map(zp => "update_ip_catalog -add_ip " + zp + " -repo_path ./user_ip").mkString(NL) + NL +
         "update_ip_catalog" + NL
 
-    repoPaths + (for (i <- elems.indices) yield
+    repoPaths + (for (i <- 0 until elems.length) yield
       List(
         "dict set kernels {" + i + "} vlnv {" + elems(i)._5 + "}",
         "dict set kernels {" + i + "} count {" + elems(i)._2 + "}",
