@@ -86,10 +86,10 @@ package object json {
           JsSuccess(LocalDateTime.parse(s, dtf))
         }
         catch {
-          case e: Exception => JsError(Seq(JsPath() -> Seq(JsonValidationError("validation.error.expected.date"))))
+          case e: Exception => JsError(Seq(JsPath() -> Seq(JsonValidationError(JsonErrors.ERROR_EXPECTED_DATE))))
         }
       }
-      case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("validation.error.expected.jsstring"))))
+      case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError(JsonErrors.ERROR_EXPECTED_JSSTRING))))
     }
 
     def writes(ldt: LocalDateTime): JsValue = JsString(dtf.format(ldt))

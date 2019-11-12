@@ -39,7 +39,7 @@ package object json {
       case JsString(p) => catchAllDefault(mkError(p), "invalid path (%s): ".format(p)) {
         JsSuccess(Paths.get(p))
       }
-      case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("validation.error.expected.jsstring"))))
+      case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError(JsonErrors.ERROR_EXPECTED_JSSTRING))))
     }
 
     def writes(p: Path): JsValue = JsString(p.toString)
@@ -68,7 +68,7 @@ package object json {
     * @param basePath Path of the kernel.json
     */
   def pathExistsValidation(basePath: Path):Reads[Path] =
-    filter[Path](JsonValidationError("error.expected.FileOrDirExists"))(x => {
+    filter[Path](JsonValidationError(JsonErrors.ERROR_EXPECTED_FILEORDIREXISTS))(x => {
       val filePath = basePath.resolve(x).toAbsolutePath
       val r = mustExist(filePath)
       r

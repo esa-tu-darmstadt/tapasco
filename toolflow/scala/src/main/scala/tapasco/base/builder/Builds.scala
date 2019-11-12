@@ -21,6 +21,7 @@ package tapasco.base.builder
 import java.nio.file._
 
 import play.api.libs.json._
+import tapasco.json.JsonErrors
 
 import scala.io.Source
 
@@ -45,13 +46,13 @@ private[tapasco] trait Builds[A] {
       val path = buildPathString(entry._1.path)
       val prefix = "Json Error in File %s at Json-Path %s:".format(origin, path)
       entry._2.foreach(x => x.messages.foreach {
-        case "error.path.missing" => _logger.warn("%s Entry is missing.".format(prefix))
-        case "error.expected.jsstring" => _logger.warn("%s Should be a String.".format(prefix))
-        case "error.expected.jsnumber" => _logger.warn("%s Should be a Number.".format(prefix))
-        case "error.expected.jsarray" => _logger.warn("%s Should be an Array.".format(prefix))
-        case "expected.jsstring.for.passing.convention" =>
+        case JsonErrors.ERROR_PATH_MISSING => _logger.warn("%s Entry is missing.".format(prefix))
+        case JsonErrors.ERROR_EXPECTED_JSSTRING => _logger.warn("%s Should be a String.".format(prefix))
+        case JsonErrors.ERROR_EXPECTED_JSNUMBER => _logger.warn("%s Should be a Number.".format(prefix))
+        case JsonErrors.ERROR_EXPECTED_JSARRAY => _logger.warn("%s Should be an Array.".format(prefix))
+        case JsonErrors.ERROR_EXPECTED_JSSTRING_FOR_PASSING_CONVENTION =>
           _logger.warn("%s Must be valid Passing Convention (\"by value\" or \"by reference\").".format(prefix))
-        case "error.expected.FileOrDirExists" => {
+        case JsonErrors.ERROR_EXPECTED_FILEORDIREXISTS => {
           var offending = entry._1.read[String].reads(json).get
           if(basePath.isDefined) {
             offending = basePath.get.getParent.resolve(offending).toAbsolutePath.toString
