@@ -231,6 +231,22 @@ build_kernel_ubuntu_19_04_debug:
   image: ubuntu:disco
   extends: .build_kernel_ubuntu
 
+build_kernel_32bit_debug:
+  variables:
+    MODE: "all"
+  image: i386/ubuntu
+  retry: 2
+  dependencies: []
+  tags:
+    - Normal
+  script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
+    - ./tapasco-init.sh && source tapasco-setup.sh
+    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd runtime/kernel; make LINUX_HOME="/lib/modules/$d/build" clean && CPPFLAGS="-Wno-error=pointer-to-int-cast -Wno-error=int-to-pointer-cast" make LINUX_HOME=/lib/modules/$d/build -j 1 $MODE; popd; done
+  artifacts:
+    paths:
+      - runtime/kernel/tlkm.ko
+
 .build_kernel_fedora:
   stage: build_kernel
   retry: 2
