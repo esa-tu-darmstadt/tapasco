@@ -17,7 +17,7 @@ TaPaSCo is known to work in this environment:
 
 Other setups likely work as well, but are untested.
 
-Prerequisites
+Prerequisites for Toolflow
 -------------
 To use TaPaSCo, you'll need working installations of
 
@@ -50,12 +50,19 @@ When using *Ubuntu*, ensure that the following packages are installed:
 * curl
 * default-jdk
 
+```
+apt-get -y install unzip git zip findutils curl default-jdk
+```
+
 When using *Fedora*, ensure that the following packages are installed:
 
 * which
 * java-openjdk
 * findutils
 
+```
+dnf -y install which java-openjdk findutils
+```
 
 
 TaPaSCo-Toolflow Setup
@@ -82,6 +89,19 @@ If you want to use a specific (pre-release) version or branch, you can do the fo
 
 Whenever you want to use TaPaSCo in the future, just source the corresponding workspace using the `tapasco-setup.sh`.
 This also allows you to have multiple independent TaPaSCo-Workspaces.
+
+Prerequisites for the Runtime
+-------------
+
+*Ubuntu*:
+```
+apt-get -y build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
+```
+
+*Fedora*:
+```
+dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
+```
 
 TaPaSCo-Runtime Setup
 ---------------------
