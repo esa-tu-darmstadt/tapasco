@@ -34,7 +34,6 @@ shared_flags = '-DBUILD_SHARED_LIBS:BOOL={}'.format('ON' if args.shared else 'OF
 
 print('Build mode: {}'.format(args.mode))
 
-mdir = '{}/bin'.format(os.environ['TAPASCO_HOME_RUNTIME'])
 mdir = '{}/kernel'.format(os.environ['TAPASCO_HOME_RUNTIME'])
 pdir = '{}/platform/build'.format(os.environ['TAPASCO_HOME_RUNTIME'])
 adir = '{}/arch/build'.format(os.environ['TAPASCO_HOME_RUNTIME'])
