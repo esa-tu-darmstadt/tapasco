@@ -232,6 +232,7 @@ build_kernel_ubuntu_19_04_debug:
   extends: .build_kernel_ubuntu
 
 build_kernel_32bit_debug:
+  stage: build_kernel
   variables:
     MODE: "all"
   image: i386/ubuntu
