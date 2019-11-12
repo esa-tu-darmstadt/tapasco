@@ -43,7 +43,7 @@ package object json {
     (c map (_.count) fold 0) (_ + _) <= PLATFORM_NUM_SLOTS
 
   /* @{ TargetDesc */
-  implicit val targetReads: Reads[TargetDesc] = (
+  implicit val validatingTargetReads: Reads[TargetDesc] = (
     (JsPath \ "Architecture").read[String] ~
       (JsPath \ "Platform").read[String]
     ) (TargetDesc.apply _)
@@ -55,16 +55,17 @@ package object json {
   /* TargetDesc @} */
 
   /* @{ Architecture */
-  implicit val reads: Reads[Architecture] = (
+  def validatingArchitectureReads: Reads[Architecture] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
-      (JsPath \ "Name").read[String] ~
+      (JsPath \ "Name").read[String](minimumLength(length = 1)) ~
       (JsPath \ "TclLibrary").readNullable[Path].map(_ getOrElse Paths.get("test")) ~
       (JsPath \ "Description").readNullable[String].map(_ getOrElse "") ~
       (JsPath \ "ValueArgTemplate").readNullable[Path].map(_ getOrElse Paths.get("valuearg.directives.template")) ~
       (JsPath \ "ReferenceArgTemplate").readNullable[Path].map(_ getOrElse Paths.get("referencearg.directives.template")) ~
       (JsPath \ "AdditionalSteps").readNullable[Seq[String]].map(_ getOrElse Seq())
     ) (Architecture.apply _)
-  implicit val writes: Writes[Architecture] = (
+
+  implicit val architecturesWrites: Writes[Architecture] = (
     (JsPath \ "DescPath").write[Path].transform((js: JsObject) => js - "DescPath") ~
       (JsPath \ "Name").write[String] ~
       (JsPath \ "TclLibrary").write[Path] ~
@@ -85,10 +86,10 @@ package object json {
           JsSuccess(LocalDateTime.parse(s, dtf))
         }
         catch {
-          case e: Exception => JsError(Seq(JsPath() -> Seq(JsonValidationError("validation.error.expected.date"))))
+          case e: Exception => JsError(Seq(JsPath() -> Seq(JsonValidationError(JsonErrors.ERROR_EXPECTED_DATE))))
         }
       }
-      case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("validation.error.expected.jsstring"))))
+      case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError(JsonErrors.ERROR_EXPECTED_JSSTRING))))
     }
 
     def writes(ldt: LocalDateTime): JsValue = JsString(dtf.format(ldt))
@@ -147,9 +148,9 @@ package object json {
   /* Benchmark @} */
 
   /* @{ Composition.Entry */
-  implicit val compositionEntryReads: Reads[Composition.Entry] = (
-    (JsPath \ "Kernel").read[String](minLength[String](1)) ~
-      (JsPath \ "Count").read[Int](min(1) keepAnd max(PLATFORM_NUM_SLOTS))
+  implicit val validatingCompositionEntryReads: Reads[Composition.Entry] = (
+    (JsPath \ "Kernel").read[String](minimumLength(length = 1)) ~
+      (JsPath \ "Count").read[Int](withinBounds(lowerBound = 1, upperBound = PLATFORM_NUM_SLOTS))
     ) (Composition.Entry.apply _)
 
   implicit val compositionEntryWrites: Writes[Composition.Entry] = (
@@ -159,7 +160,7 @@ package object json {
   /* Composition.Entry @} */
 
   /* @{ Composition */
-  implicit val compositionReads: Reads[Composition] = (
+  implicit val validatingCompositionReads: Reads[Composition] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
       (JsPath \ "Description").readNullable[String] ~
       (JsPath \ "Composition").read[Seq[Composition.Entry]]
@@ -174,12 +175,12 @@ package object json {
   /* Composition @} */
 
   /* @{ Core */
-  implicit val coreReads: Reads[Core] = (
+  def validatingCoreReads(sourcePath: Path): Reads[Core] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
-      (JsPath \ "ZipFile").read[Path] ~
-      (JsPath \ "Name").read[String](minLength[String](1)) ~
-      (JsPath \ "Id").read[Kernel.Id](min(1)) ~
-      (JsPath \ "Version").read[String](minLength[String](1)) ~
+      (JsPath \ "ZipFile").read[Path](pathExistsValidation(sourcePath)) ~
+      (JsPath \ "Name").read[String](minimumLength(length = 1)) ~
+      (JsPath \ "Id").read[Kernel.Id](isValidKernelId) ~
+      (JsPath \ "Version").read[String](minimumLength(length = 1)) ~
       (JsPath \ "Target").read[TargetDesc] ~
       (JsPath \ "Description").readNullable[String] ~
       (JsPath \ "AverageClockCycles").readNullable[Long]
@@ -215,7 +216,9 @@ package object json {
 
   // Read a Feature Config from an External Json File
   def readMapFromFile(p: Path): JsResult[Feature.FMap] = {
-    val tmp = Source.fromFile(p.toString).getLines.mkString
+    val source = Source.fromFile(p.toString)
+    val tmp = source.getLines.mkString
+    source.close()
     Json.parse(tmp).validate[Feature.FMap]
   }
 
@@ -287,7 +290,12 @@ package object json {
   /* @{ Kernel.Argument */
   implicit object kernelPassingConventionFormat extends Format[Kernel.PassingConvention] {
     def reads(json: JsValue): JsResult[Kernel.PassingConvention] = json match {
-      case JsString(str) => JsSuccess(Kernel.PassingConvention(str))
+      case JsString(str) =>
+        if(List("by reference", "by value").contains(str)){
+          JsSuccess(Kernel.PassingConvention(str))
+        } else {
+          JsError(Seq(JsPath() -> Seq(JsonValidationError("expected.jsstring.for.passing.convention"))))
+        }
       case _ => JsError(Seq(JsPath() -> Seq(JsonValidationError("expected.jsstring.for.passing.convention"))))
     }
 
@@ -295,7 +303,7 @@ package object json {
   }
 
   implicit val kernelArgumentReads: Reads[Kernel.Argument] = (
-    (JsPath \ "Name").read[String](minLength[String](1)) ~
+    (JsPath \ "Name").read[String](minimumLength(length = 1)) ~
       (JsPath \ "Passing").readNullable[Kernel.PassingConvention].map(_ getOrElse Kernel.PassingConvention.ByValue)
     ) (Kernel.Argument.apply _)
   implicit val kernelArgumentWrites: Writes[Kernel.Argument] = (
@@ -305,19 +313,19 @@ package object json {
   /* Kernel.Argument @} */
 
   /* @{ Kernel */
-  implicit val kernelReads: Reads[Kernel] = (
+  def validatingKernelReads(sourcePath: Path): Reads[Kernel] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
-      (JsPath \ "Name").read[String](verifying[String](_.length > 0)) ~
-      (JsPath \ "TopFunction").read[String](verifying[String](_.length > 0)) ~
-      (JsPath \ "Id").read[Kernel.Id](verifying[Kernel.Id](_ > 0)) ~
-      (JsPath \ "Version").read[String](verifying[String](_.length > 0)) ~
-      (JsPath \ "Files").read[Seq[Path]](verifying[Seq[Path]](_.length > 0)) ~
-      (JsPath \ "TestbenchFiles").readNullable[Seq[Path]].map(_ getOrElse Seq()) ~
+      (JsPath \ "Name").read[String](minimumLength(length = 1))~
+      (JsPath \ "TopFunction").read[String](minimumLength(length = 1)) ~
+      (JsPath \ "Id").read[Int](greaterZeroIntValidation) ~
+      (JsPath \ "Version").read[String](minimumLength(length = 1)) ~
+      (JsPath \ "Files").read[Seq[Path]](pathsExistValidation(sourcePath)) ~
+      (JsPath \ "TestbenchFiles").readNullable[Seq[Path]](pathsExistValidation(sourcePath)).map(_ getOrElse Seq()) ~
       (JsPath \ "Description").readNullable[String] ~
       (JsPath \ "CompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
       (JsPath \ "TestbenchCompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
       (JsPath \ "Arguments").read[Seq[Kernel.Argument]] ~
-      (JsPath \ "OtherDirectives").readNullable[Path]
+      (JsPath \ "OtherDirectives").readNullable[Path](pathExistsValidation(sourcePath))
     ) (Kernel.apply _)
   implicit val kernelWrites: Writes[Kernel] = (
     (JsPath \ "DescPath").write[Path].transform((js: JsObject) => js - "DescPath") ~
@@ -337,7 +345,7 @@ package object json {
 
   /* @{ Platform */
   // scalastyle:off magic.number
-  implicit def platformReads: Reads[Platform] = (
+  def validatingPlatformReads(sourcePath: Path): Reads[Platform] = (
     (JsPath \ "DescPath").readNullable[Path].map(_ getOrElse Paths.get("N/A")) ~
       (JsPath \ "Name").read[String](minLength[String](1)) ~
       (JsPath \ "TclLibrary").read[Path] ~
