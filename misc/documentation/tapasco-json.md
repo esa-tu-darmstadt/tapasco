@@ -8,7 +8,7 @@ TaPaSCo uses json-files to store information about many specific entities. The f
 * architectures
 * cores 
 
-For a user, only `kernel.json` files are really relevant. They are necessary to allow the use of the TaPaSCo HLS feature with custom C/C++ code. To ensure correct use of these files, TaPaSCo uses a rigorous json-parser, which validates the json-Files and prints out errors accordingly. Mostly these error messages can already help with correcting the json-files. The following sections will further describe the attributes of certain json-Files.
+For a user, only `kernel.json` files are really relevant. They are necessary to allow the use of the TaPaSCo HLS feature with custom C/C++ code. To ensure correct use of these files, TaPaSCo uses a rigorous json-parser, which validates the json-files and prints out errors accordingly. Mostly these error messages can already help with correcting the json-files. The following sections will further describe the attributes of certain json-files.
 
 
 Table of Contents
@@ -23,11 +23,11 @@ kernel.json <a name="kernels"/>
 The `kernel.json` file contains all relevant information about an HLS-target. It tells TaPaSCo which function to synthesize and how to attach it to the surrounding architecture. Thus, a valid `kernel.json` file has to contain certain attributes:
 
 * Name : The name of the kernel, acts as identification and can be any non-empty string.
-* TopFunction : The function to use ase top-level function for HLS and corresponds to the function name in your code. Note, that only the name is required, not the function signature.
+* TopFunction : The function to use as top-level function for HLS and corresponds to the function name in your code. Note, that only the name is required, not the function signature.
 * Id : Is a number which is used by TaPaSCo to identify the resulting core in HW. This id is an int number which is >= 1.
 * Version : Is a string that gives information about the version of your kernel.
-* Files : An array of relative filenames as strings indicating which files are required by your kernel. This includes the file containing the TopFunction. The json-parser will also resolve all filepaths and check wether the files actually exist.
-* Arguments : List of arguments the TopFunction takes. Each argument is represented by a json-object containing the field Name. Optionally, it can also specify whether the paramater is passed by value or by reference.
+* Files : An array of relative filenames as strings indicating which files are required by your kernel. This includes the file containing the TopFunction. The json-parser will also resolve all filepaths and check whether the files actually exist.
+* Arguments : List of arguments the TopFunction takes. Each argument is represented by a json-object containing the field Name. Optionally, it can also specify whether the parameter is passed by value or by reference.
 * TestbenchFiles : (Optional) Additional files for use with Cosimultion
 * Description : (Optional) Description of your kernel
 * CompilerFlags : (Optional) Compiler flags for use with HLS
