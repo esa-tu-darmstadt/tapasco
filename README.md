@@ -71,7 +71,7 @@ TaPaSCo-Toolflow Setup
 Using the prebuilt packages, the setup of TaPaSCo is very easy:
 
 1.  Create or open a folder, which you would like to use as your TaPaSCo workspace.
-    Within this folder, source the TaPaSCo-Initialization-Script which is located in
+    Within this folder, run the TaPaSCo-Initialization-Script which is located in
     `/opt/tapasco/tapasco-init-toolflow.sh`. This will setup your current folder as `TAPASCO_WORK_DIR`.
     It will also create the file `tapasco-setup.sh` within your current directory. 
 2.	Source `tapasco-setup.sh`.
@@ -81,7 +81,7 @@ If you want to use a specific (pre-release) version or branch, you can do the fo
 1.  Clone TaPaSCo: `git clone https://github.com/esa-tu-darmstadt/tapasco.git`
 2.  _Optionally_ Checkout a corresponding branch: `git checkout <BRANCH>`
 3.  Create or open a folder, which you would like to use as your TaPaSCo workspace.
-    Within this folder, source the TaPaSCo-Initialization-Script `tapasco-init.sh` which is located in the root-folder 
+    Within this folder, run the TaPaSCo-Initialization-Script `tapasco-init.sh` which is located in the root-folder 
     of your cloned repo. This will setup your current folder as `TAPASCO_WORK_DIR`.
     It will also create the file `tapasco-setup.sh` within your workdir.
 4.  Source `tapasco-setup.sh` to setup the TaPaSCo-Environment.
@@ -111,7 +111,7 @@ If you want to use a specific (pre-release) version or branch, you can do the fo
 1.  Clone TaPaSCo: `git clone https://github.com/esa-tu-darmstadt/tapasco.git`
 2.  _Optionally_ Checkout a corresponding branch: `git checkout <BRANCH>`
 3.  Create or open a folder, which you would like to use as your TaPaSCo workspace.
-    Within this folder, source the TaPaSCo-Initialization-Script `tapasco-init.sh` which is located in the root-folder 
+    Within this folder, run the TaPaSCo-Initialization-Script `tapasco-init.sh` which is located in the root-folder 
     of your cloned repo. This will setup your current folder as `TAPASCO_WORK_DIR`.
     It will also create the file `tapasco-setup.sh` within your workdir.
 4.  Source `tapasco-setup.sh` to setup the TaPaSCo-Environment.
