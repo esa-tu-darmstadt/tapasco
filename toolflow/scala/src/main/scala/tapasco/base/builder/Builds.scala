@@ -21,6 +21,7 @@ package tapasco.base.builder
 import java.nio.file._
 
 import play.api.libs.json._
+import tapasco.json.JsonErrors
 
 import scala.io.Source
 
@@ -33,6 +34,37 @@ import scala.io.Source
   * json lib documentation for details).
   */
 private[tapasco] trait Builds[A] {
+
+  private def buildPathString(nodes: List[PathNode]): String = nodes.map(
+    x => "\"" + x.toString.replace("/", "") + "\""
+  ).mkString("/")
+
+  def errorHandling(json:JsValue, error: JsError, basePath: Option[Path] = None): Unit = {
+    val _logger = tapasco.Logging.logger(getClass)
+    val origin = (json \ "DescPath").get.toString()
+    for(entry <- error.errors) {
+      val path = buildPathString(entry._1.path)
+      val prefix = "Json Error in File %s at Json-Path %s:".format(origin, path)
+      entry._2.foreach(x => x.messages.foreach {
+        case JsonErrors.ERROR_PATH_MISSING => _logger.warn("%s Entry is missing.".format(prefix))
+        case JsonErrors.ERROR_EXPECTED_JSSTRING => _logger.warn("%s Should be a String.".format(prefix))
+        case JsonErrors.ERROR_EXPECTED_JSNUMBER => _logger.warn("%s Should be a Number.".format(prefix))
+        case JsonErrors.ERROR_EXPECTED_JSARRAY => _logger.warn("%s Should be an Array.".format(prefix))
+        case JsonErrors.ERROR_EXPECTED_JSSTRING_FOR_PASSING_CONVENTION =>
+          _logger.warn("%s Must be valid Passing Convention (\"by value\" or \"by reference\").".format(prefix))
+        case JsonErrors.ERROR_EXPECTED_FILEORDIREXISTS => {
+          var offending = entry._1.read[String].reads(json).get
+          if(basePath.isDefined) {
+            offending = basePath.get.getParent.resolve(offending).toAbsolutePath.toString
+          }
+          _logger.warn("%s File or Dir %s does not exist.".format(prefix, offending))
+        }
+        case s: String => _logger.warn("%s %s".format(prefix, s))
+      })
+    }
+  }
+
+
   /**
     * Deserialize instance from a Json tree.
     *
@@ -41,10 +73,13 @@ private[tapasco] trait Builds[A] {
     * @param r          Reads[R] instance to parse Json (implicit).
     * @return Either the instance, or an exception detailing the error.
     **/
-  def from(json: JsValue)(implicit sourcePath: Option[Path] = None, r: Reads[A]): Either[Throwable, A] =
+  def from(json: JsValue, basePath: Option[Path] = None)(implicit sourcePath: Option[Path] = None, r: Reads[A]): Either[Throwable, A] =
     Json.fromJson[A](json) match {
       case s: JsSuccess[A] => Right(s.get)
-      case e: JsError => Left(new Exception(e.toString))
+      case e: JsError => {
+        errorHandling(json, e, basePath)
+        Left(new Exception(e.toString))
+      }
     }
 
   /**
@@ -62,7 +97,7 @@ private[tapasco] trait Builds[A] {
       // read from file
       Source.fromFile(p.toString).getLines.mkString)
       .transform(JsPath.json.update(pathTransformer)) // inject artificial key 'DescPath'
-      .get
+      .get, Some(p)
     )
   } catch {
     case e: Exception => Left(e)

@@ -249,7 +249,7 @@ final case class ImportJob(
                             zipFile: Path,
                             id: Kernel.Id,
                             description: Option[String] = None,
-                            averageClockCycles: Option[Int] = None,
+                            averageClockCycles: Option[Long] = None,
                             skipEvaluation: Option[Boolean] = None,
                             synthOptions: Option[String] = None,
                             private val _architectures: Option[Seq[String]] = None,

@@ -104,7 +104,7 @@ class ReportManager(var _base: Path) extends Publisher {
   /** Returns SynthesisReport for given core and Architecture/Platform combination. **/
   def synthReport(name: String, archName: String, platformName: String): Option[SynthesisReport] = {
     val bp = _base.resolve(name).resolve(archName).resolve(platformName)
-    _logger.trace("looking for SynthesisReport of {}@{}@{} in {}", name, archName, platformName, bp)
+    _logger.info("looking for SynthesisReport of {}@{}@{} in {}", name, archName, platformName, bp)
     val files = _synthReportCache.files filter (f => f.startsWith(bp))
     if (files.size > 1) {
       _logger.warn("found more than one SynthesisReport of {}@{}@{} in {}: {}",

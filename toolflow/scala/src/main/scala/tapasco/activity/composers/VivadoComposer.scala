@@ -54,7 +54,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
              (implicit cfg: Configuration): Composer.Result = {
     logger.debug("VivadoComposer uses at most {} threads", cfg.maxThreads getOrElse "unlimited")
     // create output struct
-    val files = VivadoComposer.Files(bd, target, f, features)
+    val frequency = checkFrequency(f, target.pd)
+    val files = VivadoComposer.Files(bd, target, frequency, features)
     // create log tracker
     val lt = new LogTrackingFileWatcher(Some(logger))
     // create output directory
@@ -64,8 +65,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     // create Tcl script
     mkTclScript(fromTemplate = Common.commonDir.resolve("design.master.tcl.template"),
       to = files.tclFile,
-      projectName = Composer.mkProjectName(bd, target, f),
-      header = makeHeader(bd, target, f, features),
+      projectName = Composer.mkProjectName(bd, target, frequency),
+      header = makeHeader(bd, target, frequency, features),
       target = target,
       composition = composition(bd, target),
       effort = effortLevel)
@@ -84,9 +85,9 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       "-notrace", "-nojournal", "-log", files.logFile.toString)
     logger.debug("Vivado shell command: {}", vivadoCmd mkString " ")
 
-    // execute Vivado (max runtime: 1 day)
+    // execute Vivado (max runtime defined by platform, defaults to 24 hours)
     val r = InterruptibleProcess(Process(vivadoCmd, files.outdir.toFile),
-      waitMillis = Some(24 * 60 * 60 * 1000)).!(ProcessLogger(
+      waitMillis = Some(target.pd.implTimeout.getOrElse(24) * 60 * 60 * 1000)).!(ProcessLogger(
       stdoutString => logger.trace("Vivado: {}", stdoutString),
       stderrString => logger.trace("Vivado ERR: {}", stderrString)
     ))
@@ -125,15 +126,32 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     cfg.outputDir(bd, target, f).resolve("microarch").toFile.deleteOnExit
     cfg.outputDir(bd, target, f).resolve("user_ip").toFile.deleteOnExit
     Common.getFiles(cfg.outputDir(bd, target, f).resolve("microarch").toFile).filter(_.isFile).map(_.delete)
-    Common.getFiles(cfg.outputDir(bd, target, f).resolve("microarch").toFile).filter(_.isDirectory).map(_.deleteOnExit)
+    Common.getFiles(cfg.outputDir(bd, target, f).resolve("microarch").toFile).filter(_.isDirectory).foreach(_.deleteOnExit)
     Common.getFiles(cfg.outputDir(bd, target, f).resolve("user_ip").toFile).filter(_.isFile).map(_.delete)
-    Common.getFiles(cfg.outputDir(bd, target, f).resolve("user_ip").toFile).filter(_.isDirectory).map(_.deleteOnExit)
+    Common.getFiles(cfg.outputDir(bd, target, f).resolve("user_ip").toFile).filter(_.isDirectory).foreach(_.deleteOnExit)
   }
 
   /** @inheritdoc*/
   def cleanAll(bd: Composition, target: Target, f: Double = 0)(implicit cfg: Configuration): Unit = {
     Common.getFiles(cfg.outputDir(bd, target, f).toFile).filter(_.isFile).map(_.delete)
-    Common.getFiles(cfg.outputDir(bd, target, f).toFile).filter(_.isDirectory).map(_.deleteOnExit)
+    Common.getFiles(cfg.outputDir(bd, target, f).toFile).filter(_.isDirectory).foreach(_.deleteOnExit)
+  }
+
+  /**
+    * Ensures that the given frequency is viable for the given Platform by potentially reducing it to the maximum of
+    * the Platform if it is exceeded.
+    *
+    * @param f        Frequency
+    * @param platform Platform
+    * @return resulting Frequency
+    */
+  private def checkFrequency(f: Heuristics.Frequency, platform: Platform): Heuristics.Frequency = {
+    if (f > platform.maxFrequency) {
+      logger.warn("Design Frequency exceeded the maximum and was reduced to %sMHz.".format(platform.maxFrequency))
+      platform.maxFrequency
+    } else {
+      f
+    }
   }
 
   /** Check for timing failure in report. */
@@ -186,7 +204,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     // check that all cores are found, else abort
     if (cores.values map (_.isEmpty) reduce (_ || _)) {
       throw new Exception("could not find all required cores for target %s, missing: %s"
-        .format(target, cores filter (_._2.isEmpty) map (_._1) mkString ", "))
+        .format(target, (cores filter (_._2.isEmpty)).keys mkString ", "))
     }
 
     val elems = for {

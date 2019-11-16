@@ -9,6 +9,7 @@ endif
 
 ifeq ($(ARCH), arm)
 CROSS_COMPILE?=arm-linux-gnueabihf-
+export CROSS_COMPILE
 endif
 
 MODULE_DIR := $(PWD)

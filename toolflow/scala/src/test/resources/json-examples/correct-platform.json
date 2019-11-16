@@ -7,11 +7,13 @@
   "BoardPreset": "ZC706",
   "TargetUtilization": 55,
   "SlotCount": 64,
+  "MaximumFrequency" : 420,
   "SupportedFrequencies": [
     250,
     200,
     150,
     100,
     42
-  ]
+  ],
+  "ImplementationTimeout" : 42
 }

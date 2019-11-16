@@ -1,8 +1,3 @@
-#
-# Copyright (C) 2014 Jens Korinth, TU Darmstadt
-#
-# This file is part of Tapasco (TPC).
-#
 # Tapasco is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -26,3 +21,4 @@ add_subdirectory(arrayupdate)
 add_subdirectory(memcheck)
 add_subdirectory(tapasco-benchmark)
 add_subdirectory(tapasco-debug)
+add_subdirectory(bandwidth)

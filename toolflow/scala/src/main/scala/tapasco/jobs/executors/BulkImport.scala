@@ -86,7 +86,7 @@ private object BulkImport extends Executor[BulkImportJob] {
     zipFile = Paths.get(fields(0)),
     id = fields(1).toInt,
     description = if (fields(2).length > 0) Some(fields(2)) else None,
-    averageClockCycles = allCatch.opt(fields(5).toInt),
+    averageClockCycles = allCatch.opt(fields(5).toLong),
     _architectures = Some(Seq(fields(3))),
     _platforms = Some(Seq(fields(4))))).toSeq
 

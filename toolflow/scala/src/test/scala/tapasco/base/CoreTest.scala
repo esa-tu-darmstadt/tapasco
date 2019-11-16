@@ -32,15 +32,15 @@ class CoreSpec extends TaPaSCoSpec with Matchers {
     tapasco.Logging.logger(getClass)
 
   "A missing Core file" should "throw an exception" in {
-    assert(Core.from(jsonPath.resolve("missing.json")).isLeft)
+    assert(Core.from(jsonPath.resolve("missing.json"))(validatingCoreReads(jsonPath)).isLeft)
   }
 
   "A correct Core file" should "be parsed to Right(Core)" in {
-    assert(Core.from(jsonPath.resolve("correct-core.json")).isRight)
+    assert(Core.from(jsonPath.resolve("correct-core.json"))(validatingCoreReads(jsonPath)).isRight)
   }
 
   "A correct Core file" should "be parsed correctly" in {
-    val oc = Core.from(jsonPath.resolve("correct-core.json"))
+    val oc = Core.from(jsonPath.resolve("correct-core.json"))(validatingCoreReads(jsonPath))
     lazy val c = oc.right.get
     if (oc.isLeft) logger.error("parsing failed: {}", oc.left.get)
     assert(oc.isRight)
@@ -53,7 +53,7 @@ class CoreSpec extends TaPaSCoSpec with Matchers {
   }
 
   "A Core file with unknown entries" should "be parsed correctly" in {
-    val oc = Core.from(jsonPath.resolve("unknown-core.json"))
+    val oc = Core.from(jsonPath.resolve("unknown-core.json"))(validatingCoreReads(jsonPath))
     lazy val c = oc.right.get
     assert(oc.isRight)
     c.name should equal("TestCore")
@@ -64,10 +64,10 @@ class CoreSpec extends TaPaSCoSpec with Matchers {
   }
 
   "An invalid Core file" should "not be parsed" in {
-    val oc1 = Core.from(jsonPath.resolve("invalid-core1.json"))
-    val oc2 = Core.from(jsonPath.resolve("invalid-core2.json"))
-    val oc3 = Core.from(jsonPath.resolve("invalid-core3.json"))
-    val oc4 = Core.from(jsonPath.resolve("invalid-core4.json"))
+    val oc1 = Core.from(jsonPath.resolve("invalid-core1.json"))(validatingCoreReads(jsonPath))
+    val oc2 = Core.from(jsonPath.resolve("invalid-core2.json"))(validatingCoreReads(jsonPath))
+    val oc3 = Core.from(jsonPath.resolve("invalid-core3.json"))(validatingCoreReads(jsonPath))
+    val oc4 = Core.from(jsonPath.resolve("invalid-core4.json"))(validatingCoreReads(jsonPath))
     assert(oc1.isLeft)
     assert(oc2.isLeft)
     assert(oc3.isLeft)

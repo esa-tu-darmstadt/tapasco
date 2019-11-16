@@ -35,9 +35,7 @@ object Common {
 
   lazy val homeDir: Path = Paths.get(sys.env("TAPASCO_HOME")).toAbsolutePath
   lazy val commonDir: Path =
-    Paths.get(sys.env("TAPASCO_HOME")).resolve("toolflow").resolve("vivado")
-      .resolve("common").toAbsolutePath
-  //lazy val targetDesignFrequency: Option[Int] = sys.env.get("TAPASCO_FREQ") map (_.toInt)
+    Paths.get(sys.env("TAPASCO_HOME_TCL")).resolve("common").toAbsolutePath
 
   // FIXME implement software environment singleton for versions etc.
 

@@ -120,19 +120,18 @@ class EntityManager(val bpm: BasePathManager) extends Publisher {
 
   /** Issue warning for failed builds (at least once). */
   private def checkBuild[T](kind: String, p: Path, build: Option[T]): Option[T] = {
-    if (build.isEmpty) _logger.warn("could not build {} from file: '{}'", kind: Any, p)
     build
   }
 
-  private def buildArch(p: Path): Option[Architecture] = checkBuild("Architecture", p, Architecture.from(p).toOption)
+  private def buildArch(p: Path): Option[Architecture] = checkBuild("Architecture", p, Architecture.from(p)(validatingArchitectureReads).toOption)
 
   private def buildComposition(p: Path): Option[Composition] = checkBuild("Composition", p, Composition.from(p).toOption)
 
-  private def buildCore(p: Path): Option[Core] = checkBuild("Core", p, Core.from(p).toOption)
+  private def buildCore(p: Path): Option[Core] = checkBuild("Core", p, Core.from(p)(validatingCoreReads(p.getParent)).toOption)
 
-  private def buildKernel(p: Path): Option[Kernel] = checkBuild("Kernel", p, Kernel.from(p).toOption)
+  private def buildKernel(p: Path): Option[Kernel] = checkBuild("Kernel", p, Kernel.from(p)(validatingKernelReads(p.getParent)).toOption)
 
-  private def buildPlatform(p: Path): Option[Platform] = checkBuild("Platform", p, Platform.from(p).toOption)
+  private def buildPlatform(p: Path): Option[Platform] = checkBuild("Platform", p, Platform.from(p)(validatingPlatformReads(p.getParent)).toOption)
 
   /** EntityCache instance for Architectures. **/
   private val _archCache = EntityCache(Set(bpm.basepath(Entities.Architectures)),
