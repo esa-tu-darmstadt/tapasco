@@ -87,13 +87,6 @@ namespace eval platform {
         "M_MEM_GPIO" { foreach {base stride range comp} [list 0x00002000 0       0      "PLATFORM_COMPONENT_MEM_GPIO"] {} }
         "M_HOST"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_MEM_0"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
-        "M_MEM_1"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
-        "M_MEM_2"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
-        "M_MEM_3"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
-        "M_MEM_4"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
-        "M_MEM_5"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
-        "M_MEM_6"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
-        "M_MEM_7"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_ARCH"    { set base "skip" }
         "M_DDR"    { foreach {base stride range comp} [list 0 0 0 ""] {} }
         default     { if { [dict exists $extra_masters [get_property NAME $m]] } {
@@ -403,28 +396,28 @@ namespace eval platform {
 
     # Connect DMA engine and architecture to local memory
 
-    set ddr_ic [tapasco::ip::create_axi_sc "ddr_ic" [expr "1 + [llength $arch_axi_m]"] [llength $ddr_available]]
-    set_property -dict [list CONFIG.NUM_CLKS {2}] $ddr_ic
-    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins $ddr_ic/aclk1]
-    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] [get_bd_pins $ddr_ic/aclk]
+    # set ddr_ic [tapasco::ip::create_axi_sc "ddr_ic" [expr "1 + [llength $arch_axi_m]"] [llength $ddr_available]]
+    # set_property -dict [list CONFIG.NUM_CLKS {2}] $ddr_ic
+    # connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins $ddr_ic/aclk1]
+    # connect_bd_net [tapasco::subsystem::get_port "host" "clk"] [get_bd_pins $ddr_ic/aclk]
 
-    # set ddr_ic [tapasco::ip::create_axi_ic "ddr_ic" 2 [llength $ddr_available]]
+    set ddr_ic [tapasco::ip::create_axi_ic "ddr_ic" 2 [llength $ddr_available]]
 
-    # connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
-    #   [get_bd_pins $ddr_ic/ACLK] \
-    #   [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00_* && TYPE == clk}] \
-    #   [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M* && TYPE == clk}]
+    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
+      [get_bd_pins $ddr_ic/ACLK] \
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00_* && TYPE == clk}] \
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M* && TYPE == clk}]
 
-    # connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
-    #   [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == clk}]
+    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == clk}]
 
-    # connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
-    #   [get_bd_pins $ddr_ic/ARESETN] \
-    #   [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00* && TYPE == rst}] \
-    #   [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M* && TYPE == rst}]
+    connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
+      [get_bd_pins $ddr_ic/ARESETN] \
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00* && TYPE == rst}] \
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M* && TYPE == rst}]
 
-    # connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
-    #   [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == rst}]
+    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == rst}]
 
     set num_ddr 0
     foreach x $ddr_available {

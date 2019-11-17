@@ -158,11 +158,6 @@ namespace eval arch {
       lappend mdist 0
     }
 
-    puts "COMPOSITION: $composition"
-    puts "OUTS: $outs"
-    puts "IC_PORTS: $ic_ports"
-    puts "MDIST: $mdist"
-
     # distribute masters round-robin on all output ports: mdist holds
     # number of masters for each port
     set j 0
@@ -390,10 +385,6 @@ namespace eval arch {
   proc create {{mgroups 0}} {
     variable arch_mem_ics
     variable arch_host_ics
-
-    set mgroups [list 1 1 1 1 1 1 1 1]
-
-    puts "MGROUPS: $mgroups"
 
     if {$mgroups == 0} {
       set mgroups [platform::max_masters]
