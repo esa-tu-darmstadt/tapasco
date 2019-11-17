@@ -544,7 +544,6 @@ namespace eval platform {
   }
 
   proc create_f1_shell {} {
-
     puts "Creating AWS F1 Shell ..."
 
     set_property ip_repo_paths  "[get_property ip_repo_paths [current_project]] \
@@ -681,8 +680,6 @@ namespace eval platform {
   namespace eval aws_plugins {
 
     proc set_params {args} {
-      tapasco::add_capabilities_flag "PLATFORM_CAP0_AWS_EC2_PLATFORM"
-
       set_msg_config -id {Opt 31-430}       -suppress
       set_msg_config -string {AXI_QUAD_SPI} -suppress
 
@@ -845,6 +842,7 @@ namespace eval platform {
     proc post_addr_map {} {
       # Debug failed address mapping
       save_bd_design
+      ::platform::addressmap::add_platform_component "PLATFORM_COMPONENT_AWS_EC2" 0 0
     }
   }
 
