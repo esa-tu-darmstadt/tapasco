@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
 
   volatile void *status = device_regspace_status_ptr(tapasco.platform_device());
 
-  std::chrono::duration<double> elapsed_seconds;
+  std::chrono::duration<double, std::micro> elapsed_seconds;
 
   volatile uint64_t out;
 
@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
   auto end = std::chrono::system_clock::now();
 
   elapsed_seconds = end - start;
-  std::cout << std::fixed << "Single read takes " << elapsed_seconds.count() / repetitions << "s. V: " << out << std::endl;
+  std::cout << std::fixed << "Single read takes " << elapsed_seconds.count() / repetitions << "us. V: " << out << std::endl;
 
   start = std::chrono::system_clock::now();
   for (int i = 0; i < repetitions; ++i) {
@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
   end = std::chrono::system_clock::now();
 
   elapsed_seconds = end - start;
-  std::cout << std::fixed << "Single write takes " << elapsed_seconds.count() / repetitions << "s. V: " << out << std::endl;
+  std::cout << std::fixed << "Single write takes " << elapsed_seconds.count() / repetitions << "us. V: " << out << std::endl;
 
   return 0;
 }
