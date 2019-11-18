@@ -54,6 +54,8 @@ int threads = 1;
     // the device
     auto result_buffer_out = tapasco::makeOutOnly(result_buffer_pointer);
 
+std::cout << "Byte, Seconds" << std::endl;
+
 #ifdef _OPENMP
     #pragma omp parallel for shared(elapsed_seconds)
 #endif
@@ -74,7 +76,7 @@ int threads = 1;
         elapsed_seconds += end - start;
       }
     }
-    std::cout << len << "B " << elapsed_seconds.count() / repetitions << std::endl;
+    std::cout << std::fixed << len << "," << elapsed_seconds.count() / repetitions << std::endl;
   }
 
   return 0;
