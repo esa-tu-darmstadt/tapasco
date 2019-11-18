@@ -41,6 +41,8 @@ int threads = 1;
 
   std::chrono::duration<double> elapsed_seconds;
 
+  std::cout << "Byte, Seconds" << std::endl;
+
   for (size_t s = 3; s < max_pow; ++s) {
     size_t len = 1 << s;
 
@@ -53,8 +55,6 @@ int threads = 1;
     // Data will be copied back from the device only, no data will be moved to
     // the device
     auto result_buffer_out = tapasco::makeOutOnly(result_buffer_pointer);
-
-std::cout << "Byte, Seconds" << std::endl;
 
 #ifdef _OPENMP
     #pragma omp parallel for shared(elapsed_seconds)
