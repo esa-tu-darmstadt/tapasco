@@ -10,15 +10,16 @@ find_package(Tapasco REQUIRED)
 endif(NOT TARGET tapasco)
 
 find_package(PNG)
+find_package (Threads)
 
 add_executable (imgproc imgproc.cpp cliparser.cpp stringtools.cpp ${CMAKE_CURRENT_BINARY_DIR}/CImg/CImg.h)
 target_include_directories(imgproc PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/)
 set_tapasco_defaults(imgproc)
-target_link_libraries (imgproc PRIVATE tapasco tlkm platform tapasco-common pthread atomic PNG::PNG)
+target_link_libraries (imgproc PRIVATE tapasco tlkm platform tapasco-common ${CMAKE_THREAD_LIBS_INIT} PNG::PNG)
 
 add_executable (print_status print_status.cpp)
 set_tapasco_defaults(print_status)
-target_link_libraries (print_status PRIVATE tapasco tlkm platform tapasco-common pthread atomic)
+target_link_libraries (print_status PRIVATE tapasco tlkm platform tapasco-common ${CMAKE_THREAD_LIBS_INIT})
 
 target_compile_definitions(imgproc PRIVATE -Dcimg_display=0)
 
