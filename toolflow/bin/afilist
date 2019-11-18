@@ -26,7 +26,7 @@ if args.name is not None:
         {
             'Name': 'name',
             'Values': [
-                f'*{args.name}*'
+                '*{}*'.format(args.name)
             ]
         },
     ])
