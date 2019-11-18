@@ -9,11 +9,15 @@ find_package(TapascoPlatform REQUIRED)
 find_package(Tapasco REQUIRED)
 endif(NOT TARGET tapasco)
 
+add_executable(start_latency start_latency.cpp)
+set_tapasco_defaults(start_latency)
+target_link_libraries(start_latency PRIVATE tapasco tlkm platform tapasco-common)
+
 add_executable(read_latency read_latency.cpp)
 set_tapasco_defaults(read_latency)
 target_link_libraries(read_latency PRIVATE tapasco tlkm platform tapasco-common)
 
-install(TARGETS read_latency
+install(TARGETS read_latency start_latency
         ARCHIVE  DESTINATION share/Tapasco/bin/
         LIBRARY  DESTINATION share/Tapasco/bin/
         RUNTIME  DESTINATION share/Tapasco/bin/)

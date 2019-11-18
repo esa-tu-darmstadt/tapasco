@@ -6,24 +6,16 @@
 
 using namespace tapasco;
 
+extern volatile void *device_regspace_status_ptr(const platform_devctx_t *devctx);
+
 int main(int argc, char **argv) {
   Tapasco tapasco;
 
   constexpr int repetitions = 1000;
 
-  static constexpr tapasco_kernel_id_t COUNTER_ID{14};
-
-  extern volatile void *device_regspace_status_ptr(const platform_devctx_t *devctx);
-
-  uint64_t instances = tapasco_device_kernel_pe_count(tapasco.device(), COUNTER_ID);
-  if (!instances) {
-    std::cout << "Need at least one counter instance to run.";
-    exit(1);
-  }
-
   volatile void *status = device_regspace_status_ptr(tapasco.platform_device());
 
-  std::chrono::duration<double, std::micro> elapsed_seconds;
+  std::chrono::duration<double, std::nano> elapsed_seconds;
 
   volatile uint64_t out;
 
@@ -34,7 +26,8 @@ int main(int argc, char **argv) {
   auto end = std::chrono::system_clock::now();
 
   elapsed_seconds = end - start;
-  std::cout << std::fixed << "Single read takes " << elapsed_seconds.count() / repetitions << "us. V: " << out << std::endl;
+  uint64_t read_delay = (uint64_t) (elapsed_seconds.count() / repetitions);
+  std::cout << std::fixed << "Single read takes " << read_delay << "us. V: " << out << std::endl;
 
   start = std::chrono::system_clock::now();
   for (int i = 0; i < repetitions; ++i) {
@@ -43,7 +36,8 @@ int main(int argc, char **argv) {
   end = std::chrono::system_clock::now();
 
   elapsed_seconds = end - start;
-  std::cout << std::fixed << "Single write takes " << elapsed_seconds.count() / repetitions << "us. V: " << out << std::endl;
+  uint64_t write_delay = (uint64_t) (elapsed_seconds.count() / repetitions);
+  std::cout << std::fixed << "Single write takes " << write_delay << "us. V: " << out << std::endl;
 
   return 0;
 }
