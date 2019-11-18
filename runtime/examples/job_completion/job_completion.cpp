@@ -28,8 +28,6 @@ int threads = 1;
   omp_set_num_threads(threads);
 #endif
 
-  std::cout << "Using " << threads << " threads." << std::endl;
-
   static constexpr tapasco_kernel_id_t COUNTER_ID{14};
 
   uint64_t instances = tapasco_device_kernel_pe_count(tapasco.device(), COUNTER_ID);
@@ -41,7 +39,7 @@ int threads = 1;
 
   std::chrono::duration<double> elapsed_seconds;
 
-  std::cout << "Byte, Seconds" << std::endl;
+  std::cout << "Byte,Seconds" << std::endl;
 
   for (size_t s = 3; s < max_pow; ++s) {
     size_t len = 1 << s;
