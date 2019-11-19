@@ -116,8 +116,8 @@ for name, file in files:
         w_s = pd.Series([x * 1024 * 1024 for x in write], index)
         rw_s = pd.Series([x * 1024 * 1024 for x in readwrite], index)
 
-        benchmark_read["{} Read".format(name)] = r_s
-        benchmark_write["{} Write".format(name)] = w_s
+        benchmark_read["{} R".format(name)] = r_s
+        benchmark_write["{} W".format(name)] = w_s
         benchmark_readwrite["{} RW".format(name)] = rw_s
 
         il = benchmark["Interrupt Latency"]
@@ -156,6 +156,7 @@ data_w = pd.DataFrame(benchmark_write)
 data_rw = pd.DataFrame(benchmark_readwrite)
 
 fig, ax = plt.subplots(3, 1)
+plt.subplots_adjust(hspace = 0.25)
 
 ax[0].set_xscale("log")
 data_r.plot(ax=ax[0])
@@ -176,7 +177,7 @@ ax[1].set_ylabel(r'Latency (\si{\micro\second})')
 for name, group in job_throughput.groupby("Device"):
     group.plot(ax=ax[2], y="Jobs", x="Threads", label=name)
 
-ax[1].set_xlabel(r'Threads')
-ax[1].set_ylabel(r'Jobs Per Second')
+ax[2].set_xlabel(r'Threads')
+ax[2].set_ylabel(r'Jobs Per Second')
 
 plt.savefig('performance.pdf', format='pdf', bbox_inches='tight')
