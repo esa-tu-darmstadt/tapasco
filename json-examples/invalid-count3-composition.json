@@ -1,7 +1,0 @@
-{
-	"Description": "Test",
-	"Composition" : [
-		{ "Kernel" : "sudoku", "Count" : 64 },
-		{ "Kernel" : "warraw", "Count" : 65 }
-	]
-}
