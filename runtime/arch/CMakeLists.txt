@@ -51,7 +51,9 @@ target_compile_definitions(tapasco PRIVATE -DNPERFC)
 
 set_tapasco_defaults(tapasco)
 
-target_link_libraries(tapasco PUBLIC tlkm platform tapasco-common PRIVATE atomic pthread)
+find_package (Threads)
+
+target_link_libraries(tapasco PUBLIC tlkm platform tapasco-common PRIVATE atomic ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS tapasco EXPORT TapascoConfig
         ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}

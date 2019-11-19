@@ -51,7 +51,9 @@ target_include_directories(platform PUBLIC $<INSTALL_INTERFACE:include/tapasco/p
                                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/common/nanopb>
                                       )
 
-target_link_libraries(platform PUBLIC tlkm PRIVATE pthread atomic tapasco-common)
+find_package (Threads)
+
+target_link_libraries(platform PUBLIC tlkm PRIVATE ${CMAKE_THREAD_LIBS_INIT} tapasco-common)
 
 install(TARGETS platform EXPORT TapascoPlatformConfig
         ARCHIVE  DESTINATION ${CMAKE_INSTALL_LIBDIR}

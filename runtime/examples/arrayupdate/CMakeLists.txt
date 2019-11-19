@@ -9,13 +9,15 @@ find_package(TapascoPlatform REQUIRED)
 find_package(Tapasco REQUIRED)
 endif(NOT TARGET tapasco)
 
+find_package (Threads)
+
 add_executable(arrayupdate arrayupdate-example.c)
 set_tapasco_defaults(arrayupdate)
-target_link_libraries(arrayupdate tapasco pthread platform tlkm)
+target_link_libraries(arrayupdate tapasco ${CMAKE_THREAD_LIBS_INIT} platform tlkm)
 
 add_executable(arrayupdate-cpp arrayupdate-example.cpp)
 set_tapasco_defaults(arrayupdate-cpp)
-target_link_libraries(arrayupdate-cpp tapasco pthread platform tlkm)
+target_link_libraries(arrayupdate-cpp tapasco ${CMAKE_THREAD_LIBS_INIT} platform tlkm)
 
 install(TARGETS arrayupdate arrayupdate-cpp
         ARCHIVE  DESTINATION share/Tapasco/bin/
