@@ -178,28 +178,28 @@ We provided pre-compiled packages for many popular Linux distributions. All pack
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_16_04_debug)
 [Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.10.0-Linux.deb?job=build_tapasco_ubuntu_16_04)
 [Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.10.0-Linux.deb?job=build_tapasco_ubuntu_16_04_debug)
-[Toolflow](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco_2019_10_amd64.deb?job=build_scala_tapasco_ubuntu_16_04)
+[Toolflow](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb?job=build_scala_tapasco_ubuntu_16_04)
 
 ### Ubuntu 18.04
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_18_04)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_18_04_debug)
 [Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.10.0-Linux.deb?job=build_tapasco_ubuntu_18_04)
 [Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.10.0-Linux.deb?job=build_tapasco_ubuntu_18_04_debug)
-[Toolflow](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco_2019_10_amd64.deb?job=build_scala_tapasco_ubuntu_18_04)
+[Toolflow](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb?job=build_scala_tapasco_ubuntu_18_04)
 
 ### Ubuntu 18.10
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_18_10)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_18_10_debug)
 [Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.10.0-Linux.deb?job=build_tapasco_ubuntu_18_10)
 [Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.10.0-Linux.deb?job=build_tapasco_ubuntu_18_10_debug)
-[Toolflow](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco_2019_10_amd64.deb?job=build_scala_tapasco_ubuntu_18_10)
+[Toolflow](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb?job=build_scala_tapasco_ubuntu_18_10)
 
 ### Ubuntu 19.04
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_19_04)
 [Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_19_04_debug)
 [Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.10.0-Linux.deb?job=build_tapasco_ubuntu_19_04)
 [Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2019.10.0-Linux.deb?job=build_tapasco_ubuntu_19_04_debug)
-[Toolflow](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco_2019_10_amd64.deb?job=build_scala_tapasco_ubuntu_19_04)
+[Toolflow](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb?job=build_scala_tapasco_ubuntu_19_04)
 
 ### Fedora 27
 [Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_fedora_27)
