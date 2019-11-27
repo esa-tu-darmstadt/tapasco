@@ -66,38 +66,23 @@ def latexify(fig_width=None, fig_height=None, columns=1):
 
     mpl.rcParams.update(params)
 
-def format_axes(ax):
-    for spine in ['top', 'right']:
-        ax.spines[spine].set_visible(False)
-
-    for spine in ['left', 'bottom']:
-        ax.spines[spine].set_color(SPINE_COLOR)
-        ax.spines[spine].set_linewidth(0.5)
-
-    ax.xaxis.set_ticks_position('bottom')
-    ax.yaxis.set_ticks_position('left')
-
-    for axis in [ax.xaxis, ax.yaxis]:
-        axis.set_tick_params(direction='out', color=SPINE_COLOR)
-
-    return ax
-
 sns.set()
 latexify(columnwidth)
 
 import csv
 
 data_csv = csv.DictReader(args.file)
-data = pd.DataFrame(columns=("Byte", "Seconds"))
+data = pd.DataFrame(columns=("Byte", "Microseconds"))
 for k in data_csv:
-    data = data.append({'Byte':int(k["Byte"]), 'Seconds': float(k["Seconds"])}, ignore_index=True)
+    data = data.append({'Byte':int(k["Byte"]), 'Microseconds': float(k["Nanoseconds"]) / 1000.0}, ignore_index=True)
 
 fig, ax = plt.subplots(1, 1)
 
 ax.set_yscale("log")
 ax.set_xscale("log")
-data.plot(ax=ax, x="Byte", y="Seconds")
+sns.lineplot(ax=ax, data=data, x="Byte", y="Microseconds", ci="sd")
+#data.plot(ax=ax, x="Byte", y="Microseconds")
 ax.set_xlabel(r'Transfer Size (\si{\byte})')
-ax.set_ylabel(r'Seconds')
+ax.set_ylabel(r'Microseconds')
 
 plt.savefig('job_completion.pdf', format='pdf', bbox_inches='tight')
