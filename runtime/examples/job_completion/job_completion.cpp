@@ -18,9 +18,9 @@ int main(int argc, char **argv) {
   constexpr int max_pow = 30;
   constexpr int repetitions = 1000;
 
+#ifdef _OPENMP
   int threads = 1;
 
-#ifdef _OPENMP
   if (argc > 1) {
     std::stringstream s(argv[1]);
     s >> threads;
