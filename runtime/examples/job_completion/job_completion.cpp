@@ -31,15 +31,18 @@ int main(int argc, char **argv) {
   static constexpr tapasco_kernel_id_t COUNTER_ID{14};
   static constexpr tapasco_kernel_id_t LATENCY_ID{742};
 
-  uint64_t counter = tapasco_device_kernel_pe_count(tapasco.device(), COUNTER_ID);
-  uint64_t latency = tapasco_device_kernel_pe_count(tapasco.device(), LATENCY_ID);
+  uint64_t counter =
+      tapasco_device_kernel_pe_count(tapasco.device(), COUNTER_ID);
+  uint64_t latency =
+      tapasco_device_kernel_pe_count(tapasco.device(), LATENCY_ID);
   if (!counter && !latency) {
-    std::cout << "Need at least one counter or latencycheck instance to run." << std::endl;
+    std::cout << "Need at least one counter or latencycheck instance to run."
+              << std::endl;
     exit(1);
   }
 
   tapasco_kernel_id_t pe_id = COUNTER_ID;
-  if(latency) {
+  if (latency) {
     pe_id = LATENCY_ID;
   }
 
@@ -55,7 +58,7 @@ int main(int argc, char **argv) {
 
     // Wrap the array to be TaPaSCo compatible
     auto result_buffer_pointer = tapasco::makeWrappedPointer(
-                                   arr_from.data(), arr_from.size() * sizeof(int));
+        arr_from.data(), arr_from.size() * sizeof(int));
     // Data will be copied back from the device only, no data will be moved to
     // the device
     auto result_buffer_out = tapasco::makeOutOnly(result_buffer_pointer);
@@ -63,7 +66,7 @@ int main(int argc, char **argv) {
     auto end = std::chrono::steady_clock::now();
 
 #ifdef _OPENMP
-    #pragma omp parallel for shared(elapsed_seconds)
+#pragma omp parallel for shared(elapsed_seconds)
 #endif
     for (int i = 0; i < repetitions; ++i) {
       if (len > 8) {
@@ -76,7 +79,8 @@ int main(int argc, char **argv) {
         end = std::chrono::steady_clock::now();
       }
       elapsed_seconds = end - start;
-      std::cout << std::fixed << len << "," << elapsed_seconds.count() << std::endl;
+      std::cout << std::fixed << len << "," << elapsed_seconds.count()
+                << std::endl;
     }
   }
 
