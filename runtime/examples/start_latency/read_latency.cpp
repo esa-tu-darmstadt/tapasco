@@ -6,12 +6,13 @@
 
 using namespace tapasco;
 
-extern volatile void *device_regspace_status_ptr(const platform_devctx_t *devctx);
+extern volatile void *
+device_regspace_status_ptr(const platform_devctx_t *devctx);
 
 int main(int argc, char **argv) {
   Tapasco tapasco;
 
-  constexpr int repetitions = 1000;
+  constexpr int repetitions = 1000000;
 
   volatile void *status = device_regspace_status_ptr(tapasco.platform_device());
 
@@ -19,25 +20,27 @@ int main(int argc, char **argv) {
 
   volatile uint64_t out;
 
-  auto start = std::chrono::system_clock::now();
+  auto start = std::chrono::steady_clock::now();
   for (int i = 0; i < repetitions; ++i) {
-    out = ((volatile uint64_t*)status)[0];
+    out = ((volatile uint64_t *)status)[0];
   }
-  auto end = std::chrono::system_clock::now();
+  auto end = std::chrono::steady_clock::now();
 
   elapsed_seconds = end - start;
-  uint64_t read_delay = (uint64_t) (elapsed_seconds.count() / repetitions);
-  std::cout << std::fixed << "Single read takes " << read_delay << "us. V: " << out << std::endl;
+  uint64_t read_delay = (uint64_t)(elapsed_seconds.count() / repetitions);
+  std::cout << std::fixed << "Single read takes " << read_delay
+            << "ns. V: " << out << std::endl;
 
-  start = std::chrono::system_clock::now();
+  start = std::chrono::steady_clock::now();
   for (int i = 0; i < repetitions; ++i) {
-    ((volatile uint64_t*)status)[0] = 42;
+    ((volatile uint64_t *)status)[0] = 42;
   }
-  end = std::chrono::system_clock::now();
+  end = std::chrono::steady_clock::now();
 
   elapsed_seconds = end - start;
-  uint64_t write_delay = (uint64_t) (elapsed_seconds.count() / repetitions);
-  std::cout << std::fixed << "Single write takes " << write_delay << "us. V: " << out << std::endl;
+  uint64_t write_delay = (uint64_t)(elapsed_seconds.count() / repetitions);
+  std::cout << std::fixed << "Single write takes " << write_delay
+            << "ns. V: " << out << std::endl;
 
   return 0;
 }
