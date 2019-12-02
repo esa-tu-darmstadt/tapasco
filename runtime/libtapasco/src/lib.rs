@@ -18,6 +18,7 @@ extern crate volatile_register;
 #[macro_use]
 extern crate snafu;
 
+pub mod device;
 pub mod tlkm;
 //mod ffi;
 //pub mod pe;
