@@ -59,6 +59,7 @@ tlkm_ioctl_enum_devices(struct file *fp, unsigned int ioctl,
 			ret.devs[i].name[TLKM_DEVNAME_SZ - 1] = '\0';
 			ret.devs[i].vendor_id = pd->vendor_id;
 			ret.devs[i].product_id = pd->product_id;
+			ret.devs[i].dev_id = pd->dev_id;
 		} else {
 			ERR("number of devices reported by bus is wrong");
 			return -EFAULT;

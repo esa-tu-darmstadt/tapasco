@@ -5,7 +5,7 @@ use snafu::{ErrorCompat, ResultExt, Snafu};
 extern crate log;
 
 extern crate tapasco;
-use tapasco::device::Device;
+
 use tapasco::tlkm::*;
 
 use clap::{App, AppSettings, ArgMatches, SubCommand};
@@ -36,7 +36,7 @@ fn enum_devices(_: &ArgMatches) -> Result<()> {
     println!("Got {} devices.", devices.len());
     for x in devices {
         println!(
-            "ID: {} Name: {}, Vendor: {}, Product {}",
+            "Device {}: Name: {}, Vendor: {}, Product {}",
             x.id(),
             x.name(),
             x.vendor(),
@@ -48,17 +48,15 @@ fn enum_devices(_: &ArgMatches) -> Result<()> {
 
 fn allocate_devices(_: &ArgMatches) -> Result<()> {
     let mut tlkm = TLKM::new().context(TLKMInit {})?;
-    let ids: Vec<DeviceId> = tlkm
-        .device_enum()
-        .context(TLKMInit {})?
-        .into_iter()
-        .map(|x| *x.id())
-        .collect();
+    let mut devices = tlkm.device_enum().context(TLKMInit {})?;
 
-    for x in ids.iter() {
-        println!("Allocating ID {} exclusively.", x);
-        tlkm.device_create(*x, tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(TLKMInit {})?;
+    for x in devices.iter_mut() {
+        println!("Allocating ID {} exclusively.", x.id());
+        x.create(
+            &tlkm.file(),
+            tapasco::tlkm::tlkm_access::TlkmAccessExclusive,
+        )
+        .context(DeviceInit {})?;
     }
 
     Ok(())
@@ -66,10 +64,10 @@ fn allocate_devices(_: &ArgMatches) -> Result<()> {
 
 fn print_status(_: &ArgMatches) -> Result<()> {
     let mut tlkm = TLKM::new().context(TLKMInit {})?;
-    for i in 0..tlkm.device_enum().context(TLKMInit)?.len() {
-        let dev = Device::new(i as DeviceId).context(DeviceInit)?;
-        println!("Device {}", i);
-        println!("{:?}", dev);
+    let devices = tlkm.device_enum().context(TLKMInit)?;
+    for x in devices {
+        println!("Device {}", x.id());
+        println!("{:?}", x.status());
     }
     Ok(())
 }
