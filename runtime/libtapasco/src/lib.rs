@@ -19,6 +19,7 @@ extern crate volatile_register;
 extern crate snafu;
 
 pub mod device;
+pub mod scheduler;
 pub mod tlkm;
 //mod ffi;
 //pub mod pe;

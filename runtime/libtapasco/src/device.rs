@@ -1,8 +1,12 @@
+use crate::scheduler::PEId;
+use crate::scheduler::Scheduler;
+use crate::scheduler::PE;
 use crate::tlkm::tlkm_access;
 use crate::tlkm::tlkm_ioctl_create;
 use crate::tlkm::tlkm_ioctl_destroy;
 use crate::tlkm::tlkm_ioctl_device_cmd;
 use crate::tlkm::DeviceId;
+use memmap::MmapMut;
 use memmap::MmapOptions;
 use prost::Message;
 use snafu::ResultExt;
@@ -22,6 +26,9 @@ pub enum Error {
         id: DeviceId,
     },
 
+    #[snafu(display("Memory area {} not found in bitstream.", area))]
+    AreaMissing { area: String },
+
     #[snafu(display("Decoding the status core failed: {}", source))]
     StatusCoreDecoding { source: prost::DecodeError },
 
@@ -39,10 +46,16 @@ pub enum Error {
 
     #[snafu(display("Could not destroy device {}: {}", id, source))]
     IOCTLDestroy { source: nix::Error, id: DeviceId },
+
+    #[snafu(display("Scheduler Error: {}", source))]
+    SchedulerError { source: crate::scheduler::Error },
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-#[derive(Debug, Getters, PartialEq)]
+pub type DeviceAddress = u64;
+pub type DeviceSize = u64;
+
+#[derive(Debug, Getters)]
 pub struct Device {
     #[get = "pub"]
     status: status::Status,
@@ -55,9 +68,12 @@ pub struct Device {
     #[get = "pub"]
     name: String,
     access: tlkm_access,
+    scheduler: Scheduler,
+    platform: MmapMut,
+    arch: MmapMut,
 }
 
-impl Drop for TLKM {
+impl Drop for Device {
     fn drop(&mut self) {
         match self.finish() {
             Ok(_) => (),
@@ -74,20 +90,64 @@ impl Device {
         product: u32,
         name: String,
     ) -> Result<Device> {
-        let file = OpenOptions::new()
-            .read(true)
-            .open(format!("/dev/tlkm_{:02}", id))
-            .context(DeviceUnavailable { id: id })?;
-
         let mmap = unsafe {
             MmapOptions::new()
                 .len(8192)
                 .offset(0)
-                .map(&file)
+                .map(
+                    &OpenOptions::new()
+                        .read(true)
+                        .open(format!("/dev/tlkm_{:02}", id))
+                        .context(DeviceUnavailable { id: id })?,
+                )
                 .context(DeviceUnavailable { id: id })?
         };
 
         let s = status::Status::decode_length_delimited(&mmap[..]).context(StatusCoreDecoding)?;
+
+        let platform_size = match &s.platform_base {
+            Some(base) => Ok(base.size),
+            None => Err(Error::AreaMissing {
+                area: "Platform".to_string(),
+            }),
+        }?;
+
+        let platform = unsafe {
+            MmapOptions::new()
+                .len(platform_size as usize)
+                .offset(8192)
+                .map_mut(
+                    &OpenOptions::new()
+                        .read(true)
+                        .write(true)
+                        .open(format!("/dev/tlkm_{:02}", id))
+                        .context(DeviceUnavailable { id: id })?,
+                )
+                .context(DeviceUnavailable { id: id })?
+        };
+
+        let arch_size = match &s.arch_base {
+            Some(base) => Ok(base.size),
+            None => Err(Error::AreaMissing {
+                area: "Platform".to_string(),
+            }),
+        }?;
+
+        let arch = unsafe {
+            MmapOptions::new()
+                .len(arch_size as usize)
+                .offset(4096)
+                .map_mut(
+                    &OpenOptions::new()
+                        .read(true)
+                        .write(true)
+                        .open(format!("/dev/tlkm_{:02}", id))
+                        .context(DeviceUnavailable { id: id })?,
+                )
+                .context(DeviceUnavailable { id: id })?
+        };
+
+        let scheduler = Scheduler::new(&s.pe).context(SchedulerError)?;
 
         let mut device = Device {
             id: id,
@@ -96,6 +156,9 @@ impl Device {
             access: tlkm_access::TlkmAccessTypes,
             name: name,
             status: s,
+            scheduler: scheduler,
+            platform: platform,
+            arch: arch,
         };
 
         device.create(&tlkm_file, tlkm_access::TlkmAccessMonitor)?;
@@ -104,6 +167,21 @@ impl Device {
     }
 
     fn finish(&mut self) -> Result<()> {
+        Ok(())
+    }
+
+    pub fn acquire_pe(&mut self, id: PEId, args: Vec<u64>) -> Result<PE> {
+        let mut pe = self.scheduler.acquire_pe(id).context(SchedulerError)?;
+        for (i, arg) in args.iter().enumerate() {
+            pe.set_arg(&mut self.arch, i, *arg)
+                .context(SchedulerError)?;
+        }
+        pe.start(&mut self.arch).context(SchedulerError)?;
+        Ok(pe)
+    }
+
+    pub fn release_pe(&mut self, pe: PE) -> Result<()> {
+        self.scheduler.release_pe(pe).context(SchedulerError)?;
         Ok(())
     }
 

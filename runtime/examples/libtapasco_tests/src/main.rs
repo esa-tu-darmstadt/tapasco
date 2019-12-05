@@ -72,6 +72,16 @@ fn print_status(_: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
+fn run_counter(_: &ArgMatches) -> Result<()> {
+    let mut tlkm = TLKM::new().context(TLKMInit {})?;
+    let devices = tlkm.device_enum().context(TLKMInit)?;
+    for mut x in devices {
+        let pe = x.acquire_pe(14, vec![1]).context(DeviceInit)?;
+        x.release_pe(pe).context(DeviceInit)?;
+    }
+    Ok(())
+}
+
 fn main() -> Result<()> {
     env_logger::init();
 
@@ -90,6 +100,7 @@ fn main() -> Result<()> {
         .subcommand(
             SubCommand::with_name("status").about("Print status core information of all devices."),
         )
+        .subcommand(SubCommand::with_name("run_counter").about("Runs a counter with ID 14."))
         .get_matches();
 
     match match matches.subcommand() {
@@ -97,6 +108,7 @@ fn main() -> Result<()> {
         ("enum", Some(m)) => enum_devices(m),
         ("allocate", Some(m)) => allocate_devices(m),
         ("status", Some(m)) => print_status(m),
+        ("run_counter", Some(m)) => run_counter(m),
         _ => Err(Error::UnknownCommand {}),
     } {
         Ok(()) => Ok(()),
