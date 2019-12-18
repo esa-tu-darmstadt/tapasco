@@ -114,7 +114,9 @@ namespace eval platform {
       CONFIG.bar0_indicator {0}
       ]
 
-    set_property -dict $pcie_properties $axi_pcie3_0
+    if {[catch {set_property -dict $pcie_properties $axi_pcie3_0}]} {
+        error "ERROR: Failed to configure PCIe bridge. For Vivado 2019.2, please install patch from Xilinx AR# 73001."
+    }
 
     tapasco::ip::create_msixusptrans "MSIxTranslator" $axi_pcie3_0
 
