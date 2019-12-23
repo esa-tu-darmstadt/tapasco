@@ -6,12 +6,15 @@ use crate::tlkm::tlkm_ioctl_create;
 use crate::tlkm::tlkm_ioctl_destroy;
 use crate::tlkm::tlkm_ioctl_device_cmd;
 use crate::tlkm::DeviceId;
+use bytes::Buf;
 use memmap::MmapMut;
 use memmap::MmapOptions;
 use prost::Message;
 use snafu::ResultExt;
 use std::fs::File;
 use std::fs::OpenOptions;
+use std::io::Cursor;
+use std::io::Read;
 use std::os::unix::io::AsRawFd;
 
 pub mod status {
@@ -71,6 +74,7 @@ pub struct Device {
     scheduler: Scheduler,
     platform: MmapMut,
     arch: MmapMut,
+    completion: File,
 }
 
 impl Drop for Device {
@@ -159,6 +163,10 @@ impl Device {
             scheduler: scheduler,
             platform: platform,
             arch: arch,
+            completion: OpenOptions::new()
+                .read(true)
+                .open(format!("/dev/tlkm_{:02}", id))
+                .context(DeviceUnavailable { id: id })?,
         };
 
         device.create(&tlkm_file, tlkm_access::TlkmAccessMonitor)?;
@@ -170,17 +178,45 @@ impl Device {
         Ok(())
     }
 
-    pub fn acquire_pe(&mut self, id: PEId, args: Vec<u64>) -> Result<PE> {
-        let mut pe = self.scheduler.acquire_pe(id).context(SchedulerError)?;
+    pub fn wait_for_completion(&mut self, pe: &mut PE) -> Result<()> {
+        if *pe.active() {
+            let mut buffer = [0 as u8; 128 * 4];
+            self.completion
+                .read(&mut buffer)
+                .context(DeviceUnavailable { id: self.id })?;
+            let mut buf = Cursor::new(&buffer[..]);
+            while buf.remaining() >= 4 {
+                let id = buf.get_u32_le();
+                if id != 0 {
+                    trace!("PE {} is finished.", id);
+                    if *pe.id() as u32 == id {
+                        pe.set_active(false);
+                        pe.reset_interrupt(&mut self.arch).context(SchedulerError)?;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn acquire_pe(&mut self, id: PEId) -> Result<PE> {
+        let pe = self.scheduler.acquire_pe(id).context(SchedulerError)?;
+        Ok(pe)
+    }
+
+    pub fn start_pe(&mut self, pe: &mut PE, args: Vec<u64>) -> Result<()> {
+        pe.enable_interrupt(&mut self.arch)
+            .context(SchedulerError)?;
         for (i, arg) in args.iter().enumerate() {
             pe.set_arg(&mut self.arch, i, *arg)
                 .context(SchedulerError)?;
         }
         pe.start(&mut self.arch).context(SchedulerError)?;
-        Ok(pe)
+        Ok(())
     }
 
-    pub fn release_pe(&mut self, pe: PE) -> Result<()> {
+    pub fn release_pe(&mut self, mut pe: PE) -> Result<()> {
+        self.wait_for_completion(&mut pe)?;
         self.scheduler.release_pe(pe).context(SchedulerError)?;
         Ok(())
     }

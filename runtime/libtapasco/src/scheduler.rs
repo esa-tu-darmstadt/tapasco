@@ -24,13 +24,16 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 pub type PEId = usize;
 type PEArg = u64;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Getters, Setters)]
 pub struct PE {
+    #[get = "pub"]
     id: usize,
     type_id: PEId,
     offset: DeviceAddress,
     size: DeviceSize,
     name: String,
+    #[set = "pub"]
+    #[get = "pub"]
     active: bool,
 }
 
@@ -44,6 +47,34 @@ impl PE {
             (*volatile_ptr).write(1);
         }
         self.active = true;
+        Ok(())
+    }
+
+    pub fn reset_interrupt(&mut self, mem: &mut MmapMut) -> Result<()> {
+        ensure!(!self.active, PEAlreadyActive { id: self.id });
+        let offset = (self.offset as usize + 0x0c) as isize;
+        unsafe {
+            let ptr = mem.as_ptr().offset(offset);
+            let volatile_ptr = ptr as *mut Volatile<u32>;
+            (*volatile_ptr).write(1);
+        }
+        Ok(())
+    }
+
+    pub fn enable_interrupt(&mut self, mem: &mut MmapMut) -> Result<()> {
+        ensure!(!self.active, PEAlreadyActive { id: self.id });
+        let mut offset = (self.offset as usize + 0x04) as isize;
+        unsafe {
+            let ptr = mem.as_ptr().offset(offset);
+            let volatile_ptr = ptr as *mut Volatile<u32>;
+            (*volatile_ptr).write(1);
+        }
+        offset = (self.offset as usize + 0x08) as isize;
+        unsafe {
+            let ptr = mem.as_ptr().offset(offset);
+            let volatile_ptr = ptr as *mut Volatile<u32>;
+            (*volatile_ptr).write(1);
+        }
         Ok(())
     }
 
@@ -112,7 +143,7 @@ impl Scheduler {
     pub fn release_pe(&mut self, pe: PE) -> Result<()> {
         ensure!(!pe.active, PEStillActive { pe: pe });
 
-        match self.pes.get_mut(&pe.id) {
+        match self.pes.get_mut(&pe.type_id) {
             Some(l) => l.push(pe),
             None => return Err(Error::NoSuchPE { id: pe.type_id }),
         }

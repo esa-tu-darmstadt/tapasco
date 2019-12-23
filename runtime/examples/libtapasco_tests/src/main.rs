@@ -76,7 +76,11 @@ fn run_counter(_: &ArgMatches) -> Result<()> {
     let mut tlkm = TLKM::new().context(TLKMInit {})?;
     let devices = tlkm.device_enum().context(TLKMInit)?;
     for mut x in devices {
-        let pe = x.acquire_pe(14, vec![1]).context(DeviceInit)?;
+        let mut pe = x.acquire_pe(14).context(DeviceInit)?;
+        for _ in 0..1000 {
+            x.start_pe(&mut pe, vec![1000]).context(DeviceInit)?;
+            x.wait_for_completion(&mut pe).context(DeviceInit)?;
+        }
         x.release_pe(pe).context(DeviceInit)?;
     }
     Ok(())
