@@ -1,29 +1,37 @@
 #!/bin/bash
 BOARD=${1:-zedboard}
-VERSION=${2:-2019.1}
+VERSION=${2:-2019.2}
 IMGSIZE=${3:-7534}
 SDCARD=${4:-}
 JOBCOUNT=4
 SCRIPTDIR="$(dirname $(readlink -f $0))"
 DIR="$SCRIPTDIR/$BOARD/$VERSION"
 LOGDIR="$DIR/logs"
-CROSS_COMPILE=${CROSS_COMPILE:=arm-linux-gnueabihf-}
 ROOTFS_IMG="$SCRIPTDIR/rootfs.img"
 PYNQ_VERSION="pynq_z1_v2.1"
 PYNQ_IMAGE="$SCRIPTDIR/pynq/$PYNQ_VERSION.zip"
 PYNQ_IMAGE_URL="http://files.digilent.com/Products/PYNQ/$PYNQ_VERSION.img.zip"
+ARCH_ROOTFS_URL="http://os.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz"
 UDEV_RULES="$TAPASCO_HOME/platform/zynq/module/99-tapasco.rules"
 OUTPUT_IMAGE="$DIR/${BOARD}_${VERSION}.img"
 OPENSSL_URL="https://www.openssl.org/source/old/1.0.2/openssl-1.0.2n.tar.gz"
 OPENSSL="$SCRIPTDIR/oldopenssl"
 OPENSSL_TAR="$OPENSSL/openssl.tar.gz"
+BSDTAR_URL="https://www.libarchive.org/downloads/libarchive-3.3.1.tar.gz"
+BSDTAR="$SCRIPTDIR/bsdtar"
+BSDTAR_TAR="$BSDTAR/BSDTAR.tar.gz"
 ### LOGFILES ###################################################################
 FETCH_LINUX_LOG="$LOGDIR/fetch-linux.log"
 FETCH_UBOOT_LOG="$LOGDIR/fetch-uboot.log"
 FETCH_PYNQ_IMG_LOG="$SCRIPTDIR/pynq/fetch-pynq-img.log"
 FETCH_OPENSSL_LOG="$LOGDIR/fetch-openssl.log"
+FETCH_ARM_TRUSTED_FIRMWARE_LOG="$LOGDIR/fetch-atfw.log"
+FETCH_BSDTAR_LOG="$LOGDIR/fetch-bsdtar.log"
+FETCH_ARCH_LINUX_LOG="$LOGDIR/fetch-arch-linux.log"
 BUILD_LINUX_LOG="$LOGDIR/build-linux.log"
 BUILD_UBOOT_LOG="$LOGDIR/build-uboot.log"
+BUILD_ARM_TRUSTED_FIRMWARE_LOG="$LOGDIR/build-atfw.log"
+BUILD_BSDTAR_LOG="$LOGDIR/build-bsdtar.log"
 BUILD_SSBL_LOG="$LOGDIR/build-ssbl.log"
 BUILD_UIMAGE_LOG="$LOGDIR/build-uimage.log"
 BUILD_FSBL_LOG="$LOGDIR/build-fsbl.log"
@@ -44,8 +52,8 @@ Usage: ${0##*/} BOARD VERSION [DISK SIZE] [DEVICE]
 Build a boot image for the given BOARD and VERSION (git tag). If DEVICE is
 given, repartition the device as a bootable SD card (WARNING: all data will
 be lost).
-	BOARD		one of zc706, zedboard, pyng or zcu102
-	VERSION		Vivado Design Suite version, e.g., 2016.4
+	BOARD		one of zc706, zedboard, pyng, zcu102 or ultra96v2
+	VERSION		Vivado Design Suite version, e.g., 2019.2
 	DISK SIZE	Size of the image in MiB (optional, default: 7534)
 	DEVICE		SD card device, e.g., /dev/sdb (optional)
 EOF
@@ -74,9 +82,11 @@ check_board () {
 			;;
 		"zcu102")
 			;;
+        "ultra96v2")
+            ;;
 		*)
 			echo "unknown board: $BOARD"
-			echo "select one of zedboard, zc706 or pynq"
+			echo "select one of zedboard, zc706, pynq or ultra96v2"
 			print_usage
 			;;
 	esac
@@ -87,9 +97,9 @@ check_compiler () {
 	error_exit "Compiler ${CROSS_COMPILE}gcc not found in path."
 }
 
-check_hsi () {
-	which hsi &> /dev/null ||
-	error_exit "Xilinx hsi tool is not in PATH, please source Vivado settings."
+check_xsct() {
+    which xsct &> /dev/null ||
+	error_exit "Xilinx xcst tool is not in PATH, please source Vitis settings."
 }
 
 check_vivado () {
@@ -119,8 +129,14 @@ check_sdcard () {
 
 fetch_linux () {
 	if [[ ! -d $DIR/linux-xlnx ]]; then
-		echo "Fetching linux $VERSION ..."
-		git clone -b xilinx-v$VERSION --depth 1 https://github.com/xilinx/linux-xlnx.git $DIR/linux-xlnx ||
+        #handling of xilinx sudden change in name convention
+        if [[ $VERSION = 2019.2 ]]; then
+            LINUX_VERSION=2019.2.01
+        else
+            LINUX_VERSION=$VERSION
+        fi
+		echo "Fetching linux $LINUX_VERSION ..."
+		git clone -b xilinx-v$LINUX_VERSION --depth 1 https://github.com/xilinx/linux-xlnx.git $DIR/linux-xlnx ||
 		return $(error_ret "$LINENO: could not clone linux git")
 	else
 		echo "$DIR/linux-xln already exists, skipping."
@@ -137,6 +153,16 @@ fetch_u-boot () {
 	fi
 }
 
+fetch_arm_trusted_firmware () {
+    if [[ ! -d $DIR/arm-trusted-firmware ]]; then
+        echo "Fetching arm-trusted-firmware ..."
+        git clone --depth 1 https://github.com/ARM-software/arm-trusted-firmware.git $DIR/arm-trusted-firmware ||
+        return $(error_ret "$LINENO: could not clone arm-trusted-firmware")
+    else
+        echo "$DIR/arm-trusted-firmware already exists, skipping."
+    fi
+}
+
 fetch_openssl () {
 	if [[ ! -f $OPENSSL_TAR ]]; then
 		echo "Fetching ancient OpenSSL 1.0.2 for U-Boot ..."
@@ -144,6 +170,17 @@ fetch_openssl () {
 		curl -s $OPENSSL_URL -o $OPENSSL_TAR ||
 			return $(error_ret "$LINENO: could not fetch $OPENSSL_URL")
 		cd $OPENSSL && tar xvzf $OPENSSL_TAR
+	fi
+}
+
+fetch_bsdtar () {
+	if [[ ! -f $BSDTAR_TAR ]]; then
+		echo "Fetching libarchive-3.3.1 for unpacking Arch Rootfs ..."
+		mkdir -p $BSDTAR || return $(error_ret "$LINENO: could not create $BSDTAR")
+		curl -s $BSDTAR_URL -o $BSDTAR_TAR ||
+			return $(error_ret "$LINENO: could not fetch $BSDTAR_URL")
+		cd $BSDTAR && tar xvzf $BSDTAR_TAR 
+        
 	fi
 }
 
@@ -210,6 +247,35 @@ extract_pynq_rootfs () {
 		echo "$ROOTFS_IMG already exists, skipping."
 	fi
 }
+build_bsdtar () {
+	if [[ ! -f $BSDTAR/libarchive-3.3.1/aclocal.m4 ]]; then
+		cd $BSDTAR/libarchive-3.3.1
+		make distclean
+		./config || return $(error_ret "$LINENO: could not configure libarchive-3.3.1")
+		make -j $JOBCOUNT || return $(error_ret "$LINENO: could not build libarchive-3.3.1")
+		make install || return $(error_ret "$LINENO: could not install libarchive-3.3.1")
+	else
+		echo "$BSDTAR/libarchive-3.3.1 already exists, skipping"
+	fi
+}
+
+fetch_arch_linux() {
+    ROOTFS_TAR_GZ=arch_latest.tar.gz
+    BD=arch_latest
+    if [[ ! -f $ROOTFS_TAR_GZ ]]; then
+        echo "Fetching arch linux rootfs..."
+        curl -L -s $ARCH_ROOTFS_URL -o $ROOTFS_TAR_GZ|| 
+        return $(error_ret "$LINENO: could not fetch $ARCH_ROOTFS_URL")
+    else
+        echo "$ROOTFS_TAR_GZ already exists, skipping."
+    fi
+    if [[ ! -d $BD ]]; then 
+        mkdir $BD || return $(error_ret "$LINENO: could not create $BD")
+        bsdtar -xvf $ROOTFS_TAR_GZ -C $BD || return $(error_ret "$LINENO: could not unpack $ROOTFS_TAR_GZ")
+    else
+        echo "Directory $BD already exists, skipping."
+    fi 
+}
 
 build_openssl () {
 	if [[ ! -f $OPENSSL/lib/libssl.a ]]; then
@@ -224,57 +290,86 @@ build_openssl () {
 }
 
 build_u-boot () {
-	build_openssl
 	if [[ ! -e $DIR/u-boot-xlnx/tools/mkimage ]]; then
 		echo "Building u-boot $VERSION ..."
 		case $BOARD in
 			"zedboard")
 				DEFCONFIG=zynq_zed_defconfig
+                ARCH=arm
 				;;
 			"zc706")
 				DEFCONFIG=zynq_zc706_defconfig
+                ARCH=arm
 				;;
+            "ultra96v2")
+                DEFCONFIG=avnet_ultra96_rev1_defconfig
+                ARCH=arm64
+                ;;
 			"pynq")
 				DEFCONFIG=zynq_zed_defconfig
+                ARCH=arm
 				;;
 			*)
 				return $(error_ret "unknown board: $BOARD")
 				;;
 		esac
 		cd $DIR/u-boot-xlnx
-		make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG ||
-			return $(error_ret "$LINENO: could make defconfig $DEFCONFIG")
-		make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" tools -j $JOBCOUNT ||
-			return $(error_ret "$LINENO: could not build u-boot tools")
+		make CROSS_COMPILE=$CROSS_COMPILE ARCH=$ARCH $DEFCONFIG ||
+		return $(error_ret "$LINENO: could not make defconfig $DEFCONFIG")
+        if [[ $BOARD != ultra96v2 ]]; then
+            build_openssl
+		    make CROSS_COMPILE=$CROSS_COMPILE ARCH=$ARCH HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" tools -j $JOBCOUNT ||
+			    return $(error_ret "$LINENO: could not build u-boot tools")
+        fi
 	else
 		echo "$DIR/u-boot-xlnx/tools/mkimage already exists, skipping."
 	fi
 }
 
 build_linux () {
-	if [[ ! -e $DIR/linux-xlnx/arch/arm/boot/Image ]]; then
-		echo "Building linux $VERSION .."
-		DEFCONFIG=tapasco_zynq_defconfig
-		CONFIGFILE="$SCRIPTDIR/configs/tapasco_zynq_defconfig"
-		cp $CONFIGFILE $DIR/linux-xlnx/arch/arm/configs/ ||
-			return $(error_ret "$LINENO: could not copy config")
-		cd $DIR/linux-xlnx
-		make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG ||
-			return $(error_ret "$LINENO: could not make defconfig")
-		make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm -j $JOBCOUNT ||
-			return $(error_ret "$LINENO: could not build kernel")
-	else
-		echo "$DIR/linux-xlnx/arch/arm/boot/Image already exists, skipping."
-	fi
+    if [[ ! $BOARD = ultra96v2 ]]; then
+	    if [[ ! -e $DIR/linux-xlnx/arch/arm/boot/Image ]]; then
+		    echo "Building linux $VERSION .."
+		    DEFCONFIG=tapasco_zynq_defconfig
+		    CONFIGFILE="$SCRIPTDIR/configs/tapasco_zynq_defconfig"
+		    cp $CONFIGFILE $DIR/linux-xlnx/arch/arm/configs/ ||
+			    return $(error_ret "$LINENO: could not copy config")
+		    cd $DIR/linux-xlnx
+		    make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG ||
+			    return $(error_ret "$LINENO: could not make defconfig")
+		    make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm -j $JOBCOUNT ||
+			    return $(error_ret "$LINENO: could not build kernel")
+	    else
+		    echo "$DIR/linux-xlnx/arch/arm/boot/Image already exists, skipping."
+	    fi
+    else
+        if [[ ! -e $DIR/linux-xlnx/arch/arm64/boot/Image ]]; then
+		    echo "Building linux $VERSION for arm64.."
+            DEFCONFIG=xilinx_zynqmp_defconfig
+            cd $DIR/linux-xlnx
+            make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64 $DEFCONFIG ||
+                return $(error_ret "$LINENO: could not make defconfig")
+            make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64 -j $JOBCOUNT ||  
+			    return $(error_ret "$LINENO: could not build kernel")
+            cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/avnet-ultra96-rev1.dtb $DIR/devicetree.dtb || 
+                return $(error_ret "$LINENO: could not copy device tree");
+        else
+            echo "$DIR/linux-xlnx/arch/arm64/boot/Image already exists, skipping."
+        fi
+    fi
 }
 
 build_ssbl () {
 	if [[ ! -e $DIR/u-boot-xlnx/u-boot ]]; then
 		echo "Building second stage boot loader ..."
-		DTC=$DIR/linux-xlnx/scripts/dtc/dtc
-		cd $DIR/u-boot-xlnx
+        cd $DIR/u-boot-xlnx
+        if [[ $BOARD != "ultra96v2" ]]; then
+		    DTC=$DIR/linux-xlnx/scripts/dtc/dtc
 			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm DTC=$DTC HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" u-boot ||
 			return $(error_ret "$LINENO: could not build u-boot")
+        else
+            make CROSS_COMPILE=$CROSS_COMPILE 
+        fi
 	else
 		echo "$DIR/u-boot-xlnx/u-boot already exists, skipping."
 	fi
@@ -297,8 +392,9 @@ build_uimage () {
 build_fsbl () {
 	if [[ ! -f $DIR/fsbl/executable.elf ]]; then
 		mkdir -p $DIR/fsbl || return $(error_ret "$LINENO: could not create $DIR/fsbl")
-		pushd $DIR/fsbl > /dev/null &&
-		cat > project.tcl << EOF
+        if [[  $BOARD != ultra96v2 ]]; then
+		    pushd $DIR/fsbl > /dev/null &&
+		    cat > project.tcl << EOF
 package require json
 
 set platform_file [open "\$env(TAPASCO_HOME)/platform/$BOARD/platform.json" r]
@@ -355,28 +451,91 @@ write_hwdef -force  -file $BOARD.hdf
 puts "HDF in $BOARD.hdf, done."
 exit
 EOF
-		cat > hsi.tcl << EOF
-generate_app -hw [open_hw_design $BOARD.hdf] -os standalone -proc ps7_cortexa9_0 -app zynq_fsbl -compile -sw fsbl -dir .
+		    cat > hsi.tcl << EOF
+hsi generate_app -hw [hsi open_hw_design $BOARD.hdf] -os standalone -proc ps7_cortexa9_0 -app zynq_fsbl -compile -sw fsbl -dir .
 EOF
+        else 
+            pushd $DIR/fsbl > /dev/null &&
+		    cat > project.tcl << EOF
+create_project $BOARD $BOARD -part xczu3eg-sbva484-1-e
+set_property board_part em.avnet.com:ultra96v2:part0:1.0 [current_project]
+create_bd_design -quiet "system"
+startgroup
+create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.3 zynq_ultra_ps_e_0
+endgroup
+apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e -config {apply_board_preset "1" }  [get_bd_cells zynq_ultra_ps_e_0]
+connect_bd_net [get_bd_pins zynq_ultra_ps_e_0/pl_clk0] [get_bd_pins zynq_ultra_ps_e_0/maxihpm1_fpd_aclk]
+connect_bd_net [get_bd_pins zynq_ultra_ps_e_0/pl_clk0] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk]
+validate_bd_design
+make_wrapper -files [get_files $DIR/$BOARD/$BOARD.srcs/sources_1/bd/system/system.bd] -top
+add_files -norecurse $DIR/$BOARD/$BOARD.srcs/sources_1/bd/system/hdl/system_wrapper.v
+update_compile_order -fileset sources_1
+generate_target all [get_files $DIR/$BOARD/$BOARD.srcs/sources_1/bd/system/system.bd]
+write_hw_platform -fixed -force  -file $BOARD.xsa
+puts "XSA in $BOARD.xsa, done"
+EOF
+        cat > hsi.tcl << EOF
+hsi generate_app -hw [hsi open_hw_design $BOARD.xsa] -proc psu_cortexa53_0 -os standalone -app zynqmp_fsbl -compile -sw fsbl -dir .
+EOF
+        fi
+        
 		vivado -nolog -nojournal -notrace -mode batch -source project.tcl ||
 			return $(error_ret "$LINENO: Vivado could not build FSBL project")
-		hsi -nolog -nojournal -notrace -mode batch -source hsi.tcl ||
+		xsct -nolog -nojournal -notrace -mode batch -source hsi.tcl ||
 			return $(error_ret "$LINENO: hsi could not build FSBL")
 	else
 		echo "$BOARD/fsbl/executable.elf already exists, skipping."
 	fi
 }
 
+build_pmuf() {
+    if [[ ! -f $DIR/pmuf/executable.elf ]]; then
+		mkdir -p $DIR/pmufw || return $(error_ret "$LINENO: could not create $DIR/pmufw")
+        pushd $DIR/pmufw > /dev/null &&
+        cat > pmufw.tcl << EOF
+generate_app -hw [open_hw_design $DIR/fsbl/$BOARD.hdf] -os standalone -proc psu_pmu_0 -app zynqmp_pmufw -compile -sw pmufw -dir .
+EOF
+    his -nolog -nojournal -notrace -mode batch -source pmufw.tcl || 
+        return $(error_ret "$LINENO: hsi could not build pmu firmware")
+
+    else
+		echo "$BOARD/pmufw/executable.elf already exists, skipping."
+	fi
+}
+
+build_arm_trusted_firmware() {
+    if [[ ! -f $DIR/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf ]]; then
+        echo "Building Arm Trusted Firmware for ZynqMP ..."
+        cd $DIR/arm-trusted-firmware
+        make CROSS_COMPILE=$CROSS_COMPILE PLAT=zynqmp RESET_TO_BL31=1
+    else 
+        echo "$BOARD/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf already exists, skipping."
+    fi
+}
+
 build_bootbin () {
 	echo "Building BOOT.BIN ..."
-	cat > $DIR/bootimage.bif << EOF
-image : {
-	[bootloader]$DIR/fsbl/executable.elf
-	$DIR/u-boot-xlnx/u-boot.elf
-}
+    if [[ $BOARD = "ultra96v2" ]]; then 
+        cat > $DIR/bootimage.bif << EOF
+            image: {
+                [bootloader,destination_cpu=a53-0] $DIR/fsbl/executable.elf
+                [pmufw_image] $DIR/pmufw/executable.elf
+                [destination_cpu=a53-0,exception_level=el-3,trustzone] $DIR/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf 
+                [destination_cpu=a53-0, exception_level=el-2] $DIR/u-boot-xlnx/u-boot.elf
+            }
 EOF
-	bootgen -image $DIR/bootimage.bif -w on -o $DIR/BOOT.BIN ||
+        bootgen -arch zynqmp -image $DIR/bootimage.bif -w on -o $DIR/BOOT.BIN ||
+		    return $(error_ret "$LINENO: could not generate BOOT.bin")
+    else
+	    cat > $DIR/bootimage.bif << EOF
+            image : {
+	            [bootloader]$DIR/fsbl/executable.elf
+	            $DIR/u-boot-xlnx/u-boot.elf
+            }
+EOF
+    bootgen -image $DIR/bootimage.bif -w on -o $DIR/BOOT.BIN ||
 		return $(error_ret "$LINENO: could not generate BOOT.bin")
+    fi
 	echo "$DIR/BOOT.BIN ready."
 }
 
@@ -547,6 +706,14 @@ copy_files_to_root () {
 
 ################################################################################
 ################################################################################
+
+if [ -z ${CROSS_COMPILE+x} ]; then 
+    if [ $BOARD = ultra96v2 ]; then
+        CROSS_COMPILE=aarch64-linux-gnu-
+    else
+        CROSS_COMPILE=arm-linux-gnueabihf-
+    fi
+fi
 echo "Cross compiler ABI is set to $CROSS_COMPILE."
 echo "Board is $BOARD."
 echo "Version is $VERSION."
@@ -555,7 +722,7 @@ echo "Image size: $IMGSIZE MiB"
 echo "OpenSSL dir: $OPENSSL"
 check_board
 check_compiler
-check_hsi
+check_xsct
 check_vivado
 check_image_tools
 check_sdcard
@@ -566,21 +733,36 @@ mkdir -p $LOGDIR 2> /dev/null
 mkdir -p `dirname $PYNQ_IMAGE` 2> /dev/null
 echo "And so it begins ..."
 ################################################################################
-echo "Fetching Linux kernel, U-Boot sources, PyNQ default image and OpenSSL ..."
+echo "Fetching Linux kernel, U-Boot sources, rootfs and OpenSSL/bsdtar ..."
 mkdir -p `dirname $FETCH_PYNQ_IMG_LOG` &> /dev/null
 fetch_linux &> $FETCH_LINUX_LOG &
 FETCH_LINUX_OK=$!
 fetch_u-boot &> $FETCH_UBOOT_LOG &
 FETCH_UBOOT_OK=$!
-fetch_pynq_image &> $FETCH_PYNQ_IMG_LOG &
-FETCH_PYNQ_OK=$!
-fetch_openssl &> $FETCH_OPENSSL_LOG &
-FETCH_OPENSSL_OK=$!
+if [[ $BOARD != ultra96v2 ]]; then
+    fetch_pynq_image &> $FETCH_PYNQ_IMG_LOG &
+    FETCH_PYNQ_OK=$!
+    fetch_openssl &> $FETCH_OPENSSL_LOG &
+    FETCH_OPENSSL_OK=$!
+else
+    fetch_bsdtar &> $FETCH_BSDTAR_LOG & 
+    FETCH_BSDTAR_OK=$!
+    fetch_arm_trusted_firmware &> $FETCH_ARM_TRUSTED_FIRMWARE_LOG &
+    FETCH_ARM_TRUSTED_FIRMWARE_OK=$!
+    fetch_arch_linux &> $FETCH_ARCH_LINUX_LOG &
+    FETCH_ARCH_LINUX_OK=$!
+fi
 
 wait $FETCH_LINUX_OK   || error_exit "Fetching Linux failed, check log: $FETCH_LINUX_LOG"
 wait $FETCH_UBOOT_OK   || error_exit "Fetching U-Boot failed, check logs: $FETCH_UBOOT_LOG"
-wait $FETCH_PYNQ_OK    || error_exit "Fetching PyNQ failed, check log: $FETCH_PYNQ_IMG_LOG"
-wait $FETCH_OPENSSL_OK || error_exit "Fetching OpenSSL failed, check log: $FETCH_OPENSSL_LOG"
+if [[ $BOARD != ultra96v2 ]]; then
+    wait $FETCH_PYNQ_OK    || error_exit "Fetching PyNQ failed, check log: $FETCH_PYNQ_IMG_LOG"
+    wait $FETCH_OPENSSL_OK || error_exit "Fetching OpenSSL failed, check log: $FETCH_OPENSSL_LOG"
+else
+    wait $FETCH_BSDTAR_OK || error_exit "Fetching libarchive-3.3.1 failed, check log: $FETCH_BSDTAR_LOG"
+    wait $FETCH_ARM_TRUSTED_FIRMWARE_OK || error_exit "Fetching ARM Trusted Firmware failed, check log: $FETCH_ARM_TRUSTED_FIRMWARE_LOG"   
+    wait $FETCH_ARCH_LINUX_OK || error_exit "Fetching Arch Linux Rootfs failed, check log: $FETCH_BSDTAR_LOG"
+fi
 
 ################################################################################
 echo "Ok, got the sources, will build now ..."
@@ -591,18 +773,25 @@ build_u-boot &> $BUILD_UBOOT_LOG &
 BUILD_UBOOT_OK=$!
 wait $BUILD_LINUX_OK || error_exit "Building Linux failed, check log: $BUILD_LINUX_LOG"
 wait $BUILD_UBOOT_OK || error_exit "Building U-Boot failed, check log: $BUILD_UBOOT_LOG"
+
 ################################################################################
 if [[ $BOARD != "pynq" ]]; then
-	echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and uImage (output in $BUILD_UIMAGE_LOG) ..."
+    if [[ $BOARD = "ultra96v2" ]] ; then 
+        echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) ... "
+    else
+	    echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and uImage (output in $BUILD_UIMAGE_LOG) ..."
+    fi
 else
 	echo "Building uImage (output in $BUILD_UIMAGE_LOG) ..."
 fi
-build_uimage &> $BUILD_UIMAGE_LOG &
+if [[ $BOARD != "ultra96v2" ]]; then build_uimage &> $BUILD_UIMAGE_LOG; fi &
 BUILD_UIMAGE_OK=$!
 if [[ $BOARD != "pynq" ]]; then build_ssbl &> $BUILD_SSBL_LOG; fi &
 BUILD_SSBL_OK=$!
 wait $BUILD_UIMAGE_OK || error_exit "Building uImage failed, check log: $BUILD_UIMAGE_LOG"
 wait $BUILD_SSBL_OK || error_exit "Building U-Boot SSBL failed, check log: $BUILD_SSBL_LOG"
+echo "Done with what i hoped would work..."
+error_exit
 ################################################################################
 if [[ $BOARD != "pynq" ]]; then
 	echo "Build FSBL (output in $BUILD_FSBL_LOG) ..."
