@@ -12,29 +12,26 @@ PYNQ_VERSION="pynq_z1_v2.1"
 PYNQ_IMAGE="$SCRIPTDIR/pynq/$PYNQ_VERSION.zip"
 PYNQ_IMAGE_URL="http://files.digilent.com/Products/PYNQ/$PYNQ_VERSION.img.zip"
 ARCH_ROOTFS_URL="http://os.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz"
+ARCH_ROOTFS_TAR_GZ="$DIR/arch_latest.tar.gz"
 UDEV_RULES="$TAPASCO_HOME/platform/zynq/module/99-tapasco.rules"
 OUTPUT_IMAGE="$DIR/${BOARD}_${VERSION}.img"
 OPENSSL_URL="https://www.openssl.org/source/old/1.0.2/openssl-1.0.2n.tar.gz"
 OPENSSL="$SCRIPTDIR/oldopenssl"
 OPENSSL_TAR="$OPENSSL/openssl.tar.gz"
-BSDTAR_URL="https://www.libarchive.org/downloads/libarchive-3.3.1.tar.gz"
-BSDTAR="$SCRIPTDIR/bsdtar"
-BSDTAR_TAR="$BSDTAR/BSDTAR.tar.gz"
 ### LOGFILES ###################################################################
 FETCH_LINUX_LOG="$LOGDIR/fetch-linux.log"
 FETCH_UBOOT_LOG="$LOGDIR/fetch-uboot.log"
 FETCH_PYNQ_IMG_LOG="$SCRIPTDIR/pynq/fetch-pynq-img.log"
 FETCH_OPENSSL_LOG="$LOGDIR/fetch-openssl.log"
 FETCH_ARM_TRUSTED_FIRMWARE_LOG="$LOGDIR/fetch-atfw.log"
-FETCH_BSDTAR_LOG="$LOGDIR/fetch-bsdtar.log"
 FETCH_ARCH_LINUX_LOG="$LOGDIR/fetch-arch-linux.log"
 BUILD_LINUX_LOG="$LOGDIR/build-linux.log"
 BUILD_UBOOT_LOG="$LOGDIR/build-uboot.log"
 BUILD_ARM_TRUSTED_FIRMWARE_LOG="$LOGDIR/build-atfw.log"
-BUILD_BSDTAR_LOG="$LOGDIR/build-bsdtar.log"
 BUILD_SSBL_LOG="$LOGDIR/build-ssbl.log"
 BUILD_UIMAGE_LOG="$LOGDIR/build-uimage.log"
 BUILD_FSBL_LOG="$LOGDIR/build-fsbl.log"
+BUILD_PMUFW_LOG="$LOGDIR/build-PMUFW.log"
 BUILD_BOOTBIN_LOG="$LOGDIR/build-bootbin.log"
 BUILD_DEVICETREE_LOG="$LOGDIR/build-devicetree.log"
 BUILD_OUTPUT_IMAGE_LOG="$LOGDIR/build-output-image.log"
@@ -173,33 +170,6 @@ fetch_openssl () {
 	fi
 }
 
-fetch_bsdtar () {
-	if [[ ! -f $BSDTAR_TAR ]]; then
-		echo "Fetching libarchive-3.3.1 for unpacking Arch Rootfs ..."
-		mkdir -p $BSDTAR || return $(error_ret "$LINENO: could not create $BSDTAR")
-		curl -s $BSDTAR_URL -o $BSDTAR_TAR ||
-			return $(error_ret "$LINENO: could not fetch $BSDTAR_URL")
-		cd $BSDTAR && tar xvzf $BSDTAR_TAR 
-        
-	fi
-}
-
-fetch_pynq_image () {
-	IMG=${PYNQ_VERSION}.img
-	BD=`dirname $PYNQ_IMAGE`
-	if [[ ! -f $PYNQ_IMAGE ]]; then
-		echo "Fetching PyNQ standard image ..."
-		mkdir -p $BD || return $(error_ret "$LINENO: could not create $BD")
-		curl -s $PYNQ_IMAGE_URL -o $PYNQ_IMAGE ||
-		return $(error_ret "$LINENO: could not fetch $PYNQ_IMAGE_URL")
-	fi
-	if [[ ! -f $SCRIPTDIR/pynq/$IMG ]]; then
-		echo "Unzipping $PYNQ_IMAGE to extract $IMG ..."
-		pushd $SCRIPTDIR/pynq &&
-		unzip -u $PYNQ_IMAGE &&
-		popd > /dev/null
-	fi
-}
 
 extract_pynq_bl () {
 	IMG=${PYNQ_VERSION}.img
@@ -247,34 +217,15 @@ extract_pynq_rootfs () {
 		echo "$ROOTFS_IMG already exists, skipping."
 	fi
 }
-build_bsdtar () {
-	if [[ ! -f $BSDTAR/libarchive-3.3.1/aclocal.m4 ]]; then
-		cd $BSDTAR/libarchive-3.3.1
-		make distclean
-		./config || return $(error_ret "$LINENO: could not configure libarchive-3.3.1")
-		make -j $JOBCOUNT || return $(error_ret "$LINENO: could not build libarchive-3.3.1")
-		make install || return $(error_ret "$LINENO: could not install libarchive-3.3.1")
-	else
-		echo "$BSDTAR/libarchive-3.3.1 already exists, skipping"
-	fi
-}
 
 fetch_arch_linux() {
-    ROOTFS_TAR_GZ=arch_latest.tar.gz
-    BD=arch_latest
-    if [[ ! -f $ROOTFS_TAR_GZ ]]; then
+    if [[ ! -f $ARCH_ROOTFS_TAR_GZ ]]; then
         echo "Fetching arch linux rootfs..."
-        curl -L -s $ARCH_ROOTFS_URL -o $ROOTFS_TAR_GZ|| 
+        curl -L -s $ARCH_ROOTFS_URL -o $ARCH_ROOTFS_TAR_GZ|| 
         return $(error_ret "$LINENO: could not fetch $ARCH_ROOTFS_URL")
     else
-        echo "$ROOTFS_TAR_GZ already exists, skipping."
+        echo "$ARCH_ROOTFS_TAR_GZ already exists, skipping."
     fi
-    if [[ ! -d $BD ]]; then 
-        mkdir $BD || return $(error_ret "$LINENO: could not create $BD")
-        bsdtar -xvf $ROOTFS_TAR_GZ -C $BD || return $(error_ret "$LINENO: could not unpack $ROOTFS_TAR_GZ")
-    else
-        echo "Directory $BD already exists, skipping."
-    fi 
 }
 
 build_openssl () {
@@ -457,7 +408,7 @@ EOF
         else 
             pushd $DIR/fsbl > /dev/null &&
 		    cat > project.tcl << EOF
-create_project $BOARD $BOARD -part xczu3eg-sbva484-1-e
+create_project -force $BOARD $BOARD -part xczu3eg-sbva484-1-e
 set_property board_part em.avnet.com:ultra96v2:part0:1.0 [current_project]
 create_bd_design -quiet "system"
 startgroup
@@ -467,10 +418,10 @@ apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e -config {apply_boar
 connect_bd_net [get_bd_pins zynq_ultra_ps_e_0/pl_clk0] [get_bd_pins zynq_ultra_ps_e_0/maxihpm1_fpd_aclk]
 connect_bd_net [get_bd_pins zynq_ultra_ps_e_0/pl_clk0] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk]
 validate_bd_design
-make_wrapper -files [get_files $DIR/$BOARD/$BOARD.srcs/sources_1/bd/system/system.bd] -top
-add_files -norecurse $DIR/$BOARD/$BOARD.srcs/sources_1/bd/system/hdl/system_wrapper.v
+make_wrapper -files [get_files $DIR/fsbl/$BOARD/$BOARD.srcs/sources_1/bd/system/system.bd] -top
+add_files -norecurse $DIR/fsbl/$BOARD/$BOARD.srcs/sources_1/bd/system/hdl/system_wrapper.v
 update_compile_order -fileset sources_1
-generate_target all [get_files $DIR/$BOARD/$BOARD.srcs/sources_1/bd/system/system.bd]
+generate_target all [get_files $DIR/fsbl/$BOARD/$BOARD.srcs/sources_1/bd/system/system.bd]
 write_hw_platform -fixed -force  -file $BOARD.xsa
 puts "XSA in $BOARD.xsa, done"
 EOF
@@ -480,23 +431,23 @@ EOF
         fi
         
 		vivado -nolog -nojournal -notrace -mode batch -source project.tcl ||
-			return $(error_ret "$LINENO: Vivado could not build FSBL project")
-		xsct -nolog -nojournal -notrace -mode batch -source hsi.tcl ||
+			return $(error_ret "$LINENO: Vivado could not build project")
+		xsct hsi.tcl ||
 			return $(error_ret "$LINENO: hsi could not build FSBL")
 	else
 		echo "$BOARD/fsbl/executable.elf already exists, skipping."
 	fi
 }
 
-build_pmuf() {
-    if [[ ! -f $DIR/pmuf/executable.elf ]]; then
+build_pmufw() {
+    if [[ ! -f $DIR/pmufw/executable.elf ]]; then
 		mkdir -p $DIR/pmufw || return $(error_ret "$LINENO: could not create $DIR/pmufw")
         pushd $DIR/pmufw > /dev/null &&
         cat > pmufw.tcl << EOF
-generate_app -hw [open_hw_design $DIR/fsbl/$BOARD.hdf] -os standalone -proc psu_pmu_0 -app zynqmp_pmufw -compile -sw pmufw -dir .
+hsi generate_app -hw [hsi open_hw_design $DIR/fsbl/$BOARD.xsa] -os standalone -proc psu_pmu_0 -app zynqmp_pmufw -compile -sw pmufw -dir .
 EOF
-    his -nolog -nojournal -notrace -mode batch -source pmufw.tcl || 
-        return $(error_ret "$LINENO: hsi could not build pmu firmware")
+        xsct pmufw.tcl || 
+            return $(error_ret "$LINENO: hsi could not build pmu firmware")
 
     else
 		echo "$BOARD/pmufw/executable.elf already exists, skipping."
@@ -514,29 +465,33 @@ build_arm_trusted_firmware() {
 }
 
 build_bootbin () {
-	echo "Building BOOT.BIN ..."
-    if [[ $BOARD = "ultra96v2" ]]; then 
-        cat > $DIR/bootimage.bif << EOF
-            image: {
-                [bootloader,destination_cpu=a53-0] $DIR/fsbl/executable.elf
-                [pmufw_image] $DIR/pmufw/executable.elf
-                [destination_cpu=a53-0,exception_level=el-3,trustzone] $DIR/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf 
-                [destination_cpu=a53-0, exception_level=el-2] $DIR/u-boot-xlnx/u-boot.elf
-            }
+    if [[ ! -f $DIR/BOOT.BIN ]]; then
+	    echo "Building BOOT.BIN ..."
+        if [[ $BOARD = "ultra96v2" ]]; then 
+            cat > $DIR/bootimage.bif << EOF
+                image: {
+                    [bootloader,destination_cpu=a53-0] $DIR/fsbl/executable.elf
+                    [pmufw_image] $DIR/pmufw/executable.elf
+                    [destination_cpu=a53-0,exception_level=el-3,trustzone] $DIR/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf 
+                    [destination_cpu=a53-0, exception_level=el-2] $DIR/u-boot-xlnx/u-boot.elf
+                }
 EOF
-        bootgen -arch zynqmp -image $DIR/bootimage.bif -w on -o $DIR/BOOT.BIN ||
-		    return $(error_ret "$LINENO: could not generate BOOT.bin")
+            bootgen -arch zynqmp -image $DIR/bootimage.bif -w on -o $DIR/BOOT.BIN ||
+    		    return $(error_ret "$LINENO: could not generate BOOT.bin")
+        else
+    	    cat > $DIR/bootimage.bif << EOF
+                image : {
+    	            [bootloader]$DIR/fsbl/executable.elf
+    	            $DIR/u-boot-xlnx/u-boot.elf
+                }
+EOF
+        bootgen -image $DIR/bootimage.bif -w on -o $DIR/BOOT.BIN ||
+    		return $(error_ret "$LINENO: could not generate BOOT.bin")
+        fi
+    	echo "$DIR/BOOT.BIN ready."
     else
-	    cat > $DIR/bootimage.bif << EOF
-            image : {
-	            [bootloader]$DIR/fsbl/executable.elf
-	            $DIR/u-boot-xlnx/u-boot.elf
-            }
-EOF
-    bootgen -image $DIR/bootimage.bif -w on -o $DIR/BOOT.BIN ||
-		return $(error_ret "$LINENO: could not generate BOOT.bin")
+        echo "$DIR/BOOT.BIN already exists, skipping."
     fi
-	echo "$DIR/BOOT.BIN ready."
 }
 
 build_devtree () {
@@ -719,7 +674,7 @@ echo "Board is $BOARD."
 echo "Version is $VERSION."
 echo "SD card device is $SDCARD."
 echo "Image size: $IMGSIZE MiB"
-echo "OpenSSL dir: $OPENSSL"
+if [[ $BOARD  != "ultra96v2" ]]; then echo "OpenSSL dir: $OPENSSL"; fi
 check_board
 check_compiler
 check_xsct
@@ -731,9 +686,9 @@ read -p "Enter sudo password: " -s SUDOPW
 dusudo true || error_exit "sudo password seems to be wrong?"
 mkdir -p $LOGDIR 2> /dev/null
 mkdir -p `dirname $PYNQ_IMAGE` 2> /dev/null
-echo "And so it begins ..."
+printf "\nAnd so it begins ...\n"
 ################################################################################
-echo "Fetching Linux kernel, U-Boot sources, rootfs and OpenSSL/bsdtar ..."
+echo "Fetching Linux kernel, U-Boot sources, rootfs and additional tools ..."
 mkdir -p `dirname $FETCH_PYNQ_IMG_LOG` &> /dev/null
 fetch_linux &> $FETCH_LINUX_LOG &
 FETCH_LINUX_OK=$!
@@ -745,8 +700,6 @@ if [[ $BOARD != ultra96v2 ]]; then
     fetch_openssl &> $FETCH_OPENSSL_LOG &
     FETCH_OPENSSL_OK=$!
 else
-    fetch_bsdtar &> $FETCH_BSDTAR_LOG & 
-    FETCH_BSDTAR_OK=$!
     fetch_arm_trusted_firmware &> $FETCH_ARM_TRUSTED_FIRMWARE_LOG &
     FETCH_ARM_TRUSTED_FIRMWARE_OK=$!
     fetch_arch_linux &> $FETCH_ARCH_LINUX_LOG &
@@ -759,7 +712,6 @@ if [[ $BOARD != ultra96v2 ]]; then
     wait $FETCH_PYNQ_OK    || error_exit "Fetching PyNQ failed, check log: $FETCH_PYNQ_IMG_LOG"
     wait $FETCH_OPENSSL_OK || error_exit "Fetching OpenSSL failed, check log: $FETCH_OPENSSL_LOG"
 else
-    wait $FETCH_BSDTAR_OK || error_exit "Fetching libarchive-3.3.1 failed, check log: $FETCH_BSDTAR_LOG"
     wait $FETCH_ARM_TRUSTED_FIRMWARE_OK || error_exit "Fetching ARM Trusted Firmware failed, check log: $FETCH_ARM_TRUSTED_FIRMWARE_LOG"   
     wait $FETCH_ARCH_LINUX_OK || error_exit "Fetching Arch Linux Rootfs failed, check log: $FETCH_BSDTAR_LOG"
 fi
@@ -776,8 +728,11 @@ wait $BUILD_UBOOT_OK || error_exit "Building U-Boot failed, check log: $BUILD_UB
 
 ################################################################################
 if [[ $BOARD != "pynq" ]]; then
-    if [[ $BOARD = "ultra96v2" ]] ; then 
-        echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) ... "
+    if [[ $BOARD = "ultra96v2" ]]; then 
+        echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and Arm Trusted Firmware (output in $BUILD_ARM_TRUSTED_FIRMWARE) ... "
+        build_arm_trusted_firmware &> $BUILD_ARM_TRUSTED_FIRMWARE_LOG &
+            BUILD_ARM_TRUSTED_FIRMWARE_OK=$!
+        wait $BUILD_ARM_TRUSTED_FIRMWARE || error_exit "Building Arm Trusted Firmware failed, check log: $ARM_TRUSTED_FIRMWARE_LOG"
     else
 	    echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and uImage (output in $BUILD_UIMAGE_LOG) ..."
     fi
@@ -790,8 +745,7 @@ if [[ $BOARD != "pynq" ]]; then build_ssbl &> $BUILD_SSBL_LOG; fi &
 BUILD_SSBL_OK=$!
 wait $BUILD_UIMAGE_OK || error_exit "Building uImage failed, check log: $BUILD_UIMAGE_LOG"
 wait $BUILD_SSBL_OK || error_exit "Building U-Boot SSBL failed, check log: $BUILD_SSBL_LOG"
-echo "Done with what i hoped would work..."
-error_exit
+
 ################################################################################
 if [[ $BOARD != "pynq" ]]; then
 	echo "Build FSBL (output in $BUILD_FSBL_LOG) ..."
@@ -799,15 +753,23 @@ if [[ $BOARD != "pynq" ]]; then
 	BUILD_FSBL_OK=$!
 	wait $BUILD_FSBL_OK || error_exit "Building FSBL failed, check log: $BUILD_FSBL_LOG"
 
-	echo "Building devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
+    if [[ $BOARD = "ultra96v2" ]]; then 
+        echo "Building pmufw (output in $BUILD_PMUFW_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
+        build_pmufw &> $BUILD_PMUFW_LOG &
+            BUILD_PMUFW_OK=$!
+        wait $BUILD_PMUFW_OK || error_exit "Building PMUFW failed, check log: $BUILD_PMUFW_LOG"
+    else
+        echo "Building devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
+    	build_devtree &> $BUILD_DEVICETREE_LOG &
+            BUILD_DEVICETREE_OK=$!
+    	wait $BUILD_DEVICETREE_OK || error_exit "Building devicetree failed, check log: $BUILD_DEVICETREE_LOG"
+    fi
 
 	build_bootbin &> $BUILD_BOOTBIN_LOG &
 	BUILD_BOOTBIN_OK=$!
-	build_devtree &> $BUILD_DEVICETREE_LOG &
-	BUILD_DEVICETREE_OK=$!
+
 	wait $BUILD_BOOTBIN_OK || error_exit "Building BOOT.BIN failed, check log: $BUILD_BOOTBIN_LOG"
-	echo "Done - find BOOT.BIN is here: $DIR/BOOT.BIN."
-	wait $BUILD_DEVICETREE_OK || error_exit "Building devicetree failed, check log: $BUILD_DEVICETREE_LOG"
+	echo "Done - find BOOT.BIN here: $DIR/BOOT.BIN."
 else
 	echo "Extract FSBL and devicetree from $PYNQ_IMAGE (output in $EXTRACT_BL_LOG) ..."
 	extract_pynq_bl &> $EXTRACT_BL_LOG &
@@ -820,7 +782,8 @@ else
 		echo "Extracting devicetree.dtb failed, check log: $EXTRACT_BL_LOG"
 		exit 1
 	fi
-fi
+fi 
+error_exit "Done with what i hoped would work..."
 ################################################################################
 echo "Extracting root FS (output in $EXTRACT_RFS_LOG) ..."
 extract_pynq_rootfs &> $EXTRACT_RFS_LOG
