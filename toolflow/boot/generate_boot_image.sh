@@ -296,7 +296,10 @@ build_linux () {
     else
         if [[ ! -e $DIR/linux-xlnx/arch/arm64/boot/Image ]]; then
 		    echo "Building linux $VERSION for arm64.."
-            DEFCONFIG=xilinx_zynqmp_defconfig
+            DEFCONFIG=tapasco_ultra96_defconfig
+		    CONFIGFILE="$SCRIPTDIR/configs/tapasco_ultra96_defconfig"
+            cp $CONFIGFILE $DIR/linux-xlnx/arch/arm64/configs/ ||
+			    return $(error_ret "$LINENO: could not copy config")
             cd $DIR/linux-xlnx
             make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64 $DEFCONFIG ||
                 return $(error_ret "$LINENO: could not make defconfig")
@@ -324,8 +327,11 @@ build_ssbl () {
 	else
 		echo "$DIR/u-boot-xlnx/u-boot already exists, skipping."
 	fi
-	cp $DIR/u-boot-xlnx/u-boot $DIR/u-boot-xlnx/u-boot.elf ||
-		return $(error_ret "$LINENO: could not copy to $DIR/u-boot-xlnx/u-boot.elf failed")
+
+    if [[$BOARD != "ultra96v2" ]]; then
+	    cp $DIR/u-boot-xlnx/u-boot $DIR/u-boot-xlnx/u-boot.elf ||
+		    return $(error_ret "$LINENO: could not copy to $DIR/u-boot-xlnx/u-boot.elf failed")
+    fi
 }
 
 build_uimage () {
