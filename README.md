@@ -95,7 +95,7 @@ Prerequisites for the Runtime
 
 *Ubuntu*:
 ```
-apt-get -y build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
+apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
 ```
 
 *Fedora*:
