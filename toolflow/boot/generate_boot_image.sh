@@ -246,20 +246,19 @@ build_u-boot () {
 		case $BOARD in
 			"zedboard")
 				DEFCONFIG=zynq_zed_defconfig
-                ARCH=arm
 				;;
 			"zc706")
 				DEFCONFIG=zynq_zc706_defconfig
-                ARCH=arm
 				;;
             "ultra96v2")
                 DEFCONFIG=avnet_ultra96_rev1_defconfig
-                ARCH=arm64
                 ;;
 			"pynq")
 				DEFCONFIG=zynq_zed_defconfig
-                ARCH=arm
 				;;
+            "zcu102")
+                DEFCONFIG=xilinx_zynqmp_zcu102_rev1_0_defconfig
+                ;;
 			*)
 				return $(error_ret "unknown board: $BOARD")
 				;;
@@ -273,12 +272,13 @@ build_u-boot () {
 			    return $(error_ret "$LINENO: could not build u-boot tools")
         fi
 	else
+
 		echo "$DIR/u-boot-xlnx/tools/mkimage already exists, skipping."
 	fi
 }
 
 build_linux () {
-    if [[ ! $BOARD = ultra96v2 ]]; then
+    if [[ ! $ARCH = arm64 ]]; then
 	    if [[ ! -e $DIR/linux-xlnx/arch/arm/boot/Image ]]; then
 		    echo "Building linux $VERSION .."
 		    DEFCONFIG=tapasco_zynq_defconfig
@@ -296,8 +296,8 @@ build_linux () {
     else
         if [[ ! -e $DIR/linux-xlnx/arch/arm64/boot/Image ]]; then
 		    echo "Building linux $VERSION for arm64.."
-            DEFCONFIG=tapasco_ultra96_defconfig
-		    CONFIGFILE="$SCRIPTDIR/configs/tapasco_ultra96_defconfig"
+            DEFCONFIG=tapasco_zynqmp_defconfig
+		    CONFIGFILE="$SCRIPTDIR/configs/tapasco_zynqmp_defconfig"
             cp $CONFIGFILE $DIR/linux-xlnx/arch/arm64/configs/ ||
 			    return $(error_ret "$LINENO: could not copy config")
             cd $DIR/linux-xlnx
@@ -305,8 +305,15 @@ build_linux () {
                 return $(error_ret "$LINENO: could not make defconfig")
             make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64 -j $JOBCOUNT ||  
 			    return $(error_ret "$LINENO: could not build kernel")
-            cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/avnet-ultra96-rev1.dtb $DIR/devicetree.dtb || 
-                return $(error_ret "$LINENO: could not copy device tree");
+           case $BOARD in
+		        "ultra96v2")
+                    cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/avnet-ultra96-rev1.dtb $DIR/devicetree.dtb || 
+                    return $(error_ret "$LINENO: could not copy device tree");
+                    ;;
+                "zcu102")
+                    cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/zynqmp-zcu102-revB.dtb $DIR/devicetree.dtb ||
+                    return $(error_ret "$LINENO: could not copy device tree");
+            esac
         else
             echo "$DIR/linux-xlnx/arch/arm64/boot/Image already exists, skipping."
         fi
@@ -317,7 +324,7 @@ build_ssbl () {
 	if [[ ! -e $DIR/u-boot-xlnx/u-boot ]]; then
 		echo "Building second stage boot loader ..."
         cd $DIR/u-boot-xlnx
-        if [[ $BOARD != "ultra96v2" ]]; then
+        if [[ $ARCH != arm64 ]]; then
 		    DTC=$DIR/linux-xlnx/scripts/dtc/dtc
 			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm DTC=$DTC HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" u-boot ||
 			return $(error_ret "$LINENO: could not build u-boot")
@@ -328,7 +335,7 @@ build_ssbl () {
 		echo "$DIR/u-boot-xlnx/u-boot already exists, skipping."
 	fi
 
-    if [[$BOARD != "ultra96v2" ]]; then
+    if [[$ARCH != arm64 ]]; then
 	    cp $DIR/u-boot-xlnx/u-boot $DIR/u-boot-xlnx/u-boot.elf ||
 		    return $(error_ret "$LINENO: could not copy to $DIR/u-boot-xlnx/u-boot.elf failed")
     fi
@@ -349,7 +356,8 @@ build_uimage () {
 build_fsbl () {
 	if [[ ! -f $DIR/fsbl/executable.elf ]]; then
 		mkdir -p $DIR/fsbl || return $(error_ret "$LINENO: could not create $DIR/fsbl")
-        if [[  $BOARD != ultra96v2 ]]; then
+        if [[  $ARCH != arm64 ]]; then
+#How could \$env(TAPASCO_HOME)/platform/$BOARD/platform.json ever work? The platform files are located @ \$env(TAPASCO_HOME)/toolflow/vivado/platform/$BOARD/platform.json...
 		    pushd $DIR/fsbl > /dev/null &&
 		    cat > project.tcl << EOF
 package require json
@@ -414,8 +422,23 @@ EOF
         else 
             pushd $DIR/fsbl > /dev/null &&
 		    cat > project.tcl << EOF
-create_project -force $BOARD $BOARD -part xczu3eg-sbva484-1-e
-set_property board_part em.avnet.com:ultra96v2:part0:1.0 [current_project]
+package require json
+
+set platform_file [open "\$env(TAPASCO_HOME)/toolflow/vivado/platform/$BOARD/platform.json" r]
+set json [read \$platform_file]
+close \$platform_file
+set platform [::json::json2dict \$json]
+
+source "\$env(TAPASCO_HOME)/toolflow/vivado/common/common.tcl"
+source "\$env(TAPASCO_HOME)/toolflow/vivado/platform/common/platform.tcl"
+source "\$env(TAPASCO_HOME)/toolflow/vivado/platform/$BOARD/$BOARD.tcl"
+
+create_project -force $BOARD $BOARD -part [dict get \$platform "Part"]
+set board_part ""
+if {[dict exists \$platform "BoardPart"]} {
+	set board_part [dict get \$platform "BoardPart"]
+	set_property board_part \$board_part [current_project]
+}
 create_bd_design -quiet "system"
 startgroup
 create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.3 zynq_ultra_ps_e_0
@@ -430,6 +453,7 @@ update_compile_order -fileset sources_1
 generate_target all [get_files $DIR/fsbl/$BOARD/$BOARD.srcs/sources_1/bd/system/system.bd]
 write_hw_platform -fixed -force  -file $BOARD.xsa
 puts "XSA in $BOARD.xsa, done"
+exit
 EOF
         cat > hsi.tcl << EOF
 hsi generate_app -hw [hsi open_hw_design $BOARD.xsa] -proc psu_cortexa53_0 -os standalone -app zynqmp_fsbl -compile -sw fsbl -dir .
@@ -473,7 +497,7 @@ build_arm_trusted_firmware() {
 build_bootbin () {
     if [[ ! -f $DIR/BOOT.BIN ]]; then
 	    echo "Building BOOT.BIN ..."
-        if [[ $BOARD = "ultra96v2" ]]; then 
+        if [[ $ARCH = arm64 ]]; then 
             cat > $DIR/bootimage.bif << EOF
                 image: {
                     [bootloader,destination_cpu=a53-0] $DIR/fsbl/executable.elf
@@ -519,6 +543,14 @@ build_devtree () {
 			echo >> $DIR/devicetree.dts
 			echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
 			;;
+        "ultra96v2")
+            #work around: Re-compile dts from dtb generated by linux-build and add tapasco related interrupts
+            $DIR/linux-xlnx/scripts/dtc/dtc -I dtb -O dts -o $DIR/devicetree.dts $DIR/devicetree.dtb
+            echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
+            ;;
+        "zcu102")
+            $DIR/linux-xlnx/scripts/dtc/dtc -I dtb -O dts -o $DIR/devicetree.dts $DIR/devicetree.dtb
+            echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
 	esac
 	$DIR/linux-xlnx/scripts/dtc/dtc -I dts -O dtb -o $DIR/devicetree.dtb $DIR/devicetree.dts ||
 		return $(error_ret "$LINENO: could not build devicetree.dtb")
@@ -607,14 +639,20 @@ copy_files_to_boot () {
 	dusudo mount $DEV $TO || return $(error_ret "$LINENO: could not mount $DEV -> $TO")
 	echo "Copying $DIR/BOOT.BIN to $TO ..."
 	dusudo cp $DIR/BOOT.BIN $TO || echo >&2 "$LINENO: WARNING: could not copy BOOT.BIN"
-	echo "Copying $DIR/linux-xlnx/arch/arm/boot/uImage to $TO ..."
-	dusudo cp $DIR/linux-xlnx/arch/arm/boot/uImage $TO ||
-		echo >&2 "$LINENO: WARNING: could not copy uImage"
+    if [[ $ARCH == arm64 ]]; then
+        echo "Copying $DIR/linux-xlnx/arch/arm64/boot/Image to $TO ..."
+        dusudo cp $DIR/linux-xlnx/arch/arm64/boot/Image $TO ||
+		    echo >&2 "$LINENO: WARNING: could not copy Image"
+    else
+	    echo "Copying $DIR/linux-xlnx/arch/arm/boot/uImage to $TO ..."
+	    dusudo cp $DIR/linux-xlnx/arch/arm/boot/uImage $TO ||
+		    echo >&2 "$LINENO: WARNING: could not copy uImage"
+        echo "Copying uenv/uEnv-$BOARD.txt to $TO/uEnv.txt ..."
+        dusudo cp uenv/uEnv-$BOARD.txt $TO/uEnv.txt ||
+		    echo >&2 "$LINENO: WARNING: could not copy uEnv.txt"
+    fi
 	echo "Copying $DIR/devicetree.dtb to $TO ..."
 	dusudo cp $DIR/devicetree.dtb $TO || echo >&2 "$LINENO: WARNING: could copy devicetree"
-	echo "Copying uenv/uEnv-$BOARD.txt to $TO/uEnv.txt ..."
-	dusudo cp uenv/uEnv-$BOARD.txt $TO/uEnv.txt ||
-		echo >&2 "$LINENO: WARNING: could not copy uEnv.txt"
 	dusudo umount $TO
 	rmdir $TO 2> /dev/null &&
 	echo "Boot partition ready."
@@ -669,18 +707,21 @@ copy_files_to_root () {
 ################################################################################
 
 if [ -z ${CROSS_COMPILE+x} ]; then 
-    if [ $BOARD = ultra96v2 ]; then
+    if [[ $BOARD = ultra96v2 ]] || [[ $BOARD = zcu102 ]]; then
         CROSS_COMPILE=aarch64-linux-gnu-
+        ARCH=arm64
     else
         CROSS_COMPILE=arm-linux-gnueabihf-
+        ARCH=arm
     fi
 fi
+echo "Processor architecture is set to $ARCH. "
 echo "Cross compiler ABI is set to $CROSS_COMPILE."
 echo "Board is $BOARD."
 echo "Version is $VERSION."
 echo "SD card device is $SDCARD."
 echo "Image size: $IMGSIZE MiB"
-if [[ $BOARD  != "ultra96v2" ]]; then echo "OpenSSL dir: $OPENSSL"; fi
+if [[ $ARCH  != arm64 ]]; then echo "OpenSSL dir: $OPENSSL"; fi
 check_board
 check_compiler
 check_xsct
@@ -700,7 +741,7 @@ fetch_linux &> $FETCH_LINUX_LOG &
 FETCH_LINUX_OK=$!
 fetch_u-boot &> $FETCH_UBOOT_LOG &
 FETCH_UBOOT_OK=$!
-if [[ $BOARD != ultra96v2 ]]; then
+if [[ $ARCH != arm64 ]]; then
     fetch_pynq_image &> $FETCH_PYNQ_IMG_LOG &
     FETCH_PYNQ_OK=$!
     fetch_openssl &> $FETCH_OPENSSL_LOG &
@@ -734,7 +775,7 @@ wait $BUILD_UBOOT_OK || error_exit "Building U-Boot failed, check log: $BUILD_UB
 
 ################################################################################
 if [[ $BOARD != "pynq" ]]; then
-    if [[ $BOARD = "ultra96v2" ]]; then 
+    if [[ $ARCH = arm64 ]]; then 
         echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and Arm Trusted Firmware (output in $BUILD_ARM_TRUSTED_FIRMWARE) ... "
         build_arm_trusted_firmware &> $BUILD_ARM_TRUSTED_FIRMWARE_LOG &
             BUILD_ARM_TRUSTED_FIRMWARE_OK=$!
@@ -745,7 +786,7 @@ if [[ $BOARD != "pynq" ]]; then
 else
 	echo "Building uImage (output in $BUILD_UIMAGE_LOG) ..."
 fi
-if [[ $BOARD != "ultra96v2" ]]; then build_uimage &> $BUILD_UIMAGE_LOG; fi &
+if [[ $ARCH != arm64 ]]; then build_uimage &> $BUILD_UIMAGE_LOG; fi &
 BUILD_UIMAGE_OK=$!
 if [[ $BOARD != "pynq" ]]; then build_ssbl &> $BUILD_SSBL_LOG; fi &
 BUILD_SSBL_OK=$!
@@ -759,21 +800,22 @@ if [[ $BOARD != "pynq" ]]; then
 	BUILD_FSBL_OK=$!
 	wait $BUILD_FSBL_OK || error_exit "Building FSBL failed, check log: $BUILD_FSBL_LOG"
 
-    if [[ $BOARD = "ultra96v2" ]]; then 
-        echo "Building pmufw (output in $BUILD_PMUFW_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
+    if [[ $ARCH = arm64 ]]; then 
+        echo "Building pmufw (output in $BUILD_PMUFW_LOG), devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
         build_pmufw &> $BUILD_PMUFW_LOG &
             BUILD_PMUFW_OK=$!
         wait $BUILD_PMUFW_OK || error_exit "Building PMUFW failed, check log: $BUILD_PMUFW_LOG"
     else
         echo "Building devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
-    	build_devtree &> $BUILD_DEVICETREE_LOG &
-            BUILD_DEVICETREE_OK=$!
-    	wait $BUILD_DEVICETREE_OK || error_exit "Building devicetree failed, check log: $BUILD_DEVICETREE_LOG"
     fi
+
+    build_devtree &> $BUILD_DEVICETREE_LOG &
+    BUILD_DEVICETREE_OK=$!
 
 	build_bootbin &> $BUILD_BOOTBIN_LOG &
 	BUILD_BOOTBIN_OK=$!
 
+    wait $BUILD_DEVICETREE_OK || error_exit "Building devicetree failed, check log: $BUILD_DEVICETREE_LOG"
 	wait $BUILD_BOOTBIN_OK || error_exit "Building BOOT.BIN failed, check log: $BUILD_BOOTBIN_LOG"
 	echo "Done - find BOOT.BIN here: $DIR/BOOT.BIN."
 else
@@ -789,7 +831,7 @@ else
 		exit 1
 	fi
 fi 
-error_exit "Done with what i hoped would work..."
+error_exit "Done."
 ################################################################################
 echo "Extracting root FS (output in $EXTRACT_RFS_LOG) ..."
 extract_pynq_rootfs &> $EXTRACT_RFS_LOG
