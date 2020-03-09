@@ -11,8 +11,10 @@ ROOTFS_IMG="$SCRIPTDIR/rootfs.img"
 PYNQ_VERSION="pynq_z1_v2.1"
 PYNQ_IMAGE="$SCRIPTDIR/pynq/$PYNQ_VERSION.zip"
 PYNQ_IMAGE_URL="http://files.digilent.com/Products/PYNQ/$PYNQ_VERSION.img.zip"
-ARCH_ROOTFS_URL="http://os.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz"
+ARCH_ROOTFS_URL="http://os.archlinuxarm.org/os/ArchLinuxARM-zedboard-latest.tar.gz"
+ARCH64_ROOTFS_URL="http://os.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz"
 ARCH_ROOTFS_TAR_GZ="$DIR/arch_latest.tar.gz"
+ARCH64_ROOTFS_TAR_GZ="$DIR/arch64_latest.tar.gz"
 UDEV_RULES="$TAPASCO_HOME/platform/zynq/module/99-tapasco.rules"
 OUTPUT_IMAGE="$DIR/${BOARD}_${VERSION}.img"
 OPENSSL_URL="https://www.openssl.org/source/old/1.0.2/openssl-1.0.2n.tar.gz"
@@ -83,7 +85,7 @@ check_board () {
             ;;
 		*)
 			echo "unknown board: $BOARD"
-			echo "select one of zedboard, zc706, pynq or ultra96v2"
+			echo "select one of zedboard, zc706, pynq, zcu102 or ultra96v2"
 			print_usage
 			;;
 	esac
@@ -106,7 +108,7 @@ check_vivado () {
 
 check_tapasco () {
 	[[ -n $TAPASCO_HOME ]] ||
-	error_exit "TAPASCO_HOME is not set, please source setup.sh from TaPaSCo."
+	error_exit "TAPASCO_HOME is not set, please source tapasco-setup.sh from TaPaSCo."
 }
 
 check_bootgen () {
@@ -153,7 +155,7 @@ fetch_u-boot () {
 fetch_arm_trusted_firmware () {
     if [[ ! -d $DIR/arm-trusted-firmware ]]; then
         echo "Fetching arm-trusted-firmware ..."
-        git clone --depth 1 https://github.com/ARM-software/arm-trusted-firmware.git $DIR/arm-trusted-firmware ||
+        git clone --depth 1 https://github.com/Xilinx/arm-trusted-firmware.git $DIR/arm-trusted-firmware ||
         return $(error_ret "$LINENO: could not clone arm-trusted-firmware")
     else
         echo "$DIR/arm-trusted-firmware already exists, skipping."
@@ -204,27 +206,23 @@ extract_pynq_bl () {
 	echo "BOOT.BIN and devicetree.dtb are ready in $DIR."
 }
 
-extract_pynq_rootfs () {
-	IMG=${PYNQ_VERSION}.img
-	if [[ ! -f $ROOTFS_IMG ]]; then
-		IMG=$SCRIPTDIR/pynq/${PYNQ_VERSION}.img
-		START=$(fdisk -l $IMG | awk 'END { print $2 }')
-		COUNT=$(fdisk -l $IMG | awk 'END { print $4 }')
-		echo "Extracting root image from $IMG, start=$START and count = $COUNT"
-		dd if=$IMG of=$ROOTFS_IMG skip=$START count=$COUNT ||
-			return $(error_ret "$LINENO: extracting rootfs via dd failed")
-	else
-		echo "$ROOTFS_IMG already exists, skipping."
-	fi
-}
-
 fetch_arch_linux() {
-    if [[ ! -f $ARCH_ROOTFS_TAR_GZ ]]; then
+	case $ARCH in
+		"arm")
+			ARCH_URL=$ARCH_ROOTFS_URL
+			LOCAL_FILE=$ARCH_ROOTFS_TAR_GZ
+			;;
+		"arm64")
+			ARCH_URL=$ARCH64_ROOTFS_URL
+			LOCAL_FILE=$ARCH64_ROOTFS_TAR_GZ
+			;;
+	esac
+    if [[ ! -f $LOCAL_FILE ]]; then
         echo "Fetching arch linux rootfs..."
-        curl -L -s $ARCH_ROOTFS_URL -o $ARCH_ROOTFS_TAR_GZ|| 
-        return $(error_ret "$LINENO: could not fetch $ARCH_ROOTFS_URL")
+        curl -L -s $ARCH_URL -o $LOCAL_FILE ||
+        return $(error_ret "$LINENO: could not fetch $ARCH_URL")
     else
-        echo "$ARCH_ROOTFS_TAR_GZ already exists, skipping."
+        echo "$LOCAL_FILE already exists, skipping."
     fi
 }
 
@@ -264,11 +262,11 @@ build_u-boot () {
 				;;
 		esac
 		cd $DIR/u-boot-xlnx
-		make CROSS_COMPILE=$CROSS_COMPILE ARCH=$ARCH $DEFCONFIG ||
+		make CROSS_COMPILE=$CROSS_COMPILE $DEFCONFIG ||
 		return $(error_ret "$LINENO: could not make defconfig $DEFCONFIG")
-        if [[ $BOARD != ultra96v2 ]]; then
+        if [[ $ARCH != arm64 ]]; then
             build_openssl
-		    make CROSS_COMPILE=$CROSS_COMPILE ARCH=$ARCH HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" tools -j $JOBCOUNT ||
+		    make CROSS_COMPILE=$CROSS_COMPILE HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" tools -j $JOBCOUNT ||
 			    return $(error_ret "$LINENO: could not build u-boot tools")
         fi
 	else
@@ -313,6 +311,7 @@ build_linux () {
                 "zcu102")
                     cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/zynqmp-zcu102-revB.dtb $DIR/devicetree.dtb ||
                     return $(error_ret "$LINENO: could not copy device tree");
+                    ;;
             esac
         else
             echo "$DIR/linux-xlnx/arch/arm64/boot/Image already exists, skipping."
@@ -326,16 +325,17 @@ build_ssbl () {
         cd $DIR/u-boot-xlnx
         if [[ $ARCH != arm64 ]]; then
 		    DTC=$DIR/linux-xlnx/scripts/dtc/dtc
-			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm DTC=$DTC HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" u-boot ||
+			make CROSS_COMPILE=$CROSS_COMPILE DTC=$DTC HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" u-boot -j $JOBCOUNT ||
 			return $(error_ret "$LINENO: could not build u-boot")
         else
-            make CROSS_COMPILE=$CROSS_COMPILE 
+            make CROSS_COMPILE=$CROSS_COMPILE -j $JOBCOUNT ||
+			return $(error_ret "$LINENO: could not build u-boot")
         fi
 	else
 		echo "$DIR/u-boot-xlnx/u-boot already exists, skipping."
 	fi
 
-    if [[$ARCH != arm64 ]]; then
+    if [[ $ARCH != arm64 ]]; then
 	    cp $DIR/u-boot-xlnx/u-boot $DIR/u-boot-xlnx/u-boot.elf ||
 		    return $(error_ret "$LINENO: could not copy to $DIR/u-boot-xlnx/u-boot.elf failed")
     fi
@@ -356,20 +356,19 @@ build_uimage () {
 build_fsbl () {
 	if [[ ! -f $DIR/fsbl/executable.elf ]]; then
 		mkdir -p $DIR/fsbl || return $(error_ret "$LINENO: could not create $DIR/fsbl")
-        if [[  $ARCH != arm64 ]]; then
-#How could \$env(TAPASCO_HOME)/platform/$BOARD/platform.json ever work? The platform files are located @ \$env(TAPASCO_HOME)/toolflow/vivado/platform/$BOARD/platform.json...
+        if [[ $ARCH != arm64 ]]; then
 		    pushd $DIR/fsbl > /dev/null &&
 		    cat > project.tcl << EOF
 package require json
 
-set platform_file [open "\$env(TAPASCO_HOME)/platform/$BOARD/platform.json" r]
+set platform_file [open "\$env(TAPASCO_HOME_TCL)/platform/$BOARD/platform.json" r]
 set json [read \$platform_file]
 close \$platform_file
 set platform [::json::json2dict \$json]
 
-source "\$env(TAPASCO_HOME)/common/common.tcl"
-source "\$env(TAPASCO_HOME)/platform/common/platform.tcl"
-source "\$env(TAPASCO_HOME)/platform/$BOARD/$BOARD.tcl"
+source "\$env(TAPASCO_HOME_TCL)/common/common.tcl"
+source "\$env(TAPASCO_HOME_TCL)/platform/common/platform.tcl"
+source "\$env(TAPASCO_HOME_TCL)/platform/$BOARD/$BOARD.tcl"
 create_project $BOARD $BOARD -part [dict get \$platform "Part"] -force
 set board_part ""
 if {[dict exists \$platform "BoardPart"]} {
@@ -424,14 +423,14 @@ EOF
 		    cat > project.tcl << EOF
 package require json
 
-set platform_file [open "\$env(TAPASCO_HOME)/toolflow/vivado/platform/$BOARD/platform.json" r]
+set platform_file [open "\$env(TAPASCO_HOME_TCL)/platform/$BOARD/platform.json" r]
 set json [read \$platform_file]
 close \$platform_file
 set platform [::json::json2dict \$json]
 
-source "\$env(TAPASCO_HOME)/toolflow/vivado/common/common.tcl"
-source "\$env(TAPASCO_HOME)/toolflow/vivado/platform/common/platform.tcl"
-source "\$env(TAPASCO_HOME)/toolflow/vivado/platform/$BOARD/$BOARD.tcl"
+source "\$env(TAPASCO_HOME_TCL)/common/common.tcl"
+source "\$env(TAPASCO_HOME_TCL)/platform/common/platform.tcl"
+source "\$env(TAPASCO_HOME_TCL)/platform/$BOARD/$BOARD.tcl"
 
 create_project -force $BOARD $BOARD -part [dict get \$platform "Part"]
 set board_part ""
@@ -440,15 +439,16 @@ if {[dict exists \$platform "BoardPart"]} {
 	set_property board_part \$board_part [current_project]
 }
 create_bd_design -quiet "system"
-startgroup
-create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.3 zynq_ultra_ps_e_0
-endgroup
-apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e -config {apply_board_preset "1" }  [get_bd_cells zynq_ultra_ps_e_0]
-connect_bd_net [get_bd_pins zynq_ultra_ps_e_0/pl_clk0] [get_bd_pins zynq_ultra_ps_e_0/maxihpm1_fpd_aclk]
-connect_bd_net [get_bd_pins zynq_ultra_ps_e_0/pl_clk0] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk]
+set board_preset {}
+if {[dict exists \$platform "BoardPreset"]} {
+	set board_preset [dict get \$platform "BoardPreset"]
+}
+set ps [tapasco::ip::create_ultra_ps "zynqmp" \$board_preset 100]
+apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e -config {apply_board_preset "1" } \$ps
+connect_bd_net [get_bd_pins \$ps/pl_clk0] [get_bd_pins \$ps/maxihpm1_fpd_aclk]
+connect_bd_net [get_bd_pins \$ps/pl_clk0] [get_bd_pins \$ps/maxihpm0_fpd_aclk]
 validate_bd_design
-make_wrapper -files [get_files $DIR/fsbl/$BOARD/$BOARD.srcs/sources_1/bd/system/system.bd] -top
-add_files -norecurse $DIR/fsbl/$BOARD/$BOARD.srcs/sources_1/bd/system/hdl/system_wrapper.v
+make_wrapper -files [get_files $DIR/fsbl/$BOARD/$BOARD.srcs/sources_1/bd/system/system.bd] -top -import
 update_compile_order -fileset sources_1
 generate_target all [get_files $DIR/fsbl/$BOARD/$BOARD.srcs/sources_1/bd/system/system.bd]
 write_hw_platform -fixed -force  -file $BOARD.xsa
@@ -464,6 +464,7 @@ EOF
 			return $(error_ret "$LINENO: Vivado could not build project")
 		xsct hsi.tcl ||
 			return $(error_ret "$LINENO: hsi could not build FSBL")
+		popd &> /dev/null
 	else
 		echo "$BOARD/fsbl/executable.elf already exists, skipping."
 	fi
@@ -478,7 +479,7 @@ hsi generate_app -hw [hsi open_hw_design $DIR/fsbl/$BOARD.xsa] -os standalone -p
 EOF
         xsct pmufw.tcl || 
             return $(error_ret "$LINENO: hsi could not build pmu firmware")
-
+        popd &> /dev/null
     else
 		echo "$BOARD/pmufw/executable.elf already exists, skipping."
 	fi
@@ -551,6 +552,7 @@ build_devtree () {
         "zcu102")
             $DIR/linux-xlnx/scripts/dtc/dtc -I dtb -O dts -o $DIR/devicetree.dts $DIR/devicetree.dtb
             echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
+            ;;
 	esac
 	$DIR/linux-xlnx/scripts/dtc/dtc -I dts -O dtb -o $DIR/devicetree.dtb $DIR/devicetree.dts ||
 		return $(error_ret "$LINENO: could not build devicetree.dtb")
@@ -643,6 +645,8 @@ copy_files_to_boot () {
         echo "Copying $DIR/linux-xlnx/arch/arm64/boot/Image to $TO ..."
         dusudo cp $DIR/linux-xlnx/arch/arm64/boot/Image $TO ||
 		    echo >&2 "$LINENO: WARNING: could not copy Image"
+		echo "Copying $DIR/devicetree.dtb to $TO/system.dtb ..."
+		dusudo cp $DIR/devicetree.dtb $TO/system.dtb || echo >&2 "$LINENO: WARNING: could not copy devicetree"
     else
 	    echo "Copying $DIR/linux-xlnx/arch/arm/boot/uImage to $TO ..."
 	    dusudo cp $DIR/linux-xlnx/arch/arm/boot/uImage $TO ||
@@ -650,41 +654,34 @@ copy_files_to_boot () {
         echo "Copying uenv/uEnv-$BOARD.txt to $TO/uEnv.txt ..."
         dusudo cp uenv/uEnv-$BOARD.txt $TO/uEnv.txt ||
 		    echo >&2 "$LINENO: WARNING: could not copy uEnv.txt"
+		echo "Copying $DIR/devicetree.dtb to $TO ..."
+		dusudo cp $DIR/devicetree.dtb $TO || echo >&2 "$LINENO: WARNING: could not copy devicetree"
     fi
-	echo "Copying $DIR/devicetree.dtb to $TO ..."
-	dusudo cp $DIR/devicetree.dtb $TO || echo >&2 "$LINENO: WARNING: could copy devicetree"
 	dusudo umount $TO
 	rmdir $TO 2> /dev/null &&
 	echo "Boot partition ready."
 }
 
 copy_files_to_root () {
+	case $ARCH in
+		"arm")
+			LOCAL_FILE=$ARCH_ROOTFS_TAR_GZ
+			;;
+		"arm64")
+			LOCAL_FILE=$ARCH64_ROOTFS_TAR_GZ
+			;;
+	esac
 	DEV=${1:-${SDCARD}2}
 	TO="$DIR/`basename $DEV`"
-	echo "dd'ing rootfs onto second partition $TO, this will take a while ..."
-	dusudo dd if=$ROOTFS_IMG of=$DEV bs=10M ||
-		return $(error_ret "$LINENO: could not copy $ROOTFS_IMG to $DEV")
-	dusudo resize2fs $DEV ||
-		return $(error_ret "$LINENO: could not resize $DEV")
 	mkdir -p $TO || return $(error_ret "$LINENO: could not create $TO")
 	dusudo mount -onoacl $DEV $TO ||
 		return $(error_ret "$LINENO: could not mount $DEV -> $TO")
+	echo "Extracting rootfs"
+	dusudo sh -c "tar -xpf $LOCAL_FILE -C $TO" ||
+		echo >&2 "$LINENO: WARNING: could not extract rootfs"
 	echo "Setting hostname to $BOARD ... "
 	dusudo sh -c "echo $BOARD > $TO/etc/hostname" ||
 		echo >&2 "$LINENO: WARNING: could not set hostname"
-	echo "Updating /etc/hosts ..."
-	dusudo sh -c "sed -i "s/pynq/$BOARD/g" $TO/etc/hosts" ||
-		echo >&2 "$LINENO: WARNING: could not update /etc/hosts"
-	echo "Setting env vars ... "
-	dusudo sh -c "echo export LINUX_HOME=/linux-xlnx >> $TO/home/xilinx/.bashrc" ||
-		echo >&2 "$LINENO: WARNING: could not set env var LINUX_HOME"
-	dusudo sh -c "echo export TAPASCO_HOME=~/tapasco >> $TO/home/xilinx/.bashrc" ||
-		echo >&2 "$LINENO: WARNING: could not set env var TAPASCO_HOME"
-	dusudo sh -c "echo export PATH=\\\$PATH:\\\$TAPASCO_HOME/bin >> $TO/home/xilinx/.bashrc" ||
-		echo >&2 "$LINENO: WARNING: could not set env PATH."
-	echo "Replacing rc.local ... "
-	dusudo sh -c "cp --no-preserve=ownership $SCRIPTDIR/misc/rc.local $TO/etc/rc.local" ||
-		echo >&2 "$LINENO: WARNING: could not copy rc.local"
 	if [[ $IMGSIZE -gt 4096 ]]; then
 		echo "Copying linux tree to /linux-xlnx ..."
 		dusudo sh -c "cp -r --no-preserve=ownership,timestamps $DIR/linux-xlnx $TO/linux-xlnx" ||
@@ -692,12 +689,6 @@ copy_files_to_root () {
 	else
 		echo >&2 "$LINENO: WARNING: image size $IMGSIZE < 4096 MiB, not enough space to copy linux tree"
 	fi
-	echo "Copying udev rules ..."
-	dusudo sh -c "cat $UDEV_RULES | sed 's/OWNER\"tapasco\"/OWNER=\"xilinx\"/g' | sed 's/GROUP=\"tapasco\"/GROUP=\"xilinx\"/g' | sed 's/tapasco:tapasco/xilinx:xilinx/g' > $TO/etc/udev/rules.d/99-tapasco.rules" ||
-		echo >&2 "$LINENO: WARNING: could not write udev rules"
-	echo "Removing Jupyter stuff from home ..."
-	dusudo sh -c "find $TO/home/xilinx/* -maxdepth 0 | xargs rm -rf" ||
-		echo >&2 "$LINENO: WARNING: could not delete Jupyter stuff"
 	dusudo umount $TO
 	rmdir $TO 2> /dev/null &&
 	echo "RootFS partition ready."
@@ -726,6 +717,7 @@ check_board
 check_compiler
 check_xsct
 check_vivado
+check_tapasco
 check_image_tools
 check_sdcard
 read -p "Enter sudo password: " -s SUDOPW
@@ -741,6 +733,8 @@ fetch_linux &> $FETCH_LINUX_LOG &
 FETCH_LINUX_OK=$!
 fetch_u-boot &> $FETCH_UBOOT_LOG &
 FETCH_UBOOT_OK=$!
+fetch_arch_linux &> $FETCH_ARCH_LINUX_LOG &
+FETCH_ARCH_LINUX_OK=$!
 if [[ $ARCH != arm64 ]]; then
     fetch_pynq_image &> $FETCH_PYNQ_IMG_LOG &
     FETCH_PYNQ_OK=$!
@@ -749,18 +743,16 @@ if [[ $ARCH != arm64 ]]; then
 else
     fetch_arm_trusted_firmware &> $FETCH_ARM_TRUSTED_FIRMWARE_LOG &
     FETCH_ARM_TRUSTED_FIRMWARE_OK=$!
-    fetch_arch_linux &> $FETCH_ARCH_LINUX_LOG &
-    FETCH_ARCH_LINUX_OK=$!
 fi
 
 wait $FETCH_LINUX_OK   || error_exit "Fetching Linux failed, check log: $FETCH_LINUX_LOG"
 wait $FETCH_UBOOT_OK   || error_exit "Fetching U-Boot failed, check logs: $FETCH_UBOOT_LOG"
-if [[ $BOARD != ultra96v2 ]]; then
+wait $FETCH_ARCH_LINUX_OK || error_exit "Fetching Arch Linux Rootfs failed, check log: $FETCH_ARCH_LINUX_LOG"
+if [[ $ARCH != arm64 ]]; then
     wait $FETCH_PYNQ_OK    || error_exit "Fetching PyNQ failed, check log: $FETCH_PYNQ_IMG_LOG"
     wait $FETCH_OPENSSL_OK || error_exit "Fetching OpenSSL failed, check log: $FETCH_OPENSSL_LOG"
 else
     wait $FETCH_ARM_TRUSTED_FIRMWARE_OK || error_exit "Fetching ARM Trusted Firmware failed, check log: $FETCH_ARM_TRUSTED_FIRMWARE_LOG"   
-    wait $FETCH_ARCH_LINUX_OK || error_exit "Fetching Arch Linux Rootfs failed, check log: $FETCH_BSDTAR_LOG"
 fi
 
 ################################################################################
@@ -775,7 +767,7 @@ wait $BUILD_UBOOT_OK || error_exit "Building U-Boot failed, check log: $BUILD_UB
 
 ################################################################################
 if [[ $BOARD != "pynq" ]]; then
-    if [[ $ARCH = arm64 ]]; then 
+    if [[ $ARCH == arm64 ]]; then
         echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and Arm Trusted Firmware (output in $BUILD_ARM_TRUSTED_FIRMWARE) ... "
         build_arm_trusted_firmware &> $BUILD_ARM_TRUSTED_FIRMWARE_LOG &
             BUILD_ARM_TRUSTED_FIRMWARE_OK=$!
@@ -800,7 +792,7 @@ if [[ $BOARD != "pynq" ]]; then
 	BUILD_FSBL_OK=$!
 	wait $BUILD_FSBL_OK || error_exit "Building FSBL failed, check log: $BUILD_FSBL_LOG"
 
-    if [[ $ARCH = arm64 ]]; then 
+    if [[ $ARCH == arm64 ]]; then
         echo "Building pmufw (output in $BUILD_PMUFW_LOG), devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
         build_pmufw &> $BUILD_PMUFW_LOG &
             BUILD_PMUFW_OK=$!
@@ -830,12 +822,7 @@ else
 		echo "Extracting devicetree.dtb failed, check log: $EXTRACT_BL_LOG"
 		exit 1
 	fi
-fi 
-error_exit "Done."
-################################################################################
-echo "Extracting root FS (output in $EXTRACT_RFS_LOG) ..."
-extract_pynq_rootfs &> $EXTRACT_RFS_LOG
-[[ $? -eq 0 ]] || error_exit "Extracting root FS failed, check log: $EXTRACT_RFS_LOG"
+fi
 ################################################################################
 echo "Building image in $OUTPUT_IMAGE (output in $BUILD_OUTPUT_IMAGE_LOG) ..."
 build_output_image $IMGSIZE &> $BUILD_OUTPUT_IMAGE_LOG
