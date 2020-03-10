@@ -256,6 +256,7 @@ build_u-boot () {
 				;;
             "zcu102")
                 DEFCONFIG=xilinx_zynqmp_zcu102_rev1_0_defconfig
+                echo "# CONFIG_CMD_NET is not set" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
                 ;;
 			*)
 				return $(error_ret "unknown board: $BOARD")
@@ -309,7 +310,7 @@ build_linux () {
                     return $(error_ret "$LINENO: could not copy device tree");
                     ;;
                 "zcu102")
-                    cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/zynqmp-zcu102-revB.dtb $DIR/devicetree.dtb ||
+                    cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/zynqmp-zcu102-rev1.0.dtb $DIR/devicetree.dtb ||
                     return $(error_ret "$LINENO: could not copy device tree");
                     ;;
             esac
@@ -372,7 +373,8 @@ source "\$env(TAPASCO_HOME_TCL)/platform/$BOARD/$BOARD.tcl"
 create_project $BOARD $BOARD -part [dict get \$platform "Part"] -force
 set board_part ""
 if {[dict exists \$platform "BoardPart"]} {
-	set board_part [dict get \$platform "BoardPart"]
+	set parts [get_board_parts -filter [format {NAME =~ "%s*"} [dict get \$platform "BoardPart"]]]
+	set board_part [lindex \$parts [expr [llength \$parts] - 1]]
 	set_property board_part \$board_part [current_project]
 }
 create_bd_design -quiet "system"
@@ -435,7 +437,8 @@ source "\$env(TAPASCO_HOME_TCL)/platform/$BOARD/$BOARD.tcl"
 create_project -force $BOARD $BOARD -part [dict get \$platform "Part"]
 set board_part ""
 if {[dict exists \$platform "BoardPart"]} {
-	set board_part [dict get \$platform "BoardPart"]
+	set parts [get_board_parts -filter [format {NAME =~ "%s*"} [dict get \$platform "BoardPart"]]]
+	set board_part [lindex \$parts [expr [llength \$parts] - 1]]
 	set_property board_part \$board_part [current_project]
 }
 create_bd_design -quiet "system"
@@ -445,8 +448,8 @@ if {[dict exists \$platform "BoardPreset"]} {
 }
 set ps [tapasco::ip::create_ultra_ps "zynqmp" \$board_preset 100]
 apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e -config {apply_board_preset "1" } \$ps
-connect_bd_net [get_bd_pins \$ps/pl_clk0] [get_bd_pins \$ps/maxihpm1_fpd_aclk]
-connect_bd_net [get_bd_pins \$ps/pl_clk0] [get_bd_pins \$ps/maxihpm0_fpd_aclk]
+set clk [lindex [get_bd_pins -of_objects \$ps -filter { TYPE == clk && DIR == O }] 0]
+connect_bd_net \$clk [get_bd_pins -of_objects \$ps -filter { TYPE == clk && DIR == I}]
 validate_bd_design
 make_wrapper -files [get_files $DIR/fsbl/$BOARD/$BOARD.srcs/sources_1/bd/system/system.bd] -top -import
 update_compile_order -fileset sources_1
@@ -503,7 +506,7 @@ build_bootbin () {
                 image: {
                     [bootloader,destination_cpu=a53-0] $DIR/fsbl/executable.elf
                     [pmufw_image] $DIR/pmufw/executable.elf
-                    [destination_cpu=a53-0,exception_level=el-3,trustzone] $DIR/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf 
+                    [destination_cpu=a53-0, exception_level=el-3,trustzone] $DIR/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf
                     [destination_cpu=a53-0, exception_level=el-2] $DIR/u-boot-xlnx/u-boot.elf
                 }
 EOF
@@ -768,7 +771,7 @@ wait $BUILD_UBOOT_OK || error_exit "Building U-Boot failed, check log: $BUILD_UB
 ################################################################################
 if [[ $BOARD != "pynq" ]]; then
     if [[ $ARCH == arm64 ]]; then
-        echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and Arm Trusted Firmware (output in $BUILD_ARM_TRUSTED_FIRMWARE) ... "
+        echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and Arm Trusted Firmware (output in $BUILD_ARM_TRUSTED_FIRMWARE_LOG) ... "
         build_arm_trusted_firmware &> $BUILD_ARM_TRUSTED_FIRMWARE_LOG &
             BUILD_ARM_TRUSTED_FIRMWARE_OK=$!
         wait $BUILD_ARM_TRUSTED_FIRMWARE || error_exit "Building Arm Trusted Firmware failed, check log: $ARM_TRUSTED_FIRMWARE_LOG"
