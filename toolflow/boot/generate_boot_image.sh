@@ -7,24 +7,15 @@ JOBCOUNT=4
 SCRIPTDIR="$(dirname $(readlink -f $0))"
 DIR="$SCRIPTDIR/$BOARD/$VERSION"
 LOGDIR="$DIR/logs"
-ROOTFS_IMG="$SCRIPTDIR/rootfs.img"
-PYNQ_VERSION="pynq_z1_v2.1"
-PYNQ_IMAGE="$SCRIPTDIR/pynq/$PYNQ_VERSION.zip"
-PYNQ_IMAGE_URL="http://files.digilent.com/Products/PYNQ/$PYNQ_VERSION.img.zip"
 ARCH_ROOTFS_URL="http://os.archlinuxarm.org/os/ArchLinuxARM-zedboard-latest.tar.gz"
 ARCH64_ROOTFS_URL="http://os.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz"
 ARCH_ROOTFS_TAR_GZ="$DIR/arch_latest.tar.gz"
 ARCH64_ROOTFS_TAR_GZ="$DIR/arch64_latest.tar.gz"
 UDEV_RULES="$TAPASCO_HOME/platform/zynq/module/99-tapasco.rules"
 OUTPUT_IMAGE="$DIR/${BOARD}_${VERSION}.img"
-OPENSSL_URL="https://www.openssl.org/source/old/1.0.2/openssl-1.0.2n.tar.gz"
-OPENSSL="$SCRIPTDIR/oldopenssl"
-OPENSSL_TAR="$OPENSSL/openssl.tar.gz"
 ### LOGFILES ###################################################################
 FETCH_LINUX_LOG="$LOGDIR/fetch-linux.log"
 FETCH_UBOOT_LOG="$LOGDIR/fetch-uboot.log"
-FETCH_PYNQ_IMG_LOG="$SCRIPTDIR/pynq/fetch-pynq-img.log"
-FETCH_OPENSSL_LOG="$LOGDIR/fetch-openssl.log"
 FETCH_ARM_TRUSTED_FIRMWARE_LOG="$LOGDIR/fetch-atfw.log"
 FETCH_ARCH_LINUX_LOG="$LOGDIR/fetch-arch-linux.log"
 BUILD_LINUX_LOG="$LOGDIR/build-linux.log"
@@ -38,12 +29,6 @@ BUILD_BOOTBIN_LOG="$LOGDIR/build-bootbin.log"
 BUILD_DEVICETREE_LOG="$LOGDIR/build-devicetree.log"
 BUILD_OUTPUT_IMAGE_LOG="$LOGDIR/build-output-image.log"
 PREPARE_SD_LOG="$LOGDIR/prepare-sd.log"
-EXTRACT_BL_LOG="$SCRIPTDIR/pynq/extract-bl.log"
-EXTRACT_RFS_LOG="$SCRIPTDIR/pynq/extract-rfs.log"
-
-HOSTCFLAGS=-I$OPENSSL/include
-HOSTLDFLAGS="-L$OPENSSL/lib -lssl -lcrypto -ldl"
-HOSTLOADLIBES=$HOSTLDFLAGS
 
 print_usage () {
 	cat << EOF
@@ -162,50 +147,6 @@ fetch_arm_trusted_firmware () {
     fi
 }
 
-fetch_openssl () {
-	if [[ ! -f $OPENSSL_TAR ]]; then
-		echo "Fetching ancient OpenSSL 1.0.2 for U-Boot ..."
-		mkdir -p $OPENSSL || return $(error_ret "$LINENO: could not create $OPENSSL")
-		curl -s $OPENSSL_URL -o $OPENSSL_TAR ||
-			return $(error_ret "$LINENO: could not fetch $OPENSSL_URL")
-		cd $OPENSSL && tar xvzf $OPENSSL_TAR
-	fi
-}
-
-
-extract_pynq_bl () {
-	IMG=${PYNQ_VERSION}.img
-	if [[ ! -f $SCRIPTDIR/pynq/BOOT.BIN ]]; then
-		pushd $SCRIPTDIR/pynq &> /dev/null
-		mkdir -p img ||
-			return $(error_ret "$LINENO: could not create img dir")
-		dusudo mount -oloop,offset=1M $IMG img ||
-			return $(error_ret "$LINENO: could not mount $IMAGE")
-		dusudo cp img/BOOT.BIN $VERSION/BOOT.BIN ||
-			return $(error_ret "$LINENO: could not copy img/BOOT.BIN")
-		dusudo chown $USER $VERSION/BOOT.BIN ||
-			return $(error_ret "$LINENO: could not chown $USER $VERSION/BOOT.BIN")
-		dusudo cp img/uEnv.txt ../uenv/uEnv-pynq.txt ||
-			return $(error_ret "$LINENO: could not cp img/uEnv.txt")
-		dusudo chown $USER ../uenv/uEnv-pynq.txt ||
-			return $(error_ret "$LINENO: could not chown $USER uenv/uEnv-pynq.txt")
-		dusudo umount img ||
-			return $(error_ret "$LINENO: could not umount img")
-		rmdir img ||
-			return $(error_ret "$LINENO: could not remove img")
-		popd &> /dev/null
-	else
-		echo "$DIR/BOOT.BIN already exists, skipping."
-	fi
-	if [[ ! -f $DIR/devicetree.dtb ]]; then
-		$DIR/linux-xlnx/scripts/dtc/dtc -I dts -O dtb -o $DIR/devicetree.dtb $SCRIPTDIR/pynq/devicetree.dts ||
-			return $(error_ret "$LINENO: could not build devicetree")
-	else
-		echo "$DIR/devicetree.dtb already exists, skipping."
-	fi
-	echo "BOOT.BIN and devicetree.dtb are ready in $DIR."
-}
-
 fetch_arch_linux() {
 	case $ARCH in
 		"arm")
@@ -226,22 +167,22 @@ fetch_arch_linux() {
     fi
 }
 
-build_openssl () {
-	if [[ ! -f $OPENSSL/lib/libssl.a ]]; then
-		cd $OPENSSL/openssl-1.0.2n
-		make distclean
-		./config --prefix=$OPENSSL || return $(error_ret "$LINENO: could not configure OpenSSL")
-		make -j $JOBCOUNT || return $(error_ret "$LINENO: could not build OpenSSL")
-		make install || return $(error_ret "$LINENO: could not install OpenSSL")
-	else
-		echo "$OPENSSL/libssl.a already exists, skipping"
-	fi
-}
-
 build_u-boot () {
 	if [[ ! -e $DIR/u-boot-xlnx/tools/mkimage ]]; then
 		echo "Building u-boot $VERSION ..."
 		case $BOARD in
+			"pynq")
+				# based on zybo z7, but requires a few changes
+				DEFCONFIG=zynq_zybo_z7_defconfig
+				echo "CONFIG_DEBUG_UART_BASE=0xe0000000" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
+				# modify devicetree
+				# change uart1 to uart0
+				sed -i 's/uart1/uart0/' $DIR/u-boot-xlnx/arch/arm/dts/zynq-zybo-z7.dts
+				# change clock frequency to 50 MHz
+				sed -i 's/33333333/50000000/' $DIR/u-boot-xlnx/arch/arm/dts/zynq-zybo-z7.dts
+				# set memory size to 512 MB
+				sed -i 's/40000000/20000000/' $DIR/u-boot-xlnx/arch/arm/dts/zynq-zybo-z7.dts
+				;;
 			"zedboard")
 				DEFCONFIG=zynq_zed_defconfig
 				;;
@@ -256,17 +197,21 @@ build_u-boot () {
 				;;
             "zcu102")
                 DEFCONFIG=xilinx_zynqmp_zcu102_rev1_0_defconfig
-                echo "# CONFIG_CMD_NET is not set" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
                 ;;
 			*)
 				return $(error_ret "unknown board: $BOARD")
 				;;
 		esac
 		cd $DIR/u-boot-xlnx
+		# disable network boot for all devices
+		echo "# CONFIG_CMD_NET is not set" >> configs/$DEFCONFIG
+		if [[ $ARCH == arm ]]; then
+			echo "CONFIG_OF_EMBED=y" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
+			echo "# CONFIG_OF_SEPARATE is not set" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
+		fi
 		make CROSS_COMPILE=$CROSS_COMPILE $DEFCONFIG ||
 		return $(error_ret "$LINENO: could not make defconfig $DEFCONFIG")
         if [[ $ARCH != arm64 ]]; then
-            build_openssl
 		    make CROSS_COMPILE=$CROSS_COMPILE HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" tools -j $JOBCOUNT ||
 			    return $(error_ret "$LINENO: could not build u-boot tools")
         fi
@@ -531,32 +476,31 @@ EOF
 build_devtree () {
 	echo "Building devicetree ..."
 	case $BOARD in
+		"pynq")
+			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
+			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
+			curl -L -s https://raw.githubusercontent.com/Digilent/linux-digilent/master/arch/arm/boot/dts/zynq-artyz7.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
+			;;
 		"zedboard")
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
 			cat $SCRIPTDIR/misc/zynq-7000.dtsi.patch | patch $DIR/zynq-7000.dtsi &&
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
 			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zed.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
-			echo >> $DIR/devicetree.dts
-			echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
 			;;
 		"zc706")
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
-			cat $SCRIPTDIR/misc/zynq-7000.dtsi.patch | patch $DIR/zynq-7000.dtsi &&
-			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
-			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zed.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
-			echo >> $DIR/devicetree.dts
-			echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
+			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zc706.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
 			;;
         "ultra96v2")
             #work around: Re-compile dts from dtb generated by linux-build and add tapasco related interrupts
             $DIR/linux-xlnx/scripts/dtc/dtc -I dtb -O dts -o $DIR/devicetree.dts $DIR/devicetree.dtb
-            echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
             ;;
         "zcu102")
             $DIR/linux-xlnx/scripts/dtc/dtc -I dtb -O dts -o $DIR/devicetree.dts $DIR/devicetree.dtb
-            echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
             ;;
 	esac
+	echo >> $DIR/devicetree.dts
+	echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
 	$DIR/linux-xlnx/scripts/dtc/dtc -I dts -O dtb -o $DIR/devicetree.dtb $DIR/devicetree.dts ||
 		return $(error_ret "$LINENO: could not build devicetree.dtb")
 	echo "$DIR/devicetree.dtb ready."
@@ -715,7 +659,6 @@ echo "Board is $BOARD."
 echo "Version is $VERSION."
 echo "SD card device is $SDCARD."
 echo "Image size: $IMGSIZE MiB"
-if [[ $ARCH  != arm64 ]]; then echo "OpenSSL dir: $OPENSSL"; fi
 check_board
 check_compiler
 check_xsct
@@ -727,23 +670,16 @@ read -p "Enter sudo password: " -s SUDOPW
 [[ -n $SUDOPW ]] || error_exit "dusudo password may not be empty"
 dusudo true || error_exit "sudo password seems to be wrong?"
 mkdir -p $LOGDIR 2> /dev/null
-mkdir -p `dirname $PYNQ_IMAGE` 2> /dev/null
 printf "\nAnd so it begins ...\n"
 ################################################################################
 echo "Fetching Linux kernel, U-Boot sources, rootfs and additional tools ..."
-mkdir -p `dirname $FETCH_PYNQ_IMG_LOG` &> /dev/null
 fetch_linux &> $FETCH_LINUX_LOG &
 FETCH_LINUX_OK=$!
 fetch_u-boot &> $FETCH_UBOOT_LOG &
 FETCH_UBOOT_OK=$!
 fetch_arch_linux &> $FETCH_ARCH_LINUX_LOG &
 FETCH_ARCH_LINUX_OK=$!
-if [[ $ARCH != arm64 ]]; then
-    fetch_pynq_image &> $FETCH_PYNQ_IMG_LOG &
-    FETCH_PYNQ_OK=$!
-    fetch_openssl &> $FETCH_OPENSSL_LOG &
-    FETCH_OPENSSL_OK=$!
-else
+if [[ $ARCH == arm64 ]]; then
     fetch_arm_trusted_firmware &> $FETCH_ARM_TRUSTED_FIRMWARE_LOG &
     FETCH_ARM_TRUSTED_FIRMWARE_OK=$!
 fi
@@ -751,10 +687,7 @@ fi
 wait $FETCH_LINUX_OK   || error_exit "Fetching Linux failed, check log: $FETCH_LINUX_LOG"
 wait $FETCH_UBOOT_OK   || error_exit "Fetching U-Boot failed, check logs: $FETCH_UBOOT_LOG"
 wait $FETCH_ARCH_LINUX_OK || error_exit "Fetching Arch Linux Rootfs failed, check log: $FETCH_ARCH_LINUX_LOG"
-if [[ $ARCH != arm64 ]]; then
-    wait $FETCH_PYNQ_OK    || error_exit "Fetching PyNQ failed, check log: $FETCH_PYNQ_IMG_LOG"
-    wait $FETCH_OPENSSL_OK || error_exit "Fetching OpenSSL failed, check log: $FETCH_OPENSSL_LOG"
-else
+if [[ $ARCH == arm64 ]]; then
     wait $FETCH_ARM_TRUSTED_FIRMWARE_OK || error_exit "Fetching ARM Trusted Firmware failed, check log: $FETCH_ARM_TRUSTED_FIRMWARE_LOG"   
 fi
 
@@ -769,63 +702,46 @@ wait $BUILD_LINUX_OK || error_exit "Building Linux failed, check log: $BUILD_LIN
 wait $BUILD_UBOOT_OK || error_exit "Building U-Boot failed, check log: $BUILD_UBOOT_LOG"
 
 ################################################################################
-if [[ $BOARD != "pynq" ]]; then
-    if [[ $ARCH == arm64 ]]; then
-        echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and Arm Trusted Firmware (output in $BUILD_ARM_TRUSTED_FIRMWARE_LOG) ... "
-        build_arm_trusted_firmware &> $BUILD_ARM_TRUSTED_FIRMWARE_LOG &
-            BUILD_ARM_TRUSTED_FIRMWARE_OK=$!
-        wait $BUILD_ARM_TRUSTED_FIRMWARE || error_exit "Building Arm Trusted Firmware failed, check log: $ARM_TRUSTED_FIRMWARE_LOG"
-    else
-	    echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and uImage (output in $BUILD_UIMAGE_LOG) ..."
-    fi
+if [[ $ARCH == arm64 ]]; then
+    echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and Arm Trusted Firmware (output in $BUILD_ARM_TRUSTED_FIRMWARE_LOG) ... "
+    build_arm_trusted_firmware &> $BUILD_ARM_TRUSTED_FIRMWARE_LOG &
+        BUILD_ARM_TRUSTED_FIRMWARE_OK=$!
+    wait $BUILD_ARM_TRUSTED_FIRMWARE || error_exit "Building Arm Trusted Firmware failed, check log: $ARM_TRUSTED_FIRMWARE_LOG"
 else
-	echo "Building uImage (output in $BUILD_UIMAGE_LOG) ..."
+    echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and uImage (output in $BUILD_UIMAGE_LOG) ..."
+    build_uimage &> $BUILD_UIMAGE_LOG &
+    BUILD_UIMAGE_OK=$!
+    wait $BUILD_UIMAGE_OK || error_exit "Building uImage failed, check log: $BUILD_UIMAGE_LOG"
 fi
-if [[ $ARCH != arm64 ]]; then build_uimage &> $BUILD_UIMAGE_LOG; fi &
-BUILD_UIMAGE_OK=$!
-if [[ $BOARD != "pynq" ]]; then build_ssbl &> $BUILD_SSBL_LOG; fi &
+
+build_ssbl &> $BUILD_SSBL_LOG
 BUILD_SSBL_OK=$!
-wait $BUILD_UIMAGE_OK || error_exit "Building uImage failed, check log: $BUILD_UIMAGE_LOG"
 wait $BUILD_SSBL_OK || error_exit "Building U-Boot SSBL failed, check log: $BUILD_SSBL_LOG"
 
 ################################################################################
-if [[ $BOARD != "pynq" ]]; then
-	echo "Build FSBL (output in $BUILD_FSBL_LOG) ..."
-	build_fsbl &> $BUILD_FSBL_LOG &
-	BUILD_FSBL_OK=$!
-	wait $BUILD_FSBL_OK || error_exit "Building FSBL failed, check log: $BUILD_FSBL_LOG"
+echo "Build FSBL (output in $BUILD_FSBL_LOG) ..."
+build_fsbl &> $BUILD_FSBL_LOG &
+BUILD_FSBL_OK=$!
+wait $BUILD_FSBL_OK || error_exit "Building FSBL failed, check log: $BUILD_FSBL_LOG"
 
-    if [[ $ARCH == arm64 ]]; then
-        echo "Building pmufw (output in $BUILD_PMUFW_LOG), devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
-        build_pmufw &> $BUILD_PMUFW_LOG &
-            BUILD_PMUFW_OK=$!
-        wait $BUILD_PMUFW_OK || error_exit "Building PMUFW failed, check log: $BUILD_PMUFW_LOG"
-    else
-        echo "Building devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
-    fi
-
-    build_devtree &> $BUILD_DEVICETREE_LOG &
-    BUILD_DEVICETREE_OK=$!
-
-	build_bootbin &> $BUILD_BOOTBIN_LOG &
-	BUILD_BOOTBIN_OK=$!
-
-    wait $BUILD_DEVICETREE_OK || error_exit "Building devicetree failed, check log: $BUILD_DEVICETREE_LOG"
-	wait $BUILD_BOOTBIN_OK || error_exit "Building BOOT.BIN failed, check log: $BUILD_BOOTBIN_LOG"
-	echo "Done - find BOOT.BIN here: $DIR/BOOT.BIN."
+if [[ $ARCH == arm64 ]]; then
+    echo "Building pmufw (output in $BUILD_PMUFW_LOG), devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
+    build_pmufw &> $BUILD_PMUFW_LOG &
+        BUILD_PMUFW_OK=$!
+    wait $BUILD_PMUFW_OK || error_exit "Building PMUFW failed, check log: $BUILD_PMUFW_LOG"
 else
-	echo "Extract FSBL and devicetree from $PYNQ_IMAGE (output in $EXTRACT_BL_LOG) ..."
-	extract_pynq_bl &> $EXTRACT_BL_LOG &
-	wait || error_exit "Extraction of FSBL and devicetree from $PYNQ_IMAGE failed, check log: $EXTRACT_BL_LOG"
-	if [[ ! -f $DIR/BOOT.BIN ]]; then
-		echo "Extracting FSBL failed, check log: $EXTRACT_BL_LOG"
-		exit 1
-	fi
-	if [[ ! -f $DIR/devicetree.dtb ]]; then
-		echo "Extracting devicetree.dtb failed, check log: $EXTRACT_BL_LOG"
-		exit 1
-	fi
+    echo "Building devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
 fi
+
+build_devtree &> $BUILD_DEVICETREE_LOG &
+BUILD_DEVICETREE_OK=$!
+
+build_bootbin &> $BUILD_BOOTBIN_LOG &
+BUILD_BOOTBIN_OK=$!
+
+wait $BUILD_DEVICETREE_OK || error_exit "Building devicetree failed, check log: $BUILD_DEVICETREE_LOG"
+wait $BUILD_BOOTBIN_OK || error_exit "Building BOOT.BIN failed, check log: $BUILD_BOOTBIN_LOG"
+echo "Done - find BOOT.BIN here: $DIR/BOOT.BIN."
 ################################################################################
 echo "Building image in $OUTPUT_IMAGE (output in $BUILD_OUTPUT_IMAGE_LOG) ..."
 build_output_image $IMGSIZE &> $BUILD_OUTPUT_IMAGE_LOG
