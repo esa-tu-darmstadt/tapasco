@@ -192,9 +192,6 @@ build_u-boot () {
             "ultra96v2")
                 DEFCONFIG=avnet_ultra96_rev1_defconfig
                 ;;
-			"pynq")
-				DEFCONFIG=zynq_zed_defconfig
-				;;
             "zcu102")
                 DEFCONFIG=xilinx_zynqmp_zcu102_rev1_0_defconfig
                 ;;
