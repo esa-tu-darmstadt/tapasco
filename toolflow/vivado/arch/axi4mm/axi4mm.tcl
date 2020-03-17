@@ -124,9 +124,8 @@ namespace eval arch {
     return [tapasco::get_aximm_interfaces [get_bd_cell -hier -filter "NAME == $name"] $mode]
   }
 
-  # Instantiates the memory interconnect hierarchy.
-  proc arch_create_mem_interconnects {composition outs} {
-    variable arch_mem_ports
+  # Determines the number of AXI-MM interfaces in the composition
+  proc arch_get_num_masters {composition} {
     set no_kinds [llength [dict keys $composition]]
     set ic_m 0
     set m_total 0
@@ -144,6 +143,14 @@ namespace eval arch {
     puts "  Found a total of $m_total masters."
     set no_masters $m_total
     puts "  no_masters : $no_masters"
+
+    return $no_masters
+  }
+
+  # Instantiates a memory interconnect hierarchy for the given number of masters
+  proc arch_create_mem_interconnects {outs no_masters} {
+    variable arch_mem_ports
+
 
     # check if all masters can be connected with the outs config
     set total_ports [expr [join $outs +]]
@@ -257,9 +264,7 @@ namespace eval arch {
   }
 
   # Connects the threadpool to memory interconnects.
-  proc arch_connect_mem {mem_ics ips} {
-    # get PE masters
-    set masters [lsort -dictionary [tapasco::get_aximm_interfaces $ips]]
+  proc arch_connect_mem {mem_ics masters} {
     # interleave slaves of out ic trees
     set outs [get_bd_cells -filter {NAME =~ "out_*"}]
     set sc [llength [tapasco::get_aximm_interfaces $outs "Slave"]]
@@ -407,13 +412,16 @@ namespace eval arch {
     arch_connect_interrupts $insts
 
     arch_check_instance_count $kernels
-    set arch_mem_ics [arch_create_mem_interconnects $kernels $mgroups]
+    set no_masters [arch_get_num_masters $kernels]
+    set arch_mem_ics [arch_create_mem_interconnects $mgroups $no_masters]
 
     set arch_host_ics [arch_create_host_interconnects $kernels 1]
 
     # connect AXI infrastructure
     arch_connect_host $arch_host_ics $insts
-    arch_connect_mem $arch_mem_ics $insts
+
+    set masters [lsort -dictionary [tapasco::get_aximm_interfaces $insts]]
+    arch_connect_mem $arch_mem_ics $masters
 
     arch_connect_clocks
     arch_connect_resets

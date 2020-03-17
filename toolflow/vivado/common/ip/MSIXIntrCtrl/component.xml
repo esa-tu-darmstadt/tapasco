@@ -966,6 +966,7 @@
         <xilinx:family xilinx:lifeCycle="Pre-Production">spartan7</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Pre-Production">virtexu</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Pre-Production">virtexuplus</xilinx:family>
+        <xilinx:family xilinx:lifeCycle="Pre-Production">virtexuplushbm</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Pre-Production">kintexuplus</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Pre-Production">kintexu</xilinx:family>
       </xilinx:supportedFamilies>
