@@ -240,8 +240,6 @@ namespace eval platform {
         }
       }
     }
-
-    save_bd_design
   }
 
   namespace eval xupvvh {

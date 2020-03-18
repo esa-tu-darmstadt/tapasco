@@ -1,6 +1,6 @@
 {
 	"Name" : "xupvvh",
-	"Description" : "Xilinx UltraScale+ 3/4-Length PCIe Board",
+	"Description" : "Xilinx UltraScale+ 3/4-Length PCIe Board by Bittware",
 	"TclLibrary" : "xupvvh.tcl",
 	"Part" : "xcvu37p-fsvh2892-2-e-es1",
 	"TargetUtilization" : 90,

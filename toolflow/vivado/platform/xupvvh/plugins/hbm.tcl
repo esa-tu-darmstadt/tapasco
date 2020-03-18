@@ -247,10 +247,6 @@ namespace eval hbm {
       for {set i 0} {$i < $numInterfaces} {incr i} {
         variable master [lindex $hbmInterfaces $i]
 
-        #set pe [get_bd_cells -of_objects [get_bd_intf_pins $master]]
-        #set base_address [format "0x0000000%02x0000000" $i]
-        #set_property -dict [list CONFIG.base_address $base_address] $pe
-
         set pin [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 /arch/M_AXI_HBM_${i}]
         connect_bd_intf_net $pin $master
 
@@ -292,9 +288,7 @@ namespace eval hbm {
           connect_bd_intf_net [get_bd_intf_pins $converter/M00_AXI] [get_bd_intf_pins $hbm/SAXI_${hbm_index}]
         }
 
-        #assign_bd_address [get_bd_addr_segs $hbm/SAXI_${hbm_index}/HBM_MEM${hbm_index}]
       }
-      save_bd_design
 
       # recreate memory interconnect network for AXI-MM masters not connected to HBM
       current_bd_instance /arch
@@ -330,7 +324,6 @@ namespace eval hbm {
       }
       
     }
-    save_bd_design
     return $args
   }
 
