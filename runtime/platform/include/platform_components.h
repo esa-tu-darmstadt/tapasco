@@ -36,6 +36,8 @@ typedef enum {
   PLATFORM_COMPONENT_DMA2,
   /** DMA engine #3. **/
   PLATFORM_COMPONENT_DMA3,
+  /** ECC Configuration + Status. **/
+  PLATFORM_COMPONENT_ECC,
 } platform_component_t;
 
 #endif /* PLATFORM_COMPONENTS_H__ */
