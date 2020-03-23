@@ -283,6 +283,7 @@ inline tapasco_job_id_t tapasco_jobs_acquire(tapasco_jobs_t *jobs) {
   tapasco_job_id_t j_id = tapasco_jobs_fsp_get(&jobs->q);
   if (j_id != INVALID_IDX) {
     jobs->q.elems[j_id].state = TAPASCO_JOB_STATE_REQUESTED;
+    jobs->q.elems[j_id].args_len = 0;
     j_id = jobs->q.elems[j_id].id;
     if (j_id > jobs->job_id_high_watermark) {
       jobs->job_id_high_watermark = j_id;
