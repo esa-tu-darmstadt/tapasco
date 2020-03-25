@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
 include($ENV{TAPASCO_HOME_RUNTIME}/cmake/Tapasco.cmake NO_POLICY_SCOPE)
+
+set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2")
+
 project(platform VERSION 1.0 LANGUAGES C)
 
 add_library(platform "common/src/platform_addr_map.c"
