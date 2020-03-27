@@ -45,6 +45,8 @@ class ProgressPercentage(object):
                     percentage))
             sys.stdout.flush()
 
+default_region = boto3.session.Session().region_name
+
 parser = argparse.ArgumentParser(description='Helper script for creating AFIs')
 parser.add_argument('bucket',
     help='name of the target S3 bucket (created when not existing)')
@@ -59,6 +61,8 @@ parser.add_argument('--verbose', default=False, action='store_true',
     help='be more talkative')
 parser.add_argument('--description', default=False,
     help='description of the AFI')
+parser.add_argument('--region', default=default_region,
+    help='region to use (currently configured: {})'.format(default_region))
 
 args = parser.parse_args()
 
@@ -71,7 +75,17 @@ if not os.path.isfile(args.tarfile):
 
 s3 = boto3.resource('s3')
 
-s3.create_bucket(Bucket=args.bucket)
+try:
+    if args.region == 'us-east-1':
+        s3.create_bucket(Bucket=args.bucket)
+    else:
+        s3.create_bucket(
+            Bucket=args.bucket,
+            CreateBucketConfiguration={'LocationConstraint' : args.region}
+        )
+except s3.meta.client.exceptions.BucketAlreadyOwnedByYou:
+    pass
+
 s3.Object(args.bucket, 'logs/').put()
 
 fname = os.path.basename(args.tarfile)
@@ -105,7 +119,12 @@ print('FpgaImageGlobalId = {}'.format(response['FpgaImageGlobalId']))
 print('FpgaImageId       = {}'.format(response['FpgaImageId']))
 
 if not args.no_wait:
-    if shutil.which('wait_for_afi.py') is not None:
+    if shutil.which('wait_for_afi.py') is None:
+        print(
+            'Cannot wait for AFI generation because `wait_for_afi.py` ' +
+            'is not in PATH.'
+        )
+    else:
         subprocess.call(['wait_for_afi.py', '--afi', response['FpgaImageId']])
 
 # vim: set expandtab ts=4 sw=4:
