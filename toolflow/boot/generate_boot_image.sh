@@ -711,7 +711,7 @@ else
     wait $BUILD_UIMAGE_OK || error_exit "Building uImage failed, check log: $BUILD_UIMAGE_LOG"
 fi
 
-build_ssbl &> $BUILD_SSBL_LOG
+build_ssbl &> $BUILD_SSBL_LOG &
 BUILD_SSBL_OK=$!
 wait $BUILD_SSBL_OK || error_exit "Building U-Boot SSBL failed, check log: $BUILD_SSBL_LOG"
 
