@@ -37,9 +37,11 @@ typedef enum {
   /** DMA engine #3. **/
   PLATFORM_COMPONENT_DMA3,
   /** AXI GPIO controller for memory status (on EC2) **/
-  PLATFORM_COMPONENT_MEM_GPIO
+  PLATFORM_COMPONENT_MEM_GPIO,
   /** Dummy component indicating the AWS EC2 platform **/
-  PLATFORM_COMPONENT_AWS_EC2
+  PLATFORM_COMPONENT_AWS_EC2,
+  /** ECC Configuration + Status. **/
+  PLATFORM_COMPONENT_ECC,
 } platform_component_t;
 
 #endif /* PLATFORM_COMPONENTS_H__ */

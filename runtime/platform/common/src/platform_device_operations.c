@@ -362,7 +362,8 @@ platform_res_t request_device_size(platform_devctx_t const *devctx) {
   return PLATFORM_SUCCESS;
 }
 
-platform_res_t default_init(platform_devctx_t *devctx, platform_mem_addr_t offboard_memory) {
+platform_res_t default_init(platform_devctx_t *devctx,
+                            platform_mem_addr_t offboard_memory) {
   default_platform_t *pp =
       (default_platform_t *)malloc(sizeof(default_platform_t));
   if (!pp)

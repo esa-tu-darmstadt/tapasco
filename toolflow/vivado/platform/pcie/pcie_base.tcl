@@ -228,12 +228,13 @@
 
     set design_clk_wiz [tapasco::ip::create_clk_wiz design_clk_wiz]
     set_property -dict [list CONFIG.CLK_OUT1_PORT {design_clk} \
-                        CONFIG.USE_SAFE_CLOCK_STARTUP {true} \
+                        CONFIG.USE_SAFE_CLOCK_STARTUP {false} \
                         CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
                         CONFIG.USE_LOCKED {true} \
                         CONFIG.USE_RESET {true} \
                         CONFIG.RESET_TYPE {ACTIVE_LOW} \
                         CONFIG.RESET_PORT {resetn} \
+                        CONFIG.PRIM_SOURCE {No_buffer} \
                         ] $design_clk_wiz
 
     connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins -regexp $mig/((mmcm_locked)|(c0_init_calib_complete))]
@@ -286,7 +287,7 @@
     set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
     tapasco::ip::connect_sc_default_clocks $out_ic "design"
 
-    if {$device_type != "virtexuplus"} {
+    if {$device_type != "virtexuplus" && $device_type != "virtexuplusHBM"} {
       if { $pcie_width == "x8" } {
         puts "Using PCIe IP for x8..."
         set bridge [tapasco::ip::create_pciebridgetolite "PCIeBridgeToLite"]

@@ -28,7 +28,8 @@ typedef struct platform_device_operations {
                               platform_ctl_addr_t const addr,
                               size_t const length, void const *data,
                               platform_ctl_flags_t const flags);
-  platform_res_t (*init)(platform_devctx_t *devctx, platform_mem_addr_t offboard_memory);
+  platform_res_t (*init)(platform_devctx_t *devctx,
+                         platform_mem_addr_t offboard_memory);
   platform_res_t (*deinit)(platform_devctx_t const *devctx);
 } platform_device_operations_t;
 
@@ -76,7 +77,8 @@ platform_res_t default_write_ctl(platform_devctx_t const *devctx,
                                  size_t const length, void const *data,
                                  platform_ctl_flags_t const flags);
 
-platform_res_t default_init(platform_devctx_t *devctx, platform_mem_addr_t offboard_memory);
+platform_res_t default_init(platform_devctx_t *devctx,
+                            platform_mem_addr_t offboard_memory);
 platform_res_t default_deinit(platform_devctx_t const *devctx);
 
 static inline void default_dops(platform_device_operations_t *dops) {

@@ -108,8 +108,7 @@ tapasco_res_t tapasco_local_mem_alloc(tapasco_local_mem_t *lmem,
 }
 
 void tapasco_local_mem_dealloc(tapasco_local_mem_t *lmem,
-                               tapasco_slot_id_t slot_id,
-                               tapasco_handle_t h,
+                               tapasco_slot_id_t slot_id, tapasco_handle_t h,
                                size_t sz) {
   tapasco_slot_id_t slot_id_local =
       tapasco_local_mem_get_slot(lmem->devctx, slot_id);

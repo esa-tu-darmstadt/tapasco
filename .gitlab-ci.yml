@@ -580,6 +580,11 @@ tapasco_compose_19_1:
     VIVADO_VERSION: "2019.1"
   extends: .tapasco_compose
 
+tapasco_compose_19_2:
+  variables:
+    VIVADO_VERSION: "2019.2"
+  extends: .tapasco_compose
+
 tapasco_compose_pcie:
   variables:
     VIVADO_VERSION: "2018.3"

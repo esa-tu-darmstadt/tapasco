@@ -25,7 +25,7 @@
 
 # init paths
 DRIVER=tlkm
-DRIVERPATH="$TAPASCO_HOME/tlkm"
+DRIVERPATH="$TAPASCO_HOME_RUNTIME/kernel"
 
 show_usage() {
 	cat << EOF
