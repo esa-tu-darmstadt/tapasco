@@ -38,5 +38,7 @@ dict set stdcomps   pciebridgetolite     vlnv   "esa.informatik.tu-darmstadt.de:
 dict set stdcomps   pciebridgetolite_x16 vlnv   "esa.informatik.tu-darmstadt.de:user:PCIeBridgeToLite_x16:1.0"
 dict set stdcomps   hsa_wrapper          vlnv   "esa.informatik.tu-darmstadt.de:user:HSAWrapper:1.0"
 dict set stdcomps   axis_arbiter         vlnv   "esa.informatik.tu-darmstadt.de:user:AXIS_Arbiter:1.0"
+dict set stdcomps   aws_intr_ctrl        vlnv   "esa.informatik.tu-darmstadt.de:user:AWSIntrCtrl:1.0"
 dict set stdcomps   axi_bram_ctrl        vlnv   "xilinx.com:ip:axi_bram_ctrl"
 dict set stdcomps   bram_ctrl            vlnv   "xilinx.com:ip:blk_mem_gen"
+dict set stdcomps   axi_gpio             vlnv   "xilinx.com:ip:axi_gpio:2.0"
