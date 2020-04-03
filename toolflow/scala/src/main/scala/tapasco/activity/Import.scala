@@ -135,7 +135,7 @@ object Import {
     * @param synthOptions Optional arguments for synth_design.
     * @param cfg          Implicit [[Configuration]].
     **/
-  private def evaluateCore(c: Core, t: Target, optimization: Int, synthOptions: Option[String] = None)
+  def evaluateCore(c: Core, t: Target, optimization: Int, synthOptions: Option[String] = None)
                           (implicit cfg: Configuration): Boolean = {
     logger.trace("looking for SynthesisReport ...")
     val period = 1.0
