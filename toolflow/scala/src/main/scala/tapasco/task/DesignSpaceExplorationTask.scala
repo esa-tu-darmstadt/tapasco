@@ -60,10 +60,12 @@ private class DesignSpaceExplorationTask(
   private[this] val _bp = basePath map (p => Paths.get(p).toAbsolutePath) getOrElse {
     val shortDate = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(java.time.LocalDateTime.now())
     val dsepath = FileAssetManager.TAPASCO_WORK_DIR.resolve(
-      "DSE_%s-%s-%s_%s".format(target.ad.name, target.pd.name, composition.toString, shortDate)
+      "DSE_%s-%s-%s-%s".format(target.ad.name, target.pd.name, composition.toString, shortDate)
         .replace(" ", "_")
         .replace("/", "-")
         .replace(":", "-")
+        .replace("[", "")
+        .replace("]", "")
     ).normalize()
     java.nio.file.Files.createDirectories(dsepath.resolve("bd"))
     dsepath
