@@ -166,7 +166,7 @@ build_scala_tapasco_ubuntu_18_04:
   extends: .build_scala_tapasco_ubuntu
 
 build_scala_tapasco_ubuntu_19_10:
-  image: ubuntu:eon
+  image: ubuntu:eoan
   extends: .build_scala_tapasco_ubuntu
 
 build_scala_tapasco_ubuntu_19_04:
