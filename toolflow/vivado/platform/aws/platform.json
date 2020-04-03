@@ -11,5 +11,6 @@
 	"HostFrequency": 250.0,
 	"MemFrequency": 250.0,
 	"MaximumFrequency": 500,
-	"ImplementationTimeout": 48
+	"ImplementationTimeout": 48,
+	"FileExtension": "tar"
 }
