@@ -31,8 +31,8 @@ test_tapasco_ubuntu_18_04:
   image: ubuntu:bionic
   extends: .test_tapasco_ubuntu
 
-test_tapasco_ubuntu_18_10:
-  image: ubuntu:cosmic
+test_tapasco_ubuntu_19_10:
+  image: ubuntu:eoan
   extends: .test_tapasco_ubuntu
 
 test_tapasco_ubuntu_19_04:
