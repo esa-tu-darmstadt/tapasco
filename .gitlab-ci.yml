@@ -23,11 +23,11 @@ stages:
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
     - ./gradlew test
 
-.test_tapasco_centos_7:
+test_tapasco_centos_7:
   image: centos:7
   extends: .test_tapasco_centos
 
-.test_tapasco_centos_8:
+test_tapasco_centos_8:
   image: centos:8
   extends: .test_tapasco_centos
 
