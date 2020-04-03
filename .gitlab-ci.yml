@@ -73,7 +73,7 @@ test_tapasco_fedora_31:
   image: fedora:31
   extends: .test_tapasco_fedora
 
-.build_tapasco_centos:
+.build_scala_tapasco_centos:
   stage: build_scala_toolflow
   retry: 2
   dependencies: []
@@ -88,11 +88,11 @@ test_tapasco_fedora_31:
 
 build_scala_tapasco_centos_7:
   image: centos:7
-  extends: .build_scala_tapasco_fedora
+  extends: .build_scala_tapasco_centos
 
 build_scala_tapasco_centos_8:
   image: centos:8
-  extends: .build_scala_tapasco_fedora
+  extends: .build_scala_tapasco_centos
 
 .build_scala_tapasco_fedora:
   stage: build_scala_toolflow
