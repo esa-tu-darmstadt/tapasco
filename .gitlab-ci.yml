@@ -165,8 +165,8 @@ build_scala_tapasco_ubuntu_18_04:
   image: ubuntu:bionic
   extends: .build_scala_tapasco_ubuntu
 
-build_scala_tapasco_ubuntu_18_10:
-  image: ubuntu:cosmic
+build_scala_tapasco_ubuntu_19_10:
+  image: ubuntu:eon
   extends: .build_scala_tapasco_ubuntu
 
 build_scala_tapasco_ubuntu_19_04:
@@ -199,8 +199,8 @@ build_kernel_ubuntu_18_04:
   image: ubuntu:bionic
   extends: .build_kernel_ubuntu
 
-build_kernel_ubuntu_18_10:
-  image: ubuntu:cosmic
+build_kernel_ubuntu_19_10:
+  image: ubuntu:eoan
   extends: .build_kernel_ubuntu
 
 build_kernel_ubuntu_19_04:
@@ -219,10 +219,10 @@ build_kernel_ubuntu_18_04_debug:
   image: ubuntu:bionic
   extends: .build_kernel_ubuntu
 
-build_kernel_ubuntu_18_10_debug:
+build_kernel_ubuntu_19_10_debug:
   variables:
     MODE: "all"
-  image: ubuntu:cosmic
+  image: ubuntu:eoan
   extends: .build_kernel_ubuntu
 
 build_kernel_ubuntu_19_04_debug:
@@ -450,8 +450,8 @@ build_tapasco_ubuntu_18_04:
   image: ubuntu:bionic
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_18_10:
-  image: ubuntu:cosmic
+build_tapasco_ubuntu_19_10:
+  image: ubuntu:eoan
   extends: .build_tapasco_ubuntu
 
 build_tapasco_ubuntu_19_04:
@@ -486,10 +486,10 @@ build_tapasco_ubuntu_18_04_debug:
   image: ubuntu:bionic
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_18_10_debug:
+build_tapasco_ubuntu_19_10_debug:
   variables:
     MODE: "debug"
-  image: ubuntu:cosmic
+  image: ubuntu:eoan
   extends: .build_tapasco_ubuntu
 
 build_tapasco_ubuntu_19_04_debug:
