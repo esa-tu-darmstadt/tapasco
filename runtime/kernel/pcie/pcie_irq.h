@@ -140,9 +140,9 @@
 	_INTR(127)
 
 #define TLKM_AWS_EC2_SLOT_INTERRUPTS                                           \
-	_INTR(0)                                                             \
-	_INTR(1)                                                             \
-	_INTR(2)                                                             \
+	_INTR(0)                                                               \
+	_INTR(1)                                                               \
+	_INTR(2)                                                               \
 	_INTR(3)
 
 int aws_ec2_pcie_irqs_init(struct tlkm_device *dev);
@@ -159,9 +159,9 @@ void pcie_irqs_release_platform_irq(struct tlkm_device *dev, int irq_no);
 TLKM_PCIE_SLOT_INTERRUPTS
 #undef _INTR
 
-#define _INTR(nr) \
-irqreturn_t aws_ec2_tlkm_pcie_slot_irq_ ## nr(int irq, void *dev_id); \
-void aws_ec2_tlkm_pcie_slot_irq_work_ ## nr(struct work_struct *work);
+#define _INTR(nr)                                                              \
+	irqreturn_t aws_ec2_tlkm_pcie_slot_irq_##nr(int irq, void *dev_id);    \
+	void aws_ec2_tlkm_pcie_slot_irq_work_##nr(struct work_struct *work);
 TLKM_AWS_EC2_SLOT_INTERRUPTS
 #undef _INTR
 

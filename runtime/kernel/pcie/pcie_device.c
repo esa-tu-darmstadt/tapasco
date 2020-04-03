@@ -30,7 +30,8 @@ static int aws_ec2_configure_xdma(struct tlkm_pcie_device *pdev)
 	uint32_t val;
 
 	DEVLOG(did, TLKM_LF_PCIE, "Mapping BAR2 and configuring XDMA core");
-	bar2 = ioremap_nocache(pci_resource_start(dev, 2), pci_resource_len(dev, 2));
+	bar2 = ioremap_nocache(pci_resource_start(dev, 2),
+			       pci_resource_len(dev, 2));
 
 	if (!bar2) {
 		DEVERR(did, "XDMA ioremap_nocache failed");
@@ -38,7 +39,8 @@ static int aws_ec2_configure_xdma(struct tlkm_pcie_device *pdev)
 	}
 
 	DEVLOG(did, TLKM_LF_PCIE, "XDMA addr: %p", bar2);
-	DEVLOG(did, TLKM_LF_PCIE, "XDMA len: %x", (int)pci_resource_len(dev, 2));
+	DEVLOG(did, TLKM_LF_PCIE, "XDMA len: %x",
+	       (int)pci_resource_len(dev, 2));
 
 	val = ioread32(bar2 + get_xdma_reg_addr(2, 0, 0));
 	DEVLOG(did, TLKM_LF_PCIE, "XDMA IRQ block identifier: %x", val);
@@ -56,7 +58,8 @@ static int aws_ec2_configure_xdma(struct tlkm_pcie_device *pdev)
 	val = ioread32(bar2 + get_xdma_reg_addr(2, 0, 0x04));
 	DEVLOG(did, TLKM_LF_PCIE, "XDMA user IER: %x", val);
 
-	DEVLOG(did, TLKM_LF_PCIE, "Finished configuring XDMA core, unmapping BAR2");
+	DEVLOG(did, TLKM_LF_PCIE,
+	       "Finished configuring XDMA core, unmapping BAR2");
 	iounmap(bar2);
 	return 0;
 }
@@ -94,7 +97,8 @@ static int claim_device(struct tlkm_pcie_device *pdev)
 	dev_set_drvdata(&dev->dev, pdev);
 
 	/* set up XDMA user interrupts on AWS EC2 platform */
-	if (dev->vendor == AWS_EC2_VENDOR_ID && dev->device == AWS_EC2_DEVICE_ID) {
+	if (dev->vendor == AWS_EC2_VENDOR_ID &&
+	    dev->device == AWS_EC2_DEVICE_ID) {
 		err = aws_ec2_configure_xdma(pdev);
 		if (err) {
 			DEVERR(did, "failed to configure XDMA core");
@@ -175,27 +179,23 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 #endif
 	}
 
-	if (dev->vendor == AWS_EC2_VENDOR_ID && dev->device == AWS_EC2_DEVICE_ID) {
+	if (dev->vendor == AWS_EC2_VENDOR_ID &&
+	    dev->device == AWS_EC2_DEVICE_ID) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
-		err = pci_enable_msix_range(dev,
-		                            pdev->msix_entries,
-		                            16,
-		                            16);
+		err = pci_enable_msix_range(dev, pdev->msix_entries, 16, 16);
 #else
 		/* set up MSI interrupt vector to max size */
-		err = pci_alloc_irq_vectors(dev,
-		                            16,
-		                            16,
-		                            PCI_IRQ_MSIX);
+		err = pci_alloc_irq_vectors(dev, 16, 16, PCI_IRQ_MSIX);
 #endif
 	} else {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
-	err = pci_enable_msix_range(dev, pdev->msix_entries,
-				    REQUIRED_INTERRUPTS, REQUIRED_INTERRUPTS);
+		err = pci_enable_msix_range(dev, pdev->msix_entries,
+					    REQUIRED_INTERRUPTS,
+					    REQUIRED_INTERRUPTS);
 #else
-	/* set up MSI interrupt vector to max size */
-	err = pci_alloc_irq_vectors(dev, REQUIRED_INTERRUPTS,
-				    REQUIRED_INTERRUPTS, PCI_IRQ_MSIX);
+		/* set up MSI interrupt vector to max size */
+		err = pci_alloc_irq_vectors(dev, REQUIRED_INTERRUPTS,
+					    REQUIRED_INTERRUPTS, PCI_IRQ_MSIX);
 #endif
 	}
 
@@ -206,7 +206,8 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 		DEVLOG(did, TLKM_LF_IRQ, "got %d MSI vectors", err);
 	}
 
-	if (dev->vendor == AWS_EC2_VENDOR_ID && dev->device == AWS_EC2_DEVICE_ID) {
+	if (dev->vendor == AWS_EC2_VENDOR_ID &&
+	    dev->device == AWS_EC2_DEVICE_ID) {
 		err = aws_ec2_pcie_irqs_init(pdev->parent);
 	} else {
 		err = pcie_irqs_init(pdev->parent);
@@ -221,7 +222,8 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 
 static void release_msi(struct tlkm_pcie_device *pdev)
 {
-	if (pdev->pdev->vendor == AWS_EC2_VENDOR_ID && pdev->pdev->device == AWS_EC2_DEVICE_ID) {
+	if (pdev->pdev->vendor == AWS_EC2_VENDOR_ID &&
+	    pdev->pdev->device == AWS_EC2_DEVICE_ID) {
 		aws_ec2_pcie_irqs_exit(pdev->parent);
 	} else {
 		pcie_irqs_exit(pdev->parent);
@@ -273,10 +275,8 @@ int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	struct tlkm_device *dev;
 	LOG(TLKM_LF_PCIE, "found TaPaSCo PCIe device, registering ...");
-	dev = tlkm_bus_new_device((struct tlkm_class *)&pcie_cls,
-	                          id->vendor,
-	                          id->device,
-	                          pdev);
+	dev = tlkm_bus_new_device((struct tlkm_class *)&pcie_cls, id->vendor,
+				  id->device, pdev);
 	if (!dev) {
 		ERR("could not add device to bus");
 		return -ENOMEM;
@@ -365,7 +365,8 @@ int pcie_device_init_subsystems(struct tlkm_device *dev, void *data)
 		for (c = 0; c < 4; c++) {
 			if (!(status & (1 << c))) {
 				DEVWRN(dev->dev_id,
-				       "memory channel %c is not available or not ready", 65 + c);
+				       "memory channel %c is not available or not ready",
+				       65 + c);
 			}
 		}
 	}
