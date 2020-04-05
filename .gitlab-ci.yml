@@ -334,16 +334,15 @@ build_tapasco_ubuntu_19_10_cross_debug:
 
 tapasco_compose_ubuntu:
   stage: build_hw
-  retry: 2
   variables:
     VIVADO_VERSION: "2019.1"
     XILINX_VIVADO: "/opt/cad/xilinx/vivado/Vivado/${VIVADO_VERSION}"
     XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
   tags:
     - CAD
-  image: ubuntu:eoan
+  image: ubuntu:bionic
   dependencies:
-    - build_scala_tapasco_ubuntu_19_10
+    - build_scala_tapasco_ubuntu_18_04
   script:
     - source $XILINX_VIVADO/settings64.sh
     - apt-get -y update
