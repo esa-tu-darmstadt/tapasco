@@ -47,8 +47,8 @@ test_tapasco_ubuntu_18_04:
   image: ubuntu:bionic
   extends: .test_tapasco_ubuntu
 
-test_tapasco_ubuntu_19_10:
-  image: ubuntu:eoan
+test_tapasco_ubuntu_16_04:
+  image: ubuntu:xenial
   extends: .test_tapasco_ubuntu
 
 .test_tapasco_fedora:
@@ -142,8 +142,8 @@ build_scala_tapasco_ubuntu_18_04:
   image: ubuntu:bionic
   extends: .build_scala_tapasco_ubuntu
 
-build_scala_tapasco_ubuntu_19_10:
-  image: ubuntu:eoan
+build_scala_tapasco_ubuntu_16_04:
+  image: ubuntu:xenial
   extends: .build_scala_tapasco_ubuntu
 
 # build kernel module
@@ -168,8 +168,8 @@ build_kernel_ubuntu_18_04:
   image: ubuntu:bionic
   extends: .build_kernel_ubuntu
 
-build_kernel_ubuntu_19_10:
-  image: ubuntu:eoan
+build_kernel_ubuntu_16_04:
+  image: ubuntu:xenial
   extends: .build_kernel_ubuntu
 
 build_kernel_ubuntu_18_04_debug:
@@ -178,10 +178,10 @@ build_kernel_ubuntu_18_04_debug:
   image: ubuntu:bionic
   extends: .build_kernel_ubuntu
 
-build_kernel_ubuntu_19_10_debug:
+build_kernel_ubuntu_16_04_debug:
   variables:
     MODE: "all"
-  image: ubuntu:eoan
+  image: ubuntu:xenial
   extends: .build_kernel_ubuntu
 
 build_kernel_32bit_debug:
@@ -291,22 +291,22 @@ build_tapasco_ubuntu_18_04:
   image: ubuntu:bionic
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_19_10:
-  image: ubuntu:eoan
+build_tapasco_ubuntu_16_04:
+  image: ubuntu:xenial
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_19_10_cross:
+build_tapasco_ubuntu_16_04_cross:
   variables:
     TARGET: "zynq"
-  image: ubuntu:eoan
+  image: ubuntu:xenial
   before_script:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_19_10_clang:
+build_tapasco_ubuntu_16_04_clang:
   variables:
     TARGET: "clang"
-  image: ubuntu:eoan
+  image: ubuntu:xenial
   before_script:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm clang
   extends: .build_tapasco_ubuntu
@@ -317,17 +317,17 @@ build_tapasco_ubuntu_18_04_debug:
   image: ubuntu:bionic
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_19_10_debug:
+build_tapasco_ubuntu_16_04_debug:
   variables:
     MODE: "debug"
-  image: ubuntu:eoan
+  image: ubuntu:xenial
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_19_10_cross_debug:
+build_tapasco_ubuntu_16_04_cross_debug:
   variables:
     MODE: "debug"
     TARGET: "zynq"
-  image: ubuntu:eoan
+  image: ubuntu:xenial
   before_script:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
   extends: .build_tapasco_ubuntu
