@@ -324,6 +324,7 @@ int pcie_device_create(struct tlkm_device *dev, void *data)
 		goto err_configure;
 	}
 	report_link_status(pdev);
+	memset(pdev->irq_mapping, -1, REQUIRED_INTERRUPTS * sizeof(pdev->irq_mapping[0]));
 	return 0;
 
 err_configure:
