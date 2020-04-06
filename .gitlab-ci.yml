@@ -43,12 +43,12 @@ test_tapasco_centos_8:
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
     - ./gradlew test
 
-test_tapasco_ubuntu_18_04:
-  image: ubuntu:bionic
-  extends: .test_tapasco_ubuntu
-
 test_tapasco_ubuntu_16_04:
   image: ubuntu:xenial
+  extends: .test_tapasco_ubuntu
+
+test_tapasco_ubuntu_18_04:
+  image: ubuntu:bionic
   extends: .test_tapasco_ubuntu
 
 .test_tapasco_fedora:
@@ -138,12 +138,12 @@ build_scala_tapasco_fedora_31:
     paths:
       - toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb
 
-build_scala_tapasco_ubuntu_18_04:
-  image: ubuntu:bionic
-  extends: .build_scala_tapasco_ubuntu
-
 build_scala_tapasco_ubuntu_16_04:
   image: ubuntu:xenial
+  extends: .build_scala_tapasco_ubuntu
+
+build_scala_tapasco_ubuntu_18_04:
+  image: ubuntu:bionic
   extends: .build_scala_tapasco_ubuntu
 
 # build kernel module
@@ -164,17 +164,11 @@ build_scala_tapasco_ubuntu_16_04:
     paths:
       - runtime/kernel/tlkm.ko
 
-build_kernel_ubuntu_18_04:
-  image: ubuntu:bionic
-  extends: .build_kernel_ubuntu
-
 build_kernel_ubuntu_16_04:
   image: ubuntu:xenial
   extends: .build_kernel_ubuntu
 
-build_kernel_ubuntu_18_04_debug:
-  variables:
-    MODE: "all"
+build_kernel_ubuntu_18_04:
   image: ubuntu:bionic
   extends: .build_kernel_ubuntu
 
@@ -182,6 +176,12 @@ build_kernel_ubuntu_16_04_debug:
   variables:
     MODE: "all"
   image: ubuntu:xenial
+  extends: .build_kernel_ubuntu
+
+build_kernel_ubuntu_18_04_debug:
+  variables:
+    MODE: "all"
+  image: ubuntu:bionic
   extends: .build_kernel_ubuntu
 
 build_kernel_32bit_debug:
@@ -287,12 +287,12 @@ build_tapasco_fedora_31_debug:
       - build/tapasco-*-Linux.deb
   extends: .build_tapasco
 
-build_tapasco_ubuntu_18_04:
-  image: ubuntu:bionic
-  extends: .build_tapasco_ubuntu
-
 build_tapasco_ubuntu_16_04:
   image: ubuntu:xenial
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_18_04:
+  image: ubuntu:bionic
   extends: .build_tapasco_ubuntu
 
 build_tapasco_ubuntu_16_04_cross:
@@ -311,16 +311,16 @@ build_tapasco_ubuntu_16_04_clang:
     - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm clang
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_18_04_debug:
-  variables:
-    MODE: "debug"
-  image: ubuntu:bionic
-  extends: .build_tapasco_ubuntu
-
 build_tapasco_ubuntu_16_04_debug:
   variables:
     MODE: "debug"
   image: ubuntu:xenial
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_18_04_debug:
+  variables:
+    MODE: "debug"
+  image: ubuntu:bionic
   extends: .build_tapasco_ubuntu
 
 build_tapasco_ubuntu_16_04_cross_debug:
