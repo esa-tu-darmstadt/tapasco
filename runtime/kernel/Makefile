@@ -14,7 +14,7 @@ endif
 
 MODULE_DIR := $(PWD)
 
-CPPFLAGS+=-Werror -I$(MODULE_DIR) \
+CPPFLAGS+=-Werror -Wno-missing-attributes -I$(MODULE_DIR) \
 				  -I$(MODULE_DIR)/device \
 				  -I$(MODULE_DIR)/tlkm \
 				  -I$(MODULE_DIR)/user \
