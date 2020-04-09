@@ -664,7 +664,7 @@ check_tapasco
 check_image_tools
 check_sdcard
 read -p "Enter sudo password: " -s SUDOPW
-[[ -n $SUDOPW ]] || error_exit "dusudo password may not be empty"
+[[ -n $SUDOPW ]] || error_exit "sudo password may not be empty"
 dusudo true || error_exit "sudo password seems to be wrong?"
 mkdir -p $LOGDIR 2> /dev/null
 printf "\nAnd so it begins ...\n"
