@@ -28,6 +28,8 @@
 #define TLKM_SLOT_INTERRUPTS 128
 #define REQUIRED_INTERRUPTS (TLKM_PLATFORM_INTERRUPTS + TLKM_SLOT_INTERRUPTS)
 
+uint32_t get_xdma_reg_addr(uint32_t target, uint32_t channel, uint32_t offset);
+
 int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id);
 void tlkm_pcie_remove(struct pci_dev *pdev);
 
