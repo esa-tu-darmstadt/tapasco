@@ -114,8 +114,11 @@ if {[llength [info commands platform::generate_wrapper]] == 0} {
   platform::generate_wrapper
 }
 
-# Disable OOC synthesis to avoid log file problems
-set_property synth_checkpoint_mode None [get_files system.bd]
+# activate retiming in synthesis
+set_property STEPS.SYNTH_DESIGN.ARGS.RETIMING true [get_runs synth_1]
+if {[info exists platform::ooc_synth_mode] == 0 || [string is false $platform::ooc_synth_mode]} {
+  set_property synth_checkpoint_mode None [get_files "[platform::get_bd_name].bd"]
+}
 
 # Synthesis and P&R effort level
 set effort_level "@@EFFORT_LEVEL@@"
