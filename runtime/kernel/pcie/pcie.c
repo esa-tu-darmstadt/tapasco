@@ -6,6 +6,7 @@
 
 static const struct pci_device_id tlkm_pcie_id[] = {
 	{ PCI_DEVICE(XILINX_VENDOR_ID, XILINX_DEVICE_ID) },
+	{ PCI_DEVICE(AWS_EC2_VENDOR_ID, AWS_EC2_DEVICE_ID) },
 	{},
 };
 

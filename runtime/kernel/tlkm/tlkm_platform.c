@@ -7,6 +7,9 @@
 #include "tlkm_logging.h"
 #include "user/tlkm_device_ioctl_cmds.h"
 
+#define AWS_EC2_VENDOR_ID 0x1D0F
+#define AWS_EC2_DEVICE_ID 0xF000
+
 int tlkm_platform_status_init(struct tlkm_device *dev,
 			      struct platform_mmap *mmap)
 {

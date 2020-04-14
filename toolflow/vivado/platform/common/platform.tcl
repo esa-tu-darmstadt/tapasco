@@ -223,9 +223,16 @@ namespace eval platform {
         puts "Normal mode selected."
     }
 
+    # Workaround for Vivado unpredictably crashing on `generate_target`.
+    close_bd_design -quiet [current_bd_design]
+    open_bd_design -quiet [get_files "[get_bd_name].bd"]
+
     generate_target all [get_files "[get_bd_name].bd"]
     set synth_run [get_runs synth_1]
     set_property -dict $synth_settings $synth_run
+
+    tapasco::call_plugins "pre-synth"
+
     current_run $synth_run
     launch_runs -jobs $jobs $synth_run
     wait_on_run $synth_run
@@ -235,8 +242,9 @@ namespace eval platform {
     # call plugins
     tapasco::call_plugins "post-synth"
 
-    set impl_run [get_runs impl_1]
+    set impl_run [get_runs [current_run -implementation]]
     set_property -dict $impl_settings $impl_run
+
     current_run $impl_run
     launch_runs -jobs $jobs -to_step route_design $impl_run
     wait_on_run $impl_run
@@ -254,7 +262,10 @@ namespace eval platform {
     report_utilization -file utilization_userlogic.txt -cells [get_cells -hierarchical -filter {NAME =~ *target_ip_*}]
     set wns [tapasco::get_wns_from_timing_report "timing.txt"]
     if {$wns >= -0.3} {
-      write_bitstream -force "${bitstreamname}.bit"
+      variable disable_write_bitstream
+      if {[info exists disable_write_bitstream] == 0 || [string is false $disable_write_bitstream]} {
+        write_bitstream -force "${bitstreamname}.bit"
+      }
     } else {
       error "timing failure, WNS: $wns"
     }

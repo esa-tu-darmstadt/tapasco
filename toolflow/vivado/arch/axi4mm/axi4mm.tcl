@@ -127,7 +127,6 @@ namespace eval arch {
   # Determines the number of AXI-MM interfaces in the composition
   proc arch_get_num_masters {composition} {
     set no_kinds [llength [dict keys $composition]]
-    set ic_m 0
     set m_total 0
 
     # determine number of masters from composition
@@ -135,8 +134,6 @@ namespace eval arch {
       set no_inst [dict get $composition $i count]
       set example [get_bd_cells [format "target_ip_%02d_000" $i]]
       set masters [tapasco::get_aximm_interfaces $example]
-      set ic_m [expr "$ic_m + [llength $masters] * $no_inst"]
-
       set m_total [expr "$m_total + [llength $masters] * $no_inst"]
     }
 
