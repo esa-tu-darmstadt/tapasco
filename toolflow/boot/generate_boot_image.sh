@@ -497,7 +497,11 @@ build_devtree () {
             ;;
 	esac
 	echo >> $DIR/devicetree.dts
-	echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
+	if [[ $BOARD == "ultra96v2" ]]; then
+        echo "/include/ \"$SCRIPTDIR/misc/tapasco_zynqmp.dtsi\"" >> $DIR/devicetree.dts
+    else
+        echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
+    fi
 	$DIR/linux-xlnx/scripts/dtc/dtc -I dts -O dtb -o $DIR/devicetree.dtb $DIR/devicetree.dts ||
 		return $(error_ret "$LINENO: could not build devicetree.dtb")
 	echo "$DIR/devicetree.dtb ready."
