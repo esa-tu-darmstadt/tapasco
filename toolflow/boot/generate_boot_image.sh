@@ -497,7 +497,7 @@ build_devtree () {
             ;;
 	esac
 	echo >> $DIR/devicetree.dts
-	if [[ $BOARD == "ultra96v2" ]]; then
+	if [[ $ARCH == arm64 ]]; then
         echo "/include/ \"$SCRIPTDIR/misc/tapasco_zynqmp.dtsi\"" >> $DIR/devicetree.dts
     else
         echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
