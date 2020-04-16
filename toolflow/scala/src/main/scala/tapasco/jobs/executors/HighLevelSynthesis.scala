@@ -89,6 +89,6 @@ protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
     }
 
     // success, if all tasks were successful
-    ((tasks ++ importTasks) map (_.result) fold false) (_ || _)
+    ((tasks ++ importTasks) map (_.result) fold true) (_ && _)
   }
 }
