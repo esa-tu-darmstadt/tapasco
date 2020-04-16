@@ -184,42 +184,46 @@ impl Device {
         Ok(())
     }
 
+    fn wait_for_completion_loop(&mut self, pe_id: &usize) -> Result<()> {
+        let mut active = true;
+        while active {
+            let mut buffer = [u8::max_value(); 128 * 4];
+            self.completion
+                .read(&mut buffer)
+                .context(DeviceUnavailable { id: self.id })?;
+            trace!("Fetched completion notices from driver.");
+            let mut buf = Cursor::new(&buffer[..]);
+            while buf.remaining() >= 4 {
+                let id = buf.get_u32_le();
+                if id != u32::max_value() {
+                    if id as usize == *pe_id {
+                        trace!("PE {} is finished.", id);
+                        active = false;
+                    } else {
+                        match self.active_pes.get_mut(&(id as usize)) {
+                            Some(pe_done) => *pe_done = true,
+                            None => trace!("PE is not waiting right now."),
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub fn wait_for_completion(&mut self, pe: &mut PE) -> Result<()> {
         if *pe.active() {
             match self.active_pes.get(&pe.id()) {
                 Some(pe_done) => {
                     if *pe_done {
                         trace!("PE {} has already indicated completion.", pe.id());
-                        pe.set_active(false);
-                        pe.reset_interrupt(&mut self.arch).context(SchedulerError)?;
                     } else {
                         trace!("Waiting for completion of {:?}.", pe);
-                        while *pe.active() {
-                            let mut buffer = [u8::max_value(); 128 * 4];
-                            self.completion
-                                .read(&mut buffer)
-                                .context(DeviceUnavailable { id: self.id })?;
-                            trace!("Fetched completion notices from driver.");
-                            let mut buf = Cursor::new(&buffer[..]);
-                            while buf.remaining() >= 4 {
-                                let id = buf.get_u32_le();
-                                if id != u32::max_value() {
-                                    trace!("PE {} is finished.", id);
-                                    if *pe.id() as u32 == id {
-                                        pe.set_active(false);
-                                        pe.reset_interrupt(&mut self.arch)
-                                            .context(SchedulerError)?;
-                                    } else {
-                                        match self.active_pes.get_mut(&(id as usize)) {
-                                            Some(pe_done) => *pe_done = true,
-                                            None => trace!("PE is not waiting right now."),
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        self.wait_for_completion_loop(&pe.id())?;
                         trace!("Waiting for PE completed.");
                     }
+                    pe.set_active(false);
+                    pe.reset_interrupt(&mut self.arch).context(SchedulerError)?;
                 }
                 None => trace!("PE is not waiting right now."),
             }
