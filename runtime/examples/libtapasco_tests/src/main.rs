@@ -10,6 +10,8 @@ use tapasco::tlkm::*;
 
 use clap::{App, AppSettings, ArgMatches, SubCommand};
 
+use std::time::Instant;
+
 #[derive(Debug, Snafu)]
 pub enum Error {
     #[snafu(display("Invalid subcommand"))]
@@ -100,6 +102,32 @@ fn run_counter(_: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
+fn benchmark_counter(_: &ArgMatches) -> Result<()> {
+    let mut tlkm = TLKM::new().context(TLKMInit {})?;
+    let devices = tlkm.device_enum().context(TLKMInit)?;
+    for mut x in devices {
+        x.create(
+            &tlkm.file(),
+            tapasco::tlkm::tlkm_access::TlkmAccessExclusive,
+        )
+        .context(DeviceInit {})?;
+        let iterations = 300000;
+        println!("Starting benchmark.");
+        let now = Instant::now();
+        for _ in 0..iterations {
+            let mut pe = x.acquire_pe(14).context(DeviceInit)?;
+            x.start_pe(&mut pe, vec![1]).context(DeviceInit)?;
+            x.wait_for_completion(&mut pe).context(DeviceInit)?;
+            x.release_pe(pe).context(DeviceInit)?;
+        }
+        println!(
+            "Result: {} calls/s",
+            iterations as f32 / now.elapsed().as_secs_f32()
+        );
+    }
+    Ok(())
+}
+
 fn main() -> Result<()> {
     env_logger::init();
 
@@ -119,6 +147,9 @@ fn main() -> Result<()> {
             SubCommand::with_name("status").about("Print status core information of all devices."),
         )
         .subcommand(SubCommand::with_name("run_counter").about("Runs a counter with ID 14."))
+        .subcommand(
+            SubCommand::with_name("run_benchmark").about("Runs a counter benchmark with ID 14."),
+        )
         .get_matches();
 
     match match matches.subcommand() {
@@ -127,6 +158,7 @@ fn main() -> Result<()> {
         ("allocate", Some(m)) => allocate_devices(m),
         ("status", Some(m)) => print_status(m),
         ("run_counter", Some(m)) => run_counter(m),
+        ("run_benchmark", Some(m)) => benchmark_counter(m),
         _ => Err(Error::UnknownCommand {}),
     } {
         Ok(()) => Ok(()),
