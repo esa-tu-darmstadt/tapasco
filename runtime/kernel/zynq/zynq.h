@@ -4,7 +4,6 @@
 #include "tlkm_platform.h"
 
 #define ZYNQ_NAME "xlnx,zynq-7000"
-#define ZYNQMP_NAME "xlnx,zynqmp"
 #define ZYNQ_CLASS_NAME "zynq"
 
 #define ZYNQ_DEF INIT_PLATFORM(0x80000000, 0x00002000 /* status */)
