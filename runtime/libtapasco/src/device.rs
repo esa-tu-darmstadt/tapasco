@@ -11,6 +11,7 @@ use memmap::MmapMut;
 use memmap::MmapOptions;
 use prost::Message;
 use snafu::ResultExt;
+use std::collections::HashMap;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::Cursor;
@@ -47,6 +48,9 @@ pub enum Error {
         access: tlkm_access,
     },
 
+    #[snafu(display("PE acquisition requires Exclusive Access mode."))]
+    ExclusiveRequired {},
+
     #[snafu(display("Could not destroy device {}: {}", id, source))]
     IOCTLDestroy { source: nix::Error, id: DeviceId },
 
@@ -75,6 +79,7 @@ pub struct Device {
     platform: MmapMut,
     arch: MmapMut,
     completion: File,
+    active_pes: HashMap<usize, bool>,
 }
 
 impl Drop for Device {
@@ -167,6 +172,7 @@ impl Device {
                 .read(true)
                 .open(format!("/dev/tlkm_{:02}", id))
                 .context(DeviceUnavailable { id: id })?,
+            active_pes: HashMap::new(),
         };
 
         device.create(&tlkm_file, tlkm_access::TlkmAccessMonitor)?;
@@ -180,45 +186,93 @@ impl Device {
 
     pub fn wait_for_completion(&mut self, pe: &mut PE) -> Result<()> {
         if *pe.active() {
-            let mut buffer = [0 as u8; 128 * 4];
-            self.completion
-                .read(&mut buffer)
-                .context(DeviceUnavailable { id: self.id })?;
-            let mut buf = Cursor::new(&buffer[..]);
-            while buf.remaining() >= 4 {
-                let id = buf.get_u32_le();
-                if id != 0 {
-                    trace!("PE {} is finished.", id);
-                    if *pe.id() as u32 == id {
+            match self.active_pes.get(&pe.id()) {
+                Some(pe_done) => {
+                    if *pe_done {
+                        trace!("PE {} has already indicated completion.", pe.id());
                         pe.set_active(false);
                         pe.reset_interrupt(&mut self.arch).context(SchedulerError)?;
+                    } else {
+                        trace!("Waiting for completion of {:?}.", pe);
+                        while *pe.active() {
+                            let mut buffer = [u8::max_value(); 128 * 4];
+                            self.completion
+                                .read(&mut buffer)
+                                .context(DeviceUnavailable { id: self.id })?;
+                            trace!("Fetched completion notices from driver.");
+                            let mut buf = Cursor::new(&buffer[..]);
+                            while buf.remaining() >= 4 {
+                                let id = buf.get_u32_le();
+                                if id != u32::max_value() {
+                                    trace!("PE {} is finished.", id);
+                                    if *pe.id() as u32 == id {
+                                        pe.set_active(false);
+                                        pe.reset_interrupt(&mut self.arch)
+                                            .context(SchedulerError)?;
+                                    } else {
+                                        match self.active_pes.get_mut(&(id as usize)) {
+                                            Some(pe_done) => *pe_done = true,
+                                            None => trace!("PE is not waiting right now."),
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        trace!("Waiting for PE completed.");
                     }
                 }
+                None => trace!("PE is not waiting right now."),
             }
+            self.active_pes.remove(pe.id());
+        } else {
+            trace!("Wait requested but {:?} is already idle.", pe);
         }
         Ok(())
     }
 
     pub fn acquire_pe(&mut self, id: PEId) -> Result<PE> {
+        self.check_exclusive_access()?;
+        trace!("Trying to acquire PE of type {}.", id);
         let pe = self.scheduler.acquire_pe(id).context(SchedulerError)?;
+        trace!("Successfully acquired PE of type {}.", id);
         Ok(pe)
     }
 
     pub fn start_pe(&mut self, pe: &mut PE, args: Vec<u64>) -> Result<()> {
-        pe.enable_interrupt(&mut self.arch)
-            .context(SchedulerError)?;
+        self.check_exclusive_access()?;
+        trace!("Starting execution of {:?} with Arguments {:?}.", pe, args);
+        trace!("Setting arguments.");
         for (i, arg) in args.iter().enumerate() {
             pe.set_arg(&mut self.arch, i, *arg)
                 .context(SchedulerError)?;
+            trace!("Argument {} set.", i);
         }
+        trace!("Arguments set.");
+        trace!("Starting PE execution.");
         pe.start(&mut self.arch).context(SchedulerError)?;
+        self.active_pes.insert(*pe.id(), false);
+        trace!("PE started.");
         Ok(())
     }
 
     pub fn release_pe(&mut self, mut pe: PE) -> Result<()> {
-        self.wait_for_completion(&mut pe)?;
+        self.check_exclusive_access()?;
+        trace!("Trying to release {:?}.", pe);
+        if *pe.active() {
+            self.wait_for_completion(&mut pe)?;
+        }
+        trace!("PE is idle.");
         self.scheduler.release_pe(pe).context(SchedulerError)?;
+        trace!("Release successful.");
         Ok(())
+    }
+
+    fn check_exclusive_access(&self) -> Result<()> {
+        if self.access != tlkm_access::TlkmAccessExclusive {
+            Err(Error::ExclusiveRequired {})
+        } else {
+            Ok(())
+        }
     }
 
     pub fn create(&mut self, tlkm_file: &File, access: tlkm_access) -> Result<()> {
@@ -248,6 +302,13 @@ impl Device {
         };
 
         self.access = access;
+
+        if access == tlkm_access::TlkmAccessExclusive {
+            trace!("Access changed to exclusive, resetting all interrupts.");
+            self.scheduler
+                .reset_interrupts(&mut self.arch)
+                .context(SchedulerError)?;
+        }
 
         trace!("Successfully acquired access.");
         Ok(())

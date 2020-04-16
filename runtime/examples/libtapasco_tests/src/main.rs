@@ -76,12 +76,26 @@ fn run_counter(_: &ArgMatches) -> Result<()> {
     let mut tlkm = TLKM::new().context(TLKMInit {})?;
     let devices = tlkm.device_enum().context(TLKMInit)?;
     for mut x in devices {
-        let mut pe = x.acquire_pe(14).context(DeviceInit)?;
-        for _ in 0..1000 {
-            x.start_pe(&mut pe, vec![1000]).context(DeviceInit)?;
-            x.wait_for_completion(&mut pe).context(DeviceInit)?;
+        x.create(
+            &tlkm.file(),
+            tapasco::tlkm::tlkm_access::TlkmAccessExclusive,
+        )
+        .context(DeviceInit {})?;
+        let mut pes = Vec::new();
+        for _ in 0..4 {
+            pes.push(x.acquire_pe(14).context(DeviceInit)?);
         }
-        x.release_pe(pe).context(DeviceInit)?;
+        for _ in (0..1000).step_by(4) {
+            for pe in &mut pes.iter_mut() {
+                x.start_pe(pe, vec![1000]).context(DeviceInit)?;
+            }
+            for pe in &mut pes.iter_mut() {
+                x.wait_for_completion(pe).context(DeviceInit)?;
+            }
+        }
+        for pe in pes {
+            x.release_pe(pe).context(DeviceInit)?;
+        }
     }
     Ok(())
 }

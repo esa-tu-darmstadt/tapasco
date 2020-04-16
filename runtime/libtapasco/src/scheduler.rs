@@ -149,4 +149,15 @@ impl Scheduler {
         }
         Ok(())
     }
+
+    pub fn reset_interrupts(&mut self, mem: &mut MmapMut) -> Result<()> {
+        for (_, v) in self.pes.iter_mut() {
+            for pe in v.iter_mut() {
+                pe.enable_interrupt(mem)?;
+                pe.reset_interrupt(mem)?;
+            }
+        }
+
+        Ok(())
+    }
 }
