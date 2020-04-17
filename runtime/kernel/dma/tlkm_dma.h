@@ -22,18 +22,18 @@ typedef enum { TO_DEV, FROM_DEV } dma_direction_t;
 
 typedef int (*dma_allocate_buffer_func_t)(dev_id_t dev_id,
 					  struct tlkm_device *dev,
-					  void **buffer, void **dev_handle,
+					  void **buffer, dma_addr_t *dev_handle,
 					  dma_direction_t direction,
 					  size_t size);
 typedef void (*dma_free_buffer_func_t)(dev_id_t dev_id, struct tlkm_device *dev,
-				       void **buffer, void **dev_handle,
+				       void **buffer, dma_addr_t *dev_handle,
 				       dma_direction_t direction, size_t size);
 
 typedef int (*dma_buffer_cpu_func_t)(dev_id_t dev_id, struct tlkm_device *dev,
-				     void **buffer, void **dev_handle,
+				     void **buffer, dma_addr_t *dev_handle,
 				     dma_direction_t direction, size_t size);
 typedef int (*dma_buffer_dev_func_t)(dev_id_t dev_id, struct tlkm_device *dev,
-				     void **buffer, void **dev_handle,
+				     void **buffer, dma_addr_t *dev_handle,
 				     dma_direction_t direction, size_t size);
 
 struct dma_operations {
@@ -67,9 +67,9 @@ struct dma_engine {
 	atomic64_t wq_enqueued;
 	atomic64_t wq_processed;
 	void *dma_buf_read[TLKM_DMA_CHUNKS];
-	void *dma_buf_read_dev[TLKM_DMA_CHUNKS];
+	dma_addr_t dma_buf_read_dev[TLKM_DMA_CHUNKS];
 	void *dma_buf_write[TLKM_DMA_CHUNKS];
-	void *dma_buf_write_dev[TLKM_DMA_CHUNKS];
+	dma_addr_t dma_buf_write_dev[TLKM_DMA_CHUNKS];
 	struct tlkm_device *dev;
 	int alignment;
 	volatile uint32_t *ack_register;

@@ -222,7 +222,7 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,
 				cpy_sz);
 			t_ids[current_buffer] = dma->ops.copy_to(
 				dma, dev_addr,
-				dma->dma_buf_write_dev[current_buffer], cpy_sz);
+				(void __user *)dma->dma_buf_write_dev[current_buffer], cpy_sz);
 
 			usr_addr += cpy_sz;
 			dev_addr += cpy_sz;
@@ -315,7 +315,7 @@ ssize_t tlkm_dma_copy_from(struct dma_engine *dma, void __user *usr_addr,
 				    &dma->dma_buf_read_dev[current_buffer],
 				    FROM_DEV, cpy_sz);
 		chunks[current_buffer].t_id = dma->ops.copy_from(
-			dma, dma->dma_buf_read_dev[current_buffer], dev_addr,
+			dma, (void __user *)dma->dma_buf_read_dev[current_buffer], dev_addr,
 			cpy_sz);
 
 		chunks[current_buffer].usr_addr = usr_addr;

@@ -403,14 +403,11 @@ void pcie_device_exit_subsystems(struct tlkm_device *dev)
 }
 
 int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct tlkm_device *dev,
-				    void **buffer, void **dev_handle,
+				    void **buffer, dma_addr_t *dev_handle,
 				    dma_direction_t direction, size_t size)
 {
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
-	// We should really allocate memory and not misuse the void* as dma_addr_t
-	// Should be the same size on most systems, however
-	dma_addr_t *handle = (dma_addr_t *)dev_handle;
 	int err = 0;
 	*buffer = kmalloc(size, 0);
 	DEVLOG(dev_id, TLKM_LF_DEVICE,
@@ -418,11 +415,11 @@ int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct tlkm_device *dev,
 	       size, *buffer);
 	if (*buffer) {
 		memset(*buffer, 0, size);
-		*handle =
+		*dev_handle =
 			dma_map_single(&pdev->pdev->dev, *buffer, size,
 				       direction == FROM_DEV ? DMA_FROM_DEVICE :
 							       DMA_TO_DEVICE);
-		if (dma_mapping_error(&pdev->pdev->dev, *handle)) {
+		if (dma_mapping_error(&pdev->pdev->dev, *dev_handle)) {
 			DEVERR(dev_id, "DMA Mapping error");
 			err = -EFAULT;
 		}
@@ -432,25 +429,24 @@ int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct tlkm_device *dev,
 	}
 
 	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapped buffer to device address %p",
-	       (void *)*handle);
+	       (void *)*dev_handle);
 
 	return err;
 }
 
 void pcie_device_dma_free_buffer(dev_id_t dev_id, struct tlkm_device *dev,
-				 void **buffer, void **dev_handle,
+				 void **buffer, dma_addr_t *dev_handle,
 				 dma_direction_t direction, size_t size)
 {
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
-	dma_addr_t *handle = (dma_addr_t *)dev_handle;
 	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapped buffer to device address %p",
-	       (void *)*handle);
-	if (*handle) {
-		dma_unmap_single(&pdev->pdev->dev, *handle, size,
+	       (void *)*dev_handle);
+	if (*dev_handle) {
+		dma_unmap_single(&pdev->pdev->dev, *dev_handle, size,
 				 direction == FROM_DEV ? DMA_FROM_DEVICE :
 							 DMA_TO_DEVICE);
-		*handle = 0;
+		*dev_handle = 0;
 	}
 	if (*buffer) {
 		kfree(*buffer);
@@ -460,16 +456,15 @@ void pcie_device_dma_free_buffer(dev_id_t dev_id, struct tlkm_device *dev,
 
 inline int pcie_device_dma_sync_buffer_cpu(dev_id_t dev_id,
 					   struct tlkm_device *dev,
-					   void **buffer, void **dev_handle,
+					   void **buffer, dma_addr_t *dev_handle,
 					   dma_direction_t direction,
 					   size_t size)
 {
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
-	dma_addr_t *handle = (dma_addr_t *)dev_handle;
 	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapping buffer %p for cpu",
-	       *dev_handle);
-	dma_sync_single_for_cpu(&pdev->pdev->dev, *handle, size,
+	       (void *)*dev_handle);
+	dma_sync_single_for_cpu(&pdev->pdev->dev, *dev_handle, size,
 				direction == FROM_DEV ? DMA_FROM_DEVICE :
 							DMA_TO_DEVICE);
 	return 0;
@@ -477,16 +472,15 @@ inline int pcie_device_dma_sync_buffer_cpu(dev_id_t dev_id,
 
 inline int pcie_device_dma_sync_buffer_dev(dev_id_t dev_id,
 					   struct tlkm_device *dev,
-					   void **buffer, void **dev_handle,
+					   void **buffer, dma_addr_t *dev_handle,
 					   dma_direction_t direction,
 					   size_t size)
 {
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
-	dma_addr_t *handle = (dma_addr_t *)dev_handle;
 	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapping buffer %p for device",
-	       *dev_handle);
-	dma_sync_single_for_device(&pdev->pdev->dev, *handle, size,
+	       (void *)*dev_handle);
+	dma_sync_single_for_device(&pdev->pdev->dev, *dev_handle, size,
 				   direction == FROM_DEV ? DMA_FROM_DEVICE :
 							   DMA_TO_DEVICE);
 	return 0;
