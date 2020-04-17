@@ -2,8 +2,7 @@
 
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate bitflags;
+
 #[macro_use]
 extern crate getset;
 #[macro_use]
@@ -18,6 +17,7 @@ extern crate volatile_register;
 #[macro_use]
 extern crate snafu;
 
+pub mod allocator;
 pub mod device;
 pub mod scheduler;
 pub mod tlkm;

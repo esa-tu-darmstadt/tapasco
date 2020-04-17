@@ -1,3 +1,4 @@
+use crate::allocator::{Allocator, DriverAllocator, GenericAllocator};
 use crate::scheduler::PEId;
 use crate::scheduler::Scheduler;
 use crate::scheduler::PE;
@@ -56,11 +57,20 @@ pub enum Error {
 
     #[snafu(display("Scheduler Error: {}", source))]
     SchedulerError { source: crate::scheduler::Error },
+
+    #[snafu(display("Allocator Error: {}", source))]
+    AllocatorError { source: crate::allocator::Error },
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub type DeviceAddress = u64;
 pub type DeviceSize = u64;
+
+#[derive(Debug, Getters)]
+struct OffchipMemory {
+    id: usize,
+    allocator: Box<dyn Allocator>,
+}
 
 #[derive(Debug, Getters)]
 pub struct Device {
@@ -80,6 +90,7 @@ pub struct Device {
     arch: MmapMut,
     completion: File,
     active_pes: HashMap<usize, bool>,
+    offchip_memory: Vec<OffchipMemory>,
 }
 
 impl Drop for Device {
@@ -120,6 +131,25 @@ impl Device {
                 area: "Platform".to_string(),
             }),
         }?;
+
+        // This falls back to PCIe and Zynq allocation using the default 4GB at 0x0
+        info!("Using static memory allocation due to lack of dynamic data in the status core.");
+        let mut allocator = Vec::new();
+        if name == "pcie" {
+            info!("Allocating the default of 4GB at 0x0 for a PCIe platform");
+            allocator.push(OffchipMemory {
+                id: 0,
+                allocator: Box::new(
+                    GenericAllocator::new(0, 4 * 1024 * 1024 * 1024, 64).context(AllocatorError)?,
+                ),
+            });
+        } else if name == "zynq" {
+            info!("Using driver allocation for zynq based platform.");
+            allocator.push(OffchipMemory {
+                id: 0,
+                allocator: Box::new(DriverAllocator::new().context(AllocatorError)?),
+            });
+        }
 
         let platform = unsafe {
             MmapOptions::new()
@@ -173,6 +203,7 @@ impl Device {
                 .open(format!("/dev/tlkm_{:02}", id))
                 .context(DeviceUnavailable { id: id })?,
             active_pes: HashMap::new(),
+            offchip_memory: allocator,
         };
 
         device.create(&tlkm_file, tlkm_access::TlkmAccessMonitor)?;
