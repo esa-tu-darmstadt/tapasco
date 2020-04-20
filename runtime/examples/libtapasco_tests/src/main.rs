@@ -89,7 +89,8 @@ fn run_counter(_: &ArgMatches) -> Result<()> {
         }
         for _ in (0..1000).step_by(4) {
             for pe in &mut pes.iter_mut() {
-                x.start_pe(pe, vec![1000]).context(DeviceInit)?;
+                x.start_pe(pe, vec![tapasco::device::PEParameter::Single64(1000)])
+                    .context(DeviceInit)?;
             }
             for pe in &mut pes.iter_mut() {
                 x.wait_for_completion(pe).context(DeviceInit)?;
@@ -116,7 +117,8 @@ fn benchmark_counter(_: &ArgMatches) -> Result<()> {
         let now = Instant::now();
         for _ in 0..iterations {
             let mut pe = x.acquire_pe(14).context(DeviceInit)?;
-            x.start_pe(&mut pe, vec![1]).context(DeviceInit)?;
+            x.start_pe(&mut pe, vec![tapasco::device::PEParameter::Single64(1)])
+                .context(DeviceInit)?;
             x.wait_for_completion(&mut pe).context(DeviceInit)?;
             x.release_pe(pe).context(DeviceInit)?;
         }

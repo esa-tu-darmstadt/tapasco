@@ -19,6 +19,7 @@ extern crate snafu;
 
 pub mod allocator;
 pub mod device;
+pub mod dma;
 pub mod scheduler;
 pub mod tlkm;
 //mod ffi;

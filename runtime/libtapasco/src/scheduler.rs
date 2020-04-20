@@ -1,4 +1,4 @@
-use crate::device::{DeviceAddress, DeviceSize};
+use crate::device::{DeviceAddress, DeviceSize, PEParameter};
 use memmap::Mmap;
 use memmap::MmapMut;
 use std::collections::HashMap;
@@ -17,12 +17,23 @@ pub enum Error {
 
     #[snafu(display("PE {} is still active. Can't release it.", pe.id))]
     PEStillActive { pe: PE },
+
+    #[snafu(display(
+        "Param {:?} is unsupported. Only 32 and 64 Bit value can interact with device registers.",
+        param
+    ))]
+    UnsupportedParameter { param: PEParameter },
+
+    #[snafu(display(
+        "Transfer width {} Bit is unsupported. Only 32 and 64 Bit value can interact with device registers.",
+        param * 8
+    ))]
+    UnsupportedRegisterSize { param: usize },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub type PEId = usize;
-type PEArg = u64;
 
 #[derive(Debug, PartialEq, Getters, Setters)]
 pub struct PE {
@@ -78,24 +89,33 @@ impl PE {
         Ok(())
     }
 
-    pub fn set_arg(&self, mem: &mut MmapMut, argn: usize, arg: PEArg) -> Result<()> {
+    pub fn set_arg(&self, mem: &mut MmapMut, argn: usize, arg: PEParameter) -> Result<()> {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
         unsafe {
             let ptr = mem.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<PEArg>;
-            (*volatile_ptr).write(arg);
+            match arg {
+                PEParameter::Single32(x) => (*(ptr as *mut Volatile<u32>)).write(x),
+                PEParameter::Single64(x) => (*(ptr as *mut Volatile<u64>)).write(x),
+                _ => return Err(Error::UnsupportedParameter { param: arg }),
+            };
         }
         Ok(())
     }
 
-    pub fn read_arg(&self, mem: &Mmap, argn: usize) -> Result<PEArg> {
+    pub fn read_arg(&self, mem: &Mmap, argn: usize, bytes: usize) -> Result<PEParameter> {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
-        let v = unsafe {
+        unsafe {
             let ptr = mem.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *const Volatile<PEArg>;
-            (*volatile_ptr).read()
-        };
-        Ok(v)
+            match bytes {
+                4 => Ok(PEParameter::Single32(
+                    (*(ptr as *const Volatile<u32>)).read(),
+                )),
+                8 => Ok(PEParameter::Single64(
+                    (*(ptr as *const Volatile<u64>)).read(),
+                )),
+                _ => Err(Error::UnsupportedRegisterSize { param: bytes }),
+            }
+        }
     }
 }
 

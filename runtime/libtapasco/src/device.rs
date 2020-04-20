@@ -1,7 +1,6 @@
 use crate::allocator::{Allocator, DriverAllocator, GenericAllocator};
-use crate::scheduler::PEId;
-use crate::scheduler::Scheduler;
-use crate::scheduler::PE;
+use crate::dma::{DMAControl, DriverDMA};
+use crate::scheduler::{PEId, Scheduler, PE};
 use crate::tlkm::tlkm_access;
 use crate::tlkm::tlkm_ioctl_create;
 use crate::tlkm::tlkm_ioctl_destroy;
@@ -52,6 +51,9 @@ pub enum Error {
     #[snafu(display("PE acquisition requires Exclusive Access mode."))]
     ExclusiveRequired {},
 
+    #[snafu(display("Memory {} not found on device.", id))]
+    UnknownMemory { id: MemoryID },
+
     #[snafu(display("Could not destroy device {}: {}", id, source))]
     IOCTLDestroy { source: nix::Error, id: DeviceId },
 
@@ -60,16 +62,57 @@ pub enum Error {
 
     #[snafu(display("Allocator Error: {}", source))]
     AllocatorError { source: crate::allocator::Error },
+
+    #[snafu(display(
+        "Unsupported parameter during register write stage. Unconverted data transfer alloc?: {:?}",
+        arg
+    ))]
+    UnsupportedRegisterParameter { arg: PEParameter },
+
+    #[snafu(display(
+        "Unsupported parameter during during transfer to. Unconverted data transfer alloc?: {:?}",
+        arg
+    ))]
+    UnsupportedTransferParameter { arg: PEParameter },
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub type DeviceAddress = u64;
 pub type DeviceSize = u64;
 
+pub type MemoryID = usize;
+
 #[derive(Debug, Getters)]
-struct OffchipMemory {
-    id: usize,
+pub struct OffchipMemory {
+    id: MemoryID,
     allocator: Box<dyn Allocator>,
+    dma: Box<dyn DMAControl>,
+}
+
+#[derive(Debug)]
+pub struct DataTransferAlloc {
+    data: Box<[u8]>,
+    from_device: bool,
+    to_device: bool,
+    memory: MemoryID,
+}
+
+#[derive(Debug)]
+pub struct DataTransferPrealloc {
+    data: Box<[u8]>,
+    device_address: DeviceAddress,
+    from_device: bool,
+    to_device: bool,
+    memory: MemoryID,
+}
+
+#[derive(Debug)]
+pub enum PEParameter {
+    Single32(u32),
+    Single64(u64),
+    DeviceAddress(DeviceAddress),
+    DataTransferAlloc(DataTransferAlloc),
+    DataTransferPrealloc(DataTransferPrealloc),
 }
 
 #[derive(Debug, Getters)]
@@ -142,12 +185,14 @@ impl Device {
                 allocator: Box::new(
                     GenericAllocator::new(0, 4 * 1024 * 1024 * 1024, 64).context(AllocatorError)?,
                 ),
+                dma: Box::new(DriverDMA {}),
             });
         } else if name == "zynq" {
             info!("Using driver allocation for zynq based platform.");
             allocator.push(OffchipMemory {
                 id: 0,
                 allocator: Box::new(DriverAllocator::new().context(AllocatorError)?),
+                dma: Box::new(DriverDMA {}),
             });
         }
 
@@ -265,6 +310,64 @@ impl Device {
         Ok(())
     }
 
+    //TODO: Check performance as this does not happen inplace but creates a new Vec
+    pub fn handle_allocates(&mut self, args: Vec<PEParameter>) -> Result<Vec<PEParameter>> {
+        trace!("Handling allocate parameters.");
+        let new_params = args
+            .into_iter()
+            .map(|arg| match arg {
+                PEParameter::DataTransferAlloc(x) => {
+                    match self.offchip_memory.iter_mut().find(|y| y.id == x.memory) {
+                        Some(mem) => {
+                            let a = mem
+                                .allocator
+                                .allocate(x.data.len() as u64)
+                                .context(AllocatorError)?;
+                            let v = x;
+                            Ok(PEParameter::DataTransferPrealloc(DataTransferPrealloc {
+                                data: v.data,
+                                device_address: a,
+                                from_device: v.from_device,
+                                to_device: v.to_device,
+                                memory: v.memory,
+                            }))
+                        }
+                        None => return Err(Error::UnknownMemory { id: x.memory }),
+                    }
+                }
+                _ => Ok(arg),
+            })
+            .collect();
+        trace!("All allocate parameters handled.");
+        new_params
+    }
+
+    //pub fn handle_transfers_to_device(
+    //    &mut self,
+    //    pe: &mut PE,
+    //    args: &mut Vec<PEParameter>,
+    //) -> Result<()> {
+    //    trace!("Handling transfer to parameters.");
+    //    for (i, arg) in args.iter_mut().enumerate() {
+    //        match arg {
+    //            PEParameter::DataTransferPrealloc(x) => {
+    //                match self.offchip_memory.iter_mut().find(|y| y.id == x.memory) {
+    //                    Some(mem) => {
+    //                        trace!("NOT IMPLEMENTED.");
+    //                    }
+    //                    None => return Err(Error::UnknownMemory { id: x.memory }),
+    //                }
+    //            }
+    //            PEParameter::DataTransferAlloc(x) => {
+    //                return Err(Error::UnsupportedTransferParameter { arg: *arg })
+    //            }
+    //            _ => trace!("No work to do for parameter {:?}.", arg),
+    //        };
+    //    }
+    //    trace!("All transfer to parameters handled.");
+    //    Ok(())
+    //}
+
     pub fn acquire_pe(&mut self, id: PEId) -> Result<PE> {
         self.check_exclusive_access()?;
         trace!("Trying to acquire PE of type {}.", id);
@@ -273,14 +376,24 @@ impl Device {
         Ok(pe)
     }
 
-    pub fn start_pe(&mut self, pe: &mut PE, args: Vec<u64>) -> Result<()> {
+    pub fn start_pe(&mut self, pe: &mut PE, args: Vec<PEParameter>) -> Result<()> {
         self.check_exclusive_access()?;
         trace!("Starting execution of {:?} with Arguments {:?}.", pe, args);
         trace!("Setting arguments.");
-        for (i, arg) in args.iter().enumerate() {
-            pe.set_arg(&mut self.arch, i, *arg)
-                .context(SchedulerError)?;
-            trace!("Argument {} set.", i);
+        for (i, arg) in args.into_iter().enumerate() {
+            trace!("Setting argument {} => {:?}.", i, arg);
+            match arg {
+                PEParameter::Single32(_) => {
+                    pe.set_arg(&mut self.arch, i, arg).context(SchedulerError)?
+                }
+                PEParameter::Single64(_) => {
+                    pe.set_arg(&mut self.arch, i, arg).context(SchedulerError)?
+                }
+                PEParameter::DeviceAddress(x) => pe
+                    .set_arg(&mut self.arch, i, PEParameter::Single64(x))
+                    .context(SchedulerError)?,
+                _ => return Err(Error::UnsupportedRegisterParameter { arg: arg }),
+            };
         }
         trace!("Arguments set.");
         trace!("Starting PE execution.");
