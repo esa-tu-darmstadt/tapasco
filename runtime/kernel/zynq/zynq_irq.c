@@ -21,6 +21,8 @@
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/sched.h>
+#include <linux/of.h>
+#include <linux/of_irq.h>
 #include "tlkm_logging.h"
 #include "tlkm_slots.h"
 #include "zynq_irq.h"
@@ -48,6 +50,13 @@
 typedef struct {
 	u32 base;
 } intc_t;
+
+static const struct of_device_id tapasco_ids[] = {
+    {
+        .compatible = "tapasco",
+    },
+    {},
+};
 
 static struct {
 	struct tlkm_control *ctrl;
@@ -117,10 +126,12 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 	u32 base;
 
 	init_work_structs();
-
-#define _INTC(N)                                                               \
-	rirq = ZYNQ_IRQ_BASE_IRQ + zynq_dev->parent->cls->npirqs + irqn;       \
-	base = tlkm_status_get_component_base(zynq_dev->parent,                \
+    //TODO: Whats up with this 'base" component? Prevents other 4 interrupt lanes from getting connected... 
+#define _INTC(N) \
+    LOG(TLKM_LF_IRQ, "_INTC %d called. irqn is %d", N, irqn);                                                               \
+	rirq = irq_of_parse_and_map(of_find_matching_node(NULL, tapasco_ids), irqn);       \
+	LOG(TLKM_LF_IRQ, "rirq for %d: %d",N, rirq); \
+    base = tlkm_status_get_component_base(zynq_dev->parent,                \
 					      "PLATFORM_COMPONENT_INTC" #N);   \
 	LOG(TLKM_LF_IRQ, "INTC%d base is %d", N, base);                        \
 	if (base != -1) {                                                      \
@@ -158,7 +169,7 @@ void zynq_irq_exit(struct zynq_device *zynq_dev)
 	int irqn = ZYNQ_MAX_NUM_INTCS, rirq = 0;
 	while (irqn) {
 		--irqn;
-		rirq = ZYNQ_IRQ_BASE_IRQ + zynq_dev->parent->cls->npirqs + irqn;
+		rirq = irq_of_parse_and_map(of_find_matching_node(NULL, tapasco_ids), irqn);
 		LOG(TLKM_LF_IRQ, "releasing IRQ #%d", rirq);
 		disable_irq(rirq);
 		free_irq(rirq, zynq_dev);
