@@ -17,6 +17,8 @@ use std::fs::OpenOptions;
 use std::io::Cursor;
 use std::io::Read;
 use std::os::unix::io::AsRawFd;
+use uom::si::f32::*;
+use uom::si::frequency::megahertz;
 
 pub mod status {
     include!(concat!(env!("OUT_DIR"), "/tapasco.status.rs"));
@@ -153,20 +155,31 @@ impl Device {
         product: u32,
         name: String,
     ) -> Result<Device> {
-        let mmap = unsafe {
-            MmapOptions::new()
-                .len(8192)
-                .offset(0)
-                .map(
-                    &OpenOptions::new()
-                        .read(true)
-                        .open(format!("/dev/tlkm_{:02}", id))
-                        .context(DeviceUnavailable { id: id })?,
-                )
-                .context(DeviceUnavailable { id: id })?
+        trace!("Mapping status core.");
+        let s = {
+            let mmap = unsafe {
+                MmapOptions::new()
+                    .len(8192)
+                    .offset(0)
+                    .map(
+                        &OpenOptions::new()
+                            .read(true)
+                            .open(format!("/dev/tlkm_{:02}", id))
+                            .context(DeviceUnavailable { id: id })?,
+                    )
+                    .context(DeviceUnavailable { id: id })?
+            };
+            trace!("Mapped status core: {}", mmap[0]);
+
+            // copy from device to avoid alignment errors that occur on certain devices
+            // e.g. ZynqMP
+            let mut mmap_cpy = [0; 8192];
+            mmap_cpy.copy_from_slice(&mmap[..]);
+
+            status::Status::decode_length_delimited(&mmap_cpy[..]).context(StatusCoreDecoding)?
         };
 
-        let s = status::Status::decode_length_delimited(&mmap[..]).context(StatusCoreDecoding)?;
+        trace!("Status core decoded: {:?}", s);
 
         let platform_size = match &s.platform_base {
             Some(base) => Ok(base.size),
@@ -477,5 +490,19 @@ impl Device {
         }
 
         Ok(())
+    }
+
+    pub fn design_frequency(&self) -> Result<Frequency> {
+        let freq = self
+            .status
+            .clocks
+            .iter()
+            .find(|&x| x.name == "Design")
+            .unwrap_or(&status::Clock {
+                name: "".to_string(),
+                frequency_mhz: 0,
+            })
+            .frequency_mhz;
+        Ok(Frequency::new::<megahertz>(freq as f32))
     }
 }
