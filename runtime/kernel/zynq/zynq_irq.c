@@ -52,10 +52,10 @@ typedef struct {
 } intc_t;
 
 static const struct of_device_id tapasco_ids[] = {
-    {
-        .compatible = "tapasco",
-    },
-    {},
+	{
+		.compatible = "tapasco",
+	},
+	{},
 };
 
 static struct {
@@ -126,12 +126,13 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 	u32 base;
 
 	init_work_structs();
-    //TODO: Whats up with this 'base" component? Prevents other 4 interrupt lanes from getting connected... 
-#define _INTC(N) \
-    LOG(TLKM_LF_IRQ, "_INTC %d called. irqn is %d", N, irqn);                                                               \
-	rirq = irq_of_parse_and_map(of_find_matching_node(NULL, tapasco_ids), irqn);       \
-	LOG(TLKM_LF_IRQ, "rirq for %d: %d",N, rirq); \
-    base = tlkm_status_get_component_base(zynq_dev->parent,                \
+	//TODO: Whats up with this 'base" component? Prevents other 4 interrupt lanes from getting connected...
+#define _INTC(N)                                                               \
+	LOG(TLKM_LF_IRQ, "_INTC %d called. irqn is %d", N, irqn);              \
+	rirq = irq_of_parse_and_map(of_find_matching_node(NULL, tapasco_ids),  \
+				    irqn);                                     \
+	LOG(TLKM_LF_IRQ, "rirq for %d: %d", N, rirq);                          \
+	base = tlkm_status_get_component_base(zynq_dev->parent,                \
 					      "PLATFORM_COMPONENT_INTC" #N);   \
 	LOG(TLKM_LF_IRQ, "INTC%d base is %d", N, base);                        \
 	if (base != -1) {                                                      \
@@ -169,7 +170,8 @@ void zynq_irq_exit(struct zynq_device *zynq_dev)
 	int irqn = ZYNQ_MAX_NUM_INTCS, rirq = 0;
 	while (irqn) {
 		--irqn;
-		rirq = irq_of_parse_and_map(of_find_matching_node(NULL, tapasco_ids), irqn);
+		rirq = irq_of_parse_and_map(
+			of_find_matching_node(NULL, tapasco_ids), irqn);
 		LOG(TLKM_LF_IRQ, "releasing IRQ #%d", rirq);
 		disable_irq(rirq);
 		free_irq(rirq, zynq_dev);
