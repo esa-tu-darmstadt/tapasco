@@ -18,10 +18,10 @@ static const struct of_device_id zynq_ids[] = {
 };
 
 static const struct of_device_id zynqmp_ids[] = {
-    {
-        .compatible = ZYNQMP_NAME,
-    },
-    {},
+	{
+		.compatible = ZYNQMP_NAME,
+	},
+	{},
 };
 
 static struct zynq_device _zynq_dev; // there is at most one Zynq
@@ -95,7 +95,7 @@ int zynq_device_probe(struct tlkm_class *cls)
 		inst = tlkm_bus_new_device(cls, 0, 0, NULL);
 		if (!inst)
 			return -EFAULT;
-    } else {
+	} else {
 		LOG(TLKM_LF_DEVICE, "no Xilinx Zynq-7000 series device found");
 	}
 	return 0;
@@ -104,14 +104,13 @@ int zynq_device_probe(struct tlkm_class *cls)
 int zynqmp_device_probe(struct tlkm_class *cls)
 {
 	struct tlkm_device *inst;
-	LOG(TLKM_LF_DEVICE,
-	    "searching for Xilinx Zynq-MP series devices ...");
+	LOG(TLKM_LF_DEVICE, "searching for Xilinx Zynq-MP series devices ...");
 	if (of_find_matching_node(NULL, zynqmp_ids)) {
-        LOG(TLKM_LF_DEVICE, "found Xilinx Zynq-MP");
+		LOG(TLKM_LF_DEVICE, "found Xilinx Zynq-MP");
 		inst = tlkm_bus_new_device(cls, 0, 0, NULL);
 		if (!inst)
-			return -EFAULT; 
-    } else {
+			return -EFAULT;
+	} else {
 		LOG(TLKM_LF_DEVICE, "no Xilinx Zynq-MP series device found");
 	}
 	return 0;

@@ -25,7 +25,7 @@ static struct tlkm_bus {
 
 static struct tlkm_class *const _tlkm_class[] = {
 	(struct tlkm_class *)&zynq_cls,
-    (struct tlkm_class *)&zynqmp_cls,
+	(struct tlkm_class *)&zynqmp_cls,
 	(struct tlkm_class *)&pcie_cls,
 };
 
