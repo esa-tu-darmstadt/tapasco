@@ -4,9 +4,16 @@ version = "0.1.0"
 authors = ["Jaco Hofmann <hofmann@esa.tu-darmstadt.de>"]
 edition = "2018"
 
+[profile.release]
+opt-level = 3
+lto = true
+
 [dependencies]
 tapasco = { path = "../../libtapasco" }
 env_logger = "0.6.0"
 clap = "2.32.0"
 log = "0.4.6"
 snafu = "0.6.0"
+indicatif = "0.14.0"
+average = "0.10.4"
+uom = "0.27.0"
