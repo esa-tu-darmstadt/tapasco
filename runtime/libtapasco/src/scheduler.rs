@@ -1,4 +1,4 @@
-use crate::device::{DeviceAddress, DeviceSize, PEParameter};
+use crate::device::{DataTransferPrealloc, DeviceAddress, DeviceSize, PEParameter};
 use memmap::Mmap;
 use memmap::MmapMut;
 use std::collections::HashMap;
@@ -46,6 +46,7 @@ pub struct PE {
     #[set = "pub"]
     #[get = "pub"]
     active: bool,
+    copy_back: Option<Vec<DataTransferPrealloc>>,
 }
 
 impl PE {
@@ -117,6 +118,14 @@ impl PE {
             }
         }
     }
+
+    pub fn add_copyback(&mut self, param: DataTransferPrealloc) {
+        self.copy_back.get_or_insert(Vec::new()).push(param);
+    }
+
+    pub fn get_copyback(&mut self) -> Option<Vec<DataTransferPrealloc>> {
+        self.copy_back.take()
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -135,6 +144,7 @@ impl Scheduler {
                 size: pe.size,
                 name: pe.name.to_string(),
                 type_id: pe.id as PEId,
+                copy_back: None,
             };
             match pe_hashed.get_mut(&(pe.id as PEId)) {
                 Some(l) => l.push(the_pe),

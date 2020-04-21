@@ -2,6 +2,7 @@ extern crate snafu;
 
 use average::{concatenate, Estimate, Max, MeanWithError, Min};
 use std::io::Write;
+use tapasco::device::DataTransferAlloc;
 
 use snafu::{ErrorCompat, ResultExt, Snafu};
 use std::io;
@@ -222,6 +223,37 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
+fn test_copy(_: &ArgMatches) -> Result<()> {
+    let mut tlkm = TLKM::new().context(TLKMInit {})?;
+    let devices = tlkm.device_enum().context(TLKMInit)?;
+    for mut x in devices {
+        println!("Evaluating device {}", x.id());
+        x.create(
+            &tlkm.file(),
+            tapasco::tlkm::tlkm_access::TlkmAccessExclusive,
+        )
+        .context(DeviceInit {})?;
+
+        let mut pe = x.acquire_pe(14).context(DeviceInit)?;
+        x.start_pe(
+            &mut pe,
+            vec![
+                tapasco::device::PEParameter::Single64(1),
+                tapasco::device::PEParameter::DataTransferAlloc(DataTransferAlloc {
+                    data: vec![42 as u8, 44, 52, 123, 0, 0, 0, 0, 1, 2, 3, 4, 5],
+                    from_device: true,
+                    to_device: true,
+                    memory: 0,
+                }),
+            ],
+        )
+        .context(DeviceInit)?;
+        x.wait_for_completion(&mut pe).context(DeviceInit)?;
+        println!("{:?}", x.release_pe(pe).context(DeviceInit)?);
+    }
+    Ok(())
+}
+
 fn main() -> Result<()> {
     env_logger::init();
 
@@ -287,6 +319,10 @@ fn main() -> Result<()> {
                         .default_value("1000"),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name("test_copy")
+                .about("Tests the copy to and from the device on memory 0."),
+        )
         .get_matches();
 
     match match matches.subcommand() {
@@ -297,6 +333,7 @@ fn main() -> Result<()> {
         ("run_counter", Some(m)) => run_counter(m),
         ("run_benchmark", Some(m)) => benchmark_counter(m),
         ("run_latency", Some(m)) => latency_benchmark(m),
+        ("test_copy", Some(m)) => test_copy(m),
         _ => Err(Error::UnknownCommand {}),
     } {
         Ok(()) => Ok(()),

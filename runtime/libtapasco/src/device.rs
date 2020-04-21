@@ -65,6 +65,9 @@ pub enum Error {
     #[snafu(display("Allocator Error: {}", source))]
     AllocatorError { source: crate::allocator::Error },
 
+    #[snafu(display("DMA Error: {}", source))]
+    DMAError { source: crate::dma::Error },
+
     #[snafu(display(
         "Unsupported parameter during register write stage. Unconverted data transfer alloc?: {:?}",
         arg
@@ -91,24 +94,24 @@ pub struct OffchipMemory {
     dma: Box<dyn DMAControl>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct DataTransferAlloc {
-    data: Box<[u8]>,
-    from_device: bool,
-    to_device: bool,
-    memory: MemoryID,
+    pub data: Vec<u8>,
+    pub from_device: bool,
+    pub to_device: bool,
+    pub memory: MemoryID,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct DataTransferPrealloc {
-    data: Box<[u8]>,
-    device_address: DeviceAddress,
-    from_device: bool,
-    to_device: bool,
-    memory: MemoryID,
+    pub data: Vec<u8>,
+    pub device_address: DeviceAddress,
+    pub from_device: bool,
+    pub to_device: bool,
+    pub memory: MemoryID,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum PEParameter {
     Single32(u32),
     Single64(u64),
@@ -336,16 +339,15 @@ impl Device {
                                 .allocator
                                 .allocate(x.data.len() as u64)
                                 .context(AllocatorError)?;
-                            let v = x;
                             Ok(PEParameter::DataTransferPrealloc(DataTransferPrealloc {
-                                data: v.data,
+                                data: x.data,
                                 device_address: a,
-                                from_device: v.from_device,
-                                to_device: v.to_device,
-                                memory: v.memory,
+                                from_device: x.from_device,
+                                to_device: x.to_device,
+                                memory: x.memory,
                             }))
                         }
-                        None => return Err(Error::UnknownMemory { id: x.memory }),
+                        None => Err(Error::UnknownMemory { id: x.memory }),
                     }
                 }
                 _ => Ok(arg),
@@ -355,31 +357,40 @@ impl Device {
         new_params
     }
 
-    //pub fn handle_transfers_to_device(
-    //    &mut self,
-    //    pe: &mut PE,
-    //    args: &mut Vec<PEParameter>,
-    //) -> Result<()> {
-    //    trace!("Handling transfer to parameters.");
-    //    for (i, arg) in args.iter_mut().enumerate() {
-    //        match arg {
-    //            PEParameter::DataTransferPrealloc(x) => {
-    //                match self.offchip_memory.iter_mut().find(|y| y.id == x.memory) {
-    //                    Some(mem) => {
-    //                        trace!("NOT IMPLEMENTED.");
-    //                    }
-    //                    None => return Err(Error::UnknownMemory { id: x.memory }),
-    //                }
-    //            }
-    //            PEParameter::DataTransferAlloc(x) => {
-    //                return Err(Error::UnsupportedTransferParameter { arg: *arg })
-    //            }
-    //            _ => trace!("No work to do for parameter {:?}.", arg),
-    //        };
-    //    }
-    //    trace!("All transfer to parameters handled.");
-    //    Ok(())
-    //}
+    pub fn handle_transfers_to_device(
+        &mut self,
+        pe: &mut PE,
+        args: Vec<PEParameter>,
+    ) -> Result<Vec<PEParameter>> {
+        trace!("Handling allocate parameters.");
+        let new_params = args
+            .into_iter()
+            .try_fold(Vec::new(), |mut xs, arg| match arg {
+                PEParameter::DataTransferPrealloc(x) => {
+                    if x.to_device {
+                        match self.offchip_memory.iter_mut().find(|y| y.id == x.memory) {
+                            Some(mem) => {
+                                mem.dma
+                                    .copy_to(&self.completion, &x.data[..], x.device_address)
+                                    .context(DMAError)?;
+                                xs.push(PEParameter::DeviceAddress(x.device_address));
+                            }
+                            None => return Err(Error::UnknownMemory { id: x.memory }),
+                        }
+                    }
+                    if x.from_device {
+                        pe.add_copyback(x);
+                    }
+                    Ok(xs)
+                }
+                _ => {
+                    xs.push(arg);
+                    Ok(xs)
+                }
+            });
+        trace!("All transfer to parameters handled.");
+        new_params
+    }
 
     pub fn acquire_pe(&mut self, id: PEId) -> Result<PE> {
         self.check_exclusive_access()?;
@@ -392,8 +403,12 @@ impl Device {
     pub fn start_pe(&mut self, pe: &mut PE, args: Vec<PEParameter>) -> Result<()> {
         self.check_exclusive_access()?;
         trace!("Starting execution of {:?} with Arguments {:?}.", pe, args);
+        let local_args = self.handle_allocates(args)?;
+        trace!("Handled allocates => {:?}.", local_args);
+        let trans_args = self.handle_transfers_to_device(pe, local_args)?;
+        trace!("Handled transfers => {:?}.", trans_args);
         trace!("Setting arguments.");
-        for (i, arg) in args.into_iter().enumerate() {
+        for (i, arg) in trans_args.into_iter().enumerate() {
             trace!("Setting argument {} => {:?}.", i, arg);
             match arg {
                 PEParameter::Single32(_) => {
@@ -416,16 +431,47 @@ impl Device {
         Ok(())
     }
 
-    pub fn release_pe(&mut self, mut pe: PE) -> Result<()> {
+    pub fn release_pe(&mut self, mut pe: PE) -> Result<Option<Vec<Vec<u8>>>> {
         self.check_exclusive_access()?;
         trace!("Trying to release {:?}.", pe);
         if *pe.active() {
             self.wait_for_completion(&mut pe)?;
         }
         trace!("PE is idle.");
+        let copyback = pe.get_copyback();
         self.scheduler.release_pe(pe).context(SchedulerError)?;
         trace!("Release successful.");
-        Ok(())
+        match copyback {
+            Some(x) => {
+                let res = x
+                    .into_iter()
+                    .map(|mut param| {
+                        match self
+                            .offchip_memory
+                            .iter_mut()
+                            .find(|y| y.id == param.memory)
+                        {
+                            Some(mem) => {
+                                mem.dma
+                                    .copy_from(
+                                        &self.completion,
+                                        param.device_address,
+                                        &mut param.data[..],
+                                    )
+                                    .context(DMAError)?;
+                                Ok(param.data)
+                            }
+                            None => Err(Error::UnknownMemory { id: param.memory }),
+                        }
+                    })
+                    .collect();
+                match res {
+                    Ok(x) => Ok(Some(x)),
+                    Err(x) => Err(x),
+                }
+            }
+            None => Ok(None),
+        }
     }
 
     fn check_exclusive_access(&self) -> Result<()> {

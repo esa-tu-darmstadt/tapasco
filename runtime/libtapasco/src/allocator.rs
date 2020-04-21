@@ -245,7 +245,7 @@ impl Allocator for DriverAllocator {
     fn allocate(&mut self, size: DeviceSize) -> Result<DeviceAddress> {
         Err(Error::OutOfMemory { size: size })
     }
-    fn free(&mut self, ptr: DeviceAddress) -> Result<()> {
+    fn free(&mut self, _ptr: DeviceAddress) -> Result<()> {
         Ok(())
     }
 }

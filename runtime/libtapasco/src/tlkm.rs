@@ -1,5 +1,5 @@
-use crate::device::Device;
 use crate::device::Error as DevError;
+use crate::device::{Device, DeviceAddress};
 use snafu::ResultExt;
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -28,12 +28,69 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub type DeviceId = u32;
 
-const TLKM_IOC_MAGIC: u8 = b't';
-const TLKM_IOCTL_VERSION: u8 = 1;
-
 const TLKM_VERSION_SZ: usize = 30;
 const TLKM_DEVNAME_SZ: usize = 30;
 const TLKM_DEVS_SZ: usize = 10;
+
+const TLKM_DEVICE_IOC_MAGIC: u8 = b'd';
+
+const TLKM_DEVICE_IOCTL_ALLOC: u8 = 0x10;
+const TLKM_DEVICE_IOCTL_FREE: u8 = 0x11;
+
+#[repr(C)]
+#[derive(Default)]
+pub struct tlkm_mm_cmd {
+    sz: usize,
+    dev_addr: DeviceAddress,
+}
+
+ioctl_readwrite!(
+    tlkm_ioctl_alloc,
+    TLKM_DEVICE_IOC_MAGIC,
+    TLKM_DEVICE_IOCTL_ALLOC,
+    tlkm_mm_cmd
+);
+
+ioctl_readwrite!(
+    tlkm_ioctl_free,
+    TLKM_DEVICE_IOC_MAGIC,
+    TLKM_DEVICE_IOCTL_FREE,
+    tlkm_mm_cmd
+);
+
+const TLKM_DEVICE_IOCTL_COPYTO: u8 = 0x12;
+const TLKM_DEVICE_IOCTL_COPYFROM: u8 = 0x13;
+
+#[repr(C)]
+pub struct tlkm_copy_cmd_from {
+    pub length: usize,
+    pub user_addr: *mut u8,
+    pub dev_addr: DeviceAddress,
+}
+
+#[repr(C)]
+pub struct tlkm_copy_cmd_to {
+    pub length: usize,
+    pub user_addr: *const u8,
+    pub dev_addr: DeviceAddress,
+}
+
+ioctl_readwrite!(
+    tlkm_ioctl_copy_to,
+    TLKM_DEVICE_IOC_MAGIC,
+    TLKM_DEVICE_IOCTL_COPYTO,
+    tlkm_copy_cmd_to
+);
+
+ioctl_readwrite!(
+    tlkm_ioctl_copy_from,
+    TLKM_DEVICE_IOC_MAGIC,
+    TLKM_DEVICE_IOCTL_COPYFROM,
+    tlkm_copy_cmd_from
+);
+
+const TLKM_IOC_MAGIC: u8 = b't';
+const TLKM_IOCTL_VERSION: u8 = 1;
 
 #[repr(C)]
 #[derive(Default)]
@@ -170,7 +227,9 @@ impl TLKM {
                     devices.devs[x].dev_id,
                     devices.devs[x].vendor_id,
                     devices.devs[x].product_id,
-                    String::from_utf8_lossy(&devices.devs[x].name).to_string(),
+                    String::from_utf8_lossy(&devices.devs[x].name)
+                        .trim_matches(char::from(0))
+                        .to_string(),
                 )
                 .context(DeviceError)?,
             );
