@@ -133,9 +133,6 @@ impl PE {
                     trace!("Cleaning up PE {} after release.", self.id);
                     self.active_pes.1.remove(&self.id());
                     self.active = false;
-                    // TODO: Why is GIER reset without any write to it?
-                    // This call should not be necessary
-                    self.enable_interrupt()?;
                     self.reset_interrupt(true)?;
                 } else {
                     match self.active_pes.0.try_lock() {

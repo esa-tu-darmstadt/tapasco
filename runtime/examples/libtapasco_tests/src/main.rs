@@ -2,7 +2,8 @@ extern crate snafu;
 
 use average::{concatenate, Estimate, Max, MeanWithError, Min};
 use std::io::Write;
-use tapasco::device::DataTransferAlloc;
+
+use tapasco::device::DataTransferPrealloc;
 
 use snafu::{ErrorCompat, ResultExt, Snafu};
 use std::io;
@@ -32,6 +33,9 @@ extern crate uom;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
+    #[snafu(display("Allocator Error: {}", source))]
+    AllocatorError { source: tapasco::allocator::Error },
+
     #[snafu(display("Invalid subcommand"))]
     UnknownCommand {},
     #[snafu(display("Failed to initialize TLKM object: {}", source))]
@@ -45,6 +49,15 @@ pub enum Error {
 
     #[snafu(display("IO Error: {}", source))]
     IOError { source: std::io::Error },
+
+    #[snafu(display("Mutex has been poisoned"))]
+    MutexError {},
+}
+
+impl<T> From<std::sync::PoisonError<T>> for Error {
+    fn from(_error: std::sync::PoisonError<T>) -> Self {
+        Error::MutexError {}
+    }
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -238,29 +251,46 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
         )
         .context(DeviceInit {})?;
 
-        for _ in 0..2 {
-            let mut pe = x.acquire_pe(14).context(DeviceInit)?;
-            let mem = x.default_memory().context(DeviceInit)?;
-            pe.start(vec![
-                tapasco::device::PEParameter::Single64(1),
-                tapasco::device::PEParameter::DataTransferAlloc(DataTransferAlloc {
-                    data: vec![42 as u8, 44, 52, 123, 0, 0, 0, 0, 1, 2, 3, 4, 5],
-                    from_device: true,
-                    to_device: true,
-                    free: true,
-                    memory: mem.clone(),
-                }),
-                tapasco::device::PEParameter::DataTransferAlloc(DataTransferAlloc {
-                    data: vec![255 as u8, 254, 253, 252, 23, 42, 51, 66, 35, 21, 77, 83, 52],
-                    from_device: true,
-                    to_device: true,
-                    free: true,
-                    memory: mem,
-                }),
-            ])
-            .context(JobError)?;
-            println!("{:?}", pe.release(true).context(JobError)?);
-        }
+        let mem = x.default_memory().context(DeviceInit)?;
+        let a = mem
+            .allocator()
+            .lock()?
+            .allocate(256 * 4)
+            .context(AllocatorError)?;
+
+        let mut pe = x.acquire_pe(11).context(DeviceInit)?;
+
+        pe.start(vec![
+            tapasco::device::PEParameter::Single64(1),
+            tapasco::device::PEParameter::DataTransferPrealloc(DataTransferPrealloc {
+                data: vec![0 as u8; 256 * 4],
+                device_address: a,
+                from_device: true,
+                to_device: false,
+                free: false,
+                memory: mem.clone(),
+            }),
+        ])
+        .context(JobError)?;
+        println!("{:?}", pe.release(true).context(JobError)?);
+
+        let mut pe = x.acquire_pe(9).context(DeviceInit)?;
+
+        pe.start(vec![
+            tapasco::device::PEParameter::Single64(1),
+            tapasco::device::PEParameter::DataTransferPrealloc(DataTransferPrealloc {
+                data: vec![0 as u8; 256 * 4],
+                device_address: a,
+                from_device: true,
+                to_device: false,
+                free: false,
+                memory: mem.clone(),
+            }),
+        ])
+        .context(JobError)?;
+        println!("{:?}", pe.release(true).context(JobError)?);
+
+        mem.allocator().lock()?.free(a).context(AllocatorError)?;
     }
     Ok(())
 }

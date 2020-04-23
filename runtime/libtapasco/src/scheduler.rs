@@ -86,8 +86,9 @@ impl Scheduler {
         for (_, v) in self.pes.iter_mut() {
             for pe in v.iter_mut() {
                 pe.enable_interrupt().context(PEError)?;
-                let iar_status = pe.interrupt_set().context(PEError)?;
-                pe.reset_interrupt(iar_status).context(PEError)?;
+                if pe.interrupt_set().context(PEError)? {
+                    pe.reset_interrupt(true).context(PEError)?;
+                }
             }
         }
 
