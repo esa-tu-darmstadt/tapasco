@@ -35,7 +35,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub type PEId = usize;
 
-#[derive(Debug, PartialEq, Getters, Setters)]
+#[derive(Debug, Getters, Setters)]
 pub struct PE {
     #[get = "pub"]
     id: usize,
@@ -62,26 +62,59 @@ impl PE {
         Ok(())
     }
 
-    pub fn reset_interrupt(&mut self, mem: &mut MmapMut) -> Result<()> {
-        ensure!(!self.active, PEAlreadyActive { id: self.id });
+    pub fn interrupt_set(&mut self, mem: &mut MmapMut) -> Result<bool> {
         let offset = (self.offset as usize + 0x0c) as isize;
+        let r = unsafe {
+            let ptr = mem.as_ptr().offset(offset);
+            let volatile_ptr = ptr as *mut Volatile<u32>;
+            (*volatile_ptr).read()
+        };
+        let s = (r & 1) == 1;
+        trace!("Reading interrupt status from 0x{:x} -> {}", offset, s);
+        Ok(s)
+    }
+
+    pub fn reset_interrupt(&mut self, mem: &mut MmapMut, v: bool) -> Result<()> {
+        let offset = (self.offset as usize + 0x0c) as isize;
+        trace!("Resetting interrupts: 0x{:x} -> {}", offset, v);
         unsafe {
             let ptr = mem.as_ptr().offset(offset);
             let volatile_ptr = ptr as *mut Volatile<u32>;
-            (*volatile_ptr).write(1);
+            (*volatile_ptr).write(if v { 1 } else { 0 });
         }
         Ok(())
+    }
+
+    pub fn interrupt_status(&mut self, mem: &mut MmapMut) -> Result<(bool, bool)> {
+        let mut offset = (self.offset as usize + 0x04) as isize;
+        let g = unsafe {
+            let ptr = mem.as_ptr().offset(offset);
+            let volatile_ptr = ptr as *mut Volatile<u32>;
+            (*volatile_ptr).read()
+        } & 1
+            == 1;
+        offset = (self.offset as usize + 0x08) as isize;
+        let l = unsafe {
+            let ptr = mem.as_ptr().offset(offset);
+            let volatile_ptr = ptr as *mut Volatile<u32>;
+            (*volatile_ptr).read()
+        } & 1
+            == 1;
+        trace!("Interrupt status is {}, {}", g, l);
+        Ok((g, l))
     }
 
     pub fn enable_interrupt(&mut self, mem: &mut MmapMut) -> Result<()> {
         ensure!(!self.active, PEAlreadyActive { id: self.id });
         let mut offset = (self.offset as usize + 0x04) as isize;
+        trace!("Enabling interrupts: 0x{:x} -> 1", offset);
         unsafe {
             let ptr = mem.as_ptr().offset(offset);
             let volatile_ptr = ptr as *mut Volatile<u32>;
             (*volatile_ptr).write(1);
         }
         offset = (self.offset as usize + 0x08) as isize;
+        trace!("Enabling global interrupts: 0x{:x} -> 1", offset);
         unsafe {
             let ptr = mem.as_ptr().offset(offset);
             let volatile_ptr = ptr as *mut Volatile<u32>;
@@ -92,6 +125,7 @@ impl PE {
 
     pub fn set_arg(&self, mem: &mut MmapMut, argn: usize, arg: PEParameter) -> Result<()> {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
+        trace!("Writing argument: 0x{:x} ({}) -> {:?}", offset, argn, arg);
         unsafe {
             let ptr = mem.as_ptr().offset(offset);
             match arg {
@@ -105,7 +139,7 @@ impl PE {
 
     pub fn read_arg(&self, mem: &Mmap, argn: usize, bytes: usize) -> Result<PEParameter> {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
-        unsafe {
+        let r = unsafe {
             let ptr = mem.as_ptr().offset(offset);
             match bytes {
                 4 => Ok(PEParameter::Single32(
@@ -116,7 +150,15 @@ impl PE {
                 )),
                 _ => Err(Error::UnsupportedRegisterSize { param: bytes }),
             }
-        }
+        };
+        trace!(
+            "Reading argument: 0x{:x} ({} x {}B) -> {:?}",
+            offset,
+            argn,
+            bytes,
+            r
+        );
+        r
     }
 
     pub fn add_copyback(&mut self, param: DataTransferPrealloc) {
@@ -128,7 +170,7 @@ impl PE {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct Scheduler {
     pes: HashMap<PEId, Vec<PE>>,
 }
@@ -184,7 +226,8 @@ impl Scheduler {
         for (_, v) in self.pes.iter_mut() {
             for pe in v.iter_mut() {
                 pe.enable_interrupt(mem)?;
-                pe.reset_interrupt(mem)?;
+                let iar_status = pe.interrupt_set(mem)?;
+                pe.reset_interrupt(mem, iar_status)?;
             }
         }
 

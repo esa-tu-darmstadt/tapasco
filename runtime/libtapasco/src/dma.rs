@@ -3,6 +3,7 @@ use crate::tlkm::tlkm_copy_cmd_from;
 use crate::tlkm::tlkm_copy_cmd_to;
 use crate::tlkm::tlkm_ioctl_copy_from;
 use crate::tlkm::tlkm_ioctl_copy_to;
+use core::fmt::Debug;
 use snafu::ResultExt;
 use std::fs::File;
 use std::os::unix::prelude::*;
@@ -17,15 +18,9 @@ pub enum Error {
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-pub trait DMAControl {
+pub trait DMAControl: Debug {
     fn copy_to(&self, tlkm_file: &File, data: &[u8], ptr: DeviceAddress) -> Result<()>;
     fn copy_from(&self, tlkm_file: &File, ptr: DeviceAddress, data: &mut [u8]) -> Result<()>;
-}
-
-impl std::fmt::Debug for dyn DMAControl {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
 }
 
 #[derive(Debug, Getters)]

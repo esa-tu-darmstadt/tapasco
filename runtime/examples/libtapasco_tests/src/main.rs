@@ -234,22 +234,33 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
         )
         .context(DeviceInit {})?;
 
-        let mut pe = x.acquire_pe(14).context(DeviceInit)?;
-        x.start_pe(
-            &mut pe,
-            vec![
-                tapasco::device::PEParameter::Single64(1),
-                tapasco::device::PEParameter::DataTransferAlloc(DataTransferAlloc {
-                    data: vec![42 as u8, 44, 52, 123, 0, 0, 0, 0, 1, 2, 3, 4, 5],
-                    from_device: true,
-                    to_device: true,
-                    memory: 0,
-                }),
-            ],
-        )
-        .context(DeviceInit)?;
-        x.wait_for_completion(&mut pe).context(DeviceInit)?;
-        println!("{:?}", x.release_pe(pe).context(DeviceInit)?);
+        for _ in 0..2 {
+            let mut pe = x.acquire_pe(14).context(DeviceInit)?;
+            let mem = x.default_memory().context(DeviceInit)?;
+            x.start_pe(
+                &mut pe,
+                vec![
+                    tapasco::device::PEParameter::Single64(1),
+                    tapasco::device::PEParameter::DataTransferAlloc(DataTransferAlloc {
+                        data: vec![42 as u8, 44, 52, 123, 0, 0, 0, 0, 1, 2, 3, 4, 5],
+                        from_device: true,
+                        to_device: true,
+                        free: true,
+                        memory: mem.clone(),
+                    }),
+                    tapasco::device::PEParameter::DataTransferAlloc(DataTransferAlloc {
+                        data: vec![255 as u8, 254, 253, 252, 23, 42, 51, 66, 35, 21, 77, 83, 52],
+                        from_device: true,
+                        to_device: true,
+                        free: true,
+                        memory: mem,
+                    }),
+                ],
+            )
+            .context(DeviceInit)?;
+            x.wait_for_completion(&mut pe).context(DeviceInit)?;
+            println!("{:?}", x.release_pe(pe).context(DeviceInit)?);
+        }
     }
     Ok(())
 }

@@ -1,5 +1,6 @@
 use crate::device::DeviceAddress;
 use crate::device::DeviceSize;
+use core::fmt::Debug;
 
 #[derive(Debug, Snafu, PartialEq)]
 pub enum Error {
@@ -14,15 +15,9 @@ pub enum Error {
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-pub trait Allocator {
+pub trait Allocator: Debug {
     fn allocate(&mut self, size: DeviceSize) -> Result<DeviceAddress>;
     fn free(&mut self, ptr: DeviceAddress) -> Result<()>;
-}
-
-impl std::fmt::Debug for dyn Allocator {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
 }
 
 #[derive(Debug, Getters, Copy, Clone)]

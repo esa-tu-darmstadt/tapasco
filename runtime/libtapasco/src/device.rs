@@ -17,6 +17,8 @@ use std::fs::OpenOptions;
 use std::io::Cursor;
 use std::io::Read;
 use std::os::unix::io::AsRawFd;
+use std::sync::Arc;
+use std::sync::Mutex;
 use uom::si::f32::*;
 use uom::si::frequency::megahertz;
 
@@ -68,6 +70,9 @@ pub enum Error {
     #[snafu(display("DMA Error: {}", source))]
     DMAError { source: crate::dma::Error },
 
+    #[snafu(display("Mutex has been poisoned"))]
+    MutexError {},
+
     #[snafu(display(
         "Unsupported parameter during register write stage. Unconverted data transfer alloc?: {:?}",
         arg
@@ -82,6 +87,12 @@ pub enum Error {
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+impl<T> From<std::sync::PoisonError<T>> for Error {
+    fn from(_error: std::sync::PoisonError<T>) -> Self {
+        Error::MutexError {}
+    }
+}
+
 pub type DeviceAddress = u64;
 pub type DeviceSize = u64;
 
@@ -90,28 +101,30 @@ pub type MemoryID = usize;
 #[derive(Debug, Getters)]
 pub struct OffchipMemory {
     id: MemoryID,
-    allocator: Box<dyn Allocator>,
+    allocator: Mutex<Box<dyn Allocator>>,
     dma: Box<dyn DMAControl>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct DataTransferAlloc {
     pub data: Vec<u8>,
     pub from_device: bool,
     pub to_device: bool,
-    pub memory: MemoryID,
+    pub free: bool,
+    pub memory: Arc<OffchipMemory>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct DataTransferPrealloc {
     pub data: Vec<u8>,
     pub device_address: DeviceAddress,
     pub from_device: bool,
     pub to_device: bool,
-    pub memory: MemoryID,
+    pub free: bool,
+    pub memory: Arc<OffchipMemory>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum PEParameter {
     Single32(u32),
     Single64(u64),
@@ -138,7 +151,7 @@ pub struct Device {
     arch: MmapMut,
     completion: File,
     active_pes: HashMap<usize, bool>,
-    offchip_memory: Vec<OffchipMemory>,
+    offchip_memory: Vec<Arc<OffchipMemory>>,
 }
 
 impl Drop for Device {
@@ -196,20 +209,20 @@ impl Device {
         let mut allocator = Vec::new();
         if name == "pcie" {
             info!("Allocating the default of 4GB at 0x0 for a PCIe platform");
-            allocator.push(OffchipMemory {
+            allocator.push(Arc::new(OffchipMemory {
                 id: 0,
-                allocator: Box::new(
+                allocator: Mutex::new(Box::new(
                     GenericAllocator::new(0, 4 * 1024 * 1024 * 1024, 64).context(AllocatorError)?,
-                ),
+                )),
                 dma: Box::new(DriverDMA {}),
-            });
+            }));
         } else if name == "zynq" {
             info!("Using driver allocation for zynq based platform.");
-            allocator.push(OffchipMemory {
+            allocator.push(Arc::new(OffchipMemory {
                 id: 0,
-                allocator: Box::new(DriverAllocator::new().context(AllocatorError)?),
+                allocator: Mutex::new(Box::new(DriverAllocator::new().context(AllocatorError)?)),
                 dma: Box::new(DriverDMA {}),
-            });
+            }));
         }
 
         let platform = unsafe {
@@ -261,6 +274,7 @@ impl Device {
             arch: arch,
             completion: OpenOptions::new()
                 .read(true)
+                .write(true)
                 .open(format!("/dev/tlkm_{:02}", id))
                 .context(DeviceUnavailable { id: id })?,
             active_pes: HashMap::new(),
@@ -279,6 +293,7 @@ impl Device {
     fn wait_for_completion_loop(&mut self, pe_id: &usize) -> Result<()> {
         let mut active = true;
         while active {
+            trace!("Waiting for completion notices from driver.");
             let mut buffer = [u8::max_value(); 128 * 4];
             self.completion
                 .read(&mut buffer)
@@ -288,13 +303,14 @@ impl Device {
             while buf.remaining() >= 4 {
                 let id = buf.get_u32_le();
                 if id != u32::max_value() {
+                    trace!("Checking PE ID {}", id);
                     if id as usize == *pe_id {
                         trace!("PE {} is finished.", id);
                         active = false;
                     } else {
                         match self.active_pes.get_mut(&(id as usize)) {
                             Some(pe_done) => *pe_done = true,
-                            None => trace!("PE is not waiting right now."),
+                            None => trace!("PE {} is not waiting right now.", id),
                         }
                     }
                 }
@@ -312,12 +328,17 @@ impl Device {
                     } else {
                         trace!("Waiting for completion of {:?}.", pe);
                         self.wait_for_completion_loop(&pe.id())?;
-                        trace!("Waiting for PE completed.");
+                        trace!("PE finished execution.");
                     }
                     pe.set_active(false);
-                    pe.reset_interrupt(&mut self.arch).context(SchedulerError)?;
+                    // TODO: Why is GIER reset without any write to it?
+                    // This call should not be necessary
+                    pe.enable_interrupt(&mut self.arch)
+                        .context(SchedulerError)?;
+                    pe.reset_interrupt(&mut self.arch, true)
+                        .context(SchedulerError)?;
                 }
-                None => trace!("PE is not waiting right now."),
+                None => trace!("PE {} is not waiting right now.", pe.id()),
             }
             self.active_pes.remove(pe.id());
         } else {
@@ -333,22 +354,21 @@ impl Device {
             .into_iter()
             .map(|arg| match arg {
                 PEParameter::DataTransferAlloc(x) => {
-                    match self.offchip_memory.iter_mut().find(|y| y.id == x.memory) {
-                        Some(mem) => {
-                            let a = mem
-                                .allocator
-                                .allocate(x.data.len() as u64)
-                                .context(AllocatorError)?;
-                            Ok(PEParameter::DataTransferPrealloc(DataTransferPrealloc {
-                                data: x.data,
-                                device_address: a,
-                                from_device: x.from_device,
-                                to_device: x.to_device,
-                                memory: x.memory,
-                            }))
-                        }
-                        None => Err(Error::UnknownMemory { id: x.memory }),
-                    }
+                    let a = {
+                        x.memory
+                            .allocator
+                            .lock()?
+                            .allocate(x.data.len() as u64)
+                            .context(AllocatorError)?
+                    };
+                    Ok(PEParameter::DataTransferPrealloc(DataTransferPrealloc {
+                        data: x.data,
+                        device_address: a,
+                        from_device: x.from_device,
+                        to_device: x.to_device,
+                        memory: x.memory,
+                        free: x.free,
+                    }))
                 }
                 _ => Ok(arg),
             })
@@ -368,15 +388,11 @@ impl Device {
             .try_fold(Vec::new(), |mut xs, arg| match arg {
                 PEParameter::DataTransferPrealloc(x) => {
                     if x.to_device {
-                        match self.offchip_memory.iter_mut().find(|y| y.id == x.memory) {
-                            Some(mem) => {
-                                mem.dma
-                                    .copy_to(&self.completion, &x.data[..], x.device_address)
-                                    .context(DMAError)?;
-                                xs.push(PEParameter::DeviceAddress(x.device_address));
-                            }
-                            None => return Err(Error::UnknownMemory { id: x.memory }),
-                        }
+                        x.memory
+                            .dma
+                            .copy_to(&self.completion, &x.data[..], x.device_address)
+                            .context(DMAError)?;
+                        xs.push(PEParameter::DeviceAddress(x.device_address));
                     }
                     if x.from_device {
                         pe.add_copyback(x);
@@ -446,23 +462,20 @@ impl Device {
                 let res = x
                     .into_iter()
                     .map(|mut param| {
-                        match self
-                            .offchip_memory
-                            .iter_mut()
-                            .find(|y| y.id == param.memory)
-                        {
-                            Some(mem) => {
-                                mem.dma
-                                    .copy_from(
-                                        &self.completion,
-                                        param.device_address,
-                                        &mut param.data[..],
-                                    )
-                                    .context(DMAError)?;
-                                Ok(param.data)
-                            }
-                            None => Err(Error::UnknownMemory { id: param.memory }),
+                        param
+                            .memory
+                            .dma
+                            .copy_from(&self.completion, param.device_address, &mut param.data[..])
+                            .context(DMAError)?;
+                        if param.free {
+                            param
+                                .memory
+                                .allocator
+                                .lock()?
+                                .free(param.device_address)
+                                .context(AllocatorError)?;
                         }
+                        Ok(param.data)
                     })
                     .collect();
                 match res {
@@ -550,5 +563,9 @@ impl Device {
             })
             .frequency_mhz;
         Ok(Frequency::new::<megahertz>(freq as f32))
+    }
+
+    pub fn default_memory(&self) -> Result<Arc<OffchipMemory>> {
+        Ok(self.offchip_memory[0].clone())
     }
 }
