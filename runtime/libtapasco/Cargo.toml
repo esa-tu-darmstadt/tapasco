@@ -26,6 +26,7 @@ snafu = "0.6.6"
 prost = "0.5.0"
 bytes = "0.4.12"
 env_logger = "0.7.1"
+lockfree = "0.5.1"
 
 [build-dependencies]
 prost-build = { version = "0.5.0" }

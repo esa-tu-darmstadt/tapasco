@@ -1,8 +1,11 @@
-use crate::device::{DataTransferPrealloc, DeviceAddress, DeviceSize, PEParameter};
-use memmap::Mmap;
+use crate::pe::PEId;
+use crate::pe::PE;
+use lockfree::set::Set;
 use memmap::MmapMut;
+use snafu::ResultExt;
 use std::collections::HashMap;
-use volatile::Volatile;
+use std::fs::File;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -12,163 +15,14 @@ pub enum Error {
     #[snafu(display("PE Type {} is unknown.", id))]
     NoSuchPE { id: PEId },
 
-    #[snafu(display("PE {} is already running.", id))]
-    PEAlreadyActive { id: usize },
-
-    #[snafu(display("PE {} is still active. Can't release it.", pe.id))]
+    #[snafu(display("PE {} is still active. Can't release it.", pe.id()))]
     PEStillActive { pe: PE },
 
-    #[snafu(display(
-        "Param {:?} is unsupported. Only 32 and 64 Bit value can interact with device registers.",
-        param
-    ))]
-    UnsupportedParameter { param: PEParameter },
-
-    #[snafu(display(
-        "Transfer width {} Bit is unsupported. Only 32 and 64 Bit value can interact with device registers.",
-        param * 8
-    ))]
-    UnsupportedRegisterSize { param: usize },
+    #[snafu(display("PE Error: {}", source))]
+    PEError { source: crate::pe::Error },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
-
-pub type PEId = usize;
-
-#[derive(Debug, Getters, Setters)]
-pub struct PE {
-    #[get = "pub"]
-    id: usize,
-    type_id: PEId,
-    offset: DeviceAddress,
-    size: DeviceSize,
-    name: String,
-    #[set = "pub"]
-    #[get = "pub"]
-    active: bool,
-    copy_back: Option<Vec<DataTransferPrealloc>>,
-}
-
-impl PE {
-    pub fn start(&mut self, mem: &mut MmapMut) -> Result<()> {
-        ensure!(!self.active, PEAlreadyActive { id: self.id });
-        let offset = self.offset as isize;
-        unsafe {
-            let ptr = mem.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u32>;
-            (*volatile_ptr).write(1);
-        }
-        self.active = true;
-        Ok(())
-    }
-
-    pub fn interrupt_set(&mut self, mem: &mut MmapMut) -> Result<bool> {
-        let offset = (self.offset as usize + 0x0c) as isize;
-        let r = unsafe {
-            let ptr = mem.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u32>;
-            (*volatile_ptr).read()
-        };
-        let s = (r & 1) == 1;
-        trace!("Reading interrupt status from 0x{:x} -> {}", offset, s);
-        Ok(s)
-    }
-
-    pub fn reset_interrupt(&mut self, mem: &mut MmapMut, v: bool) -> Result<()> {
-        let offset = (self.offset as usize + 0x0c) as isize;
-        trace!("Resetting interrupts: 0x{:x} -> {}", offset, v);
-        unsafe {
-            let ptr = mem.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u32>;
-            (*volatile_ptr).write(if v { 1 } else { 0 });
-        }
-        Ok(())
-    }
-
-    pub fn interrupt_status(&mut self, mem: &mut MmapMut) -> Result<(bool, bool)> {
-        let mut offset = (self.offset as usize + 0x04) as isize;
-        let g = unsafe {
-            let ptr = mem.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u32>;
-            (*volatile_ptr).read()
-        } & 1
-            == 1;
-        offset = (self.offset as usize + 0x08) as isize;
-        let l = unsafe {
-            let ptr = mem.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u32>;
-            (*volatile_ptr).read()
-        } & 1
-            == 1;
-        trace!("Interrupt status is {}, {}", g, l);
-        Ok((g, l))
-    }
-
-    pub fn enable_interrupt(&mut self, mem: &mut MmapMut) -> Result<()> {
-        ensure!(!self.active, PEAlreadyActive { id: self.id });
-        let mut offset = (self.offset as usize + 0x04) as isize;
-        trace!("Enabling interrupts: 0x{:x} -> 1", offset);
-        unsafe {
-            let ptr = mem.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u32>;
-            (*volatile_ptr).write(1);
-        }
-        offset = (self.offset as usize + 0x08) as isize;
-        trace!("Enabling global interrupts: 0x{:x} -> 1", offset);
-        unsafe {
-            let ptr = mem.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u32>;
-            (*volatile_ptr).write(1);
-        }
-        Ok(())
-    }
-
-    pub fn set_arg(&self, mem: &mut MmapMut, argn: usize, arg: PEParameter) -> Result<()> {
-        let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
-        trace!("Writing argument: 0x{:x} ({}) -> {:?}", offset, argn, arg);
-        unsafe {
-            let ptr = mem.as_ptr().offset(offset);
-            match arg {
-                PEParameter::Single32(x) => (*(ptr as *mut Volatile<u32>)).write(x),
-                PEParameter::Single64(x) => (*(ptr as *mut Volatile<u64>)).write(x),
-                _ => return Err(Error::UnsupportedParameter { param: arg }),
-            };
-        }
-        Ok(())
-    }
-
-    pub fn read_arg(&self, mem: &Mmap, argn: usize, bytes: usize) -> Result<PEParameter> {
-        let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
-        let r = unsafe {
-            let ptr = mem.as_ptr().offset(offset);
-            match bytes {
-                4 => Ok(PEParameter::Single32(
-                    (*(ptr as *const Volatile<u32>)).read(),
-                )),
-                8 => Ok(PEParameter::Single64(
-                    (*(ptr as *const Volatile<u64>)).read(),
-                )),
-                _ => Err(Error::UnsupportedRegisterSize { param: bytes }),
-            }
-        };
-        trace!(
-            "Reading argument: 0x{:x} ({} x {}B) -> {:?}",
-            offset,
-            argn,
-            bytes,
-            r
-        );
-        r
-    }
-
-    pub fn add_copyback(&mut self, param: DataTransferPrealloc) {
-        self.copy_back.get_or_insert(Vec::new()).push(param);
-    }
-
-    pub fn get_copyback(&mut self) -> Option<Vec<DataTransferPrealloc>> {
-        self.copy_back.take()
-    }
-}
 
 #[derive(Debug)]
 pub struct Scheduler {
@@ -176,18 +30,24 @@ pub struct Scheduler {
 }
 
 impl Scheduler {
-    pub fn new(pes: &Vec<crate::device::status::Pe>) -> Result<Scheduler> {
+    pub fn new(
+        pes: &Vec<crate::device::status::Pe>,
+        mmap: &Arc<MmapMut>,
+        completion: File,
+    ) -> Result<Scheduler> {
+        let active_pes = Arc::new((Mutex::new(completion), Set::new()));
+
         let mut pe_hashed: HashMap<PEId, Vec<PE>> = HashMap::new();
         for (i, pe) in pes.iter().enumerate() {
-            let the_pe = PE {
-                active: false,
-                id: i,
-                offset: pe.offset,
-                size: pe.size,
-                name: pe.name.to_string(),
-                type_id: pe.id as PEId,
-                copy_back: None,
-            };
+            let the_pe = PE::new(
+                i,
+                pe.id as PEId,
+                pe.offset,
+                pe.size,
+                pe.name.to_string(),
+                mmap.clone(),
+                active_pes.clone(),
+            );
             match pe_hashed.get_mut(&(pe.id as PEId)) {
                 Some(l) => l.push(the_pe),
                 None => {
@@ -213,21 +73,21 @@ impl Scheduler {
     }
 
     pub fn release_pe(&mut self, pe: PE) -> Result<()> {
-        ensure!(!pe.active, PEStillActive { pe: pe });
+        ensure!(!pe.active(), PEStillActive { pe: pe });
 
-        match self.pes.get_mut(&pe.type_id) {
+        match self.pes.get_mut(&pe.type_id()) {
             Some(l) => l.push(pe),
-            None => return Err(Error::NoSuchPE { id: pe.type_id }),
+            None => return Err(Error::NoSuchPE { id: *pe.type_id() }),
         }
         Ok(())
     }
 
-    pub fn reset_interrupts(&mut self, mem: &mut MmapMut) -> Result<()> {
+    pub fn reset_interrupts(&mut self) -> Result<()> {
         for (_, v) in self.pes.iter_mut() {
             for pe in v.iter_mut() {
-                pe.enable_interrupt(mem)?;
-                let iar_status = pe.interrupt_set(mem)?;
-                pe.reset_interrupt(mem, iar_status)?;
+                pe.enable_interrupt().context(PEError)?;
+                let iar_status = pe.interrupt_set().context(PEError)?;
+                pe.reset_interrupt(iar_status).context(PEError)?;
             }
         }
 

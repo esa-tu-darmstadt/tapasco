@@ -40,6 +40,9 @@ pub enum Error {
     #[snafu(display("Failed to decode TLKM device: {}", source))]
     DeviceInit { source: tapasco::device::Error },
 
+    #[snafu(display("Error while executing Job: {}", source))]
+    JobError { source: tapasco::job::Error },
+
     #[snafu(display("IO Error: {}", source))]
     IOError { source: std::io::Error },
 }
@@ -106,17 +109,20 @@ fn run_counter(_: &ArgMatches) -> Result<()> {
         .context(DeviceInit {})?;
         let mut pes = Vec::new();
         pes.push(x.acquire_pe(14).context(DeviceInit)?);
+        pes.push(x.acquire_pe(14).context(DeviceInit)?);
+        pes.push(x.acquire_pe(14).context(DeviceInit)?);
+        pes.push(x.acquire_pe(14).context(DeviceInit)?);
         for _ in 0..1000 {
             for pe in &mut pes.iter_mut() {
-                x.start_pe(pe, vec![tapasco::device::PEParameter::Single64(1000)])
-                    .context(DeviceInit)?;
+                pe.start(vec![tapasco::device::PEParameter::Single64(1000)])
+                    .context(JobError)?;
             }
             for pe in &mut pes.iter_mut() {
-                x.wait_for_completion(pe).context(DeviceInit)?;
+                pe.release(false).context(JobError)?;
             }
         }
-        for pe in pes {
-            x.release_pe(pe).context(DeviceInit)?;
+        for mut pe in pes {
+            pe.release(true).context(JobError)?;
         }
     }
     Ok(())
@@ -142,10 +148,9 @@ fn benchmark_counter(m: &ArgMatches) -> Result<()> {
         for _ in (0..iterations).step_by(pb_step) {
             for _ in 0..pb_step {
                 let mut pe = x.acquire_pe(14).context(DeviceInit)?;
-                x.start_pe(&mut pe, vec![tapasco::device::PEParameter::Single64(1)])
-                    .context(DeviceInit)?;
-                x.wait_for_completion(&mut pe).context(DeviceInit)?;
-                x.release_pe(pe).context(DeviceInit)?;
+                pe.start(vec![tapasco::device::PEParameter::Single64(1)])
+                    .context(JobError)?;
+                pe.release(true).context(JobError)?;
             }
             pb.inc(pb_step as u64);
         }
@@ -203,13 +208,12 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
             for _ in 0..iterations {
                 let mut pe = x.acquire_pe(14).context(DeviceInit)?;
                 let now = Instant::now();
-                x.start_pe(&mut pe, vec![tapasco::device::PEParameter::Single64(step)])
-                    .context(DeviceInit)?;
-                x.wait_for_completion(&mut pe).context(DeviceInit)?;
+                pe.start(vec![tapasco::device::PEParameter::Single64(step)])
+                    .context(JobError)?;
+                pe.release(true).context(JobError)?;
                 let dur = now.elapsed();
                 let diff = Time::new::<nanosecond>(dur.as_nanos() as f32) - step_duration;
                 var.add(diff.get::<microsecond>() as f64);
-                x.release_pe(pe).context(DeviceInit)?;
             }
             println!(
                 "The mean latency is {:.2}us ± {:.2}us (Min: {:.2}, Max: {:.2}).",
@@ -237,29 +241,25 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
         for _ in 0..2 {
             let mut pe = x.acquire_pe(14).context(DeviceInit)?;
             let mem = x.default_memory().context(DeviceInit)?;
-            x.start_pe(
-                &mut pe,
-                vec![
-                    tapasco::device::PEParameter::Single64(1),
-                    tapasco::device::PEParameter::DataTransferAlloc(DataTransferAlloc {
-                        data: vec![42 as u8, 44, 52, 123, 0, 0, 0, 0, 1, 2, 3, 4, 5],
-                        from_device: true,
-                        to_device: true,
-                        free: true,
-                        memory: mem.clone(),
-                    }),
-                    tapasco::device::PEParameter::DataTransferAlloc(DataTransferAlloc {
-                        data: vec![255 as u8, 254, 253, 252, 23, 42, 51, 66, 35, 21, 77, 83, 52],
-                        from_device: true,
-                        to_device: true,
-                        free: true,
-                        memory: mem,
-                    }),
-                ],
-            )
-            .context(DeviceInit)?;
-            x.wait_for_completion(&mut pe).context(DeviceInit)?;
-            println!("{:?}", x.release_pe(pe).context(DeviceInit)?);
+            pe.start(vec![
+                tapasco::device::PEParameter::Single64(1),
+                tapasco::device::PEParameter::DataTransferAlloc(DataTransferAlloc {
+                    data: vec![42 as u8, 44, 52, 123, 0, 0, 0, 0, 1, 2, 3, 4, 5],
+                    from_device: true,
+                    to_device: true,
+                    free: true,
+                    memory: mem.clone(),
+                }),
+                tapasco::device::PEParameter::DataTransferAlloc(DataTransferAlloc {
+                    data: vec![255 as u8, 254, 253, 252, 23, 42, 51, 66, 35, 21, 77, 83, 52],
+                    from_device: true,
+                    to_device: true,
+                    free: true,
+                    memory: mem,
+                }),
+            ])
+            .context(JobError)?;
+            println!("{:?}", pe.release(true).context(JobError)?);
         }
     }
     Ok(())

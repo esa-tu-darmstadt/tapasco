@@ -1,21 +1,20 @@
 use crate::allocator::{Allocator, DriverAllocator, GenericAllocator};
 use crate::dma::{DMAControl, DriverDMA};
-use crate::scheduler::{PEId, Scheduler, PE};
+use crate::job::Job;
+use crate::pe::PEId;
+
+use crate::scheduler::Scheduler;
 use crate::tlkm::tlkm_access;
 use crate::tlkm::tlkm_ioctl_create;
 use crate::tlkm::tlkm_ioctl_destroy;
 use crate::tlkm::tlkm_ioctl_device_cmd;
 use crate::tlkm::DeviceId;
-use bytes::Buf;
 use memmap::MmapMut;
 use memmap::MmapOptions;
 use prost::Message;
 use snafu::ResultExt;
-use std::collections::HashMap;
 use std::fs::File;
 use std::fs::OpenOptions;
-use std::io::Cursor;
-use std::io::Read;
 use std::os::unix::io::AsRawFd;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -67,23 +66,8 @@ pub enum Error {
     #[snafu(display("Allocator Error: {}", source))]
     AllocatorError { source: crate::allocator::Error },
 
-    #[snafu(display("DMA Error: {}", source))]
-    DMAError { source: crate::dma::Error },
-
     #[snafu(display("Mutex has been poisoned"))]
     MutexError {},
-
-    #[snafu(display(
-        "Unsupported parameter during register write stage. Unconverted data transfer alloc?: {:?}",
-        arg
-    ))]
-    UnsupportedRegisterParameter { arg: PEParameter },
-
-    #[snafu(display(
-        "Unsupported parameter during during transfer to. Unconverted data transfer alloc?: {:?}",
-        arg
-    ))]
-    UnsupportedTransferParameter { arg: PEParameter },
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -100,8 +84,11 @@ pub type MemoryID = usize;
 
 #[derive(Debug, Getters)]
 pub struct OffchipMemory {
+    #[get = "pub"]
     id: MemoryID,
+    #[get = "pub"]
     allocator: Mutex<Box<dyn Allocator>>,
+    #[get = "pub"]
     dma: Box<dyn DMAControl>,
 }
 
@@ -146,11 +133,9 @@ pub struct Device {
     #[get = "pub"]
     name: String,
     access: tlkm_access,
-    scheduler: Scheduler,
+    scheduler: Arc<Mutex<Scheduler>>,
     platform: MmapMut,
-    arch: MmapMut,
-    completion: File,
-    active_pes: HashMap<usize, bool>,
+    arch: Arc<MmapMut>,
     offchip_memory: Vec<Arc<OffchipMemory>>,
 }
 
@@ -204,6 +189,14 @@ impl Device {
             }),
         }?;
 
+        let tlkm_dma_file = Arc::new(
+            OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(format!("/dev/tlkm_{:02}", id))
+                .context(DeviceUnavailable { id: id })?,
+        );
+
         // This falls back to PCIe and Zynq allocation using the default 4GB at 0x0
         info!("Using static memory allocation due to lack of dynamic data in the status core.");
         let mut allocator = Vec::new();
@@ -214,14 +207,14 @@ impl Device {
                 allocator: Mutex::new(Box::new(
                     GenericAllocator::new(0, 4 * 1024 * 1024 * 1024, 64).context(AllocatorError)?,
                 )),
-                dma: Box::new(DriverDMA {}),
+                dma: Box::new(DriverDMA::new(&tlkm_dma_file)),
             }));
         } else if name == "zynq" {
             info!("Using driver allocation for zynq based platform.");
             allocator.push(Arc::new(OffchipMemory {
                 id: 0,
                 allocator: Mutex::new(Box::new(DriverAllocator::new().context(AllocatorError)?)),
-                dma: Box::new(DriverDMA {}),
+                dma: Box::new(DriverDMA::new(&tlkm_dma_file)),
             }));
         }
 
@@ -246,7 +239,7 @@ impl Device {
             }),
         }?;
 
-        let arch = unsafe {
+        let arch = Arc::new(unsafe {
             MmapOptions::new()
                 .len(arch_size as usize)
                 .offset(4096)
@@ -258,9 +251,19 @@ impl Device {
                         .context(DeviceUnavailable { id: id })?,
                 )
                 .context(DeviceUnavailable { id: id })?
-        };
+        });
 
-        let scheduler = Scheduler::new(&s.pe).context(SchedulerError)?;
+        let scheduler = Arc::new(Mutex::new(
+            Scheduler::new(
+                &s.pe,
+                &arch,
+                OpenOptions::new()
+                    .read(true)
+                    .open(format!("/dev/tlkm_{:02}", id))
+                    .context(DeviceUnavailable { id: id })?,
+            )
+            .context(SchedulerError)?,
+        ));
 
         let mut device = Device {
             id: id,
@@ -272,12 +275,6 @@ impl Device {
             scheduler: scheduler,
             platform: platform,
             arch: arch,
-            completion: OpenOptions::new()
-                .read(true)
-                .write(true)
-                .open(format!("/dev/tlkm_{:02}", id))
-                .context(DeviceUnavailable { id: id })?,
-            active_pes: HashMap::new(),
             offchip_memory: allocator,
         };
 
@@ -290,201 +287,16 @@ impl Device {
         Ok(())
     }
 
-    fn wait_for_completion_loop(&mut self, pe_id: &usize) -> Result<()> {
-        let mut active = true;
-        while active {
-            trace!("Waiting for completion notices from driver.");
-            let mut buffer = [u8::max_value(); 128 * 4];
-            self.completion
-                .read(&mut buffer)
-                .context(DeviceUnavailable { id: self.id })?;
-            trace!("Fetched completion notices from driver.");
-            let mut buf = Cursor::new(&buffer[..]);
-            while buf.remaining() >= 4 {
-                let id = buf.get_u32_le();
-                if id != u32::max_value() {
-                    trace!("Checking PE ID {}", id);
-                    if id as usize == *pe_id {
-                        trace!("PE {} is finished.", id);
-                        active = false;
-                    } else {
-                        match self.active_pes.get_mut(&(id as usize)) {
-                            Some(pe_done) => *pe_done = true,
-                            None => trace!("PE {} is not waiting right now.", id),
-                        }
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
-    pub fn wait_for_completion(&mut self, pe: &mut PE) -> Result<()> {
-        if *pe.active() {
-            match self.active_pes.get(&pe.id()) {
-                Some(pe_done) => {
-                    if *pe_done {
-                        trace!("PE {} has already indicated completion.", pe.id());
-                    } else {
-                        trace!("Waiting for completion of {:?}.", pe);
-                        self.wait_for_completion_loop(&pe.id())?;
-                        trace!("PE finished execution.");
-                    }
-                    pe.set_active(false);
-                    // TODO: Why is GIER reset without any write to it?
-                    // This call should not be necessary
-                    pe.enable_interrupt(&mut self.arch)
-                        .context(SchedulerError)?;
-                    pe.reset_interrupt(&mut self.arch, true)
-                        .context(SchedulerError)?;
-                }
-                None => trace!("PE {} is not waiting right now.", pe.id()),
-            }
-            self.active_pes.remove(pe.id());
-        } else {
-            trace!("Wait requested but {:?} is already idle.", pe);
-        }
-        Ok(())
-    }
-
-    //TODO: Check performance as this does not happen inplace but creates a new Vec
-    pub fn handle_allocates(&mut self, args: Vec<PEParameter>) -> Result<Vec<PEParameter>> {
-        trace!("Handling allocate parameters.");
-        let new_params = args
-            .into_iter()
-            .map(|arg| match arg {
-                PEParameter::DataTransferAlloc(x) => {
-                    let a = {
-                        x.memory
-                            .allocator
-                            .lock()?
-                            .allocate(x.data.len() as u64)
-                            .context(AllocatorError)?
-                    };
-                    Ok(PEParameter::DataTransferPrealloc(DataTransferPrealloc {
-                        data: x.data,
-                        device_address: a,
-                        from_device: x.from_device,
-                        to_device: x.to_device,
-                        memory: x.memory,
-                        free: x.free,
-                    }))
-                }
-                _ => Ok(arg),
-            })
-            .collect();
-        trace!("All allocate parameters handled.");
-        new_params
-    }
-
-    pub fn handle_transfers_to_device(
-        &mut self,
-        pe: &mut PE,
-        args: Vec<PEParameter>,
-    ) -> Result<Vec<PEParameter>> {
-        trace!("Handling allocate parameters.");
-        let new_params = args
-            .into_iter()
-            .try_fold(Vec::new(), |mut xs, arg| match arg {
-                PEParameter::DataTransferPrealloc(x) => {
-                    if x.to_device {
-                        x.memory
-                            .dma
-                            .copy_to(&self.completion, &x.data[..], x.device_address)
-                            .context(DMAError)?;
-                        xs.push(PEParameter::DeviceAddress(x.device_address));
-                    }
-                    if x.from_device {
-                        pe.add_copyback(x);
-                    }
-                    Ok(xs)
-                }
-                _ => {
-                    xs.push(arg);
-                    Ok(xs)
-                }
-            });
-        trace!("All transfer to parameters handled.");
-        new_params
-    }
-
-    pub fn acquire_pe(&mut self, id: PEId) -> Result<PE> {
+    pub fn acquire_pe(&mut self, id: PEId) -> Result<Job> {
         self.check_exclusive_access()?;
         trace!("Trying to acquire PE of type {}.", id);
-        let pe = self.scheduler.acquire_pe(id).context(SchedulerError)?;
+        let pe = self
+            .scheduler
+            .lock()?
+            .acquire_pe(id)
+            .context(SchedulerError)?;
         trace!("Successfully acquired PE of type {}.", id);
-        Ok(pe)
-    }
-
-    pub fn start_pe(&mut self, pe: &mut PE, args: Vec<PEParameter>) -> Result<()> {
-        self.check_exclusive_access()?;
-        trace!("Starting execution of {:?} with Arguments {:?}.", pe, args);
-        let local_args = self.handle_allocates(args)?;
-        trace!("Handled allocates => {:?}.", local_args);
-        let trans_args = self.handle_transfers_to_device(pe, local_args)?;
-        trace!("Handled transfers => {:?}.", trans_args);
-        trace!("Setting arguments.");
-        for (i, arg) in trans_args.into_iter().enumerate() {
-            trace!("Setting argument {} => {:?}.", i, arg);
-            match arg {
-                PEParameter::Single32(_) => {
-                    pe.set_arg(&mut self.arch, i, arg).context(SchedulerError)?
-                }
-                PEParameter::Single64(_) => {
-                    pe.set_arg(&mut self.arch, i, arg).context(SchedulerError)?
-                }
-                PEParameter::DeviceAddress(x) => pe
-                    .set_arg(&mut self.arch, i, PEParameter::Single64(x))
-                    .context(SchedulerError)?,
-                _ => return Err(Error::UnsupportedRegisterParameter { arg: arg }),
-            };
-        }
-        trace!("Arguments set.");
-        trace!("Starting PE execution.");
-        pe.start(&mut self.arch).context(SchedulerError)?;
-        self.active_pes.insert(*pe.id(), false);
-        trace!("PE started.");
-        Ok(())
-    }
-
-    pub fn release_pe(&mut self, mut pe: PE) -> Result<Option<Vec<Vec<u8>>>> {
-        self.check_exclusive_access()?;
-        trace!("Trying to release {:?}.", pe);
-        if *pe.active() {
-            self.wait_for_completion(&mut pe)?;
-        }
-        trace!("PE is idle.");
-        let copyback = pe.get_copyback();
-        self.scheduler.release_pe(pe).context(SchedulerError)?;
-        trace!("Release successful.");
-        match copyback {
-            Some(x) => {
-                let res = x
-                    .into_iter()
-                    .map(|mut param| {
-                        param
-                            .memory
-                            .dma
-                            .copy_from(&self.completion, param.device_address, &mut param.data[..])
-                            .context(DMAError)?;
-                        if param.free {
-                            param
-                                .memory
-                                .allocator
-                                .lock()?
-                                .free(param.device_address)
-                                .context(AllocatorError)?;
-                        }
-                        Ok(param.data)
-                    })
-                    .collect();
-                match res {
-                    Ok(x) => Ok(Some(x)),
-                    Err(x) => Err(x),
-                }
-            }
-            None => Ok(None),
-        }
+        Ok(Job::new(pe, &self.scheduler))
     }
 
     fn check_exclusive_access(&self) -> Result<()> {
@@ -526,7 +338,8 @@ impl Device {
         if access == tlkm_access::TlkmAccessExclusive {
             trace!("Access changed to exclusive, resetting all interrupts.");
             self.scheduler
-                .reset_interrupts(&mut self.arch)
+                .lock()?
+                .reset_interrupts()
                 .context(SchedulerError)?;
         }
 
