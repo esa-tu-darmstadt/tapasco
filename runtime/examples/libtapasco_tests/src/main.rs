@@ -1,3 +1,4 @@
+extern crate bytesize;
 extern crate crossbeam;
 extern crate num_cpus;
 extern crate rayon;
@@ -5,12 +6,14 @@ extern crate snafu;
 extern crate tapasco;
 
 use average::{concatenate, Estimate, Max, MeanWithError, Min};
+use bytesize::ByteSize;
 use crossbeam::thread;
 use snafu::{ErrorCompat, ResultExt, Snafu};
 use std::io;
 use std::io::Write;
 use std::sync::Arc;
 use tapasco::device::DataTransferPrealloc;
+use tapasco::device::OffchipMemory;
 use uom::si::f32::*;
 use uom::si::frequency::megahertz;
 use uom::si::time::microsecond;
@@ -37,6 +40,9 @@ extern crate uom;
 pub enum Error {
     #[snafu(display("Allocator Error: {}", source))]
     AllocatorError { source: tapasco::allocator::Error },
+
+    #[snafu(display("DMA Error: {}", source))]
+    DMAError { source: tapasco::dma::Error },
 
     #[snafu(display("Invalid subcommand"))]
     UnknownCommand {},
@@ -196,11 +202,13 @@ fn benchmark_counter(m: &ArgMatches) -> Result<()> {
             })
             .unwrap();
 
-            pb.finish();
+            let done = now.elapsed().as_secs_f32();
+
+            pb.finish_and_clear();
             println!(
                 "Result with {} Threads: {} calls/s",
                 cur_threads,
-                iterations_cur as f32 / now.elapsed().as_secs_f32()
+                iterations_cur as f32 / done
             );
         }
     }
@@ -326,6 +334,117 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
+fn transfer_to(
+    pb: &ProgressBar,
+    mem: Arc<OffchipMemory>,
+    bytes: usize,
+    chunk: usize,
+) -> Result<()> {
+    let a = mem
+        .allocator()
+        .lock()?
+        .allocate(chunk as u64)
+        .context(AllocatorError)?;
+    let mut transferred = 0;
+    let data = vec![0; chunk];
+
+    while transferred < bytes {
+        mem.dma().copy_to(&data, a).context(DMAError)?;
+        transferred += chunk;
+        pb.inc(chunk as u64);
+    }
+
+    Ok(())
+}
+
+fn transfer_from(
+    pb: &ProgressBar,
+    mem: Arc<OffchipMemory>,
+    bytes: usize,
+    chunk: usize,
+) -> Result<()> {
+    let a = mem
+        .allocator()
+        .lock()?
+        .allocate(chunk as u64)
+        .context(AllocatorError)?;
+    let mut transferred = 0;
+    let mut data = vec![0; chunk];
+
+    while transferred < bytes {
+        mem.dma().copy_from(a, &mut data).context(DMAError)?;
+        transferred += chunk;
+        pb.inc(chunk as u64);
+    }
+
+    Ok(())
+}
+
+fn benchmark_copy(m: &ArgMatches) -> Result<()> {
+    let mut tlkm = TLKM::new().context(TLKMInit {})?;
+    let devices = tlkm.device_enum().context(TLKMInit)?;
+    for mut x in devices.into_iter() {
+        x.create(
+            &tlkm.file(),
+            tapasco::tlkm::tlkm_access::TlkmAccessExclusive,
+        )
+        .context(DeviceInit)?;
+        let x_l = Arc::new(x);
+        let max_size_power = value_t!(m, "max_bytes", usize).unwrap();
+        let max_size = usize::pow(2, max_size_power as u32);
+
+        let total_bytes_power = value_t!(m, "total_bytes", usize).unwrap();
+        let total_bytes = usize::pow(2, total_bytes_power as u32);
+
+        let mut num_threads = value_t!(m, "threads", i32).unwrap();
+        if num_threads == -1 {
+            num_threads = num_cpus::get() as i32;
+        }
+        let _pb_step: usize = value_t!(m, "pb_step", usize).unwrap();
+        println!(
+            "Starting {} thread transfer benchmark with maximum of {} per transfer and total {}.",
+            num_threads,
+            ByteSize(max_size as u64),
+            ByteSize(total_bytes as u64)
+        );
+        for cur_threads in 1..num_threads + 1 {
+            for chunk_pow in 10..(max_size_power + 1) {
+                let chunk = usize::pow(2, chunk_pow as u32);
+                let bytes_per_threads = total_bytes / cur_threads as usize;
+                let total_bytes_cur = bytes_per_threads * cur_threads as usize;
+
+                let mut pb = ProgressBar::new(total_bytes_cur as u64);
+                if m.is_present("pb_disable") {
+                    pb = ProgressBar::hidden();
+                }
+                pb.tick();
+
+                let now = Instant::now();
+                thread::scope(|s| {
+                    for _t in 0..cur_threads {
+                        s.spawn(|_| {
+                            let x_local = x_l.clone();
+                            let mem = x_local.default_memory().unwrap();
+                            transfer_to(&pb, mem, bytes_per_threads, chunk).unwrap();
+                        });
+                    }
+                })
+                .unwrap();
+                let done = now.elapsed().as_secs_f64();
+
+                pb.finish_and_clear();
+                println!(
+                    "Result with {} Threads and Chunk Size of {}: {}/s",
+                    cur_threads,
+                    ByteSize(chunk as u64),
+                    ByteSize((total_bytes_cur as f64 / done) as u64)
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
 fn main() -> Result<()> {
     env_logger::init();
 
@@ -345,6 +464,48 @@ fn main() -> Result<()> {
             SubCommand::with_name("status").about("Print status core information of all devices."),
         )
         .subcommand(SubCommand::with_name("run_counter").about("Runs a counter with ID 14."))
+        .subcommand(
+            SubCommand::with_name("benchmark_copy")
+                .about("Runs a copy benchmark for r, w and rw.")
+                .arg(
+                    Arg::with_name("pb_disable")
+                        .short("p")
+                        .long("pb_disable")
+                        .help("Disables the progress bar to avoid overhead."),
+                )
+                .arg(
+                    Arg::with_name("pb_step")
+                        .short("s")
+                        .long("pb_step")
+                        .help("Step size for the progress bar.")
+                        .takes_value(true)
+                        .default_value("1000"),
+                )
+                .arg(
+                    Arg::with_name("max_bytes")
+                        .short("m")
+                        .long("max_bytes")
+                        .help("Maximum number of bytes in a single transfer transfer log_2.")
+                        .takes_value(true)
+                        .default_value("24"),
+                )
+                .arg(
+                    Arg::with_name("total_bytes")
+                        .short("b")
+                        .long("total_bytes")
+                        .help("Total number of bytes to transfer transfer log_2.")
+                        .takes_value(true)
+                        .default_value("28"),
+                )
+                .arg(
+                    Arg::with_name("threads")
+                        .short("t")
+                        .long("threads")
+                        .help("How many threads should be used? (-1 for auto)")
+                        .takes_value(true)
+                        .default_value("-1"),
+                ),
+        )
         .subcommand(
             SubCommand::with_name("run_benchmark")
                 .about("Runs a counter benchmark with ID 14.")
@@ -414,6 +575,7 @@ fn main() -> Result<()> {
         ("run_benchmark", Some(m)) => benchmark_counter(m),
         ("run_latency", Some(m)) => latency_benchmark(m),
         ("test_copy", Some(m)) => test_copy(m),
+        ("benchmark_copy", Some(m)) => benchmark_copy(m),
         _ => Err(Error::UnknownCommand {}),
     } {
         Ok(()) => Ok(()),
