@@ -11,10 +11,10 @@ lto = "fat"
 
 [dependencies]
 tapasco = { path = "../../libtapasco" }
-env_logger = "0.6.0"
-clap = "2.32.0"
-log = "0.4.6"
-snafu = "0.6.0"
+env_logger = "0.7.1"
+clap = "2.33.0"
+log = "0.4.8"
+snafu = "0.6.6"
 indicatif = "0.14.0"
 average = "0.10.4"
 uom = "0.27.0"
