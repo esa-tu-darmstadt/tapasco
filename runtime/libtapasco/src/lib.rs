@@ -16,6 +16,7 @@ extern crate uom;
 extern crate volatile_register;
 #[macro_use]
 extern crate snafu;
+extern crate crossbeam;
 
 pub mod allocator;
 pub mod device;

@@ -133,7 +133,7 @@ pub struct Device {
     #[get = "pub"]
     name: String,
     access: tlkm_access,
-    scheduler: Arc<Mutex<Scheduler>>,
+    scheduler: Arc<Scheduler>,
     platform: MmapMut,
     arch: Arc<MmapMut>,
     offchip_memory: Vec<Arc<OffchipMemory>>,
@@ -253,7 +253,7 @@ impl Device {
                 .context(DeviceUnavailable { id: id })?
         });
 
-        let scheduler = Arc::new(Mutex::new(
+        let scheduler = Arc::new(
             Scheduler::new(
                 &s.pe,
                 &arch,
@@ -263,7 +263,7 @@ impl Device {
                     .context(DeviceUnavailable { id: id })?,
             )
             .context(SchedulerError)?,
-        ));
+        );
 
         let mut device = Device {
             id: id,
@@ -287,14 +287,10 @@ impl Device {
         Ok(())
     }
 
-    pub fn acquire_pe(&mut self, id: PEId) -> Result<Job> {
+    pub fn acquire_pe(&self, id: PEId) -> Result<Job> {
         self.check_exclusive_access()?;
         trace!("Trying to acquire PE of type {}.", id);
-        let pe = self
-            .scheduler
-            .lock()?
-            .acquire_pe(id)
-            .context(SchedulerError)?;
+        let pe = self.scheduler.acquire_pe(id).context(SchedulerError)?;
         trace!("Successfully acquired PE of type {}.", id);
         Ok(Job::new(pe, &self.scheduler))
     }
@@ -337,10 +333,7 @@ impl Device {
 
         if access == tlkm_access::TlkmAccessExclusive {
             trace!("Access changed to exclusive, resetting all interrupts.");
-            self.scheduler
-                .lock()?
-                .reset_interrupts()
-                .context(SchedulerError)?;
+            self.scheduler.reset_interrupts().context(SchedulerError)?;
         }
 
         trace!("Successfully acquired access.");

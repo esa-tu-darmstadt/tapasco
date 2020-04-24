@@ -4,7 +4,6 @@ use crate::pe::PE;
 use crate::scheduler::Scheduler;
 use snafu::ResultExt;
 use std::sync::Arc;
-use std::sync::Mutex;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
     fn from(_error: std::sync::PoisonError<T>) -> Self {
@@ -47,7 +46,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug)]
 pub struct Job {
     pe: Option<PE>,
-    scheduler: Arc<Mutex<Scheduler>>,
+    scheduler: Arc<Scheduler>,
 }
 
 impl Drop for Job {
@@ -60,7 +59,7 @@ impl Drop for Job {
 }
 
 impl Job {
-    pub fn new(pe: PE, scheduler: &Arc<Mutex<Scheduler>>) -> Job {
+    pub fn new(pe: PE, scheduler: &Arc<Scheduler>) -> Job {
         Job {
             pe: Some(pe),
             scheduler: scheduler.clone(),
@@ -171,7 +170,6 @@ impl Job {
 
             if release_pe {
                 self.scheduler
-                    .lock()?
                     .release_pe(self.pe.take().unwrap())
                     .context(SchedulerError)?;
             }

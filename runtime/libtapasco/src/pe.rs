@@ -11,7 +11,7 @@ use std::io::Cursor;
 use std::io::Read;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::{thread, time};
+use std::thread;
 use volatile::Volatile;
 
 #[derive(Debug, Snafu)]
@@ -112,12 +112,12 @@ impl PE {
             while buf.remaining() >= 4 {
                 let id = buf.get_u32_le();
                 if id != u32::max_value() {
-                    trace!("Checking PE ID {}", id);
+                    trace!("PE ID {} done.", id);
                     if id as usize == self.id {
                         active = false;
                     }
                     match self.active_pes.1.insert(id as usize) {
-                        Err(i) => Err(Error::CouldNotInsertPE { pe_id: i })?,
+                        Err(i) => trace!("Duplicated indication for PE {}", i),
                         _ => {}
                     }
                 }
