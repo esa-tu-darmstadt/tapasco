@@ -87,9 +87,9 @@ pub struct OffchipMemory {
     #[get = "pub"]
     id: MemoryID,
     #[get = "pub"]
-    allocator: Mutex<Box<dyn Allocator>>,
+    allocator: Mutex<Box<dyn Allocator + Sync + Send>>,
     #[get = "pub"]
-    dma: Box<dyn DMAControl>,
+    dma: Box<dyn DMAControl + Sync + Send>,
 }
 
 #[derive(Debug)]

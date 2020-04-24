@@ -137,11 +137,13 @@ impl PE {
                 } else {
                     match self.active_pes.0.try_lock() {
                         Ok(mut x) => {
-                            trace!("Waiting for completion of {:?}.", self);
-                            self.wait_for_completion_loop(&mut x)?;
-                            trace!("PE finished execution.");
+                            if !self.active_pes.1.contains(&self.id()) {
+                                trace!("Waiting for completion of {:?}.", self);
+                                self.wait_for_completion_loop(&mut x)?;
+                                trace!("PE finished execution.");
+                            }
                         }
-                        Err(_) => thread::sleep(time::Duration::from_micros(1)),
+                        Err(_) => thread::yield_now(),
                     };
                 }
             }

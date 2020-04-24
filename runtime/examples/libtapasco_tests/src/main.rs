@@ -1,12 +1,17 @@
+extern crate crossbeam;
+extern crate num_cpus;
+extern crate rayon;
 extern crate snafu;
+extern crate tapasco;
 
 use average::{concatenate, Estimate, Max, MeanWithError, Min};
-use std::io::Write;
-
-use tapasco::device::DataTransferPrealloc;
-
+use crossbeam::thread;
 use snafu::{ErrorCompat, ResultExt, Snafu};
 use std::io;
+use std::io::Write;
+use std::sync::Arc;
+use std::sync::Mutex;
+use tapasco::device::DataTransferPrealloc;
 use uom::si::f32::*;
 use uom::si::frequency::megahertz;
 use uom::si::time::microsecond;
@@ -17,8 +22,6 @@ extern crate log;
 
 extern crate indicatif;
 use indicatif::ProgressBar;
-
-extern crate tapasco;
 
 use tapasco::tlkm::*;
 
@@ -52,6 +55,9 @@ pub enum Error {
 
     #[snafu(display("Mutex has been poisoned"))]
     MutexError {},
+
+    #[snafu(display("Crossbeam encountered an error {}", s))]
+    CrossbeamError { s: String },
 }
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
@@ -144,34 +150,64 @@ fn run_counter(_: &ArgMatches) -> Result<()> {
 fn benchmark_counter(m: &ArgMatches) -> Result<()> {
     let mut tlkm = TLKM::new().context(TLKMInit {})?;
     let devices = tlkm.device_enum().context(TLKMInit)?;
-    for mut x in devices {
+    for mut x in devices.into_iter() {
         x.create(
             &tlkm.file(),
             tapasco::tlkm::tlkm_access::TlkmAccessExclusive,
         )
         .context(DeviceInit {})?;
+        let x_l = Arc::new(Mutex::new(x));
         let iterations = value_t!(m, "iterations", usize).unwrap();
-        println!("Starting benchmark.");
-        let mut pb = ProgressBar::new(iterations as u64);
-        if m.is_present("pb_disable") {
-            pb = ProgressBar::hidden();
+        let mut num_threads = value_t!(m, "threads", i32).unwrap();
+        if num_threads == -1 {
+            num_threads = num_cpus::get() as i32;
         }
         let pb_step: usize = value_t!(m, "pb_step", usize).unwrap();
-        let now = Instant::now();
-        for _ in (0..iterations).step_by(pb_step) {
-            for _ in 0..pb_step {
-                let mut pe = x.acquire_pe(14).context(DeviceInit)?;
-                pe.start(vec![tapasco::device::PEParameter::Single64(1)])
-                    .context(JobError)?;
-                pe.release(true).context(JobError)?;
-            }
-            pb.inc(pb_step as u64);
-        }
-        pb.finish();
         println!(
-            "Result: {} calls/s",
-            iterations as f32 / now.elapsed().as_secs_f32()
+            "Starting {} thread benchmark with {} iterations and {} step.",
+            num_threads, iterations, pb_step
         );
+        for cur_threads in 1..num_threads + 1 {
+            let mut pb = ProgressBar::new(iterations as u64);
+            if m.is_present("pb_disable") {
+                pb = ProgressBar::hidden();
+            }
+            pb.tick();
+            let now = Instant::now();
+            thread::scope(|s| {
+                for _t in 0..cur_threads {
+                    s.spawn(|_| {
+                        let my_step = iterations / cur_threads as usize;
+                        let x_local = x_l.clone();
+                        for _ in 0..(my_step / pb_step) {
+                            for _ in 0..pb_step {
+                                let mut pe = {
+                                    x_local
+                                        .lock()
+                                        .unwrap()
+                                        .acquire_pe(14)
+                                        .context(DeviceInit)
+                                        .unwrap()
+                                };
+                                pe.start(vec![tapasco::device::PEParameter::Single64(1)])
+                                    .context(JobError)
+                                    .unwrap();
+                                pe.release(false).context(JobError).unwrap();
+                            }
+                            pb.inc(pb_step as u64);
+                        }
+                    });
+                }
+            })
+            .unwrap();
+
+            pb.finish();
+            println!(
+                "Result with {} Threads: {} calls/s",
+                cur_threads,
+                iterations as f32 / now.elapsed().as_secs_f32()
+            );
+        }
     }
     Ok(())
 }
@@ -329,7 +365,7 @@ fn main() -> Result<()> {
                         .long("pb_step")
                         .help("Step size for the progress bar.")
                         .takes_value(true)
-                        .default_value("10"),
+                        .default_value("1000"),
                 )
                 .arg(
                     Arg::with_name("iterations")
@@ -338,6 +374,14 @@ fn main() -> Result<()> {
                         .help("How many counter iterations.")
                         .takes_value(true)
                         .default_value("100000"),
+                )
+                .arg(
+                    Arg::with_name("threads")
+                        .short("t")
+                        .long("threads")
+                        .help("How many threads should be used? (-1 for auto)")
+                        .takes_value(true)
+                        .default_value("-1"),
                 ),
         )
         .subcommand(
