@@ -175,7 +175,7 @@ impl Device {
             // copy from device to avoid alignment errors that occur on certain devices
             // e.g. ZynqMP
             let mut mmap_cpy = [0; 8192];
-            mmap_cpy.copy_from_slice(&mmap[..]);
+            mmap_cpy.clone_from_slice(&mmap[..]);
 
             status::Status::decode_length_delimited(&mmap_cpy[..]).context(StatusCoreDecoding)?
         };
