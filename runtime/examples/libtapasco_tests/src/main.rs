@@ -1,4 +1,3 @@
-extern crate bytesize;
 extern crate crossbeam;
 extern crate num_cpus;
 extern crate rayon;
@@ -6,7 +5,6 @@ extern crate snafu;
 extern crate tapasco;
 
 use average::{concatenate, Estimate, Max, MeanWithError, Min};
-use bytesize::ByteSize;
 use crossbeam::thread;
 use snafu::{ErrorCompat, ResultExt, Snafu};
 use std::io;
@@ -23,7 +21,7 @@ use uom::si::time::nanosecond;
 extern crate log;
 
 extern crate indicatif;
-use indicatif::ProgressBar;
+use indicatif::{HumanBytes, ProgressBar, ProgressStyle};
 
 use tapasco::tlkm::*;
 
@@ -347,11 +345,15 @@ fn transfer_to(
         .context(AllocatorError)?;
     let mut transferred = 0;
     let data = vec![0; chunk];
+    let mut incr = 0;
 
     while transferred < bytes {
         mem.dma().copy_to(&data, a).context(DMAError)?;
         transferred += chunk;
-        pb.inc(chunk as u64);
+        if incr % 1024 == 0 {
+            pb.inc((chunk * 1024) as u64);
+        }
+        incr += 1;
     }
 
     Ok(())
@@ -370,11 +372,15 @@ fn transfer_from(
         .context(AllocatorError)?;
     let mut transferred = 0;
     let mut data = vec![0; chunk];
+    let mut incr = 0;
 
     while transferred < bytes {
         mem.dma().copy_from(a, &mut data).context(DMAError)?;
         transferred += chunk;
-        pb.inc(chunk as u64);
+        if incr % 1024 == 0 {
+            pb.inc((chunk * 1024) as u64);
+        }
+        incr += 1;
     }
 
     Ok(())
@@ -404,41 +410,66 @@ fn benchmark_copy(m: &ArgMatches) -> Result<()> {
         println!(
             "Starting {} thread transfer benchmark with maximum of {} per transfer and total {}.",
             num_threads,
-            ByteSize(max_size as u64),
-            ByteSize(total_bytes as u64)
+            HumanBytes(max_size as u64),
+            HumanBytes(total_bytes as u64)
         );
         for cur_threads in 1..num_threads + 1 {
             for chunk_pow in 10..(max_size_power + 1) {
                 let chunk = usize::pow(2, chunk_pow as u32);
                 let bytes_per_threads = total_bytes / cur_threads as usize;
-                let total_bytes_cur = bytes_per_threads * cur_threads as usize;
+                let mut total_bytes_cur = bytes_per_threads * cur_threads as usize;
 
-                let mut pb = ProgressBar::new(total_bytes_cur as u64);
-                if m.is_present("pb_disable") {
-                    pb = ProgressBar::hidden();
-                }
-                pb.tick();
-
-                let now = Instant::now();
-                thread::scope(|s| {
-                    for _t in 0..cur_threads {
-                        s.spawn(|_| {
-                            let x_local = x_l.clone();
-                            let mem = x_local.default_memory().unwrap();
-                            transfer_to(&pb, mem, bytes_per_threads, chunk).unwrap();
-                        });
+                for d in ["r", "w", "rw"].iter() {
+                    if *d == "rw" {
+                        total_bytes_cur *= 2;
                     }
-                })
-                .unwrap();
-                let done = now.elapsed().as_secs_f64();
+                    let mut pb = ProgressBar::new(total_bytes_cur as u64);
+                    pb.set_style(
+                        ProgressStyle::default_bar()
+                            .template("{wide_bar} {bytes}/{total_bytes} {bytes_per_sec}"),
+                    );
+                    if m.is_present("pb_disable") {
+                        pb = ProgressBar::hidden();
+                    }
+                    pb.tick();
 
-                pb.finish_and_clear();
-                println!(
-                    "Result with {} Threads and Chunk Size of {}: {}/s",
-                    cur_threads,
-                    ByteSize(chunk as u64),
-                    ByteSize((total_bytes_cur as f64 / done) as u64)
-                );
+                    let now = Instant::now();
+
+                    thread::scope(|s| {
+                        for _ in 0..cur_threads {
+                            s.spawn(|_s_local| {
+                                let x_local = x_l.clone();
+                                let mem = x_local.default_memory().unwrap();
+                                if *d == "r" {
+                                    transfer_from(&pb, mem, bytes_per_threads, chunk).unwrap();
+                                } else if *d == "w" {
+                                    transfer_to(&pb, mem, bytes_per_threads, chunk).unwrap();
+                                } else {
+                                    if (0 % 2) == 0 {
+                                        transfer_from(&pb, mem.clone(), bytes_per_threads, chunk)
+                                            .unwrap();
+                                        transfer_to(&pb, mem, bytes_per_threads, chunk).unwrap();
+                                    } else {
+                                        transfer_to(&pb, mem.clone(), bytes_per_threads, chunk)
+                                            .unwrap();
+                                        transfer_from(&pb, mem, bytes_per_threads, chunk).unwrap();
+                                    }
+                                }
+                            });
+                        }
+                    })
+                    .unwrap();
+                    let done = now.elapsed().as_secs_f64();
+
+                    pb.finish_and_clear();
+                    println!(
+                        "Result for {} with {} Threads and Chunk Size of {}: {}/s",
+                        d,
+                        cur_threads,
+                        HumanBytes(chunk as u64),
+                        HumanBytes((total_bytes_cur as f64 / done) as u64)
+                    );
+                }
             }
         }
     }
