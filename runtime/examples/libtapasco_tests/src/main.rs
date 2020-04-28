@@ -1,5 +1,6 @@
 extern crate crossbeam;
 extern crate num_cpus;
+extern crate rand;
 extern crate rayon;
 extern crate snafu;
 extern crate tapasco;
@@ -9,8 +10,7 @@ use crossbeam::thread;
 use snafu::{ErrorCompat, ResultExt, Snafu};
 use std::io;
 use std::io::Write;
-use std::sync::Arc;
-use tapasco::device::DataTransferPrealloc;
+use std::sync::{Arc, RwLock};
 use tapasco::device::OffchipMemory;
 use uom::si::f32::*;
 use uom::si::frequency::megahertz;
@@ -289,45 +289,43 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
         .context(DeviceInit {})?;
 
         let mem = x.default_memory().context(DeviceInit)?;
-        let a = mem
-            .allocator()
-            .lock()?
-            .allocate(256 * 4)
-            .context(AllocatorError)?;
 
-        let mut pe = x.acquire_pe(11).context(DeviceInit)?;
+        for len_pow in 0..28 {
+            let len = i32::pow(2, len_pow);
+            println!("Checking {}", HumanBytes(len as u64));
+            let a = mem
+                .allocator()
+                .lock()?
+                .allocate(256 * 4)
+                .context(AllocatorError)?;
 
-        pe.start(vec![
-            tapasco::device::PEParameter::Single64(1),
-            tapasco::device::PEParameter::DataTransferPrealloc(DataTransferPrealloc {
-                data: vec![0 as u8; 256 * 4],
-                device_address: a,
-                from_device: true,
-                to_device: false,
-                free: false,
-                memory: mem.clone(),
-            }),
-        ])
-        .context(JobError)?;
-        println!("{:?}", pe.release(true).context(JobError)?);
+            let mut golden_samples: Vec<u8> = Vec::new();
+            let mut result: Vec<u8> = Vec::new();
+            for _ in 0..len {
+                golden_samples.push(rand::random());
+                result.push(255);
+            }
 
-        let mut pe = x.acquire_pe(9).context(DeviceInit)?;
+            mem.dma().copy_to(&golden_samples, a).context(DMAError)?;
+            mem.dma().copy_from(a, &mut result).context(DMAError)?;
 
-        pe.start(vec![
-            tapasco::device::PEParameter::Single64(1),
-            tapasco::device::PEParameter::DataTransferPrealloc(DataTransferPrealloc {
-                data: vec![0 as u8; 256 * 4],
-                device_address: a,
-                from_device: true,
-                to_device: false,
-                free: false,
-                memory: mem.clone(),
-            }),
-        ])
-        .context(JobError)?;
-        println!("{:?}", pe.release(true).context(JobError)?);
+            let not_matching = golden_samples
+                .iter()
+                .zip(result.iter())
+                .filter(|&(a, b)| a != b)
+                .count();
+            println!("{} Bytes not matching", not_matching);
 
-        mem.allocator().lock()?.free(a).context(AllocatorError)?;
+            if not_matching != 0 {
+                for (i, v) in golden_samples.iter().enumerate() {
+                    if *v != result[i] {
+                        println!("result[{}] == {} != {}", i, result[i], v);
+                    }
+                }
+            }
+
+            mem.allocator().lock()?.free(a).context(AllocatorError)?;
+        }
     }
     Ok(())
 }
@@ -337,7 +335,7 @@ fn transfer_to(
     mem: Arc<OffchipMemory>,
     bytes: usize,
     chunk: usize,
-) -> Result<()> {
+) -> Result<f64> {
     let a = mem
         .allocator()
         .lock()?
@@ -346,6 +344,8 @@ fn transfer_to(
     let mut transferred = 0;
     let data = vec![0; chunk];
     let mut incr = 0;
+
+    let now = Instant::now();
 
     while transferred < bytes {
         mem.dma().copy_to(&data, a).context(DMAError)?;
@@ -356,7 +356,11 @@ fn transfer_to(
         incr += 1;
     }
 
-    Ok(())
+    let done = now.elapsed().as_secs_f64();
+
+    mem.allocator().lock()?.free(a).context(AllocatorError)?;
+
+    Ok(done)
 }
 
 fn transfer_from(
@@ -364,7 +368,7 @@ fn transfer_from(
     mem: Arc<OffchipMemory>,
     bytes: usize,
     chunk: usize,
-) -> Result<()> {
+) -> Result<f64> {
     let a = mem
         .allocator()
         .lock()?
@@ -373,6 +377,8 @@ fn transfer_from(
     let mut transferred = 0;
     let mut data = vec![0; chunk];
     let mut incr = 0;
+
+    let now = Instant::now();
 
     while transferred < bytes {
         mem.dma().copy_from(a, &mut data).context(DMAError)?;
@@ -383,7 +389,11 @@ fn transfer_from(
         incr += 1;
     }
 
-    Ok(())
+    let done = now.elapsed().as_secs_f64();
+
+    mem.allocator().lock()?.free(a).context(AllocatorError)?;
+
+    Ok(done)
 }
 
 fn benchmark_copy(m: &ArgMatches) -> Result<()> {
@@ -414,12 +424,12 @@ fn benchmark_copy(m: &ArgMatches) -> Result<()> {
             HumanBytes(total_bytes as u64)
         );
         for cur_threads in 1..num_threads + 1 {
-            for chunk_pow in 10..(max_size_power + 1) {
+            for chunk_pow in 18..(max_size_power + 1) {
                 let chunk = usize::pow(2, chunk_pow as u32);
                 let bytes_per_threads = total_bytes / cur_threads as usize;
                 let mut total_bytes_cur = bytes_per_threads * cur_threads as usize;
 
-                for d in ["r", "w", "rw"].iter() {
+                for d in ["w" /*, "r", "w", "rw"*/].iter() {
                     if *d == "rw" {
                         total_bytes_cur *= 2;
                     }
@@ -433,42 +443,61 @@ fn benchmark_copy(m: &ArgMatches) -> Result<()> {
                     }
                     pb.tick();
 
-                    let now = Instant::now();
+                    let done: Arc<RwLock<Vec<f64>>> = Arc::new(RwLock::new(Vec::new()));
 
                     thread::scope(|s| {
                         for _ in 0..cur_threads {
                             s.spawn(|_s_local| {
                                 let x_local = x_l.clone();
                                 let mem = x_local.default_memory().unwrap();
+                                let mut time = 0.0;
                                 if *d == "r" {
-                                    transfer_from(&pb, mem, bytes_per_threads, chunk).unwrap();
+                                    time +=
+                                        transfer_from(&pb, mem, bytes_per_threads, chunk).unwrap();
                                 } else if *d == "w" {
-                                    transfer_to(&pb, mem, bytes_per_threads, chunk).unwrap();
+                                    time +=
+                                        transfer_to(&pb, mem, bytes_per_threads, chunk).unwrap();
                                 } else {
                                     if (0 % 2) == 0 {
-                                        transfer_from(&pb, mem.clone(), bytes_per_threads, chunk)
+                                        time += transfer_from(
+                                            &pb,
+                                            mem.clone(),
+                                            bytes_per_threads,
+                                            chunk,
+                                        )
+                                        .unwrap();
+                                        time += transfer_to(&pb, mem, bytes_per_threads, chunk)
                                             .unwrap();
-                                        transfer_to(&pb, mem, bytes_per_threads, chunk).unwrap();
                                     } else {
-                                        transfer_to(&pb, mem.clone(), bytes_per_threads, chunk)
+                                        time +=
+                                            transfer_to(&pb, mem.clone(), bytes_per_threads, chunk)
+                                                .unwrap();
+                                        time += transfer_from(&pb, mem, bytes_per_threads, chunk)
                                             .unwrap();
-                                        transfer_from(&pb, mem, bytes_per_threads, chunk).unwrap();
                                     }
+                                }
+                                {
+                                    let mut l = done.write().unwrap();
+                                    (*l).push(time);
                                 }
                             });
                         }
                     })
                     .unwrap();
-                    let done = now.elapsed().as_secs_f64();
 
                     pb.finish_and_clear();
-                    println!(
-                        "Result for {} with {} Threads and Chunk Size of {}: {}/s",
-                        d,
-                        cur_threads,
-                        HumanBytes(chunk as u64),
-                        HumanBytes((total_bytes_cur as f64 / done) as u64)
-                    );
+                    {
+                        let time = done.read().unwrap();
+                        let max = time.iter().fold(0.0, |x, y| if x.gt(y) { x } else { *y });
+
+                        println!(
+                            "Result for {} with {} Threads and Chunk Size of {}: {}/s",
+                            d,
+                            cur_threads,
+                            HumanBytes(chunk as u64),
+                            HumanBytes((total_bytes_cur as f64 / max) as u64)
+                        );
+                    }
                 }
             }
         }

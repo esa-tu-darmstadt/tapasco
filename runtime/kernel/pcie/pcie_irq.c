@@ -72,8 +72,7 @@ int pcie_irqs_init(struct tlkm_device *dev)
 				      0x8120);
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registering %d interrupts ...",
 	       NUMBER_OF_INTERRUPTS);
-#define _INTR(nr)                                                              \
-	irqn = nr + pcie_cls.npirqs;
+#define _INTR(nr) irqn = nr + pcie_cls.npirqs;
 
 	TLKM_PCIE_SLOT_INTERRUPTS
 #undef _INTR

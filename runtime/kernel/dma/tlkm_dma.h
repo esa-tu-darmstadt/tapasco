@@ -82,9 +82,10 @@ struct dma_engine {
 	atomic64_t rq_enqueued;
 	atomic64_t rq_processed;
 	wait_queue_head_t wq;
-	struct mutex wq_mutex;
+	wait_queue_head_t wq_enque;
 	atomic64_t wq_enqueued;
 	atomic64_t wq_processed;
+	atomic64_t wq_requested;
 	void *dma_buf_read[TLKM_DMA_CHUNKS];
 	dma_addr_t dma_buf_read_dev[TLKM_DMA_CHUNKS];
 	void *dma_buf_write[TLKM_DMA_CHUNKS];

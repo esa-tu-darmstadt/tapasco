@@ -71,13 +71,19 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase,
 
 	init_waitqueue_head(&dma->rq);
 	init_waitqueue_head(&dma->wq);
+	init_waitqueue_head(&dma->wq_enque);
+
 	mutex_init(&dma->regs_mutex);
 	mutex_init(&dma->rq_mutex);
-	mutex_init(&dma->wq_mutex);
+
 	dma->dev_id = dev_id;
 	dma->base = base;
 	dma->dev = dev;
 	dma->ack_register = NULL;
+
+	atomic64_set(&dma->wq_requested, 0);
+	atomic64_set(&dma->wq_enqueued, 0);
+	atomic64_set(&dma->wq_processed, 0);
 
 	DEVLOG(dev_id, TLKM_LF_DMA, "I/O remapping 0x%px - 0x%px...", base,
 	       base + size - 1);
@@ -187,10 +193,9 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,
 {
 	struct tlkm_device *dev = dma->dev;
 	size_t cpy_sz = len;
-	int i;
 	int err;
-	int current_buffer = 0;
-	ssize_t t_ids[TLKM_DMA_CHUNKS];
+	uint64_t last_chunk = 0;
+
 	if ((dev_addr % dma->alignment) != 0) {
 		DEVERR(dma->dev_id,
 		       "Transfer is not properly aligned for dma engine. All transfers have to be aligned to %d bytes.",
@@ -198,75 +203,98 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,
 		return -EAGAIN;
 	}
 
-	mutex_lock(&dma->wq_mutex);
-
-	for (i = 0; i < TLKM_DMA_CHUNKS; ++i) {
-		t_ids[i] = 0;
-	}
-
-	atomic64_set(&dma->wq_enqueued, 0);
-	atomic64_set(&dma->wq_processed, 0);
-
 	while (len > 0) {
+		uint64_t last_chunk_slot = 0;
+		last_chunk = atomic64_inc_return(&dma->wq_requested) - 1;
+		last_chunk_slot = last_chunk % TLKM_DMA_CHUNKS;
+
+		DEVLOG(dma->dev_id, TLKM_LF_DMA,
+		       "DMA Status: Requested: %lld, Enqueued: %lld Completed: %lld",
+		       atomic64_read(&dma->wq_requested),
+		       atomic64_read(&dma->wq_enqueued),
+		       atomic64_read(&dma->wq_processed));
+
 		DEVLOG(dma->dev_id, TLKM_LF_DMA,
 		       "outstanding bytes: %zd - usr_addr = 0x%px, dev_addr = 0x%px",
 		       len, usr_addr, (void *)dev_addr);
+
 		DEVLOG(dma->dev_id, TLKM_LF_DMA,
-		       "using buffer: %d and waiting for t_id == %zd",
-		       current_buffer, t_ids[current_buffer]);
+		       "using buffer: %lld and slot %lld", last_chunk,
+		       last_chunk_slot);
+
 		cpy_sz = len < TLKM_DMA_CHUNK_SZ ? len : TLKM_DMA_CHUNK_SZ;
-		if (wait_event_interruptible(
-			    dma->wq, atomic64_read(&dma->wq_processed) >=
-					     t_ids[current_buffer])) {
+
+		if (wait_event_interruptible(dma->wq,
+					     atomic64_read(&dma->wq_processed) +
+							     TLKM_DMA_CHUNKS >
+						     last_chunk)) {
 			DEVWRN(dma->dev_id,
-			       "got killed while hanging in waiting queue");
+			       "got killed while waiting for free buffer");
 			err = -EACCES;
 			goto copy_err;
 		}
 
 		dma->ops.buffer_cpu(dev->dev_id, dev,
-				    &dma->dma_buf_write[current_buffer],
-				    &dma->dma_buf_write_dev[current_buffer],
+				    &dma->dma_buf_write[last_chunk_slot],
+				    &dma->dma_buf_write_dev[last_chunk_slot],
 				    TO_DEV, cpy_sz);
-		if (copy_from_user(dma->dma_buf_write[current_buffer], usr_addr,
-				   cpy_sz)) {
+		if (copy_from_user(dma->dma_buf_write[last_chunk_slot],
+				   usr_addr, cpy_sz)) {
 			DEVERR(dma->dev_id, "could not copy data from user");
 			err = -EAGAIN;
 			goto copy_err;
 		} else {
 			dma->ops.buffer_dev(
 				dev->dev_id, dev,
-				&dma->dma_buf_write[current_buffer],
-				&dma->dma_buf_write_dev[current_buffer], TO_DEV,
-				cpy_sz);
-			t_ids[current_buffer] = dma->ops.copy_to(
+				&dma->dma_buf_write[last_chunk_slot],
+				&dma->dma_buf_write_dev[last_chunk_slot],
+				TO_DEV, cpy_sz);
+
+			if (wait_event_interruptible(
+				    dma->wq_enque,
+				    atomic64_read(&dma->wq_enqueued) ==
+					    last_chunk)) {
+				DEVWRN(dma->dev_id,
+				       "got killed while waiting for write enqueue for chunk %lld -> %lld",
+				       last_chunk,
+				       atomic64_read(&dma->wq_enqueued));
+				err = -EACCES;
+				goto copy_err;
+			}
+			dma->ops.copy_to(
 				dma, dev_addr,
-				dma->dma_buf_write_dev[current_buffer], cpy_sz);
+				dma->dma_buf_write_dev[last_chunk_slot],
+				cpy_sz);
+
+			wake_up_interruptible(&dma->wq_enque);
 
 			usr_addr += cpy_sz;
 			dev_addr += cpy_sz;
 			len -= cpy_sz;
-			current_buffer = (current_buffer + 1) % TLKM_DMA_CHUNKS;
 		}
 	}
 
-	for (i = 0; i < TLKM_DMA_CHUNKS; ++i) {
-		if (wait_event_interruptible(
-			    dma->wq,
-			    atomic64_read(&dma->wq_processed) >= t_ids[i])) {
-			DEVWRN(dma->dev_id,
-			       "got killed while hanging in waiting queue");
-			err = -EACCES;
-			goto copy_err;
-		}
+	if (wait_event_interruptible(
+		    dma->wq, atomic64_read(&dma->wq_processed) > last_chunk)) {
+		DEVWRN(dma->dev_id,
+		       "got killed while waiting for last transfer");
+		err = -EACCES;
+		goto finish_err;
 	}
 
 	tlkm_perfc_dma_writes_add(dma->dev_id, len);
-	mutex_unlock(&dma->wq_mutex);
 	return len;
 
 copy_err:
-	mutex_unlock(&dma->wq_mutex);
+	DEVWRN(dma->dev_id, "Still got chunk %lld, waiting to free.",
+	       last_chunk);
+	wait_event_interruptible(dma->wq, atomic64_read(&dma->wq_enqueued) ==
+						  last_chunk);
+	atomic64_inc(&dma->wq_enqueued);
+	wait_event_interruptible(dma->wq, atomic64_read(&dma->wq_processed) ==
+						  last_chunk);
+	atomic64_inc(&dma->wq_processed);
+finish_err:
 	return err;
 }
 
