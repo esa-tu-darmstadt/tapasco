@@ -60,6 +60,7 @@ static const struct of_device_id tapasco_ids[] = {
 
 static struct {
 	struct tlkm_control *ctrl;
+    int requested_irq_num;
 #define _INTC(N) intc_t intc_##N;
 	INTERRUPT_CONTROLLERS
 #undef _INTC
@@ -122,19 +123,15 @@ static void zynq_init_intc(struct zynq_device *zynq_dev, u32 const base)
 
 int zynq_irq_init(struct zynq_device *zynq_dev)
 {
-	int retval = 0, irqn = 0, rirq = 0;
+	int retval = 0, rirq = 0;
 	u32 base;
+    zynq_irq.requested_irq_num = 0;
 
 	init_work_structs();
-	//TODO: Whats up with this 'base" component? Prevents other 4 interrupt lanes from getting connected...
 #define _INTC(N)                                                               \
-	LOG(TLKM_LF_IRQ, "_INTC %d called. irqn is %d", N, irqn);              \
-	rirq = irq_of_parse_and_map(of_find_matching_node(NULL, tapasco_ids),  \
-				    irqn);                                     \
-	LOG(TLKM_LF_IRQ, "rirq for %d: %d", N, rirq);                          \
+	rirq = irq_of_parse_and_map(of_find_matching_node(NULL, tapasco_ids), zynq_irq.requested_irq_num);   \
 	base = tlkm_status_get_component_base(zynq_dev->parent,                \
 					      "PLATFORM_COMPONENT_INTC" #N);   \
-	LOG(TLKM_LF_IRQ, "INTC%d base is %d", N, base);                        \
 	if (base != -1) {                                                      \
 		zynq_irq.intc_##N.base = (base >> 2);                          \
 		LOG(TLKM_LF_IRQ, "controller for IRQ #%d at 0x%08llx", rirq,   \
@@ -145,7 +142,7 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 		retval = request_irq(rirq, zynq_irq_handler_##N,               \
 				     IRQF_EARLY_RESUME,                        \
 				     "tapasco_zynq_" STR(N), zynq_dev);        \
-		++irqn;                                                        \
+        ++zynq_irq.requested_irq_num;                       \
 		if (retval) {                                                  \
 			ERR("could not register IRQ #%d!", rirq);              \
 			goto err;                                              \
@@ -158,7 +155,7 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 	return retval;
 
 err:
-	while (--irqn >= 0) {
+	while (--zynq_irq.requested_irq_num >= 0) {
 		disable_irq(rirq);
 		free_irq(rirq, zynq_dev);
 	}
@@ -167,11 +164,11 @@ err:
 
 void zynq_irq_exit(struct zynq_device *zynq_dev)
 {
-	int irqn = ZYNQ_MAX_NUM_INTCS, rirq = 0;
-	while (irqn) {
-		--irqn;
+	int rirq = 0;
+	while (zynq_irq.requested_irq_num) {
+		--zynq_irq.requested_irq_num;
 		rirq = irq_of_parse_and_map(
-			of_find_matching_node(NULL, tapasco_ids), irqn);
+			of_find_matching_node(NULL, tapasco_ids), zynq_irq.requested_irq_num);
 		LOG(TLKM_LF_IRQ, "releasing IRQ #%d", rirq);
 		disable_irq(rirq);
 		free_irq(rirq, zynq_dev);
