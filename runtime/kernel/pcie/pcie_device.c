@@ -162,6 +162,20 @@ static void release_device(struct tlkm_pcie_device *pdev)
 static int configure_device(struct pci_dev *pdev)
 {
 	dev_id_t id = TLKM_DEV_ID(pdev);
+	int mps_r = -1;
+	int mps = 8192;
+	while((mps_r < 0) && (mps > 0)) {
+		mps = mps >> 1;
+	       	mps_r = pcie_set_mps(pdev, mps);
+	}
+
+	mps_r = -1;
+	mps = 8192;
+	while((mps_r < 0) && (mps > 0)) {
+		mps = mps >> 1;
+	       	mps_r = pcie_set_readrq(pdev, mps);
+	}
+
 	DEVLOG(id, TLKM_LF_PCIE, "MPS: %d, Maximum Read Requests %d",
 	       pcie_get_mps(pdev), pcie_get_readrq(pdev));
 
