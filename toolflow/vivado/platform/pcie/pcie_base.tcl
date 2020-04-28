@@ -281,28 +281,10 @@
     }
 
     set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
-    tapasco::ip::connect_sc_default_clocks $out_ic "design"
+    tapasco::ip::connect_sc_default_clocks $out_ic "host"
 
-    if {$device_type != "virtexuplus" && $device_type != "virtexuplusHBM"} {
-      if { $pcie_width == "x8" } {
-        puts "Using PCIe IP for x8..."
-        set bridge [tapasco::ip::create_pciebridgetolite "PCIeBridgeToLite"]
-      } else {
-        puts "Using PCIe IP for x16..."
-        set bridge [tapasco::ip::create_pciebridgetolite_x16 "PCIeBridgeToLite"]
-      }
-        connect_bd_intf_net [get_bd_intf_pins -regexp $pcie/M_AXI(_B)?] \
-      [get_bd_intf_pins -of_objects $bridge -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
-
-      connect_bd_net [get_bd_pins axi_pcie3_0/axi_aclk] [get_bd_pins -of_objects $bridge -filter "TYPE == clk"]
-      connect_bd_net [get_bd_pins axi_pcie3_0/axi_aresetn] [get_bd_pins -of_objects $bridge -filter "TYPE == rst"]
-
-      connect_bd_intf_net [get_bd_intf_pins -of_objects $bridge -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Master"] \
+    connect_bd_intf_net [get_bd_intf_pins -regexp $pcie/M_AXI(_B)?] \
       [get_bd_intf_pins -of_objects $out_ic -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
-    } else {
-      connect_bd_intf_net [get_bd_intf_pins -regexp $pcie/M_AXI(_B)?] \
-        [get_bd_intf_pins -of_objects $out_ic -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"]
-    }
 
     set in_ic [tapasco::ip::create_axi_sc "in_ic" 2 1]
     tapasco::ip::connect_sc_default_clocks $in_ic "host"
