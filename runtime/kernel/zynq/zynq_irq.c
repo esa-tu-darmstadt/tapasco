@@ -51,13 +51,6 @@ typedef struct {
 	u32 base;
 } intc_t;
 
-static const struct of_device_id tapasco_ids[] = {
-	{
-		.compatible = "tapasco",
-	},
-	{},
-};
-
 static struct {
 	struct tlkm_control *ctrl;
     int requested_irq_num;
@@ -129,9 +122,10 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 
 	init_work_structs();
 #define _INTC(N)                                                               \
-	rirq = irq_of_parse_and_map(of_find_matching_node(NULL, tapasco_ids), zynq_irq.requested_irq_num);   \
+	rirq = irq_of_parse_and_map(of_find_node_by_name(NULL, "tapasco"), zynq_irq.requested_irq_num);   \
 	base = tlkm_status_get_component_base(zynq_dev->parent,                \
 					      "PLATFORM_COMPONENT_INTC" #N);   \
+    LOG(TLKM_LF_IRQ, "INTC%d base is %d", N, base);         \
 	if (base != -1) {                                                      \
 		zynq_irq.intc_##N.base = (base >> 2);                          \
 		LOG(TLKM_LF_IRQ, "controller for IRQ #%d at 0x%08llx", rirq,   \
@@ -168,7 +162,7 @@ void zynq_irq_exit(struct zynq_device *zynq_dev)
 	while (zynq_irq.requested_irq_num) {
 		--zynq_irq.requested_irq_num;
 		rirq = irq_of_parse_and_map(
-			of_find_matching_node(NULL, tapasco_ids), zynq_irq.requested_irq_num);
+			of_find_node_by_name(NULL, "tapasco"), zynq_irq.requested_irq_num);
 		LOG(TLKM_LF_IRQ, "releasing IRQ #%d", rirq);
 		disable_irq(rirq);
 		free_irq(rirq, zynq_dev);
@@ -178,7 +172,8 @@ void zynq_irq_exit(struct zynq_device *zynq_dev)
 int zynq_irq_request_platform_irq(struct tlkm_device *dev, int irq_no,
 				  irq_handler_t h, void *data)
 {
-	int err = 0;
+    int err = 0;
+    LOG(TLKM_LF_IRQ, "Called zynq_irq_request_platform_irq");
 	if (irq_no >= dev->cls->npirqs) {
 		DEVERR(dev->dev_id,
 		       "invalid platform interrupt number: %d (must be < %zd",
