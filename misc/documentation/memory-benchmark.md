@@ -6,7 +6,7 @@ memory performance.
 
 You first have to import this PE and build a bitstream:
 ```
-tapasco import $TAPSCO_HOME_TOOLFLOW/examples/MemoryBenchmark.zip
+tapasco import $TAPASCO_HOME_TOOLFLOW/examples/MemoryBenchmark.zip as 321
 tapasco compose [MemoryBenchmark x 1] @ 300MHz -p *your_platform*
 ```
 You can also benchmark Non-DDR memory with this PE, e.g. HBM. For this you need to
