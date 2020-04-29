@@ -14,8 +14,8 @@ struct tlkm_device;
 typedef int (*dma_init_fun)(struct dma_engine *);
 typedef irqreturn_t (*dma_intr_handler)(int, void *);
 typedef ssize_t (*dma_copy_to_func_t)(struct dma_engine *, dev_addr_t,
-				      const void *, size_t);
-typedef ssize_t (*dma_copy_from_func_t)(struct dma_engine *, void *, dev_addr_t,
+				      dma_addr_t, size_t);
+typedef ssize_t (*dma_copy_from_func_t)(struct dma_engine *, dma_addr_t, dev_addr_t,
 					size_t);
 
 typedef enum { TO_DEV, FROM_DEV } dma_direction_t;
