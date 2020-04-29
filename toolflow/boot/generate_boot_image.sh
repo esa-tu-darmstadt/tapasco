@@ -30,7 +30,7 @@ BUILD_DEVICETREE_LOG="$LOGDIR/build-devicetree.log"
 BUILD_OUTPUT_IMAGE_LOG="$LOGDIR/build-output-image.log"
 PREPARE_SD_LOG="$LOGDIR/prepare-sd.log"
 
-print_usage () {
+print_usage() {
 	cat << EOF
 Usage: ${0##*/} BOARD VERSION [DISK SIZE] [DEVICE]
 Build a boot image for the given BOARD and VERSION (git tag). If DEVICE is
@@ -44,30 +44,30 @@ EOF
 	exit 1
 }
 
-dusudo () {
+dusudo() {
 	[[ -z $1 ]] || echo $SUDOPW | sudo --stdin "$@"
 }
 
-error_exit () {
+error_exit() {
 	echo ${1:-"unknown error"} >&2 && exit 1
 }
 
-error_ret () {
+error_ret() {
 	echo ${1:-"error in script"} >&2 && return 1
 }
 
-check_board () {
+check_board() {
 	case $BOARD in
-		"zedboard")
-			;;
-		"zc706")
-			;;
-		"pynq")
-			;;
-		"zcu102")
-			;;
-        "ultra96v2")
-            ;;
+		"zedboard") ;;
+
+		"zc706") ;;
+
+		"pynq") ;;
+
+		"zcu102") ;;
+
+		"ultra96v2") ;;
+
 		*)
 			echo "unknown board: $BOARD"
 			echo "select one of zedboard, zc706, pynq, zcu102 or ultra96v2"
@@ -76,75 +76,75 @@ check_board () {
 	esac
 }
 
-check_compiler () {
+check_compiler() {
 	which ${CROSS_COMPILE}gcc &> /dev/null ||
-	error_exit "Compiler ${CROSS_COMPILE}gcc not found in path."
+		error_exit "Compiler ${CROSS_COMPILE}gcc not found in path."
 }
 
 check_xsct() {
-    which xsct &> /dev/null ||
-	error_exit "Xilinx xcst tool is not in PATH, please source Vitis settings."
+	which xsct &> /dev/null ||
+		error_exit "Xilinx xcst tool is not in PATH, please source Vitis settings."
 }
 
-check_vivado () {
+check_vivado() {
 	which vivado &> /dev/null ||
-	error_exit "Xilinx Vivado is not in PATH, please source Vivado settings."
+		error_exit "Xilinx Vivado is not in PATH, please source Vivado settings."
 }
 
-check_tapasco () {
+check_tapasco() {
 	[[ -n $TAPASCO_HOME ]] ||
-	error_exit "TAPASCO_HOME is not set, please source tapasco-setup.sh from TaPaSCo."
+		error_exit "TAPASCO_HOME is not set, please source tapasco-setup.sh from TaPaSCo."
 }
 
-check_bootgen () {
+check_bootgen() {
 	which bootgen &> /dev/null ||
-	error_exit "Xilinx bootgen tool is not in PATH, please source Vivado settings."
+		error_exit "Xilinx bootgen tool is not in PATH, please source Vivado settings."
 }
 
-check_image_tools () {
+check_image_tools() {
 	which kpartx &> /dev/null ||
-	error_exit "Partitioning helper 'kpartx' not found, please install package."
+		error_exit "Partitioning helper 'kpartx' not found, please install package."
 }
 
-check_sdcard () {
+check_sdcard() {
 	[[ -z $SDCARD || -e $SDCARD ]] ||
-	error_exit "SD card device $SDCARD does not exist!"
+		error_exit "SD card device $SDCARD does not exist!"
 }
 
-fetch_linux () {
+fetch_linux() {
 	if [[ ! -d $DIR/linux-xlnx ]]; then
-        #handling of xilinx sudden change in name convention
-        if [[ $VERSION = 2019.2 ]]; then
-            LINUX_VERSION=2019.2.01
-        else
-            LINUX_VERSION=$VERSION
-        fi
+		#handling of xilinx sudden change in name convention
+		if [[ $VERSION == 2019.2 ]]; then
+			LINUX_VERSION=2019.2.01
+		else
+			LINUX_VERSION=$VERSION
+		fi
 		echo "Fetching linux $LINUX_VERSION ..."
 		git clone -b xilinx-v$LINUX_VERSION --depth 1 https://github.com/xilinx/linux-xlnx.git $DIR/linux-xlnx ||
-		return $(error_ret "$LINENO: could not clone linux git")
+			return $(error_ret "$LINENO: could not clone linux git")
 	else
 		echo "$DIR/linux-xln already exists, skipping."
 	fi
 }
 
-fetch_u-boot () {
+fetch_u-boot() {
 	if [[ ! -d $DIR/u-boot-xlnx ]]; then
 		echo "Fetching u-boot $VERSION ..."
 		git clone -b xilinx-v$VERSION --depth 1 https://github.com/xilinx/u-boot-xlnx.git $DIR/u-boot-xlnx ||
-		return $(error_ret "$LINENO: could not clone u-boot git")
+			return $(error_ret "$LINENO: could not clone u-boot git")
 	else
 		echo "$DIR/u-boot-xlnx already exists, skipping."
 	fi
 }
 
-fetch_arm_trusted_firmware () {
-    if [[ ! -d $DIR/arm-trusted-firmware ]]; then
-        echo "Fetching arm-trusted-firmware ..."
-        git clone --depth 1 https://github.com/Xilinx/arm-trusted-firmware.git $DIR/arm-trusted-firmware ||
-        return $(error_ret "$LINENO: could not clone arm-trusted-firmware")
-    else
-        echo "$DIR/arm-trusted-firmware already exists, skipping."
-    fi
+fetch_arm_trusted_firmware() {
+	if [[ ! -d $DIR/arm-trusted-firmware ]]; then
+		echo "Fetching arm-trusted-firmware ..."
+		git clone --depth 1 https://github.com/Xilinx/arm-trusted-firmware.git $DIR/arm-trusted-firmware ||
+			return $(error_ret "$LINENO: could not clone arm-trusted-firmware")
+	else
+		echo "$DIR/arm-trusted-firmware already exists, skipping."
+	fi
 }
 
 fetch_arch_linux() {
@@ -158,16 +158,16 @@ fetch_arch_linux() {
 			LOCAL_FILE=$ARCH64_ROOTFS_TAR_GZ
 			;;
 	esac
-    if [[ ! -f $LOCAL_FILE ]]; then
-        echo "Fetching arch linux rootfs..."
-        curl -L -s $ARCH_URL -o $LOCAL_FILE ||
-        return $(error_ret "$LINENO: could not fetch $ARCH_URL")
-    else
-        echo "$LOCAL_FILE already exists, skipping."
-    fi
+	if [[ ! -f $LOCAL_FILE ]]; then
+		echo "Fetching arch linux rootfs..."
+		curl -L -s $ARCH_URL -o $LOCAL_FILE ||
+			return $(error_ret "$LINENO: could not fetch $ARCH_URL")
+	else
+		echo "$LOCAL_FILE already exists, skipping."
+	fi
 }
 
-build_u-boot () {
+build_u-boot() {
 	if [[ ! -e $DIR/u-boot-xlnx/tools/mkimage ]]; then
 		echo "Building u-boot $VERSION ..."
 		case $BOARD in
@@ -189,12 +189,12 @@ build_u-boot () {
 			"zc706")
 				DEFCONFIG=zynq_zc706_defconfig
 				;;
-            "ultra96v2")
-                DEFCONFIG=avnet_ultra96_rev1_defconfig
-                ;;
-            "zcu102")
-                DEFCONFIG=xilinx_zynqmp_zcu102_rev1_0_defconfig
-                ;;
+			"ultra96v2")
+				DEFCONFIG=avnet_ultra96_rev1_defconfig
+				;;
+			"zcu102")
+				DEFCONFIG=xilinx_zynqmp_zcu102_rev1_0_defconfig
+				;;
 			*)
 				return $(error_ret "unknown board: $BOARD")
 				;;
@@ -207,88 +207,88 @@ build_u-boot () {
 			echo "# CONFIG_OF_SEPARATE is not set" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
 		fi
 		make CROSS_COMPILE=$CROSS_COMPILE $DEFCONFIG ||
-		return $(error_ret "$LINENO: could not make defconfig $DEFCONFIG")
-        if [[ $ARCH != arm64 ]]; then
-		    make CROSS_COMPILE=$CROSS_COMPILE HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" tools -j $JOBCOUNT ||
-			    return $(error_ret "$LINENO: could not build u-boot tools")
-        fi
+			return $(error_ret "$LINENO: could not make defconfig $DEFCONFIG")
+		if [[ $ARCH != arm64 ]]; then
+			make CROSS_COMPILE=$CROSS_COMPILE HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" tools -j $JOBCOUNT ||
+				return $(error_ret "$LINENO: could not build u-boot tools")
+		fi
 	else
 
 		echo "$DIR/u-boot-xlnx/tools/mkimage already exists, skipping."
 	fi
 }
 
-build_linux () {
-    if [[ ! $ARCH = arm64 ]]; then
-	    if [[ ! -e $DIR/linux-xlnx/arch/arm/boot/Image ]]; then
-		    echo "Building linux $VERSION .."
-		    DEFCONFIG=tapasco_zynq_defconfig
-		    CONFIGFILE="$SCRIPTDIR/configs/tapasco_zynq_defconfig"
-		    cp $CONFIGFILE $DIR/linux-xlnx/arch/arm/configs/ ||
-			    return $(error_ret "$LINENO: could not copy config")
-		    cd $DIR/linux-xlnx
-		    make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG ||
-			    return $(error_ret "$LINENO: could not make defconfig")
-		    make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm -j $JOBCOUNT ||
-			    return $(error_ret "$LINENO: could not build kernel")
-	    else
-		    echo "$DIR/linux-xlnx/arch/arm/boot/Image already exists, skipping."
-	    fi
-    else
-        if [[ ! -e $DIR/linux-xlnx/arch/arm64/boot/Image ]]; then
-		    echo "Building linux $VERSION for arm64.."
-            DEFCONFIG=tapasco_zynqmp_defconfig
-		    CONFIGFILE="$SCRIPTDIR/configs/tapasco_zynqmp_defconfig"
-            cp $CONFIGFILE $DIR/linux-xlnx/arch/arm64/configs/ ||
-			    return $(error_ret "$LINENO: could not copy config")
-            cd $DIR/linux-xlnx
-            make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64 $DEFCONFIG ||
-                return $(error_ret "$LINENO: could not make defconfig")
-            make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64 -j $JOBCOUNT ||  
-			    return $(error_ret "$LINENO: could not build kernel")
-           case $BOARD in
-		        "ultra96v2")
-                    cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/avnet-ultra96-rev1.dtb $DIR/devicetree.dtb || 
-                    return $(error_ret "$LINENO: could not copy device tree");
-                    ;;
-                "zcu102")
-                    cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/zynqmp-zcu102-rev1.0.dtb $DIR/devicetree.dtb ||
-                    return $(error_ret "$LINENO: could not copy device tree");
-                    ;;
-            esac
-        else
-            echo "$DIR/linux-xlnx/arch/arm64/boot/Image already exists, skipping."
-        fi
-    fi
+build_linux() {
+	if [[ $ARCH != arm64 ]]; then
+		if [[ ! -e $DIR/linux-xlnx/arch/arm/boot/Image ]]; then
+			echo "Building linux $VERSION .."
+			DEFCONFIG=tapasco_zynq_defconfig
+			CONFIGFILE="$SCRIPTDIR/configs/tapasco_zynq_defconfig"
+			cp $CONFIGFILE $DIR/linux-xlnx/arch/arm/configs/ ||
+				return $(error_ret "$LINENO: could not copy config")
+			cd $DIR/linux-xlnx
+			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG ||
+				return $(error_ret "$LINENO: could not make defconfig")
+			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm -j $JOBCOUNT ||
+				return $(error_ret "$LINENO: could not build kernel")
+		else
+			echo "$DIR/linux-xlnx/arch/arm/boot/Image already exists, skipping."
+		fi
+	else
+		if [[ ! -e $DIR/linux-xlnx/arch/arm64/boot/Image ]]; then
+			echo "Building linux $VERSION for arm64.."
+			DEFCONFIG=tapasco_zynqmp_defconfig
+			CONFIGFILE="$SCRIPTDIR/configs/tapasco_zynqmp_defconfig"
+			cp $CONFIGFILE $DIR/linux-xlnx/arch/arm64/configs/ ||
+				return $(error_ret "$LINENO: could not copy config")
+			cd $DIR/linux-xlnx
+			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64 $DEFCONFIG ||
+				return $(error_ret "$LINENO: could not make defconfig")
+			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64 -j $JOBCOUNT ||
+				return $(error_ret "$LINENO: could not build kernel")
+			case $BOARD in
+				"ultra96v2")
+					cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/avnet-ultra96-rev1.dtb $DIR/devicetree.dtb ||
+						return $(error_ret "$LINENO: could not copy device tree")
+					;;
+				"zcu102")
+					cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/zynqmp-zcu102-rev1.0.dtb $DIR/devicetree.dtb ||
+						return $(error_ret "$LINENO: could not copy device tree")
+					;;
+			esac
+		else
+			echo "$DIR/linux-xlnx/arch/arm64/boot/Image already exists, skipping."
+		fi
+	fi
 }
 
-build_ssbl () {
+build_ssbl() {
 	if [[ ! -e $DIR/u-boot-xlnx/u-boot ]]; then
 		echo "Building second stage boot loader ..."
-        cd $DIR/u-boot-xlnx
-        if [[ $ARCH != arm64 ]]; then
-		    DTC=$DIR/linux-xlnx/scripts/dtc/dtc
+		cd $DIR/u-boot-xlnx
+		if [[ $ARCH != arm64 ]]; then
+			DTC=$DIR/linux-xlnx/scripts/dtc/dtc
 			make CROSS_COMPILE=$CROSS_COMPILE DTC=$DTC HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" u-boot -j $JOBCOUNT ||
-			return $(error_ret "$LINENO: could not build u-boot")
-        else
-            make CROSS_COMPILE=$CROSS_COMPILE -j $JOBCOUNT ||
-			return $(error_ret "$LINENO: could not build u-boot")
-        fi
+				return $(error_ret "$LINENO: could not build u-boot")
+		else
+			make CROSS_COMPILE=$CROSS_COMPILE -j $JOBCOUNT ||
+				return $(error_ret "$LINENO: could not build u-boot")
+		fi
 	else
 		echo "$DIR/u-boot-xlnx/u-boot already exists, skipping."
 	fi
 
-    if [[ $ARCH != arm64 ]]; then
-	    cp $DIR/u-boot-xlnx/u-boot $DIR/u-boot-xlnx/u-boot.elf ||
-		    return $(error_ret "$LINENO: could not copy to $DIR/u-boot-xlnx/u-boot.elf failed")
-    fi
+	if [[ $ARCH != arm64 ]]; then
+		cp $DIR/u-boot-xlnx/u-boot $DIR/u-boot-xlnx/u-boot.elf ||
+			return $(error_ret "$LINENO: could not copy to $DIR/u-boot-xlnx/u-boot.elf failed")
+	fi
 }
 
-build_uimage () {
+build_uimage() {
 	if [[ ! -e $DIR/linux-xlnx/arch/arm/boot/uImage ]]; then
 		echo "Building uImage ..."
 		cd $DIR/linux-xlnx
-		export PATH=$PATH:$DIR/u-boot-xlnx/tools 
+		export PATH=$PATH:$DIR/u-boot-xlnx/tools
 		make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm UIMAGE_LOADADDR=0x8000 uImage -j $JOBCOUNT ||
 			return $(error_ret "$LINENO: could not build uImage")
 	else
@@ -296,12 +296,12 @@ build_uimage () {
 	fi
 }
 
-build_fsbl () {
+build_fsbl() {
 	if [[ ! -f $DIR/fsbl/executable.elf ]]; then
 		mkdir -p $DIR/fsbl || return $(error_ret "$LINENO: could not create $DIR/fsbl")
-        if [[ $ARCH != arm64 ]]; then
-		    pushd $DIR/fsbl > /dev/null &&
-		    cat > project.tcl << EOF
+		if [[ $ARCH != arm64 ]]; then
+			pushd $DIR/fsbl > /dev/null &&
+				cat > project.tcl << EOF
 package require json
 
 set platform_file [open "\$env(TAPASCO_HOME_TCL)/platform/$BOARD/platform.json" r]
@@ -359,12 +359,12 @@ write_hwdef -force  -file $BOARD.hdf
 puts "HDF in $BOARD.hdf, done."
 exit
 EOF
-		    cat > hsi.tcl << EOF
+			cat > hsi.tcl << EOF
 hsi generate_app -hw [hsi open_hw_design $BOARD.hdf] -os standalone -proc ps7_cortexa9_0 -app zynq_fsbl -compile -sw fsbl -dir .
 EOF
-        else 
-            pushd $DIR/fsbl > /dev/null &&
-		    cat > project.tcl << EOF
+		else
+			pushd $DIR/fsbl > /dev/null &&
+				cat > project.tcl << EOF
 package require json
 
 set platform_file [open "\$env(TAPASCO_HOME_TCL)/platform/$BOARD/platform.json" r]
@@ -400,11 +400,11 @@ write_hw_platform -fixed -force  -file $BOARD.xsa
 puts "XSA in $BOARD.xsa, done"
 exit
 EOF
-        cat > hsi.tcl << EOF
+			cat > hsi.tcl << EOF
 hsi generate_app -hw [hsi open_hw_design $BOARD.xsa] -proc psu_cortexa53_0 -os standalone -app zynqmp_fsbl -compile -sw fsbl -dir .
 EOF
-        fi
-        
+		fi
+
 		vivado -nolog -nojournal -notrace -mode batch -source project.tcl ||
 			return $(error_ret "$LINENO: Vivado could not build project")
 		xsct hsi.tcl ||
@@ -416,35 +416,35 @@ EOF
 }
 
 build_pmufw() {
-    if [[ ! -f $DIR/pmufw/executable.elf ]]; then
+	if [[ ! -f $DIR/pmufw/executable.elf ]]; then
 		mkdir -p $DIR/pmufw || return $(error_ret "$LINENO: could not create $DIR/pmufw")
-        pushd $DIR/pmufw > /dev/null &&
-        cat > pmufw.tcl << EOF
+		pushd $DIR/pmufw > /dev/null &&
+			cat > pmufw.tcl << EOF
 hsi generate_app -hw [hsi open_hw_design $DIR/fsbl/$BOARD.xsa] -os standalone -proc psu_pmu_0 -app zynqmp_pmufw -compile -sw pmufw -dir .
 EOF
-        xsct pmufw.tcl || 
-            return $(error_ret "$LINENO: hsi could not build pmu firmware")
-        popd &> /dev/null
-    else
+		xsct pmufw.tcl ||
+			return $(error_ret "$LINENO: hsi could not build pmu firmware")
+		popd &> /dev/null
+	else
 		echo "$BOARD/pmufw/executable.elf already exists, skipping."
 	fi
 }
 
 build_arm_trusted_firmware() {
-    if [[ ! -f $DIR/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf ]]; then
-        echo "Building Arm Trusted Firmware for ZynqMP ..."
-        cd $DIR/arm-trusted-firmware
-        make CROSS_COMPILE=$CROSS_COMPILE PLAT=zynqmp RESET_TO_BL31=1
-    else 
-        echo "$BOARD/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf already exists, skipping."
-    fi
+	if [[ ! -f $DIR/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf ]]; then
+		echo "Building Arm Trusted Firmware for ZynqMP ..."
+		cd $DIR/arm-trusted-firmware
+		make CROSS_COMPILE=$CROSS_COMPILE PLAT=zynqmp RESET_TO_BL31=1
+	else
+		echo "$BOARD/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf already exists, skipping."
+	fi
 }
 
-build_bootbin () {
-    if [[ ! -f $DIR/BOOT.BIN ]]; then
-	    echo "Building BOOT.BIN ..."
-        if [[ $ARCH = arm64 ]]; then 
-            cat > $DIR/bootimage.bif << EOF
+build_bootbin() {
+	if [[ ! -f $DIR/BOOT.BIN ]]; then
+		echo "Building BOOT.BIN ..."
+		if [[ $ARCH == arm64 ]]; then
+			cat > $DIR/bootimage.bif << EOF
                 image: {
                     [bootloader,destination_cpu=a53-0] $DIR/fsbl/executable.elf
                     [pmufw_image] $DIR/pmufw/executable.elf
@@ -452,66 +452,66 @@ build_bootbin () {
                     [destination_cpu=a53-0, exception_level=el-2] $DIR/u-boot-xlnx/u-boot.elf
                 }
 EOF
-            bootgen -arch zynqmp -image $DIR/bootimage.bif -w on -o $DIR/BOOT.BIN ||
-    		    return $(error_ret "$LINENO: could not generate BOOT.bin")
-        else
-    	    cat > $DIR/bootimage.bif << EOF
+			bootgen -arch zynqmp -image $DIR/bootimage.bif -w on -o $DIR/BOOT.BIN ||
+				return $(error_ret "$LINENO: could not generate BOOT.bin")
+		else
+			cat > $DIR/bootimage.bif << EOF
                 image : {
     	            [bootloader]$DIR/fsbl/executable.elf
     	            $DIR/u-boot-xlnx/u-boot.elf
                 }
 EOF
-        bootgen -image $DIR/bootimage.bif -w on -o $DIR/BOOT.BIN ||
-    		return $(error_ret "$LINENO: could not generate BOOT.bin")
-        fi
-    	echo "$DIR/BOOT.BIN ready."
-    else
-        echo "$DIR/BOOT.BIN already exists, skipping."
-    fi
+			bootgen -image $DIR/bootimage.bif -w on -o $DIR/BOOT.BIN ||
+				return $(error_ret "$LINENO: could not generate BOOT.bin")
+		fi
+		echo "$DIR/BOOT.BIN ready."
+	else
+		echo "$DIR/BOOT.BIN already exists, skipping."
+	fi
 }
 
-build_devtree () {
+build_devtree() {
 	echo "Building devicetree ..."
 	case $BOARD in
 		"pynq")
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
-			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
-			curl -L -s https://raw.githubusercontent.com/Digilent/linux-digilent/master/arch/arm/boot/dts/zynq-artyz7.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
+				cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
+				curl -L -s https://raw.githubusercontent.com/Digilent/linux-digilent/master/arch/arm/boot/dts/zynq-artyz7.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
 			;;
 		"zedboard")
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
-			cat $SCRIPTDIR/misc/zynq-7000.dtsi.patch | patch $DIR/zynq-7000.dtsi &&
-			cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
-			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zed.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
+				cat $SCRIPTDIR/misc/zynq-7000.dtsi.patch | patch $DIR/zynq-7000.dtsi &&
+				cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
+				cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zed.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
 			;;
 		"zc706")
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
-			cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zc706.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
+				cat $DIR/linux-xlnx/arch/arm/boot/dts/zynq-zc706.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
 			;;
-        "ultra96v2")
-            #work around: Re-compile dts from dtb generated by linux-build and add tapasco related interrupts
-            $DIR/linux-xlnx/scripts/dtc/dtc -I dtb -O dts -o $DIR/devicetree.dts $DIR/devicetree.dtb
-            ;;
-        "zcu102")
-            $DIR/linux-xlnx/scripts/dtc/dtc -I dtb -O dts -o $DIR/devicetree.dts $DIR/devicetree.dtb
-            ;;
+		"ultra96v2")
+			#work around: Re-compile dts from dtb generated by linux-build and add tapasco related interrupts
+			$DIR/linux-xlnx/scripts/dtc/dtc -I dtb -O dts -o $DIR/devicetree.dts $DIR/devicetree.dtb
+			;;
+		"zcu102")
+			$DIR/linux-xlnx/scripts/dtc/dtc -I dtb -O dts -o $DIR/devicetree.dts $DIR/devicetree.dtb
+			;;
 	esac
 	echo >> $DIR/devicetree.dts
 	if [[ $ARCH == arm64 ]]; then
-        echo "/include/ \"$SCRIPTDIR/misc/tapasco_zynqmp.dtsi\"" >> $DIR/devicetree.dts
-    else
-        echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
-    fi
+		echo "/include/ \"$SCRIPTDIR/misc/tapasco_zynqmp.dtsi\"" >> $DIR/devicetree.dts
+	else
+		echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
+	fi
 	$DIR/linux-xlnx/scripts/dtc/dtc -I dts -O dtb -o $DIR/devicetree.dtb $DIR/devicetree.dts ||
 		return $(error_ret "$LINENO: could not build devicetree.dtb")
 	echo "$DIR/devicetree.dtb ready."
 }
 
-build_output_image () {
+build_output_image() {
 	# size of image (in MiB)
 	IMGSIZE=${1:-7534}
 	# default root size: MAX - 358 MiB (converted to 512B sectors)
-	ROOTSZ=${2:-$((($IMGSIZE - 358) * 1024 * 1024 / 512))}
+	ROOTSZ=${2:-$(((IMGSIZE - 358) * 1024 * 1024 / 512))}
 	if [[ ! -f $OUTPUT_IMAGE ]]; then
 		echo "Building $OUTPUT_IMAGE ($IMGSIZE MiB, rootfs $ROOTSZ sectors)..."
 		echo "Creating empty disk image ..."
@@ -539,7 +539,7 @@ EOF
 		dusudo kpartx -av $OUTPUT_IMAGE ||
 			return $(error_ret "$LINENO: could not kpartx -a $OUTPUT_IMAGE")
 		sleep 3
-		LD=`basename $LOOPDEV`
+		LD=$(basename $LOOPDEV)
 		LD1=${LD}p1
 		LD2=${LD}p2
 		echo "Making BOOT partition in /dev/mapper/$LD1 ..."
@@ -568,49 +568,49 @@ EOF
 		fi
 		echo "Unmounting partitions ..."
 		dusudo kpartx -d $OUTPUT_IMAGE &&
-		echo "Done, $OUTPUT_IMAGE is ready!"
+			echo "Done, $OUTPUT_IMAGE is ready!"
 	else
 		echo "$OUTPUT_IMAGE already exists, skipping."
 	fi
 }
 
-prepare_sd () {
+prepare_sd() {
 	echo "dd'ing $OUTPUT_IMAGE to $SDCARD, this will take a while ..."
 	dusudo dd if=$OUTPUT_IMAGE of=$SDCARD bs=10M ||
 		return $(error_ret "$LINENO: could not dd $OUTPUT_IMAGE to $SDCARD")
 	echo "$SDCARD ready."
 }
 
-copy_files_to_boot () {
+copy_files_to_boot() {
 	DEV=${1:-${SDCARD}1}
-	TO="$DIR/`basename $DEV`"
+	TO="$DIR/$(basename $DEV)"
 	echo "Preparing BOOT partition $TO ..."
 	mkdir -p $TO || return $(error_ret "$LINENO: could not create $TO")
 	dusudo mount $DEV $TO || return $(error_ret "$LINENO: could not mount $DEV -> $TO")
 	echo "Copying $DIR/BOOT.BIN to $TO ..."
 	dusudo cp $DIR/BOOT.BIN $TO || echo >&2 "$LINENO: WARNING: could not copy BOOT.BIN"
-    if [[ $ARCH == arm64 ]]; then
-        echo "Copying $DIR/linux-xlnx/arch/arm64/boot/Image to $TO ..."
-        dusudo cp $DIR/linux-xlnx/arch/arm64/boot/Image $TO ||
-		    echo >&2 "$LINENO: WARNING: could not copy Image"
+	if [[ $ARCH == arm64 ]]; then
+		echo "Copying $DIR/linux-xlnx/arch/arm64/boot/Image to $TO ..."
+		dusudo cp $DIR/linux-xlnx/arch/arm64/boot/Image $TO ||
+			echo >&2 "$LINENO: WARNING: could not copy Image"
 		echo "Copying $DIR/devicetree.dtb to $TO/system.dtb ..."
 		dusudo cp $DIR/devicetree.dtb $TO/system.dtb || echo >&2 "$LINENO: WARNING: could not copy devicetree"
-    else
-	    echo "Copying $DIR/linux-xlnx/arch/arm/boot/uImage to $TO ..."
-	    dusudo cp $DIR/linux-xlnx/arch/arm/boot/uImage $TO ||
-		    echo >&2 "$LINENO: WARNING: could not copy uImage"
-        echo "Copying uenv/uEnv-$BOARD.txt to $TO/uEnv.txt ..."
-        dusudo cp uenv/uEnv-$BOARD.txt $TO/uEnv.txt ||
-		    echo >&2 "$LINENO: WARNING: could not copy uEnv.txt"
+	else
+		echo "Copying $DIR/linux-xlnx/arch/arm/boot/uImage to $TO ..."
+		dusudo cp $DIR/linux-xlnx/arch/arm/boot/uImage $TO ||
+			echo >&2 "$LINENO: WARNING: could not copy uImage"
+		echo "Copying uenv/uEnv-$BOARD.txt to $TO/uEnv.txt ..."
+		dusudo cp uenv/uEnv-$BOARD.txt $TO/uEnv.txt ||
+			echo >&2 "$LINENO: WARNING: could not copy uEnv.txt"
 		echo "Copying $DIR/devicetree.dtb to $TO ..."
 		dusudo cp $DIR/devicetree.dtb $TO || echo >&2 "$LINENO: WARNING: could not copy devicetree"
-    fi
+	fi
 	dusudo umount $TO
 	rmdir $TO 2> /dev/null &&
-	echo "Boot partition ready."
+		echo "Boot partition ready."
 }
 
-copy_files_to_root () {
+copy_files_to_root() {
 	case $ARCH in
 		"arm")
 			LOCAL_FILE=$ARCH_ROOTFS_TAR_GZ
@@ -620,7 +620,7 @@ copy_files_to_root () {
 			;;
 	esac
 	DEV=${1:-${SDCARD}2}
-	TO="$DIR/`basename $DEV`"
+	TO="$DIR/$(basename $DEV)"
 	mkdir -p $TO || return $(error_ret "$LINENO: could not create $TO")
 	dusudo mount -onoacl $DEV $TO ||
 		return $(error_ret "$LINENO: could not mount $DEV -> $TO")
@@ -639,20 +639,20 @@ copy_files_to_root () {
 	fi
 	dusudo umount $TO
 	rmdir $TO 2> /dev/null &&
-	echo "RootFS partition ready."
+		echo "RootFS partition ready."
 }
 
 ################################################################################
 ################################################################################
 
-if [ -z ${CROSS_COMPILE+x} ]; then 
-    if [[ $BOARD = ultra96v2 ]] || [[ $BOARD = zcu102 ]]; then
-        CROSS_COMPILE=aarch64-linux-gnu-
-        ARCH=arm64
-    else
-        CROSS_COMPILE=arm-linux-gnueabihf-
-        ARCH=arm
-    fi
+if [ -z ${CROSS_COMPILE+x} ]; then
+	if [[ $BOARD == ultra96v2 ]] || [[ $BOARD == zcu102 ]]; then
+		CROSS_COMPILE=aarch64-linux-gnu-
+		ARCH=arm64
+	else
+		CROSS_COMPILE=arm-linux-gnueabihf-
+		ARCH=arm
+	fi
 fi
 echo "Processor architecture is set to $ARCH. "
 echo "Cross compiler ABI is set to $CROSS_COMPILE."
@@ -681,15 +681,15 @@ FETCH_UBOOT_OK=$!
 fetch_arch_linux &> $FETCH_ARCH_LINUX_LOG &
 FETCH_ARCH_LINUX_OK=$!
 if [[ $ARCH == arm64 ]]; then
-    fetch_arm_trusted_firmware &> $FETCH_ARM_TRUSTED_FIRMWARE_LOG &
-    FETCH_ARM_TRUSTED_FIRMWARE_OK=$!
+	fetch_arm_trusted_firmware &> $FETCH_ARM_TRUSTED_FIRMWARE_LOG &
+	FETCH_ARM_TRUSTED_FIRMWARE_OK=$!
 fi
 
-wait $FETCH_LINUX_OK   || error_exit "Fetching Linux failed, check log: $FETCH_LINUX_LOG"
-wait $FETCH_UBOOT_OK   || error_exit "Fetching U-Boot failed, check logs: $FETCH_UBOOT_LOG"
+wait $FETCH_LINUX_OK || error_exit "Fetching Linux failed, check log: $FETCH_LINUX_LOG"
+wait $FETCH_UBOOT_OK || error_exit "Fetching U-Boot failed, check logs: $FETCH_UBOOT_LOG"
 wait $FETCH_ARCH_LINUX_OK || error_exit "Fetching Arch Linux Rootfs failed, check log: $FETCH_ARCH_LINUX_LOG"
 if [[ $ARCH == arm64 ]]; then
-    wait $FETCH_ARM_TRUSTED_FIRMWARE_OK || error_exit "Fetching ARM Trusted Firmware failed, check log: $FETCH_ARM_TRUSTED_FIRMWARE_LOG"   
+	wait $FETCH_ARM_TRUSTED_FIRMWARE_OK || error_exit "Fetching ARM Trusted Firmware failed, check log: $FETCH_ARM_TRUSTED_FIRMWARE_LOG"
 fi
 
 ################################################################################
@@ -704,15 +704,15 @@ wait $BUILD_UBOOT_OK || error_exit "Building U-Boot failed, check log: $BUILD_UB
 
 ################################################################################
 if [[ $ARCH == arm64 ]]; then
-    echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and Arm Trusted Firmware (output in $BUILD_ARM_TRUSTED_FIRMWARE_LOG) ... "
-    build_arm_trusted_firmware &> $BUILD_ARM_TRUSTED_FIRMWARE_LOG &
-        BUILD_ARM_TRUSTED_FIRMWARE_OK=$!
-    wait $BUILD_ARM_TRUSTED_FIRMWARE || error_exit "Building Arm Trusted Firmware failed, check log: $ARM_TRUSTED_FIRMWARE_LOG"
+	echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and Arm Trusted Firmware (output in $BUILD_ARM_TRUSTED_FIRMWARE_LOG) ... "
+	build_arm_trusted_firmware &> $BUILD_ARM_TRUSTED_FIRMWARE_LOG &
+	BUILD_ARM_TRUSTED_FIRMWARE_OK=$!
+	wait $BUILD_ARM_TRUSTED_FIRMWARE || error_exit "Building Arm Trusted Firmware failed, check log: $ARM_TRUSTED_FIRMWARE_LOG"
 else
-    echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and uImage (output in $BUILD_UIMAGE_LOG) ..."
-    build_uimage &> $BUILD_UIMAGE_LOG &
-    BUILD_UIMAGE_OK=$!
-    wait $BUILD_UIMAGE_OK || error_exit "Building uImage failed, check log: $BUILD_UIMAGE_LOG"
+	echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and uImage (output in $BUILD_UIMAGE_LOG) ..."
+	build_uimage &> $BUILD_UIMAGE_LOG &
+	BUILD_UIMAGE_OK=$!
+	wait $BUILD_UIMAGE_OK || error_exit "Building uImage failed, check log: $BUILD_UIMAGE_LOG"
 fi
 
 build_ssbl &> $BUILD_SSBL_LOG &
@@ -726,12 +726,12 @@ BUILD_FSBL_OK=$!
 wait $BUILD_FSBL_OK || error_exit "Building FSBL failed, check log: $BUILD_FSBL_LOG"
 
 if [[ $ARCH == arm64 ]]; then
-    echo "Building pmufw (output in $BUILD_PMUFW_LOG), devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
-    build_pmufw &> $BUILD_PMUFW_LOG &
-        BUILD_PMUFW_OK=$!
-    wait $BUILD_PMUFW_OK || error_exit "Building PMUFW failed, check log: $BUILD_PMUFW_LOG"
+	echo "Building pmufw (output in $BUILD_PMUFW_LOG), devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
+	build_pmufw &> $BUILD_PMUFW_LOG &
+	BUILD_PMUFW_OK=$!
+	wait $BUILD_PMUFW_OK || error_exit "Building PMUFW failed, check log: $BUILD_PMUFW_LOG"
 else
-    echo "Building devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
+	echo "Building devicetree (output in $BUILD_DEVICETREE_LOG) and generating BOOT.BIN (output in $BUILD_BOOTBIN_LOG) ..."
 fi
 
 build_devtree &> $BUILD_DEVICETREE_LOG &
@@ -757,5 +757,5 @@ if [[ -n $SDCARD ]]; then
 	prepare_sd &> $PREPARE_SD_LOG
 	[[ $? -eq 0 ]] || error_exit "Preparing SD card failed, check log: $PREPARE_SD_LOG"
 	sync &&
-	echo "SD card $SDCARD successfully prepared, ready to boot!"
+		echo "SD card $SDCARD successfully prepared, ready to boot!"
 fi
