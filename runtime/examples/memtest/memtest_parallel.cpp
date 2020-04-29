@@ -149,8 +149,8 @@ int main(int argc, char **argv) {
   platform_info_t info;
   tapasco.info(&info);
   std::cout << "Got " << instances << " instances @ " << info.clock.design << "MHz" << std::endl;
-  if (!instances) {
-    std::cout << "Need at least one instance to run." << std::endl;
+  if (!instances || instances < 2) {
+    std::cout << "Need at least two instance to run." << std::endl;
     exit(1);
   }
 
