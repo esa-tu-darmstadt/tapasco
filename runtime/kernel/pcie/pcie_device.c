@@ -155,6 +155,81 @@ static void release_device(struct tlkm_pcie_device *pdev)
 }
 
 /**
+ * @brief Tries to find the maximum MPS supported by the device and
+ *		  its parent as well as the ReadRQ Size. Finally, it turns on
+ *		  extended tags if necessary.
+ * @param pdev Pointer to pci-device for which the MPS should be set
+ * @return No return value as failure to set MPS is not critical
+ * */
+void tune_pcie_parameters(struct pci_dev *pdev)
+{
+	dev_id_t id = TLKM_DEV_ID(pdev);
+	int ret = -1;
+	struct pci_dev *parent = pdev->bus->self;
+
+	int mps_m = 128 << pdev->pcie_mpss;
+
+	int readrq_m = 4096;
+	int readrq_c = pcie_get_readrq(pdev);
+
+	uint16_t ectl = 0;
+
+	while(parent) {
+		int mps_p = 128 << parent->pcie_mpss;
+		DEVLOG(id, TLKM_LF_PCIE, "Current MPS %d/%d.", pcie_get_mps(parent),
+	       		mps_p);
+		mps_m = min(mps_m, mps_p);
+
+		if(pci_is_root_bus(parent->bus)) {
+			DEVLOG(id, TLKM_LF_PCIE, "Found the parent.");
+			break;
+		}
+		parent = parent->bus->self;
+	}
+
+	parent = pdev->bus->self;
+
+	while(parent) {
+		int mps_p = pcie_get_mps(parent);
+		if(mps_p < mps_m) {
+			pcie_set_mps(parent, mps_m);
+		}
+		DEVLOG(id, TLKM_LF_PCIE, "Set MPS %d/%d.", pcie_get_mps(parent),
+       		128 << parent->pcie_mpss);
+
+		if(pci_is_root_bus(parent->bus)) {
+			DEVLOG(id, TLKM_LF_PCIE, "Set MPS up to the parent.");
+			break;
+		}
+		parent = parent->bus->self;
+	}
+	pcie_set_mps(pdev, mps_m);
+	DEVLOG(id, TLKM_LF_PCIE, "Current MPS device %d/%d.", pcie_get_mps(parent),
+   		128 << pdev->pcie_mpss);
+
+	ret = pcie_set_readrq(pdev, readrq_m);
+
+	if (ret) {
+		DEVERR(id, "Failed to set ReadRQ to %d. Staying at ReadRQ %d.",
+		       readrq_m, readrq_c);
+	} else {
+		DEVLOG(id, TLKM_LF_PCIE, "Set ReadRQ to %d from ReadRQ %d.",
+		       readrq_c, readrq_m);
+	}
+
+	// Turn on extended tags
+	ret = pcie_capability_read_word(pdev, PCI_EXP_DEVCTL, &ectl);
+	if ((!ret) && !(ectl & PCI_EXP_DEVCTL_EXT_TAG)) {
+		DEVLOG(id, TLKM_LF_PCIE, "Enabling PCIe extended tags");
+		ectl |= PCI_EXP_DEVCTL_EXT_TAG;
+		ret = pcie_capability_write_word(pdev, PCI_EXP_DEVCTL, ectl);
+		if (ret)
+			DEVERR(id,
+			       "Unable to write to PCI config to enable extended tags");
+	}
+}
+
+/**
  * @brief Configures pcie-device and bit_mask settings
  * @param pdev Pointer to pci-device, which should be allocated
  * @return Returns error code or zero if success
@@ -162,22 +237,8 @@ static void release_device(struct tlkm_pcie_device *pdev)
 static int configure_device(struct pci_dev *pdev)
 {
 	dev_id_t id = TLKM_DEV_ID(pdev);
-	int mps_r = -1;
-	int mps = 8192;
-	while((mps_r < 0) && (mps > 0)) {
-		mps = mps >> 1;
-	       	mps_r = pcie_set_mps(pdev, mps);
-	}
 
-	mps_r = -1;
-	mps = 8192;
-	while((mps_r < 0) && (mps > 0)) {
-		mps = mps >> 1;
-	       	mps_r = pcie_set_readrq(pdev, mps);
-	}
-
-	DEVLOG(id, TLKM_LF_PCIE, "MPS: %d, Maximum Read Requests %d",
-	       pcie_get_mps(pdev), pcie_get_readrq(pdev));
+	tune_pcie_parameters(pdev);
 
 	if (!dma_set_mask(&pdev->dev, DMA_BIT_MASK(64))) {
 		DEVLOG(id, TLKM_LF_PCIE,
