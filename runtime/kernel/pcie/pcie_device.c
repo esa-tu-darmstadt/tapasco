@@ -30,11 +30,11 @@ static int aws_ec2_configure_xdma(struct tlkm_pcie_device *pdev)
 	uint32_t val;
 
 	DEVLOG(did, TLKM_LF_PCIE, "Mapping BAR2 and configuring XDMA core");
-	bar2 = ioremap_nocache(pci_resource_start(dev, 2),
+	bar2 = ioremap(pci_resource_start(dev, 2),
 			       pci_resource_len(dev, 2));
 
 	if (!bar2) {
-		DEVERR(did, "XDMA ioremap_nocache failed");
+		DEVERR(did, "XDMA ioremap failed");
 		return -ENODEV;
 	}
 
