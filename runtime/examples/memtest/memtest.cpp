@@ -45,7 +45,10 @@ void benchmarkRandom(tapasco::Tapasco &tapasco, float designclk, unsigned long c
 
   std::cout << "Initializing memory (required for ECC memory)" << std::endl;
   if (ecc_memory) {
-    auto job = tapasco.launch(PE_ID, 4, 2 * cycles, random_byte_length[random_byte_length_c - 1], 1234, 5678);
+    auto job = tapasco.launch(PE_ID, 4, 2 * cycles, random_byte_length[random_byte_length_c - 1], 1234, 1234);
+    job();
+    sleep(1);
+    job = tapasco.launch(PE_ID, 4, 2 * cycles, random_byte_length[random_byte_length_c - 1], 5678, 5678);
     job();
     sleep(1);
   }
@@ -81,7 +84,10 @@ void printAsNano(double cycles, float clock) {
 
 void benchmarkLatency(tapasco::Tapasco &tapasco, float designclk) {
   std::cout << std::endl << std::endl; 
-
+  if (ecc_memory) {
+    auto prejob = tapasco.launch(PE_ID, 6, 0, 64, 1234);
+    prejob();
+  }
   std::cout << "Read Latency (" << latency_iterations << " Iterations)" << std::endl;
   std::cout << std::endl;
   unsigned long min = ULONG_MAX;

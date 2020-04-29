@@ -59,6 +59,9 @@ void benchmarkRandom(tapasco::Tapasco &tapasco, float designclk, unsigned long c
     auto job = tapasco.launch(PE_ID, 4, 2 * cycles, random_byte_length[random_byte_length_c - 1], 1234, 5678);
     job();
     sleep(1);
+    job = tapasco.launch(PE_ID, 4, 2 * cycles, random_byte_length[random_byte_length_c - 1], 5678, 5678);
+    job();
+    sleep(1);
   }
   char text[20];
   std::cout << std::endl << std::endl;
