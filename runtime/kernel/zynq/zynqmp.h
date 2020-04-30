@@ -31,7 +31,7 @@ static const struct tlkm_class zynqmp_cls = {
 	.ioctl = zynq_ioctl,
 	.pirq = zynq_irq_request_platform_irq,
 	.rirq = zynq_irq_release_platform_irq,
-	.npirqs = 8,
+	.npirqs = 16,
 	.platform = ZYNQMP_DEF,
 	.private_data = NULL,
 };

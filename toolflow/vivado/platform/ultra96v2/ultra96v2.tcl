@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2019 ???, TU Darmstadt
+# Copyright (C) 2020 David Eckhardt TU Darmstadt
 #
 # This file is part of Tapasco (TPC).
 #

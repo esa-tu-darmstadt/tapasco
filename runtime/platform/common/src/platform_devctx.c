@@ -20,11 +20,15 @@
 #define PCIE_MEM_SZ (1ULL << 32)
 
 #define ZYNQ_CLS_NAME "zynq"
+#define ZYNQMP_CLS_NAME "zynqmp"
 
 static platform_res_t platform_specific_init(platform_devctx_t *devctx) {
   if (!strncmp(PCIE_CLS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
     return default_init(devctx, (platform_mem_addr_t)PCIE_MEM_SZ);
   } else if (!strncmp(ZYNQ_CLS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
+    return default_init(devctx, 0);
+  } else if (!strncmp(ZYNQMP_CLS_NAME, devctx->dev_info.name,
+                      TLKM_DEVNAME_SZ)) {
     return default_init(devctx, 0);
   } else {
     DEVERR(devctx->dev_id, "unknown device type: '%s'", devctx->dev_info.name);
