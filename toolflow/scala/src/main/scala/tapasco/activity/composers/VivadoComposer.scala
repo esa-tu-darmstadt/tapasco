@@ -80,6 +80,9 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     val pt = new ProgressTrackingFileWatcher(Some(logger))
     pt += files.logFile
 
+    // Delete outdated timing report to make sure we detect failure correctly.
+    files.timFile.toFile.delete
+
     // Vivado shell command
     val vivadoCmd = Seq("vivado", "-mode", "batch", "-source", files.tclFile.toString,
       "-notrace", "-nojournal", "-log", files.logFile.toString)
