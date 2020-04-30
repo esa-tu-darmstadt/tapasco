@@ -98,10 +98,12 @@
     set_property -dict [list CONFIG.USE_LOCKED {false} CONFIG.USE_RESET {false}] $clk_wiz
     set clk_mode [lindex [get_board_part_interfaces -filter { NAME =~ *sys*cl*k }] 0]
 
-    if {$clk_mode == ""} {
-      error "could not find a board interface for the sys clock - check board part?"
+    if {$clk_mode != ""} {
+      set_property CONFIG.CLK_IN1_BOARD_INTERFACE $clk_mode $clk_wiz
+    } else {
+      puts "Could not find a board interface for the sys clock. Trying to use processing system clock."
+      set ps_clk_in [create_bd_pin -dir I -type clk "ps_clk_in"]
     }
-    set_property CONFIG.CLK_IN1_BOARD_INTERFACE $clk_mode $clk_wiz
 
     # check if external port already exists, re-use
     if {[get_bd_ports -quiet "/$clk_mode"] != {}} {
@@ -111,16 +113,21 @@
       set_property -dict [list CONFIG.PRIMITIVE {PLL} CONFIG.USE_MIN_POWER {true}] $clk_wiz
     } {
       # apply board automation to create top-level port
-      if {[get_property VLNV $clk_mode] == "xilinx.com:interface:diff_clock_rtl:1.0"} {
+      if {($clk_mode != "") && ([get_property VLNV $clk_mode] == "xilinx.com:interface:diff_clock_rtl:1.0")} {
         set cport [get_bd_intf_pins -of_objects $clk_wiz]
       } {
         set cport [get_bd_pins -filter {DIR == I} -of_objects $clk_wiz]
       }
       puts "  clk_wiz: $clk_wiz, cport: $cport"
       if {$cport != {}} {
-        # apply board automation
-        apply_bd_automation -rule xilinx.com:bd_rule:board -config "Board_Interface $clk_mode" $cport
-        puts "board automation worked, moving on"
+        if {[info exists ps_clk_in]} {
+          # connect ps clock in with clk_wizard
+          connect_bd_net $ps_clk_in $cport
+        } else {
+          # apply board automation
+          apply_bd_automation -rule xilinx.com:bd_rule:board -config "Board_Interface $clk_mode" $cport
+          puts "board automation worked, moving on"
+        }
       } {
         # last resort: try to call platform::create_clock_port
         set clk_mode "sys_clk"
@@ -296,6 +303,10 @@
     }
 
     set reset_in [create_bd_pin -dir O -type rst "reset_in"]
+    if {[get_bd_pins /clocks_and_resets/ps_clk_in] != {}} {
+      puts "Found pin in clock subsystem that requires a clock input from the processing system."
+      set ps_clk_in [create_bd_pin -dir O -type clk "ps_clk_in"]
+    }
     set irq_0 [create_bd_pin -dir I -type intr -from 15 -to 0 "irq_0"]
     set mem_aclk [tapasco::subsystem::get_port "mem" "clk"]
     set mem_p_arstn [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
@@ -377,6 +388,11 @@
 
     # connect reset
     connect_bd_net [get_bd_pins "$ps/pl_resetn0"] $reset_in
+
+    # connect output clock if needed
+    if {[info exists ps_clk_in]} {
+      connect_bd_net [get_bd_pins "$ps/pl_clk0"] $ps_clk_in
+    }
 
     # connect memory slaves to memory clock and reset
     connect_bd_net $mem_aclk [get_bd_pins -of_objects $ps -filter {NAME =~ "s*hp*aclk"}]
