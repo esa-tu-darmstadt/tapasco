@@ -79,20 +79,19 @@ int blue_dma_init(struct dma_engine *dma)
 	}
 }
 
-ssize_t blue_dma_copy_from(struct dma_engine *dma, void *dma_handle,
+ssize_t blue_dma_copy_from(struct dma_engine *dma, dma_addr_t dma_handle,
 			   dev_addr_t dev_addr, size_t len)
 {
-	dma_addr_t handle = (dma_addr_t)dma_handle;
 	DEVLOG(dma->dev_id, TLKM_LF_DMA,
 	       "dev_addr = 0x%p, dma_handle = 0x%p, len: %zu bytes",
-	       (void *)dev_addr, dma_handle, len);
+	       (void *)dev_addr, (void *)dma_handle, len);
 	if (mutex_lock_interruptible(&dma->regs_mutex)) {
 		WRN("got killed while aquiring the mutex");
 		return len;
 	}
 
 	*(u64 *)(dma->regs + REG_FPGA_ADDR) = dev_addr;
-	*(u64 *)(dma->regs + REG_HOST_ADDR) = (u64)(handle);
+	*(u64 *)(dma->regs + REG_HOST_ADDR) = (u64)(dma_handle);
 	*(u64 *)(dma->regs + REG_BTT) = len;
 	wmb();
 	*(u64 *)(dma->regs + REG_CMD) = CMD_READ;
@@ -101,19 +100,18 @@ ssize_t blue_dma_copy_from(struct dma_engine *dma, void *dma_handle,
 }
 
 ssize_t blue_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,
-			 const void *dma_handle, size_t len)
+			 dma_addr_t dma_handle, size_t len)
 {
-	dma_addr_t handle = (dma_addr_t)dma_handle;
 	DEVLOG(dma->dev_id, TLKM_LF_DMA,
 	       "dev_addr = 0x%px, dma_handle = 0x%p, len: %zu bytes",
-	       (void *)dev_addr, dma_handle, len);
+	       (void *)dev_addr, (void *)dma_handle, len);
 	if (mutex_lock_interruptible(&dma->regs_mutex)) {
 		WRN("got killed while aquiring the mutex");
 		return len;
 	}
 
 	*(u64 *)(dma->regs + REG_FPGA_ADDR) = dev_addr;
-	*(u64 *)(dma->regs + REG_HOST_ADDR) = (u64)(handle);
+	*(u64 *)(dma->regs + REG_HOST_ADDR) = (u64)(dma_handle);
 	*(u64 *)(dma->regs + REG_BTT) = len;
 	wmb();
 	*(u64 *)(dma->regs + REG_CMD) = CMD_WRITE;

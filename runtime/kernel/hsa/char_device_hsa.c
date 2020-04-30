@@ -200,7 +200,7 @@ static int hsa_initialize(void)
 	atomic64_set(&dev.device_opened, 0);
 	mutex_init(&dev.ioctl_mutex);
 
-	dev.arbiter_base = (uint64_t *)ioremap_nocache(
+	dev.arbiter_base = (uint64_t *)ioremap(
 		dev.dev->base_offset + HSA_ARBITER_BASE_ADDR, HSA_ARBITER_SIZE);
 	if (dev.arbiter_base == 0) {
 		DEVERR(dev.dev->dev_id, "could not map arbiter");
@@ -212,7 +212,7 @@ static int hsa_initialize(void)
 		goto arbiter_find_failed;
 	}
 
-	dev.signal_base = (uint64_t *)ioremap_nocache(
+	dev.signal_base = (uint64_t *)ioremap(
 		dev.dev->base_offset + HSA_SIGNAL_BASE_ADDR, HSA_SIGNAL_SIZE);
 	if (dev.signal_base == 0) {
 		DEVERR(dev.dev->dev_id, "could not map arbiter");
