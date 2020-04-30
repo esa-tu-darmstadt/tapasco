@@ -6,8 +6,7 @@
 #define ZYNQMP_NAME "xlnx,zynqmp"
 #define ZYNQMP_CLASS_NAME "zynqmp"
 
-//TODO: Find out what the correct values are. AXI Register Adresses? ZynqMP-TRM?
-#define ZYNQMP_DEF INIT_PLATFORM(0x60000000, 0x00002000 /* status */)
+#define ZYNQMP_DEF INIT_PLATFORM(0xB0000000, 0x0002000 /* status */)
 
 static const struct platform zynqmp_def = ZYNQMP_DEF;
 
