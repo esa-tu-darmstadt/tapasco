@@ -165,7 +165,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
         .format(files.runName, wns, files.tim.map(_.maxDelayPath), files.outdir))
       TimingFailure
     } else {
-      logger.info("Vivado finished successfully for %s, WNS: %1.3f, bitstream file is here: '%s'"
+      logger.info("Vivado finished successfully for %s, WNS: %1.3f, resulting file is here: '%s'"
         .format(files.runName, wns, files.bitFile))
       Success
     }
@@ -257,7 +257,7 @@ object VivadoComposer {
     lazy val outdir: Path = cfg.outputDir(c, t, f, fs)
     lazy val logFile: Path = outdir.resolve("%s.log".format(Composer.mkProjectName(c, t, f)))
     lazy val tclFile: Path = outdir.resolve("%s.tcl".format(t.pd.name))
-    lazy val bitFile: Path = logFile.resolveSibling("%s.bit".format(Composer.mkProjectName(c, t, f)))
+    lazy val bitFile: Path = logFile.resolveSibling("%s.%s".format(Composer.mkProjectName(c, t, f), t.pd.fileExtension))
     lazy val runName: String = "%s with %s[F=%1.3f]".format(logformat(c), t, f)
     lazy val timFile: Path = logFile.resolveSibling("timing.txt")
     lazy val utilFile: Path = logFile.resolveSibling("utilization.txt")
