@@ -1,8 +1,7 @@
 use crate::allocator::{Allocator, DriverAllocator, GenericAllocator};
-use crate::dma::{DMAControl, DriverDMA};
+use crate::dma::{DMAControl, DirectDMA, DriverDMA};
 use crate::job::Job;
 use crate::pe::PEId;
-
 use crate::scheduler::Scheduler;
 use crate::tlkm::tlkm_access;
 use crate::tlkm::tlkm_ioctl_create;
@@ -13,6 +12,7 @@ use memmap::MmapMut;
 use memmap::MmapOptions;
 use prost::Message;
 use snafu::ResultExt;
+use std::collections::VecDeque;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::os::unix::io::AsRawFd;
@@ -54,9 +54,6 @@ pub enum Error {
     #[snafu(display("PE acquisition requires Exclusive Access mode."))]
     ExclusiveRequired {},
 
-    #[snafu(display("Memory {} not found on device.", id))]
-    UnknownMemory { id: MemoryID },
-
     #[snafu(display("Could not destroy device {}: {}", id, source))]
     IOCTLDestroy { source: nix::Error, id: DeviceId },
 
@@ -80,16 +77,20 @@ impl<T> From<std::sync::PoisonError<T>> for Error {
 pub type DeviceAddress = u64;
 pub type DeviceSize = u64;
 
-pub type MemoryID = usize;
-
 #[derive(Debug, Getters)]
 pub struct OffchipMemory {
-    #[get = "pub"]
-    id: MemoryID,
     #[get = "pub"]
     allocator: Mutex<Box<dyn Allocator + Sync + Send>>,
     #[get = "pub"]
     dma: Box<dyn DMAControl + Sync + Send>,
+}
+
+#[derive(Debug)]
+pub struct DataTransferLocal {
+    pub data: Vec<u8>,
+    pub from_device: bool,
+    pub to_device: bool,
+    pub free: bool,
 }
 
 #[derive(Debug)]
@@ -116,6 +117,7 @@ pub enum PEParameter {
     Single32(u32),
     Single64(u64),
     DeviceAddress(DeviceAddress),
+    DataTransferLocal(DataTransferLocal),
     DataTransferAlloc(DataTransferAlloc),
     DataTransferPrealloc(DataTransferPrealloc),
 }
@@ -203,7 +205,6 @@ impl Device {
         if name == "pcie" {
             info!("Allocating the default of 4GB at 0x0 for a PCIe platform");
             allocator.push(Arc::new(OffchipMemory {
-                id: 0,
                 allocator: Mutex::new(Box::new(
                     GenericAllocator::new(0, 4 * 1024 * 1024 * 1024, 64).context(AllocatorError)?,
                 )),
@@ -212,7 +213,6 @@ impl Device {
         } else if name == "zynq" {
             info!("Using driver allocation for zynq based platform.");
             allocator.push(Arc::new(OffchipMemory {
-                id: 0,
                 allocator: Mutex::new(Box::new(DriverAllocator::new().context(AllocatorError)?)),
                 dma: Box::new(DriverDMA::new(&tlkm_dma_file)),
             }));
@@ -253,10 +253,26 @@ impl Device {
                 .context(DeviceUnavailable { id: id })?
         });
 
+        let mut pe_local_memories = VecDeque::new();
+        for pe in s.pe.iter() {
+            match &pe.local_memory {
+                Some(l) => {
+                    pe_local_memories.push_back(Arc::new(OffchipMemory {
+                        allocator: Mutex::new(Box::new(
+                            GenericAllocator::new(0, l.size, 1).context(AllocatorError)?,
+                        )),
+                        dma: Box::new(DirectDMA::new(l.base, l.size, arch.clone())),
+                    }));
+                }
+                None => (),
+            }
+        }
+
         let scheduler = Arc::new(
             Scheduler::new(
                 &s.pe,
                 &arch,
+                pe_local_memories,
                 OpenOptions::new()
                     .read(true)
                     .open(format!("/dev/tlkm_{:02}", id))

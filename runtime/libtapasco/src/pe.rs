@@ -1,6 +1,7 @@
 use crate::device::DataTransferPrealloc;
 use crate::device::DeviceAddress;
 use crate::device::DeviceSize;
+use crate::device::OffchipMemory;
 use crate::device::PEParameter;
 use bytes::Buf;
 use lockfree::set::Set;
@@ -56,6 +57,10 @@ pub struct PE {
     copy_back: Option<Vec<DataTransferPrealloc>>,
     memory: Arc<MmapMut>,
     active_pes: Arc<(Mutex<File>, Set<usize>)>,
+
+    #[set = "pub"]
+    #[get = "pub"]
+    local_memory: Option<Arc<OffchipMemory>>,
 }
 
 impl PE {
@@ -78,6 +83,7 @@ impl PE {
             copy_back: None,
             memory: memory,
             active_pes: active_pes,
+            local_memory: None,
         }
     }
 

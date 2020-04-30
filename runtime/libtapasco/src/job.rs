@@ -1,3 +1,4 @@
+use crate::device::DataTransferAlloc;
 use crate::device::DataTransferPrealloc;
 use crate::device::PEParameter;
 use crate::pe::PE;
@@ -39,6 +40,9 @@ pub enum Error {
 
     #[snafu(display("Scheduler Error: {}", source))]
     SchedulerError { source: crate::scheduler::Error },
+
+    #[snafu(display("Local memory requested on PE without local memory"))]
+    NoLocalMemory {},
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -64,6 +68,31 @@ impl Job {
             pe: Some(pe),
             scheduler: scheduler.clone(),
         }
+    }
+
+    pub fn handle_local_memories(&self, args: Vec<PEParameter>) -> Result<Vec<PEParameter>> {
+        trace!("Handling local memory parameters.");
+        let new_params = args
+            .into_iter()
+            .map(|arg| match arg {
+                PEParameter::DataTransferLocal(x) => {
+                    let m = match self.pe.as_ref().unwrap().local_memory() {
+                        Some(m) => m,
+                        None => return Err(Error::NoLocalMemory {}),
+                    };
+                    Ok(PEParameter::DataTransferAlloc(DataTransferAlloc {
+                        data: x.data,
+                        from_device: x.from_device,
+                        to_device: x.to_device,
+                        memory: m.clone(),
+                        free: x.free,
+                    }))
+                }
+                _ => Ok(arg),
+            })
+            .collect();
+        trace!("All local memory parameters handled.");
+        new_params
     }
 
     //TODO: Check performance as this does not happen inplace but creates a new Vec
@@ -92,6 +121,7 @@ impl Job {
                 _ => Ok(arg),
             })
             .collect();
+
         trace!("All allocate parameters handled.");
         new_params
     }
