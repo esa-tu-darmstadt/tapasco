@@ -203,8 +203,9 @@ void tune_pcie_parameters(struct pci_dev *pdev)
 		}
 		parent = parent->bus->self;
 	}
+
 	pcie_set_mps(pdev, mps_m);
-	DEVLOG(id, TLKM_LF_PCIE, "Current MPS device %d/%d.", pcie_get_mps(parent),
+	DEVLOG(id, TLKM_LF_PCIE, "Current MPS device %d/%d.", pcie_get_mps(pdev),
    		128 << pdev->pcie_mpss);
 
 	ret = pcie_set_readrq(pdev, readrq_m);
