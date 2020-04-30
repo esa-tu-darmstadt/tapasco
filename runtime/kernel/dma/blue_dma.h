@@ -26,9 +26,9 @@
 int blue_dma_init(struct dma_engine *dma);
 irqreturn_t blue_dma_intr_handler_read(int irq, void *dev_id);
 irqreturn_t blue_dma_intr_handler_write(int irq, void *dev_id);
-ssize_t blue_dma_copy_from(struct dma_engine *dma, void *krn_addr,
+ssize_t blue_dma_copy_from(struct dma_engine *dma, dma_addr_t krn_addr,
 			   dev_addr_t dev_addr, size_t len);
 ssize_t blue_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,
-			 const void *krn_addr, size_t len);
+			 dma_addr_t krn_addr, size_t len);
 
 #endif /* BLUE_DMA_H__ */

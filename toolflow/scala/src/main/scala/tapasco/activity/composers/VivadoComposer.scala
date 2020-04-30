@@ -110,7 +110,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       else{
         logger.error("Vivado finished with non-zero exit code: %d for %s in '%s'"
           .format(r, files.runName, files.outdir))
-        Composer.Result(files.log map (_.result) getOrElse OtherError, log = files.log,
+        Composer.Result(files.log map (_.result(true)) getOrElse OtherError, log = files.log,
           util = None, timing = None)
       }
     } else {

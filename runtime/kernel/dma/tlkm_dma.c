@@ -62,7 +62,7 @@ int tlkm_dma_init(struct tlkm_device *dev, struct dma_engine *dma, u64 dbase,
 
 	DEVLOG(dev_id, TLKM_LF_DMA, "I/O remapping 0x%px - 0x%px...", base,
 	       base + size - 1);
-	dma->regs = ioremap_nocache((resource_size_t)base, size);
+	dma->regs = ioremap((resource_size_t)base, size);
 	if (dma->regs == 0 || IS_ERR(dma->regs)) {
 		DEVERR(dev_id, "failed to map 0x%p - 0x%p: %lx", base,
 		       base + size - 1, PTR_ERR(dma->regs));
