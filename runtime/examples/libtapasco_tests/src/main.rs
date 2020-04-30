@@ -4,35 +4,28 @@ extern crate rand;
 extern crate rayon;
 extern crate snafu;
 extern crate tapasco;
+#[macro_use]
+extern crate log;
+extern crate indicatif;
+#[macro_use]
+extern crate clap;
+extern crate uom;
 
 use average::{concatenate, Estimate, Max, MeanWithError, Min};
+use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use crossbeam::thread;
+use indicatif::{HumanBytes, ProgressBar, ProgressStyle};
 use snafu::{ErrorCompat, ResultExt, Snafu};
 use std::io;
 use std::io::Write;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
 use tapasco::device::OffchipMemory;
+use tapasco::tlkm::*;
 use uom::si::f32::*;
 use uom::si::frequency::megahertz;
 use uom::si::time::microsecond;
 use uom::si::time::nanosecond;
-
-#[macro_use]
-extern crate log;
-
-extern crate indicatif;
-use indicatif::{HumanBytes, ProgressBar, ProgressStyle};
-
-use tapasco::tlkm::*;
-
-#[macro_use]
-extern crate clap;
-
-use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-
-use std::time::Instant;
-
-extern crate uom;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -335,17 +328,15 @@ fn transfer_to(
     mem: Arc<OffchipMemory>,
     bytes: usize,
     chunk: usize,
-) -> Result<f64> {
+    data: Vec<u8>,
+) -> Result<()> {
     let a = mem
         .allocator()
         .lock()?
         .allocate(chunk as u64)
         .context(AllocatorError)?;
     let mut transferred = 0;
-    let data = vec![0; chunk];
     let mut incr = 0;
-
-    let now = Instant::now();
 
     while transferred < bytes {
         mem.dma().copy_to(&data, a).context(DMAError)?;
@@ -356,11 +347,9 @@ fn transfer_to(
         incr += 1;
     }
 
-    let done = now.elapsed().as_secs_f64();
-
     mem.allocator().lock()?.free(a).context(AllocatorError)?;
 
-    Ok(done)
+    Ok(())
 }
 
 fn transfer_from(
@@ -368,17 +357,15 @@ fn transfer_from(
     mem: Arc<OffchipMemory>,
     bytes: usize,
     chunk: usize,
-) -> Result<f64> {
+    mut data: Vec<u8>,
+) -> Result<()> {
     let a = mem
         .allocator()
         .lock()?
         .allocate(chunk as u64)
         .context(AllocatorError)?;
     let mut transferred = 0;
-    let mut data = vec![0; chunk];
     let mut incr = 0;
-
-    let now = Instant::now();
 
     while transferred < bytes {
         mem.dma().copy_from(a, &mut data).context(DMAError)?;
@@ -389,11 +376,9 @@ fn transfer_from(
         incr += 1;
     }
 
-    let done = now.elapsed().as_secs_f64();
-
     mem.allocator().lock()?.free(a).context(AllocatorError)?;
 
-    Ok(done)
+    Ok(())
 }
 
 fn benchmark_copy(m: &ArgMatches) -> Result<()> {
@@ -424,12 +409,12 @@ fn benchmark_copy(m: &ArgMatches) -> Result<()> {
             HumanBytes(total_bytes as u64)
         );
         for cur_threads in 1..num_threads + 1 {
-            for chunk_pow in 18..(max_size_power + 1) {
+            for chunk_pow in 10..(max_size_power + 1) {
                 let chunk = usize::pow(2, chunk_pow as u32);
                 let bytes_per_threads = total_bytes / cur_threads as usize;
                 let mut total_bytes_cur = bytes_per_threads * cur_threads as usize;
 
-                for d in ["w" /*, "r", "w", "rw"*/].iter() {
+                for d in ["r", "w", "rw"].iter() {
                     if *d == "rw" {
                         total_bytes_cur *= 2;
                     }
@@ -443,61 +428,75 @@ fn benchmark_copy(m: &ArgMatches) -> Result<()> {
                     }
                     pb.tick();
 
-                    let done: Arc<RwLock<Vec<f64>>> = Arc::new(RwLock::new(Vec::new()));
+                    let data = Arc::new(Mutex::new(Vec::new()));
+                    for _ in 0..if *d == "rw" {
+                        cur_threads * 2
+                    } else {
+                        cur_threads
+                    } {
+                        data.lock().unwrap().push(vec![0; chunk]);
+                    }
 
+                    let now = Instant::now();
                     thread::scope(|s| {
-                        for _ in 0..cur_threads {
-                            s.spawn(|_s_local| {
-                                let x_local = x_l.clone();
-                                let mem = x_local.default_memory().unwrap();
-                                let mut time = 0.0;
-                                if *d == "r" {
-                                    time +=
-                                        transfer_from(&pb, mem, bytes_per_threads, chunk).unwrap();
-                                } else if *d == "w" {
-                                    time +=
-                                        transfer_to(&pb, mem, bytes_per_threads, chunk).unwrap();
+                        for i in 0..cur_threads {
+                            if *d == "rw" {
+                                if i % 2 == 0 {
+                                    s.spawn(|_s_local| {
+                                        let v = data.lock().unwrap().pop().unwrap();
+                                        let v2 = data.lock().unwrap().pop().unwrap();
+                                        let x_local = x_l.clone();
+                                        let mem = x_local.default_memory().unwrap();
+                                        let mem2 = x_local.default_memory().unwrap();
+                                        transfer_to(&pb, mem, bytes_per_threads, chunk, v).unwrap();
+                                        transfer_from(&pb, mem2, bytes_per_threads, chunk, v2)
+                                            .unwrap();
+                                    });
                                 } else {
-                                    if (0 % 2) == 0 {
-                                        time += transfer_from(
-                                            &pb,
-                                            mem.clone(),
-                                            bytes_per_threads,
-                                            chunk,
-                                        )
-                                        .unwrap();
-                                        time += transfer_to(&pb, mem, bytes_per_threads, chunk)
+                                    s.spawn(|_s_local| {
+                                        let v = data.lock().unwrap().pop().unwrap();
+                                        let v2 = data.lock().unwrap().pop().unwrap();
+                                        let x_local = x_l.clone();
+                                        let mem = x_local.default_memory().unwrap();
+                                        let mem2 = x_local.default_memory().unwrap();
+                                        transfer_from(&pb, mem, bytes_per_threads, chunk, v)
                                             .unwrap();
-                                    } else {
-                                        time +=
-                                            transfer_to(&pb, mem.clone(), bytes_per_threads, chunk)
-                                                .unwrap();
-                                        time += transfer_from(&pb, mem, bytes_per_threads, chunk)
+                                        transfer_to(&pb, mem2, bytes_per_threads, chunk, v2)
                                             .unwrap();
-                                    }
+                                    });
                                 }
-                                {
-                                    let mut l = done.write().unwrap();
-                                    (*l).push(time);
+                            } else {
+                                if *d == "w" {
+                                    s.spawn(|_s_local| {
+                                        let v = data.lock().unwrap().pop().unwrap();
+                                        let x_local = x_l.clone();
+                                        let mem = x_local.default_memory().unwrap();
+                                        transfer_to(&pb, mem, bytes_per_threads, chunk, v).unwrap();
+                                    });
                                 }
-                            });
+                                if *d == "r" {
+                                    s.spawn(|_s_local| {
+                                        let v = data.lock().unwrap().pop().unwrap();
+                                        let x_local = x_l.clone();
+                                        let mem = x_local.default_memory().unwrap();
+                                        transfer_from(&pb, mem, bytes_per_threads, chunk, v)
+                                            .unwrap();
+                                    });
+                                }
+                            }
                         }
                     })
                     .unwrap();
+                    let done = now.elapsed().as_secs_f64();
 
                     pb.finish_and_clear();
-                    {
-                        let time = done.read().unwrap();
-                        let max = time.iter().fold(0.0, |x, y| if x.gt(y) { x } else { *y });
-
-                        println!(
-                            "Result for {} with {} Threads and Chunk Size of {}: {}/s",
-                            d,
-                            cur_threads,
-                            HumanBytes(chunk as u64),
-                            HumanBytes((total_bytes_cur as f64 / max) as u64)
-                        );
-                    }
+                    println!(
+                        "Result for {} with {} Threads and Chunk Size of {}: {}/s",
+                        d,
+                        cur_threads,
+                        HumanBytes(chunk as u64),
+                        HumanBytes((total_bytes_cur as f64 / done) as u64)
+                    );
                 }
             }
         }
@@ -555,7 +554,7 @@ fn main() -> Result<()> {
                         .long("total_bytes")
                         .help("Total number of bytes to transfer transfer log_2.")
                         .takes_value(true)
-                        .default_value("28"),
+                        .default_value("30"),
                 )
                 .arg(
                     Arg::with_name("threads")
