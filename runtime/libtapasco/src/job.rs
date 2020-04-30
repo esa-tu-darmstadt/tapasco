@@ -162,7 +162,8 @@ impl Job {
             self.pe,
             args
         );
-        let local_args = self.handle_allocates(args)?;
+        let alloc_args = self.handle_local_memories(args)?;
+        let local_args = self.handle_allocates(alloc_args)?;
         trace!("Handled allocates => {:?}.", local_args);
         let trans_args = self.handle_transfers_to_device(local_args)?;
         trace!("Handled transfers => {:?}.", trans_args);

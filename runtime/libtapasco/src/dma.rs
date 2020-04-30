@@ -127,10 +127,6 @@ impl DMAControl for DirectDMA {
             (*s).clone_from_slice(&data[..]);
         }
 
-        self.memory
-            .flush_range(ptr as usize, data.len())
-            .context(FailedFlush)?;
-
         Ok(())
     }
 

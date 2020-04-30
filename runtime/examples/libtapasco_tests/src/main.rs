@@ -504,6 +504,32 @@ fn benchmark_copy(m: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
+fn test_localmem(_: &ArgMatches) -> Result<()> {
+    let mut tlkm = TLKM::new().context(TLKMInit {})?;
+    let devices = tlkm.device_enum().context(TLKMInit)?;
+    for mut x in devices {
+        x.create(
+            &tlkm.file(),
+            tapasco::tlkm::tlkm_access::TlkmAccessExclusive,
+        )
+        .context(DeviceInit {})?;
+        let mut pe = x.acquire_pe(42).context(DeviceInit)?;
+        pe.start(vec![tapasco::device::PEParameter::DataTransferLocal(
+            tapasco::device::DataTransferLocal {
+                data: vec![0, 1, 2, 3, 4, 5, 6],
+                free: true,
+                from_device: true,
+                to_device: true,
+            },
+        )])
+        .context(JobError)?;
+
+        let r = pe.release(true).context(JobError)?;
+        println!("{:?}", r);
+    }
+    Ok(())
+}
+
 fn main() -> Result<()> {
     env_logger::init();
 
@@ -623,6 +649,10 @@ fn main() -> Result<()> {
             SubCommand::with_name("test_copy")
                 .about("Tests the copy to and from the device on memory 0."),
         )
+        .subcommand(
+            SubCommand::with_name("test_localmem")
+                .about("Tests running a job with local memory (uses ID 42)."),
+        )
         .get_matches();
 
     match match matches.subcommand() {
@@ -635,6 +665,7 @@ fn main() -> Result<()> {
         ("run_latency", Some(m)) => latency_benchmark(m),
         ("test_copy", Some(m)) => test_copy(m),
         ("benchmark_copy", Some(m)) => benchmark_copy(m),
+        ("test_localmem", Some(m)) => test_localmem(m),
         _ => Err(Error::UnknownCommand {}),
     } {
         Ok(()) => Ok(()),
