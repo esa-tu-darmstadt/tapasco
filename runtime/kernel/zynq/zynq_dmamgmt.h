@@ -24,6 +24,8 @@
 #define ZYNQ_DMAMGMT_H__
 
 #include "tlkm_types.h"
+#include "tlkm_device.h"
+#include "tlkm_control.h"
 
 #define ZYNQ_DMAMGMT_POOLSZ 1024U
 
@@ -37,10 +39,10 @@ struct dma_buf_t {
 };
 
 int zynq_dmamgmt_init(void);
-void zynq_dmamgmt_exit(void);
-dma_addr_t zynq_dmamgmt_alloc(size_t const len, handle_t *hid);
-int zynq_dmamgmt_dealloc(handle_t const id);
-int zynq_dmamgmt_dealloc_dma(dma_addr_t const addr);
+void zynq_dmamgmt_exit(struct tlkm_device *inst);
+dma_addr_t zynq_dmamgmt_alloc(struct tlkm_device *inst, size_t const len, handle_t *hid);
+int zynq_dmamgmt_dealloc(struct tlkm_device *inst, handle_t const id);
+int zynq_dmamgmt_dealloc_dma(struct tlkm_device *inst, dma_addr_t const addr);
 struct dma_buf_t *zynq_dmamgmt_get(handle_t const id);
 ssize_t zynq_dmamgmt_get_id(dma_addr_t const addr);
 

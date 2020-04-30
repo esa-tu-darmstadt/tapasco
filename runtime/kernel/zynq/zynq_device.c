@@ -74,14 +74,14 @@ err_dmamgmt:
 	return ret;
 
 err_irq:
-	zynq_dmamgmt_exit();
+	zynq_dmamgmt_exit(dev);
 	return ret;
 }
 
 void zynq_device_exit_subsystems(struct tlkm_device *dev)
 {
 	zynq_irq_exit(&_zynq_dev);
-	zynq_dmamgmt_exit();
+	zynq_dmamgmt_exit(dev);
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "exited subsystems");
 }
 
