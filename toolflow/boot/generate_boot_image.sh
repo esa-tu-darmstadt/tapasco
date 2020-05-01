@@ -7,17 +7,17 @@ JOBCOUNT=4
 SCRIPTDIR="$(dirname $(readlink -f $0))"
 DIR="$SCRIPTDIR/$BOARD/$VERSION"
 LOGDIR="$DIR/logs"
-ARCH_ROOTFS_URL="http://os.archlinuxarm.org/os/ArchLinuxARM-zedboard-latest.tar.gz"
-ARCH64_ROOTFS_URL="http://os.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz"
-ARCH_ROOTFS_TAR_GZ="$DIR/arch_latest.tar.gz"
-ARCH64_ROOTFS_TAR_GZ="$DIR/arch64_latest.tar.gz"
+ROOTFS_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04-base-armhf.tar.gz"
+ROOTFS64_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04-base-arm64.tar.gz"
+ROOTFS_TAR_GZ="$DIR/ubuntu_armhf_20.04.tar.gz"
+ROOTFS64_TAR_GZ="$DIR/ubuntu_arm64_20.04.tar.gz"
 UDEV_RULES="$TAPASCO_HOME/platform/zynq/module/99-tapasco.rules"
 OUTPUT_IMAGE="$DIR/${BOARD}_${VERSION}.img"
 ### LOGFILES ###################################################################
 FETCH_LINUX_LOG="$LOGDIR/fetch-linux.log"
 FETCH_UBOOT_LOG="$LOGDIR/fetch-uboot.log"
 FETCH_ARM_TRUSTED_FIRMWARE_LOG="$LOGDIR/fetch-atfw.log"
-FETCH_ARCH_LINUX_LOG="$LOGDIR/fetch-arch-linux.log"
+FETCH_ROOTFS_LOG="$LOGDIR/fetch-rootfs.log"
 BUILD_LINUX_LOG="$LOGDIR/build-linux.log"
 BUILD_UBOOT_LOG="$LOGDIR/build-uboot.log"
 BUILD_ARM_TRUSTED_FIRMWARE_LOG="$LOGDIR/build-atfw.log"
@@ -111,6 +111,11 @@ check_sdcard() {
 		error_exit "SD card device $SDCARD does not exist!"
 }
 
+check_chroot() {
+	[[ -x /usr/bin/qemu-arm-static && -x /usr/bin/qemu-aarch64-static ]] ||
+		error_exit "QEMU user emulation is missing, please install package qemu-user-static."
+}
+
 fetch_linux() {
 	if [[ ! -d $DIR/linux-xlnx ]]; then
 		#handling of xilinx sudden change in name convention
@@ -123,7 +128,7 @@ fetch_linux() {
 		git clone -b xilinx-v$LINUX_VERSION --depth 1 https://github.com/xilinx/linux-xlnx.git $DIR/linux-xlnx ||
 			return $(error_ret "$LINENO: could not clone linux git")
 	else
-		echo "$DIR/linux-xln already exists, skipping."
+		echo "$DIR/linux-xlnx already exists, skipping."
 	fi
 }
 
@@ -147,21 +152,21 @@ fetch_arm_trusted_firmware() {
 	fi
 }
 
-fetch_arch_linux() {
+fetch_rootfs() {
 	case $ARCH in
 		"arm")
-			ARCH_URL=$ARCH_ROOTFS_URL
-			LOCAL_FILE=$ARCH_ROOTFS_TAR_GZ
+			URL=$ROOTFS_URL
+			LOCAL_FILE=$ROOTFS_TAR_GZ
 			;;
 		"arm64")
-			ARCH_URL=$ARCH64_ROOTFS_URL
-			LOCAL_FILE=$ARCH64_ROOTFS_TAR_GZ
+			URL=$ROOTFS64_URL
+			LOCAL_FILE=$ROOTFS64_TAR_GZ
 			;;
 	esac
 	if [[ ! -f $LOCAL_FILE ]]; then
 		echo "Fetching arch linux rootfs..."
-		curl -L -s $ARCH_URL -o $LOCAL_FILE ||
-			return $(error_ret "$LINENO: could not fetch $ARCH_URL")
+		curl -L -s $URL -o $LOCAL_FILE ||
+			return $(error_ret "$LINENO: could not fetch $URL")
 	else
 		echo "$LOCAL_FILE already exists, skipping."
 	fi
@@ -613,10 +618,10 @@ copy_files_to_boot() {
 copy_files_to_root() {
 	case $ARCH in
 		"arm")
-			LOCAL_FILE=$ARCH_ROOTFS_TAR_GZ
+			LOCAL_FILE=$ROOTFS_TAR_GZ
 			;;
 		"arm64")
-			LOCAL_FILE=$ARCH64_ROOTFS_TAR_GZ
+			LOCAL_FILE=$ROOTFS64_TAR_GZ
 			;;
 	esac
 	DEV=${1:-${SDCARD}2}
@@ -631,12 +636,49 @@ copy_files_to_root() {
 	dusudo sh -c "echo $BOARD > $TO/etc/hostname" ||
 		echo >&2 "$LINENO: WARNING: could not set hostname"
 	if [[ $IMGSIZE -gt 4096 ]]; then
-		echo "Copying linux tree to /linux-xlnx ..."
-		dusudo sh -c "cp -r --no-preserve=ownership,timestamps $DIR/linux-xlnx $TO/linux-xlnx" ||
+		echo "Installing linux headers ..."
+		dusudo sh -c "cp -r $DIR/linux-xlnx $TO/usr/src/linux-headers-$(make -C $DIR/linux-xlnx kernelrelease -s)" ||
 			echo >&2 "$LINENO: WARNING: could not copy linux-xlnx"
 	else
 		echo >&2 "$LINENO: WARNING: image size $IMGSIZE < 4096 MiB, not enough space to copy linux tree"
 	fi
+	echo "Preparing chroot environment"
+	dusudo sh -c "cp /usr/bin/qemu-arm-static $TO/usr/bin/"
+	dusudo sh -c "cp /usr/bin/qemu-aarch64-static $TO/usr/bin/"
+	dusudo sh -c "mount --bind /dev $TO/dev/"
+	dusudo sh -c "chroot $TO << EOF
+echo 'nameserver 8.8.4.4' | tee -a /etc/resolv.conf
+apt-get update
+apt-get -y upgrade
+# runtime dependencies (without linux-headers)
+DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential python cmake libelf-dev libncurses-dev git rpm
+# additional tools
+apt-get install -y vim-tiny sudo iproute2 ssh kmod ifupdown net-tools
+systemctl enable ssh
+systemctl enable getty@ttyPS0.service
+useradd -G sudo -m -s /bin/bash tapasco
+echo 'root:root' | chpasswd
+echo 'tapasco:tapasco' | chpasswd
+echo 'set nocompatible' > /root/.vimrc
+echo 'set nocompatible' > /home/tapasco/.vimrc
+# setup network
+echo 'auto eth0' >> /etc/network/interfaces
+echo 'iface eth0 inet dhcp' >> /etc/network/interfaces
+
+# prepare header files
+cd /usr/src/linux-headers-*-tapasco/
+make scripts
+make modules_prepare
+make headers_install
+make modules_install
+make clean
+rm -rf source
+
+sudo -u tapasco git clone https://github.com/esa-tu-darmstadt/tapasco.git /home/tapasco/tapasco
+echo '' /etc/resolv.conf
+EOF"
+	dusudo rm $TO/usr/bin/qemu-*
+	dusudo umount $TO/dev
 	dusudo umount $TO
 	rmdir $TO 2> /dev/null &&
 		echo "RootFS partition ready."
@@ -666,6 +708,7 @@ check_xsct
 check_vivado
 check_tapasco
 check_image_tools
+check_chroot
 check_sdcard
 read -p "Enter sudo password: " -s SUDOPW
 [[ -n $SUDOPW ]] || error_exit "sudo password may not be empty"
@@ -678,7 +721,7 @@ fetch_linux &> $FETCH_LINUX_LOG &
 FETCH_LINUX_OK=$!
 fetch_u-boot &> $FETCH_UBOOT_LOG &
 FETCH_UBOOT_OK=$!
-fetch_arch_linux &> $FETCH_ARCH_LINUX_LOG &
+fetch_rootfs &> $FETCH_ROOTFS_LOG &
 FETCH_ARCH_LINUX_OK=$!
 if [[ $ARCH == arm64 ]]; then
 	fetch_arm_trusted_firmware &> $FETCH_ARM_TRUSTED_FIRMWARE_LOG &
