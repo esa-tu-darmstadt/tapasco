@@ -25,6 +25,7 @@
 #include "zynq_dmamgmt.h"
 #include "gen_fixed_size_pool.h"
 #include <linux/of_device.h>
+#include <linux/version.h>
 
 static inline void init_dma_buf_t(struct dma_buf_t *buf, fsp_idx_t const idx)
 {
@@ -79,7 +80,11 @@ dma_addr_t zynq_dmamgmt_alloc(struct tlkm_device *inst, size_t const len, handle
 		WRN("internal pool depleted: could not allocate a buffer!");
 		return 0;
 	}
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
 	of_dma_configure(inst->ctrl->miscdev.this_device, NULL, true);
+#else
+	of_dma_configure(inst->ctrl->miscdev.this_device, NULL);
+#endif
 	mask = dma_set_coherent_mask(inst->ctrl->miscdev.this_device, 0xFFFFFFFF);
 	if(mask) {
 		WRN("could not set DMA mask");
