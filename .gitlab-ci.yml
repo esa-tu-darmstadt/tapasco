@@ -184,22 +184,19 @@ build_kernel_ubuntu_18_04_debug:
   image: ubuntu:bionic
   extends: .build_kernel_ubuntu
 
-build_kernel_32bit_debug:
+build_kernel_arm32v7_debug:
   stage: build_kernel
   variables:
     MODE: "all"
-  image: i386/ubuntu
-  retry: 2
-  dependencies: []
-  tags:
-    - Normal
-  script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
-    - ./tapasco-init.sh && source tapasco-setup.sh
-    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd runtime/kernel; make LINUX_HOME="/lib/modules/$d/build" clean && CPPFLAGS="-Wno-error=pointer-to-int-cast -Wno-error=int-to-pointer-cast" make LINUX_HOME=/lib/modules/$d/build -j 1 $MODE; popd; done
-  artifacts:
-    paths:
-      - runtime/kernel/tlkm.ko
+  image: arm32v7/ubuntu:16.04
+  extends: .build_kernel_ubuntu
+
+build_kernel_arm64v8_debug:
+  stage: build_kernel
+  variables:
+    MODE: "all"
+  image: arm64v8/ubuntu:16.04
+  extends: .build_kernel_ubuntu
 
 .build_kernel_fedora:
   stage: build_kernel
@@ -321,6 +318,18 @@ build_tapasco_ubuntu_18_04_debug:
   variables:
     MODE: "debug"
   image: ubuntu:bionic
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_arm32v7_debug:
+  variables:
+    MODE: "debug"
+  image: arm32v7/ubuntu:16.04
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_arm64v8_debug:
+  variables:
+    MODE: "debug"
+  image: arm64v8/ubuntu:16.04
   extends: .build_tapasco_ubuntu
 
 build_tapasco_ubuntu_16_04_cross_debug:
