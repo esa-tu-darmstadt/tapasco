@@ -653,7 +653,7 @@ apt-get -y upgrade
 # runtime dependencies (without linux-headers)
 DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential python cmake libelf-dev libncurses-dev git rpm
 # additional tools
-apt-get install -y vim-tiny sudo iproute2 ssh kmod ifupdown net-tools
+apt-get install -y vim-tiny sudo iproute2 ssh kmod ifupdown net-tools jitterentropy-rngd
 systemctl enable ssh
 systemctl enable getty@ttyPS0.service
 useradd -G sudo -m -s /bin/bash tapasco
