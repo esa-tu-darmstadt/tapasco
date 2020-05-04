@@ -275,17 +275,24 @@ namespace eval hbm {
           connect_bd_intf_net $pin [get_bd_intf_pins $converter/S00_AXI]
         }
 
+        set address_offset [tapasco::ip::create_axioffset_hbm offset_${i}]
+        set offset [format "0x0000000%02x0000000" $i]
+        set_property -dict [list CONFIG.offset $offset CONFIG.offset_bits {5}] $address_offset
+        connect_bd_intf_net [get_bd_intf_pins $converter/M00_AXI] [get_bd_intf_pins $address_offset/S_AXI]
+        connect_bd_net [get_bd_pins $hbm/AXI_${hbm_index}_ACLK] [get_bd_pins $address_offset/CLK]
+        connect_bd_net [get_bd_pins $hbm/AXI_${hbm_index}_ARESET_N] [get_bd_pins $address_offset/RST_N]
+
         if {[platform::is_regslice_enabled "hbm_hbm" false] || [platform::is_regslice_enabled [format "hbm_hbm%s" $hbm_index] false]} {
           # insert register slice between smartconnect and HBM
           set regslice_post [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 regslice_post_${i}]
           set_property -dict [list CONFIG.REG_AW {15} CONFIG.REG_AR {15} CONFIG.REG_W {15} CONFIG.REG_R {15} CONFIG.REG_B {15} CONFIG.USE_AUTOPIPELINING {1}] $regslice_post
 
-          connect_bd_intf_net [get_bd_intf_pins $converter/M00_AXI] [get_bd_intf_pins $regslice_post/S_AXI]
+          connect_bd_intf_net [get_bd_intf_pins $address_offset/M_AXI] [get_bd_intf_pins $regslice_post/S_AXI]
           connect_bd_intf_net [get_bd_intf_pins $regslice_post/M_AXI] [get_bd_intf_pins $hbm/SAXI_${hbm_index}]
           connect_bd_net [get_bd_pins $hbm/AXI_${hbm_index}_ACLK] [get_bd_pins $regslice_post/aclk]
           connect_bd_net [get_bd_pins $hbm/AXI_${hbm_index}_ARESET_N] [get_bd_pins $regslice_post/aresetn]
         } else {
-          connect_bd_intf_net [get_bd_intf_pins $converter/M00_AXI] [get_bd_intf_pins $hbm/SAXI_${hbm_index}]
+          connect_bd_intf_net [get_bd_intf_pins $address_offset/M_AXI] [get_bd_intf_pins $hbm/SAXI_${hbm_index}]
         }
 
       }
@@ -319,8 +326,7 @@ namespace eval hbm {
     if {[tapasco::is_feature_enabled "HBM"]} {
       set hbmInterfaces [get_hbm_interfaces]
       for {set i 0} {$i < [llength $hbmInterfaces]} {incr i} {
-        set base [expr {0x10000000 * $i}]
-        set args [lappend args M_AXI_HBM_${i} [list $base 0 -1 ""]]
+        set args [lappend args M_AXI_HBM_${i} [list 0 0 -1 ""]]
       }
       
     }

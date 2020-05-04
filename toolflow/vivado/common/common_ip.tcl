@@ -42,3 +42,4 @@ dict set stdcomps   aws_intr_ctrl        vlnv   "esa.informatik.tu-darmstadt.de:
 dict set stdcomps   axi_bram_ctrl        vlnv   "xilinx.com:ip:axi_bram_ctrl"
 dict set stdcomps   bram_ctrl            vlnv   "xilinx.com:ip:blk_mem_gen"
 dict set stdcomps   axi_gpio             vlnv   "xilinx.com:ip:axi_gpio:2.0"
+dict set stdcomps   axioffset_hbm        vlnv   "esa.informatik.tu-darmstadt.de:user:AXIOffsetHBM:1.0"
