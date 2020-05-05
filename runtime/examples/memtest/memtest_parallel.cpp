@@ -51,6 +51,7 @@ void executeRandomBenchmark(tapasco::Tapasco &tapasco, int op,
   // allocate vectors for jobs and return values
   std::vector<tapasco::job_future> jobs;
   std::vector<tapasco::RetVal<unsigned long>> retvals;
+  retvals.reserve(instances);
   unsigned long rets[instances];
 
   // start one job for each instance of the PE found
@@ -62,8 +63,8 @@ void executeRandomBenchmark(tapasco::Tapasco &tapasco, int op,
     // Random Read/Write second argument is runtime in cycles third argument is
     // request size in bytes (maximum 4096) fourth and fifth arguments are seeds
     // for the read and write address generation respectively
-    auto job = tapasco.launch(PE_ID, ret_val, 3 + op, cycles, byte_length,
-                              random_read_seed, random_write_seed);
+    auto job = tapasco.launch(PE_ID, retvals[instance], 3 + op, cycles,
+                              byte_length, random_read_seed, random_write_seed);
     jobs.push_back(job);
   }
 
@@ -141,6 +142,7 @@ void executeBatchBenchmark(tapasco::Tapasco &tapasco, float designclk, int op,
     // allocate vectors for jobs and return values
     std::vector<tapasco::job_future> jobs;
     std::vector<tapasco::RetVal<unsigned long>> retvals;
+    retvals.reserve(instances);
     unsigned long rets[instances];
     // start one job for each instance of the PE found
     for (int instance = 0; instance < instances; instance++) {
@@ -150,7 +152,7 @@ void executeBatchBenchmark(tapasco::Tapasco &tapasco, float designclk, int op,
       // first argument is operation: 0 for Batch Read, 1 for Batch Write, 2 for
       // Batch Read/Write second argument is unused third argument is transfer
       // size
-      auto job = tapasco.launch(PE_ID, ret_val, op, 0, len);
+      auto job = tapasco.launch(PE_ID, retvals[instance], op, 0, len);
       jobs.push_back(job);
     }
     for (int instance = 0; instance < instances; instance++) {
@@ -172,7 +174,8 @@ void executeBatchBenchmark(tapasco::Tapasco &tapasco, float designclk, int op,
              calcSpeed(total_data, accs[instance], designclk));
     std::cout << left << setw(col_width) << setfill(space) << text;
   }
-  snprintf(text, 20, "%#.3fGiB/s", calcSpeed(total_data, acc, designclk));
+  snprintf(text, 20, "%#.3fGiB/s",
+           calcSpeed(total_data * instances, acc / instances, designclk));
   std::cout << left << setw(col_width) << setfill(space) << text;
 }
 
