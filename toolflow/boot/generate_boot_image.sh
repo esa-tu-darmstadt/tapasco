@@ -7,6 +7,10 @@ JOBCOUNT=4
 SCRIPTDIR="$(dirname $(readlink -f $0))"
 DIR="$SCRIPTDIR/$BOARD/$VERSION"
 LOGDIR="$DIR/logs"
+LINUX_XLNX_URL="https://github.com/xilinx/linux-xlnx.git"
+UBOOT_URL="https://github.com/xilinx/u-boot-xlnx.git"
+ATF_URL="https://github.com/Xilinx/arm-trusted-firmware.git"
+ARTYZ7_DTS_URL="https://raw.githubusercontent.com/Digilent/linux-digilent/master/arch/arm/boot/dts/zynq-artyz7.dts"
 ROOTFS_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04-base-armhf.tar.gz"
 ROOTFS64_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04-base-arm64.tar.gz"
 ROOTFS_TAR_GZ="$DIR/ubuntu_armhf_20.04.tar.gz"
@@ -125,7 +129,7 @@ fetch_linux() {
 			LINUX_VERSION=$VERSION
 		fi
 		echo "Fetching linux $LINUX_VERSION ..."
-		git clone -b xilinx-v$LINUX_VERSION --depth 1 https://github.com/xilinx/linux-xlnx.git $DIR/linux-xlnx ||
+		git clone -b xilinx-v$LINUX_VERSION --depth 1 $LINUX_XLNX_URL $DIR/linux-xlnx ||
 			return $(error_ret "$LINENO: could not clone linux git")
 	else
 		echo "$DIR/linux-xlnx already exists, skipping."
@@ -135,7 +139,7 @@ fetch_linux() {
 fetch_u-boot() {
 	if [[ ! -d $DIR/u-boot-xlnx ]]; then
 		echo "Fetching u-boot $VERSION ..."
-		git clone -b xilinx-v$VERSION --depth 1 https://github.com/xilinx/u-boot-xlnx.git $DIR/u-boot-xlnx ||
+		git clone -b xilinx-v$VERSION --depth 1 $UBOOT_URL $DIR/u-boot-xlnx ||
 			return $(error_ret "$LINENO: could not clone u-boot git")
 	else
 		echo "$DIR/u-boot-xlnx already exists, skipping."
@@ -145,7 +149,7 @@ fetch_u-boot() {
 fetch_arm_trusted_firmware() {
 	if [[ ! -d $DIR/arm-trusted-firmware ]]; then
 		echo "Fetching arm-trusted-firmware ..."
-		git clone --depth 1 https://github.com/Xilinx/arm-trusted-firmware.git $DIR/arm-trusted-firmware ||
+		git clone --depth 1 $ATF_URL $DIR/arm-trusted-firmware ||
 			return $(error_ret "$LINENO: could not clone arm-trusted-firmware")
 	else
 		echo "$DIR/arm-trusted-firmware already exists, skipping."
@@ -481,7 +485,7 @@ build_devtree() {
 		"pynq")
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
 				cp $DIR/linux-xlnx/arch/arm/boot/dts/skeleton.dtsi $DIR/ &&
-				curl -L -s https://raw.githubusercontent.com/Digilent/linux-digilent/master/arch/arm/boot/dts/zynq-artyz7.dts | sed 's/#include/\/include\//' > $DIR/devicetree.dts
+				curl -L -s $ARTYZ7_DTS_URL | sed 's/#include/\/include\//' > $DIR/devicetree.dts
 			;;
 		"zedboard")
 			cp $DIR/linux-xlnx/arch/arm/boot/dts/zynq-7000.dtsi $DIR/ &&
@@ -643,7 +647,8 @@ copy_files_to_root() {
 	dusudo sh -c "cp /usr/bin/qemu-aarch64-static $TO/usr/bin/"
 	dusudo sh -c "mount --bind /dev $TO/dev/"
 	dusudo sh -c "chroot $TO << EOF
-echo 'nameserver 8.8.4.4' | tee -a /etc/resolv.conf
+echo 'nameserver 8.8.8.8' > /etc/resolv.conf
+echo 'nameserver 1.1.1.1' >> /etc/resolv.conf
 apt-get update
 apt-get -y upgrade
 # runtime dependencies (without linux-headers)
