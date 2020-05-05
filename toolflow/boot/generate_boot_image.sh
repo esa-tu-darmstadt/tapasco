@@ -1,7 +1,7 @@
 #!/bin/bash
 BOARD=${1:-zedboard}
 VERSION=${2:-2019.2}
-IMGSIZE=${3:-7534}
+IMGSIZE=${3:-5120}
 SDCARD=${4:-}
 JOBCOUNT=4
 SCRIPTDIR="$(dirname $(readlink -f $0))"
@@ -38,7 +38,7 @@ given, repartition the device as a bootable SD card (WARNING: all data will
 be lost).
 	BOARD		one of zc706, zedboard, pyng, zcu102 or ultra96v2
 	VERSION		Vivado Design Suite version, e.g., 2019.2
-	DISK SIZE	Size of the image in MiB (optional, default: 7534)
+	DISK SIZE	Size of the image in MiB (optional, default: 5120)
 	DEVICE		SD card device, e.g., /dev/sdb (optional)
 EOF
 	exit 1
@@ -635,13 +635,9 @@ copy_files_to_root() {
 	echo "Setting hostname to $BOARD ... "
 	dusudo sh -c "echo $BOARD > $TO/etc/hostname" ||
 		echo >&2 "$LINENO: WARNING: could not set hostname"
-	if [[ $IMGSIZE -gt 4096 ]]; then
-		echo "Installing linux headers ..."
-		dusudo sh -c "cp -r $DIR/linux-xlnx $TO/usr/src/linux-headers-$(make -C $DIR/linux-xlnx kernelrelease -s)" ||
-			echo >&2 "$LINENO: WARNING: could not copy linux-xlnx"
-	else
-		echo >&2 "$LINENO: WARNING: image size $IMGSIZE < 4096 MiB, not enough space to copy linux tree"
-	fi
+	echo "Installing linux headers ..."
+	dusudo sh -c "cp -r $DIR/linux-xlnx $TO/usr/src/linux-headers-$(make -C $DIR/linux-xlnx kernelrelease -s)" ||
+		echo >&2 "$LINENO: WARNING: could not copy linux-xlnx"
 	echo "Preparing chroot environment"
 	dusudo sh -c "cp /usr/bin/qemu-arm-static $TO/usr/bin/"
 	dusudo sh -c "cp /usr/bin/qemu-aarch64-static $TO/usr/bin/"
@@ -678,6 +674,7 @@ sudo -u tapasco git clone https://github.com/esa-tu-darmstadt/tapasco.git /home/
 echo '' /etc/resolv.conf
 EOF"
 	dusudo rm $TO/usr/bin/qemu-*
+	dusudo cp $SCRIPTDIR/misc/resizefs $TO/home/tapasco/
 	dusudo umount $TO/dev
 	dusudo umount $TO
 	rmdir $TO 2> /dev/null &&
