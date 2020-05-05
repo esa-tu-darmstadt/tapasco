@@ -64,7 +64,6 @@ void executeRandomBenchmark(tapasco::Tapasco &tapasco, int op,
   std::cout << left << setw(col_width) << setfill(space) << text;
   snprintf(text, 20, "%#.2fGiB/s", calcSpeed(total_data, cycles, designclk));
   std::cout << left << setw(col_width) << setfill(space) << text;
-  sleep(1);
 }
 
 void benchmarkRandom(tapasco::Tapasco &tapasco, float designclk,
@@ -79,12 +78,10 @@ void benchmarkRandom(tapasco::Tapasco &tapasco, float designclk,
                               random_byte_length[random_byte_length_c - 1],
                               random_read_seed, random_read_seed);
     job();
-    sleep(1);
     job = tapasco.launch(PE_ID, 4, 2 * cycles,
                          random_byte_length[random_byte_length_c - 1],
                          random_write_seed, random_write_seed);
     job();
-    sleep(1);
   }
   std::cout << std::endl << std::endl;
 

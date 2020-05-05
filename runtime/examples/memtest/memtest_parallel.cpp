@@ -81,7 +81,6 @@ void executeRandomBenchmark(tapasco::Tapasco &tapasco, int op,
   double iops = acc / (cycles / (designclk * 1000000.0));
   snprintf(text, 20, "%.2fMIOPS", iops / 1000000);
   std::cout << left << setw(col_width) << setfill(space) << text;
-  sleep(1);
 }
 
 void benchmarkRandom(tapasco::Tapasco &tapasco, float designclk,
@@ -95,11 +94,9 @@ void benchmarkRandom(tapasco::Tapasco &tapasco, float designclk,
     auto job = tapasco.launch(PE_ID, 4, 2 * cycles, 4096, random_read_seed,
                               random_read_seed);
     job();
-    sleep(1);
     job = tapasco.launch(PE_ID, 4, 2 * cycles, 4096, random_write_seed,
                          random_write_seed);
     job();
-    sleep(1);
   }
   char text[20];
   std::cout << std::endl << std::endl;
