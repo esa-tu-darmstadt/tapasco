@@ -1,5 +1,7 @@
 extern crate env_logger;
 
+use crate::device::Device;
+use crate::tlkm::DeviceId;
 use crate::tlkm::DeviceInfo;
 use crate::tlkm::TLKM;
 use core::cell::RefCell;
@@ -110,6 +112,10 @@ pub extern "C" fn tapasco_init_logging() {
     env_logger::init();
 }
 
+//////////////
+// START TLKM
+//////////////
+
 #[no_mangle]
 pub extern "C" fn tapasco_tlkm_new() -> *mut TLKM {
     match TLKM::new().context(TLKMError) {
@@ -118,6 +124,13 @@ pub extern "C" fn tapasco_tlkm_new() -> *mut TLKM {
             update_last_error(e);
             ptr::null_mut()
         }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_tlkm_destroy(t: *mut TLKM) {
+    unsafe {
+        let _b: Box<TLKM> = Box::from_raw(t);
     }
 }
 
@@ -145,13 +158,6 @@ pub extern "C" fn tapasco_tlkm_version(t: *const TLKM, vers: *mut c_char, len: u
             update_last_error(e);
             -1
         }
-    }
-}
-
-#[no_mangle]
-pub extern "C" fn tapasco_tlkm_destroy(t: *mut TLKM) {
-    unsafe {
-        let _b: Box<TLKM> = Box::from_raw(t);
     }
 }
 
@@ -216,3 +222,32 @@ pub extern "C" fn tapasco_tlkm_devices_destroy(di: *mut DeviceInfo, len: usize) 
     }
     return 0;
 }
+
+#[no_mangle]
+pub extern "C" fn tapasco_tlkm_device_alloc(t: *const TLKM, id: DeviceId) -> *mut Device {
+    if t.is_null() {
+        warn!("Null pointer passed into tapasco_tlkm_devices() as the buffer");
+        update_last_error(Error::NullPointerTLKM {});
+        return ptr::null_mut();
+    }
+
+    let tl = unsafe { &*t };
+    match tl.device_alloc(id).context(TLKMError) {
+        Ok(x) => std::boxed::Box::<Device>::into_raw(Box::new(x)),
+        Err(e) => {
+            update_last_error(e);
+            return ptr::null_mut();
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_tlkm_device_destroy(t: *mut Device) {
+    unsafe {
+        let _b: Box<Device> = Box::from_raw(t);
+    }
+}
+
+//////////////
+// END TLKM
+//////////////

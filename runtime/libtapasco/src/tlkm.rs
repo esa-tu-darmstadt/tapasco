@@ -28,6 +28,9 @@ pub enum Error {
 
     #[snafu(display("Error creating CString from Rust: {}", source))]
     FFINulError { source: std::ffi::NulError },
+
+    #[snafu(display("Could not find device {}", id))]
+    DeviceNotFound { id: DeviceId },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -267,6 +270,32 @@ impl TLKM {
         }
 
         Ok(v)
+    }
+
+    pub fn device_alloc(&self, id: DeviceId) -> Result<Device> {
+        trace!("Fetching available devices from driver.");
+        let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
+        unsafe {
+            tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnum)?;
+        };
+
+        trace!("There are {} devices.", devices.num_devs);
+
+        for x in 0..devices.num_devs {
+            if devices.devs[x].dev_id == id {
+                return Ok(Device::new(
+                    &self.file,
+                    devices.devs[x].dev_id,
+                    devices.devs[x].vendor_id,
+                    devices.devs[x].product_id,
+                    String::from_utf8_lossy(&devices.devs[x].name)
+                        .trim_matches(char::from(0))
+                        .to_string(),
+                )
+                .context(DeviceError)?);
+            }
+        }
+        Err(Error::DeviceNotFound { id: id })
     }
 
     pub fn device_enum(&self) -> Result<Vec<Device>> {
