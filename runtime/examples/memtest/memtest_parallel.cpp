@@ -44,11 +44,11 @@ void executeRandomBenchmark(tapasco::Tapasco &tapasco, int op, unsigned long cyc
     jobs[instance]();
     acc += retvals[instance].value;
     double iops = retvals[instance].value / (cycles / (designclk * 1000000.0));
-    sprintf(text, "%.2fMIOPS", iops / 1000000);
+    snprintf(text, 20, "%.2fMIOPS", iops / 1000000);
     std::cout << left << setw(col_width) << setfill(space) << text;
   }
   double iops = acc / (cycles / (designclk * 1000000.0));
-  sprintf(text, "%.2fMIOPS", iops / 1000000);
+  snprintf(text, 20, "%.2fMIOPS", iops / 1000000);
   std::cout << left << setw(col_width) << setfill(space) << text;
   sleep(1);
 }
@@ -69,14 +69,14 @@ void benchmarkRandom(tapasco::Tapasco &tapasco, float designclk, unsigned long c
 
   std::cout << left << setw(col_width) << setfill(space) << "Size";
   for (int instance = 0; instance < instances; instance++) {
-    sprintf(text, "Instance %i", instance);
+    snprintf(text, 20, "Instance %i", instance);
     std::cout << left << setw(col_width) << setfill(space) << text;
   }
   std::cout << left << setw(col_width) << setfill(space) << "Total";
   std::cout << std::endl;
 
   for (int count = 0; count < random_byte_length_c; count++) {
-    sprintf(text, "%iB", random_byte_length[count]);
+    snprintf(text, 20, "%iB", random_byte_length[count]);
     std::cout << left << setw(col_width) << setfill(space) << text;
     executeRandomBenchmark(tapasco, 2, cycles, random_byte_length[count], designclk, instances);
     std::cout << std::endl;
@@ -111,10 +111,10 @@ void executeBatchBenchmark(tapasco::Tapasco &tapasco, float designclk, int op, s
   if (op == 2) total_data *= 2;
   char text[20];
   for (int instance = 0; instance < instances; instance++) {
-    sprintf(text, "%#.3fGiB/s", calcSpeed(total_data, accs[instance], designclk));
+    snprintf(text, 20, "%#.3fGiB/s", calcSpeed(total_data, accs[instance], designclk));
     std::cout << left << setw(col_width) << setfill(space) << text;
   }
-  sprintf(text, "%#.3fGiB/s", calcSpeed(total_data, acc, designclk));
+  snprintf(text, 20, "%#.3fGiB/s", calcSpeed(total_data, acc, designclk));
   std::cout << left << setw(col_width) << setfill(space) << text;
 }
 
@@ -127,14 +127,14 @@ void benchmarkBatch(tapasco::Tapasco &tapasco, float designclk, int instances) {
 
   std::cout << left << setw(col_width) << setfill(space) << "Size";
   for (int instance = 0; instance < instances; instance++) {
-    sprintf(text, "Instance %i", instance);
+    snprintf(text, 20, "Instance %i", instance);
     std::cout << left << setw(col_width) << setfill(space) << text;
   }
   std::cout << left << setw(col_width) << setfill(space) << "Total";
   std::cout << std::endl;
 
   for (size_t s = batch_min_length; s <= batch_max_length; s++) {
-    sprintf(text, "%iKib", ((1 << s) / 1024));
+    snprintf(text, 20, "%iKib", ((1 << s) / 1024));
     std::cout << left << setw(col_width) << setfill(space) << text;
     
     executeBatchBenchmark(tapasco, designclk, 2, s, instances);

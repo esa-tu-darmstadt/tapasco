@@ -34,9 +34,9 @@ void executeRandomBenchmark(tapasco::Tapasco &tapasco, int op, unsigned long cyc
   job();
   unsigned long total_data = byte_length * ret;
   double iops = ret / (cycles / (designclk * 1000000.0));
-  sprintf(text, "%.2fMIOPS", iops / 1000000);
+  snprintf(text, 20, "%.2fMIOPS", iops / 1000000);
   std::cout << left << setw(col_width) << setfill(space) << text;
-  sprintf(text, "%#.2fGiB/s", calcSpeed(total_data, cycles, designclk));
+  snprintf(text, 20, "%#.2fGiB/s", calcSpeed(total_data, cycles, designclk));
   std::cout << left << setw(col_width) << setfill(space) << text;
   sleep(1);
 }
@@ -64,7 +64,7 @@ void benchmarkRandom(tapasco::Tapasco &tapasco, float designclk, unsigned long c
 
   for (int count = 0; count < random_byte_length_c; count++) {
     char text[20];
-    sprintf(text, "%iB", random_byte_length[count]);
+    snprintf(text, 20, "%iB", random_byte_length[count]);
     std::cout << left << setw(col_width) << setfill(space) << text;
     executeRandomBenchmark(tapasco, 0, cycles, random_byte_length[count], designclk);
     executeRandomBenchmark(tapasco, 1, cycles, random_byte_length[count], designclk);
@@ -78,7 +78,7 @@ void benchmarkRandom(tapasco::Tapasco &tapasco, float designclk, unsigned long c
 void printAsNano(double cycles, float clock) {
   double nano = (cycles / clock) * 1000;
   char text[20];
-  sprintf(text, "%.2fns", nano);
+  snprintf(text, 20, "%.2fns", nano);
   std::cout << left << setw(col_width) << setfill(space) << text; 
 }
 
@@ -126,7 +126,7 @@ void executeBatchBenchmark(tapasco::Tapasco &tapasco, float designclk, int op, s
   unsigned long total_data = len * batch_iterations;
   if (op == 2) total_data *= 2;
   char text[20];
-  sprintf(text, "%#.3fGiB/s", calcSpeed(total_data, acc, designclk));
+  snprintf(text, 20, "%#.3fGiB/s", calcSpeed(total_data, acc, designclk));
   std::cout << left << setw(col_width) << setfill(space) << text;
 }
 
@@ -144,7 +144,7 @@ void benchmarkBatch(tapasco::Tapasco &tapasco, float designclk) {
 
   for (size_t s = batch_min_length; s <= batch_max_length; s++) {
     char text[20];
-    sprintf(text, "%iKib", ((1 << s) / 1024));
+    snprintf(text, 20, "%iKib", ((1 << s) / 1024));
     std::cout << left << setw(col_width) << setfill(space) << text;
     
     executeBatchBenchmark(tapasco, designclk, 0, s);
