@@ -21,6 +21,7 @@ extern crate crossbeam;
 pub mod allocator;
 pub mod device;
 pub mod dma;
+pub mod ffi;
 pub mod job;
 pub mod pe;
 pub mod scheduler;

@@ -1,12 +1,15 @@
 use crate::device::Error as DevError;
 use crate::device::{Device, DeviceAddress};
+use libc::c_char;
 use snafu::ResultExt;
+use std::ffi::CString;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::os::unix::prelude::*;
 use std::path::PathBuf;
 
 #[derive(Debug, Snafu)]
+#[repr(C)]
 pub enum Error {
     #[snafu(display("Could not open driver chardev {}: {}", filename.display(), source))]
     DriverOpen {
@@ -22,6 +25,9 @@ pub enum Error {
 
     #[snafu(display("Could not create device: {}", source))]
     DeviceError { source: DevError },
+
+    #[snafu(display("Error creating CString from Rust: {}", source))]
+    FFINulError { source: std::ffi::NulError },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -182,6 +188,16 @@ impl Drop for TLKM {
     }
 }
 
+#[derive(Debug, Copy, Clone, CopyGetters)]
+#[repr(C)]
+pub struct DeviceInfo {
+    id: DeviceId,
+    vendor: u32,
+    product: u32,
+    #[get_copy = "pub"]
+    name: *const c_char,
+}
+
 impl TLKM {
     pub fn new() -> Result<TLKM> {
         let path = PathBuf::from(r"/dev/tlkm");
@@ -195,6 +211,7 @@ impl TLKM {
     }
 
     fn finish(&mut self) -> Result<()> {
+        trace!("TLKM object destroyed.");
         Ok(())
     }
 
@@ -204,12 +221,55 @@ impl TLKM {
             tlkm_ioctl_version(self.file.as_raw_fd(), &mut version).context(IOCTLVersion)?;
         };
 
-        let s = String::from_utf8_lossy(&version.version);
+        let s = String::from_utf8_lossy(&version.version)
+            .trim_matches(char::from(0))
+            .to_string();
         trace!("Retrieved TLKM version as {}", s);
         Ok(s.to_string())
     }
 
-    pub fn device_enum(&mut self) -> Result<Vec<Device>> {
+    pub fn device_enum_len(&self) -> Result<usize> {
+        trace!("Fetching available devices from driver.");
+        let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
+        unsafe {
+            tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnum)?;
+        };
+
+        trace!("There are {} devices.", devices.num_devs);
+
+        Ok(devices.num_devs)
+    }
+
+    pub fn device_enum_info(&self) -> Result<Vec<DeviceInfo>> {
+        trace!("Fetching available devices from driver.");
+        let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
+        unsafe {
+            tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnum)?;
+        };
+
+        trace!("There are {} devices.", devices.num_devs);
+
+        let mut v = Vec::new();
+
+        for x in 0..devices.num_devs {
+            v.push(DeviceInfo {
+                id: devices.devs[x].dev_id,
+                vendor: devices.devs[x].vendor_id,
+                product: devices.devs[x].product_id,
+                name: CString::new(
+                    String::from_utf8_lossy(&devices.devs[x].name)
+                        .trim_matches(char::from(0))
+                        .to_string(),
+                )
+                .context(FFINulError)?
+                .into_raw(),
+            });
+        }
+
+        Ok(v)
+    }
+
+    pub fn device_enum(&self) -> Result<Vec<Device>> {
         trace!("Fetching available devices from driver.");
         let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
         unsafe {
