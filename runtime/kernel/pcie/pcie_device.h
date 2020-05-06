@@ -28,6 +28,8 @@
 #define TLKM_SLOT_INTERRUPTS 128
 #define REQUIRED_INTERRUPTS (TLKM_PLATFORM_INTERRUPTS + TLKM_SLOT_INTERRUPTS)
 
+uint32_t get_xdma_reg_addr(uint32_t target, uint32_t channel, uint32_t offset);
+
 int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id);
 void tlkm_pcie_remove(struct pci_dev *pdev);
 
@@ -37,17 +39,17 @@ int pcie_device_init_subsystems(struct tlkm_device *dev, void *data);
 void pcie_device_exit_subsystems(struct tlkm_device *dev);
 
 int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct tlkm_device *dev,
-				    void **buffer, void **dev_handle,
+				    void **buffer, dma_addr_t *dev_handle,
 				    dma_direction_t direction, size_t size);
 void pcie_device_dma_free_buffer(dev_id_t dev_id, struct tlkm_device *dev,
-				 void **buffer, void **dev_handle,
+				 void **buffer, dma_addr_t *dev_handle,
 				 dma_direction_t direction, size_t size);
 
 int pcie_device_dma_sync_buffer_cpu(dev_id_t dev_id, struct tlkm_device *dev,
-				    void **buffer, void **dev_handle,
+				    void **buffer, dma_addr_t *dev_handle,
 				    dma_direction_t direction, size_t size);
 int pcie_device_dma_sync_buffer_dev(dev_id_t dev_id, struct tlkm_device *dev,
-				    void **buffer, void **dev_handle,
+				    void **buffer, dma_addr_t *dev_handle,
 				    dma_direction_t direction, size_t size);
 
 /* struct to hold data related to the pcie device */

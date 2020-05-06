@@ -26,12 +26,14 @@ package tapasco.jobs.executors
 import java.util.concurrent.Semaphore
 
 import play.api.libs.json._
+import tapasco.activity
 import tapasco.base._
 import tapasco.dse._
 import tapasco.filemgmt._
 import tapasco.jobs._
 import tapasco.jobs.json._
 import tapasco.task._
+import tapasco.util.AreaUtilization
 
 private object DesignSpaceExploration extends Executor[DesignSpaceExplorationJob] {
   private implicit val logger = tapasco.Logging.logger(getClass)
@@ -76,24 +78,49 @@ private object DesignSpaceExploration extends Executor[DesignSpaceExplorationJob
     val hls_ok = (hls_results fold true) (_ && _)
 
     if (hls_ok) {
-      val tasks = for {
-        a <- job.architectures.toSeq.sortBy(_.name)
-        p <- job.platforms.toSeq.sortBy(_.name)
-        target = Target(a, p)
-      } yield mkExplorationTask(job, target, _ => signal.release())
 
-      tasks foreach {
-        tsk.apply _
+      // Check if an area estimate from OOC synthesis is present for all cores.
+      val notEvaluated = for {
+        k <- kernels
+        t <- job.targets
+        if AreaUtilization(t, FileAssetManager.entities.core(k, t).get).isEmpty
+      } yield (FileAssetManager.entities.core(k, t).get, t)
+
+      if (notEvaluated.nonEmpty) {
+        logger.info("need to evaluate the following cores first: {}",
+          notEvaluated map { case (c, t) => "%s @ %s".format(c.name, t) } mkString ", ")
       }
 
-      0 until tasks.length foreach { i =>
-        signal.acquire()
-        logger.debug("DSE task #{} collected", i)
+      // Evaluate cores that did not have a OOC synthesis report.
+      val evaluationResults = notEvaluated.map{case (c, t) => activity.Import.evaluateCore(c, t, 1)}
+
+      val evaluation_ok = evaluationResults.forall(r => r)
+
+      if(evaluation_ok){
+
+        val tasks = for {
+          a <- job.architectures.toSeq.sortBy(_.name)
+          p <- job.platforms.toSeq.sortBy(_.name)
+          target = Target(a, p)
+        } yield mkExplorationTask(job, target, _ => signal.release())
+
+        tasks foreach {
+          tsk.apply _
+        }
+
+        0 until tasks.length foreach { i =>
+          signal.acquire()
+          logger.debug("DSE task #{} collected", i)
+        }
+
+        logger.info("all DSE tasks have finished")
+
+        (tasks map (_.result) fold true) (_ && _)
+      } else {
+        logger.error("Evaluation tasks failed, aborting design-space exploration")
+        false
       }
 
-      logger.info("all DSE tasks have finished")
-
-      (tasks map (_.result) fold true) (_ && _)
     } else {
       logger.error("HLS tasks failed, aborting composition")
       false

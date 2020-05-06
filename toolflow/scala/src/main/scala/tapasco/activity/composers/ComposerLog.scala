@@ -44,7 +44,7 @@ class ComposerLog(val file: Path) {
     _ match { case (line, idx) => !RE_WARNING.findFirstIn(line).isEmpty }).toSeq
 
   /** Interprets the warnings and errors to generate a result value. */
-  def result: ComposeResult = if (errors.isEmpty) {
+  def result(failed : Boolean = false): ComposeResult = if (errors.isEmpty && !failed) {
     if ((warnings map (line => RE_TIMING.findFirstIn(line._1).isEmpty) fold true) (_ && _)) {
       Success
     } else {

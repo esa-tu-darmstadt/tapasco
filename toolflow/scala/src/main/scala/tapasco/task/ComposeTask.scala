@@ -81,7 +81,7 @@ class ComposeTask(composition: Composition,
     }
 
     _logger.trace("_composerResult = {}", _composerResult: Any)
-    _logger.info(("compose run %s@%2.3f MHz for %s finished, result: %s, bitstream file: '%s', " +
+    _logger.info(("compose run %s@%2.3f MHz for %s finished, result: %s, produced file: '%s', " +
       "logfile: '%s', utilization report: '%s', timing report: '%s'").format(
       composition: Any,
       designFrequency,

@@ -1,0 +1,16 @@
+{
+	"Name" : "aws",
+	"Description" : "AWS EC2 F1 Platform",
+	"TclLibrary" : "aws.tcl",
+	"Part" : "xcvu9p-flgb2104-2-i",
+	"BoardPartRepository" : "\\$::env(HDK_SHELL_DIR)/hlx/design/boards",
+	"BoardPart" : "xilinx.com:f1_cl:part0:1.0",
+	"BoardPreset" : "f1_cl",
+	"TargetUtilization" : 90,
+	"Benchmark" : "aws.benchmark",
+	"HostFrequency": 250.0,
+	"MemFrequency": 250.0,
+	"MaximumFrequency": 500,
+	"ImplementationTimeout": 48,
+	"FileExtension": "tar"
+}

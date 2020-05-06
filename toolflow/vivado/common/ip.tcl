@@ -435,6 +435,7 @@ namespace eval ::tapasco::ip {
 
     set_property -dict [list CONFIG.Memory_Type {Single_Port_ROM} \
                          CONFIG.Load_Init_File {true}         \
+                         CONFIG.EN_SAFETY_CKT {false}         \
                          CONFIG.Coe_File $outfile] [get_bd_cells -filter "NAME == ${name}_base"]
   }
 

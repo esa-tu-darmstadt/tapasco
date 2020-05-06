@@ -1,0 +1,14 @@
+sudo fdisk /dev/mmcblk0 <<EOF
+p
+d
+
+n
+p
+
+
+
+n
+p
+w
+EOF
+sudo resize2fs /dev/mmcblk0p2

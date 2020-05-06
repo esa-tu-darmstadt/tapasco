@@ -7,6 +7,9 @@
 #include "tlkm_logging.h"
 #include "user/tlkm_device_ioctl_cmds.h"
 
+#define AWS_EC2_VENDOR_ID 0x1D0F
+#define AWS_EC2_DEVICE_ID 0xF000
+
 int tlkm_platform_status_init(struct tlkm_device *dev,
 			      struct platform_mmap *mmap)
 {
@@ -16,7 +19,7 @@ int tlkm_platform_status_init(struct tlkm_device *dev,
 	       "I/O mapping 0x%px-0x%px for status",
 	       (void *)(dev->base_offset + p->status.base),
 	       (void *)(dev->base_offset + p->status.high));
-	mmap->status = ioremap_nocache(dev->base_offset + p->status.base,
+	mmap->status = ioremap(dev->base_offset + p->status.base,
 				       p->status.size);
 	if (!mmap->status) {
 		DEVERR(dev->dev_id,
@@ -54,7 +57,7 @@ int tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap)
 	       "I/O mapping 0x%px-0x%px for architecture",
 	       (void *)(dev->base_offset + dev->arch.base),
 	       (void *)(dev->base_offset + dev->arch.high));
-	mmap->arch = ioremap_nocache(dev->base_offset + dev->arch.base,
+	mmap->arch = ioremap(dev->base_offset + dev->arch.base,
 				     dev->arch.size);
 	if (!mmap->arch) {
 		DEVERR(dev->dev_id,
@@ -69,7 +72,7 @@ int tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap)
 	       "I/O mapping 0x%px-0x%px for platform",
 	       (void *)(dev->base_offset + dev->plat.base),
 	       (void *)(dev->base_offset + dev->plat.high));
-	mmap->plat = ioremap_nocache(dev->base_offset + dev->plat.base,
+	mmap->plat = ioremap(dev->base_offset + dev->plat.base,
 				     dev->plat.size);
 	if (!mmap->plat) {
 		DEVERR(dev->dev_id,
