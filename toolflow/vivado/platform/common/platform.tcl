@@ -265,6 +265,8 @@ namespace eval platform {
       variable disable_write_bitstream
       if {[info exists disable_write_bitstream] == 0 || [string is false $disable_write_bitstream]} {
         write_bitstream -force "${bitstreamname}.bit"
+
+        tapasco::call_plugins "post-bitstream"
       }
     } else {
       error "timing failure, WNS: $wns"

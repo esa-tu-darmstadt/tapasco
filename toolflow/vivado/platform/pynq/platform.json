@@ -5,5 +5,6 @@
 	"Part" : "xc7z020clg400-1",
 	"BoardPart" : "digilentinc.com:arty-z7-20:part0",
 	"TargetUtilization" : 99,
-	"Benchmark": "pynq.benchmark"
+	"Benchmark": "pynq.benchmark",
+	"FileExtension": "bit.bin"
 }
