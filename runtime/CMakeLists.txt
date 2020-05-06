@@ -15,6 +15,10 @@ include(GNUInstallDirs)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__MY_FILE__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'")
 
+install(FILES platform/pcie/module/program_pcie.tcl DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/platform/pcie/module/)
+install(PROGRAMS platform/pcie/module/bit_reload.sh DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/platform/pcie/module/)
+install(PROGRAMS bin/tapasco-load-bitstream DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/bin)
+
 add_subdirectory(kernel)
 add_subdirectory(common)
 add_subdirectory(platform)

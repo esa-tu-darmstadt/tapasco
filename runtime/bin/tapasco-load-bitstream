@@ -27,6 +27,9 @@ if args.verbose:
 	print('Reload Driver: {}'.format(str(args.reload_driver)))
 	print('Platform: {}'.format(os.environ['TAPASCO_PLATFORM']))
 
+if not 'TAPASCO_HOME_RUNTIME' in os.environ:
+    os.environ['TAPASCO_HOME_RUNTIME'] = "{}/../".format(os.getcwd())
+
 path = 'module/'
 reld = '-d' if args.reload_driver else ''
 verb = '-v' if args.verbose else ''
