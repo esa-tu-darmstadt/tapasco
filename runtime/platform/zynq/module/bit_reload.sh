@@ -32,7 +32,7 @@ DRIVERPATH="$TAPASCO_HOME_RUNTIME/kernel"
 
 show_usage() {
 	cat << EOF
-Usage: ${0##*/} [-v|--verbose] [--d|drv_reload] [-pb|--partial] BITSTREAM.bit
+Usage: ${0##*/} [-v|--verbose] [--d|drv_reload] [-pb|--partial] BITSTREAM.{bit,bin}
 Program Zynq PL via /sys/class/fpga_manager/.
 
 	-v	enable verbose output
@@ -81,7 +81,7 @@ done
 shift "$((OPTIND - 1))"
 
 BITSTREAM="$1"
-if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit ]]; then
+if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit || $BITSTREAM == *.bin ]]; then
 	echo "Starting FPGA programming..."
 	echo "Bitstream = $BITSTREAM"
 
@@ -117,6 +117,7 @@ if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit ]]; then
 	if ! lsmod | grep $DRIVER > /dev/null; then
 		sudo insmod $DRIVERPATH/${DRIVER}.ko
 		INSMOD_RET=$?
+		sudo chown $USER /dev/tlkm*
 
 		# check return code
 		if [ $INSMOD_RET -ne 0 ]; then
