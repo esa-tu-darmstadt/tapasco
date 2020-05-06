@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import argparse
 import os
 import sys
@@ -26,6 +26,9 @@ if args.verbose:
 	print('Bitstream: {}'.format(args.bitstream))
 	print('Reload Driver: {}'.format(str(args.reload_driver)))
 	print('Platform: {}'.format(os.environ['TAPASCO_PLATFORM']))
+
+if not 'TAPASCO_HOME_RUNTIME' in os.environ:
+    os.environ['TAPASCO_HOME_RUNTIME'] = "{}/../".format(os.getcwd())
 
 path = 'module/'
 reld = '-d' if args.reload_driver else ''
