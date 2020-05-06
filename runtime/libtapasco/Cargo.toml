@@ -5,7 +5,7 @@ authors = ["Jaco Hofmann <hofmann@esa.tu-darmstadt.de>"]
 edition = "2018"
 
 [lib]
-crate-type = ["staticlib", "cdylib"]
+crate-type = ["lib", "staticlib", "cdylib"]
 
 [dependencies]
 log = "0.4.8"

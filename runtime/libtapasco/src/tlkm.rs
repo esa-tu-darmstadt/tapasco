@@ -7,6 +7,7 @@ use std::fs::File;
 use std::fs::OpenOptions;
 use std::os::unix::prelude::*;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 #[derive(Debug, Snafu)]
 #[repr(C)]
@@ -176,10 +177,8 @@ ioctl_readwrite!(
     tlkm_ioctl_device_cmd
 );
 
-#[derive(Getters)]
 pub struct TLKM {
-    #[get = "pub"]
-    file: File,
+    file: Arc<File>,
 }
 
 impl Drop for TLKM {
@@ -210,7 +209,9 @@ impl TLKM {
             .open("/dev/tlkm")
             .context(DriverOpen { filename: path })?;
 
-        Ok(TLKM { file: file })
+        Ok(TLKM {
+            file: Arc::new(file),
+        })
     }
 
     fn finish(&mut self) -> Result<()> {
@@ -284,7 +285,7 @@ impl TLKM {
         for x in 0..devices.num_devs {
             if devices.devs[x].dev_id == id {
                 return Ok(Device::new(
-                    &self.file,
+                    self.file.clone(),
                     devices.devs[x].dev_id,
                     devices.devs[x].vendor_id,
                     devices.devs[x].product_id,
@@ -312,7 +313,7 @@ impl TLKM {
         for x in 0..devices.num_devs {
             v.push(
                 Device::new(
-                    &self.file,
+                    self.file.clone(),
                     devices.devs[x].dev_id,
                     devices.devs[x].vendor_id,
                     devices.devs[x].product_id,

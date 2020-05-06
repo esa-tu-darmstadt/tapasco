@@ -85,7 +85,7 @@ pub struct OffchipMemory {
     dma: Box<dyn DMAControl + Sync + Send>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DataTransferLocal {
     pub data: Vec<u8>,
     pub from_device: bool,
@@ -93,7 +93,7 @@ pub struct DataTransferLocal {
     pub free: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DataTransferAlloc {
     pub data: Vec<u8>,
     pub from_device: bool,
@@ -102,7 +102,7 @@ pub struct DataTransferAlloc {
     pub memory: Arc<OffchipMemory>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DataTransferPrealloc {
     pub data: Vec<u8>,
     pub device_address: DeviceAddress,
@@ -112,7 +112,7 @@ pub struct DataTransferPrealloc {
     pub memory: Arc<OffchipMemory>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum PEParameter {
     Single32(u32),
     Single64(u64),
@@ -139,6 +139,7 @@ pub struct Device {
     platform: MmapMut,
     arch: Arc<MmapMut>,
     offchip_memory: Vec<Arc<OffchipMemory>>,
+    tlkm_file: Arc<File>,
 }
 
 impl Drop for Device {
@@ -152,7 +153,7 @@ impl Drop for Device {
 
 impl Device {
     pub fn new(
-        tlkm_file: &File,
+        tlkm_file: Arc<File>,
         id: DeviceId,
         vendor: u32,
         product: u32,
@@ -292,9 +293,10 @@ impl Device {
             platform: platform,
             arch: arch,
             offchip_memory: allocator,
+            tlkm_file: tlkm_file,
         };
 
-        device.create(&tlkm_file, tlkm_access::TlkmAccessMonitor)?;
+        device.create(tlkm_access::TlkmAccessMonitor)?;
 
         Ok(device)
     }
@@ -319,7 +321,7 @@ impl Device {
         }
     }
 
-    pub fn create(&mut self, tlkm_file: &File, access: tlkm_access) -> Result<()> {
+    pub fn create(&mut self, access: tlkm_access) -> Result<()> {
         if self.access == access {
             trace!(
                 "Device {} is already in access mode {:?}.",
@@ -329,7 +331,7 @@ impl Device {
             return Ok(());
         }
 
-        self.destroy(tlkm_file)?;
+        self.destroy()?;
 
         let mut request = tlkm_ioctl_device_cmd {
             dev_id: self.id,
@@ -339,7 +341,7 @@ impl Device {
         trace!("Device {}: Trying to change mode to {:?}", self.id, access,);
 
         unsafe {
-            tlkm_ioctl_create(tlkm_file.as_raw_fd(), &mut request).context(IOCTLCreate {
+            tlkm_ioctl_create(self.tlkm_file.as_raw_fd(), &mut request).context(IOCTLCreate {
                 access: access,
                 id: self.id,
             })?;
@@ -356,7 +358,7 @@ impl Device {
         Ok(())
     }
 
-    pub fn destroy(&mut self, tlkm_file: &File) -> Result<()> {
+    pub fn destroy(&mut self) -> Result<()> {
         if self.access != tlkm_access::TlkmAccessTypes {
             trace!("Device {}: Removing access mode {:?}", self.id, self.access,);
             let mut request = tlkm_ioctl_device_cmd {
@@ -364,7 +366,7 @@ impl Device {
                 access: self.access,
             };
             unsafe {
-                tlkm_ioctl_destroy(tlkm_file.as_raw_fd(), &mut request)
+                tlkm_ioctl_destroy(self.tlkm_file.as_raw_fd(), &mut request)
                     .context(IOCTLDestroy { id: self.id })?;
             }
             self.access = tlkm_access::TlkmAccessTypes;

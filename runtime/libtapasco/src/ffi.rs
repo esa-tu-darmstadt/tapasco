@@ -1,6 +1,11 @@
 extern crate env_logger;
 
 use crate::device::Device;
+use crate::device::DeviceAddress;
+use crate::device::PEParameter;
+use crate::job::Job;
+use crate::pe::PEId;
+use crate::tlkm::tlkm_access;
 use crate::tlkm::DeviceId;
 use crate::tlkm::DeviceInfo;
 use crate::tlkm::TLKM;
@@ -15,6 +20,12 @@ use std::slice;
 pub enum Error {
     #[snafu(display("Error during TLKM operation: {}", source))]
     TLKMError { source: crate::tlkm::Error },
+
+    #[snafu(display("Error during Device operation: {}", source))]
+    DeviceError { source: crate::device::Error },
+
+    #[snafu(display("Error during Job operation: {}", source))]
+    JobError { source: crate::job::Error },
 
     #[snafu(display("Got Null pointer as TLKM argument."))]
     NullPointerTLKM {},
@@ -107,6 +118,7 @@ pub unsafe extern "C" fn tapasco_last_error_message(buffer: *mut c_char, length:
 
 //////////////////////
 
+// Initializes the logging system so it responds to the RUST_LOG environment variable
 #[no_mangle]
 pub extern "C" fn tapasco_init_logging() {
     env_logger::init();
@@ -116,6 +128,7 @@ pub extern "C" fn tapasco_init_logging() {
 // START TLKM
 //////////////
 
+// Generates a new driver access which can be used to query verison information and devices
 #[no_mangle]
 pub extern "C" fn tapasco_tlkm_new() -> *mut TLKM {
     match TLKM::new().context(TLKMError) {
@@ -251,3 +264,154 @@ pub extern "C" fn tapasco_tlkm_device_destroy(t: *mut Device) {
 //////////////
 // END TLKM
 //////////////
+
+/////////////////
+// Job Creation
+/////////////////
+
+type JobList = Vec<PEParameter>;
+
+#[no_mangle]
+pub extern "C" fn tapasco_job_param_new() -> *mut JobList {
+    let v = Box::new(Vec::new());
+    std::boxed::Box::<JobList>::into_raw(v)
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_job_param_single32(param: u32, list: *mut JobList) -> *mut JobList {
+    if list.is_null() {
+        warn!("Null pointer passed into tapasco_job_param_single32() as the list");
+        update_last_error(Error::NullPointerTLKM {});
+        return ptr::null_mut();
+    }
+
+    let tl = unsafe { &mut *list };
+    tl.push(PEParameter::Single32(param));
+    list
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_job_param_single64(param: u64, list: *mut JobList) -> *mut JobList {
+    if list.is_null() {
+        warn!("Null pointer passed into tapasco_job_param_single32() as the list");
+        update_last_error(Error::NullPointerTLKM {});
+        return ptr::null_mut();
+    }
+
+    let tl = unsafe { &mut *list };
+    tl.push(PEParameter::Single64(param));
+    list
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_job_param_deviceaddress(
+    param: DeviceAddress,
+    list: *mut JobList,
+) -> *mut JobList {
+    if list.is_null() {
+        warn!("Null pointer passed into tapasco_job_param_single32() as the list");
+        update_last_error(Error::NullPointerTLKM {});
+        return ptr::null_mut();
+    }
+
+    let tl = unsafe { &mut *list };
+    tl.push(PEParameter::DeviceAddress(param));
+    list
+}
+
+//DataTransferLocal(DataTransferLocal),
+//DataTransferAlloc(DataTransferAlloc),
+//DataTransferPrealloc(DataTransferPrealloc),
+
+/////////////////
+// Handle Device Access
+/////////////////
+#[no_mangle]
+pub extern "C" fn tapasco_device_access(dev: *mut Device, access: tlkm_access) -> isize {
+    if dev.is_null() {
+        warn!("Null pointer passed into tapasco_device_access() as the device");
+        update_last_error(Error::NullPointerTLKM {});
+        return -1;
+    }
+
+    let tl = unsafe { &mut *dev };
+    match tl.create(access).context(DeviceError) {
+        Ok(_) => return 0,
+        Err(e) => {
+            update_last_error(e);
+            return -1;
+        }
+    }
+}
+
+/////////////////
+// Job Starting
+/////////////////
+#[no_mangle]
+pub extern "C" fn tapasco_device_acquire_pe(dev: *mut Device, id: PEId) -> *mut Job {
+    if dev.is_null() {
+        warn!("Null pointer passed into tapasco_device_acquire_pe() as the device");
+        update_last_error(Error::NullPointerTLKM {});
+        return ptr::null_mut();
+    }
+
+    let tl = unsafe { &mut *dev };
+    match tl.acquire_pe(id).context(DeviceError) {
+        Ok(x) => std::boxed::Box::<Job>::into_raw(Box::new(x)),
+        Err(e) => {
+            update_last_error(e);
+            return ptr::null_mut();
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_job_start(job: *mut Job, params: *mut JobList) -> isize {
+    if job.is_null() {
+        warn!("Null pointer passed into tapasco_job_start() as the job");
+        update_last_error(Error::NullPointerTLKM {});
+        return -1;
+    }
+
+    if params.is_null() {
+        warn!("Null pointer passed into tapasco_job_start() as the parameters");
+        update_last_error(Error::NullPointerTLKM {});
+        return -1;
+    }
+
+    let jl = unsafe { Box::from_raw(params) };
+
+    let tl = unsafe { &mut *job };
+    match tl.start(jl.to_vec()).context(JobError) {
+        Ok(_) => {
+            return 0;
+        }
+        Err(e) => {
+            update_last_error(e);
+            return -1;
+        }
+    }
+}
+
+// The rust verison of this function returns an array of vectors that contain the returned vectors
+// The C and C++ side, however, supply "unsafe" pointers and expect the data to appearch there after
+// the job has been released.
+// Hence, the function currently does not return the result list but makes sure that the data is at the
+// correct location.
+#[no_mangle]
+pub extern "C" fn tapasco_job_release(job: *mut Job, release: bool) -> isize {
+    if job.is_null() {
+        warn!("Null pointer passed into tapasco_job_release() as the job");
+        update_last_error(Error::NullPointerTLKM {});
+        return -1;
+    }
+
+    let tl = unsafe { &mut *job };
+    match tl.release(release).context(JobError) {
+        Ok(_x) => return 0,
+        Err(e) => {
+            update_last_error(e);
+            return -1;
+        }
+    }
+}
