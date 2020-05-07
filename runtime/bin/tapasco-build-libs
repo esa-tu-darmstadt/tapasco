@@ -6,8 +6,8 @@ from   socket import gethostname
 import os
 
 tools        = ['tapasco-debug', 'tapasco-benchmark']
-default_cmd  = 'mkdir -p {0} && cd {0} && cmake {1} {2} && make -j install DESTDIR={0}/install'
-tlkm_cmd     = 'cd {0} && make -j {1}'
+default_cmd  = 'mkdir -p {0} && cd {0} && cmake {1} {2} && make -j $(nproc) install DESTDIR={0}/install'
+tlkm_cmd     = 'cd {0} && make -j $(nproc) {1}'
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', help='build mode (default: %(default)s)', default='release', choices=['clean', 'release', 'debug', 'driver_debug'])

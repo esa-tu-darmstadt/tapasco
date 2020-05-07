@@ -5,6 +5,7 @@
 #include "tlkm_types.h"
 #include "tlkm_bus.h"
 #include "zynq.h"
+#include "zynqmp.h"
 #include "zynq_device.h"
 #include "zynq_irq.h"
 #include "zynq_dmamgmt.h"
@@ -12,6 +13,13 @@
 static const struct of_device_id zynq_ids[] = {
 	{
 		.compatible = ZYNQ_NAME,
+	},
+	{},
+};
+
+static const struct of_device_id zynqmp_ids[] = {
+	{
+		.compatible = ZYNQMP_NAME,
 	},
 	{},
 };
@@ -66,14 +74,14 @@ err_dmamgmt:
 	return ret;
 
 err_irq:
-	zynq_dmamgmt_exit();
+	zynq_dmamgmt_exit(dev);
 	return ret;
 }
 
 void zynq_device_exit_subsystems(struct tlkm_device *dev)
 {
 	zynq_irq_exit(&_zynq_dev);
-	zynq_dmamgmt_exit();
+	zynq_dmamgmt_exit(dev);
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "exited subsystems");
 }
 
@@ -89,6 +97,21 @@ int zynq_device_probe(struct tlkm_class *cls)
 			return -EFAULT;
 	} else {
 		LOG(TLKM_LF_DEVICE, "no Xilinx Zynq-7000 series device found");
+	}
+	return 0;
+}
+
+int zynqmp_device_probe(struct tlkm_class *cls)
+{
+	struct tlkm_device *inst;
+	LOG(TLKM_LF_DEVICE, "searching for Xilinx Zynq-MP series devices ...");
+	if (of_find_matching_node(NULL, zynqmp_ids)) {
+		LOG(TLKM_LF_DEVICE, "found Xilinx Zynq-MP");
+		inst = tlkm_bus_new_device(cls, 0, 0, NULL);
+		if (!inst)
+			return -EFAULT;
+	} else {
+		LOG(TLKM_LF_DEVICE, "no Xilinx Zynq-MP series device found");
 	}
 	return 0;
 }

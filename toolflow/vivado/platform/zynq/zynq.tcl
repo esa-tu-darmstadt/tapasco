@@ -277,8 +277,7 @@ namespace eval ::platform {
     }
 
     set reset_in [create_bd_pin -dir O -type rst "reset_in"]
-    set irq_0 [create_bd_pin -dir I -type intr -from 7 -to 0 "irq_0"]
-    set pirq_0 [create_bd_pin -dir I -type intr -from 7 -to 0 "platform_irq_0"]
+    set irq_0 [create_bd_pin -dir I -type intr -from 15 -to 0 "irq_0"]
     set mem_aclk [tapasco::subsystem::get_port "mem" "clk"]
     set mem_p_arstn [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
     set mem_ic_arstn [tapasco::subsystem::get_port "mem" "rst" "interconnect"]
@@ -331,12 +330,7 @@ namespace eval ::platform {
     foreach ms $mem_slaves pms $ps_mem_slaves { connect_bd_intf_net $ms $pms }
 
     # connect interrupts
-    set irq_cc [tapasco::ip::create_xlconcat "irq_cc" 2]
-    connect_bd_net $pirq_0 [get_bd_pins "$irq_cc/In0"]
-    connect_bd_net $irq_0 [get_bd_pins "$irq_cc/In1"]
-    set_property -dict [list CONFIG.IN0_WIDTH.VALUE_SRC USER CONFIG.IN1_WIDTH.VALUE_SRC USER] $irq_cc
-    set_property -dict [list CONFIG.IN0_WIDTH {8} CONFIG.IN1_WIDTH {8}] $irq_cc
-    connect_bd_net [get_bd_pins -of_objects $irq_cc -filter { DIR == O }] [get_bd_pins "$ps/IRQ_F2P"]
+    connect_bd_net $irq_0 [get_bd_pins "$ps/IRQ_F2P"]
 
     # connect reset
     connect_bd_net [get_bd_pins "$ps/FCLK_RESET0_N"] $reset_in

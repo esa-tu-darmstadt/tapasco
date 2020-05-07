@@ -1,0 +1,12 @@
+{
+	"Name" : "ultra96v2",
+	"Description" : "Xilinx Zynq UltraScale+ MPSoC",
+	"TclLibrary" : "ultra96v2.tcl",
+	"Part" : "xczu3eg-sbva484-1-e",
+	"BoardPart" : "em.avnet.com:ultra96v2:part0:1.0",
+	"BoardPreset" : "ultra96v2",
+	"HostFrequency" : 100.0,
+	"MemFrequency" : 533.0,
+	"TargetUtilization" : 97,
+	"Benchmark" : "ultra96v2.benchmark"
+}

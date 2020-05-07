@@ -1,6 +1,5 @@
-#!/bin/bash
 #
-# Copyright (C) 2014 Jens Korinth, TU Darmstadt
+# Copyright (C) 2020 David Eckhardt TU Darmstadt
 #
 # This file is part of Tapasco (TPC).
 #
@@ -18,7 +17,8 @@
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# Helper script to load zynqmp TPC Platform device driver.
-# Must be run as superuser.
+namespace eval platform {
+  set platform_dirname "ultra96v2"
 
-rmmod tapasco-platform-zynqmp.ko
+  source -notrace $::env(TAPASCO_HOME_TCL)/platform/zynqmp/zynqmp.tcl
+}

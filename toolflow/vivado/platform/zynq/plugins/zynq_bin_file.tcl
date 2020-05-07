@@ -1,6 +1,5 @@
-#!/bin/bash
 #
-# Copyright (C) 2014 Jens Korinth, TU Darmstadt
+# Copyright (C) 2020 Carsten Heinz, TU Darmstadt
 #
 # This file is part of Tapasco (TPC).
 #
@@ -18,10 +17,17 @@
 # along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# Helper script to load zynqmp TPC Platform device driver.
-# Must be run as superuser.
+namespace eval zynq {
 
-# insmod tapasco-platform-zynqmp.ko logging_level=132
-insmod tapasco-platform-zynqmp.ko logging_level=0x7fffffff
-#insmod tapasco-platform-zynqmp.ko
+	proc bin_bitstream {} {
+		global bitstreamname
+		set bif [open "zynq_bin.bif" w]
+		puts $bif "all: { ${bitstreamname}.bit }"
+		close $bif
+		exec bootgen -image zynq_bin.bif -arch zynq -process_bitstream bin -w
+		puts "Bitstream converted to byte swapped bin file."
+		return {}
+	}
+}
 
+tapasco::register_plugin "platform::zynq::bin_bitstream" "post-bitstream"

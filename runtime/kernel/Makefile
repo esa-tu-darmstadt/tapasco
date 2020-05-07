@@ -14,7 +14,7 @@ endif
 
 MODULE_DIR := $(PWD)
 
-CPPFLAGS+=-Werror -I$(MODULE_DIR) \
+CPPFLAGS+=-Werror -Wno-missing-attributes -I$(MODULE_DIR) \
 				  -I$(MODULE_DIR)/device \
 				  -I$(MODULE_DIR)/tlkm \
 				  -I$(MODULE_DIR)/user \
@@ -25,10 +25,10 @@ CPPFLAGS+=-Werror -I$(MODULE_DIR) \
 .PHONY:	all clean
 
 all:
-	make KCPPFLAGS="$(CPPFLAGS)" -C $(LINUX_HOME) M=$(MODULE_DIR) modules
+	$(MAKE) KCPPFLAGS="$(CPPFLAGS)" -C $(LINUX_HOME) M=$(MODULE_DIR) modules
 
 release:
-	make KCPPFLAGS+="$(CPPFLAGS) -DNDEBUG -O3" -C $(LINUX_HOME) M=$(MODULE_DIR) modules
+	$(MAKE) KCPPFLAGS+="$(CPPFLAGS) -DNDEBUG -O3" -C $(LINUX_HOME) M=$(MODULE_DIR) modules
 
 clean:
-	make -C $(LINUX_HOME) M=$(MODULE_DIR) clean
+	$(MAKE) -C $(LINUX_HOME) M=$(MODULE_DIR) clean

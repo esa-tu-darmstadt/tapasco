@@ -6,5 +6,6 @@
 	"BoardPart" : "xilinx.com:zc706:part0",
 	"BoardPreset" : "ZC706",
 	"TargetUtilization" : 97,
-	"Benchmark" : "zc706.benchmark"
+	"Benchmark" : "zc706.benchmark",
+	"FileExtension": "bit.bin"
 }

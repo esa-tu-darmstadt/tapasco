@@ -24,6 +24,8 @@
 #include "tlkm_logging.h"
 #include "zynq_dmamgmt.h"
 #include "gen_fixed_size_pool.h"
+#include <linux/of_device.h>
+#include <linux/version.h>
 
 static inline void init_dma_buf_t(struct dma_buf_t *buf, fsp_idx_t const idx)
 {
@@ -56,29 +58,39 @@ int zynq_dmamgmt_init(void)
 	return 0;
 }
 
-void zynq_dmamgmt_exit()
+void zynq_dmamgmt_exit(struct tlkm_device *inst)
 {
 	int i;
 	for (i = 0; i < ZYNQ_DMAMGMT_POOLSZ; ++i) {
 		if (_dmabuf.elems[i].kvirt_addr) {
 			WRN("buffer %d in use, releasing memory!", i);
-			zynq_dmamgmt_dealloc(i);
+			zynq_dmamgmt_dealloc(inst, i);
 		}
 	}
 	LOG(TLKM_LF_DMAMGMT, "DMA buffer management exited");
 }
 
-dma_addr_t zynq_dmamgmt_alloc(size_t const len, handle_t *hid)
+dma_addr_t zynq_dmamgmt_alloc(struct tlkm_device *inst, size_t const len, handle_t *hid)
 {
 	fsp_idx_t id;
+	int mask;
 	id = dmabuf_fsp_get(&_dmabuf);
 	LOG(TLKM_LF_DMAMGMT, "len = %zu, id = %u", len, id);
 	if (id == INVALID_IDX) {
 		WRN("internal pool depleted: could not allocate a buffer!");
 		return 0;
 	}
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 18, 0)
+	of_dma_configure(inst->ctrl->miscdev.this_device, NULL, true);
+#else
+	of_dma_configure(inst->ctrl->miscdev.this_device, NULL);
+#endif
+	mask = dma_set_coherent_mask(inst->ctrl->miscdev.this_device, 0xFFFFFFFF);
+	if(mask) {
+		WRN("could not set DMA mask");
+	}
 	_dmabuf.elems[id].kvirt_addr =
-		dma_alloc_coherent(NULL, len, &_dmabuf.elems[id].dma_addr,
+		dma_alloc_coherent(inst->ctrl->miscdev.this_device, len, &_dmabuf.elems[id].dma_addr,
 				   GFP_KERNEL | __GFP_MEMALLOC);
 	if (!_dmabuf.elems[id].kvirt_addr) {
 		WRN("could not allocate DMA buffer of size %zu byte!", len);
@@ -95,7 +107,7 @@ dma_addr_t zynq_dmamgmt_alloc(size_t const len, handle_t *hid)
 	return _dmabuf.elems[id].dma_addr;
 }
 
-int zynq_dmamgmt_dealloc(handle_t const id)
+int zynq_dmamgmt_dealloc(struct tlkm_device *inst, handle_t const id)
 {
 	if (id < ZYNQ_DMAMGMT_POOLSZ && _dmabuf.elems[id].kvirt_addr) {
 		LOG(TLKM_LF_DMAMGMT,
@@ -103,7 +115,7 @@ int zynq_dmamgmt_dealloc(handle_t const id)
 		    id, _dmabuf.elems[id].len,
 		    (unsigned long)_dmabuf.elems[id].kvirt_addr,
 		    (unsigned long)_dmabuf.elems[id].dma_addr);
-		dma_free_coherent(NULL, _dmabuf.elems[id].len,
+		dma_free_coherent(inst->ctrl->miscdev.this_device, _dmabuf.elems[id].len,
 				  _dmabuf.elems[id].kvirt_addr,
 				  _dmabuf.elems[id].dma_addr);
 		init_dma_buf_t(&_dmabuf.elems[id], id);
@@ -115,9 +127,9 @@ int zynq_dmamgmt_dealloc(handle_t const id)
 	return 0;
 }
 
-int zynq_dmamgmt_dealloc_dma(dma_addr_t const addr)
+int zynq_dmamgmt_dealloc_dma(struct tlkm_device *inst, dma_addr_t const addr)
 {
-	return zynq_dmamgmt_dealloc(find_dma_addr(addr));
+	return zynq_dmamgmt_dealloc(inst, find_dma_addr(addr));
 }
 
 inline struct dma_buf_t *zynq_dmamgmt_get(handle_t const id)

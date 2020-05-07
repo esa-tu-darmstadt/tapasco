@@ -6,5 +6,6 @@
 	"BoardPart" : "www.digilentinc.com:pynq-z1:part0",
 	"BoardPreset": "None",
 	"TargetUtilization" : 99,
-	"Benchmark": "pynq.benchmark"
+	"Benchmark": "pynq.benchmark",
+	"FileExtension": "bit.bin"
 }
