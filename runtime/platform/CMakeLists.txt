@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
 include($ENV{TAPASCO_HOME_RUNTIME}/cmake/Tapasco.cmake NO_POLICY_SCOPE)
 
-set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG -O2")
-
 project(platform VERSION 1.0 LANGUAGES C)
 
 add_library(platform "common/src/platform_addr_map.c"
@@ -24,6 +22,10 @@ add_library(platform "common/src/platform_addr_map.c"
 
 target_compile_definitions(platform PRIVATE -DNPERFC)
 target_compile_definitions(platform PRIVATE -DLOG_USE_COLOR)
+if(CMAKE_BUILD_TYPE MATCHES "Release" AND CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+  message("Reducing optimization for aarch64 plattform.")
+  target_compile_definitions(platform PRIVATE -O2)
+endif()
 
 set_tapasco_defaults(platform)
 
