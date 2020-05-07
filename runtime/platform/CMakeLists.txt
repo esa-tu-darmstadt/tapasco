@@ -22,9 +22,9 @@ add_library(platform "common/src/platform_addr_map.c"
 
 target_compile_definitions(platform PRIVATE -DNPERFC)
 target_compile_definitions(platform PRIVATE -DLOG_USE_COLOR)
-if(CMAKE_BUILD_TYPE MATCHES "Release" AND CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-  message("Reducing optimization for aarch64 plattform.")
-  target_compile_definitions(platform PRIVATE -O2)
+if(CMAKE_BUILD_TYPE MATCHES "Release" AND (CMAKE_SYSTEM_PROCESSOR MATCHES "arm" OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64"))
+  message("Reducing optimization for nanopb on zynq plattform.")
+  target_compile_options(platform PRIVATE -O2)
 endif()
 
 set_tapasco_defaults(platform)
