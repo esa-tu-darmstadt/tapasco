@@ -126,5 +126,8 @@ object HighLevelSynthesizer {
   /** HLS run that failed due to another kind of error. */
   final case class OtherError(log: HighLevelSynthesizerLog, e: Exception) extends Result
 
+  /** HLS failed to produce a valid .zip-Archive as Result. */
+  final case class MissingZip(log: HighLevelSynthesizerLog) extends Result
+
 }
 

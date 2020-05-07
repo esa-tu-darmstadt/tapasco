@@ -77,11 +77,17 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
       logger.debug("Vivado HLS finished with exit code %d".format(vivadoRet))
       vivadoRet match {
         case 0 =>
-          logger.info("Vivado HLS finished successfully for {}", runName)
-          logger.trace("performing additional steps for {}", runName)
-          performAdditionalSteps(k, t)
-          logger.trace("additional steps for {} finished, copying zip", runName)
-          Success(HighLevelSynthesizerLog(logfile), copyZip(k, t).get)
+          val cp = copyZip(k, t)
+          if(cp.isEmpty) {
+            logger.info("Check Log-File for error: {}", logfile.toAbsolutePath.toString)
+            MissingZip(HighLevelSynthesizerLog(logfile))
+          } else {
+            logger.info("Vivado HLS finished successfully for {}", runName)
+            logger.trace("performing additional steps for {}", runName)
+            performAdditionalSteps(k, t)
+            logger.trace("additional steps for {} finished, copying zip", runName)
+            Success(HighLevelSynthesizerLog(logfile), copyZip(k, t).get)
+          }
         case InterruptibleProcess.TIMEOUT_RETCODE =>
           logger.error("Vivado HLS timeout for " + runName)
           Timeout(HighLevelSynthesizerLog(logfile))
