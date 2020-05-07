@@ -79,7 +79,7 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
         case 0 =>
           val cp = copyZip(k, t)
           if(cp.isEmpty) {
-            logger.error("Vivado HLS failed for {}", k.name)
+            logger.error("Vivado HLS failed for run: {}", runName)
             logger.info("Check Log-File for error: {}", logfile.toAbsolutePath.toString)
             MissingZip(HighLevelSynthesizerLog(logfile))
           } else {
