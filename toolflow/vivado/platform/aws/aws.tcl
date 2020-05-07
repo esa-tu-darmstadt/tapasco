@@ -738,7 +738,7 @@ namespace eval platform {
 
       package require tar
 
-      set tarfilepath [file normalize [file join $::FAAS_CL_DIR .. "${::timestamp}.${::bitstreamname}.tar"]]
+      set tarfilepath [file normalize [file join $::FAAS_CL_DIR .. "${::bitstreamname}.tar"]]
 
       # Add checkpoint and manifest to tar file from which the AFI can be generated
       # (tar file must contains "to_aws" folder, so change directory accordingly)
