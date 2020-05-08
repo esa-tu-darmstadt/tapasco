@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
 #
-# This file is part of TaPaSCo 
+# This file is part of TaPaSCo
 # (see https://github.com/esa-tu-darmstadt/tapasco).
 #
 # This program is free software: you can redistribute it and/or modify
@@ -24,26 +24,38 @@ import os
 import sys
 import subprocess
 from   socket import gethostname
+from   pathlib import Path
+
+def running_on_ec2():
+	hyp_test = Path("/sys/hypervisor/uuid")
+	if hyp_test.is_file():
+		with hyp_test.open() as f:
+			uuid = f.read()
+			if uuid.startswith('ec2'):
+				return True
+	return False
 
 parser = argparse.ArgumentParser()
 parser.add_argument('bitstream', help='.bit file to load')
 parser.add_argument('--reload-driver', help='reload driver, if loaded (default: %(default)s)', action='store_true')
 parser.add_argument('--verbose', help='verbose output (default: %(default)s)', action='store_true')
 parser.add_argument('--mode', help='select the operation to be performed (default: %(default)s)', default='normal', choices=['normal', 'program', 'hotplug'])
-args = parser.parse_args() 
+args = parser.parse_args()
 
 if not 'TAPASCO_HOME_RUNTIME' in os.environ:
-        sys.exit('ERROR: Environment variable TAPASCO_HOME_RUNTIME not set. Please source tapasco-setup.sh first or use -E flag to preserve pervious users environment if using sudo.')
-
-if not os.path.exists(args.bitstream):
-	sys.exit('ERROR: {} could not be opened'.format(args.bitstream))
+	sys.exit('ERROR: Environment variable TAPASCO_HOME_RUNTIME not set. Please source tapasco-setup.sh first or use -E flag to preserve pervious users environment if using sudo.')
 
 if not 'TAPASCO_PLATFORM' in os.environ:
 	print('Environment variable TAPASCO_PLATFORM is not set, guessing Platform ...')
 	if gethostname() in ['zed', 'zedboard', 'zc706', 'zynq', 'pynq', 'ultra96v2']:
 		os.environ['TAPASCO_PLATFORM'] = 'zynq'
+	elif running_on_ec2():
+		os.environ['TAPASCO_PLATFORM'] = 'f1'
 	else:
 		os.environ['TAPASCO_PLATFORM'] = 'pcie'
+
+if os.environ['TAPASCO_PLATFORM'] != 'f1' and not os.path.exists(args.bitstream):
+	sys.exit('ERROR: {} could not be opened'.format(args.bitstream))
 
 if args.verbose:
 	print('Bitstream: {}'.format(args.bitstream))
@@ -51,7 +63,7 @@ if args.verbose:
 	print('Platform: {}'.format(os.environ['TAPASCO_PLATFORM']))
 
 if not 'TAPASCO_HOME_RUNTIME' in os.environ:
-    os.environ['TAPASCO_HOME_RUNTIME'] = "{}/../".format(os.getcwd())
+	os.environ['TAPASCO_HOME_RUNTIME'] = "{}/../".format(os.getcwd())
 
 path = 'module/'
 reld = '-d' if args.reload_driver else ''
