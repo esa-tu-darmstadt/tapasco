@@ -47,7 +47,7 @@ if not 'TAPASCO_HOME_RUNTIME' in os.environ:
 
 if not 'TAPASCO_PLATFORM' in os.environ:
 	print('Environment variable TAPASCO_PLATFORM is not set, guessing Platform ...')
-	if gethostname() in ['zed', 'zedboard', 'zc706', 'zynq', 'pynq', 'ultra96v2']:
+	if gethostname() in ['zed', 'zedboard', 'zc706', 'zynq', 'pynq', 'zcu102', 'ultra96v2']:
 		os.environ['TAPASCO_PLATFORM'] = 'zynq'
 	elif running_on_ec2():
 		os.environ['TAPASCO_PLATFORM'] = 'f1'
