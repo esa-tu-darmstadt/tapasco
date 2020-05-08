@@ -47,10 +47,6 @@ namespace eval platform {
   namespace export create_subsystem_tapasco
   namespace export generate_wrapper
 
-  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/platform/${platform_dirname}/plugins" "*.tcl"] {
-    source -notrace $f
-  }
-
   proc max_masters {} {
     return [list [::tapasco::get_platform_num_slots]]
   }
@@ -80,42 +76,31 @@ namespace eval platform {
     puts "Computing addresses for masters ..."
     foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
       switch -glob [get_property NAME $m] {
-        "M_DMA"     { foreach {base stride range comp} [list 0x00004000 0x2000 0      "PLATFORM_COMPONENT_DMA0"] {} }
-        "M_INTC"    { foreach {base stride range comp} [list 0x00010000 0x2000 0      "PLATFORM_COMPONENT_INTC0"] {} }
-        "M_MSIX"    { foreach {base stride range comp} [list 0          0       $max64 "PLATFORM_COMPONENT_MSIX0"] {} }
-        "M_TAPASCO" { foreach {base stride range comp} [list 0x00000000 0       0      "PLATFORM_COMPONENT_STATUS"] {} }
+        "M_DMA"      { foreach {base stride range comp} [list 0x00004000 0x2000  0      "PLATFORM_COMPONENT_DMA0"] {} }
+        "M_INTC"     { foreach {base stride range comp} [list 0x00010000 0x2000  0      "PLATFORM_COMPONENT_INTC0"] {} }
+        "M_MSIX"     { foreach {base stride range comp} [list 0          0       $max64 "PLATFORM_COMPONENT_MSIX0"] {} }
+        "M_TAPASCO"  { foreach {base stride range comp} [list 0x00000000 0       0      "PLATFORM_COMPONENT_STATUS"] {} }
         "M_MEM_GPIO" { foreach {base stride range comp} [list 0x00002000 0       0      "PLATFORM_COMPONENT_MEM_GPIO"] {} }
-        "M_HOST"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
+        "M_HOST"     { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_MEM_0"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
-        "M_ARCH"    { set base "skip" }
-        "M_DDR"    { foreach {base stride range comp} [list 0 0 0 ""] {} }
-        default     { if { [dict exists $extra_masters [get_property NAME $m]] } {
-                          set l [dict get $extra_masters [get_property NAME $m]]
-                          set base [lindex $l 0]
-                          set stride [lindex $l 1]
-                          set range [lindex $l 2]
-                          set comp [lindex $l 3]
-                          puts "Special address for [get_property NAME $m] base: $base stride: $stride range: $range comp: $comp"
-                        } else {
-                            error "No address defined for [get_property NAME $m], please make sure to define one in post-address-map plugin"
-                        }
-                    }
+        "M_ARCH"     { set base "skip" }
+        "M_DDR"      { foreach {base stride range comp} [list 0 0 0 ""] {} }
+        default      { if { [dict exists $extra_masters [get_property NAME $m]] } {
+                           set l [dict get $extra_masters [get_property NAME $m]]
+                           set base [lindex $l 0]
+                           set stride [lindex $l 1]
+                           set range [lindex $l 2]
+                           set comp [lindex $l 3]
+                           puts "Special address for [get_property NAME $m] base: $base stride: $stride range: $range comp: $comp"
+                       } else {
+                           error "No address defined for [get_property NAME $m], please make sure to define one in post-address-map plugin"
+                       }
+                     }
 
       }
       if {$base != "skip"} { set peam [addressmap::assign_address $peam $m $base $stride $range $comp] }
     }
     return $peam
-  }
-
-  # Setup the clock network.
-  proc platform_connect_clock {clock_pin} {
-    puts "Connecting clocks ..."
-
-    set clk_inputs [get_bd_pins -of_objects [get_bd_cells \
-      -filter {NAME != "mig_7series_0" && NAME != "proc_sys_reset_0"&& NAME != "axi_pcie3_0" && NAME != "pcie_ic"}] \
-      -filter { TYPE == "clk" && DIR == "I" && NAME != "refclk"}]
-
-    connect_bd_net $clock_pin $clk_inputs
   }
 
   proc create_subsystem_intc {} {
@@ -242,14 +227,6 @@ namespace eval platform {
 
     connect_bd_net $pcie_p_aresetn \
       [get_bd_pins $dma/m32_axi_aresetn] [get_bd_pins $dma/m64_axi_aresetn] [get_bd_pins $dma/s_axi_aresetn]
-
-    # Connect ILA to DMA config interface
-    # set ila [tapasco::ip::create_system_ila "dma_config_ila" 3 2048]
-    # connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_0_AXI] "$dma/S_AXI"
-    # connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_1_AXI] "$dma/m64_axi"
-    # connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_2_AXI] "$dma/m32_axi"
-    # connect_bd_net [get_bd_pins $ila/clk] [get_bd_pins "$dma/s_axi_aclk"]
-    # connect_bd_net [get_bd_pins $ila/resetn] [get_bd_pins "$dma/s_axi_aresetn"]
   }
 
   proc create_subsystem_host {} {
@@ -374,25 +351,6 @@ namespace eval platform {
       }
       incr i
     }
-
-    # Memory ILA
-
-    #set ila [tapasco::ip::create_system_ila "memory_ila" 4 4096]
-    #set_property -dict [list CONFIG.C_SLOT_0_MAX_RD_BURSTS {4} \
-    #                    CONFIG.C_SLOT_0_MAX_WR_BURSTS {4} \
-    #                    CONFIG.C_SLOT_1_MAX_RD_BURSTS {4} \
-    #                    CONFIG.C_SLOT_1_MAX_WR_BURSTS {4} \
-    #                    CONFIG.C_SLOT_2_MAX_RD_BURSTS {4} \
-    #                    CONFIG.C_SLOT_2_MAX_WR_BURSTS {4} \
-    #                    CONFIG.C_SLOT_3_MAX_RD_BURSTS {4} \
-    #                    CONFIG.C_SLOT_3_MAX_WR_BURSTS {4} \
-    #                    ] $ila
-    #connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_0_AXI] [get_bd_intf_pins "$f1_inst/S_AXI_DDRA"]
-    #connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_1_AXI] [get_bd_intf_pins "$f1_inst/S_AXI_DDRB"]
-    #connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_2_AXI] [get_bd_intf_pins "$f1_inst/S_AXI_DDRC"]
-    #connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_3_AXI] [get_bd_intf_pins "$f1_inst/S_AXI_DDRD"]
-    #connect_bd_net [get_bd_pins $ila/clk] [tapasco::subsystem::get_port "host" "clk"]
-    #connect_bd_net [get_bd_pins $ila/resetn] [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
 
     # Connect DMA engine and architecture to local memory
 
@@ -587,12 +545,6 @@ namespace eval platform {
     connect_bd_net $ddr_aclk [get_bd_pins "$f1_inst/clk_main_a0_out"]
     connect_bd_net $ddr_aresetn [get_bd_pins "$f1_inst/rst_main_n_out"]
 
-    # Connect ILA to M_AXI_OCL / BAR0
-    # set ila [tapasco::ip::create_system_ila "maxi_ocl_ila"]
-    # connect_bd_intf_net [get_bd_intf_pins $ila/SLOT_0_AXI] [get_bd_intf_pins $f1_inst/M_AXI_OCL]
-    # connect_bd_net [get_bd_pins $ila/clk] [get_bd_pins $f1_inst/clk_main_a0_out]
-    # connect_bd_net [get_bd_pins $ila/resetn] [get_bd_pins $f1_inst/rst_main_n_out]
-
     set ::timestamp [exec date +%y_%m_%d-%H%M%S]
 
     if {[regexp {HDK_VERSION=([0-9.]+)} [readfile ${::env(HDK_DIR)}/hdk_version.txt] match ::hdk_version] eq 0} {
@@ -600,9 +552,6 @@ namespace eval platform {
       set ::hdk_version 1.0.0
     }
 
-    # set ::clock_recipe_a [get_property CONFIG.CLOCK_A_RECIPE [get_bd_cells $f1_inst]]
-    # set ::clock_recipe_b [get_property CONFIG.CLOCK_B_RECIPE [get_bd_cells $f1_inst]]
-    # set ::clock_recipe_c [get_property CONFIG.CLOCK_C_RECIPE [get_bd_cells $f1_inst]]
     set ::clock_recipe_a "1"
     set ::clock_recipe_b "2"
     set ::clock_recipe_c "1"
@@ -655,11 +604,11 @@ namespace eval platform {
     set_property PROCESSING_ORDER EARLY [get_files */cl_clocks_aws.xdc]
     set_property USED_IN {synthesis out_of_context implementation} [get_files */cl_clocks_aws.xdc]
 
-    # This contains the CL specific constraints for synthesis at the CL level
+    # Additional constraints for custom logic (CL) synthesis
     set constraints_fn [file join $::env(HDK_SHELL_DIR) new_cl_template build constraints cl_synth_user.xdc]
     import_files -fileset constrs_1 -force $constraints_fn
 
-    # This contains the CL specific constraints for Top level PNR
+    # Additional constraints for top level implementation
     set constraints_fn [file join $::env(HDK_SHELL_DIR) new_cl_template build constraints cl_pnr_user.xdc]
     import_files -fileset constrs_1 -force $constraints_fn
     set_property PROCESSING_ORDER LATE [get_files */cl_pnr_user.xdc]
@@ -683,7 +632,6 @@ namespace eval platform {
       set_msg_config -id {Opt 31-430}       -suppress
       set_msg_config -string {AXI_QUAD_SPI} -suppress
 
-      #set_param hd.clockRoutingWireReduction false
       set_param hd.supportClockNetCrossDiffReconfigurablePartitions 1
       set_param physynth.ultraRAMOptOutput false
       set_param synth.elaboration.rodinMoreOptions {rt::set_parameter disableOregPackingUram true}
@@ -692,128 +640,105 @@ namespace eval platform {
       set ::FAAS_CL_DIR [get_property DIRECTORY [current_project]]
       set ::env(FAAS_CL_DIR) $::FAAS_CL_DIR
 
-      file mkdir "${::FAAS_CL_DIR}/build/checkpoints/to_aws"
-      file mkdir "${::FAAS_CL_DIR}/build/reports"
-
-      puts "FAAS_CL_DIR = ${::FAAS_CL_DIR}"
+      file mkdir [file join ${::FAAS_CL_DIR} build checkpoints to_aws]
+      file mkdir [file join ${::FAAS_CL_DIR} build reports]
 
       set platform_dirname $::platform::platform_dirname
+      set current_run [get_runs [current_run -implementation]]
 
       # Set TCL pre/post hooks
       set_property -name "STEPS.OPT_DESIGN.TCL.PRE" \
-        -value [file normalize [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname opt_design_pre.tcl]] \
-        -objects [get_runs [current_run -implementation]]
+        -value [file normalize [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname hooks opt_design_pre.tcl]] \
+        -objects $current_run
 
       set_property -name "STEPS.OPT_DESIGN.TCL.POST" \
-        -value [file normalize [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname opt_design_post.tcl]] \
-        -objects [get_runs [current_run -implementation]]
+        -value [file normalize [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname hooks opt_design_post.tcl]] \
+        -objects $current_run
 
       set_property -name "STEPS.ROUTE_DESIGN.TCL.POST" \
-        -value [file normalize [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname route_design_post.tcl]] \
-        -objects [get_runs [current_run -implementation]]
-
-      set_property -name "STEPS.PLACE_DESIGN.TCL.POST" \
-        -value [file normalize [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname place_design_post.tcl]] \
-        -objects [get_runs [current_run -implementation]]
+        -value [file normalize [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname hooks route_design_post.tcl]] \
+        -objects $current_run
 
       return $args
     }
 
     # Before synthesis
     proc pre_synth {args} {
-      #set_param sta.enableAutoGenClkNamePersistence 0
-
       set synth_run [get_runs synth_1]
       set_property -dict [list \
         {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS} {-mode out_of_context -max_uram_cascade_height 1} \
         STEPS.SYNTH_DESIGN.ARGS.RETIMING true \
       ] $synth_run
 
-      # set_property -name {STEPS.ROUTE_DESIGN.ARGS.MORE OPTIONS} -value -tns_cleanup -objects [get_runs impl_1]
-
+      # Work around an obscure bug that sometimes crashes Vivado
       validate_bd_design -force
 
       return $args
     }
 
     proc post_synth {args} {
-      set sdp_script_dir [file join $::env(HDK_SHELL_DIR) hlx build scripts subscripts]
-      set synth_directory [get_property DIRECTORY [current_run -synthesis]]
-      set BD_PATH [get_files */cl.bd]
-      set AWS_XDC_PATH NONE
-      set _post_synth_dcp "${::FAAS_CL_DIR}/build/checkpoints/CL.post_synth.dcp"
+      set script_dir [file join $::env(HDK_SHELL_DIR) hlx build scripts subscripts]
 
       set const_dir [file normalize [file join ${::FAAS_CL_DIR} build constraints]]
       file mkdir $const_dir
-      file copy -force [file normalize [file join $sdp_script_dir cl_debug_bridge_hlx.xdc ]] \
+
+      file copy -force [file normalize [file join $script_dir cl_debug_bridge_hlx.xdc]] \
         [file normalize [file join $const_dir cl_debug_bridge_hlx.xdc]]
 
-      set vivcmd "vivado -mode batch -source [file normalize [file join $sdp_script_dir make_post_synth_dcp.tcl ]] -tclargs\
+      set vivado_cmd "vivado -mode batch -source [file normalize [file join $script_dir make_post_synth_dcp.tcl]] -tclargs\
         -TOP [get_property top [current_fileset]]\
         -IP_REPO [get_property IP_OUTPUT_REPO [get_project [get_projects]]]\
-        -SYNTH_DIR $synth_directory\
-        -BD_PATH ${BD_PATH}\
+        -SYNTH_DIR [get_property DIRECTORY [current_run -synthesis]]\
+        -BD_PATH [get_files */cl.bd]\
         -XDC [get_files */cl_clocks_aws.xdc]\
         -USR_XDC [get_files */cl_synth_user.xdc]\
-        -AWS_XDC ${AWS_XDC_PATH}\
-        -LINK_DCP_PATH $_post_synth_dcp"
+        -AWS_XDC NONE\
+        -LINK_DCP_PATH [file join ${::FAAS_CL_DIR} build checkpoints CL.post_synth.dcp]"
 
-      puts "Create post synth DCP:\n\t$vivcmd"
-      exec {*}${vivcmd}
+      puts "Create post synth DCP:\n\t${vivado_cmd}"
+      exec {*}${vivado_cmd}
       puts "Finished!\n\n"
     }
 
     proc create_tarfile {} {
-
-      #set wns [get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]]
-      #puts "WNS post route: ${wns}"
-      #if {$wns > -0.400 && $wns < 0} {
-      #  puts "Running post-route phys opt design..."
-      #  #set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
-      #  phys_opt_design -directive AggressiveExplore
-      #}
-
       puts "\nwrite_bitstream disabled, creating tarfile instead..."
 
-      # Lock the design to preserve the placement and routing
-      puts "Locking design"
+      puts "Locking design..."
       lock_design -level routing
 
-      set to_aws_dir "${::FAAS_CL_DIR}/build/checkpoints/to_aws"
-      puts "to_aws_dir = ${to_aws_dir}"
+      set to_aws_dir [file join ${::FAAS_CL_DIR} build checkpoints to_aws]
 
-      puts "Writing final DCP to to_aws directory"
-      write_checkpoint -force ${to_aws_dir}/${::timestamp}.SH_CL_routed.dcp -encrypt
+      puts "Writing final encrypted DCP..."
+      set final_dcp [file join ${to_aws_dir} "${::timestamp}.SH_CL_routed.dcp"]
+      write_checkpoint -force $final_dcp -encrypt
 
-      puts "Write manifest file"
-      set manifest_file [open "${to_aws_dir}/${::timestamp}.manifest.txt" w]
+      puts "Writing manifest file..."
 
-      puts "Getting hash"
-      set hash [lindex [split [exec sha256sum ${to_aws_dir}/${::timestamp}.SH_CL_routed.dcp] ] 0]
+      set dcp_hash [lindex [split [exec sha256sum $final_dcp]] 0]
+      set tool_version [string range [version -short] 0 5]
 
-      set vivado_version [string range [version -short] 0 5]
-      puts "vivado_version is $vivado_version\n"
-
-      puts $manifest_file "manifest_format_version=2\n"
-      puts $manifest_file "pci_vendor_id=${::vendor_id}\n"
-      puts $manifest_file "pci_device_id=${::device_id}\n"
-      puts $manifest_file "pci_subsystem_id=${::subsystem_id}\n"
-      puts $manifest_file "pci_subsystem_vendor_id=${::subsystem_vendor_id}\n"
-      puts $manifest_file "dcp_hash=${hash}\n"
-      puts $manifest_file "shell_version=${::shell_version}\n"
-      puts $manifest_file "tool_version=v${vivado_version}\n"
-      puts $manifest_file "dcp_file_name=${::timestamp}.SH_CL_routed.dcp\n"
-      puts $manifest_file "hdk_version=${::hdk_version}\n"
-      puts $manifest_file "date=${::timestamp}\n"
-      puts $manifest_file "clock_recipe_a=A${::clock_recipe_a}\n"
-      puts $manifest_file "clock_recipe_b=B${::clock_recipe_b}\n"
-      puts $manifest_file "clock_recipe_c=C${::clock_recipe_c}\n"
-
-      close $manifest_file
+      set manifest [open [file join ${to_aws_dir} "${::timestamp}.manifest.txt"] w]
+      puts $manifest [join [list\
+        "manifest_format_version=2"\
+        "pci_vendor_id=${::vendor_id}"\
+        "pci_device_id=${::device_id}"\
+        "pci_subsystem_id=${::subsystem_id}"\
+        "pci_subsystem_vendor_id=${::subsystem_vendor_id}"\
+        "dcp_hash=${dcp_hash}"\
+        "shell_version=${::shell_version}"\
+        "tool_version=v${tool_version}"\
+        "dcp_file_name=${::timestamp}.SH_CL_routed.dcp"\
+        "hdk_version=${::hdk_version}"\
+        "date=${::timestamp}"\
+        "clock_recipe_a=A${::clock_recipe_a}"\
+        "clock_recipe_b=B${::clock_recipe_b}"\
+        "clock_recipe_c=C${::clock_recipe_c}"\
+      ] "\n"]
+      close $manifest
 
       package require tar
 
-      set tarfilepath [file normalize [file join $::FAAS_CL_DIR .. "${::timestamp}.${::bitstreamname}.tar"]]
+      set tarfilepath [file normalize [file join $::FAAS_CL_DIR .. "${::bitstreamname}.tar"]]
 
       # Add checkpoint and manifest to tar file from which the AFI can be generated
       # (tar file must contains "to_aws" folder, so change directory accordingly)
@@ -828,13 +753,13 @@ namespace eval platform {
 
     proc check_hdk {} {
       if {[info exist ::env(HDK_SHELL_DIR)] eq 0} {
-        puts "****************************************************"
-        puts "Environment variable HDK_SHELL_DIR is not set."
-        puts "This likely means the Amazon HDK has not been (properly) set up."
-        puts "Please download/clone the current version from:"
-        puts "https://github.com/aws/aws-fpga"
-        puts "Before using TaPaSCo, run 'source hdk_setup.sh'."
-        puts "****************************************************"
+        puts "****************************************************************"
+        puts "* Environment variable HDK_SHELL_DIR is not set.               *"
+        puts "* This likely means the F1 HDK has not been (properly) set up. *"
+        puts "* Please download/clone the current version from:              *"
+        puts "* https://github.com/aws/aws-fpga                              *"
+        puts "* Before using TaPaSCo, run 'source hdk_setup.sh'.             *"
+        puts "****************************************************************"
         exit 1
       }
     }
@@ -842,6 +767,8 @@ namespace eval platform {
     proc post_addr_map {} {
       # Debug failed address mapping
       save_bd_design
+
+      # Dummy component which can be used to identify the F1 platform
       ::platform::addressmap::add_platform_component "PLATFORM_COMPONENT_AWS_EC2" 0 0
     }
   }

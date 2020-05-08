@@ -1,5 +1,3 @@
-#-------------------------------------------------------------------------
-#-------------------------------------------------------------------------
 # Group A Clocks
 create_clock -period 4  -name clk_main_a0 -waveform {0.000 2}  [get_ports clk_main_a0]
 create_clock -period 8 -name clk_extra_a1 -waveform {0.000 4} [get_ports clk_extra_a1]
