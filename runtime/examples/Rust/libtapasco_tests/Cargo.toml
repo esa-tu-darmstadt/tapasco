@@ -1,6 +1,6 @@
 [package]
 name = "libtapasco_tests"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Jaco Hofmann <hofmann@esa.tu-darmstadt.de>"]
 edition = "2018"
 
@@ -10,7 +10,7 @@ codegen-units = 1
 lto = "fat"
 
 [dependencies]
-tapasco = { path = "../../libtapasco" }
+tapasco = { path = "../../../libtapasco" }
 env_logger = "0.7.1"
 clap = "2.33.0"
 log = "0.4.8"

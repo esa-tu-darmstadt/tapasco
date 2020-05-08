@@ -56,7 +56,12 @@ impl DriverDMA {
 
 impl DMAControl for DriverDMA {
     fn copy_to(&self, data: &[u8], ptr: DeviceAddress) -> Result<()> {
-        trace!("Copy Host -> Device(0x{:x}) ({} Bytes)", ptr, data.len());
+        trace!(
+            "Copy Host({:?}) -> Device(0x{:x}) ({} Bytes)",
+            data.as_ptr(),
+            ptr,
+            data.len()
+        );
         unsafe {
             tlkm_ioctl_copy_to(
                 self.tlkm_file.as_raw_fd(),
@@ -72,7 +77,14 @@ impl DMAControl for DriverDMA {
     }
 
     fn copy_from(&self, ptr: DeviceAddress, data: &mut [u8]) -> Result<()> {
-        trace!("Copy Device(0x{:x}) -> Host ({} Bytes)", ptr, data.len());
+        println!("{:?}", data);
+        println!("{:?}", data.as_ptr());
+        trace!(
+            "Copy Device(0x{:x}) -> Host({:?}) ({} Bytes)",
+            ptr,
+            data.as_mut_ptr(),
+            data.len()
+        );
         unsafe {
             tlkm_ioctl_copy_from(
                 self.tlkm_file.as_raw_fd(),
@@ -84,6 +96,9 @@ impl DMAControl for DriverDMA {
             )
             .context(DMAFromDevice)?;
         };
+
+        println!("{:?}", data);
+        println!("{:?}", data.as_ptr());
         Ok(())
     }
 }

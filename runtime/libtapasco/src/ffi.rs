@@ -1,5 +1,8 @@
 extern crate env_logger;
 
+use crate::device::DataTransferAlloc;
+use crate::device::DataTransferLocal;
+use crate::device::DataTransferPrealloc;
 use crate::device::Device;
 use crate::device::DeviceAddress;
 use crate::device::PEParameter;
@@ -35,6 +38,9 @@ pub enum Error {
 
     #[snafu(display("Not enough space for device infor, need {} entries.", len))]
     DeviceInfoToShort { len: usize },
+
+    #[snafu(display("Failed to retrieve default memory: {}", source))]
+    RetrieveDefaultMemory { source: crate::device::Error },
 }
 
 //////////////////////
@@ -273,8 +279,7 @@ type JobList = Vec<PEParameter>;
 
 #[no_mangle]
 pub extern "C" fn tapasco_job_param_new() -> *mut JobList {
-    let v = Box::new(Vec::new());
-    std::boxed::Box::<JobList>::into_raw(v)
+    Box::into_raw(Box::new(Vec::new()))
 }
 
 #[no_mangle]
@@ -319,9 +324,126 @@ pub extern "C" fn tapasco_job_param_deviceaddress(
     list
 }
 
-//DataTransferLocal(DataTransferLocal),
-//DataTransferAlloc(DataTransferAlloc),
-//DataTransferPrealloc(DataTransferPrealloc),
+#[no_mangle]
+pub extern "C" fn tapasco_job_param_alloc(
+    dev: *mut Device,
+    ptr: *mut u8,
+    bytes: usize,
+    to_device: bool,
+    from_device: bool,
+    free: bool,
+    list: *mut JobList,
+) -> *mut JobList {
+    if list.is_null() {
+        warn!("Null pointer passed into tapasco_job_param_alloc() as the list");
+        update_last_error(Error::NullPointerTLKM {});
+        return ptr::null_mut();
+    }
+
+    if dev.is_null() {
+        warn!("Null pointer passed into tapasco_job_param_alloc() as the device");
+        update_last_error(Error::NullPointerTLKM {});
+        return ptr::null_mut();
+    }
+
+    let d = unsafe { &mut *dev };
+
+    let mem = match d.default_memory().context(RetrieveDefaultMemory) {
+        Ok(x) => x,
+        Err(e) => {
+            warn!("Failed to retrieve default memory from device.");
+            update_last_error(e);
+            return ptr::null_mut();
+        }
+    };
+
+    let v = unsafe { Box::from_raw(slice::from_raw_parts_mut(ptr, bytes)) };
+
+    let tl = unsafe { &mut *list };
+    tl.push(PEParameter::DataTransferAlloc(DataTransferAlloc {
+        data: v,
+        from_device: from_device,
+        to_device: to_device,
+        free: free,
+        memory: mem,
+    }));
+    list
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_job_param_local(
+    ptr: *mut u8,
+    bytes: usize,
+    to_device: bool,
+    from_device: bool,
+    free: bool,
+    list: *mut JobList,
+) -> *mut JobList {
+    if list.is_null() {
+        warn!("Null pointer passed into tapasco_job_param_alloc() as the list");
+        update_last_error(Error::NullPointerTLKM {});
+        return ptr::null_mut();
+    }
+
+    let v = unsafe { Box::from_raw(slice::from_raw_parts_mut(ptr, bytes)) };
+
+    let tl = unsafe { &mut *list };
+    tl.push(PEParameter::DataTransferLocal(DataTransferLocal {
+        data: v,
+        from_device: from_device,
+        to_device: to_device,
+        free: free,
+    }));
+    list
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_job_param_prealloc(
+    dev: *mut Device,
+    ptr: *mut u8,
+    addr: DeviceAddress,
+    bytes: usize,
+    to_device: bool,
+    from_device: bool,
+    free: bool,
+    list: *mut JobList,
+) -> *mut JobList {
+    if list.is_null() {
+        warn!("Null pointer passed into tapasco_job_param_alloc() as the list");
+        update_last_error(Error::NullPointerTLKM {});
+        return ptr::null_mut();
+    }
+
+    if dev.is_null() {
+        warn!("Null pointer passed into tapasco_job_param_alloc() as the device");
+        update_last_error(Error::NullPointerTLKM {});
+        return ptr::null_mut();
+    }
+
+    let d = unsafe { &mut *dev };
+
+    let mem = match d.default_memory().context(RetrieveDefaultMemory) {
+        Ok(x) => x,
+        Err(e) => {
+            warn!("Failed to retrieve default memory from device.");
+            update_last_error(e);
+            return ptr::null_mut();
+        }
+    };
+
+    let v = unsafe { Box::from_raw(slice::from_raw_parts_mut(ptr, bytes)) };
+
+    let tl = unsafe { &mut *list };
+    tl.push(PEParameter::DataTransferPrealloc(DataTransferPrealloc {
+        data: v,
+        device_address: addr,
+        from_device: from_device,
+        to_device: to_device,
+        free: free,
+        memory: mem,
+    }));
+    list
+}
 
 /////////////////
 // Handle Device Access
@@ -381,9 +503,12 @@ pub extern "C" fn tapasco_job_start(job: *mut Job, params: *mut JobList) -> isiz
 
     let jl = unsafe { Box::from_raw(params) };
 
+    // Move out of Box
+    let jl = *jl;
+
     let tl = unsafe { &mut *job };
-    match tl.start(jl.to_vec()).context(JobError) {
-        Ok(_) => {
+    match tl.start(jl).context(JobError) {
+        Ok(_x) => {
             return 0;
         }
         Err(e) => {
@@ -408,7 +533,19 @@ pub extern "C" fn tapasco_job_release(job: *mut Job, release: bool) -> isize {
 
     let tl = unsafe { &mut *job };
     match tl.release(release).context(JobError) {
-        Ok(_x) => return 0,
+        Ok(x) => {
+            match x {
+                Some(y) => {
+                    for d in y.into_iter() {
+                        println!("{:?}", d);
+                        // Make sure Rust doesn't release the memory received from C
+                        let _p = std::boxed::Box::<[u8]>::into_raw(d);
+                    }
+                }
+                None => (),
+            };
+            return 0;
+        }
         Err(e) => {
             update_last_error(e);
             return -1;

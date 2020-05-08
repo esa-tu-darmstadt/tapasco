@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "tapasco.h"
+#include <tapasco.h>
 
 void handle_error() {
     int l = tapasco_last_error_length();

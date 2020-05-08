@@ -85,26 +85,26 @@ pub struct OffchipMemory {
     dma: Box<dyn DMAControl + Sync + Send>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct DataTransferLocal {
-    pub data: Vec<u8>,
+    pub data: Box<[u8]>,
     pub from_device: bool,
     pub to_device: bool,
     pub free: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct DataTransferAlloc {
-    pub data: Vec<u8>,
+    pub data: Box<[u8]>,
     pub from_device: bool,
     pub to_device: bool,
     pub free: bool,
     pub memory: Arc<OffchipMemory>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct DataTransferPrealloc {
-    pub data: Vec<u8>,
+    pub data: Box<[u8]>,
     pub device_address: DeviceAddress,
     pub from_device: bool,
     pub to_device: bool,
@@ -112,7 +112,7 @@ pub struct DataTransferPrealloc {
     pub memory: Arc<OffchipMemory>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum PEParameter {
     Single32(u32),
     Single64(u64),

@@ -27,8 +27,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <tapasco.h>
 #include <unistd.h>
+
+#include <tapasco.h>
 
 #define SZ 256
 #define RUNS 25

@@ -110,6 +110,30 @@ fn print_status(_: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
+fn run_arrayinit(_: &ArgMatches) -> Result<()> {
+    let tlkm = TLKM::new().context(TLKMInit {})?;
+    let devices = tlkm.device_enum().context(TLKMInit)?;
+    for mut x in devices {
+        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+            .context(DeviceInit {})?;
+        let mut pe = x.acquire_pe(11).context(DeviceInit)?;
+
+        pe.start(vec![tapasco::device::PEParameter::DataTransferAlloc(
+            tapasco::device::DataTransferAlloc {
+                data: vec![255; 256 * 4].into_boxed_slice(),
+                free: true,
+                from_device: true,
+                to_device: false,
+                memory: x.default_memory().context(DeviceInit)?,
+            },
+        )])
+        .context(JobError)?;
+
+        println!("{:?}", pe.release(true).context(JobError)?);
+    }
+    Ok(())
+}
+
 fn run_counter(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
     let devices = tlkm.device_enum().context(TLKMInit)?;
@@ -495,7 +519,7 @@ fn test_localmem(_: &ArgMatches) -> Result<()> {
         let mut pe = x.acquire_pe(42).context(DeviceInit)?;
         pe.start(vec![tapasco::device::PEParameter::DataTransferLocal(
             tapasco::device::DataTransferLocal {
-                data: vec![0, 1, 2, 3, 4, 5, 6],
+                data: vec![0, 1, 2, 3, 4, 5, 6].into_boxed_slice(),
                 free: true,
                 from_device: true,
                 to_device: true,
@@ -528,6 +552,9 @@ fn main() -> Result<()> {
             SubCommand::with_name("status").about("Print status core information of all devices."),
         )
         .subcommand(SubCommand::with_name("run_counter").about("Runs a counter with ID 14."))
+        .subcommand(
+            SubCommand::with_name("run_arrayinit").about("Runs an arrayinit instance with ID 11."),
+        )
         .subcommand(
             SubCommand::with_name("benchmark_copy")
                 .about("Runs a copy benchmark for r, w and rw.")
@@ -640,6 +667,7 @@ fn main() -> Result<()> {
         ("allocate", Some(m)) => allocate_devices(m),
         ("status", Some(m)) => print_status(m),
         ("run_counter", Some(m)) => run_counter(m),
+        ("run_arrayinit", Some(m)) => run_arrayinit(m),
         ("run_benchmark", Some(m)) => benchmark_counter(m),
         ("run_latency", Some(m)) => latency_benchmark(m),
         ("test_copy", Some(m)) => test_copy(m),

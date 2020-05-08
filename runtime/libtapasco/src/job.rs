@@ -109,6 +109,7 @@ impl Job {
                             .allocate(x.data.len() as u64)
                             .context(AllocatorError)?
                     };
+
                     Ok(PEParameter::DataTransferPrealloc(DataTransferPrealloc {
                         data: x.data,
                         device_address: a,
@@ -193,7 +194,7 @@ impl Job {
         Ok(())
     }
 
-    pub fn release(&mut self, release_pe: bool) -> Result<Option<Vec<Vec<u8>>>> {
+    pub fn release(&mut self, release_pe: bool) -> Result<Option<Vec<Box<[u8]>>>> {
         if self.pe.is_some() {
             trace!("Trying to release PE {:?}.", self.pe.as_ref().unwrap().id());
             let copyback = self.pe.as_mut().unwrap().release().context(PEError)?;
@@ -210,6 +211,7 @@ impl Job {
                     let res = x
                         .into_iter()
                         .map(|mut param| {
+                            println!("{:?}", param.data.as_ptr());
                             param
                                 .memory
                                 .dma()

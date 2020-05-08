@@ -1,11 +1,13 @@
 // build.rs
 extern crate cbindgen;
 
-use cbindgen::Config;
 use std::env;
 use std::path::PathBuf;
 
 fn main() {
+    println!("cargo:rerun-if-changed=src/ffi.rs");
+    println!("cargo:rerun-if-changed=src/status_core.proto");
+
     prost_build::compile_protos(&["src/status_core.proto"], &["src/"]).unwrap();
 
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
@@ -16,21 +18,25 @@ fn main() {
         .display()
         .to_string();
 
-    //let config = Config {
-    //    namespace: Some(String::from("tapasco")),
-    //    ..Default::default()
-    //};
-
-    //cbindgen::generate_with_config(&crate_dir, config)
-    //  .unwrap()
-    //  .write_to_file(&output_file);
-
     cbindgen::Builder::new()
         .with_crate(&crate_dir)
         .with_language(cbindgen::Language::C)
         .generate()
         .expect("Unable to generate bindings")
         .write_to_file(&output_file);
+
+    let output_file2 = target_dir()
+        .join(format!("{}_inner.hpp", package_name))
+        .display()
+        .to_string();
+
+    cbindgen::Builder::new()
+        .with_crate(&crate_dir)
+        .with_language(cbindgen::Language::Cxx)
+        .with_namespace("tapasco")
+        .generate()
+        .expect("Unable to generate bindings")
+        .write_to_file(&output_file2);
 }
 
 /// Find the location of the `target/` directory. Note that this may be
@@ -40,6 +46,6 @@ fn target_dir() -> PathBuf {
     if let Ok(target) = env::var("CARGO_TARGET_DIR") {
         PathBuf::from(target)
     } else {
-        PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("target")
+        PathBuf::from(env::var("OUT_DIR").unwrap())
     }
 }
