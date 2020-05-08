@@ -1,1 +1,376 @@
-{"Host": {"Machine": "x86_64", "Node": "ip-172-31-86-127", "Operating System": "Linux", "Release": "4.15.0-1044-aws", "Version": "#46-Ubuntu SMP Thu Jul 4 13:38:28 UTC 2019"}, "Interrupt Latency": [{"Avg Latency": 49.416561154722693, "Cycle Count": 1, "Max Latency": 107, "Min Latency": 45}, {"Avg Latency": 49.756023022462088, "Cycle Count": 2, "Max Latency": 108, "Min Latency": 46}, {"Avg Latency": 49.721254710255494, "Cycle Count": 4, "Max Latency": 107, "Min Latency": 48}, {"Avg Latency": 49.975878316091368, "Cycle Count": 8, "Max Latency": 106, "Min Latency": 45}, {"Avg Latency": 49.558883248730744, "Cycle Count": 16, "Max Latency": 107, "Min Latency": 47}, {"Avg Latency": 49.763716949411702, "Cycle Count": 32, "Max Latency": 105, "Min Latency": 48}, {"Avg Latency": 52.191892180981874, "Cycle Count": 64, "Max Latency": 111, "Min Latency": 48}, {"Avg Latency": 50.425108042584569, "Cycle Count": 128, "Max Latency": 199, "Min Latency": 45}, {"Avg Latency": 51.217782381159978, "Cycle Count": 256, "Max Latency": 107, "Min Latency": 47}, {"Avg Latency": 50.086682071802947, "Cycle Count": 512, "Max Latency": 107, "Min Latency": 45}, {"Avg Latency": 49.575302486775676, "Cycle Count": 1024, "Max Latency": 104, "Min Latency": 48}, {"Avg Latency": 49.779733181947265, "Cycle Count": 2048, "Max Latency": 106, "Min Latency": 46}, {"Avg Latency": 50.406874427130923, "Cycle Count": 4096, "Max Latency": 92, "Min Latency": 48}, {"Avg Latency": 53.354615697438049, "Cycle Count": 8192, "Max Latency": 112, "Min Latency": 50}, {"Avg Latency": 51.789678255236431, "Cycle Count": 16384, "Max Latency": 90, "Min Latency": 46}, {"Avg Latency": 50.930250189537531, "Cycle Count": 32768, "Max Latency": 89, "Min Latency": 46}, {"Avg Latency": 51.114568599717117, "Cycle Count": 65536, "Max Latency": 88, "Min Latency": 47}, {"Avg Latency": 52.508174386920963, "Cycle Count": 131072, "Max Latency": 91, "Min Latency": 47}, {"Avg Latency": 55.513368983957221, "Cycle Count": 262144, "Max Latency": 95, "Min Latency": 48}, {"Avg Latency": 59.523809523809526, "Cycle Count": 524288, "Max Latency": 98, "Min Latency": 51}, {"Avg Latency": 65.621052631578962, "Cycle Count": 1048576, "Max Latency": 109, "Min Latency": 52}, {"Avg Latency": 85.665263157894671, "Cycle Count": 2097152, "Max Latency": 145, "Min Latency": 52}, {"Avg Latency": 95.722689075630257, "Cycle Count": 4194304, "Max Latency": 146, "Min Latency": 52}, {"Avg Latency": 102.62237762237761, "Cycle Count": 8388608, "Max Latency": 145, "Min Latency": 52}, {"Avg Latency": 108.0952380952381, "Cycle Count": 16777216, "Max Latency": 148, "Min Latency": 79}, {"Avg Latency": 113.1304347826087, "Cycle Count": 33554432, "Max Latency": 151, "Min Latency": 50}, {"Avg Latency": 116.38461538461539, "Cycle Count": 67108864, "Max Latency": 146, "Min Latency": 56}, {"Avg Latency": 116.91666666666667, "Cycle Count": 134217728, "Max Latency": 148, "Min Latency": 91}, {"Avg Latency": 168.52201257861634, "Cycle Count": 268435456, "Max Latency": 231, "Min Latency": 118}], "Job Throughput": [{"Jobs per second": 27018.945804195802, "Number of threads": 1}, {"Jobs per second": 51063.615635179172, "Number of threads": 2}, {"Jobs per second": 74089.464743589677, "Number of threads": 3}, {"Jobs per second": 93724.317610062906, "Number of threads": 4}, {"Jobs per second": 112941.35000000005, "Number of threads": 5}, {"Jobs per second": 125300.85893416933, "Number of threads": 6}, {"Jobs per second": 147895.49088145889, "Number of threads": 7}, {"Jobs per second": 180426.02803738319, "Number of threads": 8}, {"Jobs per second": 199159.38145896656, "Number of threads": 9}, {"Jobs per second": 203164.88719512185, "Number of threads": 10}, {"Jobs per second": 206754.05757575767, "Number of threads": 11}, {"Jobs per second": 207787.6215805471, "Number of threads": 12}, {"Jobs per second": 153066.15614035088, "Number of threads": 13}, {"Jobs per second": 192827.21965317932, "Number of threads": 14}, {"Jobs per second": 177308.96344271733, "Number of threads": 15}, {"Jobs per second": 209963.72018348615, "Number of threads": 16}, {"Jobs per second": 177723.76184210519, "Number of threads": 17}], "Library Versions": {"Platform API": "1.6", "Tapasco API": "1.6"}, "Timestamp": "2019-08-09 13:27:33", "Transfer Speed": [{"Chunk Size": 1024, "Read": 58.403432168943475, "ReadWrite": 75.434035476032662, "Write": 52.972284454755375}, {"Chunk Size": 2048, "Read": 139.41467115726653, "ReadWrite": 145.66411780073477, "Write": 102.83215500620028}, {"Chunk Size": 4096, "Read": 234.53994146763108, "ReadWrite": 314.22202797827174, "Write": 203.86369754266951}, {"Chunk Size": 8192, "Read": 450.66885465448536, "ReadWrite": 597.14540968526319, "Write": 443.88968246145481}, {"Chunk Size": 16384, "Read": 764.83627266959593, "ReadWrite": 1043.54891046635, "Write": 630.21784884722683}, {"Chunk Size": 32768, "Read": 1206.5139634470675, "ReadWrite": 1965.3489440244284, "Write": 1186.7710088469037}, {"Chunk Size": 65536, "Read": 2042.59627743688, "ReadWrite": 3069.9392462774845, "Write": 1933.1647018866768}, {"Chunk Size": 131072, "Read": 2960.6120569358877, "ReadWrite": 4542.9284294450445, "Write": 2734.0623749398683}, {"Chunk Size": 262144, "Read": 3905.5314229235955, "ReadWrite": 6084.4608893137156, "Write": 3643.0456721693049}, {"Chunk Size": 524288, "Read": 5546.4350051520041, "ReadWrite": 8540.3282528388136, "Write": 5307.0643248835668}, {"Chunk Size": 1048576, "Read": 7004.02754110349, "ReadWrite": 10827.268796893721, "Write": 6606.6577436508078}, {"Chunk Size": 2097152, "Read": 8004.4555176980411, "ReadWrite": 12353.109877945173, "Write": 7525.9067086980322}, {"Chunk Size": 4194304, "Read": 8604.4657874652476, "ReadWrite": 13151.241818305209, "Write": 8105.9016241445488}, {"Chunk Size": 8388608, "Read": 8815.161559834065, "ReadWrite": 13354.368835722227, "Write": 8315.2551896234891}, {"Chunk Size": 16777216, "Read": 8710.6404039626486, "ReadWrite": 11732.300808858887, "Write": 8413.1072045456367}, {"Chunk Size": 33554432, "Read": 6030.4628679493553, "ReadWrite": 9993.7226717794638, "Write": 7106.9434506814196}, {"Chunk Size": 67108864, "Read": 3478.1877720561633, "ReadWrite": 9207.5407870731378, "Write": 5187.6589999824282}, {"Chunk Size": 134217728, "Read": 3162.3688000447005, "ReadWrite": 8939.1303701055367, "Write": 4854.8649761016704}, {"Chunk Size": 268435456, "Read": 0.39018397309098651, "ReadWrite": 0.14577100125653572, "Write": 0.31051943292676221}]}
+{
+   "Host":{
+      "Machine":"x86_64",
+      "Node":"ip-172-31-86-127",
+      "Operating System":"Linux",
+      "Release":"4.15.0-1065-aws",
+      "Version":"#69-Ubuntu SMP Thu Mar 26 02:17:29 UTC 2020"
+   },
+   "Interrupt Latency":[
+      {
+         "Avg Latency":52.480290400645409,
+         "Cycle Count":1,
+         "Max Latency":186,
+         "Min Latency":43
+      },
+      {
+         "Avg Latency":48.178469135802359,
+         "Cycle Count":2,
+         "Max Latency":275,
+         "Min Latency":42
+      },
+      {
+         "Avg Latency":47.980798507096203,
+         "Cycle Count":4,
+         "Max Latency":220,
+         "Min Latency":45
+      },
+      {
+         "Avg Latency":50.704111295681059,
+         "Cycle Count":8,
+         "Max Latency":75,
+         "Min Latency":44
+      },
+      {
+         "Avg Latency":51.362237909598598,
+         "Cycle Count":16,
+         "Max Latency":173,
+         "Min Latency":45
+      },
+      {
+         "Avg Latency":48.342020512312295,
+         "Cycle Count":32,
+         "Max Latency":170,
+         "Min Latency":45
+      },
+      {
+         "Avg Latency":48.411414096259975,
+         "Cycle Count":64,
+         "Max Latency":275,
+         "Min Latency":45
+      },
+      {
+         "Avg Latency":50.781437284539955,
+         "Cycle Count":128,
+         "Max Latency":174,
+         "Min Latency":47
+      },
+      {
+         "Avg Latency":49.865749349200414,
+         "Cycle Count":256,
+         "Max Latency":281,
+         "Min Latency":43
+      },
+      {
+         "Avg Latency":48.105954513380105,
+         "Cycle Count":512,
+         "Max Latency":285,
+         "Min Latency":44
+      },
+      {
+         "Avg Latency":50.501110288675072,
+         "Cycle Count":1024,
+         "Max Latency":278,
+         "Min Latency":42
+      },
+      {
+         "Avg Latency":49.986974161862015,
+         "Cycle Count":2048,
+         "Max Latency":307,
+         "Min Latency":45
+      },
+      {
+         "Avg Latency":50.610692632739216,
+         "Cycle Count":4096,
+         "Max Latency":201,
+         "Min Latency":45
+      },
+      {
+         "Avg Latency":50.509887760555813,
+         "Cycle Count":8192,
+         "Max Latency":86,
+         "Min Latency":43
+      },
+      {
+         "Avg Latency":64.201600000000042,
+         "Cycle Count":16384,
+         "Max Latency":121,
+         "Min Latency":44
+      },
+      {
+         "Avg Latency":66.34214680347273,
+         "Cycle Count":32768,
+         "Max Latency":173,
+         "Min Latency":47
+      },
+      {
+         "Avg Latency":59.185979971387738,
+         "Cycle Count":65536,
+         "Max Latency":207,
+         "Min Latency":46
+      },
+      {
+         "Avg Latency":60.246058944482591,
+         "Cycle Count":131072,
+         "Max Latency":119,
+         "Min Latency":48
+      },
+      {
+         "Avg Latency":57.165997322623831,
+         "Cycle Count":262144,
+         "Max Latency":110,
+         "Min Latency":48
+      },
+      {
+         "Avg Latency":65.413793103448256,
+         "Cycle Count":524288,
+         "Max Latency":348,
+         "Min Latency":50
+      },
+      {
+         "Avg Latency":75.366223038090837,
+         "Cycle Count":1048576,
+         "Max Latency":172,
+         "Min Latency":51
+      },
+      {
+         "Avg Latency":81.63636363636364,
+         "Cycle Count":2097152,
+         "Max Latency":164,
+         "Min Latency":52
+      },
+      {
+         "Avg Latency":86.805555555555557,
+         "Cycle Count":4194304,
+         "Max Latency":171,
+         "Min Latency":51
+      },
+      {
+         "Avg Latency":89.375886524822718,
+         "Cycle Count":8388608,
+         "Max Latency":191,
+         "Min Latency":52
+      },
+      {
+         "Avg Latency":110.25174825174823,
+         "Cycle Count":16777216,
+         "Max Latency":192,
+         "Min Latency":56
+      },
+      {
+         "Avg Latency":132.76190476190476,
+         "Cycle Count":33554432,
+         "Max Latency":201,
+         "Min Latency":63
+      },
+      {
+         "Avg Latency":143.41176470588238,
+         "Cycle Count":67108864,
+         "Max Latency":209,
+         "Min Latency":91
+      },
+      {
+         "Avg Latency":159.56153846153845,
+         "Cycle Count":134217728,
+         "Max Latency":241,
+         "Min Latency":109
+      },
+      {
+         "Avg Latency":193.49019607843138,
+         "Cycle Count":268435456,
+         "Max Latency":245,
+         "Min Latency":147
+      }
+   ],
+   "Job Throughput":[
+      {
+         "Jobs per second":27505.558419243978,
+         "Number of threads":1
+      },
+      {
+         "Jobs per second":51895.130293159622,
+         "Number of threads":2
+      },
+      {
+         "Jobs per second":73986.523734177244,
+         "Number of threads":3
+      },
+      {
+         "Jobs per second":97230.570532915357,
+         "Number of threads":4
+      },
+      {
+         "Jobs per second":114176.05981595092,
+         "Number of threads":5
+      },
+      {
+         "Jobs per second":132714.87888198756,
+         "Number of threads":6
+      },
+      {
+         "Jobs per second":165807.45619335337,
+         "Number of threads":7
+      },
+      {
+         "Jobs per second":196399.41666666669,
+         "Number of threads":8
+      },
+      {
+         "Jobs per second":205448.85626911314,
+         "Number of threads":9
+      },
+      {
+         "Jobs per second":211904.04103343459,
+         "Number of threads":10
+      },
+      {
+         "Jobs per second":215314.36474164133,
+         "Number of threads":11
+      },
+      {
+         "Jobs per second":133663.87697727964,
+         "Number of threads":12
+      },
+      {
+         "Jobs per second":217308.33383685796,
+         "Number of threads":13
+      },
+      {
+         "Jobs per second":153948.19117647063,
+         "Number of threads":14
+      },
+      {
+         "Jobs per second":218670.17173252284,
+         "Number of threads":15
+      },
+      {
+         "Jobs per second":221724.7757575757,
+         "Number of threads":16
+      },
+      {
+         "Jobs per second":217416.51060606071,
+         "Number of threads":17
+      }
+   ],
+   "Library Versions":{
+      "Platform API":"1.6",
+      "Tapasco API":"1.6"
+   },
+   "Timestamp":"2020-04-08 21:02:36",
+   "Transfer Speed":[
+      {
+         "Chunk Size":1024,
+         "Read":60.928448654122249,
+         "ReadWrite":81.115244765243858,
+         "Write":55.753109021581913
+      },
+      {
+         "Chunk Size":2048,
+         "Read":120.18811714537861,
+         "ReadWrite":132.6789269517781,
+         "Write":112.11576441272628
+      },
+      {
+         "Chunk Size":4096,
+         "Read":251.84791929911148,
+         "ReadWrite":307.30893599418289,
+         "Write":237.2498682440195
+      },
+      {
+         "Chunk Size":8192,
+         "Read":462.36087063770537,
+         "ReadWrite":596.68556055741715,
+         "Write":418.81301370860535
+      },
+      {
+         "Chunk Size":16384,
+         "Read":889.75293341274448,
+         "ReadWrite":1125.1684571569367,
+         "Write":713.9512595436737
+      },
+      {
+         "Chunk Size":32768,
+         "Read":1271.359702384128,
+         "ReadWrite":1876.7219700325566,
+         "Write":1095.2800676117681
+      },
+      {
+         "Chunk Size":65536,
+         "Read":2018.0192657732377,
+         "ReadWrite":3016.7993669719581,
+         "Write":1932.0313493498945
+      },
+      {
+         "Chunk Size":131072,
+         "Read":2973.5210268756941,
+         "ReadWrite":4581.1589498148423,
+         "Write":2799.435911536465
+      },
+      {
+         "Chunk Size":262144,
+         "Read":3911.3246326753474,
+         "ReadWrite":6266.0876214827867,
+         "Write":3650.1186724020581
+      },
+      {
+         "Chunk Size":524288,
+         "Read":5615.3331795654603,
+         "ReadWrite":8674.2980583717199,
+         "Write":5337.7713208460736
+      },
+      {
+         "Chunk Size":1048576,
+         "Read":7137.8159366302452,
+         "ReadWrite":11076.873817109181,
+         "Write":6721.4377422717125
+      },
+      {
+         "Chunk Size":2097152,
+         "Read":8227.7223038218945,
+         "ReadWrite":12619.489754258359,
+         "Write":7721.9954846583905
+      },
+      {
+         "Chunk Size":4194304,
+         "Read":8939.1879099110429,
+         "ReadWrite":13500.287860733028,
+         "Write":8402.5280029208061
+      },
+      {
+         "Chunk Size":8388608,
+         "Read":9244.9485108717035,
+         "ReadWrite":13924.373609023716,
+         "Write":8750.6784333764299
+      },
+      {
+         "Chunk Size":16777216,
+         "Read":9320.2896603888457,
+         "ReadWrite":11974.369300150776,
+         "Write":8979.1523984946489
+      },
+      {
+         "Chunk Size":33554432,
+         "Read":6397.6427154041594,
+         "ReadWrite":8622.7344390411636,
+         "Write":7557.6116530724703
+      },
+      {
+         "Chunk Size":67108864,
+         "Read":3245.2328635534859,
+         "ReadWrite":8220.5221879601904,
+         "Write":4992.956834509856
+      },
+      {
+         "Chunk Size":134217728,
+         "Read":3201.6280625244235,
+         "ReadWrite":8025.3750060006905,
+         "Write":4745.3751110118837
+      },
+      {
+         "Chunk Size":268435456,
+         "Read":3181.163132813585,
+         "ReadWrite":8029.6010299663612,
+         "Write":4742.76614989878
+      }
+   ]
+}
