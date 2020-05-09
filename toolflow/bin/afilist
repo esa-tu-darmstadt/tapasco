@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2019-2020 Micha Ober, TU Darmstadt
 #
-# This file is part of Tapasco (TPC).
+# Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
 #
-# Tapasco is free software: you can redistribute it and/or modify
+# This file is part of TaPaSCo 
+# (see https://github.com/esa-tu-darmstadt/tapasco).
+#
+# This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Tapasco is distributed in the hope that it will be useful,
+# This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 """
 Helper script for listing own AFIs
@@ -31,7 +34,8 @@ import boto3
 
 ec2 = boto3.client('ec2')
 
-parser = argparse.ArgumentParser(description='Helper script to list generated AFIs')
+parser = argparse.ArgumentParser(
+    description='Helper script to list generated AFIs')
 parser.add_argument('--name', help='Filter AFIs by name.')
 args = parser.parse_args()
 
@@ -68,8 +72,14 @@ data = [[d['FpgaImageId'],
          d['Public']
          ] for d in response['FpgaImages']]
 
-header = ['FpgaImageId','FpgaImageGlobalId','State','Name','ShellVer','Created','Public']
+header = [
+    'FpgaImageId',
+    'FpgaImageGlobalId',
+    'State',
+    'Name',
+    'ShellVer',
+    'Created',
+    'Public']
 
-data.sort(key=lambda k:k[3])
+data.sort(key=lambda k: k[3])
 print(tabulate(data, header, tablefmt='github'))
-

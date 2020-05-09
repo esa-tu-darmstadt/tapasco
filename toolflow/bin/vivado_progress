@@ -1,24 +1,62 @@
 #!/usr/bin/python
+#
+# Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+#
+# This file is part of TaPaSCo 
+# (see https://github.com/esa-tu-darmstadt/tapasco).
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
+import time
+from tqdm import tqdm
+import sys
+import re
+import argparse
 default_version = "v2017.4"
 
-stages = {"v2017.4": ["Calling pre-header plugins", "Subsystem tapasco complete.", "Event pre-wrapper finished.", "Starting RTL Elaboration",
-                      "Finished RTL Component Statistics ", "Starting Routing Task", "Phase 1", "Phase 2", "Phase 3", "Phase 4", "Phase 5", "Phase 6", "Phase 7", "Phase 8", "Phase 9", "Phase 10", "Routing Is Done.", "write_bitstream completed successfully"]}
+stages = {
+    "v2017.4": [
+        "Calling pre-header plugins",
+        "Subsystem tapasco complete.",
+        "Event pre-wrapper finished.",
+        "Starting RTL Elaboration",
+        "Finished RTL Component Statistics ",
+        "Starting Routing Task",
+        "Phase 1",
+        "Phase 2",
+        "Phase 3",
+        "Phase 4",
+        "Phase 5",
+        "Phase 6",
+        "Phase 7",
+        "Phase 8",
+        "Phase 9",
+        "Phase 10",
+        "Routing Is Done.",
+        "write_bitstream completed successfully"]}
 
-import argparse
 
-parser = argparse.ArgumentParser(description='Parse Vivado log and show progress information')
+parser = argparse.ArgumentParser(
+    description='Parse Vivado log and show progress information')
 parser.add_argument('log_file', type=str, help='A Vivado log file')
 args = parser.parse_args()
 
-import re
-import sys
-from tqdm import tqdm
-import time
 
 def fetch_vivado_version(filename):
     with open(filename, 'r') as f:
-        pattern = re.compile("# Vivado (v[0-9]+\.[0-9])")
+        pattern = re.compile(r"# Vivado (v[0-9]+\.[0-9])")
         for line in f:
             m = pattern.search(line)
             if m:
@@ -27,10 +65,14 @@ def fetch_vivado_version(filename):
             print("Failed to determine Vivado version in {}".format(filename))
             sys.exit(1)
 
+
 version = fetch_vivado_version(args.log_file)
 print("Found Vivado Version {}".format(version))
 if version not in stages:
-    print("Vivado version {} is unknown. Resetting to default version {}".format(version, default_version))
+    print(
+        "Vivado version {} is unknown. Resetting to default version {}".format(
+            version,
+            default_version))
     version = default_version
 
 current_line = 0
@@ -42,20 +84,20 @@ with tqdm(total=len(stage)) as pbar:
         searching = True
         pattern = re.compile(".*" + p + ".*")
         while searching:
+            line = f.readline()
+            while line == '':  # Poor mans iNotify...
+                pos = f.tell()
+                f.close()
+                time.sleep(0.1)
+                f = open(args.log_file, 'r')
+                f.seek(pos)
                 line = f.readline()
-                while line == '': # Poor mans iNotify...
-                    pos = f.tell()
-                    f.close()
-                    time.sleep(0.1)
-                    f = open(args.log_file, 'r')
-                    f.seek(pos)
-                    line = f.readline()
-                current_line += 1
-                pbar.set_description('Line {}'.format(current_line))
-                m = pattern.search(line)
-                if m:
-                    searching = False
-                    pbar.update(1)
-                    break
+            current_line += 1
+            pbar.set_description('Line {}'.format(current_line))
+            m = pattern.search(line)
+            if m:
+                searching = False
+                pbar.update(1)
+                break
 
 f.close()

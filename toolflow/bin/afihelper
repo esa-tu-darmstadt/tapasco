@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2019-2020 Micha Ober, TU Darmstadt
 #
-# This file is part of Tapasco (TPC).
+# Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
 #
-# Tapasco is free software: you can redistribute it and/or modify
+# This file is part of TaPaSCo 
+# (see https://github.com/esa-tu-darmstadt/tapasco).
+#
+# This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Tapasco is distributed in the hope that it will be useful,
+# This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 """
 Helper script for creating AFIs
@@ -42,6 +45,8 @@ import threading
 import subprocess
 
 # https://boto3.amazonaws.com/v1/documentation/api/latest/_modules/boto3/s3/transfer.html
+
+
 class ProgressPercentage(object):
     def __init__(self, filename):
         self._filename = filename
@@ -61,23 +66,27 @@ class ProgressPercentage(object):
                     percentage))
             sys.stdout.flush()
 
+
 default_region = boto3.session.Session().region_name
 
 parser = argparse.ArgumentParser(description='Helper script for creating AFIs')
-parser.add_argument('bucket',
+parser.add_argument(
+    'bucket',
     help='name of the target S3 bucket (created when not existing)')
 parser.add_argument('tarfile',
-    help='filename of the tar file to create an AFI from')
+                    help='filename of the tar file to create an AFI from')
 parser.add_argument('name', help='name of the AFI')
 parser.add_argument('--dry-run', default=False, action='store_true',
-    help='dry run operation')
+                    help='dry run operation')
 parser.add_argument('--no-wait', default=False, action='store_true',
-    help='do not wait for AFI generation to complete')
+                    help='do not wait for AFI generation to complete')
 parser.add_argument('--verbose', default=False, action='store_true',
-    help='be more talkative')
+                    help='be more talkative')
 parser.add_argument('--description', default=False,
-    help='description of the AFI')
-parser.add_argument('--region', default=default_region,
+                    help='description of the AFI')
+parser.add_argument(
+    '--region',
+    default=default_region,
     help='region to use (currently configured: {})'.format(default_region))
 
 args = parser.parse_args()
@@ -97,7 +106,7 @@ try:
     else:
         s3.create_bucket(
             Bucket=args.bucket,
-            CreateBucketConfiguration={'LocationConstraint' : args.region}
+            CreateBucketConfiguration={'LocationConstraint': args.region}
         )
 except s3.meta.client.exceptions.BucketAlreadyOwnedByYou:
     pass
@@ -107,14 +116,14 @@ s3.Object(args.bucket, 'logs/').put()
 fname = os.path.basename(args.tarfile)
 transfer = boto3.s3.transfer.S3Transfer(s3.meta.client)
 transfer.upload_file(args.tarfile, args.bucket, fname,
-                        callback=ProgressPercentage(args.tarfile))
+                     callback=ProgressPercentage(args.tarfile))
 print('\nUpload finished')
 
 ec2 = boto3.resource('ec2')
 
 token = uuid.uuid4().hex
-description = args.description or 'Created from {} at {}'.format(fname,
-                datetime.datetime.now().isoformat())
+description = args.description or 'Created from {} at {}'.format(
+    fname, datetime.datetime.now().isoformat())
 
 response = ec2.meta.client.create_fpga_image(
     DryRun=args.dry_run,
