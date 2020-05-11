@@ -1,32 +1,22 @@
-//
-// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
-//
-// This file is part of Tapasco (TaPaSCo).
-//
-// Tapasco is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Tapasco is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
-//
-/** @file 	platform.h
- *  @brief 	API for low-level FPGA integration. Provides basic methods to
- *  		interact with two different address spaces on the device: The
- *  		memory address space refers to device-local memories, the
- *  		register address space refers to the AXI (or similar) address
- *  		space in which IP core registers reside. Furthermore there are
- *  		methods to wait for a signal from the device (usually
- *  		interrupt-based).
- *  @authors 	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- *  @version 	1.6
- **/
+/*
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifndef PLATFORM_API_H__
 #define PLATFORM_API_H__
 
