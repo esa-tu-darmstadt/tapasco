@@ -109,7 +109,7 @@ build_scala_tapasco_centos_8:
     - ./gradlew buildRPM
   artifacts:
     paths:
-      - toolflow/scala/build/distributions/tapasco-2019-10.x86_64.rpm
+      - toolflow/scala/build/distributions/tapasco-2020-04.x86_64.rpm
 
 build_scala_tapasco_fedora_30:
   image: fedora:30
@@ -136,7 +136,7 @@ build_scala_tapasco_fedora_31:
     - ./gradlew buildDEB
   artifacts:
     paths:
-      - toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb
+      - toolflow/scala/build/distributions/tapasco_2020-04_amd64.deb
 
 build_scala_tapasco_ubuntu_16_04:
   image: ubuntu:xenial
@@ -357,7 +357,7 @@ tapasco_compose_ubuntu:
     - source $XILINX_VIVADO/settings64.sh
     - apt-get -y update
     - apt-get -y install libtinfo5 build-essential
-    - apt -y install ./toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb
+    - apt -y install ./toolflow/scala/build/distributions/tapasco_2020-04_amd64.deb
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
     - tapasco -v hls counter -p pynq
@@ -384,7 +384,7 @@ tapasco_compose_ubuntu:
     - source $XILINX_VIVADO/settings64.sh
     - which vivado
     - which vivado_hls
-    - dnf -y install toolflow/scala/build/distributions/tapasco-2019-10.x86_64.rpm
+    - dnf -y install toolflow/scala/build/distributions/tapasco-2020-04.x86_64.rpm
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
     - tapasco hls counter -p $PLATFORM --skipEvaluation
