@@ -1,32 +1,29 @@
+# Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
 #
-# Copyright (C) 2014 Jens Korinth, TU Darmstadt
+# This file is part of TaPaSCo
+# (see https://github.com/esa-tu-darmstadt/tapasco).
 #
-# This file is part of Tapasco (TPC).
-#
-# Tapasco is free software: you can redistribute it and/or modify
+# This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Tapasco is distributed in the hope that it will be useful,
+# This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-# @file		hls.tcl.template
-# @brief	Tcl template to generate Vivado HLS script.
-# @authors	J. Korinth (jk@esa.cs.tu-darmstadt.de
-# 
+
 # load common code etc.
 @@HEADER@@
 
 # if set, co-simulation will be performed
-# This flag is hardcoded to 0 for now until Vivado fixes 
+# This flag is hardcoded to 0 for now until Vivado fixes
 # cosimulation for current linux distributions
-# If you want to get back to default behaviour please 
+# If you want to get back to default behaviour please
 # replace the 0 with: @@COSIMULATION_FLAG@@
 set do_cosim 0
 
@@ -52,6 +49,8 @@ config_schedule -effort low
 set_directive_interface -mode s_axilite @@TOP@@
 
 @@DIRECTIVES@@
+
+config_interface -m_axi_addr64
 
 # synthesize the core
 csynth_design

@@ -1,21 +1,24 @@
-//
-// Copyright (C) 2017 Jens Korinth, TU Darmstadt
-//
-// This file is part of Tapasco (TPC).
-//
-// Tapasco is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Tapasco is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
-//
+/*
+ *
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 package tapasco.task
 
 import java.nio.file.Paths
@@ -60,10 +63,12 @@ private class DesignSpaceExplorationTask(
   private[this] val _bp = basePath map (p => Paths.get(p).toAbsolutePath) getOrElse {
     val shortDate = java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(java.time.LocalDateTime.now())
     val dsepath = FileAssetManager.TAPASCO_WORK_DIR.resolve(
-      "DSE_%s-%s-%s_%s".format(target.ad.name, target.pd.name, composition.toString, shortDate)
+      "DSE_%s-%s-%s-%s".format(target.ad.name, target.pd.name, composition.toString, shortDate)
         .replace(" ", "_")
         .replace("/", "-")
         .replace(":", "-")
+        .replace("[", "")
+        .replace("]", "")
     ).normalize()
     java.nio.file.Files.createDirectories(dsepath.resolve("bd"))
     dsepath

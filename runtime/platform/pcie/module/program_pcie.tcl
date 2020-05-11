@@ -21,7 +21,7 @@
 
 #set default values
 set wait 1000
-set dev {xc7vx690t_0|xcvu9p_0|xcvu095_0|xcu250_0}
+set dev {xc7vx690t_0|xcvu9p_0|xcvu095_0|xcu250_0|xcvu37p_0}
 set probes_file {}
 set program_file {}
 set devid -1

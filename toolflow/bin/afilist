@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+#
+# This file is part of TaPaSCo 
+# (see https://github.com/esa-tu-darmstadt/tapasco).
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
+"""
+Helper script for listing own AFIs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Prints out a table with all (max. 100) AFIs that were
+generated using the currenlty logged in AWS account.
+"""
+
+import argparse
+from tabulate import tabulate
+import boto3
+
+ec2 = boto3.client('ec2')
+
+parser = argparse.ArgumentParser(
+    description='Helper script to list generated AFIs')
+parser.add_argument('--name', help='Filter AFIs by name.')
+args = parser.parse_args()
+
+filters = []
+if args.name is not None:
+    filters.extend([
+        {
+            'Name': 'name',
+            'Values': [
+                '*{}*'.format(args.name)
+            ]
+        },
+    ])
+
+response = ec2.describe_fpga_images(
+    DryRun=False,
+    Owners=[
+        'self',
+    ],
+    Filters=filters,
+    MaxResults=100
+)
+
+if not response.get('FpgaImages', False):
+    print('No AFIs found.')
+    exit()
+
+data = [[d['FpgaImageId'],
+         d['FpgaImageGlobalId'],
+         d['State']['Code'],
+         (d['Name'][:30] + '..') if len(d['Name']) > 30 else d['Name'],
+         d.get('ShellVersion', 'n/a'),
+         d['CreateTime'].strftime('%Y-%m-%d'),
+         d['Public']
+         ] for d in response['FpgaImages']]
+
+header = [
+    'FpgaImageId',
+    'FpgaImageGlobalId',
+    'State',
+    'Name',
+    'ShellVer',
+    'Created',
+    'Public']
+
+data.sort(key=lambda k: k[3])
+print(tabulate(data, header, tablefmt='github'))

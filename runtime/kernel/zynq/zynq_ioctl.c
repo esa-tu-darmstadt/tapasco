@@ -1,26 +1,22 @@
-//
-// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
-//
-// This file is part of Tapasco (TPC).
-//
-// Tapasco is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Tapasco is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
-//
-/**
- *  @file	zynq_ioctl.c
- *  @brief	Zynq-specific implementation of ioctl interface.
- *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+/*
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo 
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <linux/uaccess.h>
 #include <linux/io.h>
 #include <linux/slab.h>
@@ -62,7 +58,7 @@ static inline long zynq_ioctl_alloc(struct tlkm_device *inst,
 		return -EINVAL;
 	}
 
-	dma_addr = zynq_dmamgmt_alloc(cmd->sz, NULL);
+	dma_addr = zynq_dmamgmt_alloc(inst, cmd->sz, NULL);
 	if (!dma_addr) {
 		DEVWRN(inst->dev_id, "allocation failed: len = %zu", cmd->sz);
 		return -ENOMEM;
@@ -80,7 +76,7 @@ static inline long zynq_ioctl_free(struct tlkm_device *inst,
 	DEVLOG(inst->dev_id, TLKM_LF_IOCTL, "free: len = %zu, dma = %pad",
 	       cmd->sz, &cmd->dev_addr);
 	if (cmd->dev_addr >= 0) {
-		zynq_dmamgmt_dealloc_dma(cmd->dev_addr);
+		zynq_dmamgmt_dealloc_dma(inst, cmd->dev_addr);
 		cmd->dev_addr = -1;
 		tlkm_perfc_total_freed_mem_add(inst->dev_id, cmd->sz);
 	}

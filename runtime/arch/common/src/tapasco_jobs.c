@@ -1,25 +1,22 @@
-//
-// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
-//
-// This file is part of Tapasco (TAPASCO).
-//
-// Tapasco is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Tapasco is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
-//
-/**
- *  @file	tapasco_jobs.c
- *  @author	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
- **/
+/*
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <assert.h>
 #include <gen_fixed_size_pool.h>
 #include <stdlib.h>
@@ -283,6 +280,9 @@ inline tapasco_job_id_t tapasco_jobs_acquire(tapasco_jobs_t *jobs) {
   tapasco_job_id_t j_id = tapasco_jobs_fsp_get(&jobs->q);
   if (j_id != INVALID_IDX) {
     jobs->q.elems[j_id].state = TAPASCO_JOB_STATE_REQUESTED;
+    jobs->q.elems[j_id].args_len = 0;
+    for (size_t i = 0; i < TAPASCO_JOB_MAX_ARGS; i++)
+      jobs->q.elems[j_id].transfers[i].len = 0;
     j_id = jobs->q.elems[j_id].id;
     if (j_id > jobs->job_id_high_watermark) {
       jobs->job_id_high_watermark = j_id;

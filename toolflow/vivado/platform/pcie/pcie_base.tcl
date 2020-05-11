@@ -1,24 +1,20 @@
+# Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
 #
-# Copyright (C) 2017 Jaco A. Hofmann, TU Darmstadt
+# This file is part of TaPaSCo
+# (see https://github.com/esa-tu-darmstadt/tapasco).
 #
-# This file is part of Tapasco (TPC).
-#
-# Tapasco is free software: you can redistribute it and/or modify
+# This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Tapasco is distributed in the hope that it will be useful,
+# This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
-#
-# @file     pcie_base.tcl
-# @brief    Functions common to all TCL platforms
-# @author   J. A. Hofmann, TU Darmstadt (hofmann@esa.tu-darmstadt.de)
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
   namespace export create
@@ -228,12 +224,13 @@
 
     set design_clk_wiz [tapasco::ip::create_clk_wiz design_clk_wiz]
     set_property -dict [list CONFIG.CLK_OUT1_PORT {design_clk} \
-                        CONFIG.USE_SAFE_CLOCK_STARTUP {true} \
+                        CONFIG.USE_SAFE_CLOCK_STARTUP {false} \
                         CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
                         CONFIG.USE_LOCKED {true} \
                         CONFIG.USE_RESET {true} \
                         CONFIG.RESET_TYPE {ACTIVE_LOW} \
                         CONFIG.RESET_PORT {resetn} \
+                        CONFIG.PRIM_SOURCE {No_buffer} \
                         ] $design_clk_wiz
 
     connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins -regexp $mig/((mmcm_locked)|(c0_init_calib_complete))]
@@ -286,7 +283,7 @@
     set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
     tapasco::ip::connect_sc_default_clocks $out_ic "design"
 
-    if {$device_type != "virtexuplus"} {
+    if {$device_type != "virtexuplus" && $device_type != "virtexuplusHBM"} {
       if { $pcie_width == "x8" } {
         puts "Using PCIe IP for x8..."
         set bridge [tapasco::ip::create_pciebridgetolite "PCIeBridgeToLite"]

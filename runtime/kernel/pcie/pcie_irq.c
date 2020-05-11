@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo 
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <linux/pci.h>
 #include <linux/interrupt.h>
 #include <linux/device.h>
@@ -42,7 +61,9 @@ int pcie_irqs_init(struct tlkm_device *dev)
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
 
-	int ret = 0, irqn, err[NUMBER_OF_INTERRUPTS];
+	int ret = 0, irqn,
+	    err[NUMBER_OF_INTERRUPTS] = { [0 ... NUMBER_OF_INTERRUPTS - 1] =
+						  1 };
 	BUG_ON(!dev);
 	pdev->ack_register =
 		(volatile uint32_t *)(dev->mmap.plat +
@@ -52,8 +73,7 @@ int pcie_irqs_init(struct tlkm_device *dev)
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registering %d interrupts ...",
 	       NUMBER_OF_INTERRUPTS);
 #define _INTR(nr)                                                              \
-	irqn = nr + pcie_cls.npirqs;                                           \
-	pdev->irq_mapping[irqn] = -1;
+	irqn = nr + pcie_cls.npirqs;
 
 	TLKM_PCIE_SLOT_INTERRUPTS
 #undef _INTR
@@ -106,6 +126,115 @@ void pcie_irqs_exit(struct tlkm_device *dev)
 	}
 	TLKM_PCIE_SLOT_INTERRUPTS
 #undef _INTR
+	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "interrupts deactivated");
+}
+
+#define _INTR(nr)                                                                                                            \
+	void aws_ec2_tlkm_pcie_slot_irq_work_##nr(struct work_struct *work)                                                  \
+	{                                                                                                                    \
+		uint32_t isr;                                                                                                \
+		struct tlkm_pcie_device *dev =                                                                               \
+			(struct tlkm_pcie_device *)container_of(                                                             \
+				work, struct tlkm_pcie_device, irq_work[nr]);                                                \
+		/*struct platform *p = &dev->parent->cls->platform;*/                                                        \
+		/* read ISR (interrupt status register) */                                                                   \
+		isr = dev->ack_register[1 + nr];                                                                             \
+		if (unlikely(!isr)) {                                                                                        \
+			DEVERR(dev->parent->dev_id,                                                                          \
+			       "Interrupt received, but ISR %d is empty", nr);                                               \
+			return;                                                                                              \
+		}                                                                                                            \
+		do {                                                                                                         \
+			/* Returns one plus the index of the least significant 1-bit of x, or if x is zero, returns zero. */ \
+			const uint32_t slot = __builtin_ffs(isr) - 1;                                                        \
+			tlkm_control_signal_slot_interrupt(dev->parent->ctrl,                                                \
+							   nr * 32 + slot);                                                  \
+			isr ^= (1U << slot);                                                                                 \
+		} while (isr);                                                                                               \
+	}                                                                                                                    \
+                                                                                                                             \
+	irqreturn_t aws_ec2_tlkm_pcie_slot_irq_##nr(int irq, void *dev_id)                                                   \
+	{                                                                                                                    \
+		struct pci_dev *pdev = (struct pci_dev *)dev_id;                                                             \
+		struct tlkm_pcie_device *dev =                                                                               \
+			(struct tlkm_pcie_device *)dev_get_drvdata(                                                          \
+				&pdev->dev);                                                                                 \
+		if (!schedule_work(&dev->irq_work[nr]))                                                                      \
+			tlkm_perfc_irq_error_already_pending_inc(                                                            \
+				dev->parent->dev_id);                                                                        \
+		tlkm_perfc_total_irqs_inc(dev->parent->dev_id);                                                              \
+		return IRQ_HANDLED;                                                                                          \
+	}
+
+TLKM_AWS_EC2_SLOT_INTERRUPTS
+#undef _INTR
+
+int aws_ec2_pcie_irqs_init(struct tlkm_device *dev)
+{
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)dev->private_data;
+
+	int ret = 0, irqn, err[4] = { [0 ... 3] = 1 };
+	BUG_ON(!dev);
+	pdev->ack_register =
+		(volatile uint32_t *)(dev->mmap.plat +
+				      tlkm_status_get_component_base(
+					      dev, "PLATFORM_COMPONENT_INTC0") +
+				      0x8120);
+	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registering %d interrupts ...", 4);
+#define _INTR(nr)                                                              \
+	irqn = nr + pcie_cls.npirqs;                                           \
+	if ((err[nr] = request_irq(pci_irq_vector(pdev->pdev, irqn),           \
+				   aws_ec2_tlkm_pcie_slot_irq_##nr,            \
+				   IRQF_EARLY_RESUME, TLKM_PCI_NAME,           \
+				   pdev->pdev))) {                             \
+		DEVERR(dev->dev_id, "could not request interrupt %d: %d",      \
+		       irqn, err[nr]);                                         \
+		goto irq_error;                                                \
+	} else {                                                               \
+		pdev->irq_mapping[irqn] = pci_irq_vector(pdev->pdev, irqn);    \
+		DEVLOG(dev->dev_id, TLKM_LF_IRQ,                               \
+		       "interrupt line %d/%d assigned with return value %d",   \
+		       irqn, pci_irq_vector(pdev->pdev, irqn), err[nr]);       \
+		INIT_WORK(&pdev->irq_work[nr],                                 \
+			  aws_ec2_tlkm_pcie_slot_irq_work_##nr);               \
+	}
+	TLKM_AWS_EC2_SLOT_INTERRUPTS
+#undef _INTR
+	return 0;
+
+irq_error:
+#define _INTR(nr)                                                              \
+	irqn = nr + pcie_cls.npirqs;                                           \
+	if (!err[nr]) {                                                        \
+		free_irq(pdev->irq_mapping[irqn], pdev->pdev);                 \
+		pdev->irq_mapping[irqn] = -1;                                  \
+	} else {                                                               \
+		ret = err[nr];                                                 \
+	}
+	TLKM_AWS_EC2_SLOT_INTERRUPTS
+#undef _INTR
+	return ret;
+}
+
+void aws_ec2_pcie_irqs_exit(struct tlkm_device *dev)
+{
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)dev->private_data;
+	int irqn;
+
+#define _INTR(nr)                                                              \
+	irqn = nr + pcie_cls.npirqs;                                           \
+	if (pdev->irq_mapping[irqn] != -1) {                                   \
+		DEVLOG(dev->dev_id, TLKM_LF_IRQ,                               \
+		       "freeing interrupt %d with mappping %d", irqn,          \
+		       pdev->irq_mapping[irqn]);                               \
+		free_irq(pdev->irq_mapping[irqn], pdev->pdev);                 \
+		pdev->irq_mapping[irqn] = -1;                                  \
+	}
+	TLKM_AWS_EC2_SLOT_INTERRUPTS
+#undef _INTR
+
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "interrupts deactivated");
 }
 

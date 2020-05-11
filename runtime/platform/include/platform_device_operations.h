@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifndef PLATFORM_DEVICE_OPERATIONS_H__
 #define PLATFORM_DEVICE_OPERATIONS_H__
 
@@ -28,7 +47,8 @@ typedef struct platform_device_operations {
                               platform_ctl_addr_t const addr,
                               size_t const length, void const *data,
                               platform_ctl_flags_t const flags);
-  platform_res_t (*init)(platform_devctx_t *devctx, platform_mem_addr_t offboard_memory);
+  platform_res_t (*init)(platform_devctx_t *devctx,
+                         platform_mem_addr_t offboard_memory);
   platform_res_t (*deinit)(platform_devctx_t const *devctx);
 } platform_device_operations_t;
 
@@ -76,7 +96,8 @@ platform_res_t default_write_ctl(platform_devctx_t const *devctx,
                                  size_t const length, void const *data,
                                  platform_ctl_flags_t const flags);
 
-platform_res_t default_init(platform_devctx_t *devctx, platform_mem_addr_t offboard_memory);
+platform_res_t default_init(platform_devctx_t *devctx,
+                            platform_mem_addr_t offboard_memory);
 platform_res_t default_deinit(platform_devctx_t const *devctx);
 
 static inline void default_dops(platform_device_operations_t *dops) {

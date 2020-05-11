@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <errno.h>
 #include <gen_mem.h>
 #include <platform_devctx.h>
@@ -362,7 +381,8 @@ platform_res_t request_device_size(platform_devctx_t const *devctx) {
   return PLATFORM_SUCCESS;
 }
 
-platform_res_t default_init(platform_devctx_t *devctx, platform_mem_addr_t offboard_memory) {
+platform_res_t default_init(platform_devctx_t *devctx,
+                            platform_mem_addr_t offboard_memory) {
   default_platform_t *pp =
       (default_platform_t *)malloc(sizeof(default_platform_t));
   if (!pp)

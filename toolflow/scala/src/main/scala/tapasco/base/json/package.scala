@@ -1,21 +1,24 @@
-//
-// Copyright (C) 2017 Jens Korinth, TU Darmstadt
-//
-// This file is part of Tapasco (TPC).
-//
-// Tapasco is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Tapasco is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
-//
+/*
+ *
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 package tapasco.base
 
 import java.nio.file._
@@ -361,7 +364,8 @@ package object json {
       (JsPath \ "Benchmark").readNullable[Path] ~
       (JsPath \ "HostFrequency").readNullable[Double] ~
       (JsPath \ "MemFrequency").readNullable[Double] ~
-      (JsPath \ "ImplementationTimeout").readNullable[Int]
+      (JsPath \ "ImplementationTimeout").readNullable[Int] ~
+      (JsPath \ "FileExtension").readNullable[String]
     ) (Platform.apply _)
 
   // scalastyle:on magic.number
@@ -381,7 +385,8 @@ package object json {
       (JsPath \ "Benchmark").writeNullable[Path] ~
       (JsPath \ "HostFrequency").writeNullable[Double] ~
       (JsPath \ "MemFrequency").writeNullable[Double] ~
-      (JsPath \ "ImplementationTimeout").writeNullable[Int]
+      (JsPath \ "ImplementationTimeout").writeNullable[Int] ~
+      (JsPath \ "FileExtension").writeNullable[String]
     ) (unlift(Platform.unapply _))
 
   /* Platform @} */

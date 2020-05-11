@@ -1,25 +1,22 @@
+# Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
 #
-# Copyright (C) 2014 Jens Korinth, TU Darmstadt
+# This file is part of TaPaSCo
+# (see https://github.com/esa-tu-darmstadt/tapasco).
 #
-# This file is part of Tapasco (TPC).
-#
-# Tapasco is free software: you can redistribute it and/or modify
+# This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Tapasco is distributed in the hope that it will be useful,
+# This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-# @file    axi4mm.tcl
-# @brief  AXI4 memory mapped master/slave interface based Architectures.
-# @author  J. Korinth, TU Darmstadt (jk@esa.tu-darmstadt.de)
-#
+
 namespace eval arch {
   namespace export create
   namespace export get_irqs
@@ -124,11 +121,9 @@ namespace eval arch {
     return [tapasco::get_aximm_interfaces [get_bd_cell -hier -filter "NAME == $name"] $mode]
   }
 
-  # Instantiates the memory interconnect hierarchy.
-  proc arch_create_mem_interconnects {composition outs} {
-    variable arch_mem_ports
+  # Determines the number of AXI-MM interfaces in the composition
+  proc arch_get_num_masters {composition} {
     set no_kinds [llength [dict keys $composition]]
-    set ic_m 0
     set m_total 0
 
     # determine number of masters from composition
@@ -136,14 +131,20 @@ namespace eval arch {
       set no_inst [dict get $composition $i count]
       set example [get_bd_cells [format "target_ip_%02d_000" $i]]
       set masters [tapasco::get_aximm_interfaces $example]
-      set ic_m [expr "$ic_m + [llength $masters] * $no_inst"]
-
       set m_total [expr "$m_total + [llength $masters] * $no_inst"]
     }
 
     puts "  Found a total of $m_total masters."
     set no_masters $m_total
     puts "  no_masters : $no_masters"
+
+    return $no_masters
+  }
+
+  # Instantiates a memory interconnect hierarchy for the given number of masters
+  proc arch_create_mem_interconnects {outs no_masters} {
+    variable arch_mem_ports
+
 
     # check if all masters can be connected with the outs config
     set total_ports [expr [join $outs +]]
@@ -257,9 +258,7 @@ namespace eval arch {
   }
 
   # Connects the threadpool to memory interconnects.
-  proc arch_connect_mem {mem_ics ips} {
-    # get PE masters
-    set masters [lsort -dictionary [tapasco::get_aximm_interfaces $ips]]
+  proc arch_connect_mem {mem_ics masters} {
     # interleave slaves of out ic trees
     set outs [get_bd_cells -filter {NAME =~ "out_*"}]
     set sc [llength [tapasco::get_aximm_interfaces $outs "Slave"]]
@@ -407,13 +406,16 @@ namespace eval arch {
     arch_connect_interrupts $insts
 
     arch_check_instance_count $kernels
-    set arch_mem_ics [arch_create_mem_interconnects $kernels $mgroups]
+    set no_masters [arch_get_num_masters $kernels]
+    set arch_mem_ics [arch_create_mem_interconnects $mgroups $no_masters]
 
     set arch_host_ics [arch_create_host_interconnects $kernels 1]
 
     # connect AXI infrastructure
     arch_connect_host $arch_host_ics $insts
-    arch_connect_mem $arch_mem_ics $insts
+
+    set masters [lsort -dictionary [tapasco::get_aximm_interfaces $insts]]
+    arch_connect_mem $arch_mem_ics $masters
 
     arch_connect_clocks
     arch_connect_resets

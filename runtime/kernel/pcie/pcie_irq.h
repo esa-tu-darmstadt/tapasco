@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo 
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifndef PCIE_IRQ_H__
 #define PCIE_IRQ_H__
 
@@ -139,6 +158,14 @@
 	_INTR(126)                                                             \
 	_INTR(127)
 
+#define TLKM_AWS_EC2_SLOT_INTERRUPTS                                           \
+	_INTR(0)                                                               \
+	_INTR(1)                                                               \
+	_INTR(2)                                                               \
+	_INTR(3)
+
+int aws_ec2_pcie_irqs_init(struct tlkm_device *dev);
+void aws_ec2_pcie_irqs_exit(struct tlkm_device *dev);
 int pcie_irqs_init(struct tlkm_device *dev);
 void pcie_irqs_exit(struct tlkm_device *dev);
 int pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no,
@@ -149,6 +176,12 @@ void pcie_irqs_release_platform_irq(struct tlkm_device *dev, int irq_no);
 	irqreturn_t tlkm_pcie_slot_irq_##nr(int irq, void *dev_id);            \
 	void tlkm_pcie_slot_irq_work_##nr(struct work_struct *work);
 TLKM_PCIE_SLOT_INTERRUPTS
+#undef _INTR
+
+#define _INTR(nr)                                                              \
+	irqreturn_t aws_ec2_tlkm_pcie_slot_irq_##nr(int irq, void *dev_id);    \
+	void aws_ec2_tlkm_pcie_slot_irq_work_##nr(struct work_struct *work);
+TLKM_AWS_EC2_SLOT_INTERRUPTS
 #undef _INTR
 
 #endif /* PCIE_IRQ_H__ */

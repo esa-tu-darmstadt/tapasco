@@ -77,3 +77,43 @@ Cache {
 
 #### ATS-PRI
 See [VC709](#VC709).
+
+### XUP-VVH
+
+#### HBM
+Allows to connect a subset of the AXI master interfaces of PEs to HBM memory instead of DDR. Each AXI master will be connected to its individual memory block (-> no data sharing possible) of size 256 MB. Up to 32 AXI masters can be connected to HBM. This is configured by specifying "groups" consisting of a PE-ID, a count and one or multiple interface names.
+
+```
+HBM {
+  "HBM0": {
+  	"ID": "PE1",
+  	"Count": "2",
+  	"Interfaces": "M_AXI"
+  },
+  "HBM1": {
+  	"ID:"PE2",
+  	"Count": "1",
+  	"Interfaces": "M_AXI M_AXI_2"
+  }
+}
+```
+
+This example connects the M_AXI interface of two PE1 instances and the M_AXI and M_AXI_2 interfaces of one PE2 instance to HBM. All other AXI masters are connected to DDR.
+
+#### Regslice
+Allows to enable or disable the optional AXI register slices. The register slices can help to achieve timing closure but introduce latency and may impact performance.
+
+```
+Regslice {
+  "DMA_HOST": true | false # used by DMA engine to access host memory
+  "DMA_MIGIC": false | true # used by DMA engine to access FPGA memory
+  "HOST_DMA": true | false # used to program DMA engine
+  "HOST_MEMCTRL": true | false # used to configure and query ECC
+  "HOST_ARCH": true | false # used to configure & start PEs
+  "ARCH_MEM": false | true # used by architecture for memory access; between interconnect network and memory
+  "PE": false | true # used by PEs for memory access; between PE and interconnect network (only for non HBM-memory)
+  "HBM_PE": false | true # used by PEs for memory access; between PE and smartconnect (only for HBM-memory)
+  "HBM_HBM": false | true # used by PEs for memory access; between smartconnect and HBM (only for HBM-memory)
+}
+```
+If no value is given for a register slice (or for all), a default value is used. The default value for each register slice is the first value in the example above.

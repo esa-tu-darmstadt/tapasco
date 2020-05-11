@@ -1,21 +1,24 @@
-//
-// Copyright (C) 2017 Jens Korinth, TU Darmstadt
-//
-// This file is part of Tapasco (TPC).
-//
-// Tapasco is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Tapasco is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
-//
+/*
+ *
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 package tapasco.activity.hls
 
 import java.io.FileWriter
@@ -77,11 +80,18 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
       logger.debug("Vivado HLS finished with exit code %d".format(vivadoRet))
       vivadoRet match {
         case 0 =>
-          logger.info("Vivado HLS finished successfully for {}", runName)
-          logger.trace("performing additional steps for {}", runName)
-          performAdditionalSteps(k, t)
-          logger.trace("additional steps for {} finished, copying zip", runName)
-          Success(HighLevelSynthesizerLog(logfile), copyZip(k, t).get)
+          val cp = copyZip(k, t)
+          if(cp.isEmpty) {
+            logger.error("Vivado HLS failed for run: {}", runName)
+            logger.info("Check Log-File for error: {}", logfile.toAbsolutePath.toString)
+            MissingZip(HighLevelSynthesizerLog(logfile))
+          } else {
+            logger.info("Vivado HLS finished successfully for {}", runName)
+            logger.trace("performing additional steps for {}", runName)
+            performAdditionalSteps(k, t)
+            logger.trace("additional steps for {} finished, copying zip", runName)
+            Success(HighLevelSynthesizerLog(logfile), copyZip(k, t).get)
+          }
         case InterruptibleProcess.TIMEOUT_RETCODE =>
           logger.error("Vivado HLS timeout for " + runName)
           Timeout(HighLevelSynthesizerLog(logfile))

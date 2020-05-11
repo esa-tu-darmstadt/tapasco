@@ -1,25 +1,22 @@
-//
-// Copyright (C) 2017 Jaco A. Hofmann, TU Darmstadt
-//
-// This file is part of ThreadPoolComposer (TPC).
-//
-// ThreadPoolComposer is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// ThreadPoolComposer is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with ThreadPoolComposer.  If not, see <http://www.gnu.org/licenses/>.
-//
-/**
- * @file char_device_dma.c
- * @brief TODO
- * */
+/*
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo 
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 /******************************************************************************/
 
@@ -200,7 +197,7 @@ static int hsa_initialize(void)
 	atomic64_set(&dev.device_opened, 0);
 	mutex_init(&dev.ioctl_mutex);
 
-	dev.arbiter_base = (uint64_t *)ioremap_nocache(
+	dev.arbiter_base = (uint64_t *)ioremap(
 		dev.dev->base_offset + HSA_ARBITER_BASE_ADDR, HSA_ARBITER_SIZE);
 	if (dev.arbiter_base == 0) {
 		DEVERR(dev.dev->dev_id, "could not map arbiter");
@@ -212,7 +209,7 @@ static int hsa_initialize(void)
 		goto arbiter_find_failed;
 	}
 
-	dev.signal_base = (uint64_t *)ioremap_nocache(
+	dev.signal_base = (uint64_t *)ioremap(
 		dev.dev->base_offset + HSA_SIGNAL_BASE_ADDR, HSA_SIGNAL_SIZE);
 	if (dev.signal_base == 0) {
 		DEVERR(dev.dev->dev_id, "could not map arbiter");

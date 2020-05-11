@@ -1,28 +1,22 @@
+# Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
 #
-# Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
+# This file is part of TaPaSCo
+# (see https://github.com/esa-tu-darmstadt/tapasco).
 #
-# This file is part of Tapasco (TaPaSCo).
-#
-# Tapasco is free software: you can redistribute it and/or modify
+# This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Tapasco is distributed in the hope that it will be useful,
+# This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-# @file		zynq.tcl
-# @brief	Zynq-7000 platform implementation: For simulation, there is an extra AXI
-#               master connected to HP3 (to simulate loading of data). Up to 16 instances
-#               of AXI Interrupt Controllers are instantiated, depending on the number
-#               interrupt sources returned by the architecture.
-# @author	J. Korinth, TU Darmstadt (jk@esa.tu-darmstadt.de)
-#
+
 namespace eval ::platform {
   namespace export max_masters
   namespace export get_address_map
@@ -277,8 +271,7 @@ namespace eval ::platform {
     }
 
     set reset_in [create_bd_pin -dir O -type rst "reset_in"]
-    set irq_0 [create_bd_pin -dir I -type intr -from 7 -to 0 "irq_0"]
-    set pirq_0 [create_bd_pin -dir I -type intr -from 7 -to 0 "platform_irq_0"]
+    set irq_0 [create_bd_pin -dir I -type intr -from 15 -to 0 "irq_0"]
     set mem_aclk [tapasco::subsystem::get_port "mem" "clk"]
     set mem_p_arstn [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
     set mem_ic_arstn [tapasco::subsystem::get_port "mem" "rst" "interconnect"]
@@ -331,12 +324,7 @@ namespace eval ::platform {
     foreach ms $mem_slaves pms $ps_mem_slaves { connect_bd_intf_net $ms $pms }
 
     # connect interrupts
-    set irq_cc [tapasco::ip::create_xlconcat "irq_cc" 2]
-    connect_bd_net $pirq_0 [get_bd_pins "$irq_cc/In0"]
-    connect_bd_net $irq_0 [get_bd_pins "$irq_cc/In1"]
-    set_property -dict [list CONFIG.IN0_WIDTH.VALUE_SRC USER CONFIG.IN1_WIDTH.VALUE_SRC USER] $irq_cc
-    set_property -dict [list CONFIG.IN0_WIDTH {8} CONFIG.IN1_WIDTH {8}] $irq_cc
-    connect_bd_net [get_bd_pins -of_objects $irq_cc -filter { DIR == O }] [get_bd_pins "$ps/IRQ_F2P"]
+    connect_bd_net $irq_0 [get_bd_pins "$ps/IRQ_F2P"]
 
     # connect reset
     connect_bd_net [get_bd_pins "$ps/FCLK_RESET0_N"] $reset_in

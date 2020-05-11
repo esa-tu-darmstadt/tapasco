@@ -1,5 +1,23 @@
+# This file is part of TaPaSCo
+# (see https://github.com/esa-tu-darmstadt/tapasco).
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
 cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
 include($ENV{TAPASCO_HOME_RUNTIME}/cmake/Tapasco.cmake NO_POLICY_SCOPE)
+
 project(platform VERSION 1.0 LANGUAGES C)
 
 add_library(platform "common/src/platform_addr_map.c"
@@ -21,6 +39,10 @@ add_library(platform "common/src/platform_addr_map.c"
 
 target_compile_definitions(platform PRIVATE -DNPERFC)
 target_compile_definitions(platform PRIVATE -DLOG_USE_COLOR)
+if(CMAKE_BUILD_TYPE MATCHES "Release" AND (CMAKE_SYSTEM_PROCESSOR MATCHES "arm" OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64"))
+  message("Reducing optimization for nanopb on zynq plattform.")
+  target_compile_options(platform PRIVATE -O2)
+endif()
 
 set_tapasco_defaults(platform)
 

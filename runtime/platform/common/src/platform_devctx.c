@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -20,11 +39,15 @@
 #define PCIE_MEM_SZ (1ULL << 32)
 
 #define ZYNQ_CLS_NAME "zynq"
+#define ZYNQMP_CLS_NAME "zynqmp"
 
 static platform_res_t platform_specific_init(platform_devctx_t *devctx) {
   if (!strncmp(PCIE_CLS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
     return default_init(devctx, (platform_mem_addr_t)PCIE_MEM_SZ);
   } else if (!strncmp(ZYNQ_CLS_NAME, devctx->dev_info.name, TLKM_DEVNAME_SZ)) {
+    return default_init(devctx, 0);
+  } else if (!strncmp(ZYNQMP_CLS_NAME, devctx->dev_info.name,
+                      TLKM_DEVNAME_SZ)) {
     return default_init(devctx, 0);
   } else {
     DEVERR(devctx->dev_id, "unknown device type: '%s'", devctx->dev_info.name);

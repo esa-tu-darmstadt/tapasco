@@ -1,25 +1,22 @@
+# Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
 #
-# Copyright (C) 2018 Jaco A. Hofmann, TU Darmstadt
+# This file is part of TaPaSCo
+# (see https://github.com/esa-tu-darmstadt/tapasco).
 #
-# This file is part of Tapasco (TPC).
-#
-# Tapasco is free software: you can redistribute it and/or modify
+# This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Tapasco is distributed in the hope that it will be useful,
+# This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-# @file		vcu1525.tcl
-# @brief	VCU1525 platform implementation.
-# @author	J. A. Hofmann, TU Darmstadt (hofmann@esa.tu-darmstadt.de)
-#
+
 namespace eval platform {
   set platform_dirname "vcu1525"
   variable pcie_width "x16"
@@ -105,7 +102,9 @@ namespace eval platform {
       CONFIG.bar0_indicator {0}
       ]
 
-    set_property -dict $pcie_properties $axi_pcie3_0
+    if {[catch {set_property -dict $pcie_properties $axi_pcie3_0}]} {
+        error "ERROR: Failed to configure PCIe bridge. For Vivado 2019.2, please install patch from Xilinx AR# 73001."
+    }
 
     tapasco::ip::create_msixusptrans "MSIxTranslator" $axi_pcie3_0
 

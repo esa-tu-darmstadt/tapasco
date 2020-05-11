@@ -6,5 +6,6 @@
 	"BoardPart" : "em.avnet.com:zed:part0",
 	"BoardPreset" : "ZedBoard",
 	"TargetUtilization" : 97,
-	"Benchmark" : "zedboard.benchmark"
+	"Benchmark" : "zedboard.benchmark",
+	"FileExtension": "bit.bin"
 }

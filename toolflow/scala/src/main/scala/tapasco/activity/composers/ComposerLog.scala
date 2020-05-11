@@ -1,21 +1,24 @@
-//
-// Copyright (C) 2016 Jens Korinth, TU Darmstadt
-//
-// This file is part of Tapasco (TPC).
-//
-// Tapasco is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Tapasco is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
-//
+/*
+ *
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 /**
   * @file ComposerLog.scala
   * @brief Model for Composer tool logfiles.
@@ -44,7 +47,7 @@ class ComposerLog(val file: Path) {
     _ match { case (line, idx) => !RE_WARNING.findFirstIn(line).isEmpty }).toSeq
 
   /** Interprets the warnings and errors to generate a result value. */
-  def result: ComposeResult = if (errors.isEmpty) {
+  def result(failed : Boolean = false): ComposeResult = if (errors.isEmpty && !failed) {
     if ((warnings map (line => RE_TIMING.findFirstIn(line._1).isEmpty) fold true) (_ && _)) {
       Success
     } else {

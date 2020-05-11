@@ -11,6 +11,26 @@ stages:
   - build_runtime
   - build_hw
 
+.test_tapasco_centos:
+  stage: test_scala_toolflow
+  retry: 2
+  dependencies: []
+  tags:
+    - High
+  script:
+    - yum -y install which java-openjdk findutils
+    - ./tapasco-init.sh && source tapasco-setup.sh
+    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - ./gradlew test
+
+test_tapasco_centos_7:
+  image: centos:7
+  extends: .test_tapasco_centos
+
+test_tapasco_centos_8:
+  image: centos:8
+  extends: .test_tapasco_centos
+
 .test_tapasco_ubuntu:
   stage: test_scala_toolflow
   retry: 2
@@ -31,14 +51,6 @@ test_tapasco_ubuntu_18_04:
   image: ubuntu:bionic
   extends: .test_tapasco_ubuntu
 
-test_tapasco_ubuntu_18_10:
-  image: ubuntu:cosmic
-  extends: .test_tapasco_ubuntu
-
-test_tapasco_ubuntu_19_04:
-  image: ubuntu:disco
-  extends: .test_tapasco_ubuntu
-
 .test_tapasco_fedora:
   stage: test_scala_toolflow
   retry: 2
@@ -51,32 +63,6 @@ test_tapasco_ubuntu_19_04:
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
     - ./gradlew test
 
-test_tapasco_fedora_24:
-  image: fedora:24
-  extends: .test_tapasco_fedora
-
-test_tapasco_fedora_25:
-  image: fedora:25
-  extends: .test_tapasco_fedora
-
-test_tapasco_fedora_26:
-  image: fedora:26
-  extends: .test_tapasco_fedora
-
-test_tapasco_fedora_27:
-  image: fedora:27
-  extends: .test_tapasco_fedora
-
-test_tapasco_fedora_28:
-  image: fedora:28
-  extends: .test_tapasco_fedora
-
-test_tapasco_fedora_29:
-  image: fedora:29
-  extends: .test_tapasco_fedora
-  before_script:
-    - dnf -y install which findutils java-11-openjdk
-
 test_tapasco_fedora_30:
   image: fedora:30
   extends: .test_tapasco_fedora
@@ -86,6 +72,27 @@ test_tapasco_fedora_30:
 test_tapasco_fedora_31:
   image: fedora:31
   extends: .test_tapasco_fedora
+
+.build_scala_tapasco_centos:
+  stage: build_scala_toolflow
+  retry: 2
+  dependencies: []
+  tags:
+    - High
+  before_script:
+    - yum -y install which java-openjdk findutils
+  script:
+    - ./tapasco-init.sh && source tapasco-setup.sh
+    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
+    - tapasco-build-toolflow
+
+build_scala_tapasco_centos_7:
+  image: centos:7
+  extends: .build_scala_tapasco_centos
+
+build_scala_tapasco_centos_8:
+  image: centos:8
+  extends: .build_scala_tapasco_centos
 
 .build_scala_tapasco_fedora:
   stage: build_scala_toolflow
@@ -102,33 +109,7 @@ test_tapasco_fedora_31:
     - ./gradlew buildRPM
   artifacts:
     paths:
-      - toolflow/scala/build/distributions/tapasco-2019-10.x86_64.rpm
-
-build_scala_tapasco_fedora_24:
-  image: fedora:24
-  extends: .build_scala_tapasco_fedora
-
-build_scala_tapasco_fedora_25:
-  image: fedora:25
-  extends: .build_scala_tapasco_fedora
-
-build_scala_tapasco_fedora_26:
-  image: fedora:26
-  extends: .build_scala_tapasco_fedora
-
-build_scala_tapasco_fedora_27:
-  image: fedora:27
-  extends: .build_scala_tapasco_fedora
-
-build_scala_tapasco_fedora_28:
-  image: fedora:28
-  extends: .build_scala_tapasco_fedora
-
-build_scala_tapasco_fedora_29:
-  image: fedora:29
-  extends: .build_scala_tapasco_fedora
-  before_script:
-    - dnf -y install which findutils java-11-openjdk
+      - toolflow/scala/build/distributions/tapasco-2020-04.x86_64.rpm
 
 build_scala_tapasco_fedora_30:
   image: fedora:30
@@ -155,7 +136,7 @@ build_scala_tapasco_fedora_31:
     - ./gradlew buildDEB
   artifacts:
     paths:
-      - toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb
+      - toolflow/scala/build/distributions/tapasco_2020-04_amd64.deb
 
 build_scala_tapasco_ubuntu_16_04:
   image: ubuntu:xenial
@@ -163,14 +144,6 @@ build_scala_tapasco_ubuntu_16_04:
 
 build_scala_tapasco_ubuntu_18_04:
   image: ubuntu:bionic
-  extends: .build_scala_tapasco_ubuntu
-
-build_scala_tapasco_ubuntu_18_10:
-  image: ubuntu:cosmic
-  extends: .build_scala_tapasco_ubuntu
-
-build_scala_tapasco_ubuntu_19_04:
-  image: ubuntu:disco
   extends: .build_scala_tapasco_ubuntu
 
 # build kernel module
@@ -184,7 +157,7 @@ build_scala_tapasco_ubuntu_19_04:
   tags:
     - Normal
   script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 libelf-dev
     - ./tapasco-init.sh && source tapasco-setup.sh
     - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd runtime/kernel; make LINUX_HOME="/lib/modules/$d/build" clean && make LINUX_HOME=/lib/modules/$d/build -j 1 $MODE; popd; done
   artifacts:
@@ -199,14 +172,6 @@ build_kernel_ubuntu_18_04:
   image: ubuntu:bionic
   extends: .build_kernel_ubuntu
 
-build_kernel_ubuntu_18_10:
-  image: ubuntu:cosmic
-  extends: .build_kernel_ubuntu
-
-build_kernel_ubuntu_19_04:
-  image: ubuntu:disco
-  extends: .build_kernel_ubuntu
-
 build_kernel_ubuntu_16_04_debug:
   variables:
     MODE: "all"
@@ -219,34 +184,19 @@ build_kernel_ubuntu_18_04_debug:
   image: ubuntu:bionic
   extends: .build_kernel_ubuntu
 
-build_kernel_ubuntu_18_10_debug:
-  variables:
-    MODE: "all"
-  image: ubuntu:cosmic
-  extends: .build_kernel_ubuntu
-
-build_kernel_ubuntu_19_04_debug:
-  variables:
-    MODE: "all"
-  image: ubuntu:disco
-  extends: .build_kernel_ubuntu
-
-build_kernel_32bit_debug:
+build_kernel_arm32v7_debug:
   stage: build_kernel
   variables:
     MODE: "all"
-  image: i386/ubuntu
-  retry: 2
-  dependencies: []
-  tags:
-    - Normal
-  script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python libelf-dev
-    - ./tapasco-init.sh && source tapasco-setup.sh
-    - for d in `ls /lib/modules`; do echo "Building for linux headers in $d"; pushd runtime/kernel; make LINUX_HOME="/lib/modules/$d/build" clean && CPPFLAGS="-Wno-error=pointer-to-int-cast -Wno-error=int-to-pointer-cast" make LINUX_HOME=/lib/modules/$d/build -j 1 $MODE; popd; done
-  artifacts:
-    paths:
-      - runtime/kernel/tlkm.ko
+  image: arm32v7/ubuntu:16.04
+  extends: .build_kernel_ubuntu
+
+build_kernel_arm64v8_debug:
+  stage: build_kernel
+  variables:
+    MODE: "all"
+  image: arm64v8/ubuntu:16.04
+  extends: .build_kernel_ubuntu
 
 .build_kernel_fedora:
   stage: build_kernel
@@ -264,72 +214,12 @@ build_kernel_32bit_debug:
     paths:
       - runtime/kernel/tlkm.ko
 
-build_kernel_fedora_24:
-  image: fedora:24
-  extends: .build_kernel_fedora
-
-build_kernel_fedora_25:
-  image: fedora:25
-  extends: .build_kernel_fedora
-
-build_kernel_fedora_26:
-  image: fedora:26
-  extends: .build_kernel_fedora
-
-build_kernel_fedora_27:
-  image: fedora:27
-  extends: .build_kernel_fedora
-
-build_kernel_fedora_28:
-  image: fedora:28
-  extends: .build_kernel_fedora
-
-build_kernel_fedora_29:
-  image: fedora:29
-  extends: .build_kernel_fedora
-
 build_kernel_fedora_30:
   image: fedora:30
   extends: .build_kernel_fedora
 
 build_kernel_fedora_31:
   image: fedora:31
-  extends: .build_kernel_fedora
-
-build_kernel_fedora_24_debug:
-  variables:
-    MODE: "all"
-  image: fedora:24
-  extends: .build_kernel_fedora
-
-build_kernel_fedora_25_debug:
-  variables:
-    MODE: "all"
-  image: fedora:25
-  extends: .build_kernel_fedora
-
-build_kernel_fedora_26_debug:
-  variables:
-    MODE: "all"
-  image: fedora:26
-  extends: .build_kernel_fedora
-
-build_kernel_fedora_27_debug:
-  variables:
-    MODE: "all"
-  image: fedora:27
-  extends: .build_kernel_fedora
-
-build_kernel_fedora_28_debug:
-  variables:
-    MODE: "all"
-  image: fedora:28
-  extends: .build_kernel_fedora
-
-build_kernel_fedora_29_debug:
-  variables:
-    MODE: "all"
-  image: fedora:29
   extends: .build_kernel_fedora
 
 build_kernel_fedora_30_debug:
@@ -360,35 +250,11 @@ build_kernel_fedora_31_debug:
 
 .build_tapasco_fedora:
   before_script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python3 libatomic git rpm-build
   artifacts:
     paths:
       - build/tapasco-*-Linux.rpm
   extends: .build_tapasco
-
-build_tapasco_fedora_24:
-  image: fedora:24
-  extends: .build_tapasco_fedora
-
-build_tapasco_fedora_25:
-  image: fedora:25
-  extends: .build_tapasco_fedora
-
-build_tapasco_fedora_26:
-  image: fedora:26
-  extends: .build_tapasco_fedora
-
-build_tapasco_fedora_27:
-  image: fedora:27
-  extends: .build_tapasco_fedora
-
-build_tapasco_fedora_28:
-  image: fedora:28
-  extends: .build_tapasco_fedora
-
-build_tapasco_fedora_29:
-  image: fedora:29
-  extends: .build_tapasco_fedora
 
 build_tapasco_fedora_30:
   image: fedora:30
@@ -396,30 +262,6 @@ build_tapasco_fedora_30:
 
 build_tapasco_fedora_31:
   image: fedora:31
-  extends: .build_tapasco_fedora
-
-build_tapasco_fedora_26_debug:
-  variables:
-    MODE: "debug"
-  image: fedora:26
-  extends: .build_tapasco_fedora
-
-build_tapasco_fedora_27_debug:
-  variables:
-    MODE: "debug"
-  image: fedora:27
-  extends: .build_tapasco_fedora
-
-build_tapasco_fedora_28_debug:
-  variables:
-    MODE: "debug"
-  image: fedora:28
-  extends: .build_tapasco_fedora
-
-build_tapasco_fedora_29_debug:
-  variables:
-    MODE: "debug"
-  image: fedora:29
   extends: .build_tapasco_fedora
 
 build_tapasco_fedora_30_debug:
@@ -436,7 +278,7 @@ build_tapasco_fedora_31_debug:
 
 .build_tapasco_ubuntu:
   before_script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git rpm
   artifacts:
     paths:
       - build/tapasco-*-Linux.deb
@@ -450,28 +292,20 @@ build_tapasco_ubuntu_18_04:
   image: ubuntu:bionic
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_18_10:
-  image: ubuntu:cosmic
-  extends: .build_tapasco_ubuntu
-
-build_tapasco_ubuntu_19_04:
-  image: ubuntu:disco
-  extends: .build_tapasco_ubuntu
-
-build_tapasco_ubuntu_19_04_cross:
+build_tapasco_ubuntu_16_04_cross:
   variables:
     TARGET: "zynq"
-  image: ubuntu:disco
+  image: ubuntu:xenial
   before_script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_19_04_clang:
+build_tapasco_ubuntu_16_04_clang:
   variables:
     TARGET: "clang"
-  image: ubuntu:disco
+  image: ubuntu:xenial
   before_script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm clang
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git rpm clang
   extends: .build_tapasco_ubuntu
 
 build_tapasco_ubuntu_16_04_debug:
@@ -486,43 +320,44 @@ build_tapasco_ubuntu_18_04_debug:
   image: ubuntu:bionic
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_18_10_debug:
+build_tapasco_arm32v7_debug:
   variables:
     MODE: "debug"
-  image: ubuntu:cosmic
+  image: arm32v7/ubuntu:16.04
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_19_04_debug:
+build_tapasco_arm64v8_debug:
   variables:
     MODE: "debug"
-  image: ubuntu:disco
+  image: arm64v8/ubuntu:16.04
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_19_04_cross_debug:
+build_tapasco_ubuntu_16_04_cross_debug:
   variables:
     MODE: "debug"
     TARGET: "zynq"
-  image: ubuntu:disco
+  image: ubuntu:xenial
   before_script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
   extends: .build_tapasco_ubuntu
 
 tapasco_compose_ubuntu:
   stage: build_hw
+  retry: 2
   variables:
     VIVADO_VERSION: "2019.1"
     XILINX_VIVADO: "/opt/cad/xilinx/vivado/Vivado/${VIVADO_VERSION}"
     XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
   tags:
     - CAD
-  image: ubuntu:disco
+  image: ubuntu:bionic
   dependencies:
-    - build_scala_tapasco_ubuntu_19_04
+    - build_scala_tapasco_ubuntu_18_04
   script:
     - source $XILINX_VIVADO/settings64.sh
     - apt-get -y update
     - apt-get -y install libtinfo5 build-essential
-    - apt -y install ./toolflow/scala/build/distributions/tapasco_2019-10_amd64.deb
+    - apt -y install ./toolflow/scala/build/distributions/tapasco_2020-04_amd64.deb
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
     - tapasco -v hls counter -p pynq
@@ -539,17 +374,17 @@ tapasco_compose_ubuntu:
   tags:
     - CAD
     - High
-  image: fedora:28
+  image: fedora:30
   dependencies:
-    - build_scala_tapasco_fedora_28
+    - build_scala_tapasco_fedora_30
   before_script:
-    - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++ python
+    - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++ python3
     - ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
   script:
     - source $XILINX_VIVADO/settings64.sh
     - which vivado
     - which vivado_hls
-    - dnf -y install toolflow/scala/build/distributions/tapasco-2019-10.x86_64.rpm
+    - dnf -y install toolflow/scala/build/distributions/tapasco-2020-04.x86_64.rpm
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
     - tapasco hls counter -p $PLATFORM --skipEvaluation
@@ -578,6 +413,11 @@ tapasco_compose_18_3:
 tapasco_compose_19_1:
   variables:
     VIVADO_VERSION: "2019.1"
+  extends: .tapasco_compose
+
+tapasco_compose_19_2:
+  variables:
+    VIVADO_VERSION: "2019.2"
   extends: .tapasco_compose
 
 tapasco_compose_pcie:

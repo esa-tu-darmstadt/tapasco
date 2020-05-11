@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo 
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <linux/pci.h>
 #include <linux/version.h>
 #include <linux/module.h>
@@ -15,6 +34,54 @@
 #define TLKM_DEV_ID(pdev)                                                      \
 	(((struct tlkm_pcie_device *)dev_get_drvdata(&(pdev)->dev))            \
 		 ->parent->dev_id)
+
+uint32_t get_xdma_reg_addr(uint32_t target, uint32_t channel, uint32_t offset)
+{
+	return ((target << 12) | (channel << 8) | offset);
+}
+
+static int aws_ec2_configure_xdma(struct tlkm_pcie_device *pdev)
+{
+	dev_id_t const did = pdev->parent->dev_id;
+	struct pci_dev *dev = pdev->pdev;
+
+	void __iomem *bar2;
+	uint32_t val;
+
+	DEVLOG(did, TLKM_LF_PCIE, "Mapping BAR2 and configuring XDMA core");
+	bar2 = ioremap(pci_resource_start(dev, 2),
+			       pci_resource_len(dev, 2));
+
+	if (!bar2) {
+		DEVERR(did, "XDMA ioremap failed");
+		return -ENODEV;
+	}
+
+	DEVLOG(did, TLKM_LF_PCIE, "XDMA addr: %p", bar2);
+	DEVLOG(did, TLKM_LF_PCIE, "XDMA len: %x",
+	       (int)pci_resource_len(dev, 2));
+
+	val = ioread32(bar2 + get_xdma_reg_addr(2, 0, 0));
+	DEVLOG(did, TLKM_LF_PCIE, "XDMA IRQ block identifier: %x", val);
+
+	/* set user interrupt vectors */
+	iowrite32(0x03020100, bar2 + get_xdma_reg_addr(2, 0, 0x80));
+	iowrite32(0x07060504, bar2 + get_xdma_reg_addr(2, 0, 0x84));
+	iowrite32(0x0b0a0908, bar2 + get_xdma_reg_addr(2, 0, 0x88));
+	iowrite32(0x0f0e0d0c, bar2 + get_xdma_reg_addr(2, 0, 0x8c));
+
+	/* set user interrupt enable mask */
+	iowrite32(0xffff, bar2 + get_xdma_reg_addr(2, 0, 0x04));
+	wmb();
+
+	val = ioread32(bar2 + get_xdma_reg_addr(2, 0, 0x04));
+	DEVLOG(did, TLKM_LF_PCIE, "XDMA user IER: %x", val);
+
+	DEVLOG(did, TLKM_LF_PCIE,
+	       "Finished configuring XDMA core, unmapping BAR2");
+	iounmap(bar2);
+	return 0;
+}
 
 /**
  * @brief Enables pcie-device and claims/remaps neccessary bar resources
@@ -48,6 +115,15 @@ static int claim_device(struct tlkm_pcie_device *pdev)
 
 	dev_set_drvdata(&dev->dev, pdev);
 
+	/* set up XDMA user interrupts on AWS EC2 platform */
+	if (dev->vendor == AWS_EC2_VENDOR_ID &&
+	    dev->device == AWS_EC2_DEVICE_ID) {
+		err = aws_ec2_configure_xdma(pdev);
+		if (err) {
+			DEVERR(did, "failed to configure XDMA core");
+			goto error_pci_req;
+		}
+	}
 	/* read out pci bar 0 settings */
 	pdev->phy_addr_bar0 = pci_resource_start(dev, 0);
 	pdev->phy_len_bar0 = pci_resource_len(dev, 0);
@@ -122,14 +198,25 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 #endif
 	}
 
+	if (dev->vendor == AWS_EC2_VENDOR_ID &&
+	    dev->device == AWS_EC2_DEVICE_ID) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
-	err = pci_enable_msix_range(dev, pdev->msix_entries,
-				    REQUIRED_INTERRUPTS, REQUIRED_INTERRUPTS);
+		err = pci_enable_msix_range(dev, pdev->msix_entries, 16, 16);
 #else
-	/* set up MSI interrupt vector to max size */
-	err = pci_alloc_irq_vectors(dev, REQUIRED_INTERRUPTS,
-				    REQUIRED_INTERRUPTS, PCI_IRQ_MSIX);
+		/* set up MSI interrupt vector to max size */
+		err = pci_alloc_irq_vectors(dev, 16, 16, PCI_IRQ_MSIX);
 #endif
+	} else {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
+		err = pci_enable_msix_range(dev, pdev->msix_entries,
+					    REQUIRED_INTERRUPTS,
+					    REQUIRED_INTERRUPTS);
+#else
+		/* set up MSI interrupt vector to max size */
+		err = pci_alloc_irq_vectors(dev, REQUIRED_INTERRUPTS,
+					    REQUIRED_INTERRUPTS, PCI_IRQ_MSIX);
+#endif
+	}
 
 	if (err <= 0) {
 		DEVERR(did, "cannot set MSI vector (%d)", err);
@@ -138,7 +225,14 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 		DEVLOG(did, TLKM_LF_IRQ, "got %d MSI vectors", err);
 	}
 
-	if ((err = pcie_irqs_init(pdev->parent))) {
+	if (dev->vendor == AWS_EC2_VENDOR_ID &&
+	    dev->device == AWS_EC2_DEVICE_ID) {
+		err = aws_ec2_pcie_irqs_init(pdev->parent);
+	} else {
+		err = pcie_irqs_init(pdev->parent);
+	}
+
+	if (err) {
 		DEVERR(did, "failed to register interrupts: %d", err);
 		return -ENOSPC;
 	}
@@ -147,7 +241,12 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 
 static void release_msi(struct tlkm_pcie_device *pdev)
 {
-	pcie_irqs_exit(pdev->parent);
+	if (pdev->pdev->vendor == AWS_EC2_VENDOR_ID &&
+	    pdev->pdev->device == AWS_EC2_DEVICE_ID) {
+		aws_ec2_pcie_irqs_exit(pdev->parent);
+	} else {
+		pcie_irqs_exit(pdev->parent);
+	}
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
 	pci_disable_msix(pdev->pdev);
 #else
@@ -195,8 +294,8 @@ int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	struct tlkm_device *dev;
 	LOG(TLKM_LF_PCIE, "found TaPaSCo PCIe device, registering ...");
-	dev = tlkm_bus_new_device((struct tlkm_class *)&pcie_cls,
-				  XILINX_VENDOR_ID, XILINX_DEVICE_ID, pdev);
+	dev = tlkm_bus_new_device((struct tlkm_class *)&pcie_cls, id->vendor,
+				  id->device, pdev);
 	if (!dev) {
 		ERR("could not add device to bus");
 		return -ENOMEM;
@@ -244,6 +343,7 @@ int pcie_device_create(struct tlkm_device *dev, void *data)
 		goto err_configure;
 	}
 	report_link_status(pdev);
+	memset(pdev->irq_mapping, -1, REQUIRED_INTERRUPTS * sizeof(pdev->irq_mapping[0]));
 	return 0;
 
 err_configure:
@@ -273,8 +373,24 @@ void pcie_device_destroy(struct tlkm_device *dev)
 int pcie_device_init_subsystems(struct tlkm_device *dev, void *data)
 {
 	int ret = 0;
+	uint32_t status, c;
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
+
+	dev_addr_t gpio_base = tlkm_status_get_component_base(
+		dev, "PLATFORM_COMPONENT_MEM_GPIO");
+	if (gpio_base != -1) {
+		volatile uint32_t *ddr_ready = (dev->mmap.plat + gpio_base);
+		status = ddr_ready[0];
+		for (c = 0; c < 4; c++) {
+			if (!(status & (1 << c))) {
+				DEVWRN(dev->dev_id,
+				       "memory channel %c is not available or not ready",
+				       65 + c);
+			}
+		}
+	}
+
 	DEVLOG(dev->dev_id, TLKM_LF_PCIE, "claiming MSI-X interrupts ...");
 	if ((ret = claim_msi(pdev))) {
 		DEVERR(dev->dev_id, "failed to claim MSI-X interrupts: %d",
@@ -306,14 +422,11 @@ void pcie_device_exit_subsystems(struct tlkm_device *dev)
 }
 
 int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct tlkm_device *dev,
-				    void **buffer, void **dev_handle,
+				    void **buffer, dma_addr_t *dev_handle,
 				    dma_direction_t direction, size_t size)
 {
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
-	// We should really allocate memory and not misuse the void* as dma_addr_t
-	// Should be the same size on most systems, however
-	dma_addr_t *handle = (dma_addr_t *)dev_handle;
 	int err = 0;
 	*buffer = kmalloc(size, 0);
 	DEVLOG(dev_id, TLKM_LF_DEVICE,
@@ -321,11 +434,11 @@ int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct tlkm_device *dev,
 	       size, *buffer);
 	if (*buffer) {
 		memset(*buffer, 0, size);
-		*handle =
+		*dev_handle =
 			dma_map_single(&pdev->pdev->dev, *buffer, size,
 				       direction == FROM_DEV ? DMA_FROM_DEVICE :
 							       DMA_TO_DEVICE);
-		if (dma_mapping_error(&pdev->pdev->dev, *handle)) {
+		if (dma_mapping_error(&pdev->pdev->dev, *dev_handle)) {
 			DEVERR(dev_id, "DMA Mapping error");
 			err = -EFAULT;
 		}
@@ -335,25 +448,24 @@ int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct tlkm_device *dev,
 	}
 
 	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapped buffer to device address %p",
-	       (void *)*handle);
+	       (void *)*dev_handle);
 
 	return err;
 }
 
 void pcie_device_dma_free_buffer(dev_id_t dev_id, struct tlkm_device *dev,
-				 void **buffer, void **dev_handle,
+				 void **buffer, dma_addr_t *dev_handle,
 				 dma_direction_t direction, size_t size)
 {
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
-	dma_addr_t *handle = (dma_addr_t *)dev_handle;
 	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapped buffer to device address %p",
-	       (void *)*handle);
-	if (*handle) {
-		dma_unmap_single(&pdev->pdev->dev, *handle, size,
+	       (void *)*dev_handle);
+	if (*dev_handle) {
+		dma_unmap_single(&pdev->pdev->dev, *dev_handle, size,
 				 direction == FROM_DEV ? DMA_FROM_DEVICE :
 							 DMA_TO_DEVICE);
-		*handle = 0;
+		*dev_handle = 0;
 	}
 	if (*buffer) {
 		kfree(*buffer);
@@ -363,16 +475,15 @@ void pcie_device_dma_free_buffer(dev_id_t dev_id, struct tlkm_device *dev,
 
 inline int pcie_device_dma_sync_buffer_cpu(dev_id_t dev_id,
 					   struct tlkm_device *dev,
-					   void **buffer, void **dev_handle,
+					   void **buffer, dma_addr_t *dev_handle,
 					   dma_direction_t direction,
 					   size_t size)
 {
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
-	dma_addr_t *handle = (dma_addr_t *)dev_handle;
 	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapping buffer %p for cpu",
-	       *dev_handle);
-	dma_sync_single_for_cpu(&pdev->pdev->dev, *handle, size,
+	       (void *)*dev_handle);
+	dma_sync_single_for_cpu(&pdev->pdev->dev, *dev_handle, size,
 				direction == FROM_DEV ? DMA_FROM_DEVICE :
 							DMA_TO_DEVICE);
 	return 0;
@@ -380,16 +491,15 @@ inline int pcie_device_dma_sync_buffer_cpu(dev_id_t dev_id,
 
 inline int pcie_device_dma_sync_buffer_dev(dev_id_t dev_id,
 					   struct tlkm_device *dev,
-					   void **buffer, void **dev_handle,
+					   void **buffer, dma_addr_t *dev_handle,
 					   dma_direction_t direction,
 					   size_t size)
 {
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
-	dma_addr_t *handle = (dma_addr_t *)dev_handle;
 	DEVLOG(dev_id, TLKM_LF_DEVICE, "Mapping buffer %p for device",
-	       *dev_handle);
-	dma_sync_single_for_device(&pdev->pdev->dev, *handle, size,
+	       (void *)*dev_handle);
+	dma_sync_single_for_device(&pdev->pdev->dev, *dev_handle, size,
 				   direction == FROM_DEV ? DMA_FROM_DEVICE :
 							   DMA_TO_DEVICE);
 	return 0;

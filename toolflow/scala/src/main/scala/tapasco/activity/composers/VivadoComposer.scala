@@ -1,21 +1,24 @@
-//
-// Copyright (C) 2016 Jens Korinth, TU Darmstadt
-//
-// This file is part of Tapasco (TPC).
-//
-// Tapasco is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Tapasco is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
-//
+/*
+ *
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 /**
   * @file VivadoComposer.scala
   * @brief Composer implementation for Vivado Design Suite.
@@ -80,6 +83,9 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
     val pt = new ProgressTrackingFileWatcher(Some(logger))
     pt += files.logFile
 
+    // Delete outdated timing report to make sure we detect failure correctly.
+    files.timFile.toFile.delete
+
     // Vivado shell command
     val vivadoCmd = Seq("vivado", "-mode", "batch", "-source", files.tclFile.toString,
       "-notrace", "-nojournal", "-log", files.logFile.toString)
@@ -107,7 +113,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       else{
         logger.error("Vivado finished with non-zero exit code: %d for %s in '%s'"
           .format(r, files.runName, files.outdir))
-        Composer.Result(files.log map (_.result) getOrElse OtherError, log = files.log,
+        Composer.Result(files.log map (_.result(true)) getOrElse OtherError, log = files.log,
           util = None, timing = None)
       }
     } else {
@@ -162,7 +168,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
         .format(files.runName, wns, files.tim.map(_.maxDelayPath), files.outdir))
       TimingFailure
     } else {
-      logger.info("Vivado finished successfully for %s, WNS: %1.3f, bitstream file is here: '%s'"
+      logger.info("Vivado finished successfully for %s, WNS: %1.3f, resulting file is here: '%s'"
         .format(files.runName, wns, files.bitFile))
       Success
     }
@@ -254,7 +260,7 @@ object VivadoComposer {
     lazy val outdir: Path = cfg.outputDir(c, t, f, fs)
     lazy val logFile: Path = outdir.resolve("%s.log".format(Composer.mkProjectName(c, t, f)))
     lazy val tclFile: Path = outdir.resolve("%s.tcl".format(t.pd.name))
-    lazy val bitFile: Path = logFile.resolveSibling("%s.bit".format(Composer.mkProjectName(c, t, f)))
+    lazy val bitFile: Path = logFile.resolveSibling("%s.%s".format(Composer.mkProjectName(c, t, f), t.pd.fileExtension))
     lazy val runName: String = "%s with %s[F=%1.3f]".format(logformat(c), t, f)
     lazy val timFile: Path = logFile.resolveSibling("timing.txt")
     lazy val utilFile: Path = logFile.resolveSibling("utilization.txt")

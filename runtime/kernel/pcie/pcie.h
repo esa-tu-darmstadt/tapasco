@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo 
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 #ifndef PCIE_H__
 #define PCIE_H__
 
@@ -7,6 +26,8 @@
 #define PCIE_CLS_NAME "pcie"
 #define XILINX_VENDOR_ID 0x10EE
 #define XILINX_DEVICE_ID 0x7038
+#define AWS_EC2_VENDOR_ID 0x1D0F
+#define AWS_EC2_DEVICE_ID 0xF000
 
 #define PCIE_DEF INIT_PLATFORM(0x0ULL, 0x00002000 /* status */)
 

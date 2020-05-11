@@ -1,21 +1,24 @@
-//
-// Copyright (C) 2014 Jens Korinth, TU Darmstadt
-//
-// This file is part of Tapasco (TPC).
-//
-// Tapasco is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Tapasco is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
-//
+/*
+ *
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 /**
   * @file Platform.scala
   * @brief Model: TPC Platform.
@@ -45,12 +48,14 @@ case class Platform(
                      private val _benchmark: Option[Path],
                      hostFrequency: Option[Double],
                      memFrequency: Option[Double],
-                     implTimeout : Option[Int]
+                     implTimeout : Option[Int],
+                     private val _fileFormat : Option[String]
                    ) extends Description(descPath) {
   val tclLibrary: Path = resolve(_tclLibrary)
   val benchmark: Option[Benchmark] = _benchmark flatMap (p => Benchmark.from(resolve(p)).toOption)
   val slotCount: Int = _slotCount getOrElse Platform.DEFAULT_SLOTCOUNT
   val supportedFrequencies : Seq[Int] = _supportedFrequencies.getOrElse(50 to maxFrequency by 5)
+  val fileExtension : String = _fileFormat.getOrElse("bit")
   require(mustExist(tclLibrary), "Tcl library %s does not exist".format(tclLibrary.toString))
 }
 

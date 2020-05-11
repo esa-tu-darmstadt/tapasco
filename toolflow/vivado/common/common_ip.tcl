@@ -1,3 +1,22 @@
+# Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+#
+# This file is part of TaPaSCo
+# (see https://github.com/esa-tu-darmstadt/tapasco).
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+
 # create a dictionary of compatible VLNVs
 dict set stdcomps   axi_ic               vlnv   "xilinx.com:ip:axi_interconnect:2.1"
 dict set stdcomps   axi_sc               vlnv   "xilinx.com:ip:smartconnect:1.0"
@@ -38,5 +57,8 @@ dict set stdcomps   pciebridgetolite     vlnv   "esa.informatik.tu-darmstadt.de:
 dict set stdcomps   pciebridgetolite_x16 vlnv   "esa.informatik.tu-darmstadt.de:user:PCIeBridgeToLite_x16:1.0"
 dict set stdcomps   hsa_wrapper          vlnv   "esa.informatik.tu-darmstadt.de:user:HSAWrapper:1.0"
 dict set stdcomps   axis_arbiter         vlnv   "esa.informatik.tu-darmstadt.de:user:AXIS_Arbiter:1.0"
+dict set stdcomps   aws_intr_ctrl        vlnv   "esa.informatik.tu-darmstadt.de:user:AWSIntrCtrl:1.0"
 dict set stdcomps   axi_bram_ctrl        vlnv   "xilinx.com:ip:axi_bram_ctrl"
 dict set stdcomps   bram_ctrl            vlnv   "xilinx.com:ip:blk_mem_gen"
+dict set stdcomps   axi_gpio             vlnv   "xilinx.com:ip:axi_gpio:2.0"
+dict set stdcomps   axioffset_hbm        vlnv   "esa.informatik.tu-darmstadt.de:user:AXIOffsetHBM:1.0"

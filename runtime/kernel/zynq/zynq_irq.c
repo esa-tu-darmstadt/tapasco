@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo 
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 //
 // Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
 //
@@ -21,11 +40,12 @@
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/sched.h>
+#include <linux/of.h>
+#include <linux/of_irq.h>
 #include "tlkm_logging.h"
 #include "tlkm_slots.h"
 #include "zynq_irq.h"
 
-#define ZYNQ_IRQ_BASE_IRQ 45
 #define ZYNQ_MAX_NUM_INTCS 4
 
 #define INTERRUPT_CONTROLLERS                                                  \
@@ -51,6 +71,7 @@ typedef struct {
 
 static struct {
 	struct tlkm_control *ctrl;
+	int requested_irq_num;
 #define _INTC(N) intc_t intc_##N;
 	INTERRUPT_CONTROLLERS
 #undef _INTC
@@ -113,13 +134,14 @@ static void zynq_init_intc(struct zynq_device *zynq_dev, u32 const base)
 
 int zynq_irq_init(struct zynq_device *zynq_dev)
 {
-	int retval = 0, irqn = 0, rirq = 0;
+	int retval = 0, rirq = 0;
 	u32 base;
+	zynq_irq.requested_irq_num = 0;
 
 	init_work_structs();
-
 #define _INTC(N)                                                               \
-	rirq = ZYNQ_IRQ_BASE_IRQ + zynq_dev->parent->cls->npirqs + irqn;       \
+	rirq = irq_of_parse_and_map(of_find_node_by_name(NULL, "tapasco"),     \
+				    zynq_irq.requested_irq_num);               \
 	base = tlkm_status_get_component_base(zynq_dev->parent,                \
 					      "PLATFORM_COMPONENT_INTC" #N);   \
 	LOG(TLKM_LF_IRQ, "INTC%d base is %d", N, base);                        \
@@ -133,7 +155,7 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 		retval = request_irq(rirq, zynq_irq_handler_##N,               \
 				     IRQF_EARLY_RESUME,                        \
 				     "tapasco_zynq_" STR(N), zynq_dev);        \
-		++irqn;                                                        \
+		++zynq_irq.requested_irq_num;                                  \
 		if (retval) {                                                  \
 			ERR("could not register IRQ #%d!", rirq);              \
 			goto err;                                              \
@@ -146,7 +168,7 @@ int zynq_irq_init(struct zynq_device *zynq_dev)
 	return retval;
 
 err:
-	while (--irqn >= 0) {
+	while (--zynq_irq.requested_irq_num >= 0) {
 		disable_irq(rirq);
 		free_irq(rirq, zynq_dev);
 	}
@@ -155,10 +177,12 @@ err:
 
 void zynq_irq_exit(struct zynq_device *zynq_dev)
 {
-	int irqn = ZYNQ_MAX_NUM_INTCS, rirq = 0;
-	while (irqn) {
-		--irqn;
-		rirq = ZYNQ_IRQ_BASE_IRQ + zynq_dev->parent->cls->npirqs + irqn;
+	int rirq = 0;
+	while (zynq_irq.requested_irq_num) {
+		--zynq_irq.requested_irq_num;
+		rirq = irq_of_parse_and_map(of_find_node_by_name(NULL,
+								 "tapasco"),
+					    zynq_irq.requested_irq_num);
 		LOG(TLKM_LF_IRQ, "releasing IRQ #%d", rirq);
 		disable_irq(rirq);
 		free_irq(rirq, zynq_dev);
@@ -169,6 +193,8 @@ int zynq_irq_request_platform_irq(struct tlkm_device *dev, int irq_no,
 				  irq_handler_t h, void *data)
 {
 	int err = 0;
+	int rirq = irq_of_parse_and_map(of_find_node_by_name(NULL, "tapasco"),
+					irq_no);
 	if (irq_no >= dev->cls->npirqs) {
 		DEVERR(dev->dev_id,
 		       "invalid platform interrupt number: %d (must be < %zd",
@@ -176,10 +202,10 @@ int zynq_irq_request_platform_irq(struct tlkm_device *dev, int irq_no,
 		return -ENXIO;
 	}
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "requesting platform irq #%d", irq_no);
-	if ((err = request_irq(ZYNQ_IRQ_BASE_IRQ + irq_no, h, IRQF_EARLY_RESUME,
+	if ((err = request_irq(rirq, h, IRQF_EARLY_RESUME,
 			       "tapasco_zynq_platform", data))) {
-		DEVERR(dev->dev_id, "could not request interrupt #%d: %d",
-		       ZYNQ_IRQ_BASE_IRQ + irq_no, err);
+		DEVERR(dev->dev_id, "could not request interrupt #%d: %d", rirq,
+		       err);
 		return err;
 	}
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registered platform irq #%d", irq_no);
@@ -188,6 +214,8 @@ int zynq_irq_request_platform_irq(struct tlkm_device *dev, int irq_no,
 
 void zynq_irq_release_platform_irq(struct tlkm_device *dev, int irq_no)
 {
+	int rirq = irq_of_parse_and_map(of_find_node_by_name(NULL, "tapasco"),
+					irq_no);
 	struct zynq_device *zdev = (struct zynq_device *)dev->private_data;
 	if (irq_no >= dev->cls->npirqs) {
 		DEVERR(dev->dev_id,
@@ -196,7 +224,6 @@ void zynq_irq_release_platform_irq(struct tlkm_device *dev, int irq_no)
 		return;
 	}
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ,
-	       "freeing platform interrupt #%d with mapping %d", irq_no,
-	       ZYNQ_IRQ_BASE_IRQ + irq_no);
-	free_irq(ZYNQ_IRQ_BASE_IRQ + irq_no, zdev);
+	       "freeing platform interrupt #%d with mapping %d", irq_no, rirq);
+	free_irq(rirq, zdev);
 }

@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ *
+ * This file is part of TaPaSCo 
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <linux/of.h>
 #include <linux/fs.h>
 #include <linux/io.h>
@@ -5,6 +24,7 @@
 #include "tlkm_types.h"
 #include "tlkm_bus.h"
 #include "zynq.h"
+#include "zynqmp.h"
 #include "zynq_device.h"
 #include "zynq_irq.h"
 #include "zynq_dmamgmt.h"
@@ -12,6 +32,13 @@
 static const struct of_device_id zynq_ids[] = {
 	{
 		.compatible = ZYNQ_NAME,
+	},
+	{},
+};
+
+static const struct of_device_id zynqmp_ids[] = {
+	{
+		.compatible = ZYNQMP_NAME,
 	},
 	{},
 };
@@ -66,14 +93,14 @@ err_dmamgmt:
 	return ret;
 
 err_irq:
-	zynq_dmamgmt_exit();
+	zynq_dmamgmt_exit(dev);
 	return ret;
 }
 
 void zynq_device_exit_subsystems(struct tlkm_device *dev)
 {
 	zynq_irq_exit(&_zynq_dev);
-	zynq_dmamgmt_exit();
+	zynq_dmamgmt_exit(dev);
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "exited subsystems");
 }
 
@@ -89,6 +116,21 @@ int zynq_device_probe(struct tlkm_class *cls)
 			return -EFAULT;
 	} else {
 		LOG(TLKM_LF_DEVICE, "no Xilinx Zynq-7000 series device found");
+	}
+	return 0;
+}
+
+int zynqmp_device_probe(struct tlkm_class *cls)
+{
+	struct tlkm_device *inst;
+	LOG(TLKM_LF_DEVICE, "searching for Xilinx Zynq-MP series devices ...");
+	if (of_find_matching_node(NULL, zynqmp_ids)) {
+		LOG(TLKM_LF_DEVICE, "found Xilinx Zynq-MP");
+		inst = tlkm_bus_new_device(cls, 0, 0, NULL);
+		if (!inst)
+			return -EFAULT;
+	} else {
+		LOG(TLKM_LF_DEVICE, "no Xilinx Zynq-MP series device found");
 	}
 	return 0;
 }
