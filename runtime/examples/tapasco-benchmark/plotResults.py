@@ -38,8 +38,7 @@ if len(args.fileandname) % 2 != 0:
         print("Please specify the benchmarks as pairs of 'name filename'.")
         sys.exit(1)
 
-textwidth=516.0 * 0.0138889
-columnwidth=252.0 * 0.0138889
+columnwidth=1000 * 0.0138889
 
 def latexify(fig_width=None, fig_height=None, columns=1):
     """Set up matplotlib's RC params for LaTeX plotting.
@@ -135,9 +134,9 @@ for name, file in files:
         w_s = pd.Series([x * 1024 * 1024 for x in write], index)
         rw_s = pd.Series([x * 1024 * 1024 for x in readwrite], index)
 
-        benchmark_read["{} R".format(name)] = r_s
-        benchmark_write["{} W".format(name)] = w_s
-        benchmark_readwrite["{} RW".format(name)] = rw_s
+        benchmark_read["{}".format(name)] = r_s
+        benchmark_write["{}".format(name)] = w_s
+        benchmark_readwrite["{}".format(name)] = rw_s
 
         il = benchmark["Interrupt Latency"]
         index = []
@@ -174,29 +173,50 @@ data_r = pd.DataFrame(benchmark_read)
 data_w = pd.DataFrame(benchmark_write)
 data_rw = pd.DataFrame(benchmark_readwrite)
 
-fig, ax = plt.subplots(3, 1)
+fig, ax = plt.subplots(5, 1)
 plt.subplots_adjust(hspace = 0.25)
 
+def sizeof_fmt(num, suffix='B'):
+    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)
+
 ax[0].set_xscale("log")
+ax[0].get_yaxis().set_major_formatter(
+    mpl.ticker.FuncFormatter(lambda x, p: sizeof_fmt(x, suffix="B/s")))
 data_r.plot(ax=ax[0])
-data_w.plot(ax=ax[0])
-data_rw.plot(ax=ax[0])
-ax[0].set_xlabel(r'Transfer Size (\si{\byte})')
-ax[0].set_ylabel(r'Transfer Speed (\si{\byte\per\second})')
+ax[0].set_xlabel(r'Transfer Size (\si{\byte}) Reads')
+ax[0].set_ylabel(r'Transfer Speed')
+
+ax[1].set_xscale("log")
+ax[1].get_yaxis().set_major_formatter(
+    mpl.ticker.FuncFormatter(lambda x, p: sizeof_fmt(x, suffix="B/s")))
+data_w.plot(ax=ax[1])
+ax[1].set_xlabel(r'Transfer Size (\si{\byte}) Writes')
+ax[1].set_ylabel(r'Transfer Speed')
+
+ax[2].set_xscale("log")
+ax[2].get_yaxis().set_major_formatter(
+    mpl.ticker.FuncFormatter(lambda x, p: sizeof_fmt(x, suffix="B/s")))
+data_rw.plot(ax=ax[2])
+ax[2].set_xlabel(r'Transfer Size (\si{\byte}) Reads and Writes')
+ax[2].set_ylabel(r'Transfer Speed')
 
 for name, group in interrupt_latency.groupby("Device"):
-    group.plot(ax=ax[1], y="Avg", label=name)
+    group.plot(ax=ax[3], y="Avg", label=name)
     #group.plot(ax=ax[1], y="Max", label="{} Max".format(name))
     #group.plot(ax=ax[1], y="Min", label="{} Min".format(name))
 
-ax[1].set_xlabel(r'Cycle Count')
-ax[1].set_ylabel(r'Latency (\si{\micro\second})')
+ax[3].set_xlabel(r'Cycle Count')
+ax[3].set_ylabel(r'Latency (\si{\micro\second})')
 
 
 for name, group in job_throughput.groupby("Device"):
-    group.plot(ax=ax[2], y="Jobs", x="Threads", label=name)
+    group.plot(ax=ax[4], y="Jobs", x="Threads", label=name)
 
-ax[2].set_xlabel(r'Threads')
-ax[2].set_ylabel(r'Jobs Per Second')
+ax[4].set_xlabel(r'Threads')
+ax[4].set_ylabel(r'Jobs Per Second')
 
 plt.savefig('performance.pdf', format='pdf', bbox_inches='tight')
