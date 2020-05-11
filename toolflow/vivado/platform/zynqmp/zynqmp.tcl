@@ -1,26 +1,22 @@
+# Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
 #
-# Copyright (C) 2017 Jaco A. Hofmann, TU Darmstadt
+# This file is part of TaPaSCo
+# (see https://github.com/esa-tu-darmstadt/tapasco).
 #
-# This file is part of Tapasco (TPC).
-#
-# Tapasco is free software: you can redistribute it and/or modify
+# This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Tapasco is distributed in the hope that it will be useful,
+# This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-# @file		zynqmp.tcl
-# @brief	MPSoC platform implementation: Up to 16 instances of AXI Interrupt Controllers
-#         are instantiated, depending on the number interrupt sources returned by the architecture.
-# @author	Jaco A. Hofmann, TU Darmstadt (hofmann@esa.tu-darmstadt.de)
-#
+
   if { [::tapasco::vivado_is_newer "2018.1"] == 0 } {
     puts "Vivado [version -short] is too old to support MPSoC."
     exit 1
