@@ -129,7 +129,7 @@ fn run_arrayinit(_: &ArgMatches) -> Result<()> {
         )])
         .context(JobError)?;
 
-        println!("{:?}", pe.release(true).context(JobError)?);
+        println!("{:?}", pe.release(true, false).context(JobError)?);
     }
     Ok(())
 }
@@ -151,11 +151,11 @@ fn run_counter(_: &ArgMatches) -> Result<()> {
                     .context(JobError)?;
             }
             for pe in &mut pes.iter_mut() {
-                pe.release(false).context(JobError)?;
+                pe.release(false, false).context(JobError)?;
             }
         }
         for mut pe in pes {
-            pe.release(true).context(JobError)?;
+            pe.release(true, false).context(JobError)?;
         }
     }
     Ok(())
@@ -198,7 +198,7 @@ fn benchmark_counter(m: &ArgMatches) -> Result<()> {
                             pe.start(vec![tapasco::device::PEParameter::Single64(1)])
                                 .context(JobError)
                                 .unwrap();
-                            pe.release(false).context(JobError).unwrap();
+                            pe.release(false, false).context(JobError).unwrap();
                             if i > 0 && i % pb_step == 0 {
                                 pb.inc(pb_step as u64);
                             }
@@ -265,7 +265,7 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
                 let now = Instant::now();
                 pe.start(vec![tapasco::device::PEParameter::Single64(step)])
                     .context(JobError)?;
-                pe.release(true).context(JobError)?;
+                pe.release(true, false).context(JobError)?;
                 let dur = now.elapsed();
                 let diff = Time::new::<nanosecond>(dur.as_nanos() as f32) - step_duration;
                 var.add(diff.get::<microsecond>() as f64);
@@ -527,7 +527,7 @@ fn test_localmem(_: &ArgMatches) -> Result<()> {
         )])
         .context(JobError)?;
 
-        let r = pe.release(true).context(JobError)?;
+        let r = pe.release(true, false).context(JobError)?;
         println!("{:?}", r);
     }
     Ok(())

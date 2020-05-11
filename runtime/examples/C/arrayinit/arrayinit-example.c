@@ -32,7 +32,7 @@
 #include <tapasco.h>
 
 #define SZ 256
-#define RUNS 1
+#define RUNS 25
 
 
 void handle_error() {
@@ -111,8 +111,6 @@ int main(int argc, char **argv) {
 
     memset(arr, -1, SZ * sizeof(int));
 
-    printf("In 0x%lx\n", (uint64_t)arr);
-
     // Create argument list
     JobList *jl = tapasco_job_param_new();
 
@@ -133,7 +131,7 @@ int main(int argc, char **argv) {
         goto finish_device;
     }
 
-    if(tapasco_job_release(j, true) < 0) {
+    if(tapasco_job_release(j, 0, true) < 0) {
         handle_error();
         ret = -1;
         goto finish_device;

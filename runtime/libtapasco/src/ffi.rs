@@ -508,7 +508,11 @@ pub extern "C" fn tapasco_job_start(job: *mut Job, params: *mut JobList) -> isiz
 
     let tl = unsafe { &mut *job };
     match tl.start(jl).context(JobError) {
-        Ok(_x) => {
+        Ok(x) => {
+            for d in x.into_iter() {
+                // Make sure Rust doesn't release the memory received from C
+                let _p = std::boxed::Box::<[u8]>::into_raw(d);
+            }
             return 0;
         }
         Err(e) => {
@@ -524,7 +528,11 @@ pub extern "C" fn tapasco_job_start(job: *mut Job, params: *mut JobList) -> isiz
 // Hence, the function currently does not return the result list but makes sure that the data is at the
 // correct location.
 #[no_mangle]
-pub extern "C" fn tapasco_job_release(job: *mut Job, release: bool) -> isize {
+pub extern "C" fn tapasco_job_release(
+    job: *mut Job,
+    return_value: *mut u64,
+    release: bool,
+) -> isize {
     if job.is_null() {
         warn!("Null pointer passed into tapasco_job_release() as the job");
         update_last_error(Error::NullPointerTLKM {});
@@ -532,18 +540,20 @@ pub extern "C" fn tapasco_job_release(job: *mut Job, release: bool) -> isize {
     }
 
     let tl = unsafe { &mut *job };
-    match tl.release(release).context(JobError) {
+    match tl
+        .release(release, !return_value.is_null())
+        .context(JobError)
+    {
         Ok(x) => {
-            match x {
-                Some(y) => {
-                    for d in y.into_iter() {
-                        println!("{:?}", d);
-                        // Make sure Rust doesn't release the memory received from C
-                        let _p = std::boxed::Box::<[u8]>::into_raw(d);
-                    }
+            for d in x.1.into_iter() {
+                // Make sure Rust doesn't release the memory received from C
+                let _p = std::boxed::Box::<[u8]>::into_raw(d);
+            }
+            if !return_value.is_null() {
+                unsafe {
+                    *return_value = x.0;
                 }
-                None => (),
-            };
+            }
             return 0;
         }
         Err(e) => {

@@ -100,11 +100,15 @@ impl PE {
         Ok(())
     }
 
-    pub fn release(&mut self) -> Result<Option<Vec<DataTransferPrealloc>>> {
+    pub fn release(
+        &mut self,
+        return_value: bool,
+    ) -> Result<(u64, Option<Vec<DataTransferPrealloc>>)> {
         trace!("Releasing PE {}.", self.id);
         self.wait_for_completion()?;
         trace!("PE {} released.", self.id);
-        Ok(self.get_copyback())
+        let rv = if return_value { self.return_value() } else { 0 };
+        Ok((rv, self.get_copyback()))
     }
 
     fn wait_for_completion_loop(&self, completion: &mut File) -> Result<()> {
@@ -255,6 +259,16 @@ impl PE {
             bytes,
             r
         );
+        r
+    }
+
+    pub fn return_value(&self) -> u64 {
+        let offset = (self.offset as usize + 0x10) as isize;
+        let r = unsafe {
+            let ptr = self.memory.as_ptr().offset(offset);
+            (*(ptr as *const Volatile<u64>)).read()
+        };
+        trace!("Reading return value: {}", r);
         r
     }
 

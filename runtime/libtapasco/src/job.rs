@@ -43,6 +43,9 @@ pub enum Error {
 
     #[snafu(display("Local memory requested on PE without local memory"))]
     NoLocalMemory {},
+
+    #[snafu(display("This Job does not contain a PE which could be released."))]
+    NoPEtoRelease {},
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -55,7 +58,7 @@ pub struct Job {
 
 impl Drop for Job {
     fn drop(&mut self) {
-        match self.release(true) {
+        match self.release(true, false) {
             Ok(_) => (),
             Err(e) => panic!("{}", e),
         }
@@ -130,8 +133,9 @@ impl Job {
     pub fn handle_transfers_to_device(
         &mut self,
         args: Vec<PEParameter>,
-    ) -> Result<Vec<PEParameter>> {
+    ) -> Result<(Vec<PEParameter>, Vec<Box<[u8]>>)> {
         trace!("Handling allocate parameters.");
+        let mut unused_mem = Vec::new();
         let new_params = args
             .into_iter()
             .try_fold(Vec::new(), |mut xs, arg| match arg {
@@ -145,6 +149,8 @@ impl Job {
                     }
                     if x.from_device {
                         self.pe.as_mut().unwrap().add_copyback(x);
+                    } else {
+                        unused_mem.push(x.data);
                     }
                     Ok(xs)
                 }
@@ -154,10 +160,13 @@ impl Job {
                 }
             });
         trace!("All transfer to parameters handled.");
-        new_params
+        match new_params {
+            Ok(x) => Ok((x, unused_mem)),
+            Err(e) => Err(e),
+        }
     }
 
-    pub fn start(&mut self, args: Vec<PEParameter>) -> Result<()> {
+    pub fn start(&mut self, args: Vec<PEParameter>) -> Result<Vec<Box<[u8]>>> {
         trace!(
             "Starting execution of {:?} with Arguments {:?}.",
             self.pe,
@@ -166,7 +175,7 @@ impl Job {
         let alloc_args = self.handle_local_memories(args)?;
         let local_args = self.handle_allocates(alloc_args)?;
         trace!("Handled allocates => {:?}.", local_args);
-        let trans_args = self.handle_transfers_to_device(local_args)?;
+        let (trans_args, unused_mem) = self.handle_transfers_to_device(local_args)?;
         trace!("Handled transfers => {:?}.", trans_args);
         trace!("Setting arguments.");
         for (i, arg) in trans_args.into_iter().enumerate() {
@@ -191,13 +200,22 @@ impl Job {
         trace!("Starting PE {} execution.", self.pe.as_ref().unwrap().id());
         self.pe.as_mut().unwrap().start().context(PEError)?;
         trace!("PE {} started.", self.pe.as_ref().unwrap().id());
-        Ok(())
+        Ok(unused_mem)
     }
 
-    pub fn release(&mut self, release_pe: bool) -> Result<Option<Vec<Box<[u8]>>>> {
+    pub fn release(
+        &mut self,
+        release_pe: bool,
+        return_value: bool,
+    ) -> Result<(u64, Vec<Box<[u8]>>)> {
         if self.pe.is_some() {
             trace!("Trying to release PE {:?}.", self.pe.as_ref().unwrap().id());
-            let copyback = self.pe.as_mut().unwrap().release().context(PEError)?;
+            let (return_value, copyback) = self
+                .pe
+                .as_mut()
+                .unwrap()
+                .release(return_value)
+                .context(PEError)?;
             trace!("PE is idle.");
 
             if release_pe {
@@ -211,7 +229,6 @@ impl Job {
                     let res = x
                         .into_iter()
                         .map(|mut param| {
-                            println!("{:?}", param.data.as_ptr());
                             param
                                 .memory
                                 .dma()
@@ -229,14 +246,14 @@ impl Job {
                         })
                         .collect();
                     match res {
-                        Ok(x) => Ok(Some(x)),
+                        Ok(x) => Ok((return_value, x)),
                         Err(x) => Err(x),
                     }
                 }
-                None => Ok(None),
+                None => Ok((return_value, Vec::new())),
             }
         } else {
-            Ok(None)
+            Err(Error::NoPEtoRelease {})
         }
     }
 }

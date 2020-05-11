@@ -88,7 +88,7 @@ int main() {
                 goto finish_tlkm;
             }
 
-            if(tapasco_job_release(j, true) < 0) {
+            if(tapasco_job_release(j, 0, true) < 0) {
                 handle_error();
                 ret = -1;
                 goto finish_tlkm;

@@ -34,25 +34,12 @@
 #define SZ 256
 #define RUNS 25
 
-static tapasco_ctx_t *ctx;
-static tapasco_devctx_t *dev;
-
-static void check(int const result) {
-  if (!result) {
-    fprintf(stderr, "fatal error: %s\n", strerror(errno));
-    tapasco_destroy_device(ctx, dev);
-    tapasco_deinit(ctx);
-    exit(errno);
-  }
-}
-
-static void check_tapasco(tapasco_res_t const result) {
-  if (result != TAPASCO_SUCCESS) {
-    fprintf(stderr, "tapasco fatal error: %s\n", tapasco_strerror(result));
-    tapasco_destroy_device(ctx, dev);
-    tapasco_deinit(ctx);
-    exit(result);
-  }
+void handle_error() {
+    int l = tapasco_last_error_length();
+    char* buf = (char*)malloc(sizeof(char) * l);
+    tapasco_last_error_message(buf, l);
+    printf("ERROR: %s\n", buf);
+    free(buf);
 }
 
 static void init_array(int *arr, size_t sz) {
@@ -78,68 +65,109 @@ static unsigned int check_arrays(int *arr, int *golden_arr, size_t sz) {
 }
 
 int main(int argc, char **argv) {
-  int errs = 0;
+  int errs_total = 0;
+  int ret = 0;
 
   // initialize threadpool
-  check_tapasco(tapasco_init(&ctx));
-  check_tapasco(tapasco_create_device(ctx, 0, &dev, 0));
-  // check arrayupdate instance count
-  printf("instance count: %zd\n", tapasco_device_kernel_pe_count(dev, 9));
-  assert(tapasco_device_kernel_pe_count(dev, 9));
-
-  // init whole array to subsequent numbers
-  int *arr = (int *)malloc(SZ * RUNS * sizeof(int));
-  check(arr != NULL);
-  int *golden_arr = (int *)malloc(SZ * RUNS * sizeof(int));
-  check(golden_arr != NULL);
-  init_array(arr, SZ * RUNS);
-  init_array(golden_arr, SZ * RUNS);
-
-  for (int run = 0; run < RUNS; ++run) {
-    // golden run
-    arrayupdate(&golden_arr[SZ * run]);
-
-    // allocate mem on device and copy array part
-    tapasco_handle_t h;
-    check_tapasco(tapasco_device_alloc(dev, &h, SZ * sizeof(int),
-                                       TAPASCO_DEVICE_COPY_BLOCKING));
-
-    check_tapasco(tapasco_device_copy_to(dev, &arr[SZ * run], h,
-                                         SZ * sizeof(int),
-                                         TAPASCO_DEVICE_COPY_BLOCKING));
-
-    // get a job id and set argument to handle
-    tapasco_job_id_t j_id;
-    tapasco_device_acquire_job_id(dev, &j_id, 9,
-                                  TAPASCO_DEVICE_ACQUIRE_JOB_ID_BLOCKING);
-    check(j_id > 0);
-    check_tapasco(tapasco_device_job_set_arg(dev, j_id, 0, sizeof(h), &h));
-
-    // shoot me to the moon!
-    check_tapasco(tapasco_device_job_launch(
-        dev, j_id, TAPASCO_DEVICE_JOB_LAUNCH_BLOCKING));
-
-    // get the result
-    int32_t r = 0;
-    check_tapasco(tapasco_device_job_get_return(dev, j_id, sizeof(r), &r));
-    check_tapasco(tapasco_device_copy_from(dev, h, &arr[SZ * run],
-                                           SZ * sizeof(int),
-                                           TAPASCO_DEVICE_COPY_BLOCKING));
-    printf("TPC output for run %d: %d\n", run, r);
-    unsigned int errs = check_arrays(&arr[SZ * run], &golden_arr[SZ * run], SZ);
-    printf("\nRUN %d %s\n", run, errs == 0 ? "OK" : "NOT OK");
-    tapasco_device_free(dev, h, SZ * sizeof(int), 0);
-    tapasco_device_release_job_id(dev, j_id);
+  tapasco_init_logging();
+  TLKM *t = tapasco_tlkm_new();
+  if(t == 0) {
+      handle_error();
+      ret = -1;
+      goto finish;
   }
 
-  if (!errs)
+  // Retrieve the number of devices from the runtime
+  int num_devices = 0;
+  if((num_devices = tapasco_tlkm_device_len(t)) < 0) {
+      handle_error();
+      ret = -1;
+      goto finish_tlkm;
+  }
+
+  if(num_devices == 0) {
+      printf("No TaPaSCo devices found.\n");
+      ret = -1;
+      goto finish_tlkm;
+  }
+
+  // Allocates the first device
+  Device *d = 0;
+  if((d = tapasco_tlkm_device_alloc(t, 0)) == 0) {
+      handle_error();
+      ret = -1;
+      goto finish_tlkm;
+  }
+
+  if(tapasco_device_access(d, TlkmAccessExclusive) < 0) {
+      handle_error();
+      ret = -1;
+      goto finish_device;
+  }
+
+  for (int run = 0; run < RUNS; ++run) {
+    // init whole array to subsequent numbers
+    int *arr = (int *)malloc(SZ * sizeof(int));
+    if(arr == 0) {
+        printf("Could not allocate memory for run %d.\n", run);
+        ret = -1;
+        goto finish_device;
+    }
+    int *golden_arr = (int *)malloc(SZ * sizeof(int));
+    if(golden_arr == 0) {
+        printf("Could not allocate memory for run %d.\n", run);
+        ret = -1;
+        goto finish_device;
+    }
+    init_array(arr, SZ);
+    init_array(golden_arr, SZ);
+    // golden run
+    arrayupdate(golden_arr);
+
+    // Create argument list
+    JobList *jl = tapasco_job_param_new();
+
+    // Allocates memory on device and copies data from device after execution
+    tapasco_job_param_alloc(d, (uint8_t*)arr, SZ * sizeof(int), true, true, true, jl);
+
+    // Acquire arrayinit PE
+    Job* j = tapasco_device_acquire_pe(d, 9);
+    if(j == 0) {
+        handle_error();
+        ret = -1;
+        goto finish_device;
+    }
+
+    if(tapasco_job_start(j, jl) < 0) {
+        handle_error();
+        ret = -1;
+        goto finish_device;
+    }
+
+    if(tapasco_job_release(j, 0, true) < 0) {
+        handle_error();
+        ret = -1;
+        goto finish_device;
+    }
+
+    unsigned int errs = check_arrays(arr, golden_arr, SZ);
+    printf("\nRUN %d %s\n", run, errs == 0 ? "OK" : "NOT OK");
+
+    errs_total += errs;
+
+    free(arr);
+    free(golden_arr);
+  }
+
+  if (!errs_total)
     printf("SUCCESS\n");
   else
     fprintf(stderr, "FAILURE\n");
 
-  // de-initialize threadpool
-  tapasco_destroy_device(ctx, dev);
-  tapasco_deinit(ctx);
-  free(arr);
-  return errs;
+finish_device:
+    tapasco_tlkm_device_destroy(d);
+finish_tlkm:
+    tapasco_tlkm_destroy(t);
+finish:
+    return ret;
 }

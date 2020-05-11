@@ -19,12 +19,11 @@ else ()
     set(TARGET_DIR "release")
 endif ()
 
-add_library(tapasco SHARED ${CMAKE_CURRENT_LIST_DIR}/unused.c src/allocator.rs src/dma.rs  src/job.rs src/pe.rs src/status_core.proto src/tlkm.rs src/device.rs src/ffi.rs src/lib.rs src/scheduler.rs src/tapasco.hpp)
+add_library(tapasco SHARED ${CMAKE_CURRENT_LIST_DIR}/unused.c src/tapasco.hpp)
 
 add_custom_command(TARGET tapasco POST_BUILD
     COMMENT "Compiling tapasco module in ${CMAKE_CURRENT_LIST_DIR}"
     COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} ${CARGO_CMD} --manifest-path=${CMAKE_CURRENT_LIST_DIR}/Cargo.toml
-    COMMENT "cp -f ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/libtapasco.so ${CMAKE_CURRENT_BINARY_DIR}/"
     COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/libtapasco.so ${CMAKE_CURRENT_BINARY_DIR}/
     )
 

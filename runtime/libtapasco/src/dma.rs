@@ -77,8 +77,6 @@ impl DMAControl for DriverDMA {
     }
 
     fn copy_from(&self, ptr: DeviceAddress, data: &mut [u8]) -> Result<()> {
-        println!("{:?}", data);
-        println!("{:?}", data.as_ptr());
         trace!(
             "Copy Device(0x{:x}) -> Host({:?}) ({} Bytes)",
             ptr,
@@ -96,9 +94,6 @@ impl DMAControl for DriverDMA {
             )
             .context(DMAFromDevice)?;
         };
-
-        println!("{:?}", data);
-        println!("{:?}", data.as_ptr());
         Ok(())
     }
 }
