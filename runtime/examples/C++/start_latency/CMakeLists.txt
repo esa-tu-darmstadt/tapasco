@@ -25,11 +25,11 @@ endif ()
 
 add_executable(start_latency start_latency.cpp)
 set_tapasco_defaults(start_latency)
-target_link_libraries(start_latency PRIVATE tapasco tlkm platform tapasco-common)
+target_link_libraries(start_latency PRIVATE tapasco)
 
 add_executable(read_latency read_latency.cpp)
 set_tapasco_defaults(read_latency)
-target_link_libraries(read_latency PRIVATE tapasco tlkm platform tapasco-common)
+target_link_libraries(read_latency PRIVATE tapasco)
 
 install(TARGETS read_latency start_latency
         ARCHIVE  DESTINATION share/Tapasco/bin/

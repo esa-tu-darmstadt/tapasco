@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
   uint64_t errs = 0;
 
   // check arraysum instance count
-  uint64_t instances = tapasco_device_kernel_pe_count(tapasco.device(), PE_ID);
+  uint64_t instances = tapasco.kernel_pe_count(PE_ID);
   std::cout << "Got " << instances << " arraysum instances.";
   if (!instances) {
     std::cout << "Need at least one arraysum instance to run.";
@@ -62,15 +62,13 @@ int main(int argc, char **argv) {
 
     int cpu_sum = arraysum(input);
 
-    // Wrap the array to be TaPaSCo compatible
-    auto input_buffer_pointer = tapasco::makeWrappedPointer(
-        input.data(), input.size() * sizeof(element_type));
     // Data will be copied back from the device only, no data will be moved to
     // the device
-    auto input_buffer_in = tapasco::makeInOnly(input_buffer_pointer);
+    auto input_buffer_in = tapasco::makeInOnly(tapasco::makeWrappedPointer(
+        input.data(), input.size() * sizeof(element_type)));
 
     int fpga_sum = -1;
-    tapasco::RetVal<int> ret_val(fpga_sum);
+    tapasco::RetVal<int> ret_val(&fpga_sum);
 
     // Launch the job
     // Arraysum takes only one parameter: The location of the array. It will
@@ -81,7 +79,7 @@ int main(int argc, char **argv) {
     job();
 
     if (cpu_sum == fpga_sum) {
-      std::cout << "RUN " << run << "OK" << std::endl;
+      std::cout << "RUN " << run << " OK" << std::endl;
     } else {
       std::cerr << "RUN" << run << " FAILED FPGA: " << fpga_sum
                 << " CPU: " << cpu_sum << std::endl;

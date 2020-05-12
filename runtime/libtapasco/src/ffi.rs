@@ -20,6 +20,7 @@ use snafu::ResultExt;
 use std::ptr;
 use std::slice;
 use std::sync::Arc;
+use uom::si::frequency::megahertz;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -718,4 +719,53 @@ pub extern "C" fn tapasco_memory_free(
             -1
         }
     }
+}
+
+///////////////////////////////////
+// Status Information
+///////////////////////////////////
+#[no_mangle]
+pub extern "C" fn tapasco_device_design_frequency(dev: *mut Device) -> f32 {
+    if dev.is_null() {
+        warn!("Null pointer passed into tapasco_device_design_frequency() as the device");
+        update_last_error(Error::NullPointerTLKM {});
+        return -1.0;
+    }
+
+    let tl = unsafe { &mut *dev };
+    match tl.design_frequency().context(DeviceError) {
+        Ok(x) => x.get::<megahertz>(),
+        Err(e) => {
+            update_last_error(e);
+            -1.0
+        }
+    }
+}
+
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
+#[no_mangle]
+pub unsafe extern "C" fn tapasco_version(buffer: *mut c_char, length: usize) -> usize {
+    let buffer = slice::from_raw_parts_mut(buffer as *mut u8, length);
+
+    if VERSION.len() >= buffer.len() {
+        warn!("Buffer provided for writing the version is too small.");
+        warn!(
+            "Expected at least {} bytes but got {}",
+            VERSION.len() + 1,
+            buffer.len()
+        );
+        return 0;
+    }
+
+    ptr::copy_nonoverlapping(VERSION.as_ptr(), buffer.as_mut_ptr(), VERSION.len());
+
+    buffer[VERSION.len()] = 0;
+
+    VERSION.len()
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_version_len() -> usize {
+    VERSION.len()
 }

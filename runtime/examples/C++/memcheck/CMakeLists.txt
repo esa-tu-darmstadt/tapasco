@@ -25,7 +25,7 @@ endif ()
 
 add_executable(memcheck memcheck.cpp)
 set_tapasco_defaults(memcheck)
-target_link_libraries(memcheck PRIVATE tapasco tlkm platform tapasco-common)
+target_link_libraries(memcheck PRIVATE tapasco)
 
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)

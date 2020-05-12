@@ -39,9 +39,6 @@
 #include <thread>
 #include <unistd.h>
 #include <vector>
-extern "C" {
-#include <platform.h>
-}
 
 using namespace std;
 using namespace std::chrono;
@@ -55,15 +52,9 @@ public:
   static tapasco_kernel_id_t const COUNTER_ID = 14;
 
   InterruptLatency(Tapasco &tapasco, bool fast) : tapasco(tapasco), fast(fast) {
-    tapasco_res_t r;
-    platform_info_t info;
     if (tapasco.kernel_pe_count(COUNTER_ID) == 0)
       throw "need at least one instance of 'Counter' (14) in bitstream";
-    if ((r = tapasco.info(&info)) != TAPASCO_SUCCESS)
-      throw new Tapasco::tapasco_error(r);
-    if (r != PLATFORM_SUCCESS)
-      throw Tapasco::platform_error(r);
-    design_clk = info.clock.design;
+    design_clk = (int32_t)tapasco.design_frequency();
   }
   virtual ~InterruptLatency() {}
 
@@ -122,14 +113,12 @@ public:
 private:
   void trigger(volatile atomic<bool> &stop, uint32_t const clock_cycles,
                CumulativeAverage<double> &cavg) {
-    tapasco_res_t res;
     while (!stop.load()) {
       auto tstart = high_resolution_clock::now();
       // if 0, use 1us - 100ms interval (clock period is 10ns)
       uint32_t cc =
           clock_cycles > 0 ? clock_cycles : (rand() % (10000000 - 100) + 100);
-      if ((res = tapasco.launch(COUNTER_ID, cc)()) != TAPASCO_SUCCESS)
-        throw Tapasco::tapasco_error(res);
+      tapasco.launch(COUNTER_ID, cc)();
       microseconds const d =
           duration_cast<microseconds>(high_resolution_clock::now() - tstart);
       cavg.update(d.count() - cc / design_clk);

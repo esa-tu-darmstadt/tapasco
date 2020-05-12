@@ -27,7 +27,7 @@ find_package (Threads)
 
 add_executable(arrayupdate-cpp arrayupdate-example.cpp)
 set_tapasco_defaults(arrayupdate-cpp)
-target_link_libraries(arrayupdate-cpp tapasco ${CMAKE_THREAD_LIBS_INIT} platform tlkm)
+target_link_libraries(arrayupdate-cpp tapasco ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS arrayupdate-cpp
         ARCHIVE  DESTINATION share/Tapasco/bin/

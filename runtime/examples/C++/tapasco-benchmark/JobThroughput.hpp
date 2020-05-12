@@ -36,7 +36,6 @@
 #include <vector>
 extern "C" {
 #include <assert.h>
-#include <gen_queue.h>
 }
 
 using namespace std;
@@ -50,8 +49,6 @@ public:
       : tapasco(tapasco), jobs(0), fast(fast) {
     if (tapasco.kernel_pe_count(COUNTER_ID) < 1)
       throw "need at least one instance of 'Counter' (14) in bitstream";
-    q = gq_init();
-    assert(q);
   }
   virtual ~JobThroughput() {}
 
@@ -112,19 +109,15 @@ public:
 
 private:
   void run(void) {
-    tapasco_res_t res;
     while (!stop) {
-      if ((res = tapasco.launch(COUNTER_ID, 1U)()) != TAPASCO_SUCCESS)
-        throw Tapasco::tapasco_error(res);
+      tapasco.launch(COUNTER_ID, 1U)();
       jobs++;
     }
   }
 
-  gq_t *q;
   Tapasco &tapasco;
   atomic<bool> stop{false};
   atomic<uint64_t> jobs{0};
-  atomic<tapasco_job_id_t> job{0};
   bool fast;
 };
 #endif /* JOB_THROUGHPUT_HPP__ */

@@ -20,7 +20,6 @@
 #include <chrono>
 #include <iostream>
 
-#include <platform_types.h>
 #include <tapasco.hpp>
 
 using namespace tapasco;

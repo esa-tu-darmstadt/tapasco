@@ -57,17 +57,14 @@ int main(int argc, char **argv) {
     // Generate array for arrayinit output
     std::array<element_type, SZ> result;
     result.fill(-1);
-    // Wrap the array to be TaPaSCo compatible
-    auto result_buffer_pointer = tapasco::makeWrappedPointer(
-        result.data(), result.size() * sizeof(element_type));
-    // Data will be copied back from the device only, no data will be moved to
-    // the device
-    auto result_buffer_out = tapasco::makeOutOnly(result_buffer_pointer);
 
     // Launch the job
     // Arrayinit takes only one parameter: The location of the array. It will
     // always initialize 256 Int`s.
-    auto job = tapasco.launch(ARRAYINIT_ID, result_buffer_out);
+    auto job = tapasco.launch(
+        ARRAYINIT_ID,
+        tapasco::makeOutOnly(tapasco::makeWrappedPointer(
+            result.data(), result.size() * sizeof(element_type))));
 
     // Wait for job completion. Will block execution until the job is done.
     job();

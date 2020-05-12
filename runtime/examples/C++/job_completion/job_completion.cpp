@@ -50,10 +50,8 @@ int main(int argc, char **argv) {
   static constexpr tapasco_kernel_id_t COUNTER_ID{14};
   static constexpr tapasco_kernel_id_t LATENCY_ID{742};
 
-  uint64_t counter =
-      tapasco_device_kernel_pe_count(tapasco.device(), COUNTER_ID);
-  uint64_t latency =
-      tapasco_device_kernel_pe_count(tapasco.device(), LATENCY_ID);
+  uint64_t counter = tapasco.kernel_pe_count(COUNTER_ID);
+  uint64_t latency = tapasco.kernel_pe_count(LATENCY_ID);
   if (!counter && !latency) {
     std::cout << "Need at least one counter or latencycheck instance to run."
               << std::endl;
@@ -75,12 +73,10 @@ int main(int argc, char **argv) {
     size_t elements = std::max((size_t)1, len / sizeof(int));
     std::vector<int> arr_from(elements, -1);
 
-    // Wrap the array to be TaPaSCo compatible
-    auto result_buffer_pointer = tapasco::makeWrappedPointer(
-        arr_from.data(), arr_from.size() * sizeof(int));
     // Data will be copied back from the device only, no data will be moved to
     // the device
-    auto result_buffer_out = tapasco::makeOutOnly(result_buffer_pointer);
+    auto result_buffer_out = tapasco::makeOutOnly(tapasco::makeWrappedPointer(
+        arr_from.data(), arr_from.size() * sizeof(int)));
     auto start = std::chrono::steady_clock::now();
     auto end = std::chrono::steady_clock::now();
 

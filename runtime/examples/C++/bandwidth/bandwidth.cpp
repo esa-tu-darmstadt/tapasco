@@ -41,18 +41,17 @@ int main(int argc, char **argv) {
 
     // get fpga handle
     tapasco_handle_t handle_to;
-    tapasco.alloc(handle_to, len, (tapasco_device_alloc_flag_t)0);
+    tapasco.alloc(handle_to, len);
 
     tapasco_handle_t handle_from;
-    tapasco.alloc(handle_from, len, (tapasco_device_alloc_flag_t)0);
+    tapasco.alloc(handle_from, len);
 
     size_t copied = 0;
 
     std::cout << "Write C " << len << "B @ ";
     auto start = std::chrono::system_clock::now();
     while (copied < data_to_transfer) {
-      tapasco.copy_to(arr_to.data(), handle_to, len,
-                      (tapasco_device_copy_flag_t)0);
+      tapasco.copy_to((uint8_t *)arr_to.data(), handle_to, len);
       copied += len;
     }
     auto end = std::chrono::system_clock::now();
@@ -67,8 +66,7 @@ int main(int argc, char **argv) {
     std::cout << "Read C " << len << "B @ ";
     start = std::chrono::system_clock::now();
     while (copied < data_to_transfer) {
-      tapasco.copy_from(handle_from, arr_from.data(), len,
-                        (tapasco_device_copy_flag_t)0);
+      tapasco.copy_from(handle_from, (uint8_t *)arr_from.data(), len);
       copied += len;
     }
     end = std::chrono::system_clock::now();
@@ -82,10 +80,8 @@ int main(int argc, char **argv) {
     copied = 0;
     std::cout << "ReadWrite C " << len << "B @ ";
     while (copied < data_to_transfer) {
-      tapasco.copy_to(arr_to.data(), handle_to, len,
-                      (tapasco_device_copy_flag_t)0);
-      tapasco.copy_from(handle_from, arr_from.data(), len,
-                        (tapasco_device_copy_flag_t)0);
+      tapasco.copy_to((uint8_t *)arr_to.data(), handle_to, len);
+      tapasco.copy_from(handle_from, (uint8_t *)arr_from.data(), len);
       copied += len * 2;
     }
     end = std::chrono::system_clock::now();
@@ -96,8 +92,8 @@ int main(int argc, char **argv) {
                      (1024.0 * 1024.0)
               << "MBps" << std::endl;
 
-    tapasco.free(handle_to, len, (tapasco_device_alloc_flag_t)0);
-    tapasco.free(handle_from, len, (tapasco_device_alloc_flag_t)0);
+    tapasco.free(handle_to);
+    tapasco.free(handle_from);
   }
 
   return 0;

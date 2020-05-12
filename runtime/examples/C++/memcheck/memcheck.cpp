@@ -82,13 +82,13 @@ int main(int argc, char **argv) {
 
     // get fpga handle
     tapasco_handle_t h;
-    tapasco.alloc(h, len, (tapasco_device_alloc_flag_t)0);
+    tapasco.alloc(h, len);
 
     // copy data to and back
-    tapasco.copy_to(arr.data(), h, len, (tapasco_device_copy_flag_t)0);
-    tapasco.copy_from(h, rarr.data(), len, (tapasco_device_copy_flag_t)0);
+    tapasco.copy_to((uint8_t *)arr.data(), h, len);
+    tapasco.copy_from(h, (uint8_t *)rarr.data(), len);
 
-    tapasco.free(h, len, (tapasco_device_alloc_flag_t)0);
+    tapasco.free(h);
 
     int merr = compare_arrays(arr, rarr, elements);
     errs = +merr;

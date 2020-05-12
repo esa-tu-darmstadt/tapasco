@@ -22,15 +22,12 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <signal.h>
 #include <sstream>
 #include <sys/utsname.h>
 #include <tapasco.hpp>
-#include <vector>
-extern "C" {
-#include <platform.h>
-}
-#include <signal.h>
 #include <unistd.h>
+#include <vector>
 
 #include "CumulativeAverage.hpp"
 #include "InterruptLatency.hpp"
@@ -195,19 +192,17 @@ int main(int argc, const char *argv[]) {
     str << put_time(&tm, "%Y-%m-%d %H:%M:%S");
 
     // build JSON object
-    Json benchmark =
-        Json::object{{"Timestamp", str.str()},
-                     {"Host", Json::object{{"Operating System", uts.sysname},
-                                           {"Node", uts.nodename},
-                                           {"Release", uts.release},
-                                           {"Version", uts.version},
-                                           {"Machine", uts.machine}}},
-                     {"Transfer Speed", speed},
-                     {"Interrupt Latency", latency},
-                     {"Job Throughput", jobs},
-                     {"Library Versions",
-                      Json::object{{"Tapasco API", tapasco_version()},
-                                   {"Platform API", platform_version()}}}};
+    Json benchmark = Json::object{
+        {"Timestamp", str.str()},
+        {"Host", Json::object{{"Operating System", uts.sysname},
+                              {"Node", uts.nodename},
+                              {"Release", uts.release},
+                              {"Version", uts.version},
+                              {"Machine", uts.machine}}},
+        {"Transfer Speed", speed},
+        {"Interrupt Latency", latency},
+        {"Job Throughput", jobs},
+        {"Library Versions", Json::object{{"Tapasco API", tapasco.version()}}}};
 
     // dump it
     stringstream ss;

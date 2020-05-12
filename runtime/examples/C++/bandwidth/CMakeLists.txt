@@ -25,7 +25,7 @@ endif ()
 
 add_executable(bandwidth bandwidth.cpp)
 set_tapasco_defaults(bandwidth)
-target_link_libraries(bandwidth PRIVATE tapasco tlkm platform tapasco-common)
+target_link_libraries(bandwidth PRIVATE tapasco)
 
 install(TARGETS bandwidth
         ARCHIVE  DESTINATION share/Tapasco/bin/

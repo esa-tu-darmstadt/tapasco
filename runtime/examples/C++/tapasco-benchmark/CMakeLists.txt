@@ -28,7 +28,7 @@ find_package (Threads)
 add_executable(tapasco-benchmark tapasco_benchmark.cpp ${CMAKE_CURRENT_BINARY_DIR}/json11/json11.cpp)
 target_include_directories(tapasco-benchmark PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/json11)
 set_tapasco_defaults(tapasco-benchmark)
-target_link_libraries(tapasco-benchmark PRIVATE tapasco ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(tapasco-benchmark PRIVATE tapasco ${CMAKE_THREAD_LIBS_INIT} atomic)
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/json11/json11.cpp ${CMAKE_CURRENT_BINARY_DIR}/json11/json11.hpp
   COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/json11

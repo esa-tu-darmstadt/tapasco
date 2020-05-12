@@ -148,7 +148,7 @@ impl PE {
                     match self.active_pes.0.try_lock() {
                         Ok(mut x) => {
                             if !self.active_pes.1.contains(&self.id()) {
-                                trace!("Waiting for completion of {:?}.", self);
+                                trace!("Waiting for completion of {:?}.", self.id);
                                 self.wait_for_completion_loop(&mut x)?;
                                 trace!("PE finished execution.");
                             }
@@ -158,7 +158,7 @@ impl PE {
                 }
             }
         } else {
-            trace!("Wait requested but {:?} is already idle.", self);
+            trace!("Wait requested but {:?} is already idle.", self.id);
         }
         Ok(())
     }

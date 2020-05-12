@@ -137,8 +137,7 @@ private:
       return TAPASCO_SUCCESS;
     }
     tapasco_handle_t h;
-    tapasco_res_t r{
-        tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE)};
+    tapasco_res_t r{tapasco.alloc(h, chunk_sz)};
 
     read_ready = true;
 
@@ -151,14 +150,14 @@ private:
       usleep(10);
 
     while (!stop.load()) {
-      r = tapasco.copy_from(h, data, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING);
+      r = tapasco.copy_from(h, data, chunk_sz);
       if (r != TAPASCO_SUCCESS) {
         stop = true;
       } else {
         bytes += chunk_sz;
       }
     }
-    tapasco.free(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+    tapasco.free(h);
     return r;
   }
 
@@ -169,8 +168,7 @@ private:
       return TAPASCO_SUCCESS;
     }
     tapasco_handle_t h;
-    tapasco_res_t r{
-        tapasco.alloc(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE)};
+    tapasco_res_t r{tapasco.alloc(h, chunk_sz)};
     write_ready = true;
 
     if (r != TAPASCO_SUCCESS) {
@@ -180,14 +178,14 @@ private:
     while (!main_ready.load())
       usleep(10);
     while (!stop.load()) {
-      r = tapasco.copy_to(data, h, chunk_sz, TAPASCO_DEVICE_COPY_BLOCKING);
+      r = tapasco.copy_to(data, h, chunk_sz);
       if (r != TAPASCO_SUCCESS) {
         stop = true;
       } else {
         bytes += chunk_sz;
       }
     }
-    tapasco.free(h, chunk_sz, TAPASCO_DEVICE_ALLOC_FLAGS_NONE);
+    tapasco.free(h);
     return r;
   }
 

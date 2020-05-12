@@ -46,49 +46,51 @@
 namespace tapasco {
 using job_future = std::function<int(void)>;
 
+// Types which might still be used by legacy applications
+typedef DeviceAddress tapasco_handle_t;
+typedef PEId tapasco_kernel_id_t;
+typedef int tapasco_res_t;
+constexpr tapasco_res_t TAPASCO_SUCCESS = 0;
+
 /**
  * Type annotation for TAPASCO launch argument pointers: output only, i.e., only
  *copy from device to host after execution, don't copy from host to device
  *prior.
  **/
 template <typename T> struct OutOnly final {
-  OutOnly(T &value) : value(value) {
-    static_assert(std::is_trivially_copyable<T>::value,
-                  "Types must be trivially copyable!");
-  }
-  T &value;
+  OutOnly(T &&value) : value(value) {}
+  T value;
 };
 
-template <typename T> OutOnly<T> makeOutOnly(T &t) { return OutOnly<T>(t); }
+template <typename T> OutOnly<T> makeOutOnly(T &&t) {
+  return OutOnly<T>(std::move(t));
+}
 
 /**
- * Type annotation for TAPASCO launch argument pointers: input only, i.e., only
- *copy from host to device before execution. This behaviour might be realised
- *using const vs non-const types but the behaviour of const was not not as clear
- *to a user as it should be which leads to unwanted transfers.
+ * Type annotation for TAPASCO launch argument pointers: input only, i.e.,
+ *only copy from host to device before execution. This behaviour might be
+ *realised using const vs non-const types but the behaviour of const was not
+ *not as clear to a user as it should be which leads to unwanted transfers.
  **/
 template <typename T> struct InOnly final {
-  InOnly(T &value) : value(value) {
-    static_assert(std::is_trivially_copyable<T>::value,
-                  "Types must be trivially copyable!");
-  }
-  T &value;
+  InOnly(T &&value) : value(value) {}
+  T value;
 };
 
-template <typename T> InOnly<T> makeInOnly(T &t) { return InOnly<T>(t); }
+template <typename T> InOnly<T> makeInOnly(T &&t) {
+  return InOnly<T>(std::move(t));
+}
 
 /**
  * Type annotation for Tapasco launch argument pointers: If the first argument
- * supplied to launch is wrapped in this type, it is assumed to be the function
- * return value residing in the return register and its value will be copied
- * from the return value register to the pointee after execution finishes.
+ * supplied to launch is wrapped in this type, it is assumed to be the
+ *function return value residing in the return register and its value will be
+ *copied from the return value register to the pointee after execution
+ *finishes.
  **/
 template <typename T> struct RetVal final {
-  RetVal(T &value) : value(value) {
-    static_assert(std::is_trivially_copyable<T>::value,
-                  "Types must be trivially copyable!");
-  }
-  T &value;
+  RetVal(T *value) : value(value) {}
+  T *value;
 };
 
 /**
@@ -96,24 +98,20 @@ template <typename T> struct RetVal final {
  * should be placed in PE-local memory (faster access).
  **/
 template <typename T> struct Local final {
-  Local(T &value) : value(value) {
-    static_assert(std::is_trivially_copyable<T>::value,
-                  "Types must be trivially copyable!");
-  }
-  T &value;
+  Local(T &&value) : value(value) {}
+  T value;
 };
 
-template <typename T> Local<T> makeLocal(T &t) { return Local<T>(t); }
+template <typename T> Local<T> makeLocal(T &&t) {
+  return Local<T>(std::move(t));
+}
 
 /**
- * Wrapped pointer type that can be used to transfer memory areas from and to a
- *device.
+ * Wrapped pointer type that can be used to transfer memory areas from and to
+ *a device.
  **/
 template <typename T> struct WrappedPointer final {
-  WrappedPointer(T *value, size_t sz) : value(value), sz(sz) {
-    static_assert(std::is_trivially_copyable<T>::value,
-                  "Types must be trivially copyable!");
-  }
+  WrappedPointer(T *value, size_t sz) : value(value), sz(sz) {}
   T *value;
   size_t sz;
 };
@@ -289,6 +287,10 @@ public:
     return j;
   }
 
+  float design_frequency() {
+    return tapasco_device_design_frequency(this->device);
+  }
+
   Device *get_device() { return this->device; }
 
 private:
@@ -396,7 +398,7 @@ struct Tapasco {
       if (tapasco_job_release(j, &ret_val, true) < 0) {
         handle_error();
       }
-      ret = ret_val;
+      *ret.value = (R)ret_val;
       return 0;
     };
   }
@@ -471,7 +473,8 @@ struct Tapasco {
   }
 
   /**
-   * Returns the number of PEs of kernel k_id in the currently loaded bitstream.
+   * Returns the number of PEs of kernel k_id in the currently loaded
+   *bitstream.
    * @param k_id kernel id
    * @return number of instances > 0 if kernel is instantiated in the
    *         bitstream, 0 if kernel is unavailable
@@ -479,6 +482,17 @@ struct Tapasco {
   int kernel_pe_count(PEId k_id) {
     int64_t cnt = this->device_internal.num_pes(k_id);
     return cnt;
+  }
+
+  float design_frequency() { return this->device_internal.design_frequency(); }
+
+  std::string version() {
+    uintptr_t len = tapasco_version_len();
+    char *ptr = new char(len);
+    tapasco_version(ptr, len);
+    std::string s(ptr, len);
+    delete (ptr);
+    return s;
   }
 
   /**

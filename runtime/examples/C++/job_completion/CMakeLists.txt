@@ -25,7 +25,7 @@ endif ()
 
 add_executable(job_completion job_completion.cpp)
 set_tapasco_defaults(job_completion)
-target_link_libraries(job_completion PRIVATE tapasco tlkm platform tapasco-common)
+target_link_libraries(job_completion PRIVATE tapasco)
 
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
