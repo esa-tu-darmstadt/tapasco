@@ -19,7 +19,7 @@ else ()
     set(TARGET_DIR "release")
 endif ()
 
-add_library(tapasco SHARED ${CMAKE_CURRENT_LIST_DIR}/unused.c src/tapasco.hpp)
+add_library(tapasco SHARED ${CMAKE_CURRENT_SOURCE_DIR}/unused.c ${CMAKE_CURRENT_SOURCE_DIR}/src/tapasco.hpp)
 
 add_custom_command(TARGET tapasco POST_BUILD
     COMMENT "Compiling tapasco module in ${CMAKE_CURRENT_LIST_DIR}"
@@ -29,7 +29,7 @@ add_custom_command(TARGET tapasco POST_BUILD
 
 target_include_directories(tapasco PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/tapasco> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/> $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/>)
 
-set_property(TARGET tapasco PROPERTY PUBLIC_HEADER ${CMAKE_CURRENT_BINARY_DIR}/tapasco.h ${CMAKE_CURRENT_BINARY_DIR}/tapasco_inner.hpp src/tapasco.hpp)
+set_property(TARGET tapasco PROPERTY PUBLIC_HEADER ${CMAKE_CURRENT_BINARY_DIR}/tapasco.h ${CMAKE_CURRENT_BINARY_DIR}/tapasco_inner.hpp ${CMAKE_CURRENT_SOURCE_DIR}/src/tapasco.hpp)
 
 include(GNUInstallDirs)
 

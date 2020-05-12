@@ -392,4 +392,8 @@ impl Device {
     pub fn default_memory(&self) -> Result<Arc<OffchipMemory>> {
         Ok(self.offchip_memory[0].clone())
     }
+
+    pub fn num_pes(&self, pe: PEId) -> usize {
+        self.scheduler.num_pes(pe)
+    }
 }

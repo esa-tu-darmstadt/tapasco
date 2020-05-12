@@ -46,8 +46,7 @@ int main(int argc, char **argv) {
   uint64_t errs = 0;
 
   // check arrayinit instance count
-  uint64_t instances =
-      tapasco_device_kernel_pe_count(tapasco.device(), ARRAYINIT_ID);
+  uint64_t instances = tapasco.kernel_pe_count(ARRAYINIT_ID);
   std::cout << "Got " << instances << " arrayinit instances.";
   if (!instances) {
     std::cout << "Need at least one arrayinit instance to run.";

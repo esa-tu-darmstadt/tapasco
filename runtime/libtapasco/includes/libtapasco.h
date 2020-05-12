@@ -4,7 +4,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    extern void libplatform_tlkm_get_device_count();
+extern void libplatform_tlkm_get_device_count();
 #ifdef __cplusplus
 }
 #endif

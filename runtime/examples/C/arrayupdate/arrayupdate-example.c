@@ -34,12 +34,14 @@
 #define SZ 256
 #define RUNS 25
 
+#define PE_ID 9
+
 void handle_error() {
-    int l = tapasco_last_error_length();
-    char* buf = (char*)malloc(sizeof(char) * l);
-    tapasco_last_error_message(buf, l);
-    printf("ERROR: %s\n", buf);
-    free(buf);
+  int l = tapasco_last_error_length();
+  char *buf = (char *)malloc(sizeof(char) * l);
+  tapasco_last_error_message(buf, l);
+  printf("ERROR: %s\n", buf);
+  free(buf);
 }
 
 static void init_array(int *arr, size_t sz) {
@@ -71,53 +73,58 @@ int main(int argc, char **argv) {
   // initialize threadpool
   tapasco_init_logging();
   TLKM *t = tapasco_tlkm_new();
-  if(t == 0) {
-      handle_error();
-      ret = -1;
-      goto finish;
+  if (t == 0) {
+    handle_error();
+    ret = -1;
+    goto finish;
   }
 
   // Retrieve the number of devices from the runtime
   int num_devices = 0;
-  if((num_devices = tapasco_tlkm_device_len(t)) < 0) {
-      handle_error();
-      ret = -1;
-      goto finish_tlkm;
+  if ((num_devices = tapasco_tlkm_device_len(t)) < 0) {
+    handle_error();
+    ret = -1;
+    goto finish_tlkm;
   }
 
-  if(num_devices == 0) {
-      printf("No TaPaSCo devices found.\n");
-      ret = -1;
-      goto finish_tlkm;
+  if (num_devices == 0) {
+    printf("No TaPaSCo devices found.\n");
+    ret = -1;
+    goto finish_tlkm;
   }
 
   // Allocates the first device
   Device *d = 0;
-  if((d = tapasco_tlkm_device_alloc(t, 0)) == 0) {
-      handle_error();
-      ret = -1;
-      goto finish_tlkm;
+  if ((d = tapasco_tlkm_device_alloc(t, 0)) == 0) {
+    handle_error();
+    ret = -1;
+    goto finish_tlkm;
   }
 
-  if(tapasco_device_access(d, TlkmAccessExclusive) < 0) {
-      handle_error();
-      ret = -1;
-      goto finish_device;
+  if (tapasco_device_num_pes(d, PE_ID) == 0) {
+    printf("No Arrayupdate PE found.\n");
+    goto finish_device;
+  }
+
+  if (tapasco_device_access(d, TlkmAccessExclusive) < 0) {
+    handle_error();
+    ret = -1;
+    goto finish_device;
   }
 
   for (int run = 0; run < RUNS; ++run) {
     // init whole array to subsequent numbers
     int *arr = (int *)malloc(SZ * sizeof(int));
-    if(arr == 0) {
-        printf("Could not allocate memory for run %d.\n", run);
-        ret = -1;
-        goto finish_device;
+    if (arr == 0) {
+      printf("Could not allocate memory for run %d.\n", run);
+      ret = -1;
+      goto finish_device;
     }
     int *golden_arr = (int *)malloc(SZ * sizeof(int));
-    if(golden_arr == 0) {
-        printf("Could not allocate memory for run %d.\n", run);
-        ret = -1;
-        goto finish_device;
+    if (golden_arr == 0) {
+      printf("Could not allocate memory for run %d.\n", run);
+      ret = -1;
+      goto finish_device;
     }
     init_array(arr, SZ);
     init_array(golden_arr, SZ);
@@ -128,26 +135,27 @@ int main(int argc, char **argv) {
     JobList *jl = tapasco_job_param_new();
 
     // Allocates memory on device and copies data from device after execution
-    tapasco_job_param_alloc(d, (uint8_t*)arr, SZ * sizeof(int), true, true, true, jl);
+    tapasco_job_param_alloc(d, (uint8_t *)arr, SZ * sizeof(int), true, true,
+                            true, jl);
 
     // Acquire arrayinit PE
-    Job* j = tapasco_device_acquire_pe(d, 9);
-    if(j == 0) {
-        handle_error();
-        ret = -1;
-        goto finish_device;
+    Job *j = tapasco_device_acquire_pe(d, PE_ID);
+    if (j == 0) {
+      handle_error();
+      ret = -1;
+      goto finish_device;
     }
 
-    if(tapasco_job_start(j, jl) < 0) {
-        handle_error();
-        ret = -1;
-        goto finish_device;
+    if (tapasco_job_start(j, &jl) < 0) {
+      handle_error();
+      ret = -1;
+      goto finish_device;
     }
 
-    if(tapasco_job_release(j, 0, true) < 0) {
-        handle_error();
-        ret = -1;
-        goto finish_device;
+    if (tapasco_job_release(j, 0, true) < 0) {
+      handle_error();
+      ret = -1;
+      goto finish_device;
     }
 
     unsigned int errs = check_arrays(arr, golden_arr, SZ);
@@ -165,9 +173,9 @@ int main(int argc, char **argv) {
     fprintf(stderr, "FAILURE\n");
 
 finish_device:
-    tapasco_tlkm_device_destroy(d);
+  tapasco_tlkm_device_destroy(d);
 finish_tlkm:
-    tapasco_tlkm_destroy(t);
+  tapasco_tlkm_destroy(t);
 finish:
-    return ret;
+  return ret;
 }

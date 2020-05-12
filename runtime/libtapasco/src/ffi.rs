@@ -5,6 +5,7 @@ use crate::device::DataTransferLocal;
 use crate::device::DataTransferPrealloc;
 use crate::device::Device;
 use crate::device::DeviceAddress;
+use crate::device::OffchipMemory;
 use crate::device::PEParameter;
 use crate::job::Job;
 use crate::pe::PEId;
@@ -18,6 +19,7 @@ use libc::c_int;
 use snafu::ResultExt;
 use std::ptr;
 use std::slice;
+use std::sync::Arc;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -26,6 +28,12 @@ pub enum Error {
 
     #[snafu(display("Error during Device operation: {}", source))]
     DeviceError { source: crate::device::Error },
+
+    #[snafu(display("Error during DMA operation: {}", source))]
+    DMAError { source: crate::dma::Error },
+
+    #[snafu(display("Error during Allocator operation: {}", source))]
+    AllocatorError { source: crate::allocator::Error },
 
     #[snafu(display("Error during Job operation: {}", source))]
     JobError { source: crate::job::Error },
@@ -466,6 +474,18 @@ pub extern "C" fn tapasco_device_access(dev: *mut Device, access: tlkm_access) -
     }
 }
 
+#[no_mangle]
+pub extern "C" fn tapasco_device_num_pes(dev: *mut Device, id: PEId) -> isize {
+    if dev.is_null() {
+        warn!("Null pointer passed into tapasco_device_num_pes() as the device");
+        update_last_error(Error::NullPointerTLKM {});
+        return -1;
+    }
+
+    let tl = unsafe { &mut *dev };
+    tl.num_pes(id) as isize
+}
+
 /////////////////
 // Job Starting
 /////////////////
@@ -488,7 +508,7 @@ pub extern "C" fn tapasco_device_acquire_pe(dev: *mut Device, id: PEId) -> *mut 
 }
 
 #[no_mangle]
-pub extern "C" fn tapasco_job_start(job: *mut Job, params: *mut JobList) -> isize {
+pub extern "C" fn tapasco_job_start(job: *mut Job, params: *mut *mut JobList) -> isize {
     if job.is_null() {
         warn!("Null pointer passed into tapasco_job_start() as the job");
         update_last_error(Error::NullPointerTLKM {});
@@ -501,7 +521,16 @@ pub extern "C" fn tapasco_job_start(job: *mut Job, params: *mut JobList) -> isiz
         return -1;
     }
 
-    let jl = unsafe { Box::from_raw(params) };
+    let jl_ptr: *mut JobList = unsafe { *params };
+
+    if jl_ptr.is_null() {
+        warn!("Null pointer passed into tapasco_job_start() as the parameters");
+        update_last_error(Error::NullPointerTLKM {});
+        return -1;
+    }
+
+    let jl = unsafe { Box::from_raw(jl_ptr) };
+    unsafe { *params = ptr::null_mut() };
 
     // Move out of Box
     let jl = *jl;
@@ -559,6 +588,134 @@ pub extern "C" fn tapasco_job_release(
         Err(e) => {
             update_last_error(e);
             return -1;
+        }
+    }
+}
+
+///////////////////
+// Memory handling
+///////////////////
+
+type TapascoOffchipMemory = Arc<OffchipMemory>;
+
+#[no_mangle]
+pub extern "C" fn tapasco_get_default_memory(dev: *mut Device) -> *mut TapascoOffchipMemory {
+    if dev.is_null() {
+        warn!("Null pointer passed into tapasco_get_default_memory() as the device");
+        update_last_error(Error::NullPointerTLKM {});
+        return ptr::null_mut();
+    }
+
+    let tl = unsafe { &mut *dev };
+    match tl.default_memory().context(DeviceError) {
+        Ok(x) => Box::into_raw(Box::new(x)),
+        Err(e) => {
+            update_last_error(e);
+            ptr::null_mut()
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_memory_copy_to(
+    mem: *mut TapascoOffchipMemory,
+    data: *const u8,
+    addr: DeviceAddress,
+    len: usize,
+) -> isize {
+    if mem.is_null() {
+        warn!("Null pointer passed into tapasco_memory_copy_to() as the memory");
+        update_last_error(Error::NullPointerTLKM {});
+        return -1;
+    }
+
+    let s = unsafe { slice::from_raw_parts(data, len) };
+
+    let tl = unsafe { &mut *mem };
+    match tl.dma().copy_to(s, addr).context(DMAError) {
+        Ok(_x) => 0,
+        Err(e) => {
+            update_last_error(e);
+            -1
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_memory_copy_from(
+    mem: *mut TapascoOffchipMemory,
+    addr: DeviceAddress,
+    data: *mut u8,
+    len: usize,
+) -> isize {
+    if mem.is_null() {
+        warn!("Null pointer passed into tapasco_memory_copy_to() as the memory");
+        update_last_error(Error::NullPointerTLKM {});
+        return -1;
+    }
+
+    let s = unsafe { slice::from_raw_parts_mut(data, len) };
+
+    let tl = unsafe { &mut *mem };
+    match tl.dma().copy_from(addr, s).context(DMAError) {
+        Ok(_x) => 0,
+        Err(e) => {
+            update_last_error(e);
+            -1
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_memory_allocate(
+    mem: *mut TapascoOffchipMemory,
+    len: usize,
+) -> DeviceAddress {
+    if mem.is_null() {
+        warn!("Null pointer passed into tapasco_memory_copy_to() as the memory");
+        update_last_error(Error::NullPointerTLKM {});
+        return DeviceAddress::MAX;
+    }
+
+    let tl = unsafe { &mut *mem };
+    match tl
+        .allocator()
+        .lock()
+        .unwrap()
+        .allocate(len as u64)
+        .context(AllocatorError)
+    {
+        Ok(x) => x,
+        Err(e) => {
+            update_last_error(e);
+            DeviceAddress::MAX
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_memory_free(
+    mem: *mut TapascoOffchipMemory,
+    addr: DeviceAddress,
+) -> isize {
+    if mem.is_null() {
+        warn!("Null pointer passed into tapasco_memory_copy_to() as the memory");
+        update_last_error(Error::NullPointerTLKM {});
+        return -1;
+    }
+
+    let tl = unsafe { &mut *mem };
+    match tl
+        .allocator()
+        .lock()
+        .unwrap()
+        .free(addr)
+        .context(AllocatorError)
+    {
+        Ok(_x) => 0,
+        Err(e) => {
+            update_last_error(e);
+            -1
         }
     }
 }

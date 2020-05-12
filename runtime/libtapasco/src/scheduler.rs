@@ -6,6 +6,7 @@ use lockfree::map::Map;
 use lockfree::set::Set;
 use memmap::MmapMut;
 use snafu::ResultExt;
+use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::fs::File;
 use std::sync::{Arc, Mutex};
@@ -31,6 +32,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug)]
 pub struct Scheduler {
     pes: Map<PEId, Injector<PE>>,
+    pes_overview: HashMap<PEId, usize>,
 }
 
 impl Scheduler {
@@ -43,6 +45,7 @@ impl Scheduler {
         let active_pes = Arc::new((Mutex::new(completion), Set::new()));
 
         let pe_hashed: Map<PEId, Injector<PE>> = Map::new();
+        let mut pes_overview: HashMap<PEId, usize> = HashMap::new();
 
         for (i, pe) in pes.iter().enumerate() {
             let mut the_pe = PE::new(
@@ -68,9 +71,19 @@ impl Scheduler {
                     pe_hashed.insert(pe.id as PEId, v);
                 }
             }
+
+            match pes_overview.get_mut(&(pe.id as PEId)) {
+                Some(l) => *l += 1,
+                None => {
+                    pes_overview.insert(pe.id as PEId, 1);
+                }
+            };
         }
 
-        Ok(Scheduler { pes: pe_hashed })
+        Ok(Scheduler {
+            pes: pe_hashed,
+            pes_overview: pes_overview,
+        })
     }
 
     pub fn acquire_pe(&self, id: PEId) -> Result<PE> {
@@ -117,5 +130,12 @@ impl Scheduler {
         }
 
         Ok(())
+    }
+
+    pub fn num_pes(&self, id: PEId) -> usize {
+        match self.pes_overview.get(&id) {
+            Some(l) => *l,
+            None => 0,
+        }
     }
 }
