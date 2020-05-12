@@ -42,6 +42,7 @@ namespace eval platform {
   namespace export create_subsystem_tapasco
   namespace export generate_wrapper
 
+  # begin mandatory functions
   proc max_masters {} {
     return [list [::tapasco::get_platform_num_slots]]
   }
@@ -57,6 +58,7 @@ namespace eval platform {
   proc get_pe_base_address {} {
     return 0x20000
   }
+  # end mandatory functions
 
   proc get_address_map {{pe_base ""}} {
     set max32 [expr "1 << 32"]
@@ -126,14 +128,17 @@ namespace eval platform {
 
     # Concat for design interrupts
     set irq_concat_design [tapasco::ip::create_xlconcat "interrupt_concat_design" 4]
-    set_property -dict [list CONFIG.IN0_WIDTH.VALUE_SRC USER \
-                        CONFIG.IN1_WIDTH.VALUE_SRC USER \
-                        CONFIG.IN2_WIDTH.VALUE_SRC USER \
-                        CONFIG.IN3_WIDTH.VALUE_SRC USER\
-                        CONFIG.IN0_WIDTH {32} \
-                        CONFIG.IN1_WIDTH {32} \
-                        CONFIG.IN2_WIDTH {32} \
-                        CONFIG.IN3_WIDTH {32} ] $irq_concat_design
+    set_property -dict [list \
+      {CONFIG.IN0_WIDTH.VALUE_SRC} {USER} \
+      {CONFIG.IN1_WIDTH.VALUE_SRC} {USER} \
+      {CONFIG.IN2_WIDTH.VALUE_SRC} {USER} \
+      {CONFIG.IN3_WIDTH.VALUE_SRC} {USER} \
+      {CONFIG.IN0_WIDTH} {32} \
+      {CONFIG.IN1_WIDTH} {32} \
+      {CONFIG.IN2_WIDTH} {32} \
+      {CONFIG.IN3_WIDTH} {32} \
+    ] $irq_concat_design
+
     # Concat for DMA interrupts
     set irq_concat_dma [tapasco::ip::create_xlconcat "interrupt_concat_dma" 4]
     # Interrupt Controller
@@ -142,27 +147,28 @@ namespace eval platform {
     connect_bd_net [get_bd_pins -of_objects $irq_concat_design -filter {NAME == "dout"}] \
       [get_bd_pins -of_objects $intr_ctrl -filter {NAME == "interrupt_design"}]
 
-    connect_bd_net [get_bd_pin -of_objects $irq_concat_dma -filter {NAME == "dout"}] \
-      [get_bd_pin -of_objects $intr_ctrl -filter {NAME == "interrupt_pcie"}]
+    connect_bd_net [get_bd_pins -of_objects $irq_concat_dma -filter {NAME == "dout"}] \
+      [get_bd_pins -of_objects $intr_ctrl -filter {NAME == "interrupt_pcie"}]
 
     # Connect DMA interrupts
-    connect_bd_net $dma_irq_read [get_bd_pin -of_objects $irq_concat_dma -filter {NAME == "In0"}]
-    connect_bd_net $dma_irq_write [get_bd_pin -of_objects $irq_concat_dma -filter {NAME == "In1"}]
+    connect_bd_net $dma_irq_read [get_bd_pins -of_objects $irq_concat_dma -filter {NAME == "In0"}]
+    connect_bd_net $dma_irq_write [get_bd_pins -of_objects $irq_concat_dma -filter {NAME == "In1"}]
     puts "Unused Interrupts: 2, 3 are tied to 0"
     set irq_unused [tapasco::ip::create_constant "irq_unused_dma" 1 0]
-    connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] \
-      [get_bd_pin -of_objects $irq_concat_dma -filter {NAME == "In2"}]
-    connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] \
-      [get_bd_pin -of_objects $irq_concat_dma -filter {NAME == "In3"}]
+    connect_bd_net [get_bd_pins -of_object $irq_unused -filter {NAME == "dout"}] \
+      [get_bd_pins -of_objects $irq_concat_dma -filter {NAME == "In2"}]
+    connect_bd_net [get_bd_pins -of_object $irq_unused -filter {NAME == "dout"}] \
+      [get_bd_pins -of_objects $irq_concat_dma -filter {NAME == "In3"}]
 
     for {set i 0} {$i < [llength $irqs]} {incr i} {
       set port [create_bd_pin -from 31 -to 0 -dir I -type intr "intr_$i"]
-      connect_bd_net $port [get_bd_pin -of_objects $irq_concat_design -filter "NAME == In$i"]
+      connect_bd_net $port [get_bd_pins -of_objects $irq_concat_design -filter "NAME == In$i"]
     }
     if {$i < 4} {
       set unused [tapasco::ip::create_constant "irq_unused_design" 32 0]
       for {set j $i} {$j < 4} {incr j} {
-        connect_bd_net [get_bd_pins $unused/dout] [get_bd_pin -of_objects $irq_concat_design -filter "NAME == In$j"]
+        connect_bd_net [get_bd_pins -of_objects $unused -filter {NAME == "dout"}] \
+          [get_bd_pins -of_objects $irq_concat_design -filter "NAME == In$j"]
       }
     }
 
@@ -195,33 +201,39 @@ namespace eval platform {
     set ddr_ready [create_bd_pin -type "undef" -dir "I" "ddr_ready"]
 
     set gpio [tapasco::ip::create_axi_gpio "axi_gpio"]
-    set_property -dict [list CONFIG.C_GPIO_WIDTH {4} CONFIG.C_ALL_INPUTS {1}] $gpio
-    connect_bd_net $ddr_ready [get_bd_pins "$gpio/gpio_io_i"]
-    connect_bd_intf_net $s_axi_gpio [get_bd_intf_pins "$gpio/S_AXI"]
-    connect_bd_net [get_bd_pins $gpio/s_axi_aclk] [tapasco::subsystem::get_port "host" "clk"]
-    connect_bd_net [get_bd_pins $gpio/s_axi_aresetn] [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
+    set_property -dict [list \
+      {CONFIG.C_GPIO_WIDTH} {4} \
+      {CONFIG.C_ALL_INPUTS} {1}
+    ] $gpio
+    connect_bd_net $ddr_ready [get_bd_pins -of_objects $gpio -filter {NAME == "gpio_io_i"}]
+    connect_bd_intf_net $s_axi_gpio [get_bd_intf_pins -of_objects $gpio -filter {NAME == "S_AXI"}]
+
+    connect_bd_net \
+      [get_bd_pins -of_objects $gpio -filter {NAME == "s_axi_aclk"}] \
+      [tapasco::subsystem::get_port "host" "clk"]
+
+    connect_bd_net \
+      [get_bd_pins -of_objects $gpio -filter {NAME == "s_axi_aresetn"}] \
+      [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
 
     set dma [tapasco::ip::create_bluedma_x16 "dma"]
-    connect_bd_net [get_bd_pins $dma/IRQ_read] $irq_read
-    connect_bd_net [get_bd_pins $dma/IRQ_write] $irq_write
+    connect_bd_net [get_bd_pins -of_objects $dma -filter {NAME == "IRQ_read"}] $irq_read
+    connect_bd_net [get_bd_pins -of_objects $dma -filter {NAME == "IRQ_write"}] $irq_write
 
     # connect DMA 64bit to external port
-    connect_bd_intf_net [get_bd_intf_pins $dma/M64_AXI] $m_axi_mem
+    connect_bd_intf_net [get_bd_intf_pins -of_objects $dma -filter {NAME == "m64_axi"}] $m_axi_mem
 
     # connect DMA S_AXI to external port
-    connect_bd_intf_net $s_axi_ddma [get_bd_intf_pins $dma/S_AXI]
+    connect_bd_intf_net $s_axi_ddma [get_bd_intf_pins -of_objects $dma -filter {NAME == "S_AXI"}]
 
     # create port for access to DDR memory
     set m_ddr [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DDR"]
 
-    connect_bd_intf_net $m_ddr [get_bd_intf_pins "$dma/m32_axi"]
+    connect_bd_intf_net $m_ddr [get_bd_intf_pins -of_objects $dma -filter {NAME == "m32_axi"}]
 
     # connect PCIe clock and reset
-    connect_bd_net $pcie_aclk \
-      [get_bd_pins $dma/m32_axi_aclk] [get_bd_pins $dma/m64_axi_aclk] [get_bd_pins $dma/s_axi_aclk]
-
-    connect_bd_net $pcie_p_aresetn \
-      [get_bd_pins $dma/m32_axi_aresetn] [get_bd_pins $dma/m64_axi_aresetn] [get_bd_pins $dma/s_axi_aresetn]
+    connect_bd_net $pcie_aclk [get_bd_pins -of_objects $dma -filter {NAME =~ "*_axi_aclk"}]
+    connect_bd_net $pcie_p_aresetn [get_bd_pins -of_objects $dma -filter {NAME =~ "*_axi_aresetn"}]
   }
 
   proc create_subsystem_host {} {
@@ -252,15 +264,16 @@ namespace eval platform {
     set arch_axi_m [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Master"}]
     current_bd_instance $oldCurInst
 
-    connect_bd_net $irq_input [get_bd_pins "$f1_inst/irq_req"]
-    connect_bd_net $ack_output [get_bd_pins "$f1_inst/irq_ack"]
+    connect_bd_net $irq_input [get_bd_pins -of_objects $f1_inst -filter {NAME == "irq_req"}]
+    connect_bd_net $ack_output [get_bd_pins -of_objects $f1_inst -filter {NAME == "irq_ack"}]
 
-    # create clocking wizard instance and ports
+    # For some design clock frequencies, the MMCM can be omitted by using a
+    # clock output of the Shell. There are three clock groups (A, B, C) with
+    # up to 4 outputs:
     #     0   1   2   3
     # A: 250 125 375 500
     # B: 450 225
     # C: 150 200
-
     switch [tapasco::get_design_frequency] {
       "250" {
           set clk_group "a"
@@ -301,40 +314,47 @@ namespace eval platform {
 
     if {[info exist clk_group] eq 0} {
       set design_clk_wiz [tapasco::ip::create_clk_wiz design_clk_wiz]
-      set_property -dict [list CONFIG.CLK_OUT1_PORT {design_clk} \
-                          CONFIG.USE_SAFE_CLOCK_STARTUP {false} \
-                          CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
-                          CONFIG.USE_LOCKED {true} \
-                          CONFIG.USE_RESET {true} \
-                          CONFIG.RESET_TYPE {ACTIVE_LOW} \
-                          CONFIG.RESET_PORT {resetn} \
-                          ] $design_clk_wiz
+      set_property -dict [list \
+        {CONFIG.CLK_OUT1_PORT} {design_clk} \
+        {CONFIG.USE_SAFE_CLOCK_STARTUP} {false} \
+        {CONFIG.CLKOUT1_REQUESTED_OUT_FREQ} [tapasco::get_design_frequency] \
+        {CONFIG.USE_LOCKED} {true} \
+        {CONFIG.USE_RESET} {true} \
+        {CONFIG.RESET_TYPE} {ACTIVE_LOW} \
+        {CONFIG.RESET_PORT} {resetn} \
+      ] $design_clk_wiz
 
-      connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins "$f1_inst/rst_main_n_out"]
-      connect_bd_net [get_bd_pins $design_clk_wiz/clk_in1] [get_bd_pins "$f1_inst/clk_extra_a1_out"]
+      connect_bd_net \
+        [get_bd_pins -of_objects $design_clk_wiz -filter {NAME == "resetn"}] \
+        [get_bd_pins -of_objects $f1_inst -filter {NAME == "rst_main_n_out"}]
+      connect_bd_net \
+        [get_bd_pins -of_objects $design_clk_wiz -filter {NAME == "clk_in1"}] \
+        [get_bd_pins -of_objects $f1_inst -filter {NAME == "clk_extra_a1_out"}]
 
       # connect external design clk
-      connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $clkwiz_design_aclk
-      connect_bd_net [get_bd_pins $design_clk_wiz/locked] $clkwiz_design_aresetn
+      connect_bd_net [get_bd_pins -of_objects $design_clk_wiz -filter {NAME == "design_clk"}] $clkwiz_design_aclk
+      connect_bd_net [get_bd_pins -of_objects $design_clk_wiz -filter {NAME == "locked"}] $clkwiz_design_aresetn
     } else {
       set_property -dict [list \
-          "CONFIG.NUM_[string toupper $clk_group]_CLOCKS" [expr "$clk_port + 1"] \
-          CONFIG.CLOCK_B_RECIPE {2} \
-          CONFIG.CLOCK_C_RECIPE {1} \
+        "CONFIG.NUM_[string toupper $clk_group]_CLOCKS" [expr "$clk_port + 1"] \
+        {CONFIG.CLOCK_B_RECIPE} {2} \
+        {CONFIG.CLOCK_C_RECIPE} {1} \
       ] $f1_inst
 
       if {$clk_group == "a" && $clk_port == "0"} {
-        connect_bd_net [get_bd_pins "$f1_inst/clk_main_a0_out"] $clkwiz_design_aclk
+        connect_bd_net [get_bd_pins -of_objects $f1_inst -filter {NAME == "clk_main_a0_out"}] $clkwiz_design_aclk
       } else {
-        connect_bd_net [get_bd_pins "$f1_inst/clk_extra_${clk_group}${clk_port}_out"] $clkwiz_design_aclk
+        connect_bd_net \
+          [get_bd_pins -of_objects $f1_inst -filter "NAME == clk_extra_${clk_group}${clk_port}_out"] \
+          $clkwiz_design_aclk
       }
-      connect_bd_net [get_bd_pins "$f1_inst/rst_main_n_out"] $clkwiz_design_aresetn
+      connect_bd_net [get_bd_pins -of_objects $f1_inst -filter {NAME == "rst_main_n_out"}] $clkwiz_design_aresetn
     }
 
     # DDR training status
     set ddr_ready [create_bd_pin -type "undef" -dir O "ddr_ready"]
     set ddr_concat [tapasco::ip::create_xlconcat "ddr_ready_concat" 4]
-    connect_bd_net [get_bd_pins $ddr_concat/dout] $ddr_ready
+    connect_bd_net [get_bd_pins -of_objects $ddr_concat -filter {NAME == "dout"}] $ddr_ready
 
     # Connect DDR ports (DDR C is inside the Shell and should always be available)
     set ddr_available {}
@@ -342,12 +362,16 @@ namespace eval platform {
     foreach x {A B C D} {
       if {[get_property "CONFIG.DDR_${x}_PRESENT" $f1_inst] eq 1} {
         set ddr_available [lappend ddr_available $x]
-        connect_bd_net [get_bd_pins "$f1_inst/ddr[string tolower $x]_is_ready"] [get_bd_pins "$ddr_concat/In${i}"]
+        connect_bd_net \
+          [get_bd_pins -of_objects $f1_inst -filter "NAME == ddr[string tolower $x]_is_ready"] \
+          [get_bd_pins -of_objects $ddr_concat -filter "NAME == In${i}"]
       }
       incr i
     }
 
     # Connect DMA engine and architecture to local memory
+
+    # To use a SmartConnect, uncomment the following code and comment the code after this block
 
     # set ddr_ic [tapasco::ip::create_axi_sc "ddr_ic" [expr "1 + [llength $arch_axi_m]"] [llength $ddr_available]]
     # set_property -dict [list CONFIG.NUM_CLKS {2}] $ddr_ic
@@ -357,7 +381,7 @@ namespace eval platform {
     set ddr_ic [tapasco::ip::create_axi_ic "ddr_ic" 2 [llength $ddr_available]]
 
     connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
-      [get_bd_pins $ddr_ic/ACLK] \
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME == "ACLK"}] \
       [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00_* && TYPE == clk}] \
       [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M* && TYPE == clk}]
 
@@ -365,7 +389,7 @@ namespace eval platform {
       [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == clk}]
 
     connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
-      [get_bd_pins $ddr_ic/ARESETN] \
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME == "ARESETN"}] \
       [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00* && TYPE == rst}] \
       [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M* && TYPE == rst}]
 
@@ -375,12 +399,14 @@ namespace eval platform {
     set num_ddr 0
     foreach x $ddr_available {
       puts "Connect AXI master $num_ddr to DDR port $x"
-      connect_bd_intf_net [get_bd_intf_pins "$ddr_ic/M0${num_ddr}_AXI"] [get_bd_intf_pins "$f1_inst/S_AXI_DDR${x}"]
+      connect_bd_intf_net \
+        [get_bd_intf_pins -of_objects $ddr_ic -filter "NAME == M0${num_ddr}_AXI"] \
+        [get_bd_intf_pins -of_objects $f1_inst -filter "NAME == S_AXI_DDR${x}"]
       incr num_ddr
     }
 
     set s_ddr [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DDR"]
-    connect_bd_intf_net [get_bd_intf_pins "$ddr_ic/S00_AXI"] $s_ddr
+    connect_bd_intf_net [get_bd_intf_pins -of_objects $ddr_ic -filter {NAME == "S00_AXI"}] $s_ddr
 
     for {set i 0} {$i < [llength $arch_axi_m]} {incr i} {
       set s_axi_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 [format "S_MEM_%d" $i]]
@@ -388,6 +414,8 @@ namespace eval platform {
     }
 
     # Connect configuration AXI ports (connected to 32 MB BAR provided by the Shell)
+
+    # To use a SmartConnect, uncomment the following code and comment the code after this block
 
     # set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
     # tapasco::ip::connect_sc_default_clocks $out_ic "design"
@@ -401,9 +429,10 @@ namespace eval platform {
 
     set out_ic [tapasco::ip::create_axi_ic "out_ic" 1 5]
 
+    # Without this, Vivado chooses wrong parameters (at least in 2018.3)
     set_property -dict [list \
-      CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
-      CONFIG.XBAR_DATA_WIDTH {32} \
+      {CONFIG.ENABLE_ADVANCED_OPTIONS} {1} \
+      {CONFIG.XBAR_DATA_WIDTH} {32} \
     ] $out_ic
 
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M00_AXI}] $m_arch
@@ -413,7 +442,7 @@ namespace eval platform {
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M04_AXI}] $m_mem_gpio
 
     connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
-      [get_bd_pins $out_ic/ACLK] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME == ACLK}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == clk}] \
@@ -424,7 +453,7 @@ namespace eval platform {
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == clk}]
 
     connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
-      [get_bd_pins $out_ic/ARESETN] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME == ARESETN}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == rst}] \
@@ -434,7 +463,8 @@ namespace eval platform {
     connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == rst}]
 
-    connect_bd_intf_net [get_bd_intf_pins "$f1_inst/M_AXI_OCL"] [get_bd_intf_pins "$out_ic/S00_AXI"]
+    connect_bd_intf_net [get_bd_intf_pins -of_objects $f1_inst -filter {NAME == "M_AXI_OCL"}] \
+      [get_bd_intf_pins -of_objects $out_ic -filter {NAME == "S00_AXI"}]
 
     # Connect "in" AXI ports
     set in_ic [tapasco::ip::create_axi_ic "in_ic" 1 1]
@@ -448,7 +478,7 @@ namespace eval platform {
     connect_bd_intf_net [get_bd_intf_pins S_HOST] \
       [get_bd_intf_pins -of_objects $in_ic -filter {NAME == S00_AXI}]
     connect_bd_intf_net [get_bd_intf_pins -of_object $in_ic -filter { MODE == Master }] \
-      [get_bd_intf_pins "$f1_inst/S_AXI_PCIM"]
+      [get_bd_intf_pins -of_objects $f1_inst -filter {NAME == "S_AXI_PCIM"}]
   }
 
   proc create_subsystem_clocks_and_resets {} {
@@ -466,27 +496,47 @@ namespace eval platform {
     set mem_rst_gen [tapasco::ip::create_rst_gen "mem_rst_gen"]
 
     # connect external ports
-    connect_bd_net $pcie_clk [get_bd_pins $host_rst_gen/slowest_sync_clk] [tapasco::subsystem::get_port "host" "clk"]
-    connect_bd_net $pcie_aresetn [get_bd_pins $host_rst_gen/ext_reset_in]
+    connect_bd_net $pcie_clk [get_bd_pins -of_objects $host_rst_gen -filter {NAME == "slowest_sync_clk"}] \
+      [tapasco::subsystem::get_port "host" "clk"]
+    connect_bd_net $pcie_aresetn [get_bd_pins -of_objects $host_rst_gen -filter {NAME == "ext_reset_in"}]
 
-    connect_bd_net $ddr_clk [get_bd_pins $mem_rst_gen/slowest_sync_clk] [tapasco::subsystem::get_port "mem" "clk"]
-    connect_bd_net $ddr_clk_aresetn [get_bd_pins $mem_rst_gen/ext_reset_in]
+    connect_bd_net $ddr_clk [get_bd_pins -of_objects $mem_rst_gen -filter {NAME == "slowest_sync_clk"}] \
+      [tapasco::subsystem::get_port "mem" "clk"]
+    connect_bd_net $ddr_clk_aresetn [get_bd_pins -of_objects $mem_rst_gen -filter {NAME == "ext_reset_in"}]
 
-    connect_bd_net $design_clk [get_bd_pins $design_rst_gen/slowest_sync_clk] [tapasco::subsystem::get_port "design" "clk"]
-    connect_bd_net $design_clk_aresetn [get_bd_pins $design_rst_gen/ext_reset_in]
+    connect_bd_net $design_clk [get_bd_pins -of_objects $design_rst_gen -filter {NAME == "slowest_sync_clk"}] \
+      [tapasco::subsystem::get_port "design" "clk"]
+    connect_bd_net $design_clk_aresetn [get_bd_pins -of_objects $design_rst_gen -filter {NAME == "ext_reset_in"}]
 
     # connect to clock reset master
-    connect_bd_net [get_bd_pins $host_rst_gen/peripheral_aresetn] [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
-    connect_bd_net [get_bd_pins $host_rst_gen/peripheral_reset] [tapasco::subsystem::get_port "host" "rst" "peripheral" "reset"]
-    connect_bd_net [get_bd_pins $host_rst_gen/interconnect_aresetn] [tapasco::subsystem::get_port "host" "rst" "interconnect"]
+    connect_bd_net [get_bd_pins -of_objects $host_rst_gen -filter {NAME == "peripheral_aresetn"}] \
+      [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
 
-    connect_bd_net [get_bd_pins $design_rst_gen/peripheral_aresetn] [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
-    connect_bd_net [get_bd_pins $design_rst_gen/peripheral_reset] [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"]
-    connect_bd_net [get_bd_pins $design_rst_gen/interconnect_aresetn] [tapasco::subsystem::get_port "design" "rst" "interconnect"]
+    connect_bd_net [get_bd_pins -of_objects $host_rst_gen -filter {NAME == "peripheral_reset"}] \
+      [tapasco::subsystem::get_port "host" "rst" "peripheral" "reset"]
 
-    connect_bd_net [get_bd_pins $mem_rst_gen/peripheral_aresetn] [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
-    connect_bd_net [get_bd_pins $mem_rst_gen/peripheral_reset] [tapasco::subsystem::get_port "mem" "rst" "peripheral" "reset"]
-    connect_bd_net [get_bd_pins $mem_rst_gen/interconnect_aresetn] [tapasco::subsystem::get_port "mem" "rst" "interconnect"]
+    connect_bd_net [get_bd_pins -of_objects $host_rst_gen -filter {NAME == "interconnect_aresetn"}] \
+      [tapasco::subsystem::get_port "host" "rst" "interconnect"]
+
+
+    connect_bd_net [get_bd_pins -of_objects $design_rst_gen -filter {NAME == "peripheral_aresetn"}] \
+      [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
+
+    connect_bd_net [get_bd_pins -of_objects $design_rst_gen -filter {NAME == "peripheral_reset"}] \
+      [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"]
+
+    connect_bd_net [get_bd_pins -of_objects $design_rst_gen -filter {NAME == "interconnect_aresetn"}] \
+      [tapasco::subsystem::get_port "design" "rst" "interconnect"]
+
+
+    connect_bd_net [get_bd_pins -of_objects $mem_rst_gen -filter {NAME == "peripheral_aresetn"}] \
+      [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
+
+    connect_bd_net [get_bd_pins -of_objects $mem_rst_gen -filter {NAME == "peripheral_reset"}] \
+      [tapasco::subsystem::get_port "mem" "rst" "peripheral" "reset"]
+
+    connect_bd_net [get_bd_pins -of_objects $mem_rst_gen -filter {NAME == "interconnect_aresetn"}] \
+      [tapasco::subsystem::get_port "mem" "rst" "interconnect"]
   }
 
   proc readfile {filename} {
@@ -509,20 +559,20 @@ namespace eval platform {
 
     # Create instance: f1_inst, and set properties
     set f1_inst [ create_bd_cell -type ip -vlnv xilinx.com:ip:aws:1.0 f1_inst ]
-    set_property -dict [ list \
-        CONFIG.AUX_PRESENT {1} \
-        CONFIG.BAR1_PRESENT {0} \
-        CONFIG.NUM_A_CLOCKS {2} \
-        CONFIG.CLOCK_A_RECIPE {1} \
-        CONFIG.DEVICE_ID {0xF000} \
-        CONFIG.PCIS_PRESENT {0} \
-        CONFIG.PCIM_PRESENT {1} \
-        CONFIG.DDR_A_PRESENT {1} \
-        CONFIG.DDR_B_PRESENT {1} \
-        CONFIG.DDR_C_PRESENT {1} \
-        CONFIG.DDR_D_PRESENT {1} \
-        CONFIG.OCL_PRESENT {1} \
-        CONFIG.SDA_PRESENT {0} \
+    set_property -dict [list \
+      {CONFIG.AUX_PRESENT} {1} \
+      {CONFIG.BAR1_PRESENT} {0} \
+      {CONFIG.NUM_A_CLOCKS} {2} \
+      {CONFIG.CLOCK_A_RECIPE} {1} \
+      {CONFIG.DEVICE_ID} {0xF000} \
+      {CONFIG.PCIS_PRESENT} {0} \
+      {CONFIG.PCIM_PRESENT} {1} \
+      {CONFIG.DDR_A_PRESENT} {1} \
+      {CONFIG.DDR_B_PRESENT} {1} \
+      {CONFIG.DDR_C_PRESENT} {1} \
+      {CONFIG.DDR_D_PRESENT} {1} \
+      {CONFIG.OCL_PRESENT} {1} \
+      {CONFIG.SDA_PRESENT} {0} \
     ] $f1_inst
 
     set ddr_aclk [create_bd_pin -type "clk" -dir "O" "ddr_aclk"]
@@ -531,14 +581,18 @@ namespace eval platform {
     # Connect S_SH pin
     set oldCurInst [current_bd_instance .]
     current_bd_instance
-    connect_bd_intf_net $S_SH [get_bd_intf_pins $f1_inst/S_SH]
+    connect_bd_intf_net $S_SH [get_bd_intf_pins -of_objects $f1_inst -filter {NAME == "S_SH"}]
     current_bd_instance $oldCurInst
 
-    connect_bd_net [get_bd_pins "pcie_aclk"] [get_bd_pins "$f1_inst/clk_main_a0_out"]
-    connect_bd_net [get_bd_pins "pcie_aresetn"] [get_bd_pins "$f1_inst/rst_main_n_out"]
+    connect_bd_net [get_bd_pins "pcie_aclk"] \
+      [get_bd_pins -of_objects $f1_inst -filter {NAME == "clk_main_a0_out"}]
+    connect_bd_net [get_bd_pins "pcie_aresetn"] \
+      [get_bd_pins -of_objects $f1_inst -filter {NAME == "rst_main_n_out"}]
 
-    connect_bd_net $ddr_aclk [get_bd_pins "$f1_inst/clk_main_a0_out"]
-    connect_bd_net $ddr_aresetn [get_bd_pins "$f1_inst/rst_main_n_out"]
+    connect_bd_net $ddr_aclk \
+      [get_bd_pins -of_objects $f1_inst -filter {NAME == "clk_main_a0_out"}]
+    connect_bd_net $ddr_aresetn \
+      [get_bd_pins -of_objects $f1_inst -filter {NAME == "rst_main_n_out"}]
 
     set ::timestamp [exec date +%y_%m_%d-%H%M%S]
 
@@ -606,17 +660,18 @@ namespace eval platform {
     # Additional constraints for top level implementation
     set constraints_fn [file join $::env(HDK_SHELL_DIR) new_cl_template build constraints cl_pnr_user.xdc]
     import_files -fileset constrs_1 -force $constraints_fn
-    set_property PROCESSING_ORDER LATE [get_files */cl_pnr_user.xdc]
-    set_property USED_IN {implementation} [get_files */cl_pnr_user.xdc]
 
-    set_property is_enabled false [get_files */cl_pnr_user.xdc]
+    set_property -dict [list \
+      {PROCESSING_ORDER} {LATE} \
+      {USED_IN} {implementation} \
+      {is_enabled} {false} \
+    ] [get_files */cl_pnr_user.xdc]
+
     set ::env(PNR_USER) [get_files */cl_pnr_user.xdc]
-
-    add_files -norecurse [file join $::env(HDK_SHELL_DIR) hlx design lib cl_top.sv]
   }
 
   proc generate_wrapper {} {
-    puts "Using provided wrapper."
+    add_files -norecurse [file join $::env(HDK_SHELL_DIR) hlx design lib cl_top.sv]
   }
 
   # Begin plugins
@@ -639,20 +694,15 @@ namespace eval platform {
       file mkdir [file join ${::FAAS_CL_DIR} build reports]
 
       set platform_dirname $::platform::platform_dirname
-      set current_run [get_runs [current_run -implementation]]
+      set impl_run [get_runs [current_run -implementation]]
+      set hook_dir [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname hooks]
 
       # Set TCL pre/post hooks
-      set_property -name "STEPS.OPT_DESIGN.TCL.PRE" \
-        -value [file normalize [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname hooks opt_design_pre.tcl]] \
-        -objects $current_run
-
-      set_property -name "STEPS.OPT_DESIGN.TCL.POST" \
-        -value [file normalize [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname hooks opt_design_post.tcl]] \
-        -objects $current_run
-
-      set_property -name "STEPS.ROUTE_DESIGN.TCL.POST" \
-        -value [file normalize [file join $::env(TAPASCO_HOME_TCL) platform $platform_dirname hooks route_design_post.tcl]] \
-        -objects $current_run
+      set_property -dict [list \
+        {STEPS.OPT_DESIGN.TCL.PRE} [file normalize [file join $hook_dir opt_design_pre.tcl]] \
+        {STEPS.OPT_DESIGN.TCL.POST} [file normalize [file join $hook_dir opt_design_post.tcl]] \
+        {STEPS.ROUTE_DESIGN.TCL.POST} [file normalize [file join $hook_dir route_design_post.tcl]] \
+      ] $impl_run
 
       return $args
     }
@@ -662,7 +712,7 @@ namespace eval platform {
       set synth_run [get_runs synth_1]
       set_property -dict [list \
         {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS} {-mode out_of_context -max_uram_cascade_height 1} \
-        STEPS.SYNTH_DESIGN.ARGS.RETIMING true \
+        {STEPS.SYNTH_DESIGN.ARGS.RETIMING} {true} \
       ] $synth_run
 
       # Work around an obscure bug that sometimes crashes Vivado
@@ -712,6 +762,7 @@ namespace eval platform {
       set dcp_hash [lindex [split [exec sha256sum $final_dcp]] 0]
       set tool_version [string range [version -short] 0 5]
 
+      # Reference: https://github.com/aws/aws-fpga/blob/master/hdk/docs/AFI_Manifest.md
       set manifest [open [file join ${to_aws_dir} "${::timestamp}.manifest.txt"] w]
       puts $manifest [join [list\
         "manifest_format_version=2"\
@@ -736,7 +787,7 @@ namespace eval platform {
       set tarfilepath [file normalize [file join $::FAAS_CL_DIR .. "${::bitstreamname}.tar"]]
 
       # Add checkpoint and manifest to tar file from which the AFI can be generated
-      # (tar file must contains "to_aws" folder, so change directory accordingly)
+      # (tar file must contain "to_aws" folder, so change directory accordingly)
       set old_pwd [pwd]
       cd [file normalize [file join $to_aws_dir ..]]
       tar::create $tarfilepath [glob to_aws/${::timestamp}*]
@@ -767,7 +818,6 @@ namespace eval platform {
       ::platform::addressmap::add_platform_component "PLATFORM_COMPONENT_AWS_EC2" 0 0
     }
   }
-
   # End plugins
 
   # Register plugins
