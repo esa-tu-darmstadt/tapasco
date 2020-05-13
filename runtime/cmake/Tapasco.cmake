@@ -15,9 +15,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-if(POLICY CMP0069)
-  cmake_policy(SET CMP0069 NEW)
-endif()
+cmake_policy(SET CMP0060 NEW)
+cmake_policy(SET CMP0069 NEW)
 
 function(set_tapasco_defaults target_name)
     target_compile_options(${target_name} PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall>
