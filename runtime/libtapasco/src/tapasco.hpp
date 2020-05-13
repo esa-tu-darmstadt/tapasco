@@ -50,7 +50,18 @@ using job_future = std::function<int(void)>;
 typedef DeviceAddress tapasco_handle_t;
 typedef PEId tapasco_kernel_id_t;
 typedef int tapasco_res_t;
+typedef int tapasco_device_capability_t;
+
 constexpr tapasco_res_t TAPASCO_SUCCESS = 0;
+
+constexpr int PLATFORM_CAP0_ATSPRI = (1 << 0);
+constexpr int PLATFORM_CAP0_ATSCHECK = (1 << 1);
+constexpr int PLATFORM_CAP0_PE_LOCAL_MEM = (1 << 2);
+constexpr int PLATFORM_CAP0_DYNAMIC_ADDRESS_MAP = (1 << 3);
+constexpr int PLATFORM_CAP0_AWS_EC2_PLATFORM = (1 << 6);
+
+constexpr int default_legacy_caps =
+    PLATFORM_CAP0_PE_LOCAL_MEM | PLATFORM_CAP0_DYNAMIC_ADDRESS_MAP;
 
 /**
  * Type annotation for TAPASCO launch argument pointers: output only, i.e., only
@@ -501,10 +512,9 @@ struct Tapasco {
    * @return TAPASCO_SUCCESS, if capability is available, an error code
    *otherwise
    **/
-  //  tapasco_res_t has_capability(tapasco_device_capability_t cap) const
-  //  noexcept {
-  //    return tapasco_device_has_capability(devctx, cap);
-  //  }
+  tapasco_res_t has_capability(tapasco_device_capability_t cap) {
+    return default_legacy_caps & cap;
+  }
 
 private:
   /* Collector methods: bottom half of job launch. @} */

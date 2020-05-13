@@ -758,6 +758,8 @@ pub unsafe extern "C" fn tapasco_version(buffer: *mut c_char, length: usize) -> 
         return 0;
     }
 
+    println!("Version: {}", VERSION);
+
     ptr::copy_nonoverlapping(VERSION.as_ptr(), buffer.as_mut_ptr(), VERSION.len());
 
     buffer[VERSION.len()] = 0;
@@ -767,5 +769,5 @@ pub unsafe extern "C" fn tapasco_version(buffer: *mut c_char, length: usize) -> 
 
 #[no_mangle]
 pub extern "C" fn tapasco_version_len() -> usize {
-    VERSION.len()
+    VERSION.len() + 1
 }

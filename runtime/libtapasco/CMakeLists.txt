@@ -39,6 +39,6 @@ install(TARGETS tapasco EXPORT TapascoConfig
         RUNTIME  DESTINATION ${CMAKE_INSTALL_BINDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tapasco/)
 
-install(EXPORT TapascoConfig DESTINATION share/Tapasco/cmake)
+install(EXPORT TapascoConfig DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/cmake)
 
 export(TARGETS tapasco FILE TapascoConfig.cmake)
