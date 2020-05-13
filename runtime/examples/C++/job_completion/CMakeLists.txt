@@ -33,6 +33,4 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 install(TARGETS job_completion
-        ARCHIVE  DESTINATION share/Tapasco/bin/
-        LIBRARY  DESTINATION share/Tapasco/bin/
-        RUNTIME  DESTINATION share/Tapasco/bin/)
+        RUNTIME  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/bin)

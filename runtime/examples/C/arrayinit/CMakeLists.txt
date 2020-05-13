@@ -9,13 +9,10 @@ set_tapasco_defaults(arrayinit)
 
 if(NOT TARGET tapasco)
     find_package(Tapasco REQUIRED)
-    set_target_properties(arrayinit PROPERTIES INSTALL_RPATH ${CMAKE_INSTALL_FULL_LIBDIR} )
 endif()
 
 target_link_libraries(arrayinit tapasco ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS arrayinit
-        ARCHIVE  DESTINATION share/Tapasco/bin/
-        LIBRARY  DESTINATION share/Tapasco/bin/
-        RUNTIME  DESTINATION share/Tapasco/bin/)
+        RUNTIME  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/bin)
 

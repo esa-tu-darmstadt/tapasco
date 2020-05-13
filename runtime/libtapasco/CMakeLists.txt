@@ -2,15 +2,6 @@ cmake_minimum_required(VERSION 3.0)
 
 project(tapasco VERSION 2.0 LANGUAGES C CXX)
 
-SET(CPACK_GENERATOR "RPM" "DEB" "TGZ" "ZIP" "STGZ" "TBZ2")
-SET(CPACK_PACKAGE_CONTACT "tapasco@esa.tu-darmstadt.de")
-
-SET(CPACK_PACKAGE_VERSION_MAJOR 2020)
-SET(CPACK_PACKAGE_VERSION_MINOR 4)
-SET(CPACK_PACKAGE_VERSION_PATCH 0)
-
-INCLUDE(CPack)
-
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(CARGO_CMD cargo build)
     set(TARGET_DIR "debug")
@@ -21,9 +12,16 @@ endif ()
 
 add_library(tapasco SHARED ${CMAKE_CURRENT_SOURCE_DIR}/unused.c ${CMAKE_CURRENT_SOURCE_DIR}/src/tapasco.hpp)
 
-add_custom_command(TARGET tapasco POST_BUILD
+add_custom_target(tapasco_rust ALL CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} ${CARGO_CMD} --manifest-path=${CMAKE_CURRENT_LIST_DIR}/Cargo.toml
     COMMENT "Compiling tapasco module in ${CMAKE_CURRENT_LIST_DIR}"
-    COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} ${CARGO_CMD} --manifest-path=${CMAKE_CURRENT_LIST_DIR}/Cargo.toml
+    BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/libtapasco.so
+    )
+
+add_dependencies(tapasco tapasco_rust)
+
+add_custom_command(TARGET tapasco POST_BUILD
+    COMMENT "Replacing dummy libtapasco.so with real one"
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/libtapasco.so
     COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/libtapasco.so ${CMAKE_CURRENT_BINARY_DIR}/
     )
 

@@ -30,7 +30,5 @@ set_tapasco_defaults(arraysum-cpp)
 target_link_libraries(arraysum-cpp tapasco ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS arraysum-cpp
-        ARCHIVE  DESTINATION share/Tapasco/bin/
-        LIBRARY  DESTINATION share/Tapasco/bin/
-        RUNTIME  DESTINATION share/Tapasco/bin/)
+        RUNTIME  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/bin)
 

@@ -76,7 +76,7 @@ void executeRandomBenchmark(tapasco::Tapasco &tapasco, int op,
   // start one job for each instance of the PE found
   for (int instance = 0; instance < instances; instance++) {
     rets[instance] = 0;
-    tapasco::RetVal<unsigned long> ret_val(rets[instance]);
+    tapasco::RetVal<unsigned long> ret_val(&rets[instance]);
     retvals.push_back(ret_val);
     // first argument is operation: 3 means Random Read, 4 Random Write, 5
     // Random Read/Write second argument is runtime in cycles third argument is
@@ -92,15 +92,16 @@ void executeRandomBenchmark(tapasco::Tapasco &tapasco, int op,
     // when job is finished use return value (completed requests) to calculate
     // performance
     jobs[instance]();
-    acc += retvals[instance].value;
-    double iops = retvals[instance].value / (cycles / (designclk * 1000000.0));
+    acc += *retvals[instance].value;
+    double iops = *retvals[instance].value / (cycles / (designclk * 1000000.0));
     snprintf(text, 20, "%.2fMIOPS", iops / 1000000);
-    std::cout << left << setw(col_width) << setfill(space) << text;
+    std::cout << std::left << std::setw(col_width) << std::setfill(space)
+              << text;
   }
 
   double iops = acc / (cycles / (designclk * 1000000.0));
   snprintf(text, 20, "%.2fMIOPS", iops / 1000000);
-  std::cout << left << setw(col_width) << setfill(space) << text;
+  std::cout << std::left << std::setw(col_width) << std::setfill(space) << text;
 }
 
 void benchmarkRandom(tapasco::Tapasco &tapasco, float designclk,
@@ -124,18 +125,22 @@ void benchmarkRandom(tapasco::Tapasco &tapasco, float designclk,
             << std::endl;
 
   // print table header
-  std::cout << left << setw(col_width) << setfill(space) << "Size";
+  std::cout << std::left << std::setw(col_width) << std::setfill(space)
+            << "Size";
   for (int instance = 0; instance < instances; instance++) {
     snprintf(text, 20, "Instance %i", instance);
-    std::cout << left << setw(col_width) << setfill(space) << text;
+    std::cout << std::left << std::setw(col_width) << std::setfill(space)
+              << text;
   }
-  std::cout << left << setw(col_width) << setfill(space) << "Total";
+  std::cout << std::left << std::setw(col_width) << std::setfill(space)
+            << "Total";
   std::cout << std::endl;
 
   // execute random benchmark for different request sizes
   for (int count = 0; count < random_byte_length_c; count++) {
     snprintf(text, 20, "%iB", random_byte_length[count]);
-    std::cout << left << setw(col_width) << setfill(space) << text;
+    std::cout << std::left << std::setw(col_width) << std::setfill(space)
+              << text;
     // execute Random Read/Write
     executeRandomBenchmark(tapasco, 2, cycles, random_byte_length[count],
                            designclk, instances);
@@ -166,7 +171,7 @@ void executeBatchBenchmark(tapasco::Tapasco &tapasco, float designclk, int op,
     // start one job for each instance of the PE found
     for (int instance = 0; instance < instances; instance++) {
       rets[instance] = 0;
-      tapasco::RetVal<unsigned long> ret_val(rets[instance]);
+      tapasco::RetVal<unsigned long> ret_val(&rets[instance]);
       retvals.push_back(ret_val);
       // first argument is operation: 0 for Batch Read, 1 for Batch Write, 2 for
       // Batch Read/Write second argument is unused third argument is transfer
@@ -178,8 +183,8 @@ void executeBatchBenchmark(tapasco::Tapasco &tapasco, float designclk, int op,
       // when job finished add return value (transfer time in cycles) to
       // accumulators
       jobs[instance]();
-      accs[instance] += retvals[instance].value;
-      acc += retvals[instance].value;
+      accs[instance] += *retvals[instance].value;
+      acc += *retvals[instance].value;
     }
   }
 
@@ -191,11 +196,12 @@ void executeBatchBenchmark(tapasco::Tapasco &tapasco, float designclk, int op,
   for (int instance = 0; instance < instances; instance++) {
     snprintf(text, 20, "%#.3fGiB/s",
              calcSpeed(total_data, accs[instance], designclk));
-    std::cout << left << setw(col_width) << setfill(space) << text;
+    std::cout << std::left << std::setw(col_width) << std::setfill(space)
+              << text;
   }
   snprintf(text, 20, "%#.3fGiB/s",
            calcSpeed(total_data * instances, acc / instances, designclk));
-  std::cout << left << setw(col_width) << setfill(space) << text;
+  std::cout << std::left << std::setw(col_width) << std::setfill(space) << text;
 }
 
 void benchmarkBatch(tapasco::Tapasco &tapasco, float designclk, int instances) {
@@ -207,18 +213,22 @@ void benchmarkBatch(tapasco::Tapasco &tapasco, float designclk, int instances) {
             << std::endl;
 
   // print table header
-  std::cout << left << setw(col_width) << setfill(space) << "Size";
+  std::cout << std::left << std::setw(col_width) << std::setfill(space)
+            << "Size";
   for (int instance = 0; instance < instances; instance++) {
     snprintf(text, 20, "Instance %i", instance);
-    std::cout << left << setw(col_width) << setfill(space) << text;
+    std::cout << std::left << std::setw(col_width) << std::setfill(space)
+              << text;
   }
-  std::cout << left << setw(col_width) << setfill(space) << "Total";
+  std::cout << std::left << std::setw(col_width) << std::setfill(space)
+            << "Total";
   std::cout << std::endl;
 
   // execute batch benchmark for different transfer sizes
   for (size_t s = batch_min_length; s <= batch_max_length; s++) {
     snprintf(text, 20, "%iKib", ((1 << s) / 1024));
-    std::cout << left << setw(col_width) << setfill(space) << text;
+    std::cout << std::left << std::setw(col_width) << std::setfill(space)
+              << text;
     // execute Batch Read/Write
     executeBatchBenchmark(tapasco, designclk, 2, s, instances);
 
@@ -229,24 +239,22 @@ void benchmarkBatch(tapasco::Tapasco &tapasco, float designclk, int instances) {
 int main(int argc, char **argv) {
   // Initialize TaPaSCo
   tapasco::Tapasco tapasco;
-  platform_info_t info;
-  tapasco.info(&info);
 
   // Check PE count
-  uint64_t instances = tapasco_device_kernel_pe_count(tapasco.device(), PE_ID);
-  std::cout << "Got " << instances << " instances @ " << info.clock.design
-            << "MHz" << std::endl;
+  uint64_t instances = tapasco.kernel_pe_count(PE_ID);
+  std::cout << "Got " << instances << " instances @ "
+            << tapasco.design_frequency() << "MHz" << std::endl;
   if (!instances || instances < 2) {
     std::cout << "Need at least two instance to run." << std::endl;
     exit(1);
   }
 
   // runtime for random access benchmark
-  unsigned long cycles = random_time_ms * info.clock.design * 1000;
+  unsigned long cycles = random_time_ms * tapasco.design_frequency() * 1000;
 
-  benchmarkRandom(tapasco, info.clock.design, cycles, instances);
+  benchmarkRandom(tapasco, tapasco.design_frequency(), cycles, instances);
 
-  benchmarkBatch(tapasco, info.clock.design, instances);
+  benchmarkBatch(tapasco, tapasco.design_frequency(), instances);
 
   return 0;
 }

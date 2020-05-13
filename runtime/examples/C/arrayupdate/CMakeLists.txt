@@ -13,7 +13,5 @@ set_tapasco_defaults(arrayupdate)
 target_link_libraries(arrayupdate tapasco ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS arrayupdate
-        ARCHIVE  DESTINATION share/Tapasco/bin/
-        LIBRARY  DESTINATION share/Tapasco/bin/
-        RUNTIME  DESTINATION share/Tapasco/bin/)
+        RUNTIME  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/bin)
 

@@ -28,7 +28,5 @@ set_tapasco_defaults(bandwidth)
 target_link_libraries(bandwidth PRIVATE tapasco)
 
 install(TARGETS bandwidth
-        ARCHIVE  DESTINATION share/Tapasco/bin/
-        LIBRARY  DESTINATION share/Tapasco/bin/
-        RUNTIME  DESTINATION share/Tapasco/bin/)
+        RUNTIME  DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/bin)
 

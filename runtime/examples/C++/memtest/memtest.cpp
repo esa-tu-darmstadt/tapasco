@@ -67,7 +67,7 @@ void executeRandomBenchmark(tapasco::Tapasco &tapasco, int op,
                             float designclk) {
   char text[20];
   unsigned long ret = -1;
-  tapasco::RetVal<unsigned long> ret_val(ret);
+  tapasco::RetVal<unsigned long> ret_val(&ret);
   // first argument is operation: 3 means Random Read, 4 Random Write, 5 Random
   // Read/Write second argument is runtime in cycles third argument is request
   // size in bytes (maximum 4096) fourth and fifth arguments are seeds for the
@@ -80,9 +80,9 @@ void executeRandomBenchmark(tapasco::Tapasco &tapasco, int op,
   unsigned long total_data = byte_length * ret;
   double iops = ret / (cycles / (designclk * 1000000.0));
   snprintf(text, 20, "%.2fMIOPS", iops / 1000000);
-  std::cout << left << setw(col_width) << setfill(space) << text;
+  std::cout << std::left << std::setw(col_width) << std::setfill(space) << text;
   snprintf(text, 20, "%#.2fGiB/s", calcSpeed(total_data, cycles, designclk));
-  std::cout << left << setw(col_width) << setfill(space) << text;
+  std::cout << std::left << std::setw(col_width) << std::setfill(space) << text;
 }
 
 void benchmarkRandom(tapasco::Tapasco &tapasco, float designclk,
@@ -108,17 +108,22 @@ void benchmarkRandom(tapasco::Tapasco &tapasco, float designclk,
             << std::endl;
 
   // print table header
-  std::cout << left << setw(col_width) << setfill(space) << "Size";
-  std::cout << left << setw(2 * col_width) << setfill(space) << "Read";
-  std::cout << left << setw(2 * col_width) << setfill(space) << "Write";
-  std::cout << left << setw(2 * col_width) << setfill(space) << "Read/Write";
+  std::cout << std::left << std::setw(col_width) << std::setfill(space)
+            << "Size";
+  std::cout << std::left << std::setw(2 * col_width) << std::setfill(space)
+            << "Read";
+  std::cout << std::left << std::setw(2 * col_width) << std::setfill(space)
+            << "Write";
+  std::cout << std::left << std::setw(2 * col_width) << std::setfill(space)
+            << "Read/Write";
   std::cout << std::endl;
 
   // execute random benchmark for different request sizes
   for (int count = 0; count < random_byte_length_c; count++) {
     char text[20];
     snprintf(text, 20, "%iB", random_byte_length[count]);
-    std::cout << left << setw(col_width) << setfill(space) << text;
+    std::cout << std::left << std::setw(col_width) << std::setfill(space)
+              << text;
     // Random Read
     executeRandomBenchmark(tapasco, 0, cycles, random_byte_length[count],
                            designclk);
@@ -138,7 +143,7 @@ void printAsNano(double cycles, float clock) {
   double nano = (cycles / clock) * 1000;
   char text[20];
   snprintf(text, 20, "%.2fns", nano);
-  std::cout << left << setw(col_width) << setfill(space) << text;
+  std::cout << std::left << std::setw(col_width) << std::setfill(space) << text;
 }
 
 void benchmarkLatency(tapasco::Tapasco &tapasco, float designclk) {
@@ -157,7 +162,7 @@ void benchmarkLatency(tapasco::Tapasco &tapasco, float designclk) {
   // execute given number of iterations
   for (int t = 0; t < latency_iterations; t++) {
     unsigned long ret = -1;
-    tapasco::RetVal<unsigned long> ret_val(ret);
+    tapasco::RetVal<unsigned long> ret_val(&ret);
     // first argument is operation: 6 for Read Latency
     // second argument is ignored
     // third argument is request size
@@ -171,13 +176,16 @@ void benchmarkLatency(tapasco::Tapasco &tapasco, float designclk) {
     acc += ret;
   }
   // Calculate minimum, maximum and average latency in nanoseconds
-  std::cout << left << setw(col_width) << setfill(space) << "Average:";
+  std::cout << std::left << std::setw(col_width) << std::setfill(space)
+            << "Average:";
   printAsNano(((acc * 1.0) / latency_iterations), designclk);
   std::cout << std::endl;
-  std::cout << left << setw(col_width) << setfill(space) << "Minimum:";
+  std::cout << std::left << std::setw(col_width) << std::setfill(space)
+            << "Minimum:";
   printAsNano(min, designclk);
   std::cout << std::endl;
-  std::cout << left << setw(col_width) << setfill(space) << "Maximum:";
+  std::cout << std::left << std::setw(col_width) << std::setfill(space)
+            << "Maximum:";
   printAsNano(max, designclk);
   std::cout << std::endl;
 }
@@ -191,7 +199,7 @@ void executeBatchBenchmark(tapasco::Tapasco &tapasco, float designclk, int op,
   // execute given number of iterations
   for (int i = 0; i < batch_iterations; i++) {
     unsigned long ret = 0;
-    tapasco::RetVal<unsigned long> ret_val(ret);
+    tapasco::RetVal<unsigned long> ret_val(&ret);
     // first argument is operation: 0 for Batch Read, 1 for Batch Write, 2 for
     // Batch Read/Write second argument is unused third argument is transfer
     // size
@@ -208,7 +216,7 @@ void executeBatchBenchmark(tapasco::Tapasco &tapasco, float designclk, int op,
     total_data *= 2;
   char text[20];
   snprintf(text, 20, "%#.3fGiB/s", calcSpeed(total_data, acc, designclk));
-  std::cout << left << setw(col_width) << setfill(space) << text;
+  std::cout << std::left << std::setw(col_width) << std::setfill(space) << text;
 }
 
 void benchmarkBatch(tapasco::Tapasco &tapasco, float designclk) {
@@ -219,17 +227,22 @@ void benchmarkBatch(tapasco::Tapasco &tapasco, float designclk) {
             << std::endl;
 
   // print table header
-  std::cout << left << setw(col_width) << setfill(space) << "Size";
-  std::cout << left << setw(col_width) << setfill(space) << "Read";
-  std::cout << left << setw(col_width) << setfill(space) << "Write";
-  std::cout << left << setw(col_width) << setfill(space) << "Read/Write";
+  std::cout << std::left << std::setw(col_width) << std::setfill(space)
+            << "Size";
+  std::cout << std::left << std::setw(col_width) << std::setfill(space)
+            << "Read";
+  std::cout << std::left << std::setw(col_width) << std::setfill(space)
+            << "Write";
+  std::cout << std::left << std::setw(col_width) << std::setfill(space)
+            << "Read/Write";
   std::cout << std::endl;
 
   // execute batch benchmark for different transfer sizes
   for (size_t s = batch_min_length; s <= batch_max_length; s++) {
     char text[20];
     snprintf(text, 20, "%iKib", ((1 << s) / 1024));
-    std::cout << left << setw(col_width) << setfill(space) << text;
+    std::cout << std::left << std::setw(col_width) << std::setfill(space)
+              << text;
     // Batch Read
     executeBatchBenchmark(tapasco, designclk, 0, s);
     // Batch Write
@@ -244,26 +257,24 @@ void benchmarkBatch(tapasco::Tapasco &tapasco, float designclk) {
 int main(int argc, char **argv) {
   // Initialize TaPaSCo
   tapasco::Tapasco tapasco;
-  platform_info_t info;
-  tapasco.info(&info);
 
   // Check PE count
-  uint64_t instances = tapasco_device_kernel_pe_count(tapasco.device(), PE_ID);
-  std::cout << "Got " << instances << " instances @ " << info.clock.design
-            << "MHz" << std::endl;
+  uint64_t instances = tapasco.kernel_pe_count(PE_ID);
+  std::cout << "Got " << instances << " instances @ "
+            << tapasco.design_frequency() << "MHz" << std::endl;
   if (!instances) {
     std::cout << "Need at least one instance to run." << std::endl;
     exit(1);
   }
 
   // runtime for random access benchmark
-  unsigned long cycles = random_time_ms * info.clock.design * 1000;
+  unsigned long cycles = random_time_ms * tapasco.design_frequency() * 1000;
 
-  benchmarkRandom(tapasco, info.clock.design, cycles);
+  benchmarkRandom(tapasco, tapasco.design_frequency(), cycles);
 
-  benchmarkBatch(tapasco, info.clock.design);
+  benchmarkBatch(tapasco, tapasco.design_frequency());
 
-  benchmarkLatency(tapasco, info.clock.design);
+  benchmarkLatency(tapasco, tapasco.design_frequency());
 
   return 0;
 }
