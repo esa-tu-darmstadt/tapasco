@@ -32,6 +32,8 @@ include(GNUInstallDirs)
 
 install(FILES scripts/pcie/program_pcie.tcl DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/scripts/pcie/)
 install(PROGRAMS scripts/pcie/bit_reload.sh DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/scripts/pcie/)
+install(PROGRAMS scripts/zynq/bit_reload.sh DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/scripts/zynq/)
+install(PROGRAMS scripts/f1/bit_reload.sh DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/scripts/f1/)
 install(PROGRAMS bin/tapasco-load-bitstream DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/bin)
 
 add_subdirectory(libtapasco)
