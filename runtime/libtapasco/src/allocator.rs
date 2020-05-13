@@ -20,7 +20,14 @@
 
 use crate::device::DeviceAddress;
 use crate::device::DeviceSize;
+use crate::tlkm::tlkm_ioctl_alloc;
+use crate::tlkm::tlkm_ioctl_free;
+use crate::tlkm::tlkm_mm_cmd;
 use core::fmt::Debug;
+use snafu::ResultExt;
+use std::fs::File;
+use std::os::unix::prelude::*;
+use std::sync::Arc;
 
 #[derive(Debug, Snafu, PartialEq)]
 pub enum Error {
@@ -32,6 +39,8 @@ pub enum Error {
     InvalidAlignment { alignment: DeviceSize },
     #[snafu(display("Can't free unknown memory address {}.", ptr))]
     UnknownMemory { ptr: DeviceAddress },
+    #[snafu(display("Could not free memory: {}", source))]
+    IOCTLFree { source: nix::Error },
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -249,18 +258,39 @@ fn empty_allocate() -> Result<()> {
 }
 
 #[derive(Debug, Getters)]
-pub struct DriverAllocator {}
+pub struct DriverAllocator {
+    tlkm_file: Arc<File>,
+}
 impl DriverAllocator {
-    pub fn new() -> Result<DriverAllocator> {
-        Ok(DriverAllocator {})
+    pub fn new(tlkm_file: &Arc<File>) -> Result<DriverAllocator> {
+        Ok(DriverAllocator {
+            tlkm_file: tlkm_file.clone(),
+        })
     }
 }
 
 impl Allocator for DriverAllocator {
     fn allocate(&mut self, size: DeviceSize) -> Result<DeviceAddress> {
-        Err(Error::OutOfMemory { size: size })
+        trace!("Allocating {} bytes through driver.", size);
+        let mut cmd = tlkm_mm_cmd {
+            sz: size as usize,
+            dev_addr: u64::MAX,
+        };
+        match unsafe { tlkm_ioctl_alloc(self.tlkm_file.as_raw_fd(), &mut cmd) } {
+            Ok(_x) => {
+                trace!("Received address 0x{:x} from driver.", cmd.dev_addr);
+                Ok(cmd.dev_addr)
+            }
+            Err(_e) => Err(Error::OutOfMemory { size: size }),
+        }
     }
-    fn free(&mut self, _ptr: DeviceAddress) -> Result<()> {
+    fn free(&mut self, ptr: DeviceAddress) -> Result<()> {
+        trace!("Dellocating address 0x{:x} through driver.", ptr);
+        let mut cmd = tlkm_mm_cmd {
+            sz: 0,
+            dev_addr: ptr,
+        };
+        unsafe { tlkm_ioctl_free(self.tlkm_file.as_raw_fd(), &mut cmd).context(IOCTLFree)? };
         Ok(())
     }
 }

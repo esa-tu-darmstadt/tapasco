@@ -234,7 +234,9 @@ impl Device {
         } else if name == "zynq" {
             info!("Using driver allocation for zynq based platform.");
             allocator.push(Arc::new(OffchipMemory {
-                allocator: Mutex::new(Box::new(DriverAllocator::new().context(AllocatorError)?)),
+                allocator: Mutex::new(Box::new(
+                    DriverAllocator::new(&tlkm_dma_file).context(AllocatorError)?,
+                )),
                 dma: Box::new(DriverDMA::new(&tlkm_dma_file)),
             }));
         }

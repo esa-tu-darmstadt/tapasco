@@ -70,8 +70,8 @@ const TLKM_DEVICE_IOCTL_FREE: u8 = 0x11;
 #[repr(C)]
 #[derive(Default)]
 pub struct tlkm_mm_cmd {
-    sz: usize,
-    dev_addr: DeviceAddress,
+    pub sz: usize,
+    pub dev_addr: DeviceAddress,
 }
 
 ioctl_readwrite!(
