@@ -40,6 +40,7 @@ use snafu::ResultExt;
 use std::ptr;
 use std::slice;
 use std::sync::Arc;
+use std::u64;
 use uom::si::frequency::megahertz;
 
 #[derive(Debug, Snafu)]

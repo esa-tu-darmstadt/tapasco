@@ -274,7 +274,7 @@ impl Allocator for DriverAllocator {
         trace!("Allocating {} bytes through driver.", size);
         let mut cmd = tlkm_mm_cmd {
             sz: size as usize,
-            dev_addr: u64::MAX,
+            dev_addr: std::u64::MAX,
         };
         match unsafe { tlkm_ioctl_alloc(self.tlkm_file.as_raw_fd(), &mut cmd) } {
             Ok(_x) => {
