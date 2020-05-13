@@ -85,6 +85,9 @@ pub enum Error {
 
     #[snafu(display("Mutex has been poisoned"))]
     MutexError {},
+
+    #[snafu(display("Unknown device type {}.", name))]
+    DeviceType { name: String },
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -231,7 +234,7 @@ impl Device {
                 )),
                 dma: Box::new(DriverDMA::new(&tlkm_dma_file)),
             }));
-        } else if name == "zynq" {
+        } else if name == "zynq" || name == "zynqmp" {
             info!("Using driver allocation for zynq based platform.");
             allocator.push(Arc::new(OffchipMemory {
                 allocator: Mutex::new(Box::new(
@@ -239,6 +242,8 @@ impl Device {
                 )),
                 dma: Box::new(DriverDMA::new(&tlkm_dma_file)),
             }));
+        } else {
+            return Err(Error::DeviceType { name: name });
         }
 
         let platform = unsafe {
