@@ -5,46 +5,23 @@ project(
   VERSION 2.0
   LANGUAGES C CXX)
 
-set(CARGO_GREP grep -oP \"note: native-static-libs: \\K.+\")
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  set(CARGO_CMD RUSTFLAGS="--print=native-static-libs" cargo build)
-  set(TARGET_DIR "debug")
-else()
-  set(CARGO_CMD RUSTFLAGS="--print=native-static-libs" cargo build --release)
-  set(TARGET_DIR "release")
-endif()
+include(TapascoInner.cmake)
 
 add_library(tapasco STATIC ${CMAKE_CURRENT_BINARY_DIR}/unused.c)
-
-add_custom_target(
-  tapasco_rust ALL
-  CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}
-  ${CARGO_CMD}
-  --manifest-path=${CMAKE_CURRENT_LIST_DIR}/Cargo.toml
-  2>&1
-  |
-  tee
-  ${CMAKE_CURRENT_BINARY_DIR}/cargo.log
-  COMMENT "Compiling tapasco module in ${CMAKE_CURRENT_LIST_DIR}")
-
 add_dependencies(tapasco tapasco_rust)
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unused.c
-         ${CMAKE_CURRENT_BINARY_DIR}/rust_links.txt
   COMMENT "Creating dummy file to force build"
-  COMMAND echo "" | tee ${CMAKE_CURRENT_BINARY_DIR}/unused.c
-  COMMAND ${CARGO_GREP} ${CMAKE_CURRENT_BINARY_DIR}/cargo.log 2>&1 | tee
-          ${CMAKE_CURRENT_BINARY_DIR}/rust_links.txt)
+  COMMAND echo "" | tee ${CMAKE_CURRENT_BINARY_DIR}/unused.c)
 
 add_custom_command(
   TARGET tapasco
   POST_BUILD
   COMMENT "Replacing libtapasco.a"
-  COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/libtapasco.a
+  COMMAND  ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/libtapasco.a
           ${CMAKE_CURRENT_BINARY_DIR}/
-  COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/unused.c)
+  COMMAND  ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_BINARY_DIR}/unused.c)
 
 target_include_directories(
   tapasco
@@ -52,9 +29,12 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/>)
 
-file(TOUCH ${CMAKE_CURRENT_BINARY_DIR}/rust_links.txt)
-file(READ ${CMAKE_CURRENT_BINARY_DIR}/rust_links.txt RUST_LINK_INNER)
-string(STRIP "${RUST_LINK_INNER}" RUST_LINK)
+if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/rust_links.cmake)
+  set(RUST_LINK "-pthread -ldl")
+  file(TOUCH ${CMAKE_CURRENT_BINARY_DIR}/rust_links.cmake)
+else()
+  include(${CMAKE_CURRENT_BINARY_DIR}/rust_links.cmake)
+endif()
 
 target_link_libraries(tapasco PUBLIC ${RUST_LINK})
 
