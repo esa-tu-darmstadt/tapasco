@@ -119,26 +119,29 @@ proc validate_sfp_ports {{args {}}} {
       }
 
       #Check if Port Config is valid
-      for {variable i 0} {$i < [llength $ky]-1} {incr i} {
-        variable port [dict get $f [lindex $ky $i]]
-        lappend used_ports [dict get $port PORT]
-        variable mode [dict get $port mode]
-        puts "Port: [dict get $port PORT]"
-        puts "  Mode: $mode"
-        dict set [lindex [dict get $port kernel] 0] vlnv " "
-        switch $mode {
-          singular   { validate_singular $port }
-          broadcast  { validate_broadcast $port }
-          roundrobin { validate_roundrobin $port }
-          default {
-            puts "Mode $mode not supported"
+      for {variable i 0} {$i < [llength $ky]} {incr i} {
+        set key [lindex $ky $i]
+        if {$key != "enabled"} {
+          variable port [dict get $f $key]
+          lappend used_ports [dict get $port PORT]
+          variable mode [dict get $port mode]
+          puts "Port: [dict get $port PORT]"
+          puts "  Mode: $mode"
+          dict set [lindex [dict get $port kernel] 0] vlnv " "
+          switch $mode {
+            singular   { validate_singular $port }
+            broadcast  { validate_broadcast $port }
+            roundrobin { validate_roundrobin $port }
+            default {
+              puts "Mode $mode not supported"
+              exit
+            }
+          }
+          variable unique_ports [lsort -unique $used_ports]
+          if { [llength $used_ports] > [llength $unique_ports]} {
+            puts "Port-specification not Unique (Ports Specified: [lsort $used_ports])"
             exit
           }
-        }
-        variable unique_ports [lsort -unique $used_ports]
-        if { [llength $used_ports] > [llength $unique_ports]} {
-          puts "Port-specification not Unique (Ports Specified: [lsort $used_ports])"
-          exit
         }
       }
       puts "SFP-Config OK"
