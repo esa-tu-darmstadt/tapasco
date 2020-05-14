@@ -210,17 +210,18 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,
 
 		DEVLOG(dma->dev_id, TLKM_LF_DMA,
 		       "DMA Status: Requested: %lld, Enqueued: %lld Completed: %lld",
-		       atomic64_read(&dma->wq_requested),
-		       atomic64_read(&dma->wq_enqueued),
-		       atomic64_read(&dma->wq_processed));
+		       (long long int)atomic64_read(&dma->wq_requested),
+		       (long long int)atomic64_read(&dma->wq_enqueued),
+		       (long long int)atomic64_read(&dma->wq_processed));
 
 		DEVLOG(dma->dev_id, TLKM_LF_DMA,
 		       "outstanding bytes: %zd - usr_addr = 0x%px, dev_addr = 0x%px",
 		       len, usr_addr, (void *)dev_addr);
 
 		DEVLOG(dma->dev_id, TLKM_LF_DMA,
-		       "using buffer: %lld and slot %lld", last_chunk,
-		       last_chunk_slot);
+		       "using buffer: %lld and slot %lld",
+		       (long long int)last_chunk,
+		       (long long int)last_chunk_slot);
 
 		cpy_sz = len < TLKM_DMA_CHUNK_SZ ? len : TLKM_DMA_CHUNK_SZ;
 
@@ -256,8 +257,9 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,
 					    last_chunk)) {
 				DEVWRN(dma->dev_id,
 				       "got killed while waiting for write enqueue for chunk %lld -> %lld",
-				       last_chunk,
-				       atomic64_read(&dma->wq_enqueued));
+				       (long long int)last_chunk,
+				       (long long int)atomic64_read(
+					       &dma->wq_enqueued));
 				err = -EACCES;
 				goto copy_err;
 			}
@@ -287,7 +289,7 @@ ssize_t tlkm_dma_copy_to(struct dma_engine *dma, dev_addr_t dev_addr,
 
 copy_err:
 	DEVWRN(dma->dev_id, "Still got chunk %lld, waiting to free.",
-	       last_chunk);
+	       (long long int)last_chunk);
 	wait_event_interruptible(dma->wq, atomic64_read(&dma->wq_enqueued) ==
 						  last_chunk);
 	atomic64_inc(&dma->wq_enqueued);
