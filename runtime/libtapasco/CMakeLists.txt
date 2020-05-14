@@ -5,35 +5,31 @@ project(
   VERSION 2.0
   LANGUAGES C CXX)
 
+set(CARGO_GREP grep -oP \"note: native-static-libs: \\K.+\")
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  set(CARGO_CMD cargo build)
+  set(CARGO_CMD RUSTFLAGS="--print=native-static-libs" cargo build)
   set(TARGET_DIR "debug")
 else()
-  set(CARGO_CMD cargo build --release)
+  set(CARGO_CMD RUSTFLAGS="--print=native-static-libs" cargo build --release)
   set(TARGET_DIR "release")
 endif()
 
-add_library(tapasco ${CMAKE_CURRENT_BINARY_DIR}/unused.c)
+add_library(tapasco STATIC ${CMAKE_CURRENT_BINARY_DIR}/unused.c)
 
 add_custom_target(
   tapasco_rust ALL
   CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} ${CARGO_CMD}
-  --manifest-path=${CMAKE_CURRENT_LIST_DIR}/Cargo.toml
+  --manifest-path=${CMAKE_CURRENT_LIST_DIR}/Cargo.toml 2>&1 | tee ${CMAKE_CURRENT_BINARY_DIR}/cargo.log
   COMMENT "Compiling tapasco module in ${CMAKE_CURRENT_LIST_DIR}")
 
 add_dependencies(tapasco tapasco_rust)
 
 add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unused.c
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unused.c ${CMAKE_CURRENT_BINARY_DIR}/rust_links.txt
   COMMENT "Creating dummy file to force build"
-  COMMAND echo "" | tee ${CMAKE_CURRENT_BINARY_DIR}/unused.c)
-
-add_custom_command(
-  TARGET tapasco
-  POST_BUILD
-  COMMENT "Replacing libtapasco.so"
-  COMMAND cp -f ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_DIR}/libtapasco.so
-          ${CMAKE_CURRENT_BINARY_DIR}/)
+  COMMAND echo "" | tee ${CMAKE_CURRENT_BINARY_DIR}/unused.c
+  COMMAND ${CARGO_GREP} ${CMAKE_CURRENT_BINARY_DIR}/cargo.log 2>&1 | tee ${CMAKE_CURRENT_BINARY_DIR}/rust_links.txt)
 
 add_custom_command(
   TARGET tapasco
@@ -49,17 +45,10 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/>)
 
-# These libraries have been determined by as
-# RUSTFLAGS="--print=native-static-libs" cargo build -lutil -ldl -lutil -ldl
-# -lrt -lpthread -lgcc_s -lc -lm -lrt -lpthread -lutil -lutil
-# This should maybe be automated...
+file(READ ${CMAKE_CURRENT_BINARY_DIR}/rust_links.txt RUST_LINK_FLAGS_INNER)
+string(STRIP "${RUST_LINK_FLAGS_INNER}" RUST_LINK_FLAGS)
 
-find_package(Threads)
-find_library(LIBRT_LIBRARY rt)
-find_library(LIBDL_LIBRARY dl)
-
-target_link_libraries(tapasco PUBLIC ${LIBDL_LIBRARY} ${LIBRT_LIBRARY}
-                                     Threads::Threads)
+target_link_libraries(tapasco PUBLIC ${RUST_LINK_FLAGS})
 
 set_property(
   TARGET tapasco
