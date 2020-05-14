@@ -19,17 +19,24 @@ add_library(tapasco STATIC ${CMAKE_CURRENT_BINARY_DIR}/unused.c)
 
 add_custom_target(
   tapasco_rust ALL
-  CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} ${CARGO_CMD}
-  --manifest-path=${CMAKE_CURRENT_LIST_DIR}/Cargo.toml 2>&1 | tee ${CMAKE_CURRENT_BINARY_DIR}/cargo.log
+  CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}
+  ${CARGO_CMD}
+  --manifest-path=${CMAKE_CURRENT_LIST_DIR}/Cargo.toml
+  2>&1
+  |
+  tee
+  ${CMAKE_CURRENT_BINARY_DIR}/cargo.log
   COMMENT "Compiling tapasco module in ${CMAKE_CURRENT_LIST_DIR}")
 
 add_dependencies(tapasco tapasco_rust)
 
 add_custom_command(
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unused.c ${CMAKE_CURRENT_BINARY_DIR}/rust_links.txt
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unused.c
+         ${CMAKE_CURRENT_BINARY_DIR}/rust_links.txt
   COMMENT "Creating dummy file to force build"
   COMMAND echo "" | tee ${CMAKE_CURRENT_BINARY_DIR}/unused.c
-  COMMAND ${CARGO_GREP} ${CMAKE_CURRENT_BINARY_DIR}/cargo.log 2>&1 | tee ${CMAKE_CURRENT_BINARY_DIR}/rust_links.txt)
+  COMMAND ${CARGO_GREP} ${CMAKE_CURRENT_BINARY_DIR}/cargo.log 2>&1 | tee
+          ${CMAKE_CURRENT_BINARY_DIR}/rust_links.txt)
 
 add_custom_command(
   TARGET tapasco
@@ -45,10 +52,11 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/>)
 
-file(READ ${CMAKE_CURRENT_BINARY_DIR}/rust_links.txt RUST_LINK_FLAGS_INNER)
-string(STRIP "${RUST_LINK_FLAGS_INNER}" RUST_LINK_FLAGS)
+file(TOUCH ${CMAKE_CURRENT_BINARY_DIR}/rust_links.txt)
+file(READ ${CMAKE_CURRENT_BINARY_DIR}/rust_links.txt RUST_LINK_INNER)
+string(STRIP "${RUST_LINK_INNER}" RUST_LINK)
 
-target_link_libraries(tapasco PUBLIC ${RUST_LINK_FLAGS})
+target_link_libraries(tapasco PUBLIC ${RUST_LINK})
 
 set_property(
   TARGET tapasco
