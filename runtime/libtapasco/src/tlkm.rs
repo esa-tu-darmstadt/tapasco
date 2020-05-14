@@ -276,6 +276,11 @@ impl TLKM {
         let mut v = Vec::new();
 
         for x in 0..devices.num_devs {
+            if devices.devs[x].dev_id != x as u32 {
+                warn!("Got device ID mismatch. Falling back to own counting, assuming old TLKM: TLKM: {} vs Counting: {}", 
+                    devices.devs[x].dev_id, x);
+                devices.devs[x].dev_id = x as u32;
+            }
             v.push(DeviceInfo {
                 id: devices.devs[x].dev_id,
                 vendor: devices.devs[x].vendor_id,
@@ -303,6 +308,11 @@ impl TLKM {
         trace!("There are {} devices.", devices.num_devs);
 
         for x in 0..devices.num_devs {
+            if devices.devs[x].dev_id != x as u32 {
+                warn!("Got device ID mismatch. Falling back to own counting, assuming old TLKM: TLKM: {} vs Counting: {}", 
+                    devices.devs[x].dev_id, x);
+                devices.devs[x].dev_id = x as u32;
+            }
             if devices.devs[x].dev_id == id {
                 return Ok(Device::new(
                     self.file.clone(),
@@ -331,6 +341,11 @@ impl TLKM {
         trace!("There are {} devices.", devices.num_devs);
 
         for x in 0..devices.num_devs {
+            if devices.devs[x].dev_id != x as u32 {
+                warn!("Got device ID mismatch. Falling back to own counting, assuming old TLKM: TLKM: {} vs Counting: {}", 
+                    devices.devs[x].dev_id, x);
+                devices.devs[x].dev_id = x as u32;
+            }
             v.push(
                 Device::new(
                     self.file.clone(),
