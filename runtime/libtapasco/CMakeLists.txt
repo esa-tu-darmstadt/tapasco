@@ -31,7 +31,6 @@ target_include_directories(
 
 if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/rust_links.cmake)
   set(RUST_LINK "-pthread -ldl")
-  file(TOUCH ${CMAKE_CURRENT_BINARY_DIR}/rust_links.cmake)
 else()
   include(${CMAKE_CURRENT_BINARY_DIR}/rust_links.cmake)
 endif()
