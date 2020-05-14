@@ -30,7 +30,7 @@ target_include_directories(
          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/>)
 
 if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/rust_links.cmake)
-  set(RUST_LINK "-pthread -ldl")
+  set(RUST_LINK "-lutil -ldl -lutil -ldl -lrt -lpthread -lgcc_s -lc -lm -lrt -lpthread -lutil -lutil")
 else()
   include(${CMAKE_CURRENT_BINARY_DIR}/rust_links.cmake)
 endif()
