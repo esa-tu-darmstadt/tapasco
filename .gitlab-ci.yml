@@ -244,7 +244,7 @@ build_kernel_fedora_31_debug:
   tags:
     - Normal
   script:
-    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o /tmp/rustup.sh && sh /tmp/rustup.sh -y
     - source ~/.cargo/env
     - ./tapasco-init.sh && source tapasco-setup.sh
     - tapasco-build-libs --mode=$MODE --target=$TARGET --skip_driver
