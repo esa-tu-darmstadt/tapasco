@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
 
     free(arr);
 
-    printf("FPGA output for run %d: %lu\n", run, (long long unsigned int)r);
+    printf("FPGA output for run %d: %llu\n", run, (long long unsigned int)r);
     printf("\nRUN %d %s\n", run, r == golden ? "OK" : "NOT OK");
   }
 
