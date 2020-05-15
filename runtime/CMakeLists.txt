@@ -26,6 +26,7 @@ set(CPACK_PACKAGE_CONTACT "tapasco@esa.tu-darmstadt.de")
 set(CPACK_PACKAGE_VERSION_MAJOR 2020)
 set(CPACK_PACKAGE_VERSION_MINOR 4)
 set(CPACK_PACKAGE_VERSION_PATCH 0)
+set(CPACK_PACKAGE_NAME tapasco)
 
 include(CPack)
 include(GNUInstallDirs)
