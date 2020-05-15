@@ -18,8 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-extern crate env_logger;
-
 use crate::device::DataTransferAlloc;
 use crate::device::DataTransferLocal;
 use crate::device::DataTransferPrealloc;

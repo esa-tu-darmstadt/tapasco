@@ -22,7 +22,6 @@
 
 #[macro_use]
 extern crate log;
-
 #[macro_use]
 extern crate getset;
 #[macro_use]
@@ -32,6 +31,7 @@ extern crate chrono;
 extern crate snafu;
 extern crate bytes;
 extern crate crossbeam;
+extern crate env_logger;
 extern crate lockfree;
 extern crate volatile;
 

@@ -24,8 +24,8 @@ env_logger = "0.7.1"
 lockfree = "0.5.1"
 crossbeam = "0.7.3"
 volatile = "0.2.6"
-libc = "0.2.70"
 bytes = "0.5.4"
+libc = "0.2.70"
 
 [build-dependencies]
 prost-build = "0.6.1"
