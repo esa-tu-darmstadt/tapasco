@@ -241,12 +241,15 @@ build_kernel_fedora_31_debug:
     MODE: "release"
     TARGET: ""
     PACKAGE_TYPE: "ZIP"
+    RUSTC_WRAPPER: sccache 
+    SCCACHE_DIR: /cache/rust 
   dependencies: []
   tags:
     - Normal
   script:
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o /tmp/rustup.sh && sh /tmp/rustup.sh -y
     - source ~/.cargo/env
+    - cargo install sccache
     - ./tapasco-init.sh && source tapasco-setup.sh
     - tapasco-build-libs --mode=$MODE --target=$TARGET --skip_driver
     - cd build* && cpack -G $PACKAGE_TYPE
