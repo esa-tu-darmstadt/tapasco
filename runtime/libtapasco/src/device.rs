@@ -38,8 +38,6 @@ use std::fs::OpenOptions;
 use std::os::unix::io::AsRawFd;
 use std::sync::Arc;
 use std::sync::Mutex;
-use uom::si::f32::*;
-use uom::si::frequency::megahertz;
 
 pub mod status {
     include!(concat!(env!("OUT_DIR"), "/tapasco.status.rs"));
@@ -402,7 +400,7 @@ impl Device {
         Ok(())
     }
 
-    pub fn design_frequency(&self) -> Result<Frequency> {
+    pub fn design_frequency_mhz(&self) -> Result<f32> {
         let freq = self
             .status
             .clocks
@@ -413,7 +411,7 @@ impl Device {
                 frequency_mhz: 0,
             })
             .frequency_mhz;
-        Ok(Frequency::new::<megahertz>(freq as f32))
+        Ok(freq as f32)
     }
 
     pub fn default_memory(&self) -> Result<Arc<OffchipMemory>> {

@@ -28,15 +28,12 @@ extern crate getset;
 #[macro_use]
 extern crate nix;
 extern crate chrono;
-extern crate generic_array;
-extern crate libc;
-extern crate page_size;
-extern crate rand;
-extern crate uom;
-extern crate volatile_register;
 #[macro_use]
 extern crate snafu;
+extern crate bytes;
 extern crate crossbeam;
+extern crate lockfree;
+extern crate volatile;
 
 pub mod allocator;
 pub mod device;

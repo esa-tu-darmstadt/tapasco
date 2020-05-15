@@ -41,7 +41,6 @@ use std::ptr;
 use std::slice;
 use std::sync::Arc;
 use std::u64;
-use uom::si::frequency::megahertz;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -754,8 +753,8 @@ pub extern "C" fn tapasco_device_design_frequency(dev: *mut Device) -> f32 {
     }
 
     let tl = unsafe { &mut *dev };
-    match tl.design_frequency().context(DeviceError) {
-        Ok(x) => x.get::<megahertz>(),
+    match tl.design_frequency_mhz().context(DeviceError) {
+        Ok(x) => x,
         Err(e) => {
             update_last_error(e);
             -1.0
