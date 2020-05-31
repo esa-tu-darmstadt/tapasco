@@ -261,7 +261,9 @@ configuration via `tapasco -n config.json`.
         Arg("-p | --platforms P+", "list of Platforms , e.g.," ~
           "-p vc709, pynq") &
         Arg("--implementation NAME", "selects a HLS tool by name" &
-          """default: "VivadoHLS"""")) &
+          """default: "VivadoHLS"""") &
+        Arg("--skipEvaluation", "import the HLS result without performing" ~
+          "an out-of-context synthesis to get resource estimates")) &
       "" &
       Section("Note",
         Block("All HLS kernels are located in the directories below the currently" ~
