@@ -79,7 +79,7 @@ object EvaluateIP {
     lazy val i_dcp = reportFile.resolveSibling("out-of-context_impl.dcp")
     lazy val zip = zipFile
     lazy val vlnv = VLNV.fromZip(zipFile)
-    lazy val baseDir = Files.createTempDirectory(null)
+    lazy val baseDir = reportFile.getParent()
     lazy val logFile = baseDir.resolve("evaluate.log")
     lazy val tclFile = baseDir.resolve("evaluate.tcl")
   }
@@ -103,6 +103,7 @@ object EvaluateIP {
     // define report filenames
     Files.createDirectories(reportFile.getParent)
     val files = new Files(zipFile, reportFile)
+    files.logFile.toFile.delete
     writeTclScript(files, targetPart, targetPeriod, optimization, synthOptions)
 
     val lt = new LogTrackingFileWatcher(Some(logger))
@@ -133,11 +134,8 @@ object EvaluateIP {
         val portReport = PortReport(files.rpt_port).get
         writeXMLReport(reportFile, ur, dpd, targetPeriod, portReport.numMasters, portReport.numSlaves)
         logger.info("{} finished successfully, report in {}", runPrefix: Any, reportFile)
-        // clean up files on exit
-        deleteOnExit(files.baseDir.toFile)
-        deleteOnExit(files.baseDir.resolve(".Xil").toFile) // also remove Xilinx's crap
-        deleteOnExit(files.tclFile.toFile)
-        deleteOnExit(files.logFile.toFile)
+        // clean up Xilinx's files on exit
+        deleteOnExit(files.baseDir.resolve(".Xil").toFile)
       } else {
         logger.error("%s: Vivado finished with error (%d)".format(runPrefix, r))
       }
