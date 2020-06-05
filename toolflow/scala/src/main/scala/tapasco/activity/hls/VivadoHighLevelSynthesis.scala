@@ -133,6 +133,7 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
     tmpl("SRCSCFLAGS") = k.compilerFlags mkString " "
     tmpl("TBSRCS") = k.testbenchFiles mkString " "
     tmpl("TBCFLAGS") = k.testbenchCompilerFlags mkString " "
+    tmpl("TBARGV") = k.testbenchArgv
     tmpl("DIRECTIVES") = Seq(
       kernelArgs(k, t),
       dirs
