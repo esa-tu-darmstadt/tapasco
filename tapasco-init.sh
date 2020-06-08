@@ -28,22 +28,22 @@ else
     export TAPASCO_HOME_RUNTIME=${TAPASCO_HOME}/runtime
     export TAPASCO_WORK_DIR=$PWD
 
-    echo "export TAPASCO_HOME=${TAPASCO_HOME}" > tapasco-setup.sh
+    echo "export TAPASCO_HOME=\"${TAPASCO_HOME}\"" > tapasco-setup.sh
     echo "echo Using TaPaSCo from ${TAPASCO_HOME}" >> tapasco-setup.sh
-    echo "export TAPASCO_HOME_TOOLFLOW=${TAPASCO_HOME}/toolflow" >> tapasco-setup.sh
-    echo "export TAPASCO_HOME_TCL=${TAPASCO_HOME_TOOLFLOW}/vivado" >> tapasco-setup.sh
-    echo "export TAPASCO_HOME_RUNTIME=${TAPASCO_HOME}/runtime" >> tapasco-setup.sh
-    echo "export TAPASCO_WORK_DIR=$PWD" >> tapasco-setup.sh
+    echo "export TAPASCO_HOME_TOOLFLOW=\"${TAPASCO_HOME}/toolflow\"" >> tapasco-setup.sh
+    echo "export TAPASCO_HOME_TCL=\"${TAPASCO_HOME_TOOLFLOW}/vivado\"" >> tapasco-setup.sh
+    echo "export TAPASCO_HOME_RUNTIME=\"${TAPASCO_HOME}/runtime\"" >> tapasco-setup.sh
+    echo "export TAPASCO_WORK_DIR=\"$PWD\"" >> tapasco-setup.sh
 
     echo "export PATH=\"${TAPASCO_HOME_TOOLFLOW}/bin:${TAPASCO_HOME_RUNTIME}/bin:${TAPASCO_WORK_DIR}/build/install/usr/local/bin/:${TAPASCO_HOME_TOOLFLOW}/scala/build/install/tapasco/bin:\$PATH\"" >> tapasco-setup.sh
-    echo "export MANPATH=\$MANPATH:$TAPASCO_HOME/man" >> tapasco-setup.sh
-    echo "export MYVIVADO=\$MYVIVADO:${TAPASCO_HOME_TCL}/common" >> tapasco-setup.sh
-    echo "export XILINX_PATH=\$XILINX_PATH:${TAPASCO_HOME_TCL}/common" >> tapasco-setup.sh
+    echo "export MANPATH=\"\$MANPATH:$TAPASCO_HOME/man\"" >> tapasco-setup.sh
+    echo "export MYVIVADO=\"\$MYVIVADO:${TAPASCO_HOME_TCL}/common\"" >> tapasco-setup.sh
+    echo "export XILINX_PATH=\"\$XILINX_PATH:${TAPASCO_HOME_TCL}/common\"" >> tapasco-setup.sh
 
-    echo "export Tapasco_DIR=${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/" >> tapasco-setup.sh
-    echo "export TapascoPlatform_DIR=${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/" >> tapasco-setup.sh
-    echo "export TapascoCommon_DIR=${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/" >> tapasco-setup.sh
-    echo "export TapascoTLKM_DIR=${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/" >> tapasco-setup.sh
+    echo "export Tapasco_DIR=\"${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/\"" >> tapasco-setup.sh
+    echo "export TapascoPlatform_DIR=\"${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/\"" >> tapasco-setup.sh
+    echo "export TapascoCommon_DIR=\"${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/\"" >> tapasco-setup.sh
+    echo "export TapascoTLKM_DIR=\"${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/\"" >> tapasco-setup.sh
 
     echo "if echo \"\${PATH}\" | grep --quiet \"cmake-3.3.2\";" >> tapasco-setup.sh
     echo "then" >> tapasco-setup.sh
