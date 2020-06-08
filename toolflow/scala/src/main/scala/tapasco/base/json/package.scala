@@ -327,6 +327,7 @@ package object json {
       (JsPath \ "Description").readNullable[String] ~
       (JsPath \ "CompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
       (JsPath \ "TestbenchCompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
+      (JsPath \ "TestbenchArgv").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
       (JsPath \ "Arguments").read[Seq[Kernel.Argument]] ~
       (JsPath \ "OtherDirectives").readNullable[Path](pathExistsValidation(sourcePath))
     ) (Kernel.apply _)
@@ -341,6 +342,7 @@ package object json {
       (JsPath \ "Description").writeNullable[String] ~
       (JsPath \ "CompilerFlags").write[Seq[String]] ~
       (JsPath \ "TestbenchCompilerFlags").write[Seq[String]] ~
+      (JsPath \ "TestbenchArgv").write[Seq[String]] ~
       (JsPath \ "Arguments").write[Seq[Kernel.Argument]] ~
       (JsPath \ "OtherDirectives").writeNullable[Path]
     ) (unlift(Kernel.unapply _))
