@@ -56,6 +56,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
   def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, effortLevel: String, features: Seq[Feature] = Seq())
              (implicit cfg: Configuration): Composer.Result = {
     logger.debug("VivadoComposer uses at most {} threads", cfg.maxThreads getOrElse "unlimited")
+    val skipSynth = false
     // create output struct
     val frequency = checkFrequency(f, target.pd)
     val files = VivadoComposer.Files(bd, target, frequency, features)
@@ -72,7 +73,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       header = makeHeader(bd, target, frequency, features),
       target = target,
       composition = composition(bd, target),
-      effort = effortLevel)
+      effort = effortLevel,
+      skipSynth = skipSynth)
 
     logger.info("Vivado starting run {}: show progress with `vivado_progress {}`", files.runName: Any, files.logFile)
     files.logFile.toFile.delete
@@ -106,19 +108,20 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       logger.error("Vivado timeout for %s in '%s'".format(files.runName, files.outdir))
       Composer.Result(Timeout, log = files.log, util = None, timing = None)
     } else if (r != 0) {
-      if(files.tim.isDefined){
+      if(files.tim.isDefined) {
         Composer.Result(checkTimingFailure(files), Some(files.bitFile.toString),
           files.log, files.util, files.tim)
-      }
-      else{
+      } else {
         logger.error("Vivado finished with non-zero exit code: %d for %s in '%s'"
           .format(r, files.runName, files.outdir))
         Composer.Result(files.log map (_.result(true)) getOrElse OtherError, log = files.log,
           util = None, timing = None)
       }
     } else {
-      // check for timing failure
-      if (files.tim.isEmpty) {
+      if (skipSynth) {
+        logger.info("Skipped synthesis and bitstream generation.")
+        Composer.Result(Success)
+      } else if (files.tim.isEmpty) {
         throw new Exception("could not parse timing report: '%s'".format(files.timFile.toString))
       } else {
         Composer.Result(checkTimingFailure(files), Some(files.bitFile.toString),
@@ -176,7 +179,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
 
   /** Writes the .tcl script for Vivado. */
   private def mkTclScript(fromTemplate: Path, to: Path, projectName: String, header: String, target: Target,
-                          composition: String, effort: String): Unit = {
+                          composition: String, effort: String, skipSynth: Boolean): Unit = {
     // needles for template
     val needles: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map(
       "PROJECT_NAME" -> "microarch",
@@ -190,7 +193,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       "PLATFORM_TCL" -> target.pd.tclLibrary.toString,
       "ARCHITECTURE_TCL" -> target.ad.tclLibrary.toString,
       "COMPOSITION" -> composition,
-      "EFFORT_LEVEL" -> effort.toUpperCase
+      "EFFORT_LEVEL" -> effort.toUpperCase,
+      "SKIP_SYNTH" -> (if (skipSynth) "1" else "0")
     )
 
     // write Tcl script

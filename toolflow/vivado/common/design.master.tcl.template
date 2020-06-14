@@ -111,6 +111,11 @@ if {[llength [info commands platform::generate_wrapper]] == 0} {
   platform::generate_wrapper
 }
 
+# skip platform generation if flag was provided
+if {@@SKIP_SYNTH@@ > 0} {
+	exit
+}
+
 # activate retiming in synthesis
 set_property STEPS.SYNTH_DESIGN.ARGS.RETIMING true [get_runs synth_1]
 if {[info exists platform::ooc_synth_mode] == 0 || [string is false $platform::ooc_synth_mode]} {
