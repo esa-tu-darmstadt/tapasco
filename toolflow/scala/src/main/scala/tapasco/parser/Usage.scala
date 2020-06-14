@@ -184,7 +184,9 @@ configuration via `tapasco -n config.json`.
           Arg("normal", "default options") &
           Arg("optimal", "slower, get best QoR possible") &
           Arg("aggressive_performance", "maximal optimization for performance") &
-          Arg("aggressive_area", "maximal optimization for area"))) &
+          Arg("aggressive_area", "maximal optimization for area")) &
+        Arg("--skipSynthesis", "For testing purposes, execute composition without final" ~
+          "synthesis and bitstream generation")) &
       "" &
       s"NOTE: Currently the  total number of PEs must be <= ${PLATFORM_NUM_SLOTS}." &
       s"IMPORTANT: The maximum runtime of a compose job is limited is limited dependent on the platform.")
