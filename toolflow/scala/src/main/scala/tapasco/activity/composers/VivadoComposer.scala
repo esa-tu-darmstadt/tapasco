@@ -53,10 +53,9 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
   def maxMemoryUsagePerProcess: Int = VIVADO_PROCESS_PEAK_MEM
 
   /** @inheritdoc*/
-  def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, effortLevel: String, features: Seq[Feature] = Seq())
-             (implicit cfg: Configuration): Composer.Result = {
+  def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, effortLevel: String,
+              features: Seq[Feature] = Seq(), skipSynth: Boolean) (implicit cfg: Configuration): Composer.Result = {
     logger.debug("VivadoComposer uses at most {} threads", cfg.maxThreads getOrElse "unlimited")
-    val skipSynth = false
     // create output struct
     val frequency = checkFrequency(f, target.pd)
     val files = VivadoComposer.Files(bd, target, frequency, features)

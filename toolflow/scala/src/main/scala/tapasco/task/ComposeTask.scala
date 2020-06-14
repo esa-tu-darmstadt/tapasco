@@ -46,6 +46,7 @@ class ComposeTask(composition: Composition,
                   features: Option[Seq[Feature]] = None,
                   logFile: Option[String] = None,
                   debugMode: Option[String] = None,
+                  skipSynth: Option[Boolean] = None,
                   val deleteOnFail: Option[Boolean] = None,
                   private val effortLevel: String = "normal",
                   val onComplete: Boolean => Unit)
@@ -71,7 +72,8 @@ class ComposeTask(composition: Composition,
       target.ad.name: Object, target.pd.name: Object, Thread.currentThread.getName(): Object, _logFile: Object)
     if (debugMode.isEmpty) {
       _composerResult = Some(try {
-        composer.compose(composition, target, designFrequency, effortLevel, features getOrElse Seq())
+        composer.compose(composition, target, designFrequency, effortLevel, features getOrElse Seq(),
+                         skipSynth getOrElse false)
       }
       catch {
         case e: Exception =>

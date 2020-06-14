@@ -123,6 +123,7 @@ package object json {
       (JsPath \ "Features").readNullable[Seq[Feature]] ~
       (JsPath \ "DebugMode").readNullable[String] ~
       (JsPath \ "EffortLevel").readNullable[String] ~
+      (JsPath \ "SkipSynthesis").readNullable[Boolean] ~
       (JsPath \ "DeleteProjects").readNullable[Boolean]
     ) (ComposeJob.apply _)
 
@@ -136,6 +137,7 @@ package object json {
       (JsPath \ "Features").writeNullable[Seq[Feature]] ~
       (JsPath \ "DebugMode").writeNullable[String] ~
       (JsPath \ "EffortLevel").writeNullable[String] ~
+      (JsPath \ "SkipSynthesis").writeNullable[Boolean] ~
       (JsPath \ "DeleteProjects").writeNullable[Boolean]
     ) (unlift(ComposeJob.unapply _ andThen (_ map ("Compose" +: _))))
   /* ComposeJob @} */
