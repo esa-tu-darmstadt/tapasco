@@ -24,6 +24,9 @@ if {![info exists ::env(TAPASCO_HOME)]} {
   exit 1
 }
 
+# set to true to skip final synthesis and bitstream generation
+set skip_synth @@SKIP_SYNTH@@
+
 # source base lib
 source -notrace "$::env(TAPASCO_HOME_TCL)/common/common.tcl"
 
@@ -112,7 +115,7 @@ if {[llength [info commands platform::generate_wrapper]] == 0} {
 }
 
 # skip platform generation if flag was provided
-if {@@SKIP_SYNTH@@ > 0} {
+if {$skip_synth} {
 	exit
 }
 

@@ -193,7 +193,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       "ARCHITECTURE_TCL" -> target.ad.tclLibrary.toString,
       "COMPOSITION" -> composition,
       "EFFORT_LEVEL" -> effort.toUpperCase,
-      "SKIP_SYNTH" -> (if (skipSynth) "1" else "0")
+      "SKIP_SYNTH" -> (if (skipSynth) "true" else "false")
     )
 
     // write Tcl script
