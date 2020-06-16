@@ -24,6 +24,9 @@ if {![info exists ::env(TAPASCO_HOME)]} {
   exit 1
 }
 
+# set to true to skip final synthesis and bitstream generation
+set skip_synth @@SKIP_SYNTH@@
+
 # source base lib
 source -notrace "$::env(TAPASCO_HOME_TCL)/common/common.tcl"
 
@@ -109,6 +112,11 @@ if {[llength [info commands platform::generate_wrapper]] == 0} {
 } else {
   # create platform specific wrapper
   platform::generate_wrapper
+}
+
+# skip platform generation if flag was provided
+if {$skip_synth} {
+	exit
 }
 
 # activate retiming in synthesis
