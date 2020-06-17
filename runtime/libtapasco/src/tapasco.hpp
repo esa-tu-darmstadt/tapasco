@@ -27,10 +27,6 @@
 #endif
 #endif
 
-//#include <cstdint>
-//#include <functional>
-//#include <type_traits>
-
 #include <future>
 #include <iostream>
 #include <sstream>
@@ -47,6 +43,8 @@ typedef DeviceAddress tapasco_handle_t;
 typedef PEId tapasco_kernel_id_t;
 typedef int tapasco_res_t;
 typedef int tapasco_device_capability_t;
+typedef int tapasco_device_alloc_flag_t;
+typedef int tapasco_device_copy_flag_t;
 
 constexpr tapasco_res_t TAPASCO_SUCCESS = 0;
 
@@ -229,6 +227,11 @@ public:
     return 0;
   }
 
+  void free(DeviceAddress handle, size_t const len,
+            tapasco_device_alloc_flag_t const flags) {
+    this->free(handle);
+  }
+
   int copy_to(uint8_t *d, DeviceAddress a, uint64_t len) {
     if (tapasco_memory_copy_to(mem, d, a, len) == -1) {
       handle_error();
@@ -237,12 +240,22 @@ public:
     return 0;
   }
 
+  int copy_to(uint8_t *src, DeviceAddress dst, uint64_t len,
+              tapasco_device_copy_flag_t const flags) {
+    return this->copy_to(src, dst, len);
+  }
+
   int copy_from(DeviceAddress a, uint8_t *d, uint64_t len) {
     if (tapasco_memory_copy_from(mem, a, d, len) == -1) {
       handle_error();
       return -1;
     }
     return 0;
+  }
+
+  int copy_from(DeviceAddress src, uint8_t *dst, uint64_t len,
+                tapasco_device_copy_flag_t const flags) {
+    return this->copy_from(src, dst, len);
   }
 
 private:
@@ -444,6 +457,11 @@ struct Tapasco {
       return -1;
     }
     return 0;
+  }
+
+  int alloc(tapasco_handle_t &h, size_t const len,
+            tapasco_device_alloc_flag_t const flags) {
+    return this->alloc(h, len);
   }
 
   /**
