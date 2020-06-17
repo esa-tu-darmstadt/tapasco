@@ -234,11 +234,8 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
     let devices = tlkm.device_enum().context(TLKMInit)?;
     for mut x in devices {
         println!("Evaluating device {:?}", x.id());
-        let design_mhz = x.design_frequency().context(DeviceInit)?;
-        println!(
-            "Counter running with {:?} MHz.",
-            design_mhz.get::<megahertz>()
-        );
+        let design_mhz = x.design_frequency_mhz().context(DeviceInit)?;
+        println!("Counter running with {:?} MHz.", design_mhz);
         x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
         let mut iterations = value_t!(m, "iterations", usize).unwrap();
@@ -246,17 +243,16 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
         println!("Starting benchmark.");
         for step_pow in 0..max_step {
             let step = u64::pow(2, step_pow);
-            let step_duration = (step as f32) * (1.0 / design_mhz);
+            let step_duration_ns = (step as f32) * (1.0 / design_mhz);
             let mut var = LatencyStats::new();
 
-            if iterations * (step_duration.get::<nanosecond>() as usize) > (4 * 1000000000) {
-                iterations = (4 * 1000000000) / (step_duration.get::<nanosecond>() as usize);
+            if iterations * (step_duration_ns as usize) > (4 * 1000000000) {
+                iterations = (4 * 1000000000) / (step_duration_ns as usize);
             }
 
             print!(
                 "Checking {:.0} us execution (I {}): ",
-                step_duration.get::<nanosecond>(),
-                iterations
+                step_duration_ns, iterations
             );
             io::stdout().flush().context(IOError)?;
 
@@ -267,7 +263,8 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
                     .context(JobError)?;
                 pe.release(true, false).context(JobError)?;
                 let dur = now.elapsed();
-                let diff = Time::new::<nanosecond>(dur.as_nanos() as f32) - step_duration;
+                let diff = Time::new::<nanosecond>(dur.as_nanos() as f32)
+                    - Time::new::<nanosecond>(step_duration_ns);
                 var.add(diff.get::<microsecond>() as f64);
             }
             println!(
