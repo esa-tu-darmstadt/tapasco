@@ -2,7 +2,7 @@
  * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
  *
  * This file is part of TaPaSCo
- * (see https://github.com/esa-tu-darmstadt/tapasco).
+ * (see https:///github.com/esa-tu-darmstadt/tapasco).
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -15,7 +15,7 @@
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http:///www.gnu.org/licenses/>.
  */
 
 use crate::device::Error as DevError;
@@ -55,6 +55,12 @@ pub enum Error {
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
+
+// IOCTLs taken from TLKM
+//
+// These are mappings from the C version of the IOCTLs
+// to the rust version using the ioctl wrapper. Please refer to the
+// corresponding TLKM documentation in `tapasco/runtime/kernel` for more information.
 
 pub type DeviceId = u32;
 
@@ -196,20 +202,23 @@ ioctl_readwrite!(
     TLKM_IOCTL_DESTROY_DEVICE,
     tlkm_ioctl_device_cmd
 );
+// End of IOCTL definitions.
+
+/// TLKM IOCTL convenience access
+///
+/// This struct combines all basic interactions with TLKM
+/// and makes them accessible to the outside world. During
+/// initialization the driver is opened once and the file
+/// handle is stored for future accesses.
 
 pub struct TLKM {
     file: Arc<File>,
 }
 
-impl Drop for TLKM {
-    fn drop(&mut self) {
-        match self.finish() {
-            Ok(_) => (),
-            Err(e) => panic!("{}", e),
-        }
-    }
-}
-
+/// Helper structure for device information
+///
+/// Retrieved from TLKM and used to create a device structure
+/// for use in the driver. Only used to provide information.
 #[derive(Debug, Copy, Clone, CopyGetters)]
 #[repr(C)]
 pub struct DeviceInfo {
@@ -221,6 +230,7 @@ pub struct DeviceInfo {
 }
 
 impl TLKM {
+    /// Open the driver chardev.
     pub fn new() -> Result<TLKM> {
         let path = PathBuf::from(r"/dev/tlkm");
         let file = OpenOptions::new()
@@ -234,11 +244,10 @@ impl TLKM {
         })
     }
 
-    fn finish(&mut self) -> Result<()> {
-        trace!("TLKM object destroyed.");
-        Ok(())
-    }
-
+    /// Retrieve version information from TLKM
+    ///
+    /// The version is provided as an undocumented string.
+    /// Unstable and not intended for parsing by downstream code.
     pub fn version(&self) -> Result<String> {
         let mut version: tlkm_ioctl_version_cmd = Default::default();
         unsafe {
@@ -252,6 +261,12 @@ impl TLKM {
         Ok(s.to_string())
     }
 
+    /// Retrieve length of device enumeration structure.
+    ///
+    /// Normally used in conjunction with [`device_enum_info`].
+    /// Can also be used to check that devices available for enumeration.
+    ///
+    /// [`device_enum_info`]: #method.device_enum_info
     pub fn device_enum_len(&self) -> Result<usize> {
         trace!("Fetching available devices from driver.");
         let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
@@ -264,6 +279,9 @@ impl TLKM {
         Ok(devices.num_devs)
     }
 
+    /// Retrieve device info from the driver.
+    ///
+    /// Returns a vector of DeviceInfo structures for informational purposes.
     pub fn device_enum_info(&self) -> Result<Vec<DeviceInfo>> {
         trace!("Fetching available devices from driver.");
         let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
@@ -298,6 +316,14 @@ impl TLKM {
         Ok(v)
     }
 
+    /// Allocates a single device from TLKM.
+    ///
+    /// The resulting device can be used for all further interaction with
+    /// the TaPaSCo device.
+    /// Device IDs retrieved from #method.device_enum_info.
+    /// Returns [`Device`]
+    ///
+    /// [`Device`]: ../device/struct.Device.html
     pub fn device_alloc(&self, id: DeviceId) -> Result<Device> {
         trace!("Fetching available devices from driver.");
         let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
@@ -329,6 +355,13 @@ impl TLKM {
         Err(Error::DeviceNotFound { id: id })
     }
 
+    /// Allocates all devices available.
+    ///
+    /// Same functionality as [`device_alloc`] but allocates
+    /// all available devices as shown by [`device_enum_info`].
+    ///
+    /// [`device_alloc`]: #method.device_alloc
+    /// [`device_enum_info`]: #method.device_enum_info
     pub fn device_enum(&self) -> Result<Vec<Device>> {
         trace!("Fetching available devices from driver.");
         let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
