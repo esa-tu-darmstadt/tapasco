@@ -384,7 +384,6 @@ struct Tapasco {
       : driver_internal(),
         device_internal(driver_internal.allocate_device(dev_id)),
         default_memory_internal(device_internal.default_memory()) {
-    tapasco_init_logging();
     this->device_internal.access(access);
   }
 
