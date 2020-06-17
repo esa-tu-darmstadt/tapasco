@@ -136,10 +136,9 @@ static void handle_error() {
   int l = tapasco_last_error_length();
   char *buf = (char *)malloc(sizeof(char) * l);
   tapasco_last_error_message(buf, l);
-  free(buf);
-
   std::string err_msg(buf);
   std::cerr << err_msg << std::endl;
+  free(buf);
   throw tapasco_error(err_msg);
 }
 
@@ -320,6 +319,7 @@ private:
 class TapascoDriver {
 public:
   TapascoDriver() {
+    tapasco_init_logging();
     this->tlkm = tapasco_tlkm_new();
     if (this->tlkm == 0) {
       handle_error();
