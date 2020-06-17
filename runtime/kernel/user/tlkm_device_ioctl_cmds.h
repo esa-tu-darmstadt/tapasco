@@ -55,6 +55,11 @@ struct tlkm_size_cmd {
 	size_t platform;
 };
 
+struct tlkm_register_interrupt {
+	int32_t pe_id;
+	int32_t fd;
+};
+
 #define TLKM_DEV_IOCTL_FN "tlkm_%02u"
 #define TLKM_DEV_PERFC_FN "tlkm_perfc_%02u"
 
@@ -69,6 +74,10 @@ struct tlkm_size_cmd {
 	_TLKM_DEV_IOCTL(FREE, free, 0x11, struct tlkm_mm_cmd)                  \
 	_TLKM_DEV_IOCTL(COPYTO, copyto, 0x12, struct tlkm_copy_cmd)            \
 	_TLKM_DEV_IOCTL(COPYFROM, copyfrom, 0x13, struct tlkm_copy_cmd)        \
+	_TLKM_DEV_IOCTL(REGISTER_PLATFORM_INTERRUPT, reg_plat_int, 0x14,       \
+			struct tlkm_register_interrupt)                        \
+	_TLKM_DEV_IOCTL(REGISTER_USER_INTERRUPT, reg_user_int, 0x15,           \
+			struct tlkm_register_interrupt)                        \
 	_TLKM_DEV_IOCTL(ALLOC_COPYTO, alloc_copyto, 0x20,                      \
 			struct tlkm_bulk_cmd)                                  \
 	_TLKM_DEV_IOCTL(COPYFROM_FREE, copyfrom_free, 0x21,                    \

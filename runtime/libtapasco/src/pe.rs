@@ -23,16 +23,19 @@ use crate::device::DeviceAddress;
 use crate::device::DeviceSize;
 use crate::device::OffchipMemory;
 use crate::device::PEParameter;
-use bytes::Buf;
-use lockfree::set::Set;
+use crate::tlkm::tlkm_ioctl_reg_user;
+use crate::tlkm::tlkm_register_interrupt;
 use memmap::MmapMut;
+use nix::sys::eventfd::eventfd;
+use nix::sys::eventfd::EfdFlags;
+use nix::unistd::close;
+use nix::unistd::read;
 use snafu::ResultExt;
 use std::fs::File;
-use std::io::Cursor;
-use std::io::Read;
+use std::os::unix::io::RawFd;
+use std::os::unix::prelude::*;
 use std::sync::Arc;
-use std::sync::Mutex;
-use std::thread;
+
 use volatile::Volatile;
 
 #[derive(Debug, Snafu)]
@@ -57,6 +60,15 @@ pub enum Error {
 
     #[snafu(display("Could not insert PE {} into active PE set.", pe_id))]
     CouldNotInsertPE { pe_id: usize },
+
+    #[snafu(display("Error creating interrupt eventfd: {}", source))]
+    ErrorEventFD { source: nix::Error },
+
+    #[snafu(display("Error reading interrupt eventfd: {}", source))]
+    ErrorEventFDRead { source: nix::Error },
+
+    #[snafu(display("Could not register eventfd with driver: {}", source))]
+    ErrorEventFDRegister { source: nix::Error },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -76,11 +88,18 @@ pub struct PE {
     active: bool,
     copy_back: Option<Vec<DataTransferPrealloc>>,
     memory: Arc<MmapMut>,
-    active_pes: Arc<(Mutex<File>, Set<usize>)>,
 
     #[set = "pub"]
     #[get = "pub"]
     local_memory: Option<Arc<OffchipMemory>>,
+
+    interrupt: RawFd,
+}
+
+impl Drop for PE {
+    fn drop(&mut self) {
+        let _ = close(self.interrupt);
+    }
 }
 
 impl PE {
@@ -91,9 +110,20 @@ impl PE {
         size: DeviceSize,
         name: String,
         memory: Arc<MmapMut>,
-        active_pes: Arc<(Mutex<File>, Set<usize>)>,
-    ) -> PE {
-        PE {
+        completion: &File,
+    ) -> Result<PE> {
+        let fd = eventfd(0, EfdFlags::empty()).context(ErrorEventFD)?;
+        let mut ioctl_fd = tlkm_register_interrupt {
+            fd: fd,
+            pe_id: id as i32,
+        };
+
+        unsafe {
+            tlkm_ioctl_reg_user(completion.as_raw_fd(), &mut ioctl_fd)
+                .context(ErrorEventFDRegister)?;
+        };
+
+        Ok(PE {
             id: id,
             type_id: type_id,
             offset: offset,
@@ -102,9 +132,9 @@ impl PE {
             active: false,
             copy_back: None,
             memory: memory,
-            active_pes: active_pes,
             local_memory: None,
-        }
+            interrupt: fd,
+        })
     }
 
     pub fn start(&mut self) -> Result<()> {
@@ -131,52 +161,13 @@ impl PE {
         Ok((rv, self.get_copyback()))
     }
 
-    fn wait_for_completion_loop(&self, completion: &mut File) -> Result<()> {
-        let mut active = true;
-        while active {
-            trace!("Waiting for completion notices from driver.");
-            let mut buffer = [u8::max_value(); 128 * 4];
-            completion.read(&mut buffer).context(ReadCompletionError)?;
-            trace!("Fetched completion notices from driver.");
-            let mut buf = Cursor::new(&buffer[..]);
-            while buf.remaining() >= 4 {
-                let id = buf.get_u32_le();
-                if id != u32::max_value() {
-                    trace!("PE ID {} done.", id);
-                    if id as usize == self.id {
-                        active = false;
-                    }
-                    match self.active_pes.1.insert(id as usize) {
-                        Err(i) => trace!("Duplicated indication for PE {}", i),
-                        _ => {}
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
     fn wait_for_completion(&mut self) -> Result<()> {
         if self.active {
-            while self.active {
-                if self.active_pes.1.contains(&self.id()) {
-                    trace!("Cleaning up PE {} after release.", self.id);
-                    self.active_pes.1.remove(&self.id());
-                    self.active = false;
-                    self.reset_interrupt(true)?;
-                } else {
-                    match self.active_pes.0.try_lock() {
-                        Ok(mut x) => {
-                            if !self.active_pes.1.contains(&self.id()) {
-                                trace!("Waiting for completion of {:?}.", self.id);
-                                self.wait_for_completion_loop(&mut x)?;
-                                trace!("PE finished execution.");
-                            }
-                        }
-                        Err(_) => thread::yield_now(),
-                    };
-                }
-            }
+            let mut buf = [0u8; 8];
+            let _ = read(self.interrupt, &mut buf).context(ErrorEventFDRead)?;
+            trace!("Cleaning up PE {} after release.", self.id);
+            self.active = false;
+            self.reset_interrupt(true)?;
         } else {
             trace!("Wait requested but {:?} is already idle.", self.id);
         }

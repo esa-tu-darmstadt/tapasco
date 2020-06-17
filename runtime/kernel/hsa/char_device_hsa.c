@@ -205,7 +205,8 @@ static int hsa_initialize(void)
 	}
 
 	if (dev.arbiter_base[HSA_ARBITER_REGISTER_ID] != HSA_ARBITER_ID) {
-		DEVERR(dev.dev->dev_id, "could not find queue fetcher core");
+		DEVLOG(dev.dev->dev_id, TLKM_LF_HSA,
+		       "could not find queue fetcher core");
 		goto arbiter_find_failed;
 	}
 
@@ -548,7 +549,7 @@ int char_hsa_register(struct tlkm_device *tlkm_dev)
 	}
 
 	if (hsa_initialize() != 0) {
-		DEVERR(dev.dev->dev_id,
+		DEVLOG(dev.dev->dev_id, TLKM_LF_HSA,
 		       "Failed to initialize HSA queue/HSA infrastructure not available.");
 		goto error_device_create;
 	}

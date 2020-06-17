@@ -125,6 +125,29 @@ ioctl_readwrite!(
     tlkm_copy_cmd_from
 );
 
+const TLKM_DEVICE_IOCTL_REGISTER_PLATFORM_INTERRUPT: u8 = 0x14;
+const TLKM_DEVICE_IOCTL_REGISTER_USER_INTERRUPT: u8 = 0x15;
+
+#[repr(C)]
+pub struct tlkm_register_interrupt {
+    pub pe_id: i32,
+    pub fd: i32,
+}
+
+ioctl_readwrite!(
+    tlkm_ioctl_reg_platform,
+    TLKM_DEVICE_IOC_MAGIC,
+    TLKM_DEVICE_IOCTL_REGISTER_PLATFORM_INTERRUPT,
+    tlkm_register_interrupt
+);
+
+ioctl_readwrite!(
+    tlkm_ioctl_reg_user,
+    TLKM_DEVICE_IOC_MAGIC,
+    TLKM_DEVICE_IOCTL_REGISTER_USER_INTERRUPT,
+    tlkm_register_interrupt
+);
+
 const TLKM_IOC_MAGIC: u8 = b't';
 const TLKM_IOCTL_VERSION: u8 = 1;
 

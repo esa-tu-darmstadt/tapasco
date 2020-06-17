@@ -161,6 +161,7 @@ pub struct Device {
     arch: Arc<MmapMut>,
     offchip_memory: Vec<Arc<OffchipMemory>>,
     tlkm_file: Arc<File>,
+    tlkm_device_file: Arc<File>,
 }
 
 impl Drop for Device {
@@ -181,17 +182,20 @@ impl Device {
         name: String,
     ) -> Result<Device> {
         trace!("Mapping status core.");
+        let tlkm_dma_file = Arc::new(
+            OpenOptions::new()
+                .read(true)
+                .write(true)
+                .open(format!("/dev/tlkm_{:02}", id))
+                .context(DeviceUnavailable { id: id })?,
+        );
+
         let s = {
             let mmap = unsafe {
                 MmapOptions::new()
                     .len(8192)
                     .offset(0)
-                    .map(
-                        &OpenOptions::new()
-                            .read(true)
-                            .open(format!("/dev/tlkm_{:02}", id))
-                            .context(DeviceUnavailable { id: id })?,
-                    )
+                    .map(&tlkm_dma_file)
                     .context(DeviceUnavailable { id: id })?
             };
             trace!("Mapped status core: {}", mmap[0]);
@@ -212,14 +216,6 @@ impl Device {
                 area: "Platform".to_string(),
             }),
         }?;
-
-        let tlkm_dma_file = Arc::new(
-            OpenOptions::new()
-                .read(true)
-                .write(true)
-                .open(format!("/dev/tlkm_{:02}", id))
-                .context(DeviceUnavailable { id: id })?,
-        );
 
         // This falls back to PCIe and Zynq allocation using the default 4GB at 0x0
         info!("Using static memory allocation due to lack of dynamic data in the status core.");
@@ -248,13 +244,7 @@ impl Device {
             MmapOptions::new()
                 .len(platform_size as usize)
                 .offset(8192)
-                .map_mut(
-                    &OpenOptions::new()
-                        .read(true)
-                        .write(true)
-                        .open(format!("/dev/tlkm_{:02}", id))
-                        .context(DeviceUnavailable { id: id })?,
-                )
+                .map_mut(&tlkm_dma_file)
                 .context(DeviceUnavailable { id: id })?
         };
 
@@ -295,16 +285,8 @@ impl Device {
         }
 
         let scheduler = Arc::new(
-            Scheduler::new(
-                &s.pe,
-                &arch,
-                pe_local_memories,
-                OpenOptions::new()
-                    .read(true)
-                    .open(format!("/dev/tlkm_{:02}", id))
-                    .context(DeviceUnavailable { id: id })?,
-            )
-            .context(SchedulerError)?,
+            Scheduler::new(&s.pe, &arch, pe_local_memories, &tlkm_dma_file)
+                .context(SchedulerError)?,
         );
 
         let mut device = Device {
@@ -319,6 +301,7 @@ impl Device {
             arch: arch,
             offchip_memory: allocator,
             tlkm_file: tlkm_file,
+            tlkm_device_file: tlkm_dma_file,
         };
 
         device.create(tlkm_access::TlkmAccessMonitor)?;

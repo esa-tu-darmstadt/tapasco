@@ -20,6 +20,7 @@
 #include <linux/uaccess.h>
 #include <linux/string.h>
 #include <linux/miscdevice.h>
+#include <linux/eventfd.h>
 #include "tlkm_logging.h"
 #include "tlkm_device_ioctl_cmds.h"
 #include "tlkm_bus.h"
@@ -92,6 +93,45 @@ long tlkm_device_ioctl_size(struct file *fp, unsigned int ioctl,
 	return 0;
 }
 
+long tlkm_device_reg_plat_int(struct file *fp, unsigned int ioctl,
+			      struct tlkm_register_interrupt __user *size)
+{
+	ERR("Eventfd for platform interrupts is not implemented, yet.");
+	return 0;
+}
+
+long tlkm_device_reg_user_int(struct file *fp, unsigned int ioctl,
+			      struct tlkm_register_interrupt __user *size)
+{
+	struct tlkm_control *c = control_from_file(fp);
+	struct tlkm_register_interrupt s;
+	if (!c) {
+		ERR("received invalid file pointer");
+		return -EFAULT;
+	}
+	if (copy_from_user(&s, (void __user *)size,
+			   sizeof(struct tlkm_register_interrupt))) {
+		DEVERR(c->dev_id, "could not copy ioctl data from user space");
+		return -EFAULT;
+	}
+	if (s.pe_id < 0 || s.pe_id >= PLATFORM_NUM_SLOTS) {
+		DEVERR(c->dev_id, "PE ID %d out of range.", s.pe_id);
+		return -EFAULT;
+	}
+
+	if (c->user_interrupts[s.pe_id] != 0) {
+		DEVERR(c->dev_id, "Interrupt of PE ID %d already taken.",
+		       s.pe_id);
+		return -EFAULT;
+	}
+
+	DEVLOG(c->dev_id, TLKM_LF_CONTROL,
+	       "Registering FD %d for user interrupt %d", s.fd, s.pe_id);
+	c->user_interrupts[s.pe_id] = eventfd_ctx_fdget(s.fd);
+
+	return 0;
+}
+
 long tlkm_device_ioctl(struct file *fp, unsigned int ioctl, unsigned long data)
 {
 	tlkm_perfc_control_ioctls_inc(device_from_file(fp)->dev_id);
@@ -101,6 +141,14 @@ long tlkm_device_ioctl(struct file *fp, unsigned int ioctl, unsigned long data)
 	} else if (ioctl == TLKM_DEV_IOCTL_SIZE) {
 		return tlkm_device_ioctl_size(
 			fp, ioctl, (struct tlkm_size_cmd __user *)data);
+	} else if (ioctl == TLKM_DEV_IOCTL_REGISTER_PLATFORM_INTERRUPT) {
+		return tlkm_device_reg_plat_int(
+			fp, ioctl,
+			(struct tlkm_register_interrupt __user *)data);
+	} else if (ioctl == TLKM_DEV_IOCTL_REGISTER_USER_INTERRUPT) {
+		return tlkm_device_reg_user_int(
+			fp, ioctl,
+			(struct tlkm_register_interrupt __user *)data);
 	} else {
 		tlkm_device_ioctl_f ioctl_f = device_from_file(fp)->cls->ioctl;
 		BUG_ON(!ioctl_f);

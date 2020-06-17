@@ -23,13 +23,12 @@ use crate::pe::PEId;
 use crate::pe::PE;
 use crossbeam::deque::{Injector, Steal};
 use lockfree::map::Map;
-use lockfree::set::Set;
 use memmap::MmapMut;
 use snafu::ResultExt;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::fs::File;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread;
 
 #[derive(Debug, Snafu)]
@@ -60,10 +59,8 @@ impl Scheduler {
         pes: &Vec<crate::device::status::Pe>,
         mmap: &Arc<MmapMut>,
         mut local_memories: VecDeque<Arc<OffchipMemory>>,
-        completion: File,
+        completion: &File,
     ) -> Result<Scheduler> {
-        let active_pes = Arc::new((Mutex::new(completion), Set::new()));
-
         let pe_hashed: Map<PEId, Injector<PE>> = Map::new();
         let mut pes_overview: HashMap<PEId, usize> = HashMap::new();
 
@@ -75,8 +72,9 @@ impl Scheduler {
                 pe.size,
                 pe.name.to_string(),
                 mmap.clone(),
-                active_pes.clone(),
-            );
+                &completion,
+            )
+            .context(PEError)?;
             if pe.local_memory.is_some() {
                 let l = local_memories.pop_front();
                 the_pe.set_local_memory(l);
