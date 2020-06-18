@@ -18,3 +18,7 @@
 #
 
 enable_beta_device "*xczu9eg*"
+if {[info commands xhub::get_xstores] != ""} {
+  puts "Enable Xilinx Board Store"
+  set_param board.repoPaths [get_property LOCAL_ROOT_DIR [xhub::get_xstores xilinx_board_store]]
+}
