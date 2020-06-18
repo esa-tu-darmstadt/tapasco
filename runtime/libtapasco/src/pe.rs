@@ -112,7 +112,7 @@ impl PE {
         memory: Arc<MmapMut>,
         completion: &File,
     ) -> Result<PE> {
-        let fd = eventfd(0, EfdFlags::empty()).context(ErrorEventFD)?;
+        let fd = eventfd(0, EfdFlags::EFD_NONBLOCK).context(ErrorEventFD)?;
         let mut ioctl_fd = tlkm_register_interrupt {
             fd: fd,
             pe_id: id as i32,
@@ -164,10 +164,31 @@ impl PE {
     fn wait_for_completion(&mut self) -> Result<()> {
         if self.active {
             let mut buf = [0u8; 8];
-            let _ = read(self.interrupt, &mut buf).context(ErrorEventFDRead)?;
-            trace!("Cleaning up PE {} after release.", self.id);
-            self.active = false;
-            self.reset_interrupt(true)?;
+            while self.active {
+                let r = read(self.interrupt, &mut buf);
+                match r {
+                    Ok(_) => {
+                        trace!("Cleaning up PE {} after release.", self.id);
+                        self.active = false;
+                        self.reset_interrupt(true)?;
+                    }
+                    Err(e) => {
+                        let e_no = e.as_errno();
+                        match e_no {
+                            Some(e_no_matched) => {
+                                if e_no_matched != nix::errno::Errno::EAGAIN {
+                                    r.context(ErrorEventFDRead)?;
+                                } else {
+                                    std::thread::yield_now();
+                                }
+                            }
+                            None => {
+                                r.context(ErrorEventFDRead)?;
+                            }
+                        }
+                    }
+                }
+            }
         } else {
             trace!("Wait requested but {:?} is already idle.", self.id);
         }
