@@ -371,6 +371,7 @@ tapasco_compose_ubuntu:
     XILINX_VIVADO: "/opt/cad/xilinx/vivado/Vivado/${VIVADO_VERSION}"
     XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
     PLATFORM: "pynq"
+    FLAGS: ""
   tags:
     - CAD
     - High
@@ -388,7 +389,7 @@ tapasco_compose_ubuntu:
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
     - tapasco hls counter -p $PLATFORM --skipEvaluation
-    - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p $PLATFORM
+    - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p $PLATFORM $FLAGS
 
 tapasco_compose_17_4:
   variables:
@@ -425,3 +426,59 @@ tapasco_compose_pcie:
     VIVADO_VERSION: "2018.3"
     PLATFORM: "vc709"
   extends: .tapasco_compose
+
+# do runs without for synthesis for all other plattforms
+.tapasco_compose_no_synth:
+  variables:
+    FLAGS: "--skipSynthesis"
+  extends: .tapasco_compose
+
+tapasco_compose_AU250:
+  variables:
+    PLATFORM: "AU250"
+  extends: .tapasco_compose_no_synth
+
+tapasco_compose_netfpga_sume:
+  variables:
+    PLATFORM: "netfpga_sume"
+  extends: .tapasco_compose_no_synth
+
+tapasco_compose_ultra96v2:
+  variables:
+    PLATFORM: "ultra96v2"
+  extends: .tapasco_compose_no_synth
+
+tapasco_compose_vcu108:
+  variables:
+    PLATFORM: "vcu108"
+  extends: .tapasco_compose_no_synth
+
+tapasco_compose_vcu118:
+  variables:
+    PLATFORM: "vcu118"
+  extends: .tapasco_compose_no_synth
+
+tapasco_compose_vcu1525:
+  variables:
+    PLATFORM: "vcu1525"
+  extends: .tapasco_compose_no_synth
+
+tapasco_compose_xupvvh:
+  variables:
+    PLATFORM: "xupvvh"
+  extends: .tapasco_compose_no_synth
+
+tapasco_compose_zc706:
+  variables:
+    PLATFORM: "zc706"
+  extends: .tapasco_compose_no_synth
+
+tapasco_compose_zcu102:
+  variables:
+    PLATFORM: "zcu102"
+  extends: .tapasco_compose_no_synth
+
+tapasco_compose_zedboard:
+  variables:
+    PLATFORM: "zedboard"
+  extends: .tapasco_compose_no_synth

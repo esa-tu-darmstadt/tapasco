@@ -32,11 +32,14 @@ namespace eval platform {
     apply_board_connection -board_interface "default_300mhz_clk0" -ip_intf "$name/C0_SYS_CLK" -diagram "system"
     apply_bd_automation -rule xilinx.com:bd_rule:board -config {Board_Interface "resetn ( FPGA Resetn ) " }  [get_bd_pins $name/sys_rst]
 
-    delete_bd_objs [get_bd_nets resetn_1]
-    set rst_inv [tapasco::ip::create_logic_vector "rst_inv_ddr_in"]
-    set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] $rst_inv
-    connect_bd_net [get_bd_pins $rst_inv/Res] [get_bd_pins $name/sys_rst]
-    connect_bd_net [get_bd_pins resetn] [get_bd_pins $rst_inv/Op1]
+    if {[llength [get_bd_nets resetn_1]] > 0} {
+      puts "Applying workaround for Vivado automation bug ..."
+      delete_bd_objs [get_bd_nets resetn_1]
+      set rst_inv [tapasco::ip::create_logic_vector "rst_inv_ddr_in"]
+      set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] $rst_inv
+      connect_bd_net [get_bd_pins $rst_inv/Res] [get_bd_pins $name/sys_rst]
+      connect_bd_net [get_bd_pins resetn] [get_bd_pins $rst_inv/Op1]
+    }
 
     connect_bd_intf_net [get_bd_intf_pins ${name}/C0_DDR4_S_AXI_CTRL] $s_axi_host
 
