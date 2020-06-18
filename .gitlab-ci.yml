@@ -427,11 +427,17 @@ tapasco_compose_pcie:
     PLATFORM: "vc709"
   extends: .tapasco_compose
 
-# do runs without for synthesis for all other plattforms
+# do runs without synthesis for all other plattforms
 .tapasco_compose_no_synth:
   variables:
     FLAGS: "--skipSynthesis"
   extends: .tapasco_compose
+
+tapasco_compose_AU50:
+  variables:
+    VIVADO_VERSION: "2019.2"
+    PLATFORM: "AU50"
+  extends: .tapasco_compose_no_synth
 
 tapasco_compose_AU250:
   variables:
