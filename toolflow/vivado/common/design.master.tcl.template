@@ -60,13 +60,17 @@ if {"@@BOARD_PART@@" != ""} {
   # Use XilinxBoardStore if available (Vivado >= 2019.1)
   if {[llength $parts] < 1 && [::tapasco::vivado_is_newer "2019.1"]} {
     puts "Enable XilinxBoardStore ..."
-    set_property BOARD_PART_REPO_PATHS [lappend [get_property BOARD_PART_REPO_PATHS [current_project]] [get_property LOCAL_ROOT_DIR [xhub::get_xstores xilinx_board_store]]] [current_project]
+    set_param board.repoPaths [get_property LOCAL_ROOT_DIR [xhub::get_xstores xilinx_board_store]]
+    set_property BOARD_PART_REPO_PATHS [get_property LOCAL_ROOT_DIR [xhub::get_xstores xilinx_board_store]] [current_project]
     set parts [get_board_parts -filter {NAME =~ "@@BOARD_PART@@*"}]
     if {[llength $parts] < 1} {
       puts "Board Part not installed, trying Xilinx Hub ..."
       xhub::refresh_catalog [xhub::get_xstores xilinx_board_store]
       xhub::install [xhub::get_xitems -of_objects [xhub::get_xstores xilinx_board_store]]
       xhub::update [xhub::get_xitems -of_objects [xhub::get_xstores xilinx_board_store]]
+      # reload board part repository
+      set_property BOARD_PART_REPO_PATHS "" [current_project]
+      set_property BOARD_PART_REPO_PATHS [get_property LOCAL_ROOT_DIR [xhub::get_xstores xilinx_board_store]] [current_project]
       set parts [get_board_parts -filter {NAME =~ "@@BOARD_PART@@*"}]
     }
   }
