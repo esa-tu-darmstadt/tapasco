@@ -80,6 +80,13 @@ See [VC709](#VC709).
 
 ### XUP-VVH
 
+#### SFPPLUS
+The configuration for this feature can be found [here](sfpplus.md)
+The XUP-VVH provides four QSFP28 Cages. In TaPaSCo each cage provides four physical ports (10GbE each).
+So in total you can use up to 16 ports (port numbers 0 - 15) in your design.
+The ports 0 - 3 are connected to the top QSFP28 Cage (farthest away from the PCIe connector),
+the ports 12 - 15 are connected to the bottom QSFP28 Cage (next to the PCIe connector)
+
 #### HBM
 Allows to connect a subset of the AXI master interfaces of PEs to HBM memory instead of DDR. Each AXI master will be connected to its individual memory block (-> no data sharing possible) of size 256 MB. Up to 32 AXI masters can be connected to HBM. This is configured by specifying "groups" consisting of a PE-ID, a count and one or multiple interface names.
 
