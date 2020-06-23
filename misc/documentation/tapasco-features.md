@@ -73,6 +73,10 @@ Cache {
 
 #### ATS-PRI
 
+#### SFPPLUS
+The configuration for this feature can be found [here](sfpplus.md)
+The VC709 provides four SFP+ Ports (0 - 3).
+
 ### NetFPGA SUME
 
 #### ATS-PRI
