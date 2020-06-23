@@ -56,7 +56,8 @@ namespace eval sfpplus {
   variable si5324_rst            {"AT36" "16" "SLOW" "LVCMOS18"}
 
   proc num_available_ports {} {
-    return available_ports
+    variable available_ports
+    return $available_ports
   }
 
   proc generate_cores {ports} {

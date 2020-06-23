@@ -29,7 +29,8 @@ namespace eval sfpplus {
   variable gt_lanes              {"X1Y44" "X1Y45" "X1Y46" "X1Y47" "X1Y36" "X1Y37" "X1Y38" "X1Y39" "X1Y24" "X1Y25" "X1Y26" "X1Y27" "X1Y16" "X1Y17" "X1Y18" "X1Y19"}
 
   proc num_available_ports {} {
-    return available_ports
+    variable available_ports
+    return $available_ports
   }
 
   proc generate_cores {ports} {
@@ -84,7 +85,7 @@ namespace eval sfpplus {
   # @param number the number of the physical cage
   # @param physical_ports the numbers of all physical_ports which are required in the design
   # @param first_port the first free master on the AXI-Lite Config interconnect
-  # @param constraints_file the file used for constraints
+  # @param constraints_file git stthe file used for constraints
   # @return the number of ports created with this core
   proc generate_core {number physical_ports first_port constraints_file} {
     variable refclk_pins
