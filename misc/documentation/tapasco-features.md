@@ -38,6 +38,10 @@ FanControl {
 }
 ```
 
+#### SFPPLUS
+The configuration for this feature can be found [here](sfpplus.md)
+The ZC706 provides one SFP+ Ports (0).
+
 ### ZCU102
 
 #### SFPPLUS
