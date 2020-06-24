@@ -113,7 +113,7 @@ namespace eval sfpplus {
 
           set pe_list [dict get $available_PEs $ID]
           if {[llength $pe_list] < $Count} {
-            puts "Invalid SFP+ Configuration: More PEs of type $ID used than specified on your composition."
+            puts "Invalid SFP+ Configuration: More PEs of type $ID used than specified in your composition."
             exit
           }
           set selected [lrange $pe_list 0 $Count-1]
@@ -211,6 +211,10 @@ namespace eval sfpplus {
       foreach key [dict keys $ports] {
         set port [dict get $ports $key]
         dict with port {
+          if {$physical_port < 0 || $physical_port >= $available_ports} {
+            puts "Invalid SFP+ Configuration: Physical port $physical_port is outside allowed range on this platform (allowed 0 - [expr $available_ports - 1])"
+            exit
+          }
           if {[lsearch $port_numbers $physical_port] >= 0} {
             puts "Invalid SFP+ Configuration: Physical port $physical_port defined multiple times"
             exit
