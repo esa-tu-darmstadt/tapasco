@@ -86,6 +86,10 @@ The VC709 provides four SFP+ Ports (0 - 3).
 #### ATS-PRI
 See [VC709](#VC709).
 
+#### SFPPLUS
+The configuration for this feature can be found [here](sfpplus.md)
+The VC709 provides four SFP+ Ports (0 - 3).
+
 ### XUP-VVH
 
 #### SFPPLUS
