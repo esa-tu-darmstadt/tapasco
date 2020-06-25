@@ -217,6 +217,15 @@ namespace eval hbm {
       set hbm [ create_bd_cell -type ip -vlnv xilinx.com:ip:hbm:1.0 "hbm_0" ]
       set_property -dict $hbm_properties $hbm
 
+      # Disabling the APB debug port is only possible in Vivado 2019.2 and newer
+      if { [::tapasco::vivado_is_newer "2019.2"] == 0 } {
+        set const [tapasco::ip::create_constant const_zero 1 0]
+        connect_bd_net [get_bd_pins const_zero/dout] [get_bd_pins $hbm/APB_0_PENABLE]
+        if {$bothStacks} {
+          connect_bd_net [get_bd_pins const_zero/dout] [get_bd_pins $hbm/APB_1_PENABLE]
+        }
+      }
+
       # create and connect clocking infrastructure for left stack
       set clocking_0 [create_clocking "clocking_0" [get_bd_intf_ports /hbm_ref_clk_0]]
       connect_clocking $clocking_0 $hbm 0 [expr min($numInterfaces,16)]
