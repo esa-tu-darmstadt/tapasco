@@ -28,9 +28,14 @@ namespace eval platform {
     proc get_ignored_segments { } {
       set hbmInterfaces [hbm::get_hbm_interfaces]
       set ignored [list]
-      #lappend ignored "hbm/hbm_0/SAXI_"
-      for {set i 0} {$i < [llength $hbmInterfaces]} {incr i} {
-        for {set j 0} {$j < [llength $hbmInterfaces]} {incr j} {
+      set numInterfaces [llength $hbmInterfaces]
+      if {[expr $numInterfaces % 2] == 1} {
+        set max_mem_index [expr $numInterfaces + 1]
+      } else {
+        set max_mem_index $numInterfaces
+      }
+      for {set i 0} {$i < $numInterfaces} {incr i} {
+        for {set j 0} {$j < $max_mem_index} {incr j} {
           set axi_index [format %02s $i]
           set mem_index [format %02s $j]
           lappend ignored "/hbm/hbm_0/SAXI_${axi_index}/HBM_MEM${mem_index}"
