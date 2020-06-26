@@ -421,6 +421,12 @@ tapasco_compose_19_2:
     VIVADO_VERSION: "2019.2"
   extends: .tapasco_compose
 
+tapasco_compose_20_1:
+  variables:
+    VIVADO_VERSION: "2020.1"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+  extends: .tapasco_compose
+
 tapasco_compose_pcie:
   variables:
     VIVADO_VERSION: "2018.3"
