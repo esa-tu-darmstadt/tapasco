@@ -94,7 +94,6 @@ namespace eval hbm {
     # disable AXI crossbar (global addressing)
     # configure AXI clock freq
     set hbm_properties [list \
-      CONFIG.USER_APB_EN {false} \
       CONFIG.USER_SWITCH_ENABLE_00 {false} \
       CONFIG.USER_SWITCH_ENABLE_01 {false} \
       CONFIG.USER_AXI_INPUT_CLK_FREQ {450} \
@@ -224,6 +223,8 @@ namespace eval hbm {
         if {$bothStacks} {
           connect_bd_net [get_bd_pins const_zero/dout] [get_bd_pins $hbm/APB_1_PENABLE]
         }
+      } else {
+        set_property CONFIG.USER_APB_EN {false} $hbm
       }
 
       # create and connect clocking infrastructure for left stack
