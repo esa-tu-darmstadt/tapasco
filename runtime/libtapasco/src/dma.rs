@@ -146,13 +146,13 @@ impl DMAControl for DirectDMA {
             });
         }
 
-        trace!("Copy Host -> Device(0x{:x}) ({} Bytes)", ptr, data.len());
+        trace!("Copy Host -> Device(0x{:x} + 0x{:x}) ({} Bytes)", self.offset, ptr, data.len());
 
         // This is necessary as MMapMut is Protected by an Arc but access without
         // an explicit lock is necessary
         // Locking the mmap would slow down PE start etc too much
         unsafe {
-            let p = self.memory.as_ptr().offset(ptr as isize) as *mut u8;
+            let p = self.memory.as_ptr().offset((self.offset + ptr) as isize) as *mut u8;
             let s = std::ptr::slice_from_raw_parts_mut(p, data.len());
             (*s).clone_from_slice(&data[..]);
         }
@@ -170,9 +170,9 @@ impl DMAControl for DirectDMA {
             });
         }
 
-        trace!("Copy Device(0x{:x}) -> Host ({} Bytes)", ptr, data.len());
+        trace!("Copy Device(0x{:x} + 0x{:x}) -> Host ({} Bytes)", self.offset, ptr, data.len());
 
-        data[..].clone_from_slice(&self.memory[ptr as usize..end as usize]);
+        data[..].clone_from_slice(&self.memory[(self.offset + ptr) as usize..end as usize]);
 
         Ok(())
     }
