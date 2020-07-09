@@ -49,6 +49,7 @@ static int init_miscdev(struct tlkm_control *pctl)
 	pctl->miscdev.minor = MISC_DYNAMIC_MINOR;
 	pctl->miscdev.name = kstrdup(fn, GFP_KERNEL);
 	pctl->miscdev.fops = &_tlkm_control_fops;
+    pctl->miscdev.mode = S_IRUGO | S_IWUGO;
 	return misc_register(&pctl->miscdev);
 }
 

@@ -53,6 +53,7 @@ int tlkm_init(void)
 	_tlkm.miscdev.name = TLKM_IOCTL_FN;
 	_tlkm.miscdev.fops = &_tlkm_fops;
 	_tlkm.is_setup = 1;
+    _tlkm.miscdev.mode = S_IRUGO | S_IWUGO;
 	return misc_register(&_tlkm.miscdev);
 }
 
