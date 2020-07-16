@@ -167,13 +167,14 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
   /** Check for timing failure in report. */
   private def checkTimingFailure(files: Files): ComposeResult = {
     val wns = files.tim map (_.worstNegativeSlack) getOrElse Double.NegativeInfinity
-    if (wns < SLACK_THRESHOLD) {
-      logger.error("Vivado finished, but did not achieve timing closure for %s, WNS: %1.3f, max delay path: %s in '%s'"
-        .format(files.runName, wns, files.tim.map(_.maxDelayPath), files.outdir))
+    val wpws = files.tim map (_.worstPulseWidthSlack) getOrElse Double.NegativeInfinity
+    if (wns < SLACK_THRESHOLD || wpws < 0.0) {
+      logger.error("Vivado finished, but did not achieve timing closure for %s, WNS: %1.3f, WPWS: %1.3f, max delay path: %s in '%s'"
+        .format(files.runName, wns, wpws, files.tim.map(_.maxDelayPath), files.outdir))
       TimingFailure
     } else if (wns < 0 && wns >= SLACK_THRESHOLD) {
-      logger.warn("Bitstream might be unusable: Vivado finished, but did not achieve timing closure for %s, WNS: %1.3f, max delay path: %s in '%s'"
-        .format(files.runName, wns, files.tim.map(_.maxDelayPath), files.outdir))
+      logger.warn("Bitstream might be unusable: Vivado finished, but did not achieve timing closure for %s, WNS: %1.3f, WPWS: %1.3f, max delay path: %s in '%s'"
+        .format(files.runName, wns, wpws, files.tim.map(_.maxDelayPath), files.outdir))
         Success
     } else {
       logger.info("Vivado finished successfully for %s, WNS: %1.3f, resulting file is here: '%s'"

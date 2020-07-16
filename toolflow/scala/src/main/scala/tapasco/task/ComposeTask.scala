@@ -229,6 +229,7 @@ object ComposeTask {
       timing = Some(TimingReport(
         file = java.nio.file.Paths.get("feckedyfeck"),
         worstNegativeSlack = -scala.util.Random.nextInt(500) / 100.0,
+        worstPulseWidthSlack = -scala.util.Random.nextInt(500) / 100.0,
         dataPathDelay = 0,
         maxDelayPath = TimingReport.TimingPath("your brain", "your mouth", -42),
         minDelayPath = TimingReport.TimingPath("your ass", "your mouth", 3),
