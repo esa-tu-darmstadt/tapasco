@@ -108,6 +108,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       Composer.Result(Timeout, log = files.log, util = None, timing = None)
     } else if (r != 0) {
       if(files.tim.isDefined) {
+        logger.warn("Bitstream might be unusable: A timing report was produced but Vivado finished with non-zero exit code %d for %s in '%s'"
+          .format(r, files.runName, files.outdir))
         Composer.Result(checkTimingFailure(files), Some(files.bitFile.toString),
           files.log, files.util, files.tim)
       } else {
