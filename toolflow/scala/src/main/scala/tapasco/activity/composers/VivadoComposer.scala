@@ -171,6 +171,10 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       logger.error("Vivado finished, but did not achieve timing closure for %s, WNS: %1.3f, max delay path: %s in '%s'"
         .format(files.runName, wns, files.tim.map(_.maxDelayPath), files.outdir))
       TimingFailure
+    } else if (wns < 0 && wns >= SLACK_THRESHOLD) {
+      logger.warn("Bitstream might be unusable: Vivado finished, but did not achieve timing closure for %s, WNS: %1.3f, max delay path: %s in '%s'"
+        .format(files.runName, wns, files.tim.map(_.maxDelayPath), files.outdir))
+        Success
     } else {
       logger.info("Vivado finished successfully for %s, WNS: %1.3f, resulting file is here: '%s'"
         .format(files.runName, wns, files.bitFile))
