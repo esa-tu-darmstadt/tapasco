@@ -124,7 +124,14 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
         Composer.Result(Success)
       } else if (files.tim.isEmpty) {
         throw new Exception("could not parse timing report: '%s'".format(files.timFile.toString))
+      } else if (files.log.isEmpty) {
+        throw new Exception("could not parse log file: '%s'".format(files.logFile.toString))
       } else {
+        if (files.log.get.errors.nonEmpty) {
+          logger.warn("Vivado finished successfully, but the log file contains the following errors:")
+          for (e <- files.log.get.errors)
+            logger.warn(e._1)
+        }
         Composer.Result(checkTimingFailure(files), Some(files.bitFile.toString),
           files.log, files.util, files.tim)
       }
