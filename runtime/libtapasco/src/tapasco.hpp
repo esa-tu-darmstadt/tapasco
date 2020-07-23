@@ -188,6 +188,7 @@ public:
       tapasco_job_param_alloc(this->device, ptr, bytes, this->to_device,
                               this->from_device, this->free, this->list_inner);
     }
+    this->reset_state();
   }
 
   void unset_from_device() { from_device = false; }
