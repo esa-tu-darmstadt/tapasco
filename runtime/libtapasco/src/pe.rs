@@ -154,9 +154,12 @@ impl PE {
         &mut self,
         return_value: bool,
     ) -> Result<(u64, Option<Vec<DataTransferPrealloc>>)> {
-        trace!("Releasing PE {}.", self.id);
+        trace!(
+            "Waiting for PE {} to complete processing (interrupt signal).",
+            self.id
+        );
         self.wait_for_completion()?;
-        trace!("PE {} released.", self.id);
+        trace!("PE {} done.", self.id);
         let rv = if return_value { self.return_value() } else { 0 };
         Ok((rv, self.get_copyback()))
     }
