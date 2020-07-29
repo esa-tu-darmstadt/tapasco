@@ -313,6 +313,13 @@ pub extern "C" fn tapasco_job_param_new() -> *mut JobList {
 }
 
 #[no_mangle]
+pub extern "C" fn tapasco_job_param_destroy(t: *mut JobList) {
+    unsafe {
+        let _b: Box<JobList> = Box::from_raw(t);
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn tapasco_job_param_single32(param: u32, list: *mut JobList) -> *mut JobList {
     if list.is_null() {
         warn!("Null pointer passed into tapasco_job_param_single32() as the list");
@@ -635,6 +642,13 @@ pub extern "C" fn tapasco_get_default_memory(dev: *mut Device) -> *mut TapascoOf
             update_last_error(e);
             ptr::null_mut()
         }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_memory_destroy(t: *mut TapascoOffchipMemory) {
+    unsafe {
+        let _b: Box<TapascoOffchipMemory> = Box::from_raw(t);
     }
 }
 

@@ -146,6 +146,13 @@ class JobArgumentList {
 public:
   JobArgumentList(Device *d) : device(d) { new_list(); }
 
+  virtual ~JobArgumentList() {
+    if (this->list_inner != 0) {
+      tapasco_job_param_destroy(this->list_inner);
+      this->list_inner = 0;
+    }
+  }
+
   void new_list() {
     if (this->list_inner != 0) {
       throw tapasco::tapasco_error("List already allocated.");
@@ -210,6 +217,13 @@ private:
 class TapascoMemory {
 public:
   TapascoMemory(TapascoOffchipMemory *m) : mem(m) {}
+
+  virtual ~TapascoMemory() {
+    if (this->mem != 0) {
+      tapasco_memory_destroy(this->mem);
+      this->mem = 0;
+    }
+  }
 
   DeviceAddress alloc(uint64_t len) {
     DeviceAddress a = tapasco_memory_allocate(mem, len);

@@ -166,6 +166,7 @@ pub struct Device {
 
 impl Drop for Device {
     fn drop(&mut self) {
+        trace!("Device dropped.");
         match self.finish() {
             Ok(_) => (),
             Err(e) => panic!("{}", e),

@@ -252,6 +252,12 @@ pub struct DeviceInfo {
     name: *const c_char,
 }
 
+impl Drop for TLKM {
+    fn drop(&mut self) {
+        trace!("Dropping TLKM driver.");
+    }
+}
+
 impl TLKM {
     /// Open the driver chardev.
     pub fn new() -> Result<TLKM> {
