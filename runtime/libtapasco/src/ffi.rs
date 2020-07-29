@@ -154,7 +154,10 @@ pub unsafe extern "C" fn tapasco_last_error_message(buffer: *mut c_char, length:
 // Initializes the logging system so it responds to the RUST_LOG environment variable
 #[no_mangle]
 pub extern "C" fn tapasco_init_logging() {
-    env_logger::init();
+    match env_logger::try_init() {
+        Ok(_) => trace!("Logger initialized."),
+        Err(_) => trace!("Logger already initialized."),
+    }
 }
 
 //////////////
