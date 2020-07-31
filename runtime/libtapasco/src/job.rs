@@ -167,14 +167,13 @@ impl Job {
                             .context(DMAError)?;
                     }
 
-                    if x.from_device || x.to_device {
-                        xs.push(PEParameter::DeviceAddress(x.device_address));
-                        if x.from_device {
-                            self.pe.as_mut().unwrap().add_copyback(x);
-                        }
+                    xs.push(PEParameter::DeviceAddress(x.device_address));
+                    if x.from_device {
+                        self.pe.as_mut().unwrap().add_copyback(x);
                     } else {
                         unused_mem.push(x.data);
                     }
+
                     Ok(xs)
                 }
                 _ => {
