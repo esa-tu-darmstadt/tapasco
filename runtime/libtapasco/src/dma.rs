@@ -146,7 +146,12 @@ impl DMAControl for DirectDMA {
             });
         }
 
-        trace!("Copy Host -> Device(0x{:x} + 0x{:x}) ({} Bytes)", self.offset, ptr, data.len());
+        trace!(
+            "Copy Host -> Device(0x{:x} + 0x{:x}) ({} Bytes)",
+            self.offset,
+            ptr,
+            data.len()
+        );
 
         // This is necessary as MMapMut is Protected by an Arc but access without
         // an explicit lock is necessary
@@ -170,9 +175,16 @@ impl DMAControl for DirectDMA {
             });
         }
 
-        trace!("Copy Device(0x{:x} + 0x{:x}) -> Host ({} Bytes)", self.offset, ptr, data.len());
+        trace!(
+            "Copy Device(0x{:x} + 0x{:x}) -> Host ({} Bytes)",
+            self.offset,
+            ptr,
+            data.len()
+        );
 
-        data[..].clone_from_slice(&self.memory[(self.offset + ptr) as usize..end as usize]);
+        data[..].clone_from_slice(
+            &self.memory[(self.offset + ptr) as usize..(self.offset + end) as usize],
+        );
 
         Ok(())
     }
