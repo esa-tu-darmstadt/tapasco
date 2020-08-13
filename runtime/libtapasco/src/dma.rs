@@ -138,7 +138,7 @@ impl DirectDMA {
 impl DMAControl for DirectDMA {
     fn copy_to(&self, data: &[u8], ptr: DeviceAddress) -> Result<()> {
         let end = ptr + data.len() as u64;
-        if ptr + end > self.size {
+        if end > self.size {
             return Err(Error::OutOfRange {
                 ptr: ptr,
                 end: end,
@@ -167,7 +167,7 @@ impl DMAControl for DirectDMA {
 
     fn copy_from(&self, ptr: DeviceAddress, data: &mut [u8]) -> Result<()> {
         let end = ptr + data.len() as u64;
-        if ptr + end > self.size {
+        if end > self.size {
             return Err(Error::OutOfRange {
                 ptr: ptr,
                 end: end,
