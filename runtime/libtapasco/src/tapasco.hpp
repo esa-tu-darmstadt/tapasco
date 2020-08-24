@@ -121,7 +121,7 @@ template <typename T> struct Offset final {
   uint64_t offset;
 };
 
-template <typename T> Local<T> addOffset(uint64_t offset, T &&t) {
+template <typename T> Offset<T> addOffset(uint64_t offset, T &&t) {
   return Offset<T>(std::move(t), offset);
 }
 
