@@ -259,103 +259,123 @@ impl Allocator for GenericAllocator {
     }
 }
 
-#[test]
-fn complete_allocate() -> Result<()> {
-    let mut a = GenericAllocator::new(0, 1024, 64)?;
-    let m = a.allocate(1024)?;
-    assert_eq!(m, 0);
-    assert_eq!(a.free(m), Ok(()));
-    Ok(())
-}
+#[cfg(test)]
+mod allocator_tests {
+    use crate::allocator::Allocator;
+    use crate::allocator::Error;
+    use crate::allocator::GenericAllocator;
+    use crate::allocator::Result;
 
-#[test]
-fn allocated_fixed_single() -> Result<()> {
-    let mut a = GenericAllocator::new(0, 1024, 64)?;
-    let m = a.allocate_fixed(128, 512)?;
-    assert_eq!(m, 512);
-    assert_eq!(a.free(m), Ok(()));
-    let m2 = a.allocate(1024)?;
-    assert_eq!(m2, 0);
-    assert_eq!(a.free(m2), Ok(()));
-    Ok(())
-}
+    fn init() {
+        let _ = env_logger::builder().is_test(true).try_init();
+    }
 
-#[test]
-fn allocated_fixed_multiple() -> Result<()> {
-    let mut a = GenericAllocator::new(0, 1024, 64)?;
-    let m = a.allocate_fixed(128, 512)?;
-    assert_eq!(m, 512);
-    let m2 = a.allocate_fixed(128, 128)?;
-    assert_eq!(m2, 128);
-    let m3 = a.allocate_fixed(128, 768)?;
-    assert_eq!(m3, 768);
-    assert_eq!(a.free(m), Ok(()));
-    assert_eq!(a.free(m2), Ok(()));
-    assert_eq!(a.free(m3), Ok(()));
-    Ok(())
-}
+    #[test]
+    fn complete_allocate() -> Result<()> {
+        init();
+        let mut a = GenericAllocator::new(0, 1024, 64)?;
+        let m = a.allocate(1024)?;
+        assert_eq!(m, 0);
+        assert_eq!(a.free(m), Ok(()));
+        Ok(())
+    }
 
-#[test]
-fn alloc_free_alloc() -> Result<()> {
-    let mut a = GenericAllocator::new(0, 1024, 64)?;
-    let m = a.allocate(1024)?;
-    assert_eq!(m, 0);
-    assert_eq!(a.free(m), Ok(()));
-    let m2 = a.allocate(1024)?;
-    assert_eq!(m2, 0);
-    assert_eq!(a.free(m2), Ok(()));
-    Ok(())
-}
+    #[test]
+    fn allocated_fixed_single() -> Result<()> {
+        init();
+        let mut a = GenericAllocator::new(0, 1024, 64)?;
+        let m = a.allocate_fixed(128, 512)?;
+        assert_eq!(m, 512);
+        assert_eq!(a.free(m), Ok(()));
+        let m2 = a.allocate(1024)?;
+        assert_eq!(m2, 0);
+        assert_eq!(a.free(m2), Ok(()));
+        Ok(())
+    }
 
-#[test]
-fn alloc_free_alloc2() -> Result<()> {
-    let mut a = GenericAllocator::new(0, 1024, 64)?;
-    let m = a.allocate(512)?;
-    let m2 = a.allocate(512)?;
-    assert_eq!(m, 0);
-    assert_eq!(m2, 512);
-    assert_eq!(a.free(m), Ok(()));
-    assert_eq!(a.allocate(1024), Err(Error::OutOfMemory { size: 1024 }));
-    assert_eq!(a.free(m2), Ok(()));
-    let m3 = a.allocate(768)?;
-    assert_eq!(m3, 0);
-    assert_eq!(a.free(m3), Ok(()));
-    Ok(())
-}
+    #[test]
+    fn allocated_fixed_multiple() -> Result<()> {
+        init();
+        let mut a = GenericAllocator::new(0, 1024, 64)?;
+        let m = a.allocate_fixed(128, 512)?;
+        assert_eq!(m, 512);
+        let m2 = a.allocate_fixed(128, 128)?;
+        assert_eq!(m2, 128);
+        let m3 = a.allocate_fixed(128, 768)?;
+        assert_eq!(m3, 768);
+        assert_eq!(a.free(m), Ok(()));
+        assert_eq!(a.free(m2), Ok(()));
+        assert_eq!(a.free(m3), Ok(()));
+        Ok(())
+    }
 
-#[test]
-fn alloc_free_alloc3() -> Result<()> {
-    let mut a = GenericAllocator::new(0, 1024, 64)?;
-    let m = a.allocate(512)?;
-    let m2 = a.allocate(512)?;
-    assert_eq!(m, 0);
-    assert_eq!(m2, 512);
-    assert_eq!(a.free(m), Ok(()));
-    let m4 = a.allocate(8)?;
-    let m5 = a.allocate(32)?;
-    assert_eq!(a.allocate(1024), Err(Error::OutOfMemory { size: 1024 }));
-    assert_eq!(a.free(m2), Ok(()));
-    let m3 = a.allocate(768)?;
-    assert_eq!(a.free(m3), Ok(()));
-    assert_eq!(a.free(m4), Ok(()));
-    assert_eq!(a.free(m5), Ok(()));
-    let _ = a.allocate(1024)?;
-    Ok(())
-}
+    #[test]
+    fn alloc_free_alloc() -> Result<()> {
+        init();
+        let mut a = GenericAllocator::new(0, 1024, 64)?;
+        let m = a.allocate(1024)?;
+        assert_eq!(m, 0);
+        assert_eq!(a.free(m), Ok(()));
+        let m2 = a.allocate(1024)?;
+        assert_eq!(m2, 0);
+        assert_eq!(a.free(m2), Ok(()));
+        Ok(())
+    }
 
-#[test]
-fn freeing_unknown() -> Result<()> {
-    let mut a = GenericAllocator::new(0, 1024, 64)?;
-    assert_eq!(a.free(0), Err(Error::UnknownMemory { ptr: 0 }));
-    Ok(())
-}
+    #[test]
+    fn alloc_free_alloc2() -> Result<()> {
+        init();
+        let mut a = GenericAllocator::new(0, 1024, 64)?;
+        let m = a.allocate(512)?;
+        let m2 = a.allocate(512)?;
+        assert_eq!(m, 0);
+        assert_eq!(m2, 512);
+        assert_eq!(a.free(m), Ok(()));
+        assert_eq!(a.allocate(1024), Err(Error::OutOfMemory { size: 1024 }));
+        assert_eq!(a.free(m2), Ok(()));
+        let m3 = a.allocate(768)?;
+        assert_eq!(m3, 0);
+        assert_eq!(a.free(m3), Ok(()));
+        Ok(())
+    }
 
-#[test]
-fn empty_allocate() -> Result<()> {
-    let mut a = GenericAllocator::new(0, 1024, 64)?;
-    let m = a.allocate(0);
-    assert_eq!(m, Err(Error::InvalidSize { size: 0 }));
-    Ok(())
+    #[test]
+    fn alloc_free_alloc3() -> Result<()> {
+        init();
+        let mut a = GenericAllocator::new(0, 1024, 64)?;
+        let m = a.allocate(512)?;
+        let m2 = a.allocate(512)?;
+        assert_eq!(m, 0);
+        assert_eq!(m2, 512);
+        assert_eq!(a.free(m), Ok(()));
+        let m4 = a.allocate(8)?;
+        let m5 = a.allocate(32)?;
+        assert_eq!(a.allocate(1024), Err(Error::OutOfMemory { size: 1024 }));
+        assert_eq!(a.free(m2), Ok(()));
+        let m3 = a.allocate(768)?;
+        assert_eq!(a.free(m3), Ok(()));
+        assert_eq!(a.free(m4), Ok(()));
+        assert_eq!(a.free(m5), Ok(()));
+        let _ = a.allocate(1024)?;
+        Ok(())
+    }
+
+    #[test]
+    fn freeing_unknown() -> Result<()> {
+        init();
+        let mut a = GenericAllocator::new(0, 1024, 64)?;
+        assert_eq!(a.free(0), Err(Error::UnknownMemory { ptr: 0 }));
+        Ok(())
+    }
+
+    #[test]
+    fn empty_allocate() -> Result<()> {
+        init();
+        let mut a = GenericAllocator::new(0, 1024, 64)?;
+        let m = a.allocate(0);
+        assert_eq!(m, Err(Error::InvalidSize { size: 0 }));
+        Ok(())
+    }
 }
 
 #[derive(Debug, Getters)]
