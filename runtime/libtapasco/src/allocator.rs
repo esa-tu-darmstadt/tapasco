@@ -174,7 +174,7 @@ impl Allocator for GenericAllocator {
         let mut addr_found = None;
         for (i, s) in &mut self.memory_free.iter_mut().enumerate() {
             let segment_end = s.base + s.size;
-            if s.base <= offset && offset <= segment_end && segment_end - size >= size_aligned {
+            if s.base <= offset && offset <= segment_end && segment_end - offset >= size_aligned {
                 trace!("Found fixed free space in segment {:?}.", s);
                 addr_found = Some(offset);
                 self.memory_used.push(MemoryFree {
@@ -306,6 +306,19 @@ mod allocator_tests {
         assert_eq!(a.free(m), Ok(()));
         assert_eq!(a.free(m2), Ok(()));
         assert_eq!(a.free(m3), Ok(()));
+        Ok(())
+    }
+
+    #[test]
+    fn allocated_fixed_large() -> Result<()> {
+        init();
+        let mut a = GenericAllocator::new(0, 0x100000, 64)?;
+        let m = a.allocate(1228)?;
+        assert_eq!(m, 0);
+        let m2 = a.allocate_fixed(2048, 0x80000)?;
+        assert_eq!(m2, 0x80000);
+        assert_eq!(a.free(m), Ok(()));
+        assert_eq!(a.free(m2), Ok(()));
         Ok(())
     }
 
