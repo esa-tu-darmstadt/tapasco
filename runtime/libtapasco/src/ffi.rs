@@ -369,6 +369,8 @@ pub extern "C" fn tapasco_job_param_alloc(
     to_device: bool,
     from_device: bool,
     free: bool,
+    uses_fixed: bool,
+    fixed: u64,
     list: *mut JobList,
 ) -> *mut JobList {
     if list.is_null() {
@@ -396,6 +398,8 @@ pub extern "C" fn tapasco_job_param_alloc(
 
     let v = unsafe { Box::from_raw(slice::from_raw_parts_mut(ptr, bytes)) };
 
+    let f = if uses_fixed { Some(fixed) } else { None };
+
     let tl = unsafe { &mut *list };
     tl.push(PEParameter::DataTransferAlloc(DataTransferAlloc {
         data: v,
@@ -403,6 +407,7 @@ pub extern "C" fn tapasco_job_param_alloc(
         to_device: to_device,
         free: free,
         memory: mem,
+        fixed: f,
     }));
     list
 }
@@ -414,6 +419,8 @@ pub extern "C" fn tapasco_job_param_local(
     to_device: bool,
     from_device: bool,
     free: bool,
+    uses_fixed: bool,
+    fixed: u64,
     list: *mut JobList,
 ) -> *mut JobList {
     if list.is_null() {
@@ -424,12 +431,15 @@ pub extern "C" fn tapasco_job_param_local(
 
     let v = unsafe { Box::from_raw(slice::from_raw_parts_mut(ptr, bytes)) };
 
+    let f = if uses_fixed { Some(fixed) } else { None };
+
     let tl = unsafe { &mut *list };
     tl.push(PEParameter::DataTransferLocal(DataTransferLocal {
         data: v,
         from_device: from_device,
         to_device: to_device,
         free: free,
+        fixed: f,
     }));
     list
 }
@@ -719,6 +729,34 @@ pub extern "C" fn tapasco_memory_allocate(
         .lock()
         .unwrap()
         .allocate(len as u64)
+        .context(AllocatorError)
+    {
+        Ok(x) => x,
+        Err(e) => {
+            update_last_error(e);
+            DeviceAddress::MAX
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_memory_allocate_fixed(
+    mem: *mut TapascoOffchipMemory,
+    len: usize,
+    offset: usize,
+) -> DeviceAddress {
+    if mem.is_null() {
+        warn!("Null pointer passed into tapasco_memory_copy_to() as the memory");
+        update_last_error(Error::NullPointerTLKM {});
+        return DeviceAddress::MAX;
+    }
+
+    let tl = unsafe { &mut *mem };
+    match tl
+        .allocator()
+        .lock()
+        .unwrap()
+        .allocate_fixed(len as u64, offset as u64)
         .context(AllocatorError)
     {
         Ok(x) => x,

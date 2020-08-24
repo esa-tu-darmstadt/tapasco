@@ -109,6 +109,7 @@ impl Job {
                         to_device: x.to_device,
                         memory: m.clone(),
                         free: x.free,
+                        fixed: x.fixed,
                     }))
                 }
                 _ => Ok(arg),
@@ -125,12 +126,19 @@ impl Job {
             .into_iter()
             .map(|arg| match arg {
                 PEParameter::DataTransferAlloc(x) => {
-                    let a = {
-                        x.memory
+                    let a = match x.fixed {
+                        Some(offset) => x
+                            .memory
+                            .allocator()
+                            .lock()?
+                            .allocate_fixed(x.data.len() as u64, offset)
+                            .context(AllocatorError)?,
+                        None => x
+                            .memory
                             .allocator()
                             .lock()?
                             .allocate(x.data.len() as u64)
-                            .context(AllocatorError)?
+                            .context(AllocatorError)?,
                     };
 
                     Ok(PEParameter::DataTransferPrealloc(DataTransferPrealloc {

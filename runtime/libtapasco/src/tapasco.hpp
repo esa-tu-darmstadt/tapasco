@@ -112,6 +112,20 @@ template <typename T> Local<T> makeLocal(T &&t) {
 }
 
 /**
+ * Type annotation for Tapasco launch argument pointers: If possible, data
+ * should be placed in PE-local memory (faster access).
+ **/
+template <typename T> struct Offset final {
+  Offset(T &&value, uint64_t offset) : value(value), offset(offset) {}
+  T value;
+  uint64_t offset;
+};
+
+template <typename T> Local<T> addOffset(T &&t, uint64_t offset) {
+  return Offset<T>(std::move(t), offset);
+}
+
+/**
  * Wrapped pointer type that can be used to transfer memory areas from and to
  *a device.
  **/
@@ -167,6 +181,8 @@ public:
     this->to_device = true;
     this->free = true;
     this->local = false;
+    this->offset_used = false;
+    this->offset = 0;
   }
 
   JobList **list() { return &list_inner; }
@@ -190,10 +206,12 @@ public:
                                  this->list_inner);
     } else if (this->local) {
       tapasco_job_param_local(ptr, bytes, this->to_device, this->from_device,
-                              this->free, this->list_inner);
+                              this->free, this->offset_used, this->offset,
+                              this->list_inner);
     } else {
       tapasco_job_param_alloc(this->device, ptr, bytes, this->to_device,
-                              this->from_device, this->free, this->list_inner);
+                              this->from_device, this->free, this->offset_used,
+                              this->offset, this->list_inner);
     }
     this->reset_state();
   }
@@ -202,6 +220,10 @@ public:
   void unset_to_device() { to_device = false; }
   void unset_free() { free = false; }
   void set_local() { local = true; }
+  void set_offset(uint64_t offset) {
+    this->offset_used = true;
+    this->offset = offset;
+  }
 
 private:
   Device *device{0};
@@ -211,6 +233,8 @@ private:
   bool to_device{false};
   bool free{false};
   bool local{false};
+  bool offset_used{false};
+  uint64_t offset{0};
   DeviceAddress deviceaddress{(DeviceAddress)-1};
 };
 
@@ -227,6 +251,14 @@ public:
 
   DeviceAddress alloc(uint64_t len) {
     DeviceAddress a = tapasco_memory_allocate(mem, len);
+    if (a == (uint64_t)(int64_t)-1) {
+      handle_error();
+    }
+    return a;
+  }
+
+  DeviceAddress alloc_fixed(uint64_t len, uint64_t offset) {
+    DeviceAddress a = tapasco_memory_allocate_fixed(mem, len, offset);
     if (a == (uint64_t)(int64_t)-1) {
       handle_error();
     }
@@ -462,7 +494,6 @@ struct Tapasco {
    * Allocates a chunk of len bytes on the device.
    * @param len size in bytes
    * @param h output parameter for handle
-   * @param flags device memory allocation flags
    * @return TAPASCO_SUCCESS if successful, an error code otherwise.
    **/
   int alloc(DeviceAddress &h, size_t const len) {
@@ -476,6 +507,21 @@ struct Tapasco {
   int alloc(tapasco_handle_t &h, size_t const len,
             tapasco_device_alloc_flag_t const flags) {
     return this->alloc(h, len);
+  }
+
+  /**
+   * Allocates a chunk of len bytes on the device and forces a given offset.
+   * @param len size in bytes
+   * @param offset in bytes
+   * @param h output parameter for handle
+   * @return TAPASCO_SUCCESS if successful, an error code otherwise.
+   **/
+  int alloc(DeviceAddress &h, size_t const len, size_t const offset) {
+    h = this->default_memory_internal.alloc_fixed(len, offset);
+    if (h == (DeviceAddress)(int64_t)-1) {
+      return -1;
+    }
+    return 0;
   }
 
   /**
@@ -581,6 +627,12 @@ private:
   /** Sets a single output-only pointer argument (alloc only). **/
   template <typename T> void set_arg(JobArgumentList &a, InOnly<T> t) {
     a.unset_from_device();
+    set_arg(a, t.value);
+  }
+
+  /** Sets a single output-only pointer argument (alloc only). **/
+  template <typename T> void set_arg(JobArgumentList &a, Offset<T> t) {
+    a.set_offset(t.offset);
     set_arg(a, t.value);
   }
 

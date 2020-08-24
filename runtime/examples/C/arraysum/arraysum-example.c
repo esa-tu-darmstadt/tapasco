@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
 
     // Allocates memory on device and copies data from device after execution
     tapasco_job_param_alloc(d, (uint8_t *)arr, SZ * sizeof(int), true, false,
-                            true, jl);
+                            true, false, 0, jl);
 
     // Acquire arrayinit PE
     Job *j = tapasco_device_acquire_pe(d, PE_ID);

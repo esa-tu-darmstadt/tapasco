@@ -112,6 +112,7 @@ pub struct DataTransferLocal {
     pub from_device: bool,
     pub to_device: bool,
     pub free: bool,
+    pub fixed: Option<DeviceAddress>,
 }
 
 #[derive(Debug)]
@@ -121,6 +122,7 @@ pub struct DataTransferAlloc {
     pub to_device: bool,
     pub free: bool,
     pub memory: Arc<OffchipMemory>,
+    pub fixed: Option<DeviceAddress>,
 }
 
 #[derive(Debug)]
