@@ -117,11 +117,12 @@ impl PE {
         name: String,
         memory: Arc<MmapMut>,
         completion: &File,
+        interrupt_id: usize,
     ) -> Result<PE> {
         let fd = eventfd(0, EfdFlags::EFD_NONBLOCK).context(ErrorEventFD)?;
         let mut ioctl_fd = tlkm_register_interrupt {
             fd: fd,
-            pe_id: id as i32,
+            pe_id: interrupt_id as i32,
         };
 
         unsafe {

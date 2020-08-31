@@ -64,6 +64,8 @@ impl Scheduler {
         let pe_hashed: Map<PEId, Injector<PE>> = Map::new();
         let mut pes_overview: HashMap<PEId, usize> = HashMap::new();
 
+        let mut interrupt_id = 0;
+
         for (i, pe) in pes.iter().enumerate() {
             let mut the_pe = PE::new(
                 i,
@@ -73,11 +75,16 @@ impl Scheduler {
                 pe.name.to_string(),
                 mmap.clone(),
                 &completion,
+                interrupt_id,
             )
             .context(PEError)?;
+
+            interrupt_id += 1;
+
             if pe.local_memory.is_some() {
                 let l = local_memories.pop_front();
                 the_pe.set_local_memory(l);
+                interrupt_id += 1;
             }
 
             match pe_hashed.get(&(pe.id as PEId)) {
