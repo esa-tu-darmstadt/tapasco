@@ -223,10 +223,18 @@ impl Allocator for GenericAllocator {
 
         match addr_found {
             Some(x) => Ok(x),
-            None => Err(Error::FixedNotAvailable {
-                size: size_aligned,
-                offset: offset,
-            }),
+            None => {
+                trace!(
+                    "Could not find free memory {}B @ {:x}: {:?}.",
+                    size_aligned,
+                    offset,
+                    self
+                );
+                Err(Error::FixedNotAvailable {
+                    size: size_aligned,
+                    offset: offset,
+                })
+            }
         }
     }
 
