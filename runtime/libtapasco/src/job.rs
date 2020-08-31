@@ -21,6 +21,7 @@
 use crate::device::DataTransferAlloc;
 use crate::device::DataTransferPrealloc;
 use crate::device::PEParameter;
+use crate::pe::CopyBack;
 use crate::pe::PE;
 use crate::scheduler::Scheduler;
 use snafu::ResultExt;
@@ -177,8 +178,17 @@ impl Job {
 
                     xs.push(PEParameter::DeviceAddress(x.device_address));
                     if x.from_device {
-                        self.pe.as_mut().unwrap().add_copyback(x);
+                        self.pe
+                            .as_mut()
+                            .unwrap()
+                            .add_copyback(CopyBack::Transfer(x));
                     } else {
+                        if x.free {
+                            self.pe
+                                .as_mut()
+                                .unwrap()
+                                .add_copyback(CopyBack::Free(x.device_address, x.memory.clone()));
+                        }
                         unused_mem.push(x.data);
                     }
 
@@ -255,30 +265,34 @@ impl Job {
             }
             trace!("Release successful.");
             match copyback {
-                Some(x) => {
-                    let res = x
-                        .into_iter()
-                        .map(|mut param| {
-                            param
-                                .memory
-                                .dma()
-                                .copy_from(param.device_address, &mut param.data[..])
-                                .context(DMAError)?;
-                            if param.free {
-                                param
+                Some(copybacks) => {
+                    let mut res = Vec::new();
+
+                    for param in copybacks {
+                        match param {
+                            CopyBack::Transfer(mut transfer) => {
+                                transfer
                                     .memory
-                                    .allocator()
-                                    .lock()?
-                                    .free(param.device_address)
-                                    .context(AllocatorError)?;
+                                    .dma()
+                                    .copy_from(transfer.device_address, &mut transfer.data[..])
+                                    .context(DMAError)?;
+                                if transfer.free {
+                                    transfer
+                                        .memory
+                                        .allocator()
+                                        .lock()?
+                                        .free(transfer.device_address)
+                                        .context(AllocatorError)?;
+                                }
+                                res.push(transfer.data);
                             }
-                            Ok(param.data)
-                        })
-                        .collect();
-                    match res {
-                        Ok(x) => Ok((return_value, x)),
-                        Err(x) => Err(x),
+                            CopyBack::Free(addr, mem) => {
+                                mem.allocator().lock()?.free(addr).context(AllocatorError)?;
+                            }
+                        }
                     }
+
+                    Ok((return_value, res))
                 }
                 None => Ok((return_value, Vec::new())),
             }

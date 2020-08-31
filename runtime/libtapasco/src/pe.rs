@@ -73,6 +73,12 @@ pub enum Error {
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+#[derive(Debug)]
+pub enum CopyBack {
+    Transfer(DataTransferPrealloc),
+    Free(DeviceAddress, Arc<OffchipMemory>),
+}
+
 pub type PEId = usize;
 
 #[derive(Debug, Getters, Setters)]
@@ -86,7 +92,7 @@ pub struct PE {
     name: String,
     #[get = "pub"]
     active: bool,
-    copy_back: Option<Vec<DataTransferPrealloc>>,
+    copy_back: Option<Vec<CopyBack>>,
     memory: Arc<MmapMut>,
 
     #[set = "pub"]
@@ -150,10 +156,7 @@ impl PE {
         Ok(())
     }
 
-    pub fn release(
-        &mut self,
-        return_value: bool,
-    ) -> Result<(u64, Option<Vec<DataTransferPrealloc>>)> {
+    pub fn release(&mut self, return_value: bool) -> Result<(u64, Option<Vec<CopyBack>>)> {
         trace!(
             "Waiting for PE {} to complete processing (interrupt signal).",
             self.id
@@ -307,11 +310,11 @@ impl PE {
         r
     }
 
-    pub fn add_copyback(&mut self, param: DataTransferPrealloc) {
+    pub fn add_copyback(&mut self, param: CopyBack) {
         self.copy_back.get_or_insert(Vec::new()).push(param);
     }
 
-    fn get_copyback(&mut self) -> Option<Vec<DataTransferPrealloc>> {
+    fn get_copyback(&mut self) -> Option<Vec<CopyBack>> {
         self.copy_back.take()
     }
 }
