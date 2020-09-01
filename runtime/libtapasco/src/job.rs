@@ -71,12 +71,15 @@ pub enum Error {
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+/// Helper structure to start and release PEs.
+/// Deals with data transfer parameter handling.
 #[derive(Debug)]
 pub struct Job {
     pe: Option<PE>,
     scheduler: Arc<Scheduler>,
 }
 
+/// Release the PE if it's no longer needed.
 impl Drop for Job {
     fn drop(&mut self) {
         match self.release(true, false) {
@@ -87,6 +90,11 @@ impl Drop for Job {
 }
 
 impl Job {
+    /// Create a new Job.
+    ///
+    /// Not used directly. Request a Job through [`acquire_pe`].
+    ///
+    /// [`acquire_pe`]: ../device/struct.Device.html#method.acquire_pe
     pub fn new(pe: PE, scheduler: &Arc<Scheduler>) -> Job {
         Job {
             pe: Some(pe),
@@ -94,7 +102,8 @@ impl Job {
         }
     }
 
-    pub fn handle_local_memories(&self, args: Vec<PEParameter>) -> Result<Vec<PEParameter>> {
+    /// Fetches the correct local memory and changes `DataTransferLocal` into `DataTransferAlloc`.
+    fn handle_local_memories(&self, args: Vec<PEParameter>) -> Result<Vec<PEParameter>> {
         trace!("Handling local memory parameters.");
         let new_params = args
             .into_iter()
@@ -121,7 +130,8 @@ impl Job {
     }
 
     //TODO: Check performance as this does not happen inplace but creates a new Vec
-    pub fn handle_allocates(&self, args: Vec<PEParameter>) -> Result<Vec<PEParameter>> {
+    /// Allocates memory area on the provided memories which transforms `DataTransferAlloc` into `DataTransferPrealloc`.
+    fn handle_allocates(&self, args: Vec<PEParameter>) -> Result<Vec<PEParameter>> {
         trace!("Handling allocate parameters.");
         let new_params = args
             .into_iter()
@@ -159,7 +169,9 @@ impl Job {
         new_params
     }
 
-    pub fn handle_transfers_to_device(
+    /// Move data in `DataTransferPrealloc` to the device if necessary and prepare the copy back operations
+    /// to be used after job execution. Converts the `DataTransferPrealloc` into `DeviceAddress`.
+    fn handle_transfers_to_device(
         &mut self,
         args: Vec<PEParameter>,
     ) -> Result<(Vec<PEParameter>, Vec<Box<[u8]>>)> {
@@ -206,6 +218,13 @@ impl Job {
         }
     }
 
+    /// Start PE execution with the given parameters. This function does not block.
+    ///
+    /// # Arguments
+    ///  * args: A list of PE parameters. As the DMA engine requires complete access, ownership transfer is required.
+    /// # Returns
+    ///  * A list of memories contained in the parameter list that is not marked for copy back. Otherwise, those memories would be dropped.
+    ///    The order of returned memories is the same as they occured in the argument list.
     pub fn start(&mut self, args: Vec<PEParameter>) -> Result<Vec<Box<[u8]>>> {
         trace!(
             "Starting execution of {:?} with Arguments {:?}.",
@@ -213,6 +232,7 @@ impl Job {
             args
         );
         let alloc_args = self.handle_local_memories(args)?;
+        trace!("Handled local parameters => {:?}.", alloc_args);
         let local_args = self.handle_allocates(alloc_args)?;
         trace!("Handled allocates => {:?}.", local_args);
         let (trans_args, unused_mem) = self.handle_transfers_to_device(local_args)?;
@@ -243,6 +263,15 @@ impl Job {
         Ok(unused_mem)
     }
 
+    /// Wait for job completion and handle copy back if necessary.
+    ///
+    /// # Arguments
+    ///  * `release_pe`: Release the PE so it can be used by another Job. Can be set to false if a second launch has to occur on the same PE.
+    ///  * `return_value`: Read back the return value from the device? Can be set to false to save a register read.
+    /// # Returns
+    ///  * Tuple of
+    ///    a: The return value if requested through the argument `return_value`,
+    ///    b: The memories that have been used for copy backs after the job execution. Order is maintained according to the original argument list.
     pub fn release(
         &mut self,
         release_pe: bool,

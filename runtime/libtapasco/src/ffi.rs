@@ -504,7 +504,7 @@ pub extern "C" fn tapasco_device_access(dev: *mut Device, access: tlkm_access) -
     }
 
     let tl = unsafe { &mut *dev };
-    match tl.create(access).context(DeviceError) {
+    match tl.change_access(access).context(DeviceError) {
         Ok(_) => return 0,
         Err(e) => {
             update_last_error(e);

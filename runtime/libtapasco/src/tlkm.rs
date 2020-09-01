@@ -310,7 +310,9 @@ impl TLKM {
 
     /// Retrieve device info from the driver.
     ///
-    /// Returns a vector of DeviceInfo structures for informational purposes.
+    /// Returns a vector of [`DeviceInfo`] structures for informational purposes.
+    ///
+    /// [`DeviceInfo`]: struct.DeviceInfo.html
     pub fn device_enum_info(&self) -> Result<Vec<DeviceInfo>> {
         trace!("Fetching available devices from driver.");
         let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
@@ -349,10 +351,14 @@ impl TLKM {
     ///
     /// The resulting device can be used for all further interaction with
     /// the TaPaSCo device.
-    /// Device IDs retrieved from #method.device_enum_info.
-    /// Returns [`Device`]
+    ///
+    /// # Arguments
+    ///  * Device IDs retrieved from [`device_enum_info`].
+    ///
+    /// Returns [`Device`] with provided id.
     ///
     /// [`Device`]: ../device/struct.Device.html
+    /// [`device_enum_info`]: #method.device_enum_info
     pub fn device_alloc(&self, id: DeviceId) -> Result<Device> {
         trace!("Fetching available devices from driver.");
         let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
