@@ -589,7 +589,7 @@ inline void *pcie_device_addr2map_off(struct tlkm_device *dev,
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
 	void *ptr = 0;
-	size_t buffer_requested = (addr / 4096) - 3;
+	size_t buffer_requested = (addr / 4096) - 4;
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "Request for offset to buffer %zu",
 	       buffer_requested);
 
