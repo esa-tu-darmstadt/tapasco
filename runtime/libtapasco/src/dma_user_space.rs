@@ -67,7 +67,7 @@ impl UserSpaceDMA {
         write_interrupt: usize,
         memory: &Arc<MmapMut>,
     ) -> Result<UserSpaceDMA> {
-        let buf_size = 256 * 1024 * 1024;
+        let buf_size = 256 * 1024;
         let mut to_dev_buf = tlkm_dma_buffer_allocate {
             size: buf_size,
             from_device: false,
