@@ -97,26 +97,19 @@ static inline long pcie_ioctl_copyfrom(struct tlkm_device *inst,
 long pcie_ioctl_dma_buffer_allocate(
 	struct tlkm_device *inst, struct tlkm_dma_buffer_allocate __user *param)
 {
-	struct tlkm_dma_buffer_allocate param_kernel;
 	int i, err;
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)inst->private_data;
-	if (copy_from_user(&param_kernel, (void __user *)param,
-			   sizeof(struct tlkm_dma_buffer_allocate))) {
-		DEVERR(inst->dev_id,
-		       "could not copy ioctl data from user space");
-		return -EFAULT;
-	}
 
 	for (i = 0; i < TLKM_PCIE_NUM_DMA_BUFFERS; ++i) {
 		if (pdev->dma_buffer[i].ptr == 0) {
 			DEVLOG(inst->dev_id, TLKM_LF_IOCTL,
 			       "Request to allocate %ld Bytes will be served in location %d.",
-			       param_kernel.size, i);
+			       param->size, i);
 
-			pdev->dma_buffer[i].size = param_kernel.size;
+			pdev->dma_buffer[i].size = param->size;
 			pdev->dma_buffer[i].direction =
-				param_kernel.from_device ? FROM_DEV : TO_DEV;
+				param->from_device ? FROM_DEV : TO_DEV;
 
 			if ((err = pcie_device_dma_allocate_buffer(
 				     inst->dev_id, inst,
@@ -131,27 +124,9 @@ long pcie_ioctl_dma_buffer_allocate(
 				return err;
 			}
 
-			param_kernel.buffer_id = i;
-			param_kernel.addr = pdev->dma_buffer[i].ptr_dev;
+			param->buffer_id = i;
+			param->addr = pdev->dma_buffer[i].ptr_dev;
 
-			if (copy_to_user(
-				    (void __user *)param, &param_kernel,
-				    sizeof(struct tlkm_dma_buffer_allocate))) {
-				DEVERR(inst->dev_id,
-				       "could not copy ioctl data to user space");
-
-				pcie_device_dma_free_buffer(
-					inst->dev_id, inst,
-					&pdev->dma_buffer[i].ptr,
-					&pdev->dma_buffer[i].ptr_dev,
-					pdev->dma_buffer[i].direction,
-					pdev->dma_buffer[i].size);
-
-				memset(&pdev->dma_buffer[i], 0,
-				       sizeof(pdev->dma_buffer[0]));
-
-				return -EFAULT;
-			}
 			return 0;
 		}
 	}
@@ -163,24 +138,16 @@ long pcie_ioctl_dma_buffer_allocate(
 long pcie_ioctl_dma_buffer_free(struct tlkm_device *inst,
 				struct tlkm_dma_buffer_op __user *param)
 {
-	struct tlkm_dma_buffer_op param_kernel;
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)inst->private_data;
-	if (copy_from_user(&param_kernel, (void __user *)param,
-			   sizeof(struct tlkm_dma_buffer_op))) {
-		DEVERR(inst->dev_id,
-		       "could not copy ioctl data from user space");
-		return -EFAULT;
-	}
 
 	pcie_device_dma_free_buffer(
-		inst->dev_id, inst,
-		&pdev->dma_buffer[param_kernel.buffer_id].ptr,
-		&pdev->dma_buffer[param_kernel.buffer_id].ptr_dev,
-		pdev->dma_buffer[param_kernel.buffer_id].direction,
-		pdev->dma_buffer[param_kernel.buffer_id].size);
+		inst->dev_id, inst, &pdev->dma_buffer[param->buffer_id].ptr,
+		&pdev->dma_buffer[param->buffer_id].ptr_dev,
+		pdev->dma_buffer[param->buffer_id].direction,
+		pdev->dma_buffer[param->buffer_id].size);
 
-	memset(&pdev->dma_buffer[param_kernel.buffer_id], 0,
+	memset(&pdev->dma_buffer[param->buffer_id], 0,
 	       sizeof(pdev->dma_buffer[0]));
 
 	return 0;
@@ -189,22 +156,14 @@ long pcie_ioctl_dma_buffer_free(struct tlkm_device *inst,
 long pcie_ioctl_dma_buffer_to_dev(struct tlkm_device *inst,
 				  struct tlkm_dma_buffer_op __user *param)
 {
-	struct tlkm_dma_buffer_op param_kernel;
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)inst->private_data;
-	if (copy_from_user(&param_kernel, (void __user *)param,
-			   sizeof(struct tlkm_dma_buffer_op))) {
-		DEVERR(inst->dev_id,
-		       "could not copy ioctl data from user space");
-		return -EFAULT;
-	}
 
 	pcie_device_dma_sync_buffer_dev(
-		inst->dev_id, inst,
-		&pdev->dma_buffer[param_kernel.buffer_id].ptr,
-		&pdev->dma_buffer[param_kernel.buffer_id].ptr_dev,
-		pdev->dma_buffer[param_kernel.buffer_id].direction,
-		pdev->dma_buffer[param_kernel.buffer_id].size);
+		inst->dev_id, inst, &pdev->dma_buffer[param->buffer_id].ptr,
+		&pdev->dma_buffer[param->buffer_id].ptr_dev,
+		pdev->dma_buffer[param->buffer_id].direction,
+		pdev->dma_buffer[param->buffer_id].size);
 
 	return 0;
 }
@@ -212,22 +171,14 @@ long pcie_ioctl_dma_buffer_to_dev(struct tlkm_device *inst,
 long pcie_ioctl_dma_buffer_from_dev(struct tlkm_device *inst,
 				    struct tlkm_dma_buffer_op __user *param)
 {
-	struct tlkm_dma_buffer_op param_kernel;
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)inst->private_data;
-	if (copy_from_user(&param_kernel, (void __user *)param,
-			   sizeof(struct tlkm_dma_buffer_op))) {
-		DEVERR(inst->dev_id,
-		       "could not copy ioctl data from user space");
-		return -EFAULT;
-	}
 
 	pcie_device_dma_sync_buffer_cpu(
-		inst->dev_id, inst,
-		&pdev->dma_buffer[param_kernel.buffer_id].ptr,
-		&pdev->dma_buffer[param_kernel.buffer_id].ptr_dev,
-		pdev->dma_buffer[param_kernel.buffer_id].direction,
-		pdev->dma_buffer[param_kernel.buffer_id].size);
+		inst->dev_id, inst, &pdev->dma_buffer[param->buffer_id].ptr,
+		&pdev->dma_buffer[param->buffer_id].ptr_dev,
+		pdev->dma_buffer[param->buffer_id].direction,
+		pdev->dma_buffer[param->buffer_id].size);
 
 	return 0;
 }
