@@ -27,7 +27,10 @@ use crate::dma::ErrorInterrupt;
 use crate::dma::FailedMMapDMA;
 use crate::interrupt::Interrupt;
 use crate::tlkm::tlkm_dma_buffer_allocate;
+use crate::tlkm::tlkm_dma_buffer_op;
 use crate::tlkm::tlkm_ioctl_dma_buffer_allocate;
+use crate::tlkm::tlkm_ioctl_dma_buffer_from_dev;
+use crate::tlkm::tlkm_ioctl_dma_buffer_to_dev;
 use core::fmt::Debug;
 use crossbeam::deque::{Injector, Steal};
 use memmap::MmapMut;
@@ -79,6 +82,8 @@ impl UserSpaceDMA {
                 .context(DMABufferAllocate)?;
         };
 
+        trace!("Retrieved {:?} for to_dev_buffer.", to_dev_buf);
+
         let mut from_dev_buf = tlkm_dma_buffer_allocate {
             size: buf_size,
             from_device: true,
@@ -89,6 +94,8 @@ impl UserSpaceDMA {
             tlkm_ioctl_dma_buffer_allocate(tlkm_file.as_raw_fd(), &mut from_dev_buf)
                 .context(DMABufferAllocate)?;
         };
+
+        trace!("Retrieved {:?} for from_dev_buffer.", from_dev_buf);
 
         let read_map = Injector::new();
         read_map.push(DMABuffer {
@@ -194,7 +201,27 @@ impl DMAControl for UserSpaceDMA {
         while btt > 0 {
             let btt_this = if btt < buffer.size { btt } else { buffer.size };
 
+            unsafe {
+                tlkm_ioctl_dma_buffer_from_dev(
+                    self.tlkm_file.as_raw_fd(),
+                    &mut tlkm_dma_buffer_op {
+                        buffer_id: buffer.id,
+                    },
+                )
+                .context(DMABufferAllocate)?;
+            };
+
             buffer.mapped[0..btt_this].copy_from_slice(&data[ptr_buffer..ptr_buffer + btt_this]);
+
+            unsafe {
+                tlkm_ioctl_dma_buffer_to_dev(
+                    self.tlkm_file.as_raw_fd(),
+                    &mut tlkm_dma_buffer_op {
+                        buffer_id: buffer.id,
+                    },
+                )
+                .context(DMABufferAllocate)?;
+            };
 
             self.schedule_dma_transfer(buffer.addr, ptr_device, btt_this as u64, false)?;
 
@@ -234,9 +261,29 @@ impl DMAControl for UserSpaceDMA {
         while btt > 0 {
             let btt_this = if btt < buffer.size { btt } else { buffer.size };
 
+            unsafe {
+                tlkm_ioctl_dma_buffer_to_dev(
+                    self.tlkm_file.as_raw_fd(),
+                    &mut tlkm_dma_buffer_op {
+                        buffer_id: buffer.id,
+                    },
+                )
+                .context(DMABufferAllocate)?;
+            };
+
             self.schedule_dma_transfer(buffer.addr, ptr_device, btt_this as u64, true)?;
 
             self.read_int.wait_for_interrupt().context(ErrorInterrupt)?;
+
+            unsafe {
+                tlkm_ioctl_dma_buffer_from_dev(
+                    self.tlkm_file.as_raw_fd(),
+                    &mut tlkm_dma_buffer_op {
+                        buffer_id: buffer.id,
+                    },
+                )
+                .context(DMABufferAllocate)?;
+            };
 
             data[ptr_buffer..ptr_buffer + btt_this].copy_from_slice(&buffer.mapped[0..btt_this]);
 
