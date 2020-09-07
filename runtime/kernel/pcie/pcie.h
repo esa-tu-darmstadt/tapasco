@@ -53,6 +53,7 @@ static const struct tlkm_class pcie_cls = {
 	.pirq = pcie_irqs_request_platform_irq,
 	.rirq = pcie_irqs_release_platform_irq,
 	.ioctl = pcie_ioctl,
+	.addr2map = pcie_device_addr2map_off,
 	.npirqs = 4,
 	.platform = PCIE_DEF,
 	.private_data = NULL,

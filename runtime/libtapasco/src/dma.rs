@@ -32,12 +32,16 @@ use std::os::unix::prelude::*;
 use std::sync::Arc;
 
 #[derive(Debug, Snafu)]
+#[snafu(visibility(pub))]
 pub enum Error {
     #[snafu(display("Could not transfer to device {}", source))]
     DMAToDevice { source: nix::Error },
 
     #[snafu(display("Could not transfer from device {}", source))]
     DMAFromDevice { source: nix::Error },
+
+    #[snafu(display("Could not allocate DMA buffer {}", source))]
+    DMABufferAllocate { source: nix::Error },
 
     #[snafu(display(
         "Transfer 0x{:x} - 0x{:x} outside of memory region 0x{:x}.",
@@ -53,6 +57,12 @@ pub enum Error {
 
     #[snafu(display("Failed flushing the memory for DirectDMA: {}", source))]
     FailedFlush { source: std::io::Error },
+
+    #[snafu(display("Failed to mmap DMA buffer: {}", source))]
+    FailedMMapDMA { source: std::io::Error },
+
+    #[snafu(display("Error during interrupt handling: {}", source))]
+    ErrorInterrupt { source: crate::interrupt::Error },
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 

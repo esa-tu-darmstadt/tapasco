@@ -29,7 +29,6 @@
 #include "tlkm_perfc.h"
 #include "tlkm_access.h"
 #include "tlkm_status.h"
-#include "dma/tlkm_dma.h"
 #include "tlkm_class.h"
 
 #define TLKM_DEVICE_NAME_LEN 30
@@ -52,7 +51,6 @@ struct tlkm_device {
 	struct platform_regspace arch;
 	struct platform_regspace plat;
 	struct tlkm_control *ctrl; /* main device file */
-	struct dma_engine dma[TLKM_DEVICE_MAX_DMA_ENGINES];
 	tlkm_component_t components[TLKM_COMPONENT_MAX];
 #ifndef NPERFC
 	struct miscdevice perfc_dev; /* performance counter device */

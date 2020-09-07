@@ -71,6 +71,18 @@ ssize_t tlkm_control_signal_slot_interrupt(struct tlkm_control *pctl,
 	return 0;
 }
 
+ssize_t tlkm_control_signal_platform_interrupt(struct tlkm_control *pctl,
+					       const u32 s_id)
+{
+	if (pctl->platform_interrupts[s_id] != 0) {
+		eventfd_signal(pctl->platform_interrupts[s_id], 1);
+	} else {
+		DEVERR(pctl->dev_id, "No interrupt registered for platform %d",
+		       s_id);
+	}
+	return 0;
+}
+
 static struct tlkm_control *control_from_file(struct file *fp)
 {
 	struct miscdevice *m = (struct miscdevice *)fp->private_data;
@@ -87,6 +99,12 @@ int tlkm_control_release(struct inode *inode, struct file *file)
 		if (c->user_interrupts[i] != 0) {
 			eventfd_ctx_put(c->user_interrupts[i]);
 			c->user_interrupts[i] = 0;
+		}
+	}
+	for (i = 0; i < TLKM_PLATFORM_INTERRUPTS; ++i) {
+		if (c->platform_interrupts[i] != 0) {
+			eventfd_ctx_put(c->platform_interrupts[i]);
+			c->platform_interrupts[i] = 0;
 		}
 	}
 	return 0;
@@ -110,6 +128,10 @@ int tlkm_control_init(dev_id_t dev_id, struct tlkm_control **ppctl)
 
 	for (i = 0; i < PLATFORM_NUM_SLOTS; ++i) {
 		p->user_interrupts[i] = (struct eventfd_ctx *)0;
+	}
+
+	for (i = 0; i < TLKM_PLATFORM_INTERRUPTS; ++i) {
+		p->platform_interrupts[i] = (struct eventfd_ctx *)0;
 	}
 
 	*ppctl = p;

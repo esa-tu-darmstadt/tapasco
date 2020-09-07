@@ -96,7 +96,33 @@ long tlkm_device_ioctl_size(struct file *fp, unsigned int ioctl,
 long tlkm_device_reg_plat_int(struct file *fp, unsigned int ioctl,
 			      struct tlkm_register_interrupt __user *size)
 {
-	ERR("Eventfd for platform interrupts is not implemented, yet.");
+	struct tlkm_control *c = control_from_file(fp);
+	struct tlkm_register_interrupt s;
+	if (!c) {
+		ERR("received invalid file pointer");
+		return -EFAULT;
+	}
+	if (copy_from_user(&s, (void __user *)size,
+			   sizeof(struct tlkm_register_interrupt))) {
+		DEVERR(c->dev_id, "could not copy ioctl data from user space");
+		return -EFAULT;
+	}
+	if (s.pe_id < 0 || s.pe_id >= TLKM_PLATFORM_INTERRUPTS) {
+		DEVERR(c->dev_id, "Platform interrupt ID %d out of range.",
+		       s.pe_id);
+		return -EFAULT;
+	}
+
+	if (c->platform_interrupts[s.pe_id] != 0) {
+		DEVERR(c->dev_id, "Interrupt of platform %d already taken.",
+		       s.pe_id);
+		return -EFAULT;
+	}
+
+	DEVLOG(c->dev_id, TLKM_LF_CONTROL,
+	       "Registering FD %d for platform interrupt %d", s.fd, s.pe_id);
+	c->platform_interrupts[s.pe_id] = eventfd_ctx_fdget(s.fd);
+
 	return 0;
 }
 

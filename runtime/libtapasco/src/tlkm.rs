@@ -225,6 +225,56 @@ ioctl_readwrite!(
     TLKM_IOCTL_DESTROY_DEVICE,
     tlkm_ioctl_device_cmd
 );
+
+// User space DMA
+#[repr(C)]
+#[derive(Debug, PartialEq)]
+pub struct tlkm_dma_buffer_allocate {
+    pub size: usize,
+    pub from_device: bool,
+    pub buffer_id: usize,
+    pub addr: u64,
+}
+
+#[repr(C)]
+#[derive(Debug, PartialEq)]
+pub struct tlkm_dma_buffer_op {
+    pub buffer_id: usize,
+}
+
+const TLKM_IOCTL_DMA_BUFFER_ALLOCATE: u8 = 0x40;
+const TLKM_IOCTL_DMA_BUFFER_FREE: u8 = 0x41;
+const TLKM_IOCTL_DMA_BUFFER_TO_DEV: u8 = 0x42;
+const TLKM_IOCTL_DMA_BUFFER_FROM_DEV: u8 = 0x43;
+
+ioctl_readwrite!(
+    tlkm_ioctl_dma_buffer_allocate,
+    TLKM_IOC_MAGIC,
+    TLKM_IOCTL_DMA_BUFFER_ALLOCATE,
+    tlkm_dma_buffer_allocate
+);
+
+ioctl_readwrite!(
+    tlkm_ioctl_dma_buffer_free,
+    TLKM_IOC_MAGIC,
+    TLKM_IOCTL_DMA_BUFFER_FREE,
+    tlkm_dma_buffer_op
+);
+
+ioctl_readwrite!(
+    tlkm_ioctl_dma_buffer_to_dev,
+    TLKM_IOC_MAGIC,
+    TLKM_IOCTL_DMA_BUFFER_TO_DEV,
+    tlkm_dma_buffer_op
+);
+
+ioctl_readwrite!(
+    tlkm_ioctl_dma_buffer_from_dev,
+    TLKM_IOC_MAGIC,
+    TLKM_IOCTL_DMA_BUFFER_FROM_DEV,
+    tlkm_dma_buffer_op
+);
+
 // End of IOCTL definitions.
 
 /// TLKM IOCTL convenience access

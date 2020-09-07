@@ -42,6 +42,9 @@ typedef int (*tlkm_device_pirq_f)(struct tlkm_device *, int irq_no,
 				  irq_handler_t h, void *data);
 typedef void (*tlkm_device_rirq_f)(struct tlkm_device *, int irq_no);
 
+typedef void *(*tlkm_class_addr2map_f)(struct tlkm_device *dev,
+				       dev_addr_t const addr);
+
 struct tlkm_class {
 	char name[TLKM_CLASS_NAME_LEN];
 	tlkm_class_create_f create;
@@ -50,6 +53,7 @@ struct tlkm_class {
 	tlkm_class_exit_subsystems_f exit_subsystems;
 	tlkm_class_probe_f probe;
 	tlkm_class_remove_f remove;
+	tlkm_class_addr2map_f addr2map;
 	tlkm_device_ioctl_f ioctl; /* ioctl implementation */
 	tlkm_device_pirq_f pirq; /* request platform IRQ */
 	tlkm_device_rirq_f rirq; /* release platform IRQ */

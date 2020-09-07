@@ -27,16 +27,22 @@
 #include "tlkm_types.h"
 #include "tlkm_slots.h"
 
+// Temporary definition... will be replaced with dynamic interrupt assignments later on
+#define TLKM_PLATFORM_INTERRUPTS 4
+
 #define TLKM_CONTROL_BUFFER_SZ 1024U
 
 struct tlkm_control {
 	dev_id_t dev_id;
 	struct miscdevice miscdev;
 	struct eventfd_ctx *user_interrupts[PLATFORM_NUM_SLOTS];
+	struct eventfd_ctx *platform_interrupts[TLKM_PLATFORM_INTERRUPTS];
 };
 
 ssize_t tlkm_control_signal_slot_interrupt(struct tlkm_control *pctl,
 					   const u32 s_id);
+ssize_t tlkm_control_signal_platform_interrupt(struct tlkm_control *pctl,
+					       const u32 s_id);
 int tlkm_control_init(dev_id_t dev_id, struct tlkm_control **ppctl);
 void tlkm_control_exit(struct tlkm_control *pctl);
 int tlkm_control_release(struct inode *inode, struct file *file);

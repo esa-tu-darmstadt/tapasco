@@ -49,8 +49,7 @@ static int aws_ec2_configure_xdma(struct tlkm_pcie_device *pdev)
 	uint32_t val;
 
 	DEVLOG(did, TLKM_LF_PCIE, "Mapping BAR2 and configuring XDMA core");
-	bar2 = ioremap(pci_resource_start(dev, 2),
-			       pci_resource_len(dev, 2));
+	bar2 = ioremap(pci_resource_start(dev, 2), pci_resource_len(dev, 2));
 
 	if (!bar2) {
 		DEVERR(did, "XDMA ioremap failed");
@@ -174,13 +173,13 @@ void tune_pcie_parameters(struct pci_dev *pdev)
 
 	uint16_t ectl = 0;
 
-	while(parent) {
+	while (parent) {
 		int mps_p = 128 << parent->pcie_mpss;
-		DEVLOG(id, TLKM_LF_PCIE, "Current MPS %d/%d.", pcie_get_mps(parent),
-	       		mps_p);
+		DEVLOG(id, TLKM_LF_PCIE, "Current MPS %d/%d.",
+		       pcie_get_mps(parent), mps_p);
 		mps_m = min(mps_m, mps_p);
 
-		if(pci_is_root_bus(parent->bus)) {
+		if (pci_is_root_bus(parent->bus)) {
 			DEVLOG(id, TLKM_LF_PCIE, "Found the parent.");
 			break;
 		}
@@ -189,15 +188,15 @@ void tune_pcie_parameters(struct pci_dev *pdev)
 
 	parent = pdev->bus->self;
 
-	while(parent) {
+	while (parent) {
 		int mps_p = pcie_get_mps(parent);
-		if(mps_p < mps_m) {
+		if (mps_p < mps_m) {
 			pcie_set_mps(parent, mps_m);
 		}
 		DEVLOG(id, TLKM_LF_PCIE, "Set MPS %d/%d.", pcie_get_mps(parent),
-       		128 << parent->pcie_mpss);
+		       128 << parent->pcie_mpss);
 
-		if(pci_is_root_bus(parent->bus)) {
+		if (pci_is_root_bus(parent->bus)) {
 			DEVLOG(id, TLKM_LF_PCIE, "Set MPS up to the parent.");
 			break;
 		}
@@ -205,8 +204,8 @@ void tune_pcie_parameters(struct pci_dev *pdev)
 	}
 
 	pcie_set_mps(pdev, mps_m);
-	DEVLOG(id, TLKM_LF_PCIE, "Current MPS device %d/%d.", pcie_get_mps(pdev),
-   		128 << pdev->pcie_mpss);
+	DEVLOG(id, TLKM_LF_PCIE, "Current MPS device %d/%d.",
+	       pcie_get_mps(pdev), 128 << pdev->pcie_mpss);
 
 	ret = pcie_set_readrq(pdev, readrq_m);
 
@@ -421,6 +420,10 @@ int pcie_device_create(struct tlkm_device *dev, void *data)
 	report_link_status(pdev);
 	memset(pdev->irq_mapping, -1,
 	       REQUIRED_INTERRUPTS * sizeof(pdev->irq_mapping[0]));
+
+	memset(pdev->dma_buffer, 0,
+	       TLKM_PCIE_NUM_DMA_BUFFERS * sizeof(pdev->dma_buffer[0]));
+
 	return 0;
 
 err_configure:
@@ -550,11 +553,10 @@ void pcie_device_dma_free_buffer(dev_id_t dev_id, struct tlkm_device *dev,
 	}
 }
 
-inline int pcie_device_dma_sync_buffer_cpu(dev_id_t dev_id,
-					   struct tlkm_device *dev,
-					   void **buffer, dma_addr_t *dev_handle,
-					   dma_direction_t direction,
-					   size_t size)
+inline int
+pcie_device_dma_sync_buffer_cpu(dev_id_t dev_id, struct tlkm_device *dev,
+				void **buffer, dma_addr_t *dev_handle,
+				dma_direction_t direction, size_t size)
 {
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
@@ -566,11 +568,10 @@ inline int pcie_device_dma_sync_buffer_cpu(dev_id_t dev_id,
 	return 0;
 }
 
-inline int pcie_device_dma_sync_buffer_dev(dev_id_t dev_id,
-					   struct tlkm_device *dev,
-					   void **buffer, dma_addr_t *dev_handle,
-					   dma_direction_t direction,
-					   size_t size)
+inline int
+pcie_device_dma_sync_buffer_dev(dev_id_t dev_id, struct tlkm_device *dev,
+				void **buffer, dma_addr_t *dev_handle,
+				dma_direction_t direction, size_t size)
 {
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
@@ -580,4 +581,22 @@ inline int pcie_device_dma_sync_buffer_dev(dev_id_t dev_id,
 				   direction == FROM_DEV ? DMA_FROM_DEVICE :
 							   DMA_TO_DEVICE);
 	return 0;
+}
+
+inline void *pcie_device_addr2map_off(struct tlkm_device *dev,
+				      dev_addr_t const addr)
+{
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)dev->private_data;
+	void *ptr = 0;
+	size_t buffer_requested = (addr / 4096) - 3;
+	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "Request for offset to buffer %zu",
+	       buffer_requested);
+
+	if (pdev->dma_buffer[buffer_requested].ptr != 0) {
+		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "Found offset as %p",
+		       pdev->dma_buffer[buffer_requested].ptr);
+		ptr = pdev->dma_buffer[buffer_requested].ptr;
+	}
+	return ptr;
 }

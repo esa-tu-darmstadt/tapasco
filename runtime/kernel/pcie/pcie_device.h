@@ -26,6 +26,8 @@
 #include "tlkm_types.h"
 #include "dma/tlkm_dma.h"
 
+#define TLKM_PCIE_NUM_DMA_BUFFERS 32
+
 #define TLKM_PLATFORM_INTERRUPTS 4
 #define TLKM_SLOT_INTERRUPTS 128
 #define REQUIRED_INTERRUPTS (TLKM_PLATFORM_INTERRUPTS + TLKM_SLOT_INTERRUPTS)
@@ -54,6 +56,16 @@ int pcie_device_dma_sync_buffer_dev(dev_id_t dev_id, struct tlkm_device *dev,
 				    void **buffer, dma_addr_t *dev_handle,
 				    dma_direction_t direction, size_t size);
 
+inline void *pcie_device_addr2map_off(struct tlkm_device *dev,
+				      dev_addr_t const addr);
+
+struct dma_buf {
+	void *ptr;
+	dma_addr_t ptr_dev;
+	size_t size;
+	dma_direction_t direction;
+};
+
 /* struct to hold data related to the pcie device */
 struct tlkm_pcie_device {
 	struct tlkm_device *parent;
@@ -66,6 +78,7 @@ struct tlkm_pcie_device {
 	int link_width;
 	int link_speed;
 	struct work_struct irq_work[TLKM_SLOT_INTERRUPTS];
+	struct dma_buf dma_buffer[TLKM_PCIE_NUM_DMA_BUFFERS];
 	volatile uint32_t *ack_register;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
 	struct msix_entry msix_entries[REQUIRED_INTERRUPTS];

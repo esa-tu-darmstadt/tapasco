@@ -23,19 +23,11 @@ use crate::device::DeviceAddress;
 use crate::device::DeviceSize;
 use crate::device::OffchipMemory;
 use crate::device::PEParameter;
-use crate::tlkm::tlkm_ioctl_reg_user;
-use crate::tlkm::tlkm_register_interrupt;
+use crate::interrupt::Interrupt;
 use memmap::MmapMut;
-use nix::sys::eventfd::eventfd;
-use nix::sys::eventfd::EfdFlags;
-use nix::unistd::close;
-use nix::unistd::read;
 use snafu::ResultExt;
 use std::fs::File;
-use std::os::unix::io::RawFd;
-use std::os::unix::prelude::*;
 use std::sync::Arc;
-
 use volatile::Volatile;
 
 #[derive(Debug, Snafu)]
@@ -61,14 +53,8 @@ pub enum Error {
     #[snafu(display("Could not insert PE {} into active PE set.", pe_id))]
     CouldNotInsertPE { pe_id: usize },
 
-    #[snafu(display("Error creating interrupt eventfd: {}", source))]
-    ErrorEventFD { source: nix::Error },
-
-    #[snafu(display("Error reading interrupt eventfd: {}", source))]
-    ErrorEventFDRead { source: nix::Error },
-
-    #[snafu(display("Could not register eventfd with driver: {}", source))]
-    ErrorEventFDRegister { source: nix::Error },
+    #[snafu(display("Error during interrupt handling: {}", source))]
+    ErrorInterrupt { source: crate::interrupt::Error },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -99,13 +85,7 @@ pub struct PE {
     #[get = "pub"]
     local_memory: Option<Arc<OffchipMemory>>,
 
-    interrupt: RawFd,
-}
-
-impl Drop for PE {
-    fn drop(&mut self) {
-        let _ = close(self.interrupt);
-    }
+    interrupt: Interrupt,
 }
 
 impl PE {
@@ -119,17 +99,6 @@ impl PE {
         completion: &File,
         interrupt_id: usize,
     ) -> Result<PE> {
-        let fd = eventfd(0, EfdFlags::EFD_NONBLOCK).context(ErrorEventFD)?;
-        let mut ioctl_fd = tlkm_register_interrupt {
-            fd: fd,
-            pe_id: interrupt_id as i32,
-        };
-
-        unsafe {
-            tlkm_ioctl_reg_user(completion.as_raw_fd(), &mut ioctl_fd)
-                .context(ErrorEventFDRegister)?;
-        };
-
         Ok(PE {
             id: id,
             type_id: type_id,
@@ -140,7 +109,8 @@ impl PE {
             copy_back: None,
             memory: memory,
             local_memory: None,
-            interrupt: fd,
+            interrupt: Interrupt::new(completion, interrupt_id, true, false)
+                .context(ErrorInterrupt)?,
         })
     }
 
@@ -170,32 +140,12 @@ impl PE {
 
     fn wait_for_completion(&mut self) -> Result<()> {
         if self.active {
-            let mut buf = [0u8; 8];
-            while self.active {
-                let r = read(self.interrupt, &mut buf);
-                match r {
-                    Ok(_) => {
-                        trace!("Cleaning up PE {} after release.", self.id);
-                        self.active = false;
-                        self.reset_interrupt(true)?;
-                    }
-                    Err(e) => {
-                        let e_no = e.as_errno();
-                        match e_no {
-                            Some(e_no_matched) => {
-                                if e_no_matched != nix::errno::Errno::EAGAIN {
-                                    r.context(ErrorEventFDRead)?;
-                                } else {
-                                    std::thread::yield_now();
-                                }
-                            }
-                            None => {
-                                r.context(ErrorEventFDRead)?;
-                            }
-                        }
-                    }
-                }
-            }
+            self.interrupt
+                .wait_for_interrupt()
+                .context(ErrorInterrupt)?;
+            trace!("Cleaning up PE {} after release.", self.id);
+            self.active = false;
+            self.reset_interrupt(true)?;
         } else {
             trace!("Wait requested but {:?} is already idle.", self.id);
         }
