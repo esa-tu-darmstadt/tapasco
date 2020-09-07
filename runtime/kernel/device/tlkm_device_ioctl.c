@@ -97,6 +97,7 @@ long tlkm_device_reg_plat_int(struct file *fp, unsigned int ioctl,
 			      struct tlkm_register_interrupt __user *size)
 {
 	struct tlkm_control *c = control_from_file(fp);
+	struct tlkm_device *dev = device_from_file(fp);
 	struct tlkm_register_interrupt s;
 	if (!c) {
 		ERR("received invalid file pointer");
@@ -122,8 +123,7 @@ long tlkm_device_reg_plat_int(struct file *fp, unsigned int ioctl,
 	DEVLOG(c->dev_id, TLKM_LF_CONTROL,
 	       "Registering FD %d for platform interrupt %d", s.fd, s.pe_id);
 	c->platform_interrupts[s.pe_id] = eventfd_ctx_fdget(s.fd);
-
-	return 0;
+	return dev->cls->pirq(dev, s.pe_id);
 }
 
 long tlkm_device_reg_user_int(struct file *fp, unsigned int ioctl,
