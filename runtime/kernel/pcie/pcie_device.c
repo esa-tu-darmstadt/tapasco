@@ -599,7 +599,8 @@ inline void *pcie_device_addr2map_off(struct tlkm_device *dev,
 	if (pdev->dma_buffer[buffer_requested].ptr != 0) {
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "Found offset as %p",
 		       pdev->dma_buffer[buffer_requested].ptr);
-		ptr = pdev->dma_buffer[buffer_requested].ptr;
+		ptr = (void *)virt_to_phys(
+			pdev->dma_buffer[buffer_requested].ptr);
 	}
 	return ptr;
 }
