@@ -34,6 +34,7 @@
 #include "tlkm_device_ioctl.h"
 #include "tlkm_device_mmap.h"
 #include "user/tlkm_device_ioctl_cmds.h"
+#include "tlkm_bus.h"
 
 static const struct file_operations _tlkm_control_fops = {
 	.unlocked_ioctl = tlkm_device_ioctl,
@@ -90,9 +91,18 @@ static struct tlkm_control *control_from_file(struct file *fp)
 						   miscdev);
 }
 
+static struct tlkm_device *device_from_file(struct file *fp)
+{
+	struct miscdevice *m = (struct miscdevice *)fp->private_data;
+	struct tlkm_control *c = (struct tlkm_control *)container_of(
+		m, struct tlkm_control, miscdev);
+	return tlkm_bus_get_device(c->dev_id);
+}
+
 int tlkm_control_release(struct inode *inode, struct file *file)
 {
 	struct tlkm_control *c = control_from_file(file);
+	struct tlkm_device *dev = device_from_file(file);
 	int i;
 	DEVLOG(c->dev_id, TLKM_LF_CONTROL, "Releasing control device");
 	for (i = 0; i < PLATFORM_NUM_SLOTS; ++i) {
@@ -105,6 +115,7 @@ int tlkm_control_release(struct inode *inode, struct file *file)
 		if (c->platform_interrupts[i] != 0) {
 			eventfd_ctx_put(c->platform_interrupts[i]);
 			c->platform_interrupts[i] = 0;
+			dev->cls->rirq(dev, i);
 		}
 	}
 	return 0;

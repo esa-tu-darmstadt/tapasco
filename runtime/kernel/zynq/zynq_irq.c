@@ -189,10 +189,10 @@ void zynq_irq_exit(struct zynq_device *zynq_dev)
 	}
 }
 
-int zynq_irq_request_platform_irq(struct tlkm_device *dev, int irq_no,
-				  irq_handler_t h, void *data)
+int zynq_irq_request_platform_irq(struct tlkm_device *dev, int irq_no)
 {
-	int err = 0;
+	// TODO: FIX ZYNQ IRQS
+	/*int err = 0;
 	int rirq = irq_of_parse_and_map(of_find_node_by_name(NULL, "tapasco"),
 					irq_no);
 	if (irq_no >= dev->cls->npirqs) {
@@ -208,7 +208,7 @@ int zynq_irq_request_platform_irq(struct tlkm_device *dev, int irq_no,
 		       err);
 		return err;
 	}
-	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registered platform irq #%d", irq_no);
+	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registered platform irq #%d", irq_no);*/
 	return 0;
 }
 

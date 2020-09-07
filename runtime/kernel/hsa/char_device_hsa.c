@@ -554,8 +554,9 @@ int char_hsa_register(struct tlkm_device *tlkm_dev)
 		goto error_device_create;
 	}
 
-	pcie_irqs_request_platform_irq(tlkm_dev, 2, intr_handler_hsa_signals,
-				       (void *)tlkm_dev);
+	// TODO: FIX HSA IRQs
+	//pcie_irqs_request_platform_irq(tlkm_dev, 2, intr_handler_hsa_signals,
+	//			       (void *)tlkm_dev);
 
 	return 0;
 

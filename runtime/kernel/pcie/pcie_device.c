@@ -424,6 +424,9 @@ int pcie_device_create(struct tlkm_device *dev, void *data)
 	memset(pdev->dma_buffer, 0,
 	       TLKM_PCIE_NUM_DMA_BUFFERS * sizeof(pdev->dma_buffer[0]));
 
+	memset(pdev->irq_handler_helper, 0,
+	       TLKM_PLATFORM_INTERRUPTS * sizeof(pdev->irq_handler_helper[0]));
+
 	return 0;
 
 err_configure:

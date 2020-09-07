@@ -64,8 +64,7 @@ int tlkm_device_acquire(struct tlkm_device *pdev, tlkm_access_t access);
 void tlkm_device_release(struct tlkm_device *pdev, tlkm_access_t access);
 
 static inline int tlkm_device_request_platform_irq(struct tlkm_device *dev,
-						   int irq_no, irq_handler_t h,
-						   void *data)
+						   int irq_no)
 {
 	BUG_ON(!dev);
 	BUG_ON(!dev->cls);
@@ -74,7 +73,7 @@ static inline int tlkm_device_request_platform_irq(struct tlkm_device *dev,
 		       "platform interrupt request callback not defined");
 		return -ENXIO;
 	}
-	return dev->cls->pirq(dev, irq_no, h, data);
+	return dev->cls->pirq(dev, irq_no);
 }
 
 static inline void tlkm_device_release_platform_irq(struct tlkm_device *dev,

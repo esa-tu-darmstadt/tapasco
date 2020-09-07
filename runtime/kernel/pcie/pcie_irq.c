@@ -237,13 +237,22 @@ void aws_ec2_pcie_irqs_exit(struct tlkm_device *dev)
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "interrupts deactivated");
 }
 
-int pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no,
-				   irq_handler_t intr_handler, void *data)
+irqreturn_t intr_handler_platform(int irq, void *data)
+{
+	struct pcie_irq_mapping *mapping = (struct pcie_irq_mapping *)data;
+	struct tlkm_pcie_device *dev = mapping->dev->private_data;
+	tlkm_control_signal_platform_interrupt(dev->parent->ctrl,
+					       mapping->irq_no);
+	dev->ack_register[0] = mapping->irq_no;
+	return IRQ_HANDLED;
+}
+
+int pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no)
 {
 	int err = 0;
+	int i;
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
-	BUG_ON(!pdev);
 	if (irq_no >= dev->cls->npirqs) {
 		DEVERR(dev->dev_id,
 		       "invalid platform interrupt number: %d (must be < %zd)",
@@ -251,41 +260,71 @@ int pcie_irqs_request_platform_irq(struct tlkm_device *dev, int irq_no,
 		return -ENXIO;
 	}
 
-	BUG_ON(!pdev->pdev);
-	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "requesting platform irq #%d", irq_no);
-	if ((err = request_irq(pci_irq_vector(pdev->pdev, irq_no), intr_handler,
-			       IRQF_EARLY_RESUME, TLKM_PCI_NAME, data))) {
-		DEVERR(dev->dev_id, "could not request interrupt #%d: %d",
-		       irq_no, err);
-		return err;
+	for (i = 0; i < TLKM_PLATFORM_INTERRUPTS; ++i) {
+		if (pdev->irq_handler_helper[i].dev == 0) {
+			pdev->irq_handler_helper[i].dev = dev;
+			pdev->irq_handler_helper[i].irq_no = irq_no;
+
+			DEVLOG(dev->dev_id, TLKM_LF_IRQ,
+			       "requesting platform irq #%d", irq_no);
+			if ((err = request_irq(
+				     pci_irq_vector(pdev->pdev, irq_no),
+				     intr_handler_platform, IRQF_EARLY_RESUME,
+				     TLKM_PCI_NAME,
+				     (void *)&pdev->irq_handler_helper[i]))) {
+				DEVERR(dev->dev_id,
+				       "could not request interrupt #%d: %d",
+				       irq_no, err);
+				return err;
+			}
+			pdev->irq_mapping[irq_no] =
+				pci_irq_vector(pdev->pdev, irq_no);
+			DEVLOG(dev->dev_id, TLKM_LF_IRQ,
+			       "created mapping from interrupt %d -> %d",
+			       irq_no, pdev->irq_mapping[irq_no]);
+			DEVLOG(dev->dev_id, TLKM_LF_IRQ,
+			       "interrupt line %d/%d assigned with return value %d",
+			       irq_no, pci_irq_vector(pdev->pdev, irq_no), err);
+			return err;
+		}
 	}
-	pdev->irq_mapping[irq_no] = pci_irq_vector(pdev->pdev, irq_no);
-	pdev->irq_data[irq_no] = data;
-	DEVLOG(dev->dev_id, TLKM_LF_IRQ,
-	       "created mapping from interrupt %d -> %d", irq_no,
-	       pdev->irq_mapping[irq_no]);
-	DEVLOG(dev->dev_id, TLKM_LF_IRQ,
-	       "interrupt line %d/%d assigned with return value %d", irq_no,
-	       pci_irq_vector(pdev->pdev, irq_no), err);
-	return err;
+
+	DEVERR(dev->dev_id, "No interrupt mapping available.");
+	return -ENOSPC;
 }
 
 void pcie_irqs_release_platform_irq(struct tlkm_device *dev, int irq_no)
 {
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
+	int i;
 	if (irq_no >= dev->cls->npirqs) {
 		DEVERR(dev->dev_id,
 		       "invalid platform interrupt number: %d (must be < %zd)",
 		       irq_no, pcie_cls.npirqs);
 		return;
 	}
+
+	for (i = 0; i < TLKM_PLATFORM_INTERRUPTS; ++i) {
+		if (pdev->irq_handler_helper[i].irq_no == irq_no) {
+			break;
+		}
+	}
+
+	if (i == TLKM_PLATFORM_INTERRUPTS) {
+		DEVERR(dev->dev_id, "Could not find mapping for interrupt %d",
+		       irq_no);
+		return;
+	}
+
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ,
 	       "freeing platform interrupt #%d with mapping %d", irq_no,
 	       pdev->irq_mapping[irq_no]);
 	if (pdev->irq_mapping[irq_no] != -1) {
-		free_irq(pdev->irq_mapping[irq_no], pdev->irq_data[irq_no]);
+		free_irq(pdev->irq_mapping[irq_no],
+			 (void *)&pdev->irq_handler_helper[i]);
 		pdev->irq_mapping[irq_no] = -1;
-		pdev->irq_data[irq_no] = NULL;
+		pdev->irq_handler_helper[i].dev = 0;
+		pdev->irq_handler_helper[i].irq_no = 0;
 	}
 }

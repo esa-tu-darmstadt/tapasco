@@ -38,8 +38,7 @@ typedef void (*tlkm_class_remove_f)(struct tlkm_class *);
 
 typedef long (*tlkm_device_ioctl_f)(struct tlkm_device *, unsigned int ioctl,
 				    unsigned long data);
-typedef int (*tlkm_device_pirq_f)(struct tlkm_device *, int irq_no,
-				  irq_handler_t h, void *data);
+typedef int (*tlkm_device_pirq_f)(struct tlkm_device *, int irq_no);
 typedef void (*tlkm_device_rirq_f)(struct tlkm_device *, int irq_no);
 
 typedef void *(*tlkm_class_addr2map_f)(struct tlkm_device *dev,
