@@ -249,28 +249,28 @@ const TLKM_IOCTL_DMA_BUFFER_FROM_DEV: u8 = 0x43;
 
 ioctl_readwrite!(
     tlkm_ioctl_dma_buffer_allocate,
-    TLKM_IOC_MAGIC,
+    TLKM_DEVICE_IOC_MAGIC,
     TLKM_IOCTL_DMA_BUFFER_ALLOCATE,
     tlkm_dma_buffer_allocate
 );
 
 ioctl_readwrite!(
     tlkm_ioctl_dma_buffer_free,
-    TLKM_IOC_MAGIC,
+    TLKM_DEVICE_IOC_MAGIC,
     TLKM_IOCTL_DMA_BUFFER_FREE,
     tlkm_dma_buffer_op
 );
 
 ioctl_readwrite!(
     tlkm_ioctl_dma_buffer_to_dev,
-    TLKM_IOC_MAGIC,
+    TLKM_DEVICE_IOC_MAGIC,
     TLKM_IOCTL_DMA_BUFFER_TO_DEV,
     tlkm_dma_buffer_op
 );
 
 ioctl_readwrite!(
     tlkm_ioctl_dma_buffer_from_dev,
-    TLKM_IOC_MAGIC,
+    TLKM_DEVICE_IOC_MAGIC,
     TLKM_IOCTL_DMA_BUFFER_FROM_DEV,
     tlkm_dma_buffer_op
 );
