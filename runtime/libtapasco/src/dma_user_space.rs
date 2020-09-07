@@ -236,13 +236,13 @@ impl DMAControl for UserSpaceDMA {
 
             self.schedule_dma_transfer(buffer.addr, ptr_device, btt_this as u64, true)?;
 
-            btt -= btt_this;
-            ptr_buffer += btt_this;
-            ptr_device += btt_this as u64;
-
             self.read_int.wait_for_interrupt().context(ErrorInterrupt)?;
 
             data[ptr_buffer..ptr_buffer + btt_this].copy_from_slice(&buffer.mapped[0..btt_this]);
+
+            btt -= btt_this;
+            ptr_buffer += btt_this;
+            ptr_device += btt_this as u64;
         }
 
         self.from_dev_buffer.push(buffer);
