@@ -504,6 +504,25 @@ void pcie_device_exit_subsystems(struct tlkm_device *dev)
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "exited subsystems");
 }
 
+void pcie_device_miscdev_close(struct tlkm_device *dev)
+{
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)dev->private_data;
+
+	int i;
+
+	for (i = 0; i < TLKM_PLATFORM_INTERRUPTS; ++i) {
+		if (pdev->dma_buffer[i].ptr == 0) {
+			pcie_device_dma_free_buffer(
+				dev->dev_id, dev, &pdev->dma_buffer[i].ptr,
+				&pdev->dma_buffer[i].ptr_dev,
+				pdev->dma_buffer[i].direction,
+				pdev->dma_buffer[i].size);
+			pdev->dma_buffer[i].size = 0;
+		}
+	}
+}
+
 int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct tlkm_device *dev,
 				    void **buffer, dma_addr_t *dev_handle,
 				    dma_direction_t direction, size_t size)

@@ -48,6 +48,7 @@ static const struct tlkm_class pcie_cls = {
 	.destroy = pcie_device_destroy,
 	.init_subsystems = pcie_device_init_subsystems,
 	.exit_subsystems = pcie_device_exit_subsystems,
+	.miscdev_close = pcie_device_miscdev_close,
 	.probe = pcie_init,
 	.remove = pcie_exit,
 	.pirq = pcie_irqs_request_platform_irq,

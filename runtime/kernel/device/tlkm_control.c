@@ -118,6 +118,11 @@ int tlkm_control_release(struct inode *inode, struct file *file)
 			dev->cls->rirq(dev, i);
 		}
 	}
+
+	if (dev->cls->miscdev_close) {
+		dev->cls->miscdev_close(dev);
+	}
+
 	return 0;
 }
 

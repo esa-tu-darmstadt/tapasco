@@ -57,6 +57,8 @@ int pcie_device_dma_sync_buffer_dev(dev_id_t dev_id, struct tlkm_device *dev,
 				    void **buffer, dma_addr_t *dev_handle,
 				    dma_direction_t direction, size_t size);
 
+void pcie_device_miscdev_close(struct tlkm_device *dev);
+
 inline void *pcie_device_addr2map_off(struct tlkm_device *dev,
 				      dev_addr_t const addr);
 
