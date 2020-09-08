@@ -296,13 +296,7 @@ impl Device {
             MmapOptions::new()
                 .len(arch_size as usize)
                 .offset(4096)
-                .map_mut(
-                    &OpenOptions::new()
-                        .read(true)
-                        .write(true)
-                        .open(format!("/dev/tlkm_{:02}", id))
-                        .context(DeviceUnavailable { id: id })?,
-                )
+                .map_mut(&tlkm_dma_file)
                 .context(DeviceUnavailable { id: id })?
         });
 
