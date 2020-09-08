@@ -512,7 +512,7 @@ void pcie_device_miscdev_close(struct tlkm_device *dev)
 	int i;
 
 	for (i = 0; i < TLKM_PCIE_NUM_DMA_BUFFERS; ++i) {
-		if (pdev->dma_buffer[i].ptr == 0) {
+		if (pdev->dma_buffer[i].ptr != 0) {
 			pcie_device_dma_free_buffer(
 				dev->dev_id, dev, &pdev->dma_buffer[i].ptr,
 				&pdev->dma_buffer[i].ptr_dev,
@@ -521,8 +521,6 @@ void pcie_device_miscdev_close(struct tlkm_device *dev)
 			pdev->dma_buffer[i].size = 0;
 		}
 	}
-	memset(pdev->dma_buffer, 0,
-	       TLKM_PCIE_NUM_DMA_BUFFERS * sizeof(pdev->dma_buffer[0]));
 }
 
 int pcie_device_dma_allocate_buffer(dev_id_t dev_id, struct tlkm_device *dev,
