@@ -46,11 +46,21 @@ int tlkm_device_mmap(struct file *fp, struct vm_area_struct *vm)
 	DEVLOG(dp->dev_id, TLKM_LF_CONTROL,
 	       "mapping %zu bytes from physical address 0x%p to user space 0x%lx-0x%lx",
 	       sz, kptr, vm->vm_start, vm->vm_end);
-	vm->vm_page_prot = pgprot_noncached(vm->vm_page_prot);
-	if (io_remap_pfn_range(vm, vm->vm_start, (size_t)kptr >> PAGE_SHIFT, sz,
-			       vm->vm_page_prot)) {
-		DEVWRN(dp->dev_id, "io_remap_pfn_range failed!");
-		return -EAGAIN;
+	if ((off >> PAGE_SHIFT) < 4) {
+		vm->vm_page_prot = pgprot_noncached(vm->vm_page_prot);
+		if (io_remap_pfn_range(vm, vm->vm_start,
+				       (size_t)kptr >> PAGE_SHIFT, sz,
+				       vm->vm_page_prot)) {
+			DEVWRN(dp->dev_id, "io_remap_pfn_range failed!");
+			return -EAGAIN;
+		}
+	} else {
+		if (remap_pfn_range(vm, vm->vm_start,
+				    (size_t)kptr >> PAGE_SHIFT, sz,
+				    vm->vm_page_prot)) {
+			DEVWRN(dp->dev_id, "remap_pfn_range failed!");
+			return -EAGAIN;
+		}
 	}
 	DEVLOG(dp->dev_id, TLKM_LF_CONTROL,
 	       "register space mapping successful");
