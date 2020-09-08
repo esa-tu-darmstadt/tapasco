@@ -55,6 +55,9 @@ pub enum Error {
         size: DeviceSize,
     },
 
+    #[snafu(display("Mutex has been poisoned"))]
+    MutexError {},
+
     #[snafu(display("Failed flushing the memory for DirectDMA: {}", source))]
     FailedFlush { source: std::io::Error },
 
@@ -63,6 +66,11 @@ pub enum Error {
 
     #[snafu(display("Error during interrupt handling: {}", source))]
     ErrorInterrupt { source: crate::interrupt::Error },
+
+    #[snafu(display(
+        "Got interrupt but outstanding buffers are empty. This should never happen."
+    ))]
+    TooManyInterrupts {},
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 

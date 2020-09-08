@@ -32,14 +32,26 @@ use crate::tlkm::tlkm_ioctl_dma_buffer_allocate;
 use crate::tlkm::tlkm_ioctl_dma_buffer_from_dev;
 use crate::tlkm::tlkm_ioctl_dma_buffer_to_dev;
 use core::fmt::Debug;
+use core::sync::atomic::AtomicU64;
 use crossbeam::deque::{Injector, Steal};
+use lockfree::queue::Queue;
 use memmap::MmapMut;
 use memmap::MmapOptions;
 use snafu::ResultExt;
 use std::fs::File;
 use std::os::unix::prelude::*;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::MutexGuard;
+use std::thread;
 use volatile::Volatile;
+
+impl<T> From<std::sync::PoisonError<T>> for Error {
+    fn from(_error: std::sync::PoisonError<T>) -> Self {
+        Error::MutexError {}
+    }
+}
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -54,12 +66,16 @@ struct DMABuffer {
 #[derive(Debug, Getters)]
 pub struct UserSpaceDMA {
     tlkm_file: Arc<File>,
-    memory: Arc<MmapMut>,
+    memory: Mutex<Arc<MmapMut>>,
     engine_offset: usize,
     to_dev_buffer: Injector<DMABuffer>,
     from_dev_buffer: Injector<DMABuffer>,
     read_int: Interrupt,
     write_int: Interrupt,
+    write_out: Queue<DMABuffer>,
+    write_cntr: AtomicU64,
+    write_int_lock: Mutex<bool>,
+    write_int_cntr: AtomicU64,
 }
 
 impl UserSpaceDMA {
@@ -71,18 +87,37 @@ impl UserSpaceDMA {
         memory: &Arc<MmapMut>,
     ) -> Result<UserSpaceDMA> {
         let buf_size = 256 * 1024;
-        let mut to_dev_buf = tlkm_dma_buffer_allocate {
-            size: buf_size,
-            from_device: false,
-            buffer_id: 42,
-            addr: 42,
-        };
-        unsafe {
-            tlkm_ioctl_dma_buffer_allocate(tlkm_file.as_raw_fd(), &mut to_dev_buf)
-                .context(DMABufferAllocate)?;
-        };
+        let num_buffers = 16;
+        let write_map = Injector::new();
+        let read_map = Injector::new();
 
-        trace!("Retrieved {:?} for to_dev_buffer.", to_dev_buf);
+        for _ in 0..num_buffers {
+            let mut to_dev_buf = tlkm_dma_buffer_allocate {
+                size: buf_size,
+                from_device: false,
+                buffer_id: 42,
+                addr: 42,
+            };
+            unsafe {
+                tlkm_ioctl_dma_buffer_allocate(tlkm_file.as_raw_fd(), &mut to_dev_buf)
+                    .context(DMABufferAllocate)?;
+            };
+
+            trace!("Retrieved {:?} for to_dev_buffer.", to_dev_buf);
+
+            write_map.push(DMABuffer {
+                id: to_dev_buf.buffer_id,
+                addr: to_dev_buf.addr,
+                size: buf_size,
+                mapped: unsafe {
+                    MmapOptions::new()
+                        .len(buf_size)
+                        .offset(((4 + to_dev_buf.buffer_id) * 4096) as u64)
+                        .map_mut(&tlkm_file)
+                        .context(FailedMMapDMA)?
+                },
+            });
+        }
 
         let mut from_dev_buf = tlkm_dma_buffer_allocate {
             size: buf_size,
@@ -97,7 +132,6 @@ impl UserSpaceDMA {
 
         trace!("Retrieved {:?} for from_dev_buffer.", from_dev_buf);
 
-        let read_map = Injector::new();
         read_map.push(DMABuffer {
             id: from_dev_buf.buffer_id,
             addr: from_dev_buf.addr,
@@ -111,23 +145,9 @@ impl UserSpaceDMA {
             },
         });
 
-        let write_map = Injector::new();
-        write_map.push(DMABuffer {
-            id: to_dev_buf.buffer_id,
-            addr: to_dev_buf.addr,
-            size: buf_size,
-            mapped: unsafe {
-                MmapOptions::new()
-                    .len(buf_size)
-                    .offset(((4 + to_dev_buf.buffer_id) * 4096) as u64)
-                    .map_mut(&tlkm_file)
-                    .context(FailedMMapDMA)?
-            },
-        });
-
         Ok(UserSpaceDMA {
             tlkm_file: tlkm_file.clone(),
-            memory: memory.clone(),
+            memory: Mutex::new(memory.clone()),
             engine_offset: offset,
             to_dev_buffer: write_map,
             from_dev_buffer: read_map,
@@ -135,11 +155,16 @@ impl UserSpaceDMA {
                 .context(ErrorInterrupt)?,
             write_int: Interrupt::new(tlkm_file, write_interrupt, false, false)
                 .context(ErrorInterrupt)?,
+            write_out: Queue::new(),
+            write_cntr: AtomicU64::new(0),
+            write_int_lock: Mutex::new(false),
+            write_int_cntr: AtomicU64::new(0),
         })
     }
 
     fn schedule_dma_transfer(
         &self,
+        dma_engine_memory: &MutexGuard<Arc<MmapMut>>,
         addr_host: u64,
         addr_device: DeviceAddress,
         size: DeviceSize,
@@ -147,31 +172,55 @@ impl UserSpaceDMA {
     ) -> Result<()> {
         let mut offset = (self.engine_offset as usize + 0x00) as isize;
         unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
+            let ptr = dma_engine_memory.as_ptr().offset(offset);
             let volatile_ptr = ptr as *mut Volatile<u64>;
             (*volatile_ptr).write(addr_host);
         };
 
         offset = (self.engine_offset as usize + 0x08) as isize;
         unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
+            let ptr = dma_engine_memory.as_ptr().offset(offset);
             let volatile_ptr = ptr as *mut Volatile<u64>;
             (*volatile_ptr).write(addr_device);
         };
 
         offset = (self.engine_offset as usize + 0x10) as isize;
         unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
+            let ptr = dma_engine_memory.as_ptr().offset(offset);
             let volatile_ptr = ptr as *mut Volatile<u64>;
             (*volatile_ptr).write(size);
         };
 
         offset = (self.engine_offset as usize + 0x20) as isize;
         unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
+            let ptr = dma_engine_memory.as_ptr().offset(offset);
             let volatile_ptr = ptr as *mut Volatile<u64>;
             (*volatile_ptr).write(if from_device { 0x10001000 } else { 0x10000001 });
         };
+
+        Ok(())
+    }
+
+    fn wait_for_write(&self, next: bool, cntr: u64) -> Result<()> {
+        if (next && self.to_dev_buffer.is_empty()) || !next {
+            while (next && self.to_dev_buffer.is_empty())
+                || self.write_int_cntr.load(Ordering::Relaxed) <= cntr
+            {
+                match self.write_int_lock.try_lock() {
+                    Ok(_v) => {
+                        self.write_int
+                            .wait_for_interrupt()
+                            .context(ErrorInterrupt)?;
+                        self.write_int_cntr.fetch_add(1, Ordering::Relaxed);
+                        match self.write_out.pop() {
+                            Some(buf) => self.to_dev_buffer.push(buf),
+                            None => Err(Error::TooManyInterrupts {})?,
+                        }
+                    }
+                    Err(_) => thread::yield_now(),
+                };
+            }
+        }
 
         Ok(())
     }
@@ -190,15 +239,17 @@ impl DMAControl for UserSpaceDMA {
         let mut ptr_device = ptr;
         let mut btt = data.len();
 
-        let mut buffer = loop {
-            match self.to_dev_buffer.steal() {
-                Steal::Success(buffer) => break buffer,
-                Steal::Empty => (),
-                Steal::Retry => (),
-            }
-        };
+        let mut highest_used = 0;
 
         while btt > 0 {
+            let mut buffer = loop {
+                match self.to_dev_buffer.steal() {
+                    Steal::Success(buffer) => break buffer,
+                    Steal::Empty => self.wait_for_write(true, 0)?,
+                    Steal::Retry => (),
+                }
+            };
+
             let btt_this = if btt < buffer.size { btt } else { buffer.size };
 
             unsafe {
@@ -223,18 +274,26 @@ impl DMAControl for UserSpaceDMA {
                 .context(DMABufferAllocate)?;
             };
 
-            self.schedule_dma_transfer(buffer.addr, ptr_device, btt_this as u64, false)?;
+            {
+                let dma_engine_memory = self.memory.lock()?;
+                self.schedule_dma_transfer(
+                    &dma_engine_memory,
+                    buffer.addr,
+                    ptr_device,
+                    btt_this as u64,
+                    false,
+                )?;
+                self.write_out.push(buffer);
+                highest_used = self.write_cntr.fetch_add(1, Ordering::Relaxed);
+            }
 
             btt -= btt_this;
             ptr_buffer += btt_this;
             ptr_device += btt_this as u64;
-
-            self.write_int
-                .wait_for_interrupt()
-                .context(ErrorInterrupt)?;
         }
 
-        self.to_dev_buffer.push(buffer);
+        self.wait_for_write(false, highest_used)?;
+
         Ok(())
     }
 
@@ -271,7 +330,16 @@ impl DMAControl for UserSpaceDMA {
                 .context(DMABufferAllocate)?;
             };
 
-            self.schedule_dma_transfer(buffer.addr, ptr_device, btt_this as u64, true)?;
+            {
+                let dma_engine_memory = self.memory.lock()?;
+                self.schedule_dma_transfer(
+                    &dma_engine_memory,
+                    buffer.addr,
+                    ptr_device,
+                    btt_this as u64,
+                    true,
+                )?;
+            }
 
             self.read_int.wait_for_interrupt().context(ErrorInterrupt)?;
 
