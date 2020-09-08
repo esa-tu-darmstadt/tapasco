@@ -284,14 +284,15 @@ impl DMAControl for UserSpaceDMA {
 
             {
                 let dma_engine_memory = self.memory.lock()?;
+                let addr = buffer.addr;
+                self.write_out.push(buffer);
                 self.schedule_dma_transfer(
                     &dma_engine_memory,
-                    buffer.addr,
+                    addr,
                     ptr_device,
                     btt_this as u64,
                     false,
                 )?;
-                self.write_out.push(buffer);
                 highest_used = self.write_cntr.fetch_add(1, Ordering::Relaxed);
             }
 
