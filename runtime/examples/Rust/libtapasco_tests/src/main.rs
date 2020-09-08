@@ -93,7 +93,7 @@ fn allocate_devices(_: &ArgMatches) -> Result<()> {
 
     for x in devices.iter_mut() {
         println!("Allocating ID {} exclusively.", x.id());
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
     }
 
@@ -114,7 +114,7 @@ fn run_arrayinit(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
     let devices = tlkm.device_enum().context(TLKMInit)?;
     for mut x in devices {
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
         let mut pe = x.acquire_pe(11).context(DeviceInit)?;
 
@@ -125,6 +125,7 @@ fn run_arrayinit(_: &ArgMatches) -> Result<()> {
                 from_device: true,
                 to_device: false,
                 memory: x.default_memory().context(DeviceInit)?,
+                fixed: None,
             },
         )])
         .context(JobError)?;
@@ -138,7 +139,7 @@ fn run_counter(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
     let devices = tlkm.device_enum().context(TLKMInit)?;
     for mut x in devices {
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
         let mut pes = Vec::new();
         pes.push(x.acquire_pe(14).context(DeviceInit)?);
@@ -165,7 +166,7 @@ fn benchmark_counter(m: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
     let devices = tlkm.device_enum().context(TLKMInit)?;
     for mut x in devices.into_iter() {
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit)?;
         let x_l = Arc::new(x);
         let iterations = value_t!(m, "iterations", usize).unwrap();
@@ -236,7 +237,7 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
         println!("Evaluating device {:?}", x.id());
         let design_mhz = x.design_frequency_mhz().context(DeviceInit)?;
         println!("Counter running with {:?} MHz.", design_mhz);
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
         let mut iterations = value_t!(m, "iterations", usize).unwrap();
         let max_step = value_t!(m, "steps", u32).unwrap();
@@ -284,7 +285,7 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
     let devices = tlkm.device_enum().context(TLKMInit)?;
     for mut x in devices {
         println!("Evaluating device {}", x.id());
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
 
         let mem = x.default_memory().context(DeviceInit)?;
@@ -391,7 +392,7 @@ fn benchmark_copy(m: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
     let devices = tlkm.device_enum().context(TLKMInit)?;
     for mut x in devices.into_iter() {
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit)?;
         let x_l = Arc::new(x);
         let max_size_power = value_t!(m, "max_bytes", usize).unwrap();
@@ -511,7 +512,7 @@ fn test_localmem(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
     let devices = tlkm.device_enum().context(TLKMInit)?;
     for mut x in devices {
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
         let mut pe = x.acquire_pe(42).context(DeviceInit)?;
         pe.start(vec![tapasco::device::PEParameter::DataTransferLocal(
@@ -520,6 +521,7 @@ fn test_localmem(_: &ArgMatches) -> Result<()> {
                 free: true,
                 from_device: true,
                 to_device: true,
+                fixed: None,
             },
         )])
         .context(JobError)?;
