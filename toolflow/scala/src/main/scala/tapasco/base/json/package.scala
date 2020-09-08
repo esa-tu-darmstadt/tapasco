@@ -406,6 +406,7 @@ package object json {
       (JsPath \ "Parallel").readNullable[Boolean].map(_ getOrElse false) ~
       (JsPath \ "MaxThreads").readNullable[Int] ~
       (JsPath \ "MaxTasks").readNullable[Int] ~
+      (JsPath \ "HlsTimeOut").readNullable[Int] ~
       (JsPath \ "DryRun").readNullable[Path] ~
       (JsPath \ "Verbose").readNullable[String] ~
       (JsPath \ "Jobs").read[Seq[Job]]
@@ -421,6 +422,7 @@ package object json {
       (JsPath \ "Slurm").write[Boolean] ~
       (JsPath \ "Parallel").write[Boolean] ~
       (JsPath \ "MaxThreads").writeNullable[Int] ~
+      (JsPath \ "HlsTimeOut").writeNullable[Int] ~
       (JsPath \ "MaxTasks").writeNullable[Int] ~
       (JsPath \ "DryRun").writeNullable[Path].transform((js: JsObject) => js - "DryRun") ~
       (JsPath \ "Verbose").writeNullable[String] ~

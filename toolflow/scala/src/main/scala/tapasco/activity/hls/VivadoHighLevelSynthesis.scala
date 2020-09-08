@@ -70,10 +70,12 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
       }
 
       // execute Vivado HLS (max. runtime: 1 day)
-      val vivadoRet = InterruptibleProcess(Process(Seq("vivado_hls",
+      val vivado_hls_cmd = Seq("timeout", (cfg.hlsTimeOut getOrElse (24 * 60 * 60)).toString, "vivado_hls",
         "-f", script.toString,
-        "-l", logfile.toString
-      ), script.getParent.toFile), waitMillis = Some(24 * 60 * 60 * 1000))
+        "-l", logfile.toString)
+      val process = Process(vivado_hls_cmd, script.getParent.toFile) 
+      val vivadoRet = InterruptibleProcess(process,
+         waitMillis = Some(24 * 60 * 60 * 1000))
         .!(ProcessLogger(line => logger.trace("Vivado HLS: {}", line),
           line => logger.trace("Vivado HLS ERR: {}", line)))
       lt.closeAll
