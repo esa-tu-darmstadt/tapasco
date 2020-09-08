@@ -204,17 +204,25 @@ impl UserSpaceDMA {
     fn wait_for_write(&self, next: bool, cntr: u64) -> Result<()> {
         if (next && self.to_dev_buffer.is_empty()) || !next {
             while (next && self.to_dev_buffer.is_empty())
-                || self.write_int_cntr.load(Ordering::Relaxed) <= cntr
+                || (!next && self.write_int_cntr.load(Ordering::Relaxed) <= cntr)
             {
                 match self.write_int_lock.try_lock() {
                     Ok(_v) => {
-                        self.write_int
-                            .wait_for_interrupt()
-                            .context(ErrorInterrupt)?;
-                        self.write_int_cntr.fetch_add(1, Ordering::Relaxed);
-                        match self.write_out.pop() {
-                            Some(buf) => self.to_dev_buffer.push(buf),
-                            None => Err(Error::TooManyInterrupts {})?,
+                        while (next && self.to_dev_buffer.is_empty())
+                            || (!next && self.write_int_cntr.load(Ordering::Relaxed) <= cntr)
+                        {
+                            let n = self
+                                .write_int
+                                .wait_for_interrupt()
+                                .context(ErrorInterrupt)?;
+                            trace!("Got {} interrupts in the meantime.", n);
+                            for _ in 0..n {
+                                self.write_int_cntr.fetch_add(1, Ordering::Relaxed);
+                                match self.write_out.pop() {
+                                    Some(buf) => self.to_dev_buffer.push(buf),
+                                    None => Err(Error::TooManyInterrupts {})?,
+                                }
+                            }
                         }
                     }
                     Err(_) => thread::yield_now(),
