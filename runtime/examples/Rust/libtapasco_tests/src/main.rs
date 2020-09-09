@@ -15,6 +15,8 @@ use average::{concatenate, Estimate, Max, MeanWithError, Min};
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use crossbeam::thread;
 use indicatif::{HumanBytes, ProgressBar, ProgressStyle};
+use rand::rngs::StdRng;
+use rand::{Rng, SeedableRng};
 use snafu::{ErrorCompat, ResultExt, Snafu};
 use std::io;
 use std::io::Write;
@@ -23,7 +25,6 @@ use std::time::Instant;
 use tapasco::device::OffchipMemory;
 use tapasco::tlkm::*;
 use uom::si::f32::*;
-use uom::si::frequency::megahertz;
 use uom::si::time::microsecond;
 use uom::si::time::nanosecond;
 
@@ -290,6 +291,8 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
 
         let mem = x.default_memory().context(DeviceInit)?;
 
+        let mut small_rng = StdRng::from_entropy();
+
         for len_pow in 0..28 {
             let len = i32::pow(2, len_pow);
             println!("Checking {}", HumanBytes(len as u64));
@@ -302,7 +305,7 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
             let mut golden_samples: Vec<u8> = Vec::new();
             let mut result: Vec<u8> = Vec::new();
             for _ in 0..len {
-                golden_samples.push(rand::random());
+                golden_samples.push(small_rng.gen());
                 result.push(255);
             }
 
@@ -314,7 +317,12 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
                 .zip(result.iter())
                 .filter(|&(a, b)| a != b)
                 .count();
-            println!("{} Bytes not matching", not_matching);
+
+            if not_matching != 0 {
+                println!("{} Bytes not matching", not_matching);
+            } else {
+                println!("All bytes matching.");
+            }
 
             if not_matching != 0 {
                 for (i, v) in golden_samples.iter().enumerate() {
