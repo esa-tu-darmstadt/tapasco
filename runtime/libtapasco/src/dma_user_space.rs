@@ -74,7 +74,6 @@ pub struct UserSpaceDMA {
     write_int: Interrupt,
     write_out: Queue<DMABuffer>,
     write_cntr: AtomicU64,
-    write_int_lock: Mutex<bool>,
     write_int_cntr: AtomicU64,
     read_cntr: AtomicU64,
     read_int_cntr: AtomicU64,
@@ -159,7 +158,6 @@ impl UserSpaceDMA {
                 .context(ErrorInterrupt)?,
             write_out: Queue::new(),
             write_cntr: AtomicU64::new(0),
-            write_int_lock: Mutex::new(false),
             write_int_cntr: AtomicU64::new(0),
             read_int_cntr: AtomicU64::new(0),
             read_cntr: AtomicU64::new(0),
@@ -210,28 +208,18 @@ impl UserSpaceDMA {
             while (next && self.to_dev_buffer.is_empty())
                 || (!next && self.write_int_cntr.load(Ordering::Relaxed) <= cntr)
             {
-                // Remove lock as everything after is threadsafe?
-                match self.write_int_lock.try_lock() {
-                    Ok(_v) => {
-                        while (next && self.to_dev_buffer.is_empty())
-                            || (!next && self.write_int_cntr.load(Ordering::Relaxed) <= cntr)
-                        {
-                            let n = self
-                                .write_int
-                                .wait_for_interrupt()
-                                .context(ErrorInterrupt)?;
-                            trace!("Got {} interrupts in the meantime.", n);
-                            for _ in 0..n {
-                                self.write_int_cntr.fetch_add(1, Ordering::Relaxed);
-                                match self.write_out.pop() {
-                                    Some(buf) => self.to_dev_buffer.push(buf),
-                                    None => Err(Error::TooManyInterrupts {})?,
-                                }
-                            }
-                        }
+                let n = self
+                    .write_int
+                    .check_for_interrupt()
+                    .context(ErrorInterrupt)?;
+                for _ in 0..n {
+                    self.write_int_cntr.fetch_add(1, Ordering::Relaxed);
+                    match self.write_out.pop() {
+                        Some(buf) => self.to_dev_buffer.push(buf),
+                        None => Err(Error::TooManyInterrupts {})?,
                     }
-                    Err(_) => thread::yield_now(),
-                };
+                }
+                thread::yield_now();
             }
         }
 
