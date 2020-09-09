@@ -113,4 +113,31 @@ impl Interrupt {
             }
         }
     }
+
+    pub fn check_for_interrupt(&self) -> Result<u64> {
+        let mut buf = [0u8; 8];
+        loop {
+            let r = read(self.interrupt, &mut buf);
+            match r {
+                Ok(_) => {
+                    return Ok(u64::from_ne_bytes(buf));
+                }
+                Err(e) => {
+                    let e_no = e.as_errno();
+                    match e_no {
+                        Some(e_no_matched) => {
+                            if e_no_matched != nix::errno::Errno::EAGAIN {
+                                r.context(ErrorEventFDRead)?;
+                            } else {
+                                return Ok(0);
+                            }
+                        }
+                        None => {
+                            r.context(ErrorEventFDRead)?;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
