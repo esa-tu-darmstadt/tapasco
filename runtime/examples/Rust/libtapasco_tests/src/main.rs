@@ -364,6 +364,10 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
 
     let repetitions = 100;
 
+    let chunk_max = 26;
+
+    let mut data = vec![0; usize::pow(2, chunk_max as u32)];
+
     for (size, num) in pow2 {
         env::set_var("tapasco_dma__read_buffers", format!("{}", num));
         env::set_var("tapasco_dma__write_buffers", format!("{}", num));
@@ -375,16 +379,14 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
 
         println!("Testing {} x {}kB", num, size);
 
-        for chunk_pow in 10..28 {
+        for chunk_pow in 10..chunk_max {
             let chunk = usize::pow(2, chunk_pow as u32);
 
-            let repetitions_used = if chunk * repetitions > (1024 * 1024 * 1024) {
+            let repetitions_used = if chunk * repetitions > (256 * 1024 * 1024) {
                 (1024 * 1024 * 1024) / chunk
             } else {
                 repetitions
             };
-
-            let mut data = vec![0; chunk];
 
             let a = mem
                 .allocator()
@@ -394,7 +396,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
 
             let now = Instant::now();
             for _ in 0..repetitions {
-                mem.dma().copy_to(&data, a).context(DMAError)?;
+                mem.dma().copy_to(&data[0..chunk], a).context(DMAError)?;
             }
             let done = now.elapsed().as_secs_f64();
 
@@ -416,7 +418,9 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
 
             let now = Instant::now();
             for _ in 0..repetitions {
-                mem.dma().copy_from(a, &mut data).context(DMAError)?;
+                mem.dma()
+                    .copy_from(a, &mut data[0..chunk])
+                    .context(DMAError)?;
             }
             let done = now.elapsed().as_secs_f64();
 
