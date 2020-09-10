@@ -336,6 +336,8 @@ impl TLKM {
             .merge(config::Environment::with_prefix("tapasco"))
             .context(ConfigError)?;
 
+        trace!("Using config: {:?}", settings);
+
         let path = PathBuf::from(
             settings
                 .get_str("TLKM.main_driver_file")
