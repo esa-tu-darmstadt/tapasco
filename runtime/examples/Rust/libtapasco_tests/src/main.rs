@@ -373,7 +373,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
         let devices = tlkm.device_enum().context(TLKMInit)?;
         let mem = devices[0].default_memory().context(DeviceInit)?;
 
-        for chunk_pow in 10..20 {
+        for chunk_pow in 10..28 {
             let chunk = usize::pow(2, chunk_pow as u32);
 
             let mut data = vec![0; chunk];
@@ -437,7 +437,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
         let mbps = bps / (1024.0 * 1024.0);
         if dir == "r" {
             println!(
-                "{} kbps Read: {} -> Num: {}, Size: {}",
+                "{} kB Read: {} Mbps -> Num: {}, Size: {}",
                 chunk / 1024,
                 mbps,
                 num,
@@ -445,7 +445,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
             );
         } else {
             println!(
-                "{} kbps Write: {} -> Num: {}, Size: {}",
+                "{} kB Write: {} Mbps -> Num: {}, Size: {}",
                 chunk / 1024,
                 mbps,
                 num,
