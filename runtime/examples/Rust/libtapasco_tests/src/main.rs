@@ -397,7 +397,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
                 .context(AllocatorError)?;
 
             let now = Instant::now();
-            for _ in 0..repetitions {
+            for _ in 0..repetitions_used {
                 mem.dma().copy_to(&data[0..chunk], a).context(DMAError)?;
             }
             let done = now.elapsed().as_secs_f64();
@@ -419,7 +419,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
             }
 
             let now = Instant::now();
-            for _ in 0..repetitions {
+            for _ in 0..repetitions_used {
                 mem.dma()
                     .copy_from(a, &mut data[0..chunk])
                     .context(DMAError)?;
