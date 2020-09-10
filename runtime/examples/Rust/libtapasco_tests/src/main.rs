@@ -356,7 +356,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
         tmp as u64
     })
     .take((buffer_size_max.log2() - buffer_size_min.log2()) as usize)
-    .cartesian_product((buffer_num_min..buffer_num_max).step_by(2));
+    .cartesian_product(buffer_num_min..buffer_num_max);
 
     let mut results = HashMap::new();
 
@@ -432,6 +432,14 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
         if dir == "r" {
             println!(
                 "{} kbps Read: {} -> Num: {}, Size: {}",
+                chunk / 1024,
+                mbps,
+                num,
+                size
+            );
+        } else {
+            println!(
+                "{} kbps Write: {} -> Num: {}, Size: {}",
                 chunk / 1024,
                 mbps,
                 num,
