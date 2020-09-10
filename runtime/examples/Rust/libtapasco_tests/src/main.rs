@@ -373,8 +373,16 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
         let devices = tlkm.device_enum().context(TLKMInit)?;
         let mem = devices[0].default_memory().context(DeviceInit)?;
 
+        println!("Testing {} x {}kB", num, size);
+
         for chunk_pow in 10..28 {
             let chunk = usize::pow(2, chunk_pow as u32);
+
+            let repetitions_used = if chunk * repetitions > (1024 * 1024 * 1024) {
+                (1024 * 1024 * 1024) / chunk
+            } else {
+                repetitions
+            };
 
             let mut data = vec![0; chunk];
 
@@ -390,7 +398,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
             }
             let done = now.elapsed().as_secs_f64();
 
-            let bps = (chunk as f64) / (done / (repetitions as f64));
+            let bps = (chunk as f64) / (done / (repetitions_used as f64));
             results.insert((size, num, chunk, "r"), bps);
             let config = (chunk, "r");
             let r = (bps, size, num);
@@ -412,7 +420,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
             }
             let done = now.elapsed().as_secs_f64();
 
-            let bps = (chunk as f64) / (done / (repetitions as f64));
+            let bps = (chunk as f64) / (done / (repetitions_used as f64));
             results.insert((size, num, chunk, "w"), bps);
             let config = (chunk, "w");
             let r = (bps, size, num);
