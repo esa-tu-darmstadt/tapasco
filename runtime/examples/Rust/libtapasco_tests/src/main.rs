@@ -15,11 +15,14 @@ use average::{concatenate, Estimate, Max, MeanWithError, Min};
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use crossbeam::thread;
 use indicatif::{HumanBytes, ProgressBar, ProgressStyle};
+use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use snafu::{ErrorCompat, ResultExt, Snafu};
+use std::env;
 use std::io;
 use std::io::Write;
+use std::iter;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use tapasco::device::OffchipMemory;
@@ -396,6 +399,34 @@ fn transfer_from(
     Ok(())
 }
 
+fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
+    let buffer_size_min: f64 = 4.0 * 1024.0;
+    let buffer_size_max: f64 = 4.0 * 1024.0 * 1024.0;
+
+    let buffer_num_min = 1;
+    let buffer_num_max = 16;
+
+    let mut curr = buffer_size_min;
+    let pow2 = iter::repeat_with(|| {
+        let tmp = curr;
+        curr *= 2.0;
+        tmp
+    })
+    .take((buffer_size_max.log2() - buffer_size_min.log2()) as usize)
+    .cartesian_product((buffer_num_min..buffer_num_max).step_by(2));
+
+    for (size, num) in pow2 {
+        env::set_var("tapasco_DMA__read_buffers", format!("{}", num));
+        env::set_var("tapasco_DMA__write_buffers", format!("{}", num));
+        env::set_var("tapasco_DMA__read_buffer_size", format!("{}", size));
+        env::set_var("tapasco_DMA__write_buffer_size", format!("{}", size));
+        let tlkm = TLKM::new().context(TLKMInit {})?;
+        let _devices = tlkm.device_enum().context(TLKMInit)?;
+    }
+
+    Ok(())
+}
+
 fn benchmark_copy(m: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
     let devices = tlkm.device_enum().context(TLKMInit)?;
@@ -666,6 +697,10 @@ fn main() -> Result<()> {
             SubCommand::with_name("test_localmem")
                 .about("Tests running a job with local memory (uses ID 42)."),
         )
+        .subcommand(
+            SubCommand::with_name("evaluate_copy")
+                .about("Find optimal buffer settings for current host/device combination."),
+        )
         .get_matches();
 
     match match matches.subcommand() {
@@ -680,6 +715,7 @@ fn main() -> Result<()> {
         ("test_copy", Some(m)) => test_copy(m),
         ("benchmark_copy", Some(m)) => benchmark_copy(m),
         ("test_localmem", Some(m)) => test_localmem(m),
+        ("evaluate_copy", Some(m)) => evaluate_copy(m),
         _ => Err(Error::UnknownCommand {}),
     } {
         Ok(()) => Ok(()),
