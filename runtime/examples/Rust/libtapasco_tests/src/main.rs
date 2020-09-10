@@ -19,6 +19,7 @@ use itertools::Itertools;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use snafu::{ErrorCompat, ResultExt, Snafu};
+use std::collections::HashMap;
 use std::env;
 use std::io;
 use std::io::Write;
@@ -341,6 +342,64 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
     Ok(())
 }
 
+fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
+    let buffer_size_min: f64 = 4.0 * 1024.0;
+    let buffer_size_max: f64 = 4.0 * 1024.0 * 1024.0;
+
+    let buffer_num_min = 1;
+    let buffer_num_max = 16;
+
+    let mut curr = buffer_size_min;
+    let pow2 = iter::repeat_with(|| {
+        let tmp = curr;
+        curr *= 2.0;
+        tmp as u64
+    })
+    .take((buffer_size_max.log2() - buffer_size_min.log2()) as usize)
+    .cartesian_product((buffer_num_min..buffer_num_max).step_by(2));
+
+    let mut results = HashMap::new();
+
+    for (size, num) in pow2 {
+        env::set_var("tapasco_dma__read_buffers", format!("{}", num));
+        env::set_var("tapasco_dma__write_buffers", format!("{}", num));
+        env::set_var("tapasco_dma__read_buffer_size", format!("{}", size));
+        env::set_var("tapasco_dma__write_buffer_size", format!("{}", size));
+        let tlkm = TLKM::new().context(TLKMInit {})?;
+        let devices = tlkm.device_enum().context(TLKMInit)?;
+        let mem = devices[0].default_memory().context(DeviceInit)?;
+
+        for chunk_pow in 10..20 {
+            let chunk = usize::pow(2, chunk_pow as u32);
+
+            let mut data = vec![0; chunk];
+
+            let a = mem
+                .allocator()
+                .lock()?
+                .allocate(chunk as u64)
+                .context(AllocatorError)?;
+
+            let now = Instant::now();
+            mem.dma().copy_to(&data, a).context(DMAError)?;
+            let done = now.elapsed().as_secs_f64();
+
+            results.insert((size, num, chunk, "r"), (chunk as f64) / done);
+
+            let now = Instant::now();
+            mem.dma().copy_from(a, &mut data).context(DMAError)?;
+            let done = now.elapsed().as_secs_f64();
+            results.insert((size, num, chunk, "w"), (chunk as f64) / done);
+
+            mem.allocator().lock()?.free(a).context(AllocatorError)?;
+        }
+    }
+
+    println!("{:?}", results);
+
+    Ok(())
+}
+
 fn transfer_to(
     pb: &ProgressBar,
     mem: Arc<OffchipMemory>,
@@ -395,34 +454,6 @@ fn transfer_from(
     }
 
     mem.allocator().lock()?.free(a).context(AllocatorError)?;
-
-    Ok(())
-}
-
-fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
-    let buffer_size_min: f64 = 4.0 * 1024.0;
-    let buffer_size_max: f64 = 4.0 * 1024.0 * 1024.0;
-
-    let buffer_num_min = 1;
-    let buffer_num_max = 16;
-
-    let mut curr = buffer_size_min;
-    let pow2 = iter::repeat_with(|| {
-        let tmp = curr;
-        curr *= 2.0;
-        tmp
-    })
-    .take((buffer_size_max.log2() - buffer_size_min.log2()) as usize)
-    .cartesian_product((buffer_num_min..buffer_num_max).step_by(2));
-
-    for (size, num) in pow2 {
-        env::set_var("tapasco_DMA__read_buffers", format!("{}", num));
-        env::set_var("tapasco_DMA__write_buffers", format!("{}", num));
-        env::set_var("tapasco_DMA__read_buffer_size", format!("{}", size));
-        env::set_var("tapasco_DMA__write_buffer_size", format!("{}", size));
-        let tlkm = TLKM::new().context(TLKMInit {})?;
-        let _devices = tlkm.device_enum().context(TLKMInit)?;
-    }
 
     Ok(())
 }
