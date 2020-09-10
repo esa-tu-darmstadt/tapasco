@@ -382,8 +382,10 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
         for chunk_pow in 10..chunk_max {
             let chunk = usize::pow(2, chunk_pow as u32);
 
+            println!("Chunk: {}", chunk);
+
             let repetitions_used = if chunk * repetitions > (256 * 1024 * 1024) {
-                (1024 * 1024 * 1024) / chunk
+                (256 * 1024 * 1024) / chunk
             } else {
                 repetitions
             };
