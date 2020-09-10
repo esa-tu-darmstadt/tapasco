@@ -362,6 +362,8 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
 
     let mut best_results = HashMap::new();
 
+    let repetitions = 100;
+
     for (size, num) in pow2 {
         env::set_var("tapasco_dma__read_buffers", format!("{}", num));
         env::set_var("tapasco_dma__write_buffers", format!("{}", num));
@@ -383,10 +385,12 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
                 .context(AllocatorError)?;
 
             let now = Instant::now();
-            mem.dma().copy_to(&data, a).context(DMAError)?;
+            for _ in 0..repetitions {
+                mem.dma().copy_to(&data, a).context(DMAError)?;
+            }
             let done = now.elapsed().as_secs_f64();
 
-            let bps = (chunk as f64) / done;
+            let bps = (chunk as f64) / (done / (repetitions as f64));
             results.insert((size, num, chunk, "r"), bps);
             let config = (chunk, "r");
             let r = (bps, size, num);
@@ -403,10 +407,12 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
             }
 
             let now = Instant::now();
-            mem.dma().copy_from(a, &mut data).context(DMAError)?;
+            for _ in 0..repetitions {
+                mem.dma().copy_from(a, &mut data).context(DMAError)?;
+            }
             let done = now.elapsed().as_secs_f64();
 
-            let bps = (chunk as f64) / done;
+            let bps = (chunk as f64) / (done / (repetitions as f64));
             results.insert((size, num, chunk, "w"), bps);
             let config = (chunk, "w");
             let r = (bps, size, num);
