@@ -86,15 +86,17 @@ impl UserSpaceDMA {
         read_interrupt: usize,
         write_interrupt: usize,
         memory: &Arc<MmapMut>,
+        read_buf_size: usize,
+        read_num_buf: usize,
+        write_buf_size: usize,
+        write_num_buf: usize,
     ) -> Result<UserSpaceDMA> {
-        let buf_size = 256 * 1024;
-        let num_buffers = 16;
         let write_map = Injector::new();
         let read_map = Injector::new();
 
-        for _ in 0..num_buffers {
+        for _ in 0..write_num_buf {
             let mut to_dev_buf = tlkm_dma_buffer_allocate {
-                size: buf_size,
+                size: write_buf_size,
                 from_device: false,
                 buffer_id: 42,
                 addr: 42,
@@ -109,18 +111,20 @@ impl UserSpaceDMA {
             write_map.push(DMABuffer {
                 id: to_dev_buf.buffer_id,
                 addr: to_dev_buf.addr,
-                size: buf_size,
+                size: write_buf_size,
                 mapped: unsafe {
                     MmapOptions::new()
-                        .len(buf_size)
+                        .len(write_buf_size)
                         .offset(((4 + to_dev_buf.buffer_id) * 4096) as u64)
                         .map_mut(&tlkm_file)
                         .context(FailedMMapDMA)?
                 },
             });
+        }
 
+        for _ in 0..read_num_buf {
             let mut from_dev_buf = tlkm_dma_buffer_allocate {
-                size: buf_size,
+                size: read_buf_size,
                 from_device: true,
                 buffer_id: 42,
                 addr: 42,
@@ -135,10 +139,10 @@ impl UserSpaceDMA {
             read_map.push(DMABuffer {
                 id: from_dev_buf.buffer_id,
                 addr: from_dev_buf.addr,
-                size: buf_size,
+                size: read_buf_size,
                 mapped: unsafe {
                     MmapOptions::new()
-                        .len(buf_size)
+                        .len(read_buf_size)
                         .offset(((4 + from_dev_buf.buffer_id) * 4096) as u64)
                         .map_mut(&tlkm_file)
                         .context(FailedMMapDMA)?

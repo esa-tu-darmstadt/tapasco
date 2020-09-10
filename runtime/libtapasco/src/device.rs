@@ -29,6 +29,7 @@ use crate::tlkm::tlkm_ioctl_create;
 use crate::tlkm::tlkm_ioctl_destroy;
 use crate::tlkm::tlkm_ioctl_device_cmd;
 use crate::tlkm::DeviceId;
+use config::Config;
 use memmap::MmapMut;
 use memmap::MmapOptions;
 use prost::Message;
@@ -94,6 +95,9 @@ pub enum Error {
 
     #[snafu(display("Unknown device type {}.", name))]
     DeviceType { name: String },
+
+    #[snafu(display("Could not parse configuration {}", source))]
+    ConfigError { source: config::ConfigError },
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -216,6 +220,7 @@ pub struct Device {
     offchip_memory: Vec<Arc<OffchipMemory>>,
     tlkm_file: Arc<File>,
     tlkm_device_file: Arc<File>,
+    settings: Arc<Config>,
 }
 
 impl Device {
@@ -232,6 +237,7 @@ impl Device {
         vendor: u32,
         product: u32,
         name: String,
+        settings: Arc<Config>,
     ) -> Result<Device> {
         trace!("Open driver device file.");
 
@@ -239,7 +245,13 @@ impl Device {
             OpenOptions::new()
                 .read(true)
                 .write(true)
-                .open(format!("/dev/tlkm_{:02}", id))
+                .open(format!(
+                    "{}{:02}",
+                    settings
+                        .get_str("TLKM.device_driver_file")
+                        .context(ConfigError)?,
+                    id
+                ))
                 .context(DeviceUnavailable { id: id })?,
         );
 
@@ -324,8 +336,26 @@ impl Device {
                     GenericAllocator::new(0, 4 * 1024 * 1024 * 1024, 64).context(AllocatorError)?,
                 )),
                 dma: Box::new(
-                    UserSpaceDMA::new(&tlkm_dma_file, dma_offset as usize, 0, 1, &platform)
-                        .context(DMAError)?,
+                    UserSpaceDMA::new(
+                        &tlkm_dma_file,
+                        dma_offset as usize,
+                        0,
+                        1,
+                        &platform,
+                        settings
+                            .get::<usize>("DMA.read_buffer_size")
+                            .context(ConfigError)?,
+                        settings
+                            .get::<usize>("DMA.read_buffers")
+                            .context(ConfigError)?,
+                        settings
+                            .get::<usize>("DMA.write_buffer_size")
+                            .context(ConfigError)?,
+                        settings
+                            .get::<usize>("DMA.write_buffers")
+                            .context(ConfigError)?,
+                    )
+                    .context(DMAError)?,
                 ),
             }));
         } else if name == "zynq" || name == "zynqmp" {
@@ -376,6 +406,7 @@ impl Device {
             offchip_memory: allocator,
             tlkm_file: tlkm_file,
             tlkm_device_file: tlkm_dma_file,
+            settings: settings,
         };
 
         device.change_access(tlkm_access::TlkmAccessMonitor)?;

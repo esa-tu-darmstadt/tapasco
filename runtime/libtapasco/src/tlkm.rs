@@ -20,6 +20,7 @@
 
 use crate::device::Error as DevError;
 use crate::device::{Device, DeviceAddress};
+use config::Config;
 use libc::c_char;
 use snafu::ResultExt;
 use std::ffi::CString;
@@ -52,6 +53,9 @@ pub enum Error {
 
     #[snafu(display("Could not find device {}", id))]
     DeviceNotFound { id: DeviceId },
+
+    #[snafu(display("Could not parse configuration {}", source))]
+    ConfigError { source: config::ConfigError },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -286,6 +290,7 @@ ioctl_readwrite!(
 
 pub struct TLKM {
     file: Arc<File>,
+    settings: Arc<Config>,
 }
 
 /// Helper structure for device information
@@ -311,15 +316,40 @@ impl Drop for TLKM {
 impl TLKM {
     /// Open the driver chardev.
     pub fn new() -> Result<TLKM> {
-        let path = PathBuf::from(r"/dev/tlkm");
+        let default_config = include_str!("../config/default.toml");
+        let mut settings = Config::default();
+
+        settings
+            .merge(config::File::from_str(
+                default_config,
+                config::FileFormat::Toml,
+            ))
+            .context(ConfigError)?;
+
+        settings
+            .merge(config::File::with_name("/etc/tapasco/TapascoConfig").required(false))
+            .context(ConfigError)?;
+        settings
+            .merge(config::File::with_name("TapascoConfig").required(false))
+            .context(ConfigError)?;
+        settings
+            .merge(config::Environment::with_prefix("tapasco"))
+            .context(ConfigError)?;
+
+        let path = PathBuf::from(
+            settings
+                .get_str("TLKM.main_driver_file")
+                .context(ConfigError)?,
+        );
         let file = OpenOptions::new()
             .read(true)
             .write(true)
-            .open("/dev/tlkm")
+            .open(&path)
             .context(DriverOpen { filename: path })?;
 
         Ok(TLKM {
             file: Arc::new(file),
+            settings: Arc::new(settings),
         })
     }
 
@@ -433,6 +463,7 @@ impl TLKM {
                     String::from_utf8_lossy(&devices.devs[x].name)
                         .trim_matches(char::from(0))
                         .to_string(),
+                    self.settings.clone(),
                 )
                 .context(DeviceError)?);
             }
@@ -473,6 +504,7 @@ impl TLKM {
                     String::from_utf8_lossy(&devices.devs[x].name)
                         .trim_matches(char::from(0))
                         .to_string(),
+                    self.settings.clone(),
                 )
                 .context(DeviceError)?,
             );

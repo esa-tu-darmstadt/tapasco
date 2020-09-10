@@ -26,6 +26,8 @@ crossbeam = "0.7.3"
 volatile = "0.2.6"
 bytes = "0.5.4"
 libc = "0.2.70"
+config = "0.10.1"
+serde = "1.0.115"
 
 [build-dependencies]
 prost-build = "0.6.1"

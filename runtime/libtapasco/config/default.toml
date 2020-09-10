@@ -1,0 +1,9 @@
+[DMA]
+read_buffers: 16
+read_buffer_size: 256 * 1024
+write_buffers: 16
+write_buffer_size: 256 * 1024
+
+[TLKM]
+main_driver_file = "/dev/tlkm"
+device_driver_file = "/dev/tlkm_"
