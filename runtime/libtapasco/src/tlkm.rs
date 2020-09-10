@@ -333,7 +333,7 @@ impl TLKM {
             .merge(config::File::with_name("TapascoConfig").required(false))
             .context(ConfigError)?;
         settings
-            .merge(config::Environment::with_prefix("tapasco"))
+            .merge(config::Environment::with_prefix("tapasco").separator("__"))
             .context(ConfigError)?;
 
         trace!("Using config: {:?}", settings);
