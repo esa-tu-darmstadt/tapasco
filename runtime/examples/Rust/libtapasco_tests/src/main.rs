@@ -355,7 +355,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
         curr *= 2.0;
         tmp as u64
     })
-    .take((buffer_size_max.log2() - buffer_size_min.log2()) as usize)
+    .take((buffer_size_max.log2() - buffer_size_min.log2()) as usize + 1)
     .cartesian_product(buffer_num_min..buffer_num_max);
 
     let mut results = HashMap::new();
@@ -379,7 +379,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
 
         println!("Testing {} x {}kB", num, size);
 
-        for chunk_pow in 10..chunk_max {
+        for chunk_pow in 10..(chunk_max + 1) {
             let chunk = usize::pow(2, chunk_pow as u32);
 
             println!("Chunk: {}", chunk);
