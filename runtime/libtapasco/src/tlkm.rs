@@ -340,7 +340,7 @@ impl TLKM {
 
         let path = PathBuf::from(
             settings
-                .get_str("TLKM.main_driver_file")
+                .get_str("tlkm.main_driver_file")
                 .context(ConfigError)?,
         );
         let file = OpenOptions::new()

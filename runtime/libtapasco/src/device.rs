@@ -248,7 +248,7 @@ impl Device {
                 .open(format!(
                     "{}{:02}",
                     settings
-                        .get_str("TLKM.device_driver_file")
+                        .get_str("tlkm.device_driver_file")
                         .context(ConfigError)?,
                     id
                 ))
@@ -343,16 +343,16 @@ impl Device {
                         1,
                         &platform,
                         settings
-                            .get::<usize>("DMA.read_buffer_size")
+                            .get::<usize>("dma.read_buffer_size")
                             .context(ConfigError)?,
                         settings
-                            .get::<usize>("DMA.read_buffers")
+                            .get::<usize>("dma.read_buffers")
                             .context(ConfigError)?,
                         settings
-                            .get::<usize>("DMA.write_buffer_size")
+                            .get::<usize>("dma.write_buffer_size")
                             .context(ConfigError)?,
                         settings
-                            .get::<usize>("DMA.write_buffers")
+                            .get::<usize>("dma.write_buffers")
                             .context(ConfigError)?,
                     )
                     .context(DMAError)?,
