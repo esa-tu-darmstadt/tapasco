@@ -360,6 +360,8 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
 
     let mut results = HashMap::new();
 
+    let mut best_results = HashMap::new();
+
     for (size, num) in pow2 {
         env::set_var("tapasco_dma__read_buffers", format!("{}", num));
         env::set_var("tapasco_dma__write_buffers", format!("{}", num));
@@ -384,18 +386,59 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
             mem.dma().copy_to(&data, a).context(DMAError)?;
             let done = now.elapsed().as_secs_f64();
 
-            results.insert((size, num, chunk, "r"), (chunk as f64) / done);
+            let bps = (chunk as f64) / done;
+            results.insert((size, num, chunk, "r"), bps);
+            let config = (chunk, "r");
+            let r = (bps, size, num);
+            match best_results.get_mut(&config) {
+                Some(k) => {
+                    let (bps_old, _, _) = *k;
+                    if bps_old < bps {
+                        *k = r;
+                    }
+                }
+                None => {
+                    best_results.insert(config, r);
+                }
+            }
 
             let now = Instant::now();
             mem.dma().copy_from(a, &mut data).context(DMAError)?;
             let done = now.elapsed().as_secs_f64();
-            results.insert((size, num, chunk, "w"), (chunk as f64) / done);
+
+            let bps = (chunk as f64) / done;
+            results.insert((size, num, chunk, "w"), bps);
+            let config = (chunk, "w");
+            let r = (bps, size, num);
+            match best_results.get_mut(&config) {
+                Some(k) => {
+                    let (bps_old, _, _) = *k;
+                    if bps_old < bps {
+                        *k = r;
+                    }
+                }
+                None => {
+                    best_results.insert(config, r);
+                }
+            }
 
             mem.allocator().lock()?.free(a).context(AllocatorError)?;
         }
     }
 
-    println!("{:?}", results);
+    println!("Best results:");
+    for ((chunk, dir), (bps, size, num)) in best_results {
+        let mbps = bps / (1024.0 * 1024.0);
+        if dir == "r" {
+            println!(
+                "{} kbps Read: {} -> Num: {}, Size: {}",
+                chunk / 1024,
+                mbps,
+                num,
+                size
+            );
+        }
+    }
 
     Ok(())
 }
