@@ -146,6 +146,7 @@ namespace eval hbm {
     set instance [current_bd_instance .]
     current_bd_instance $group
 
+    set clk_in [create_bd_pin -type "clk" -dir "I" "clk_in"]
     set hbm_ref_clk [create_bd_pin -type "clk" -dir "O" "hbm_ref_clk"]
     set axi_clk_0 [create_bd_pin -type "clk" -dir "O" "axi_clk_0"]
     set axi_clk_1 [create_bd_pin -type "clk" -dir "O" "axi_clk_1"]
@@ -157,16 +158,11 @@ namespace eval hbm {
     set axi_reset [create_bd_pin -type "rst" -dir "O" "axi_reset"]
     set mem_peripheral_aresetn [create_bd_pin -type "rst" -dir "I" "mem_peripheral_aresetn"]
 
-    set ibuf [tapasco::ip::create_util_buf ibuf]
-    set_property -dict [ list CONFIG.C_BUF_TYPE {IBUFDS}  ] $ibuf
-
-    connect_bd_intf_net $port [get_bd_intf_pins $ibuf/CLK_IN_D]
-
     set clk_wiz [tapasco::ip::create_clk_wiz clk_wiz]
     set_property -dict [list CONFIG.PRIM_SOURCE {No_buffer} CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {450} CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {450} CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {450} CONFIG.CLKOUT4_REQUESTED_OUT_FREQ {450} CONFIG.CLKOUT5_REQUESTED_OUT_FREQ {450} CONFIG.CLKOUT6_REQUESTED_OUT_FREQ {450} CONFIG.CLKOUT7_REQUESTED_OUT_FREQ {450} CONFIG.CLKOUT2_USED {true} CONFIG.CLKOUT3_USED {true} CONFIG.CLKOUT4_USED {true} CONFIG.CLKOUT5_USED {true} CONFIG.CLKOUT6_USED {true} CONFIG.CLKOUT7_USED {true} CONFIG.RESET_TYPE {ACTIVE_LOW} CONFIG.NUM_OUT_CLKS {7} CONFIG.RESET_PORT {resetn}] $clk_wiz
 
-    connect_bd_net [get_bd_pins $ibuf/IBUF_OUT] $hbm_ref_clk
-    connect_bd_net [get_bd_pins $ibuf/IBUF_OUT] [get_bd_pins $clk_wiz/clk_in1]
+    connect_bd_net $port $clk_in
+    connect_bd_net $clk_in [get_bd_pins $clk_wiz/clk_in1] [get_bd_pins hbm_ref_clk]
 
     connect_bd_net $mem_peripheral_aresetn [get_bd_pins $clk_wiz/resetn]
 
@@ -213,8 +209,14 @@ namespace eval hbm {
       set hbm [ create_bd_cell -type ip -vlnv xilinx.com:ip:hbm:1.0 "hbm_0" ]
       set_property -dict $hbm_properties $hbm
 
+
+      set ibuf [tapasco::ip::create_util_buf ibuf]
+      set_property -dict [ list CONFIG.C_BUF_TYPE {IBUFDS}  ] $ibuf
+
+      connect_bd_intf_net [get_bd_intf_ports /hbm_ref_clk_0] [get_bd_intf_pins $ibuf/CLK_IN_D]
+
       # create and connect clocking infrastructure for left stack
-      set clocking_0 [create_clocking "clocking_0" [get_bd_intf_ports /hbm_ref_clk_0]]
+      set clocking_0 [create_clocking "clocking_0" [get_bd_pins $ibuf/IBUF_OUT]]
       connect_clocking $clocking_0 $hbm 0 [expr min($numInterfaces,16)]
       connect_bd_net [get_bd_pins $clocking_0/hbm_ref_clk] [get_bd_pins $hbm/HBM_REF_CLK_0]
 
@@ -223,7 +225,7 @@ namespace eval hbm {
 
       if {$bothStacks} {
         # create and connect clocking infrastructure for right stack
-        set clocking_1 [create_clocking "clocking_1" [get_bd_intf_ports /hbm_ref_clk_0]]
+        set clocking_1 [create_clocking "clocking_1" [get_bd_pins $ibuf/IBUF_OUT]]
         connect_clocking $clocking_1 $hbm 16 [expr $numInterfaces - 16]
         connect_bd_net [get_bd_pins $clocking_1/hbm_ref_clk] [get_bd_pins $hbm/HBM_REF_CLK_1]
 
