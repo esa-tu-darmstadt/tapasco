@@ -21,6 +21,11 @@ namespace eval platform {
   set platform_dirname "AU280"
   set pcie_width "x16"
 
+  if { [::tapasco::vivado_is_newer "2020.1"] == 0 } {
+    puts "Vivado [version -short] is too old to support AU280."
+    exit 1
+  }
+
   source $::env(TAPASCO_HOME_TCL)/platform/pcie/pcie_base.tcl
 
   if {[tapasco::is_feature_enabled "HBM"]} {
