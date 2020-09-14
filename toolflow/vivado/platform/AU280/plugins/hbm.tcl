@@ -294,12 +294,12 @@ namespace eval hbm {
 
       # apply constraints for one or both stacks
       current_bd_instance /hbm
-      set constraints_l "$::env(TAPASCO_HOME_TCL)/platform/xupvvh/plugins/hbm_l.xdc"
+      set constraints_l "$::env(TAPASCO_HOME_TCL)/platform/AU280/plugins/hbm_l.xdc"
       read_xdc $constraints_l
       set_property PROCESSING_ORDER EARLY [get_files $constraints_l]
 
       if {$bothStacks} {
-        set constraints_r "$::env(TAPASCO_HOME_TCL)/platform/xupvvh/plugins/hbm_r.xdc"
+        set constraints_r "$::env(TAPASCO_HOME_TCL)/platform/AU280/plugins/hbm_r.xdc"
         read_xdc $constraints_r
         set_property PROCESSING_ORDER EARLY [get_files $constraints_r]
       }
