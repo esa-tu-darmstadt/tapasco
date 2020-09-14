@@ -80,7 +80,7 @@ namespace eval hbm {
 
   # Creates input ports for reference clock(s)
   proc create_refclk_ports {bothStacks} {
-      set hbm_ref_clk_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 hbm_ref_clk_0 ]
+      set hbm_ref_clk_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 hbm_ref_clk ]
       set_property CONFIG.FREQ_HZ 100000000 $hbm_ref_clk_0
   }
 
@@ -213,7 +213,7 @@ namespace eval hbm {
       set ibuf [tapasco::ip::create_util_buf ibuf]
       set_property -dict [ list CONFIG.C_BUF_TYPE {IBUFDS}  ] $ibuf
 
-      connect_bd_intf_net [get_bd_intf_ports /hbm_ref_clk_0] [get_bd_intf_pins $ibuf/CLK_IN_D]
+      connect_bd_intf_net [get_bd_intf_ports /hbm_ref_clk] [get_bd_intf_pins $ibuf/CLK_IN_D]
 
       # create and connect clocking infrastructure for left stack
       set clocking_0 [create_clocking "clocking_0" [get_bd_pins $ibuf/IBUF_OUT]]

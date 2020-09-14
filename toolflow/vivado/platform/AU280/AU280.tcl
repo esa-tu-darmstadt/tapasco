@@ -51,7 +51,7 @@ namespace eval platform {
 
     set mig [tapasco::ip::create_us_ddr ${name}]
     apply_bd_automation -rule xilinx.com:bd_rule:board -config { Board_Interface {ddr4_sdram_c1 ( DDR4 SDRAM C1 ) } Manual_Source {Auto}}  [get_bd_intf_pins $mig/C0_DDR4]
-    apply_bd_automation -rule xilinx.com:bd_rule:board -config { Board_Interface {sysclk1 ( 100 MHz System differential clock0 ) } Manual_Source {Auto}}  [get_bd_intf_pins $mig/C0_SYS_CLK]
+    apply_bd_automation -rule xilinx.com:bd_rule:board -config { Board_Interface {sysclk1 ( 100 MHz System differential clock1 ) } Manual_Source {Auto}}  [get_bd_intf_pins $mig/C0_SYS_CLK]
     apply_bd_automation -rule xilinx.com:bd_rule:board -config { Board_Interface {resetn ( FPGA Resetn ) } Manual_Source {New External Port (ACTIVE_HIGH)}}  [get_bd_pins $mig/sys_rst]
 
 
