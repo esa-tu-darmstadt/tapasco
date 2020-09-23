@@ -258,7 +258,8 @@ namespace eval platform {
     report_utilization -file utilization.txt
     report_utilization -file utilization_userlogic.txt -cells [get_cells -hierarchical -filter {NAME =~ *target_ip_*}]
     set wns [tapasco::get_wns_from_timing_report "timing.txt"]
-    if {$wns >= -0.3} {
+    set wpws [tapasco::get_wpws_from_timing_report "timing.txt"]
+    if {$wns >= -0.3 && $wpws >= 0.0} {
       variable disable_write_bitstream
       if {[info exists disable_write_bitstream] == 0 || [string is false $disable_write_bitstream]} {
         write_bitstream -force "${bitstreamname}.bit"
@@ -266,7 +267,7 @@ namespace eval platform {
         tapasco::call_plugins "post-bitstream"
       }
     } else {
-      error "timing failure, WNS: $wns"
+      error "timing failure, WNS: $wns, WPWS: $wpws"
     }
   }
 
