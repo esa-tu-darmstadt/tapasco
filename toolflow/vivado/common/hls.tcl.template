@@ -20,6 +20,8 @@
 # load common code etc.
 @@HEADER@@
 
+source $::env(TAPASCO_HOME_TCL)/common/scripts/Vivado_init.tcl
+
 # if set, co-simulation will be performed
 # This flag is hardcoded to 0 for now until Vivado fixes
 # cosimulation for current linux distributions

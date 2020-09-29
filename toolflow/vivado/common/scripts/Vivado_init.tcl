@@ -18,3 +18,4 @@
 #
 
 enable_beta_device "*xczu9eg*"
+enable_beta_device "xcvc*"
