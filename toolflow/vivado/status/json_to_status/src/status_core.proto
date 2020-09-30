@@ -8,6 +8,7 @@ message PE {
     uint64 offset = 3;
     uint64 size = 4;
     MemoryArea local_memory = 5;
+    Platform debug = 6;
 }
 
 message Platform {

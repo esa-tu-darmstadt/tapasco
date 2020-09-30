@@ -459,8 +459,20 @@ namespace eval ::tapasco::ip {
                          CONFIG.Coe_File $outfile] [get_bd_cells -filter "NAME == ${name}_base"]
   }
 
+  set debugable_pes [list]
+
+  namespace export add_debug_to_pe
+  proc add_debug_to_pe {pe_id name offset size} {
+    variable debugable_pes
+    puts "Adding debug functionality to PE $pe_id"
+    puts "$name @ $offset -> $offset + $size"
+    lappend debugable_pes [list $pe_id $name $offset $size]
+  }
+
   # Generate JSON configuration for the status core.
   proc make_status_config_json {} {
+    variable debugable_pes
+
     platform::addressmap::reset
     puts "  getting address map ..."
     set addr [platform::get_address_map [platform::get_pe_base_address]]
@@ -491,6 +503,16 @@ namespace eval ::tapasco::ip {
       }
     }
     puts "  finished composition map, composing JSON ..."
+
+    set debug [list]
+    foreach t $debugable_pes {
+        puts $t
+        set pe_id [lindex $t 0]
+        set name [json::write string [lindex $t 1]]
+        set offset [json::write string [format "0x%016x" [lindex $t 2]]]
+        set size [json::write string [format "0x%016x" [lindex $t 3]]]
+        lappend debug [json::write object "PE_ID" $pe_id "Name" $name "Offset" $offset "Size" $size]
+    }
 
     # get platform component base addresses
     set pc_bases [list]
@@ -525,6 +547,7 @@ namespace eval ::tapasco::ip {
                                        "Composition" [json::write array {*}$slots]] \
         "Platform" [json::write object "Base" [json::write string [format "0x%016x" [::platform::get_platform_base_address]]] \
                                        "Components" [json::write array {*}$pc_bases]] \
+      "Debug" [json::write array {*}$debug] \
     ]
   }
 }
