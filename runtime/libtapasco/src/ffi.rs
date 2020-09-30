@@ -35,6 +35,7 @@ use core::cell::RefCell;
 use libc::c_char;
 use libc::c_int;
 use snafu::ResultExt;
+use std::collections::HashMap;
 use std::ptr;
 use std::slice;
 use std::sync::Arc;
@@ -281,7 +282,7 @@ pub extern "C" fn tapasco_tlkm_device_alloc(t: *const TLKM, id: DeviceId) -> *mu
     }
 
     let tl = unsafe { &*t };
-    match tl.device_alloc(id).context(TLKMError) {
+    match tl.device_alloc(id, &HashMap::new()).context(TLKMError) {
         Ok(x) => std::boxed::Box::<Device>::into_raw(Box::new(x)),
         Err(e) => {
             update_last_error(e);

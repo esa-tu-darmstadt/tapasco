@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use crate::debug::DebugControl;
 use crate::device::DataTransferPrealloc;
 use crate::device::DeviceAddress;
 use crate::device::DeviceSize;
@@ -35,7 +36,6 @@ use std::fs::File;
 use std::os::unix::io::RawFd;
 use std::os::unix::prelude::*;
 use std::sync::Arc;
-
 use volatile::Volatile;
 
 #[derive(Debug, Snafu)]
@@ -69,6 +69,12 @@ pub enum Error {
 
     #[snafu(display("Could not register eventfd with driver: {}", source))]
     ErrorEventFDRegister { source: nix::Error },
+
+    #[snafu(display("Failed to enable debug for PE {}: {}", id, source))]
+    DebugError {
+        source: crate::debug::Error,
+        id: usize,
+    },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -100,6 +106,8 @@ pub struct PE {
     local_memory: Option<Arc<OffchipMemory>>,
 
     interrupt: RawFd,
+
+    debug: Box<dyn DebugControl + Sync + Send>,
 }
 
 impl Drop for PE {
@@ -118,6 +126,7 @@ impl PE {
         memory: Arc<MmapMut>,
         completion: &File,
         interrupt_id: usize,
+        debug: Box<dyn DebugControl + Sync + Send>,
     ) -> Result<PE> {
         let fd = eventfd(0, EfdFlags::EFD_NONBLOCK).context(ErrorEventFD)?;
         let mut ioctl_fd = tlkm_register_interrupt {
@@ -141,6 +150,7 @@ impl PE {
             memory: memory,
             local_memory: None,
             interrupt: fd,
+            debug: debug,
         })
     }
 
@@ -317,5 +327,11 @@ impl PE {
 
     fn get_copyback(&mut self) -> Option<Vec<CopyBack>> {
         self.copy_back.take()
+    }
+
+    pub fn enable_debug(&mut self) -> Result<()> {
+        self.debug
+            .enable_debug()
+            .context(DebugError { id: self.id })
     }
 }

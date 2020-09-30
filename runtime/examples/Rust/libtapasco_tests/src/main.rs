@@ -16,6 +16,7 @@ use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use crossbeam::thread;
 use indicatif::{HumanBytes, ProgressBar, ProgressStyle};
 use snafu::{ErrorCompat, ResultExt, Snafu};
+use std::collections::HashMap;
 use std::io;
 use std::io::Write;
 use std::sync::{Arc, Mutex};
@@ -73,7 +74,7 @@ fn print_version(_: &ArgMatches) -> Result<()> {
 
 fn enum_devices(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit {})?;
     println!("Got {} devices.", devices.len());
     for x in devices {
         println!(
@@ -89,11 +90,11 @@ fn enum_devices(_: &ArgMatches) -> Result<()> {
 
 fn allocate_devices(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let mut devices = tlkm.device_enum().context(TLKMInit {})?;
+    let mut devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit {})?;
 
     for x in devices.iter_mut() {
         println!("Allocating ID {} exclusively.", x.id());
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
     }
 
@@ -102,7 +103,7 @@ fn allocate_devices(_: &ArgMatches) -> Result<()> {
 
 fn print_status(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for x in devices {
         println!("Device {}", x.id());
         println!("{:?}", x.status());
@@ -112,9 +113,9 @@ fn print_status(_: &ArgMatches) -> Result<()> {
 
 fn run_arrayinit(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for mut x in devices {
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
         let mut pe = x.acquire_pe(11).context(DeviceInit)?;
 
@@ -125,6 +126,7 @@ fn run_arrayinit(_: &ArgMatches) -> Result<()> {
                 from_device: true,
                 to_device: false,
                 memory: x.default_memory().context(DeviceInit)?,
+                fixed: None,
             },
         )])
         .context(JobError)?;
@@ -136,9 +138,9 @@ fn run_arrayinit(_: &ArgMatches) -> Result<()> {
 
 fn run_counter(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for mut x in devices {
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
         let mut pes = Vec::new();
         pes.push(x.acquire_pe(14).context(DeviceInit)?);
@@ -163,9 +165,9 @@ fn run_counter(_: &ArgMatches) -> Result<()> {
 
 fn benchmark_counter(m: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for mut x in devices.into_iter() {
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit)?;
         let x_l = Arc::new(x);
         let iterations = value_t!(m, "iterations", usize).unwrap();
@@ -231,12 +233,12 @@ concatenate!(
 
 fn latency_benchmark(m: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for mut x in devices {
         println!("Evaluating device {:?}", x.id());
         let design_mhz = x.design_frequency_mhz().context(DeviceInit)?;
         println!("Counter running with {:?} MHz.", design_mhz);
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
         let mut iterations = value_t!(m, "iterations", usize).unwrap();
         let max_step = value_t!(m, "steps", u32).unwrap();
@@ -281,10 +283,10 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
 
 fn test_copy(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for mut x in devices {
         println!("Evaluating device {}", x.id());
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
 
         let mem = x.default_memory().context(DeviceInit)?;
@@ -389,9 +391,9 @@ fn transfer_from(
 
 fn benchmark_copy(m: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for mut x in devices.into_iter() {
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit)?;
         let x_l = Arc::new(x);
         let max_size_power = value_t!(m, "max_bytes", usize).unwrap();
@@ -509,9 +511,9 @@ fn benchmark_copy(m: &ArgMatches) -> Result<()> {
 
 fn test_localmem(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for mut x in devices {
-        x.create(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
         let mut pe = x.acquire_pe(42).context(DeviceInit)?;
         pe.start(vec![tapasco::device::PEParameter::DataTransferLocal(
@@ -520,6 +522,7 @@ fn test_localmem(_: &ArgMatches) -> Result<()> {
                 free: true,
                 from_device: true,
                 to_device: true,
+                fixed: None,
             },
         )])
         .context(JobError)?;

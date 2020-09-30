@@ -19,6 +19,7 @@
  */
 
 use crate::allocator::{Allocator, DriverAllocator, GenericAllocator};
+use crate::debug::DebugGenerator;
 use crate::dma::{DMAControl, DirectDMA, DriverDMA};
 use crate::job::Job;
 use crate::pe::PEId;
@@ -32,6 +33,7 @@ use memmap::MmapMut;
 use memmap::MmapOptions;
 use prost::Message;
 use snafu::ResultExt;
+use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -225,6 +227,7 @@ impl Device {
         vendor: u32,
         product: u32,
         name: String,
+        debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
     ) -> Result<Device> {
         trace!("Open driver device file.");
 
@@ -343,8 +346,14 @@ impl Device {
 
         trace!("Initialize PE scheduler.");
         let scheduler = Arc::new(
-            Scheduler::new(&s.pe, &arch, pe_local_memories, &tlkm_dma_file)
-                .context(SchedulerError)?,
+            Scheduler::new(
+                &s.pe,
+                &arch,
+                pe_local_memories,
+                &tlkm_dma_file,
+                &debug_impls,
+            )
+            .context(SchedulerError)?,
         );
 
         trace!("Device creation completed.");

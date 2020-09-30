@@ -18,6 +18,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use crate::debug::UnsupportedDebugGenerator;
+use crate::debug::{DebugGenerator, NonDebugGenerator};
 use crate::device::OffchipMemory;
 use crate::pe::PEId;
 use crate::pe::PE;
@@ -44,6 +46,9 @@ pub enum Error {
 
     #[snafu(display("PE Error: {}", source))]
     PEError { source: crate::pe::Error },
+
+    #[snafu(display("Debug Error: {}", source))]
+    DebugError { source: crate::debug::Error },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -60,6 +65,7 @@ impl Scheduler {
         mmap: &Arc<MmapMut>,
         mut local_memories: VecDeque<Arc<OffchipMemory>>,
         completion: &File,
+        debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
     ) -> Result<Scheduler> {
         let pe_hashed: Map<PEId, Injector<PE>> = Map::new();
         let mut pes_overview: HashMap<PEId, usize> = HashMap::new();
@@ -67,6 +73,23 @@ impl Scheduler {
         let mut interrupt_id = 0;
 
         for (i, pe) in pes.iter().enumerate() {
+            let debug = match &pe.debug {
+                Some(x) => match debug_impls.get(&x.name) {
+                    Some(y) => y
+                        .new(mmap, x.name.clone(), x.offset, x.size)
+                        .context(DebugError)?,
+                    None => {
+                        let d = UnsupportedDebugGenerator {};
+                        d.new(mmap, x.name.clone(), 0, 0).context(DebugError)?
+                    }
+                },
+                None => {
+                    let d = NonDebugGenerator {};
+                    d.new(mmap, "Unused".to_string(), 0, 0)
+                        .context(DebugError)?
+                }
+            };
+
             let mut the_pe = PE::new(
                 i,
                 pe.id as PEId,
@@ -76,6 +99,7 @@ impl Scheduler {
                 mmap.clone(),
                 &completion,
                 interrupt_id,
+                debug,
             )
             .context(PEError)?;
 
