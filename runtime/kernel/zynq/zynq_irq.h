@@ -28,10 +28,13 @@
 #include "tlkm_control.h"
 #include "zynq_device.h"
 
-int zynq_irq_init(struct zynq_device *zynq_dev);
-void zynq_irq_exit(struct zynq_device *zynq_dev);
+void zynq_irq_exit(struct tlkm_device *dev);
 
-int zynq_irq_request_platform_irq(struct tlkm_device *dev, int irq_no);
-void zynq_irq_release_platform_irq(struct tlkm_device *dev, int irq_no);
+int zynq_irq_init(struct tlkm_device *dev, struct list_head *interrupts);
+
+int zynq_irq_request_platform_irq(struct tlkm_device *dev,
+				  struct tlkm_irq_mapping *mapping);
+void zynq_irq_release_platform_irq(struct tlkm_device *dev,
+				   struct tlkm_irq_mapping *mapping);
 
 #endif /* ZYNQ_IRQ_H__ */

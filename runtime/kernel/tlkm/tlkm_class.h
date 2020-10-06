@@ -23,6 +23,7 @@
 #include <linux/interrupt.h>
 #include "tlkm_types.h"
 #include "tlkm_platform.h"
+#include "tlkm_control.h"
 
 #define TLKM_CLASS_NAME_LEN 30
 
@@ -41,8 +42,13 @@ typedef void (*tlkm_class_miscdev_close_f)(struct tlkm_device *);
 
 typedef long (*tlkm_device_ioctl_f)(struct tlkm_device *, unsigned int ioctl,
 				    unsigned long data);
-typedef int (*tlkm_device_pirq_f)(struct tlkm_device *, int irq_no);
-typedef void (*tlkm_device_rirq_f)(struct tlkm_device *, int irq_no);
+typedef int (*tlkm_device_init_irq_f)(struct tlkm_device *,
+				      struct list_head *interrupts);
+typedef void (*tlkm_device_exit_irq_f)(struct tlkm_device *);
+typedef int (*tlkm_device_pirq_f)(struct tlkm_device *,
+				  struct tlkm_irq_mapping *mapping);
+typedef void (*tlkm_device_rirq_f)(struct tlkm_device *,
+				   struct tlkm_irq_mapping *mapping);
 
 typedef void *(*tlkm_class_addr2map_f)(struct tlkm_device *dev,
 				       dev_addr_t const addr);
@@ -59,9 +65,11 @@ struct tlkm_class {
 	tlkm_class_remove_f remove;
 	tlkm_class_addr2map_f addr2map;
 	tlkm_device_ioctl_f ioctl; /* ioctl implementation */
-	tlkm_device_pirq_f pirq; /* request platform IRQ */
-	tlkm_device_rirq_f rirq; /* release platform IRQ */
-	size_t npirqs; /* number of platform interrupts */
+	tlkm_device_init_irq_f init_interrupts;
+	tlkm_device_exit_irq_f exit_interrupts;
+	tlkm_device_pirq_f pirq;
+	tlkm_device_rirq_f rirq;
+	size_t number_of_interrupts;
 	struct platform platform; /* register space definitions */
 	void *private_data;
 };

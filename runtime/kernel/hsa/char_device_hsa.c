@@ -583,7 +583,7 @@ void char_hsa_unregister(void)
 	if (dev.dev) {
 		hsa_deinit();
 
-		pcie_irqs_release_platform_irq(dev.dev, 2);
+		//		pcie_irqs_release_platform_irq(dev.dev, 2);
 
 		cdev_del(&dev.cdev);
 		device_destroy(dev.dev_class, MKDEV(TLKM_HSA_MAJOR, 0));

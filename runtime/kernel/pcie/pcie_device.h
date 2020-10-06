@@ -76,12 +76,9 @@ struct tlkm_pcie_device {
 	u64 phy_addr_bar0;
 	u64 phy_len_bar0;
 	u64 phy_flags_bar0;
-	int irq_mapping[REQUIRED_INTERRUPTS];
 	int link_width;
 	int link_speed;
-	struct work_struct irq_work[TLKM_SLOT_INTERRUPTS];
 	struct dma_buf dma_buffer[TLKM_PCIE_NUM_DMA_BUFFERS];
-	struct pcie_irq_mapping irq_handler_helper[TLKM_PLATFORM_INTERRUPTS];
 	volatile uint32_t *ack_register;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
 	struct msix_entry msix_entries[REQUIRED_INTERRUPTS];

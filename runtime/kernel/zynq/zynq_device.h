@@ -24,8 +24,21 @@
 #include "tlkm_class.h"
 #include "tlkm_device.h"
 
+#define ZYNQ_MAX_NUM_INTCS 4
+
+struct zynq_irq_mapping {
+	struct list_head *mapping_base;
+	struct tlkm_irq_mapping *mapping;
+	u32 *base;
+	u32 start;
+	u32 id;
+};
+
 struct zynq_device {
 	struct tlkm_device *parent;
+	struct list_head *interrupts;
+	struct zynq_irq_mapping intc_bases[ZYNQ_MAX_NUM_INTCS];
+	int requested_irq_num;
 };
 
 int zynq_device_init(struct tlkm_device *dev, void *data);

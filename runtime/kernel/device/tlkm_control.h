@@ -32,11 +32,17 @@
 
 #define TLKM_CONTROL_BUFFER_SZ 1024U
 
+struct tlkm_irq_mapping {
+	struct list_head list;
+	int irq_no;
+	struct tlkm_device *dev;
+	struct eventfd_ctx *eventfd;
+};
+
 struct tlkm_control {
 	dev_id_t dev_id;
 	struct miscdevice miscdev;
-	struct eventfd_ctx *user_interrupts[PLATFORM_NUM_SLOTS];
-	struct eventfd_ctx *platform_interrupts[TLKM_PLATFORM_INTERRUPTS];
+	struct list_head interrupts;
 };
 
 ssize_t tlkm_control_signal_slot_interrupt(struct tlkm_control *pctl,

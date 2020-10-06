@@ -17,213 +17,217 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-//
-// Copyright (C) 2014-2018 Jens Korinth, TU Darmstadt
-//
-// This file is part of Tapasco (TaPaSCo).
-//
-// Tapasco is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// Tapasco is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with Tapasco.  If not, see <http://www.gnu.org/licenses/>.
-//
-//! @authors	J. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
-//!
+
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/sched.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
+#include <linux/eventfd.h>
 #include "tlkm_logging.h"
 #include "tlkm_slots.h"
 #include "zynq_irq.h"
 
-#define ZYNQ_MAX_NUM_INTCS 4
+#define IRQS_PER_CONTROLLER 32
 
-#define INTERRUPT_CONTROLLERS                                                  \
-	_INTC(0)                                                               \
-	_INTC(1)                                                               \
-	_INTC(2)                                                               \
-	_INTC(3)
-
-#define _INTC(N) 1 +
-#if (INTERRUPT_CONTROLLERS 0 != ZYNQ_MAX_NUM_INTCS)
-#error "when changing maximum number of interrupt controllers, you must change " \
-"both the INTERRUPT_CONTROLLERS and ZYNQ_MAX_NUM_INTCS macros"
-#endif
-#undef _INTC
-
-#ifndef STR
-#define STR(v) #v
-#endif
-
-typedef struct {
-	u32 base;
-} intc_t;
-
-static struct {
-	struct tlkm_control *ctrl;
-	int requested_irq_num;
-#define _INTC(N) intc_t intc_##N;
-	INTERRUPT_CONTROLLERS
-#undef _INTC
-} zynq_irq;
-
-// one work struct per slot: ack's that slot's interrupt only
-static struct work_struct zynq_irq_work_slot[PLATFORM_NUM_SLOTS];
-
-#define _SLOT(N)                                                               \
-	static void zynq_irq_work_slot_##N##_func(struct work_struct *work)    \
-	{                                                                      \
-		LOG(TLKM_LF_IRQ, "slot interrupt #%d", N);                     \
-		tlkm_control_signal_slot_interrupt(zynq_irq.ctrl, N);          \
-	}
-TLKM_SLOTS
-#undef _SLOT
-
-static void init_work_structs(void)
+static irqreturn_t zynq_irq_handler(int irq, void *data)
 {
-#define _SLOT(N)                                                               \
-	INIT_WORK(&zynq_irq_work_slot[N], zynq_irq_work_slot_##N##_func);
-	TLKM_SLOTS
-#undef _SLOT
+	struct zynq_irq_mapping *mapping = (struct zynq_irq_mapping *)data;
+	struct tlkm_irq_mapping *m_start = mapping->mapping;
+
+	u32 status;
+	u32 s_off = mapping->start;
+
+	u32 *intc = mapping->base;
+
+	if (!m_start) {
+		LOG(TLKM_LF_IRQ, "IRQ %d not initialized", mapping->id);
+		return IRQ_HANDLED;
+	}
+
+	while ((status = ioread32(intc))) {
+		iowrite32(status, intc + (0x0c >> 2));
+		do {
+			u32 slot = __builtin_ffs(status) - 1;
+			slot += s_off;
+
+			while (m_start->irq_no < slot) {
+				if (m_start->list.next !=
+				    mapping->mapping_base) {
+					m_start = list_entry(
+						m_start->list.next,
+						struct tlkm_irq_mapping, list);
+				} else {
+					break;
+				}
+			}
+			if (m_start->irq_no == slot) {
+				eventfd_signal(m_start->eventfd, 1);
+			} else {
+				// Got interrupt for unregistered interrupt
+				LOG(TLKM_LF_IRQ,
+				    "Got interrupt %d which is not registered",
+				    slot);
+			}
+
+			status ^= (1U << slot);
+		} while (status);
+	}
+	return IRQ_HANDLED;
 }
 
-#define _INTC(N)                                                                  \
-	static irqreturn_t zynq_irq_handler_##N(int irq, void *dev_id)            \
-	{                                                                         \
-		u32 status;                                                       \
-		static const u32 s_off = (N * 32U);                               \
-		struct zynq_device *zynq_dev = (struct zynq_device *)dev_id;      \
-		u32 *intc = (u32 *)zynq_dev->parent->mmap.plat +                  \
-			    zynq_irq.intc_##N.base;                               \
-		while ((status = ioread32(intc))) {                               \
-			iowrite32(status, intc + (0x0c >> 2));                    \
-			do {                                                      \
-				const u32 slot = __builtin_ffs(status) - 1;       \
-				const int ok = schedule_work(                     \
-					&zynq_irq_work_slot[s_off + slot]);       \
-				if (!ok)                                          \
-					tlkm_perfc_irq_error_already_pending_inc( \
-						zynq_dev->parent->dev_id);        \
-				tlkm_perfc_total_irqs_inc(                        \
-					zynq_dev->parent->dev_id);                \
-				status ^= (1U << slot);                           \
-			} while (status);                                         \
-		}                                                                 \
-		return IRQ_HANDLED;                                               \
-	}
-INTERRUPT_CONTROLLERS
-#undef _INTC
-
-static void zynq_init_intc(struct zynq_device *zynq_dev, u32 const base)
+static void zynq_init_intc(struct zynq_device *zynq_dev, u32 *intc)
 {
-	u32 *intc = (u32 *)zynq_dev->parent->mmap.plat + base;
 	iowrite32((u32)-1, intc + (0x08 >> 2));
 	iowrite32((u32)3, intc + (0x1c >> 2));
 	ioread32(intc);
 }
 
-int zynq_irq_init(struct zynq_device *zynq_dev)
+void zynq_irq_exit(struct tlkm_device *dev)
 {
-	int retval = 0, rirq = 0;
-	u32 base;
-	zynq_irq.requested_irq_num = 0;
-
-	init_work_structs();
-#define _INTC(N)                                                               \
-	rirq = irq_of_parse_and_map(of_find_node_by_name(NULL, "tapasco"),     \
-				    zynq_irq.requested_irq_num);               \
-	base = tlkm_status_get_component_base(zynq_dev->parent,                \
-					      "PLATFORM_COMPONENT_INTC" #N);   \
-	LOG(TLKM_LF_IRQ, "INTC%d base is %d", N, base);                        \
-	if (base != -1) {                                                      \
-		zynq_irq.intc_##N.base = (base >> 2);                          \
-		LOG(TLKM_LF_IRQ, "controller for IRQ #%d at 0x%08llx", rirq,   \
-		    (zynq_irq.intc_##N.base << 2) +                            \
-			    zynq_dev->parent->status.platform_base.base);      \
-		zynq_init_intc(zynq_dev, zynq_irq.intc_##N.base);              \
-		LOG(TLKM_LF_IRQ, "registering IRQ #%d", rirq);                 \
-		retval = request_irq(rirq, zynq_irq_handler_##N,               \
-				     IRQF_EARLY_RESUME,                        \
-				     "tapasco_zynq_" STR(N), zynq_dev);        \
-		++zynq_irq.requested_irq_num;                                  \
-		if (retval) {                                                  \
-			ERR("could not register IRQ #%d!", rirq);              \
-			goto err;                                              \
-		}                                                              \
+	struct zynq_device *zdev = (struct zynq_device *)dev->private_data;
+	int rirq = 0;
+	const char *namebuf;
+	while (zdev->requested_irq_num) {
+		--zdev->requested_irq_num;
+		rirq = irq_of_parse_and_map(of_find_node_by_name(NULL,
+								 "tapasco"),
+					    zdev->requested_irq_num);
+		LOG(TLKM_LF_IRQ, "releasing IRQ #%d", rirq);
+		disable_irq(rirq);
+		namebuf = free_irq(rirq,
+				   &zdev->intc_bases[zdev->requested_irq_num]);
+		if (namebuf)
+			kfree(namebuf);
 	}
-	INTERRUPT_CONTROLLERS
-#undef _X
-	zynq_irq.ctrl = zynq_dev->parent->ctrl;
+}
 
+int zynq_irq_init(struct tlkm_device *dev, struct list_head *interrupts)
+{
+	struct zynq_device *zdev = (struct zynq_device *)dev->private_data;
+	int retval = 0, rirq = 0;
+	int i = 0;
+	char buffer[128];
+	char *namebuf;
+	dev_addr_t offset;
+	zdev->requested_irq_num = 0;
+
+	for (i = 0; i < ZYNQ_MAX_NUM_INTCS; ++i) {
+		rirq = irq_of_parse_and_map(of_find_node_by_name(NULL,
+								 "tapasco"),
+					    zdev->requested_irq_num);
+		snprintf(buffer, 128, "PLATFORM_COMPONENT_INTC%d", i);
+		offset = tlkm_status_get_component_base(dev, buffer);
+		LOG(TLKM_LF_IRQ, "INTC%d offset is 0x%lx", i, offset);
+
+		if (offset != -1) {
+			zdev->intc_bases[i].base =
+				(u32 *)((uintptr_t)dev->mmap.plat +
+					(uintptr_t)offset);
+			zdev->intc_bases[i].mapping_base = interrupts;
+			zdev->intc_bases[i].mapping = 0;
+			zdev->intc_bases[i].start = i * IRQS_PER_CONTROLLER;
+			zdev->intc_bases[i].id = i;
+
+			LOG(TLKM_LF_IRQ, "controller for IRQ #%d at 0x%p", rirq,
+			    zdev->intc_bases[i].base);
+			zynq_init_intc(zdev, zdev->intc_bases[i].base);
+			LOG(TLKM_LF_IRQ, "registering IRQ #%d", rirq);
+
+			namebuf = kzalloc(128, GFP_KERNEL);
+			snprintf(namebuf, 128, "tapasco_zynq_%d", i);
+
+			retval = request_irq(rirq, zynq_irq_handler,
+					     IRQF_EARLY_RESUME, namebuf,
+					     &zdev->intc_bases[i]);
+
+			++zdev->requested_irq_num;
+
+			if (retval) {
+				ERR("could not register IRQ #%d!", rirq);
+				goto err;
+			}
+		}
+	}
 	return retval;
 
 err:
-	while (--zynq_irq.requested_irq_num >= 0) {
+	while (--zdev->requested_irq_num >= 0) {
 		disable_irq(rirq);
-		free_irq(rirq, zynq_dev);
+		free_irq(rirq, &zdev->intc_bases[zdev->requested_irq_num]);
 	}
 	return retval;
 }
 
-void zynq_irq_exit(struct zynq_device *zynq_dev)
+int zynq_irq_request_platform_irq(struct tlkm_device *dev,
+				  struct tlkm_irq_mapping *mapping)
 {
-	int rirq = 0;
-	while (zynq_irq.requested_irq_num) {
-		--zynq_irq.requested_irq_num;
-		rirq = irq_of_parse_and_map(of_find_node_by_name(NULL,
-								 "tapasco"),
-					    zynq_irq.requested_irq_num);
-		LOG(TLKM_LF_IRQ, "releasing IRQ #%d", rirq);
-		disable_irq(rirq);
-		free_irq(rirq, zynq_dev);
-	}
-}
+	struct zynq_device *zdev = (struct zynq_device *)dev->private_data;
+	int irq_no_request = mapping->irq_no;
+	int irq_controller = irq_no_request / IRQS_PER_CONTROLLER;
 
-int zynq_irq_request_platform_irq(struct tlkm_device *dev, int irq_no)
-{
-	// TODO: FIX ZYNQ IRQS
-	/*int err = 0;
-	int rirq = irq_of_parse_and_map(of_find_node_by_name(NULL, "tapasco"),
-					irq_no);
-	if (irq_no >= dev->cls->npirqs) {
-		DEVERR(dev->dev_id,
-		       "invalid platform interrupt number: %d (must be < %zd",
-		       irq_no, dev->cls->npirqs);
-		return -ENXIO;
+	LOG(TLKM_LF_IRQ, "Got request to add IRQ %d belonging to controller %d",
+	    irq_no_request, irq_controller);
+
+	if (!zdev->intc_bases[irq_controller].mapping) {
+		LOG(TLKM_LF_IRQ, "Added first mapping for controller %d",
+		    irq_controller);
+		zdev->intc_bases[irq_controller].mapping = mapping;
+	} else if (zdev->intc_bases[irq_controller].mapping->irq_no >
+		   mapping->irq_no) {
+		zdev->intc_bases[irq_controller].mapping = mapping;
+		LOG(TLKM_LF_IRQ, "Replaced previous mapping for controller %d",
+		    irq_controller);
+	} else {
+		LOG(TLKM_LF_IRQ, "Mapping already part of mapping %d",
+		    irq_controller);
 	}
-	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "requesting platform irq #%d", irq_no);
-	if ((err = request_irq(rirq, h, IRQF_EARLY_RESUME,
-			       "tapasco_zynq_platform", data))) {
-		DEVERR(dev->dev_id, "could not request interrupt #%d: %d", rirq,
-		       err);
-		return err;
-	}
-	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "registered platform irq #%d", irq_no);*/
+
 	return 0;
 }
 
-void zynq_irq_release_platform_irq(struct tlkm_device *dev, int irq_no)
+void zynq_irq_release_platform_irq(struct tlkm_device *dev,
+				   struct tlkm_irq_mapping *mapping)
 {
-	int rirq = irq_of_parse_and_map(of_find_node_by_name(NULL, "tapasco"),
-					irq_no);
 	struct zynq_device *zdev = (struct zynq_device *)dev->private_data;
-	if (irq_no >= dev->cls->npirqs) {
-		DEVERR(dev->dev_id,
-		       "invalid platform interrupt number: %d (must be < %zd)",
-		       irq_no, dev->cls->npirqs);
-		return;
+	int irq_no_request = mapping->irq_no;
+	int irq_controller = irq_no_request / IRQS_PER_CONTROLLER;
+	struct tlkm_irq_mapping *m_start = mapping;
+
+	LOG(TLKM_LF_IRQ,
+	    "Got request to remove IRQ %d belonging to controller %d",
+	    irq_no_request, irq_controller);
+
+	if (!zdev->intc_bases[irq_controller].mapping) {
+		LOG(TLKM_LF_IRQ, "Controller %d is already empty",
+		    irq_controller);
+	} else if (zdev->intc_bases[irq_controller].mapping->irq_no ==
+		   mapping->irq_no) {
+		if (m_start->list.next !=
+		    zdev->intc_bases[irq_controller].mapping_base) {
+			m_start = list_entry(m_start->list.next,
+					     struct tlkm_irq_mapping, list);
+
+			if ((m_start->irq_no / IRQS_PER_CONTROLLER) ==
+			    irq_controller) {
+				zdev->intc_bases[irq_controller].mapping =
+					m_start;
+				LOG(TLKM_LF_IRQ,
+				    "Controller %d start has been updated",
+				    irq_controller);
+			} else {
+				LOG(TLKM_LF_IRQ, "Controller %d is now empty",
+				    irq_controller);
+				zdev->intc_bases[irq_controller].mapping = 0;
+			}
+		} else {
+			LOG(TLKM_LF_IRQ, "Controller %d is now empty",
+			    irq_controller);
+			zdev->intc_bases[irq_controller].mapping = 0;
+		}
+
+	} else {
+		LOG(TLKM_LF_IRQ, "Mapping not first of controller %d",
+		    irq_controller);
 	}
-	DEVLOG(dev->dev_id, TLKM_LF_IRQ,
-	       "freeing platform interrupt #%d with mapping %d", irq_no, rirq);
-	free_irq(rirq, zdev);
 }

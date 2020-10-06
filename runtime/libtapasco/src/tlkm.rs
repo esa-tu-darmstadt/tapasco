@@ -129,8 +129,7 @@ ioctl_readwrite!(
     tlkm_copy_cmd_from
 );
 
-const TLKM_DEVICE_IOCTL_REGISTER_PLATFORM_INTERRUPT: u8 = 0x14;
-const TLKM_DEVICE_IOCTL_REGISTER_USER_INTERRUPT: u8 = 0x15;
+const TLKM_DEVICE_IOCTL_REGISTER_INTERRUPT: u8 = 0x14;
 
 #[repr(C)]
 pub struct tlkm_register_interrupt {
@@ -139,16 +138,9 @@ pub struct tlkm_register_interrupt {
 }
 
 ioctl_readwrite!(
-    tlkm_ioctl_reg_platform,
+    tlkm_ioctl_reg_interrupt,
     TLKM_DEVICE_IOC_MAGIC,
-    TLKM_DEVICE_IOCTL_REGISTER_PLATFORM_INTERRUPT,
-    tlkm_register_interrupt
-);
-
-ioctl_readwrite!(
-    tlkm_ioctl_reg_user,
-    TLKM_DEVICE_IOC_MAGIC,
-    TLKM_DEVICE_IOCTL_REGISTER_USER_INTERRUPT,
+    TLKM_DEVICE_IOCTL_REGISTER_INTERRUPT,
     tlkm_register_interrupt
 );
 

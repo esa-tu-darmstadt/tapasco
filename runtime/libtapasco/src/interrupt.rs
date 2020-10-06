@@ -18,8 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::tlkm::tlkm_ioctl_reg_platform;
-use crate::tlkm::tlkm_ioctl_reg_user;
+use crate::tlkm::tlkm_ioctl_reg_interrupt;
 use crate::tlkm::tlkm_register_interrupt;
 use nix::sys::eventfd::eventfd;
 use nix::sys::eventfd::EfdFlags;
@@ -73,13 +72,14 @@ impl Interrupt {
         };
 
         if user_interrupt {
+            ioctl_fd.pe_id += 4;
             unsafe {
-                tlkm_ioctl_reg_user(tlkm_file.as_raw_fd(), &mut ioctl_fd)
+                tlkm_ioctl_reg_interrupt(tlkm_file.as_raw_fd(), &mut ioctl_fd)
                     .context(ErrorEventFDRegister)?;
             };
         } else {
             unsafe {
-                tlkm_ioctl_reg_platform(tlkm_file.as_raw_fd(), &mut ioctl_fd)
+                tlkm_ioctl_reg_interrupt(tlkm_file.as_raw_fd(), &mut ioctl_fd)
                     .context(ErrorEventFDRegister)?;
             };
         }

@@ -42,15 +42,8 @@ static inline long zynq_ioctl_size(struct tlkm_device *inst,
 	return -EFAULT;
 }
 
-static inline long zynq_ioctl_reg_plat_int(struct tlkm_device *inst,
-					   struct tlkm_register_interrupt *info)
-{
-	DEVERR(inst->dev_id, "should never be called");
-	return -EFAULT;
-}
-
-static inline long zynq_ioctl_reg_user_int(struct tlkm_device *inst,
-					   struct tlkm_register_interrupt *info)
+static inline long zynq_ioctl_reg_int(struct tlkm_device *inst,
+				      struct tlkm_register_interrupt *info)
 {
 	DEVERR(inst->dev_id, "should never be called");
 	return -EFAULT;

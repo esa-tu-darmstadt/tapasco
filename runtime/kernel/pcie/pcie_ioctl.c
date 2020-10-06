@@ -38,15 +38,8 @@ static inline long pcie_ioctl_size(struct tlkm_device *inst,
 	return -EFAULT;
 }
 
-static inline long pcie_ioctl_reg_plat_int(struct tlkm_device *inst,
-					   struct tlkm_register_interrupt *info)
-{
-	DEVERR(inst->dev_id, "should never be called");
-	return -EFAULT;
-}
-
-static inline long pcie_ioctl_reg_user_int(struct tlkm_device *inst,
-					   struct tlkm_register_interrupt *info)
+static inline long pcie_ioctl_reg_int(struct tlkm_device *inst,
+				      struct tlkm_register_interrupt *info)
 {
 	DEVERR(inst->dev_id, "should never be called");
 	return -EFAULT;
@@ -104,7 +97,7 @@ long pcie_ioctl_dma_buffer_allocate(
 	for (i = 0; i < TLKM_PCIE_NUM_DMA_BUFFERS; ++i) {
 		if (pdev->dma_buffer[i].ptr == 0) {
 			DEVLOG(inst->dev_id, TLKM_LF_IOCTL,
-			       "Request to allocate %ld Bytes will be served in location %d.",
+			       "Request to allocate %zu Bytes will be served in location %d.",
 			       param->size, i);
 
 			pdev->dma_buffer[i].size = param->size;

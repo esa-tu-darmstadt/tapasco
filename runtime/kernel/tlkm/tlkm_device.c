@@ -96,9 +96,24 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 		}
 	}
 
+	if (dev->cls->init_interrupts) {
+		DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
+		       "setting up device-specific interrupt handling ...");
+		if ((ret = dev->cls->init_interrupts(dev,
+						     &dev->ctrl->interrupts))) {
+			DEVERR(dev->dev_id,
+			       "failed to initialize private data struct: %d",
+			       ret);
+			goto err_interrupts;
+		}
+	}
+
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "device setup complete");
 	return ret;
 
+err_interrupts:
+	if (dev->cls->exit_subsystems)
+		dev->cls->exit_subsystems(dev);
 err_sub:
 	tlkm_platform_mmap_exit(dev, &dev->mmap);
 err_ioremap:
@@ -118,6 +133,8 @@ err_nperfc:
 void tlkm_device_exit(struct tlkm_device *dev)
 {
 	if (dev) {
+		if (dev->cls->exit_interrupts)
+			dev->cls->exit_interrupts(dev);
 		if (dev->cls->exit_subsystems)
 			dev->cls->exit_subsystems(dev);
 		tlkm_status_exit(&dev->status, dev);

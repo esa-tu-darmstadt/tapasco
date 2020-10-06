@@ -85,9 +85,7 @@ struct tlkm_dma_buffer_op {
 	_TLKM_DEV_IOCTL(FREE, free, 0x11, struct tlkm_mm_cmd)                  \
 	_TLKM_DEV_IOCTL(COPYTO, copyto, 0x12, struct tlkm_copy_cmd)            \
 	_TLKM_DEV_IOCTL(COPYFROM, copyfrom, 0x13, struct tlkm_copy_cmd)        \
-	_TLKM_DEV_IOCTL(REGISTER_PLATFORM_INTERRUPT, reg_plat_int, 0x14,       \
-			struct tlkm_register_interrupt)                        \
-	_TLKM_DEV_IOCTL(REGISTER_USER_INTERRUPT, reg_user_int, 0x15,           \
+	_TLKM_DEV_IOCTL(REGISTER_INTERRUPT, reg_int, 0x14,                     \
 			struct tlkm_register_interrupt)                        \
 	_TLKM_DEV_IOCTL(ALLOC_COPYTO, alloc_copyto, 0x20,                      \
 			struct tlkm_bulk_cmd)                                  \
