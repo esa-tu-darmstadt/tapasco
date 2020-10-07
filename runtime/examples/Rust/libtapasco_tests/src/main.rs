@@ -374,7 +374,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
         env::set_var("tapasco_dma__read_buffer_size", format!("{}", size));
         env::set_var("tapasco_dma__write_buffer_size", format!("{}", size));
         let tlkm = TLKM::new().context(TLKMInit {})?;
-        let devices = tlkm.device_enum().context(TLKMInit)?;
+        let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
         let mem = devices[0].default_memory().context(DeviceInit)?;
 
         println!("Testing {} x {}kB", num, size);
