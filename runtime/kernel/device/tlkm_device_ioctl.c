@@ -141,7 +141,7 @@ long tlkm_device_reg_int(struct file *fp, unsigned int ioctl,
 	result = dev->cls->pirq(dev, new_entry);
 
 	if (result) {
-		vfree(new_entry);
+		kfree(new_entry);
 		DEVERR(c->dev_id, "Failed to register interrupt %d: %ld",
 		       s.pe_id, result);
 		return result;
