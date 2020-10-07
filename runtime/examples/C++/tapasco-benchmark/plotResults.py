@@ -30,6 +30,8 @@ import sys
 
 import argparse
 
+from math import sqrt
+
 parser = argparse.ArgumentParser()
 parser.add_argument('fileandname', type=str, nargs='+')
 args = parser.parse_args()
@@ -38,9 +40,9 @@ if len(args.fileandname) % 2 != 0:
         print("Please specify the benchmarks as pairs of 'name filename'.")
         sys.exit(1)
 
-columnwidth=1000 * 0.0138889
+columnwidth=250 * 0.0138889
 
-def latexify(fig_width=None, fig_height=None, columns=1):
+def latexify(fig_width=None, fig_height=None, columns=1, rows=1):
     """Set up matplotlib's RC params for LaTeX plotting.
     Call this before plotting a figure.
 
@@ -63,7 +65,7 @@ def latexify(fig_width=None, fig_height=None, columns=1):
 
     if fig_height is None:
         golden_mean = (sqrt(5)-1.0)/2.0    # Aesthetic ratio
-        fig_height = fig_width*golden_mean # height in inches
+        fig_height = fig_width*golden_mean*rows # height in inches
 
     params = {'backend': 'ps',
               'text.latex.preamble':
@@ -99,7 +101,7 @@ def format_axes(ax):
     return ax
 
 sns.set()
-latexify(columnwidth, columnwidth * 3)
+latexify(columnwidth,None,1,5)
 
 benchmark_read = {}
 benchmark_write = {}
@@ -168,7 +170,7 @@ data_w = pd.DataFrame(benchmark_write)
 data_rw = pd.DataFrame(benchmark_readwrite)
 
 fig, ax = plt.subplots(5, 1)
-plt.subplots_adjust(hspace = 0.25)
+#plt.subplots_adjust(hspace = 0.5)
 
 def sizeof_fmt(num, suffix='B'):
     for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
@@ -212,5 +214,7 @@ for name, group in job_throughput.groupby("Device"):
 
 ax[4].set_xlabel(r'Threads')
 ax[4].set_ylabel(r'Jobs Per Second')
+
+fig.tight_layout(h_pad=1)
 
 plt.savefig('performance.pdf', format='pdf', bbox_inches='tight')
