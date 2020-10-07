@@ -36,6 +36,7 @@ extern crate lockfree;
 extern crate volatile;
 
 pub mod allocator;
+pub mod debug;
 pub mod device;
 pub mod dma;
 pub mod dma_user_space;

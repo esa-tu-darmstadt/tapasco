@@ -29,6 +29,7 @@ extern crate serde;
 extern crate serde_json;
 
 use prost::Message;
+use std::collections::HashMap;
 use std::u64;
 
 use common_failures::prelude::*;
@@ -83,6 +84,15 @@ struct Component {
 
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug)]
+struct Debug {
+    Name: String,
+    Size: String,
+    Offset: String,
+    PE_ID: u64,
+}
+
+#[allow(non_snake_case)]
+#[derive(Deserialize, Debug)]
 struct ComponentAddresses {
     Base: String,
     Components: Vec<Component>,
@@ -103,6 +113,7 @@ struct Design {
     Versions: Vec<Version>,
     Clocks: Vec<Clocks>,
     Platform: ComponentAddresses,
+    Debug: Vec<Debug>,
 }
 
 #[derive(Debug, Fail)]
@@ -245,6 +256,22 @@ fn run() -> Result<()> {
         arch_base, platform_base
     );
 
+    let mut debugs: HashMap<u64, status::Platform> = HashMap::new();
+    for debug in json.Debug {
+        let offset = from_hex_str(&debug.Offset)?;
+        let size = from_hex_str(&debug.Size)?;
+        let name = &debug.Name;
+        let pe_id = &debug.PE_ID;
+        debugs.insert(
+            *pe_id,
+            status::Platform {
+                name: name.clone(),
+                offset: offset,
+                size: size,
+            },
+        );
+    }
+
     let mut pes: Vec<status::Pe> = Vec::new();
     for pe in json.Architecture.Composition {
         let addr = from_hex_str(&pe.Offset)?;
@@ -264,6 +291,7 @@ fn run() -> Result<()> {
                 offset: addr,
                 size: size,
                 local_memory: None,
+                debug: debugs.remove(&pe.SlotId),
             });
         }
     }

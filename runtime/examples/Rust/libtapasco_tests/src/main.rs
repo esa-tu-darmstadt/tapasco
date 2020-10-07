@@ -78,7 +78,7 @@ fn print_version(_: &ArgMatches) -> Result<()> {
 
 fn enum_devices(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit {})?;
     println!("Got {} devices.", devices.len());
     for x in devices {
         println!(
@@ -94,7 +94,7 @@ fn enum_devices(_: &ArgMatches) -> Result<()> {
 
 fn allocate_devices(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let mut devices = tlkm.device_enum().context(TLKMInit {})?;
+    let mut devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit {})?;
 
     for x in devices.iter_mut() {
         println!("Allocating ID {} exclusively.", x.id());
@@ -107,7 +107,7 @@ fn allocate_devices(_: &ArgMatches) -> Result<()> {
 
 fn print_status(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for x in devices {
         println!("Device {}", x.id());
         println!("{:?}", x.status());
@@ -117,7 +117,7 @@ fn print_status(_: &ArgMatches) -> Result<()> {
 
 fn run_arrayinit(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for mut x in devices {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
@@ -142,7 +142,7 @@ fn run_arrayinit(_: &ArgMatches) -> Result<()> {
 
 fn run_counter(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for mut x in devices {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
@@ -169,7 +169,7 @@ fn run_counter(_: &ArgMatches) -> Result<()> {
 
 fn benchmark_counter(m: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for mut x in devices.into_iter() {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit)?;
@@ -237,7 +237,7 @@ concatenate!(
 
 fn latency_benchmark(m: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for mut x in devices {
         println!("Evaluating device {:?}", x.id());
         let design_mhz = x.design_frequency_mhz().context(DeviceInit)?;
@@ -287,7 +287,7 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
 
 fn test_copy(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for mut x in devices {
         println!("Evaluating device {}", x.id());
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
@@ -531,7 +531,7 @@ fn transfer_from(
 
 fn benchmark_copy(m: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for mut x in devices.into_iter() {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit)?;
@@ -651,7 +651,7 @@ fn benchmark_copy(m: &ArgMatches) -> Result<()> {
 
 fn test_localmem(_: &ArgMatches) -> Result<()> {
     let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum().context(TLKMInit)?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
     for mut x in devices {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;

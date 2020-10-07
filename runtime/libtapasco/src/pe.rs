@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use crate::debug::DebugControl;
 use crate::device::DataTransferPrealloc;
 use crate::device::DeviceAddress;
 use crate::device::DeviceSize;
@@ -53,8 +54,25 @@ pub enum Error {
     #[snafu(display("Could not insert PE {} into active PE set.", pe_id))]
     CouldNotInsertPE { pe_id: usize },
 
+<<<<<<< HEAD
     #[snafu(display("Error during interrupt handling: {}", source))]
     ErrorInterrupt { source: crate::interrupt::Error },
+=======
+    #[snafu(display("Error creating interrupt eventfd: {}", source))]
+    ErrorEventFD { source: nix::Error },
+
+    #[snafu(display("Error reading interrupt eventfd: {}", source))]
+    ErrorEventFDRead { source: nix::Error },
+
+    #[snafu(display("Could not register eventfd with driver: {}", source))]
+    ErrorEventFDRegister { source: nix::Error },
+
+    #[snafu(display("Failed to enable debug for PE {}: {}", id, source))]
+    DebugError {
+        source: crate::debug::Error,
+        id: usize,
+    },
+>>>>>>> f98ce53ea33a634f5908596be2bb50de02042206
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -85,7 +103,19 @@ pub struct PE {
     #[get = "pub"]
     local_memory: Option<Arc<OffchipMemory>>,
 
+<<<<<<< HEAD
     interrupt: Interrupt,
+=======
+    interrupt: RawFd,
+
+    debug: Box<dyn DebugControl + Sync + Send>,
+}
+
+impl Drop for PE {
+    fn drop(&mut self) {
+        let _ = close(self.interrupt);
+    }
+>>>>>>> f98ce53ea33a634f5908596be2bb50de02042206
 }
 
 impl PE {
@@ -98,6 +128,7 @@ impl PE {
         memory: Arc<MmapMut>,
         completion: &File,
         interrupt_id: usize,
+        debug: Box<dyn DebugControl + Sync + Send>,
     ) -> Result<PE> {
         Ok(PE {
             id: id,
@@ -109,7 +140,12 @@ impl PE {
             copy_back: None,
             memory: memory,
             local_memory: None,
+<<<<<<< HEAD
             interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterrupt)?,
+=======
+            interrupt: fd,
+            debug: debug,
+>>>>>>> f98ce53ea33a634f5908596be2bb50de02042206
         })
     }
 
@@ -266,5 +302,11 @@ impl PE {
 
     fn get_copyback(&mut self) -> Option<Vec<CopyBack>> {
         self.copy_back.take()
+    }
+
+    pub fn enable_debug(&mut self) -> Result<()> {
+        self.debug
+            .enable_debug()
+            .context(DebugError { id: self.id })
     }
 }

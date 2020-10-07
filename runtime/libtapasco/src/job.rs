@@ -67,6 +67,9 @@ pub enum Error {
 
     #[snafu(display("This Job does not contain a PE which could be released."))]
     NoPEtoRelease {},
+
+    #[snafu(display("This Job does not contain a PE which could be debugged."))]
+    NoPEtoDebug {},
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -330,5 +333,13 @@ impl Job {
         } else {
             Err(Error::NoPEtoRelease {})
         }
+    }
+
+    pub fn enable_debug(&mut self) -> Result<()> {
+        match &mut self.pe {
+            Some(x) => x.enable_debug().context(PEError)?,
+            None => Err(Error::NoPEtoDebug {})?,
+        }
+        Ok(())
     }
 }

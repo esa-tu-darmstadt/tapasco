@@ -18,11 +18,13 @@
  * along with this program. If not, see <http:///www.gnu.org/licenses/>.
  */
 
+use crate::debug::DebugGenerator;
 use crate::device::Error as DevError;
 use crate::device::{Device, DeviceAddress};
 use config::Config;
 use libc::c_char;
 use snafu::ResultExt;
+use std::collections::HashMap;
 use std::ffi::CString;
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -433,7 +435,11 @@ impl TLKM {
     ///
     /// [`Device`]: ../device/struct.Device.html
     /// [`device_enum_info`]: #method.device_enum_info
-    pub fn device_alloc(&self, id: DeviceId) -> Result<Device> {
+    pub fn device_alloc(
+        &self,
+        id: DeviceId,
+        debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
+    ) -> Result<Device> {
         trace!("Fetching available devices from driver.");
         let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
         unsafe {
@@ -458,6 +464,7 @@ impl TLKM {
                         .trim_matches(char::from(0))
                         .to_string(),
                     self.settings.clone(),
+                    debug_impls,
                 )
                 .context(DeviceError)?);
             }
@@ -472,7 +479,10 @@ impl TLKM {
     ///
     /// [`device_alloc`]: #method.device_alloc
     /// [`device_enum_info`]: #method.device_enum_info
-    pub fn device_enum(&self) -> Result<Vec<Device>> {
+    pub fn device_enum(
+        &self,
+        debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
+    ) -> Result<Vec<Device>> {
         trace!("Fetching available devices from driver.");
         let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
         unsafe {
@@ -499,6 +509,7 @@ impl TLKM {
                         .trim_matches(char::from(0))
                         .to_string(),
                     self.settings.clone(),
+                    debug_impls,
                 )
                 .context(DeviceError)?,
             );
