@@ -82,9 +82,11 @@ pub struct Job {
 /// Release the PE if it's no longer needed.
 impl Drop for Job {
     fn drop(&mut self) {
-        match self.release(true, false) {
-            Ok(_) => (),
-            Err(e) => panic!("{}", e),
+        if self.pe.is_some() {
+            match self.release(true, false) {
+                Ok(_) => (),
+                Err(e) => panic!("{}", e),
+            }
         }
     }
 }
