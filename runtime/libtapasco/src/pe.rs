@@ -54,10 +54,9 @@ pub enum Error {
     #[snafu(display("Could not insert PE {} into active PE set.", pe_id))]
     CouldNotInsertPE { pe_id: usize },
 
-<<<<<<< HEAD
     #[snafu(display("Error during interrupt handling: {}", source))]
     ErrorInterrupt { source: crate::interrupt::Error },
-=======
+
     #[snafu(display("Error creating interrupt eventfd: {}", source))]
     ErrorEventFD { source: nix::Error },
 
@@ -72,7 +71,6 @@ pub enum Error {
         source: crate::debug::Error,
         id: usize,
     },
->>>>>>> f98ce53ea33a634f5908596be2bb50de02042206
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -103,19 +101,9 @@ pub struct PE {
     #[get = "pub"]
     local_memory: Option<Arc<OffchipMemory>>,
 
-<<<<<<< HEAD
     interrupt: Interrupt,
-=======
-    interrupt: RawFd,
 
     debug: Box<dyn DebugControl + Sync + Send>,
-}
-
-impl Drop for PE {
-    fn drop(&mut self) {
-        let _ = close(self.interrupt);
-    }
->>>>>>> f98ce53ea33a634f5908596be2bb50de02042206
 }
 
 impl PE {
@@ -140,12 +128,8 @@ impl PE {
             copy_back: None,
             memory: memory,
             local_memory: None,
-<<<<<<< HEAD
             interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterrupt)?,
-=======
-            interrupt: fd,
             debug: debug,
->>>>>>> f98ce53ea33a634f5908596be2bb50de02042206
         })
     }
 

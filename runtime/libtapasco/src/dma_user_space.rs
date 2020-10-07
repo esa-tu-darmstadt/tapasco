@@ -91,6 +91,14 @@ impl UserSpaceDMA {
         write_buf_size: usize,
         write_num_buf: usize,
     ) -> Result<UserSpaceDMA> {
+        trace!(
+            "Using setting: Read {} x {}B, Write {} x {}B",
+            read_num_buf,
+            read_buf_size,
+            write_num_buf,
+            write_buf_size
+        );
+
         let write_map = Injector::new();
         let read_map = Injector::new();
 
