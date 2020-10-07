@@ -299,10 +299,6 @@ static int claim_msi(struct tlkm_pcie_device *pdev)
 		DEVLOG(did, TLKM_LF_IRQ, "got %d MSI vectors", err);
 	}
 
-	if (err) {
-		DEVERR(did, "failed to register interrupts: %d", err);
-		return -ENOSPC;
-	}
 	return 0;
 }
 
