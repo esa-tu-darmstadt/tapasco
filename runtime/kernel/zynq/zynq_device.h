@@ -29,7 +29,7 @@
 struct zynq_irq_mapping {
 	struct list_head *mapping_base;
 	struct tlkm_irq_mapping *mapping;
-	u32 *base;
+	volatile u32 *intc;
 	u32 start;
 	u32 id;
 };

@@ -38,15 +38,15 @@ static irqreturn_t zynq_irq_handler(int irq, void *data)
 	u32 status;
 	u32 s_off = mapping->start;
 
-	u32 *intc = mapping->base;
+	volatile u32 *intc = mapping->intc;
 
 	if (!m_start) {
 		LOG(TLKM_LF_IRQ, "IRQ %d not initialized", mapping->id);
 		return IRQ_HANDLED;
 	}
 
-	while ((status = ioread32(intc))) {
-		iowrite32(status, intc + (0x0c >> 2));
+	while ((status = intc[0])) {
+		intc[3] = status;
 		do {
 			u32 slot = __builtin_ffs(status) - 1;
 			slot += s_off;
@@ -76,11 +76,12 @@ static irqreturn_t zynq_irq_handler(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-static void zynq_init_intc(struct zynq_device *zynq_dev, u32 *intc)
+static void zynq_init_intc(struct zynq_device *zynq_dev, volatile u32 *intc)
 {
-	iowrite32((u32)-1, intc + (0x08 >> 2));
-	iowrite32((u32)3, intc + (0x1c >> 2));
-	ioread32(intc);
+	u32 status;
+	intc[2] = -1;
+	intc[7] = 3;
+	status = intc[0];
 }
 
 void zynq_irq_exit(struct tlkm_device *dev)
@@ -121,7 +122,7 @@ int zynq_irq_init(struct tlkm_device *dev, struct list_head *interrupts)
 		LOG(TLKM_LF_IRQ, "INTC%d offset is 0x%lx", i, offset);
 
 		if (offset != -1) {
-			zdev->intc_bases[i].base =
+			zdev->intc_bases[i].intc =
 				(u32 *)((uintptr_t)dev->mmap.plat +
 					(uintptr_t)offset);
 			zdev->intc_bases[i].mapping_base = interrupts;
@@ -130,8 +131,8 @@ int zynq_irq_init(struct tlkm_device *dev, struct list_head *interrupts)
 			zdev->intc_bases[i].id = i;
 
 			LOG(TLKM_LF_IRQ, "controller for IRQ #%d at 0x%p", rirq,
-			    zdev->intc_bases[i].base);
-			zynq_init_intc(zdev, zdev->intc_bases[i].base);
+			    zdev->intc_bases[i].intc);
+			zynq_init_intc(zdev, zdev->intc_bases[i].intc);
 			LOG(TLKM_LF_IRQ, "registering IRQ #%d", rirq);
 
 			namebuf = kzalloc(128, GFP_KERNEL);

@@ -318,6 +318,7 @@ impl Device {
         // has been updated to contain the required information.
         info!("Using static memory allocation due to lack of dynamic data in the status core.");
         let mut allocator = Vec::new();
+        let mut is_pcie = false;
         if name == "pcie" {
             info!("Allocating the default of 4GB at 0x0 for a PCIe platform");
             let mut dma_offset = 0;
@@ -330,6 +331,8 @@ impl Device {
                 trace!("Could not find DMA engine.");
                 return Err(Error::DMAEngineMissing {});
             }
+
+            is_pcie = true;
 
             allocator.push(Arc::new(OffchipMemory {
                 allocator: Mutex::new(Box::new(
@@ -388,7 +391,7 @@ impl Device {
 
         trace!("Initialize PE scheduler.");
         let scheduler = Arc::new(
-            Scheduler::new(&s.pe, &arch, pe_local_memories, &tlkm_dma_file)
+            Scheduler::new(&s.pe, &arch, pe_local_memories, &tlkm_dma_file, is_pcie)
                 .context(SchedulerError)?,
         );
 

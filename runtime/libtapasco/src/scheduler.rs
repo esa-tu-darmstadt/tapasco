@@ -60,11 +60,15 @@ impl Scheduler {
         mmap: &Arc<MmapMut>,
         mut local_memories: VecDeque<Arc<OffchipMemory>>,
         completion: &File,
+        is_pcie: bool,
     ) -> Result<Scheduler> {
         let pe_hashed: Map<PEId, Injector<PE>> = Map::new();
         let mut pes_overview: HashMap<PEId, usize> = HashMap::new();
 
         let mut interrupt_id = 0;
+        if is_pcie {
+            interrupt_id = 4;
+        }
 
         for (i, pe) in pes.iter().enumerate() {
             let mut the_pe = PE::new(

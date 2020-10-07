@@ -55,12 +55,7 @@ impl Drop for Interrupt {
 }
 
 impl Interrupt {
-    pub fn new(
-        tlkm_file: &File,
-        interrupt_id: usize,
-        user_interrupt: bool,
-        blocking: bool,
-    ) -> Result<Interrupt> {
+    pub fn new(tlkm_file: &File, interrupt_id: usize, blocking: bool) -> Result<Interrupt> {
         let fd = if blocking {
             eventfd(0, EfdFlags::empty()).context(ErrorEventFD)?
         } else {
@@ -71,18 +66,10 @@ impl Interrupt {
             pe_id: interrupt_id as i32,
         };
 
-        if user_interrupt {
-            ioctl_fd.pe_id += 4;
-            unsafe {
-                tlkm_ioctl_reg_interrupt(tlkm_file.as_raw_fd(), &mut ioctl_fd)
-                    .context(ErrorEventFDRegister)?;
-            };
-        } else {
-            unsafe {
-                tlkm_ioctl_reg_interrupt(tlkm_file.as_raw_fd(), &mut ioctl_fd)
-                    .context(ErrorEventFDRegister)?;
-            };
-        }
+        unsafe {
+            tlkm_ioctl_reg_interrupt(tlkm_file.as_raw_fd(), &mut ioctl_fd)
+                .context(ErrorEventFDRegister)?;
+        };
 
         Ok(Interrupt { interrupt: fd })
     }

@@ -109,8 +109,7 @@ impl PE {
             copy_back: None,
             memory: memory,
             local_memory: None,
-            interrupt: Interrupt::new(completion, interrupt_id, true, false)
-                .context(ErrorInterrupt)?,
+            interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterrupt)?,
         })
     }
 

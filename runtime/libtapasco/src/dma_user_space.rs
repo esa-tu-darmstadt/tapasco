@@ -156,10 +156,8 @@ impl UserSpaceDMA {
             engine_offset: offset,
             to_dev_buffer: write_map,
             from_dev_buffer: read_map,
-            read_int: Interrupt::new(tlkm_file, read_interrupt, false, false)
-                .context(ErrorInterrupt)?,
-            write_int: Interrupt::new(tlkm_file, write_interrupt, false, false)
-                .context(ErrorInterrupt)?,
+            read_int: Interrupt::new(tlkm_file, read_interrupt, false).context(ErrorInterrupt)?,
+            write_int: Interrupt::new(tlkm_file, write_interrupt, false).context(ErrorInterrupt)?,
             write_out: Queue::new(),
             write_cntr: AtomicU64::new(0),
             write_int_cntr: AtomicU64::new(0),
