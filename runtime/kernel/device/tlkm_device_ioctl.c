@@ -93,13 +93,6 @@ long tlkm_device_ioctl_size(struct file *fp, unsigned int ioctl,
 	return 0;
 }
 
-// TODO:
-// Fix Interrupts for F1 and Zynq
-// Add init function with start to interrupt list
-// reg_int does nothing for them
-// Interrupts iterate over list and call eventfd if necessary
-// Alternative: Reg sets list start for different interrupts so iteration is faster.
-
 long tlkm_device_reg_int(struct file *fp, unsigned int ioctl,
 			 struct tlkm_register_interrupt __user *size)
 {

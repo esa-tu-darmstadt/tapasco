@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <linux/version.h>
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/sched.h>
@@ -96,10 +97,15 @@ void zynq_irq_exit(struct tlkm_device *dev)
 					    zdev->requested_irq_num);
 		LOG(TLKM_LF_IRQ, "releasing IRQ #%d", rirq);
 		disable_irq(rirq);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 12, 0)
+		free_irq(rirq, &zdev->intc_bases[zdev->requested_irq_num]);
+		kfree(zdef->intc_bases[zdev->requested_irq_num].name);
+#else
 		namebuf = free_irq(rirq,
 				   &zdev->intc_bases[zdev->requested_irq_num]);
 		if (namebuf)
 			kfree(namebuf);
+#endif
 	}
 }
 
@@ -137,6 +143,10 @@ int zynq_irq_init(struct tlkm_device *dev, struct list_head *interrupts)
 
 			namebuf = kzalloc(128, GFP_KERNEL);
 			snprintf(namebuf, 128, "tapasco_zynq_%d", i);
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 12, 0)
+			zdev->intc_bases[i].name = namebuf;
+#endif
 
 			retval = request_irq(rirq, zynq_irq_handler,
 					     IRQF_EARLY_RESUME, namebuf,
