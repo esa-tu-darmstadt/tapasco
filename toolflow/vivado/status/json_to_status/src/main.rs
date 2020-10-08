@@ -56,6 +56,7 @@ struct Composition {
     Kernel: u64,
     Offset: String,
     Size: String,
+    VLNV: String,
 }
 
 #[allow(non_snake_case)]
@@ -286,7 +287,7 @@ fn run() -> Result<()> {
             });
         } else {
             pes.push(status::Pe {
-                name: "UNNAMED KERNEL".to_string(),
+                name: pe.VLNV,
                 id: pe.Kernel as u32,
                 offset: addr,
                 size: size,

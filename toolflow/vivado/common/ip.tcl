@@ -486,15 +486,19 @@ namespace eval ::tapasco::ip {
           "register" {
             set kind [format "%d" [regsub {.*target_ip_([0-9][0-9]).*} $intf {\1}]]
             set kid [dict get [::tapasco::get_composition] $kind id]
+            set vlnv [dict get [::tapasco::get_composition] $kind vlnv]
+
             lappend slots [json::write object "Type" [json::write string "Kernel"] "SlotId" $slot_id "Kernel" $kid \
                                               "Offset" [json::write string [format "0x%016x" [expr "[dict get $addr $intf "offset"] - [::platform::get_pe_base_address]"]]]          \
-                                              "Size" [json::write string [format "0x%016x" [dict get $addr $intf "range"]]]]
+                                              "Size" [json::write string [format "0x%016x" [dict get $addr $intf "range"]]] \
+                                              "VLNV" [json::write string $vlnv]]
             incr slot_id
           }
           "memory" {
             lappend slots [json::write object "Type" [json::write string "Memory"] "SlotId" $slot_id "Kernel" 0 \
                                               "Offset" [json::write string [format "0x%016x" [expr "[dict get $addr $intf "offset"] - [::platform::get_pe_base_address]"]]] \
-                                              "Size" [json::write string [format "0x%016x" [dict get $addr $intf "range"]]]]
+                                              "Size" [json::write string [format "0x%016x" [dict get $addr $intf "range"]]] \
+                                              "VLNV" [json::write string "None"]]
             incr slot_id
           }
           "master" {}
