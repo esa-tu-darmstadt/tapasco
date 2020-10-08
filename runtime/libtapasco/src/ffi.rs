@@ -36,6 +36,7 @@ use libc::c_char;
 use libc::c_int;
 use snafu::ResultExt;
 use std::collections::HashMap;
+use std::ffi::CStr;
 use std::ptr;
 use std::slice;
 use std::sync::Arc;
@@ -524,6 +525,36 @@ pub extern "C" fn tapasco_device_num_pes(dev: *mut Device, id: PEId) -> isize {
 
     let tl = unsafe { &mut *dev };
     tl.num_pes(id) as isize
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_device_get_pe_id(dev: *mut Device, name: *const c_char) -> PEId {
+    if dev.is_null() {
+        warn!("Null pointer passed into tapasco_device_get_pe_id() as the device");
+        update_last_error(Error::NullPointerTLKM {});
+        return PEId::MAX;
+    }
+
+    if name.is_null() {
+        warn!("Null pointer passed into tapasco_device_get_pe_id() as the name");
+        update_last_error(Error::NullPointerTLKM {});
+        return PEId::MAX;
+    }
+
+    let name_r = unsafe {
+        let s = CStr::from_ptr(name);
+        s.to_str().unwrap()
+    };
+
+    let tl = unsafe { &mut *dev };
+
+    match tl.get_pe_id(name_r).context(DeviceError) {
+        Ok(x) => return x,
+        Err(e) => {
+            update_last_error(e);
+            return PEId::MAX;
+        }
+    };
 }
 
 /////////////////

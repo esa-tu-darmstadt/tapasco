@@ -50,8 +50,19 @@ int main(int argc, char **argv) {
 
   uint64_t errs = 0;
 
+  tapasco::PEId peid = 0;
+
+  try {
+    peid = tapasco.get_pe_id("esa.cs.tu-darmstadt.de:hls:arrayupdate:1.0");
+  } catch (...) {
+    std::cout << "Assuming old bitstream without VLNV info." << std::endl;
+    peid = PE_ID;
+  }
+
+  std::cout << "Using PEId " << peid << std::endl;
+
   // check arrayupdate instance count
-  uint64_t instances = tapasco.kernel_pe_count(PE_ID);
+  uint64_t instances = tapasco.kernel_pe_count(peid);
   std::cout << "Got " << instances << " arrayupdate instances.";
   if (!instances) {
     std::cout << "Need at least one arrayupdate instance to run.";
@@ -70,7 +81,7 @@ int main(int argc, char **argv) {
     // Launch the job
     // Arrayupdate takes only one parameter: The location of the array. It will
     // always update 256 Int`s.
-    auto job = tapasco.launch(PE_ID, input_buffer_pointer);
+    auto job = tapasco.launch(peid, input_buffer_pointer);
 
     // Wait for job completion. Will block execution until the job is done.
     job();

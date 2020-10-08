@@ -91,7 +91,17 @@ int main(int argc, char **argv) {
     goto finish_tlkm;
   }
 
-  if (tapasco_device_num_pes(d, PE_ID) == 0) {
+  PEId peid = 0;
+
+  if ((peid = tapasco_device_get_pe_id(
+           d, "esa.cs.tu-darmstadt.de:hls:arraysum:1.0")) == -1) {
+    printf("Assuming old bitstream without VLNV info.\n");
+    peid = PE_ID;
+  }
+
+  printf("Using PEId %ld.\n", peid);
+
+  if (tapasco_device_num_pes(d, peid) == 0) {
     printf("No Arraysum PE found.\n");
     goto finish_device;
   }
@@ -127,7 +137,7 @@ int main(int argc, char **argv) {
                             true, false, 0, jl);
 
     // Acquire arrayinit PE
-    Job *j = tapasco_device_acquire_pe(d, PE_ID);
+    Job *j = tapasco_device_acquire_pe(d, peid);
     if (j == 0) {
       handle_error();
       ret = -1;

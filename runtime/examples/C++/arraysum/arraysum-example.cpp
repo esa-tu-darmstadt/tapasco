@@ -47,8 +47,19 @@ int main(int argc, char **argv) {
 
   uint64_t errs = 0;
 
+  tapasco::PEId peid = 0;
+
+  try {
+    peid = tapasco.get_pe_id("esa.cs.tu-darmstadt.de:hls:arraysum:1.0");
+  } catch (...) {
+    std::cout << "Assuming old bitstream without VLNV info." << std::endl;
+    peid = PE_ID;
+  }
+
+  std::cout << "Using PEId " << peid << std::endl;
+
   // check arraysum instance count
-  uint64_t instances = tapasco.kernel_pe_count(PE_ID);
+  uint64_t instances = tapasco.kernel_pe_count(peid);
   std::cout << "Got " << instances << " arraysum instances.";
   if (!instances) {
     std::cout << "Need at least one arraysum instance to run.";
@@ -73,7 +84,7 @@ int main(int argc, char **argv) {
     // Launch the job
     // Arraysum takes only one parameter: The location of the array. It will
     // always summarize 256 Int`s.
-    auto job = tapasco.launch(PE_ID, ret_val, input_buffer_in);
+    auto job = tapasco.launch(peid, ret_val, input_buffer_in);
 
     // Wait for job completion. Will block execution until the job is done.
     job();

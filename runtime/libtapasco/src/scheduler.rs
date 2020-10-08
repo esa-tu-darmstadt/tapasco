@@ -41,6 +41,13 @@ pub enum Error {
     #[snafu(display("PE Type {} is unknown.", id))]
     NoSuchPE { id: PEId },
 
+    #[snafu(display(
+        "PE with name {} is unknown. Possible values are {:?}.",
+        name,
+        possible
+    ))]
+    PENotFound { name: String, possible: Vec<String> },
+
     #[snafu(display("PE {} is still active. Can't release it.", pe.id()))]
     PEStillActive { pe: PE },
 
@@ -57,6 +64,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 pub struct Scheduler {
     pes: Map<PEId, Injector<PE>>,
     pes_overview: HashMap<PEId, usize>,
+    pes_name: HashMap<PEId, String>,
 }
 
 impl Scheduler {
@@ -70,6 +78,7 @@ impl Scheduler {
     ) -> Result<Scheduler> {
         let pe_hashed: Map<PEId, Injector<PE>> = Map::new();
         let mut pes_overview: HashMap<PEId, usize> = HashMap::new();
+        let mut pes_name: HashMap<PEId, String> = HashMap::new();
 
         let mut interrupt_id = 0;
         if is_pcie {
@@ -118,10 +127,11 @@ impl Scheduler {
             match pe_hashed.get(&(pe.id as PEId)) {
                 Some(l) => l.val().push(the_pe),
                 None => {
-                    trace!("New PE type found: {}.", pe.id);
+                    trace!("New PE type found: {} ({}).", pe.name, pe.id);
                     let v = Injector::new();
                     v.push(the_pe);
                     pe_hashed.insert(pe.id as PEId, v);
+                    pes_name.insert(pe.id as PEId, pe.name.clone());
                 }
             }
 
@@ -136,6 +146,7 @@ impl Scheduler {
         Ok(Scheduler {
             pes: pe_hashed,
             pes_overview: pes_overview,
+            pes_name: pes_name,
         })
     }
 
@@ -190,5 +201,17 @@ impl Scheduler {
             Some(l) => *l,
             None => 0,
         }
+    }
+
+    pub fn get_pe_id(&self, name: &str) -> Result<PEId> {
+        for (id, pe_name) in &self.pes_name {
+            if name == pe_name {
+                return Ok(*id);
+            }
+        }
+        Err(Error::PENotFound {
+            name: name.to_string(),
+            possible: self.pes_name.values().map(|x| x.clone()).collect(),
+        })
     }
 }

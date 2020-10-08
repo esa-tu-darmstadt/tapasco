@@ -121,7 +121,11 @@ fn run_arrayinit(_: &ArgMatches) -> Result<()> {
     for mut x in devices {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
-        let mut pe = x.acquire_pe(11).context(DeviceInit)?;
+        let counter_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:arrayinit:1.0") {
+            Ok(x) => x,
+            Err(_e) => 11,
+        };
+        let mut pe = x.acquire_pe(counter_id).context(DeviceInit)?;
 
         pe.start(vec![tapasco::device::PEParameter::DataTransferAlloc(
             tapasco::device::DataTransferAlloc {
@@ -146,11 +150,17 @@ fn run_counter(_: &ArgMatches) -> Result<()> {
     for mut x in devices {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit {})?;
+
+        let counter_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:counter:0.9") {
+            Ok(x) => x,
+            Err(_e) => 14,
+        };
+
         let mut pes = Vec::new();
-        pes.push(x.acquire_pe(14).context(DeviceInit)?);
-        pes.push(x.acquire_pe(14).context(DeviceInit)?);
-        pes.push(x.acquire_pe(14).context(DeviceInit)?);
-        pes.push(x.acquire_pe(14).context(DeviceInit)?);
+        pes.push(x.acquire_pe(counter_id).context(DeviceInit)?);
+        pes.push(x.acquire_pe(counter_id).context(DeviceInit)?);
+        pes.push(x.acquire_pe(counter_id).context(DeviceInit)?);
+        pes.push(x.acquire_pe(counter_id).context(DeviceInit)?);
         for _ in 0..10 {
             for pe in &mut pes.iter_mut() {
                 pe.start(vec![tapasco::device::PEParameter::Single64(1000)])
@@ -173,6 +183,12 @@ fn benchmark_counter(m: &ArgMatches) -> Result<()> {
     for mut x in devices.into_iter() {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInit)?;
+
+        let counter_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:counter:0.9") {
+            Ok(x) => x,
+            Err(_e) => 14,
+        };
+
         let x_l = Arc::new(x);
         let iterations = value_t!(m, "iterations", usize).unwrap();
         let mut num_threads = value_t!(m, "threads", i32).unwrap();
@@ -184,6 +200,7 @@ fn benchmark_counter(m: &ArgMatches) -> Result<()> {
             "Starting {} thread benchmark with {} iterations and {} step.",
             num_threads, iterations, pb_step
         );
+
         for cur_threads in 1..num_threads + 1 {
             let iterations_per_threads = iterations / cur_threads as usize;
             let iterations_cur = iterations_per_threads * cur_threads as usize;
@@ -199,7 +216,8 @@ fn benchmark_counter(m: &ArgMatches) -> Result<()> {
                 for _t in 0..cur_threads {
                     s.spawn(|_| {
                         let x_local = x_l.clone();
-                        let mut pe = { x_local.acquire_pe(14).context(DeviceInit).unwrap() };
+                        let mut pe =
+                            { x_local.acquire_pe(counter_id).context(DeviceInit).unwrap() };
                         for i in 0..iterations_per_threads {
                             pe.start(vec![tapasco::device::PEParameter::Single64(1)])
                                 .context(JobError)
@@ -247,6 +265,12 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
         let mut iterations = value_t!(m, "iterations", usize).unwrap();
         let max_step = value_t!(m, "steps", u32).unwrap();
         println!("Starting benchmark.");
+
+        let counter_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:counter:0.9") {
+            Ok(x) => x,
+            Err(_e) => 14,
+        };
+
         for step_pow in 0..max_step {
             let step = u64::pow(2, step_pow);
             let step_duration_ns = (step as f32) * (1.0 / design_mhz);
@@ -263,7 +287,7 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
             io::stdout().flush().context(IOError)?;
 
             for _ in 0..iterations {
-                let mut pe = x.acquire_pe(14).context(DeviceInit)?;
+                let mut pe = x.acquire_pe(counter_id).context(DeviceInit)?;
                 let now = Instant::now();
                 pe.start(vec![tapasco::device::PEParameter::Single64(step)])
                     .context(JobError)?;

@@ -26,7 +26,7 @@
 #define RUNS 25
 
 typedef int32_t element_type;
-constexpr int ARRAYINIT_ID = 11;
+constexpr int PE_ID = 11;
 
 static uint64_t check_array(std::array<element_type, SZ> &arr) {
   unsigned int errs = 0;
@@ -45,8 +45,19 @@ int main(int argc, char **argv) {
 
   uint64_t errs = 0;
 
+  tapasco::PEId peid = 0;
+
+  try {
+    peid = tapasco.get_pe_id("esa.cs.tu-darmstadt.de:hls:arrayinit:1.0");
+  } catch (...) {
+    std::cout << "Assuming old bitstream without VLNV info." << std::endl;
+    peid = PE_ID;
+  }
+
+  std::cout << "Using PEId " << peid << std::endl;
+
   // check arrayinit instance count
-  uint64_t instances = tapasco.kernel_pe_count(ARRAYINIT_ID);
+  uint64_t instances = tapasco.kernel_pe_count(peid);
   std::cout << "Got " << instances << " arrayinit instances.";
   if (!instances) {
     std::cout << "Need at least one arrayinit instance to run.";
@@ -62,9 +73,8 @@ int main(int argc, char **argv) {
     // Arrayinit takes only one parameter: The location of the array. It will
     // always initialize 256 Int`s.
     auto job = tapasco.launch(
-        ARRAYINIT_ID,
-        tapasco::makeOutOnly(tapasco::makeWrappedPointer(
-            result.data(), result.size() * sizeof(element_type))));
+        peid, tapasco::makeOutOnly(tapasco::makeWrappedPointer(
+                  result.data(), result.size() * sizeof(element_type))));
 
     // Wait for job completion. Will block execution until the job is done.
     job();

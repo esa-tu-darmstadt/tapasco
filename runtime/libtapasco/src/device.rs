@@ -565,4 +565,9 @@ impl Device {
     pub fn num_pes(&self, pe: PEId) -> usize {
         self.scheduler.num_pes(pe)
     }
+
+    /// Return the PEId of the PE with the given name
+    pub fn get_pe_id(&self, name: &str) -> Result<PEId> {
+        self.scheduler.get_pe_id(name).context(SchedulerError)
+    }
 }
