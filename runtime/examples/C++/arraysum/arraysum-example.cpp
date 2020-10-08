@@ -60,9 +60,9 @@ int main(int argc, char **argv) {
 
   // check arraysum instance count
   uint64_t instances = tapasco.kernel_pe_count(peid);
-  std::cout << "Got " << instances << " arraysum instances.";
+  std::cout << "Got " << instances << " arraysum instances." << std::endl;
   if (!instances) {
-    std::cout << "Need at least one arraysum instance to run.";
+    std::cout << "Need at least one arraysum instance to run." << std::endl;
     exit(1);
   }
 

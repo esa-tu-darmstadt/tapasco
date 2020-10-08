@@ -63,9 +63,9 @@ int main(int argc, char **argv) {
 
   // check arrayupdate instance count
   uint64_t instances = tapasco.kernel_pe_count(peid);
-  std::cout << "Got " << instances << " arrayupdate instances.";
+  std::cout << "Got " << instances << " arrayupdate instances." << std::endl;
   if (!instances) {
-    std::cout << "Need at least one arrayupdate instance to run.";
+    std::cout << "Need at least one arrayupdate instance to run." << std::endl;
     exit(1);
   }
 

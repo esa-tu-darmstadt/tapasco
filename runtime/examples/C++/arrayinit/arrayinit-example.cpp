@@ -58,9 +58,9 @@ int main(int argc, char **argv) {
 
   // check arrayinit instance count
   uint64_t instances = tapasco.kernel_pe_count(peid);
-  std::cout << "Got " << instances << " arrayinit instances.";
+  std::cout << "Got " << instances << " arrayinit instances." << std::endl;
   if (!instances) {
-    std::cout << "Need at least one arrayinit instance to run.";
+    std::cout << "Need at least one arrayinit instance to run." << std::endl;
     exit(1);
   }
 
