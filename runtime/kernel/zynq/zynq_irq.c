@@ -89,7 +89,11 @@ void zynq_irq_exit(struct tlkm_device *dev)
 {
 	struct zynq_device *zdev = (struct zynq_device *)dev->private_data;
 	int rirq = 0;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
 	const char *namebuf;
+#endif
+
 	while (zdev->requested_irq_num) {
 		--zdev->requested_irq_num;
 		rirq = irq_of_parse_and_map(of_find_node_by_name(NULL,
@@ -99,7 +103,7 @@ void zynq_irq_exit(struct tlkm_device *dev)
 		disable_irq(rirq);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 12, 0)
 		free_irq(rirq, &zdev->intc_bases[zdev->requested_irq_num]);
-		kfree(zdef->intc_bases[zdev->requested_irq_num].name);
+		kfree(zdev->intc_bases[zdev->requested_irq_num].name);
 #else
 		namebuf = free_irq(rirq,
 				   &zdev->intc_bases[zdev->requested_irq_num]);
