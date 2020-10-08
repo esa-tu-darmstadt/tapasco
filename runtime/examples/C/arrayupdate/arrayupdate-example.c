@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
     peid = PE_ID;
   }
 
-  printf("Using PEId %ld.\n", peid);
+  printf("Using PEId %u.\n", (uint32_t)peid);
 
   if (tapasco_device_num_pes(d, peid) == 0) {
     printf("No Arrayupdate PE found.\n");
