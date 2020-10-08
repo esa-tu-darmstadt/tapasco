@@ -209,7 +209,7 @@ void pcie_aws_irqs_exit(struct tlkm_device *dev)
 		rirq = pci_irq_vector(pdev->pdev, pdev->requested_irq_num);
 		LOG(TLKM_LF_IRQ, "releasing IRQ #%d", rirq);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 12, 0)
-		free_irq(rirq, &pdev->intc_bases[zdev->requested_irq_num]);
+		free_irq(rirq, &pdev->intc_bases[pdev->requested_irq_num]);
 		kfree(pdev->intc_bases[pdev->requested_irq_num].name);
 #else
 		namebuf = free_irq(rirq,
