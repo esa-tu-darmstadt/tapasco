@@ -26,12 +26,10 @@
 #include "tlkm_types.h"
 #include "dma/tlkm_dma.h"
 #include "pcie/pcie_irq.h"
+#include "pcie/pcie_irq_aws.h"
+#include "zynq/zynq_irq.h"
 
 #define TLKM_PCIE_NUM_DMA_BUFFERS 32
-
-#define TLKM_PLATFORM_INTERRUPTS 4
-#define TLKM_SLOT_INTERRUPTS 128
-#define REQUIRED_INTERRUPTS (TLKM_PLATFORM_INTERRUPTS + TLKM_SLOT_INTERRUPTS)
 
 uint32_t get_xdma_reg_addr(uint32_t target, uint32_t channel, uint32_t offset);
 
@@ -80,8 +78,12 @@ struct tlkm_pcie_device {
 	int link_speed;
 	struct dma_buf dma_buffer[TLKM_PCIE_NUM_DMA_BUFFERS];
 	volatile uint32_t *ack_register;
+	volatile uint32_t *ack_register_aws;
+	struct list_head *interrupts;
+	struct zynq_irq_mapping intc_bases[AWS_NUM_IRQ_CONTROLLERS];
+	int requested_irq_num;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
-	struct msix_entry msix_entries[REQUIRED_INTERRUPTS];
+	struct msix_entry *msix_entries;
 #endif
 };
 
