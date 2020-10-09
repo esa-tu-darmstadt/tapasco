@@ -45,8 +45,7 @@
     return [list [::tapasco::get_platform_num_slots]]
   }
 
-  proc 
-   {} {
+  proc number_of_interrupt_controllers {} {
     return 1
   }
 
