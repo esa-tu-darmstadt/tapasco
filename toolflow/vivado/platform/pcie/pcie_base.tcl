@@ -103,10 +103,7 @@
   # Consists of AXI_INTC IP cores (as many as required), which are connected by an internal
   # AXI Interconnect (S_AXI port), as well as an PCIe interrupt controller IP which can be
   # connected to the PCIe bridge (required ports external).
-  # @param irqs List of the interrupts from the threadpool.
   proc create_subsystem_intc {} {
-    set irqs [arch::get_irqs]
-    puts "Connecting [llength $irqs] interrupts .."
     # create hierarchical ports
     set s_axi [create_bd_intf_pin -mode Slave -vlnv [tapasco::ip::get_vlnv "aximm_intf"] "S_INTC"]
     set msix_interface [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:pcie3_cfg_msix_rtl:1.0 "M_MSIX"]

@@ -19,7 +19,6 @@
 
 namespace eval arch {
   namespace export create
-  namespace export get_irqs
   namespace export get_masters
   namespace export get_processing_elements
   namespace export get_slaves
@@ -50,11 +49,6 @@ namespace eval arch {
 
   proc get_processing_elements {} {
     return [get_bd_cells -of_objects [::tapasco::subsystem::get arch] -filter { NAME =~ target*}]
-  }
-
-  # Returns a list of interrupt lines from the threadpool.
-  proc get_irqs {} {
-    return [get_bd_pins -of_objects [::tapasco::subsystem::get arch] -filter {TYPE == "intr" && DIR == "O"}]
   }
 
   # Checks, if the current composition can be instantiated. Exits script with
