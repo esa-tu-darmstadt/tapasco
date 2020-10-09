@@ -81,6 +81,7 @@ impl Scheduler {
         let mut pes_name: HashMap<PEId, String> = HashMap::new();
 
         let mut interrupt_id = 0;
+
         if is_pcie {
             interrupt_id = 4;
         }
@@ -102,6 +103,21 @@ impl Scheduler {
                         .context(DebugError)?
                 }
             };
+
+            if pe.interrupts.len() > 0 {
+                interrupt_id = pe.interrupts[0].mapping as usize;
+                trace!(
+                    "Using status core mapped interrupt ID for PE {} -> {}.",
+                    i,
+                    interrupt_id
+                );
+            } else {
+                trace!(
+                    "Using legacy guessed interrupt ID for PE {} -> {}.",
+                    i,
+                    interrupt_id
+                );
+            }
 
             let mut the_pe = PE::new(
                 i,

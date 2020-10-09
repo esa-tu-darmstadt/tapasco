@@ -325,9 +325,20 @@ impl Device {
         if name == "pcie" {
             info!("Allocating the default of 4GB at 0x0 for a PCIe platform");
             let mut dma_offset = 0;
+            let mut dma_interrupt_read = 0;
+            let mut dma_interrupt_write = 1;
             for comp in &s.platform {
                 if comp.name == "PLATFORM_COMPONENT_DMA0" {
                     dma_offset = comp.offset;
+                    for v in &comp.interrupts {
+                        if v.name == "READ" {
+                            dma_interrupt_read = v.mapping as usize;
+                        } else if v.name == "WRITE" {
+                            dma_interrupt_write = v.mapping as usize;
+                        } else {
+                            trace!("Unknown DMA interrupt: {}.", v.name);
+                        }
+                    }
                 }
             }
             if dma_offset == 0 {
@@ -345,8 +356,8 @@ impl Device {
                     UserSpaceDMA::new(
                         &tlkm_dma_file,
                         dma_offset as usize,
-                        0,
-                        1,
+                        dma_interrupt_read,
+                        dma_interrupt_write,
                         &platform,
                         settings
                             .get::<usize>("dma.read_buffer_size")
