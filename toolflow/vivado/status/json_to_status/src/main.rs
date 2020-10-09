@@ -283,12 +283,12 @@ fn run() -> Result<()> {
     let mut interrupts_plat: HashMap<String, Vec<status::Interrupt>> = HashMap::new();
 
     let pe_re = Regex::new(r"PE_(\d)_(\d)")?;
-    let platform_re = Regex::new(r"(PLATFORM_COMPONENT_.*)_(READ)")?;
+    let platform_re = Regex::new(r"(PLATFORM_COMPONENT_.*)_(.*)")?;
 
     for interrupt in json.Interrupts {
         if pe_re.is_match(&interrupt.Name) {
             let g = pe_re.captures(&interrupt.Name).unwrap();
-            let peid = u64::from_str_radix(&g[0], 10).unwrap();
+            let peid = u64::from_str_radix(&g[1], 10).unwrap();
 
             let v = match interrupts_pes.get_mut(&peid) {
                 Some(x) => x,
@@ -300,12 +300,12 @@ fn run() -> Result<()> {
 
             v.push(status::Interrupt {
                 mapping: interrupt.Mapping,
-                name: g[1].to_string(),
+                name: g[2].to_string(),
             });
         } else if platform_re.is_match(&interrupt.Name) {
             let g = platform_re.captures(&interrupt.Name).unwrap();
-            let component = &g[0];
-            let name = &g[1];
+            let component = &g[1];
+            let name = &g[2];
 
             let v = match interrupts_plat.get_mut(component) {
                 Some(x) => x,

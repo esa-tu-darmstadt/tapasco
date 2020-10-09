@@ -19,10 +19,49 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x11status_core.proto\x12\x0etapasco.status\"\x97\x01\n\x02PE\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\r\x12\x0e\n\x06offset\x18\x03 \x01(\x04\x12\x0c\n\x04size\x18\x04 \x01(\x04\x12\x30\n\x0clocal_memory\x18\x05 \x01(\x0b\x32\x1a.tapasco.status.MemoryArea\x12\'\n\x05\x64\x65\x62ug\x18\x06 \x01(\x0b\x32\x18.tapasco.status.Platform\"6\n\x08Platform\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06offset\x18\x02 \x01(\x04\x12\x0c\n\x04size\x18\x03 \x01(\x04\",\n\x05\x43lock\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\rfrequency_mhz\x18\x02 \x01(\r\"Q\n\x07Version\x12\x10\n\x08software\x18\x01 \x01(\t\x12\x0c\n\x04year\x18\x02 \x01(\r\x12\x0f\n\x07release\x18\x03 \x01(\r\x12\x15\n\rextra_version\x18\x04 \x01(\t\"(\n\nMemoryArea\x12\x0c\n\x04\x62\x61se\x18\x01 \x01(\x04\x12\x0c\n\x04size\x18\x02 \x01(\x04\"\x9b\x02\n\x06Status\x12\x11\n\ttimestamp\x18\x01 \x01(\x04\x12-\n\tarch_base\x18\x02 \x01(\x0b\x32\x1a.tapasco.status.MemoryArea\x12\x31\n\rplatform_base\x18\x03 \x01(\x0b\x32\x1a.tapasco.status.MemoryArea\x12\x1e\n\x02pe\x18\x04 \x03(\x0b\x32\x12.tapasco.status.PE\x12*\n\x08platform\x18\x05 \x03(\x0b\x32\x18.tapasco.status.Platform\x12%\n\x06\x63locks\x18\x06 \x03(\x0b\x32\x15.tapasco.status.Clock\x12)\n\x08versions\x18\x07 \x03(\x0b\x32\x17.tapasco.status.Versionb\x06proto3'
+  serialized_pb=b'\n\x11status_core.proto\x12\x0etapasco.status\"*\n\tInterrupt\x12\x0f\n\x07mapping\x18\x01 \x01(\x04\x12\x0c\n\x04name\x18\x02 \x01(\t\"\xc6\x01\n\x02PE\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\n\n\x02id\x18\x02 \x01(\r\x12\x0e\n\x06offset\x18\x03 \x01(\x04\x12\x0c\n\x04size\x18\x04 \x01(\x04\x12\x30\n\x0clocal_memory\x18\x05 \x01(\x0b\x32\x1a.tapasco.status.MemoryArea\x12\'\n\x05\x64\x65\x62ug\x18\x06 \x01(\x0b\x32\x18.tapasco.status.Platform\x12-\n\ninterrupts\x18\x07 \x03(\x0b\x32\x19.tapasco.status.Interrupt\"e\n\x08Platform\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0e\n\x06offset\x18\x02 \x01(\x04\x12\x0c\n\x04size\x18\x03 \x01(\x04\x12-\n\ninterrupts\x18\x04 \x03(\x0b\x32\x19.tapasco.status.Interrupt\",\n\x05\x43lock\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\rfrequency_mhz\x18\x02 \x01(\r\"Q\n\x07Version\x12\x10\n\x08software\x18\x01 \x01(\t\x12\x0c\n\x04year\x18\x02 \x01(\r\x12\x0f\n\x07release\x18\x03 \x01(\r\x12\x15\n\rextra_version\x18\x04 \x01(\t\"(\n\nMemoryArea\x12\x0c\n\x04\x62\x61se\x18\x01 \x01(\x04\x12\x0c\n\x04size\x18\x02 \x01(\x04\"\x9b\x02\n\x06Status\x12\x11\n\ttimestamp\x18\x01 \x01(\x04\x12-\n\tarch_base\x18\x02 \x01(\x0b\x32\x1a.tapasco.status.MemoryArea\x12\x31\n\rplatform_base\x18\x03 \x01(\x0b\x32\x1a.tapasco.status.MemoryArea\x12\x1e\n\x02pe\x18\x04 \x03(\x0b\x32\x12.tapasco.status.PE\x12*\n\x08platform\x18\x05 \x03(\x0b\x32\x18.tapasco.status.Platform\x12%\n\x06\x63locks\x18\x06 \x03(\x0b\x32\x15.tapasco.status.Clock\x12)\n\x08versions\x18\x07 \x03(\x0b\x32\x17.tapasco.status.Versionb\x06proto3'
 )
 
 
+
+
+_INTERRUPT = _descriptor.Descriptor(
+  name='Interrupt',
+  full_name='tapasco.status.Interrupt',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='mapping', full_name='tapasco.status.Interrupt.mapping', index=0,
+      number=1, type=4, cpp_type=4, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='name', full_name='tapasco.status.Interrupt.name', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=37,
+  serialized_end=79,
+)
 
 
 _PE = _descriptor.Descriptor(
@@ -75,6 +114,13 @@ _PE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='interrupts', full_name='tapasco.status.PE.interrupts', index=6,
+      number=7, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -87,8 +133,8 @@ _PE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=38,
-  serialized_end=189,
+  serialized_start=82,
+  serialized_end=280,
 )
 
 
@@ -121,6 +167,13 @@ _PLATFORM = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='interrupts', full_name='tapasco.status.Platform.interrupts', index=3,
+      number=4, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -133,8 +186,8 @@ _PLATFORM = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=191,
-  serialized_end=245,
+  serialized_start=282,
+  serialized_end=383,
 )
 
 
@@ -172,8 +225,8 @@ _CLOCK = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=247,
-  serialized_end=291,
+  serialized_start=385,
+  serialized_end=429,
 )
 
 
@@ -225,8 +278,8 @@ _VERSION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=293,
-  serialized_end=374,
+  serialized_start=431,
+  serialized_end=512,
 )
 
 
@@ -264,8 +317,8 @@ _MEMORYAREA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=376,
-  serialized_end=416,
+  serialized_start=514,
+  serialized_end=554,
 )
 
 
@@ -338,18 +391,21 @@ _STATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=419,
-  serialized_end=702,
+  serialized_start=557,
+  serialized_end=840,
 )
 
 _PE.fields_by_name['local_memory'].message_type = _MEMORYAREA
 _PE.fields_by_name['debug'].message_type = _PLATFORM
+_PE.fields_by_name['interrupts'].message_type = _INTERRUPT
+_PLATFORM.fields_by_name['interrupts'].message_type = _INTERRUPT
 _STATUS.fields_by_name['arch_base'].message_type = _MEMORYAREA
 _STATUS.fields_by_name['platform_base'].message_type = _MEMORYAREA
 _STATUS.fields_by_name['pe'].message_type = _PE
 _STATUS.fields_by_name['platform'].message_type = _PLATFORM
 _STATUS.fields_by_name['clocks'].message_type = _CLOCK
 _STATUS.fields_by_name['versions'].message_type = _VERSION
+DESCRIPTOR.message_types_by_name['Interrupt'] = _INTERRUPT
 DESCRIPTOR.message_types_by_name['PE'] = _PE
 DESCRIPTOR.message_types_by_name['Platform'] = _PLATFORM
 DESCRIPTOR.message_types_by_name['Clock'] = _CLOCK
@@ -357,6 +413,13 @@ DESCRIPTOR.message_types_by_name['Version'] = _VERSION
 DESCRIPTOR.message_types_by_name['MemoryArea'] = _MEMORYAREA
 DESCRIPTOR.message_types_by_name['Status'] = _STATUS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
+
+Interrupt = _reflection.GeneratedProtocolMessageType('Interrupt', (_message.Message,), {
+  'DESCRIPTOR' : _INTERRUPT,
+  '__module__' : 'status_core_pb2'
+  # @@protoc_insertion_point(class_scope:tapasco.status.Interrupt)
+  })
+_sym_db.RegisterMessage(Interrupt)
 
 PE = _reflection.GeneratedProtocolMessageType('PE', (_message.Message,), {
   'DESCRIPTOR' : _PE,

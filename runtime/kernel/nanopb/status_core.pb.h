@@ -15,6 +15,11 @@ typedef struct _tapasco_status_Clock {
     uint32_t frequency_mhz;
 } tapasco_status_Clock;
 
+typedef struct _tapasco_status_Interrupt {
+    uint64_t mapping;
+    pb_callback_t name;
+} tapasco_status_Interrupt;
+
 typedef struct _tapasco_status_MemoryArea {
     uint64_t base;
     uint64_t size;
@@ -24,6 +29,7 @@ typedef struct _tapasco_status_Platform {
     pb_callback_t name;
     uint64_t offset;
     uint64_t size;
+    pb_callback_t interrupts;
 } tapasco_status_Platform;
 
 typedef struct _tapasco_status_Version {
@@ -42,6 +48,7 @@ typedef struct _tapasco_status_PE {
     tapasco_status_MemoryArea local_memory;
     bool has_debug;
     tapasco_status_Platform debug;
+    pb_callback_t interrupts;
 } tapasco_status_PE;
 
 typedef struct _tapasco_status_Status {
@@ -62,14 +69,16 @@ extern "C" {
 #endif
 
 /* Initializer values for message structs */
-#define tapasco_status_PE_init_default           {{{NULL}, NULL}, 0, 0, 0, false, tapasco_status_MemoryArea_init_default, false, tapasco_status_Platform_init_default}
-#define tapasco_status_Platform_init_default     {{{NULL}, NULL}, 0, 0}
+#define tapasco_status_Interrupt_init_default    {0, {{NULL}, NULL}}
+#define tapasco_status_PE_init_default           {{{NULL}, NULL}, 0, 0, 0, false, tapasco_status_MemoryArea_init_default, false, tapasco_status_Platform_init_default, {{NULL}, NULL}}
+#define tapasco_status_Platform_init_default     {{{NULL}, NULL}, 0, 0, {{NULL}, NULL}}
 #define tapasco_status_Clock_init_default        {{{NULL}, NULL}, 0}
 #define tapasco_status_Version_init_default      {{{NULL}, NULL}, 0, 0, {{NULL}, NULL}}
 #define tapasco_status_MemoryArea_init_default   {0, 0}
 #define tapasco_status_Status_init_default       {0, false, tapasco_status_MemoryArea_init_default, false, tapasco_status_MemoryArea_init_default, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}}
-#define tapasco_status_PE_init_zero              {{{NULL}, NULL}, 0, 0, 0, false, tapasco_status_MemoryArea_init_zero, false, tapasco_status_Platform_init_zero}
-#define tapasco_status_Platform_init_zero        {{{NULL}, NULL}, 0, 0}
+#define tapasco_status_Interrupt_init_zero       {0, {{NULL}, NULL}}
+#define tapasco_status_PE_init_zero              {{{NULL}, NULL}, 0, 0, 0, false, tapasco_status_MemoryArea_init_zero, false, tapasco_status_Platform_init_zero, {{NULL}, NULL}}
+#define tapasco_status_Platform_init_zero        {{{NULL}, NULL}, 0, 0, {{NULL}, NULL}}
 #define tapasco_status_Clock_init_zero           {{{NULL}, NULL}, 0}
 #define tapasco_status_Version_init_zero         {{{NULL}, NULL}, 0, 0, {{NULL}, NULL}}
 #define tapasco_status_MemoryArea_init_zero      {0, 0}
@@ -78,11 +87,14 @@ extern "C" {
 /* Field tags (for use in manual encoding/decoding) */
 #define tapasco_status_Clock_name_tag            1
 #define tapasco_status_Clock_frequency_mhz_tag   2
+#define tapasco_status_Interrupt_mapping_tag     1
+#define tapasco_status_Interrupt_name_tag        2
 #define tapasco_status_MemoryArea_base_tag       1
 #define tapasco_status_MemoryArea_size_tag       2
 #define tapasco_status_Platform_name_tag         1
 #define tapasco_status_Platform_offset_tag       2
 #define tapasco_status_Platform_size_tag         3
+#define tapasco_status_Platform_interrupts_tag   4
 #define tapasco_status_Version_software_tag      1
 #define tapasco_status_Version_year_tag          2
 #define tapasco_status_Version_release_tag       3
@@ -93,6 +105,7 @@ extern "C" {
 #define tapasco_status_PE_size_tag               4
 #define tapasco_status_PE_local_memory_tag       5
 #define tapasco_status_PE_debug_tag              6
+#define tapasco_status_PE_interrupts_tag         7
 #define tapasco_status_Status_timestamp_tag      1
 #define tapasco_status_Status_arch_base_tag      2
 #define tapasco_status_Status_platform_base_tag  3
@@ -102,24 +115,34 @@ extern "C" {
 #define tapasco_status_Status_versions_tag       7
 
 /* Struct field encoding specification for nanopb */
+#define tapasco_status_Interrupt_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT64,   mapping,           1) \
+X(a, CALLBACK, SINGULAR, STRING,   name,              2)
+#define tapasco_status_Interrupt_CALLBACK pb_default_field_callback
+#define tapasco_status_Interrupt_DEFAULT NULL
+
 #define tapasco_status_PE_FIELDLIST(X, a) \
 X(a, CALLBACK, SINGULAR, STRING,   name,              1) \
 X(a, STATIC,   SINGULAR, UINT32,   id,                2) \
 X(a, STATIC,   SINGULAR, UINT64,   offset,            3) \
 X(a, STATIC,   SINGULAR, UINT64,   size,              4) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  local_memory,      5) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  debug,             6)
+X(a, STATIC,   OPTIONAL, MESSAGE,  debug,             6) \
+X(a, CALLBACK, REPEATED, MESSAGE,  interrupts,        7)
 #define tapasco_status_PE_CALLBACK pb_default_field_callback
 #define tapasco_status_PE_DEFAULT NULL
 #define tapasco_status_PE_local_memory_MSGTYPE tapasco_status_MemoryArea
 #define tapasco_status_PE_debug_MSGTYPE tapasco_status_Platform
+#define tapasco_status_PE_interrupts_MSGTYPE tapasco_status_Interrupt
 
 #define tapasco_status_Platform_FIELDLIST(X, a) \
 X(a, CALLBACK, SINGULAR, STRING,   name,              1) \
 X(a, STATIC,   SINGULAR, UINT64,   offset,            2) \
-X(a, STATIC,   SINGULAR, UINT64,   size,              3)
+X(a, STATIC,   SINGULAR, UINT64,   size,              3) \
+X(a, CALLBACK, REPEATED, MESSAGE,  interrupts,        4)
 #define tapasco_status_Platform_CALLBACK pb_default_field_callback
 #define tapasco_status_Platform_DEFAULT NULL
+#define tapasco_status_Platform_interrupts_MSGTYPE tapasco_status_Interrupt
 
 #define tapasco_status_Clock_FIELDLIST(X, a) \
 X(a, CALLBACK, SINGULAR, STRING,   name,              1) \
@@ -158,6 +181,7 @@ X(a, CALLBACK, REPEATED, MESSAGE,  versions,          7)
 #define tapasco_status_Status_clocks_MSGTYPE tapasco_status_Clock
 #define tapasco_status_Status_versions_MSGTYPE tapasco_status_Version
 
+extern const pb_msgdesc_t tapasco_status_Interrupt_msg;
 extern const pb_msgdesc_t tapasco_status_PE_msg;
 extern const pb_msgdesc_t tapasco_status_Platform_msg;
 extern const pb_msgdesc_t tapasco_status_Clock_msg;
@@ -166,6 +190,7 @@ extern const pb_msgdesc_t tapasco_status_MemoryArea_msg;
 extern const pb_msgdesc_t tapasco_status_Status_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
+#define tapasco_status_Interrupt_fields &tapasco_status_Interrupt_msg
 #define tapasco_status_PE_fields &tapasco_status_PE_msg
 #define tapasco_status_Platform_fields &tapasco_status_Platform_msg
 #define tapasco_status_Clock_fields &tapasco_status_Clock_msg
@@ -174,6 +199,7 @@ extern const pb_msgdesc_t tapasco_status_Status_msg;
 #define tapasco_status_Status_fields &tapasco_status_Status_msg
 
 /* Maximum encoded size of messages (where known) */
+/* tapasco_status_Interrupt_size depends on runtime parameters */
 /* tapasco_status_PE_size depends on runtime parameters */
 /* tapasco_status_Platform_size depends on runtime parameters */
 /* tapasco_status_Clock_size depends on runtime parameters */

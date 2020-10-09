@@ -6,6 +6,9 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
+PB_BIND(tapasco_status_Interrupt, tapasco_status_Interrupt, AUTO)
+
+
 PB_BIND(tapasco_status_PE, tapasco_status_PE, AUTO)
 
 
