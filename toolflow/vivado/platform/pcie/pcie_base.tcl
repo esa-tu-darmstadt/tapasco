@@ -122,6 +122,8 @@
 
     set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 4]
 
+    set int_in [::tapasco::create_interrupt_in_ports]
+
     # create MSIX interrupt controller
     set msix_intr_ctrl [tapasco::ip::create_msix_intr_ctrl "msix_intr_ctrl"]
     connect_bd_net [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "dout"}] [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "interrupt_pcie"}]

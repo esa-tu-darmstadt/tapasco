@@ -469,9 +469,40 @@ namespace eval ::tapasco::ip {
     lappend debugable_pes [list $pe_id $name $offset $size]
   }
 
+  set interrupts [list]
+  set interrupt_mapping [list]
+  set interrupt_cntr 0
+
+  namespace export add_interrupt
+  proc add_interrupt { name } {
+    lappend interrupts "$name"
+    incr interrupt_cntr
+  }
+
+  namespace export add_interrupt
+  proc set_interrupt_mapping { mapping } {
+    set interrupt_mapping $mapping
+  }
+
+  namespace export get_interrupt_list
+  proc get_interrupt_list { name } {
+    return $interrupts
+  }
+
+  namespace export create_interrupt_in_ports
+  proc create_interrupt_in_ports {} {
+    set ports [list]
+    for int $interrupts {
+      lappend ports [create_bd_pin -type INTR -dir I "intr_${int}"]
+    }
+    return ports
+  }
+
   # Generate JSON configuration for the status core.
   proc make_status_config_json {} {
     variable debugable_pes
+    variable interrupts
+    variable interrupt_mapping
 
     platform::addressmap::reset
     puts "  getting address map ..."
@@ -518,6 +549,12 @@ namespace eval ::tapasco::ip {
         lappend debug [json::write object "PE_ID" $pe_id "Name" $name "Offset" $offset "Size" $size]
     }
 
+    set interrupt_json [list]
+    foreach name $interrupts mapping $interrupt_mapping {
+      puts "Interrupt $name @ $mapping"
+      lappend interrupt_json [json::write object "Name" [json::write string $name] "Mapping" [json::write string $mapping]]
+    }
+
     # get platform component base addresses
     set pc_bases [list]
     foreach {pc_name pc_base size} [::platform::addressmap::get_platform_component_bases] {
@@ -552,6 +589,7 @@ namespace eval ::tapasco::ip {
         "Platform" [json::write object "Base" [json::write string [format "0x%016x" [::platform::get_platform_base_address]]] \
                                        "Components" [json::write array {*}$pc_bases]] \
       "Debug" [json::write array {*}$debug] \
+      "Interrupts" [json::write array {*}$interrupt_json] \
     ]
   }
 }

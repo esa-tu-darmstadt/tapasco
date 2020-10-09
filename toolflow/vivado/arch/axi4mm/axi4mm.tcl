@@ -27,7 +27,6 @@ namespace eval arch {
   set arch_mem_ics [list]
   set arch_mem_ports [list]
   set arch_host_ics [list]
-  set arch_irq_concats [list]
 
   # scan plugin directory
   foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/arch/axi4mm/plugins" "*.tcl"] {
@@ -300,7 +299,6 @@ namespace eval arch {
 
   # Connects the architecture interrupt lines.
   proc arch_connect_interrupts {ips} {
-    variable arch_irq_concats
     puts "Connecting [llength $ips] target IP interrupts ..."
 
     set i 0
@@ -308,60 +306,17 @@ namespace eval arch {
     set num_slaves [llength [tapasco::get_aximm_interfaces $ips "Slave"]]
     set left $num_slaves
     puts "  total number of slave interfaces: $num_slaves"
-    set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "$num_slaves > 32 ? 32 : $num_slaves"]]
-    lappend arch_irq_concats $cc
-    set zero [tapasco::ip::create_constant "zero" 1 0]
+
     # Only one Interrupt per IP is connected
     foreach ip [lsort $ips] {
-      set selected 0
+
+      set pe_sub_interrupt 0
+
       foreach pin [get_bd_pins -of $ip -filter { TYPE == intr }] {
-        if { $selected == 0 } {
-          set selected 1
-          connect_bd_net $pin [get_bd_pins -of $cc -filter "NAME == In$i"]
-        } else {
-          puts "Skipping pin $pin because ip $ip is already connected to the interrupt controller."
-        }
+          ::tapasco::ip::add_interrupt "PE_${i}_${pe_sub_interrupt}"
+          set out_port [create_bd_pin -type INTR -dir O "intr_PE_${i}_${pe_sub_interrupt}"]
+          connect_bd_net $pin $out_port
       }
-
-      if { $selected == 0 } {
-        puts "IP $ip does not seem to have any interrupts. Skipping."
-      }
-
-      incr i
-      incr left -1
-      if {$i > 31} {
-        set i 0
-        incr j
-        if { $left > 0 } {
-          set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "$left > 32 ? 32 : $left"]]
-          lappend arch_irq_concats $cc
-        }
-      }
-
-      set num_slaves [llength [tapasco::get_aximm_interfaces $ip "Slave"]]
-      puts "    number of slave interfaces on $ip: $num_slaves"
-      for {set tieoff 1} {$tieoff < $num_slaves} {incr tieoff} {
-        connect_bd_net [get_bd_pins -of $zero] [get_bd_pins -of $cc -filter "NAME == In$i"]
-        incr i
-        incr left -1
-        if {$i > 31} {
-          set i 0
-          incr j
-          if { $left > 0 } {
-            set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "$left > 32 ? 32 : $left"]]
-            lappend arch_irq_concats $cc
-          }
-        }
-      }
-    }
-    set i 0
-    foreach irq_concat $arch_irq_concats {
-      # create hierarchical port with correct width
-      set port [get_bd_pins -of_objects $irq_concat -filter {DIR == "O"}]
-      set out_port [create_bd_pin -type INTR -dir O -from [get_property LEFT $port] -to [get_property RIGHT $port] "intr_$i"]
-      connect_bd_net $port $out_port
-      incr i
-    }
   }
 
   # Connect internal clock lines.
