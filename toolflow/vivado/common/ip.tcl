@@ -471,26 +471,29 @@ namespace eval ::tapasco::ip {
 
   set interrupts [list]
   set interrupt_mapping [list]
-  set interrupt_cntr 0
 
   namespace export add_interrupt
   proc add_interrupt { name } {
+    variable interrupts
+    variable interrupt_cntr
     lappend interrupts "$name"
-    incr interrupt_cntr
   }
 
   namespace export add_interrupt
   proc set_interrupt_mapping { mapping } {
+    variable interrupt_mapping
     set interrupt_mapping $mapping
   }
 
   namespace export get_interrupt_list
   proc get_interrupt_list { name } {
+    variable interrupts
     return $interrupts
   }
 
   namespace export create_interrupt_in_ports
   proc create_interrupt_in_ports {} {
+    variable interrupts
     set ports [list]
     for int $interrupts {
       lappend ports [create_bd_pin -type INTR -dir I "intr_${int}"]

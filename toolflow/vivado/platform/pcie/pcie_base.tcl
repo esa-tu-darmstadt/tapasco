@@ -122,7 +122,8 @@
 
     set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 4]
 
-    set int_in [::tapasco::create_interrupt_in_ports]
+    set int_in [::tapasco::ip::create_interrupt_in_ports]
+    set int_mapping [list]
 
     # create MSIX interrupt controller
     set msix_intr_ctrl [tapasco::ip::create_msix_intr_ctrl "msix_intr_ctrl"]

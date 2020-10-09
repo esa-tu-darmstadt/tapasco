@@ -302,7 +302,6 @@ namespace eval arch {
     puts "Connecting [llength $ips] target IP interrupts ..."
 
     set i 0
-    set j 0
     set num_slaves [llength [tapasco::get_aximm_interfaces $ips "Slave"]]
     set left $num_slaves
     puts "  total number of slave interfaces: $num_slaves"
@@ -313,10 +312,14 @@ namespace eval arch {
       set pe_sub_interrupt 0
 
       foreach pin [get_bd_pins -of $ip -filter { TYPE == intr }] {
-          ::tapasco::ip::add_interrupt "PE_${i}_${pe_sub_interrupt}"
-          set out_port [create_bd_pin -type INTR -dir O "intr_PE_${i}_${pe_sub_interrupt}"]
+          set intr_name "PE_${i}_${pe_sub_interrupt}"
+          puts "Creating interrupt $intr_name"
+          ::tapasco::ip::add_interrupt $intr_name
+          set out_port [create_bd_pin -type INTR -dir O $intr_name]
           connect_bd_net $pin $out_port
       }
+      incr i
+    }
   }
 
   # Connect internal clock lines.
