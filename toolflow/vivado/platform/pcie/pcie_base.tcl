@@ -123,11 +123,8 @@
 
     # create MSIX interrupt controller
     set msix_intr_ctrl [tapasco::ip::create_msix_intr_ctrl "msix_intr_ctrl"]
-    connect_bd_net [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "dout"}] [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "interrupt_pcie"}]
 
     connect_bd_intf_net $msix_interface [get_bd_intf_pins msix_intr_ctrl/msix]
-
-    connect_bd_net [get_bd_pin -of_objects $irq_concat_design -filter {NAME == "dout"}] [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "interrupt_design"}]
 
     # connect internal clocks
     connect_bd_net $aclk [get_bd_pins -of_objects $msix_intr_ctrl -filter {NAME == "S_AXI_ACLK"}]
@@ -171,8 +168,8 @@
     } else {
       set dma [tapasco::ip::create_bluedma_x16 "dma"]
     }
-    connect_bd_net [get_bd_pins $dma/IRQ_read] [add_interrupt "PLATFORM_COMPONENT_DMA0_READ" "host"]
-    connect_bd_net [get_bd_pins $dma/IRQ_write] [add_interrupt "PLATFORM_COMPONENT_DMA0_WRITE" "host"]
+    connect_bd_net [get_bd_pins $dma/IRQ_read] [::tapasco::ip::add_interrupt "PLATFORM_COMPONENT_DMA0_READ" "host"]
+    connect_bd_net [get_bd_pins $dma/IRQ_write] [::tapasco::ip::add_interrupt "PLATFORM_COMPONENT_DMA0_WRITE" "host"]
 
     set mig_ic [tapasco::ip::create_axi_sc "mig_ic" 2 1]
     tapasco::ip::connect_sc_default_clocks $mig_ic "mem"

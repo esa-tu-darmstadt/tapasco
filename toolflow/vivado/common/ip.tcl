@@ -476,7 +476,7 @@ namespace eval ::tapasco::ip {
   proc add_interrupt { name clk } {
     variable interrupts
     variable interrupt_cntr
-    lappend interrupts [list "$name" "$clk"]
+    lappend interrupts "$name" "$clk"
 
     return [create_bd_pin -type INTR -dir O "intr_${name}"]
   }
@@ -488,7 +488,7 @@ namespace eval ::tapasco::ip {
   }
 
   namespace export get_interrupt_list
-  proc get_interrupt_list { name } {
+  proc get_interrupt_list { } {
     variable interrupts
     return $interrupts
   }
@@ -497,7 +497,7 @@ namespace eval ::tapasco::ip {
   proc create_interrupt_in_ports {} {
     variable interrupts
     set ports [list]
-    foreach int clk $interrupts {
+    foreach {int clk} $interrupts {
       lappend ports [create_bd_pin -type INTR -dir I "intr_${int}"]
     }
     return ports
@@ -555,7 +555,7 @@ namespace eval ::tapasco::ip {
     }
 
     set interrupt_json [list]
-    foreach name clk $interrupts mapping $interrupt_mapping {
+    foreach {name clk} $interrupts mapping $interrupt_mapping {
       puts "Interrupt $name @ $mapping"
       lappend interrupt_json [json::write object "Name" [json::write string $name] "Mapping" [json::write string $mapping]]
     }
