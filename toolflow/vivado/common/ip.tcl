@@ -477,6 +477,8 @@ namespace eval ::tapasco::ip {
     variable interrupts
     variable interrupt_cntr
     lappend interrupts "$name"
+
+    return [create_bd_pin -type INTR -dir O "M_intr_$intr_name"]
   }
 
   namespace export add_interrupt
@@ -495,8 +497,8 @@ namespace eval ::tapasco::ip {
   proc create_interrupt_in_ports {} {
     variable interrupts
     set ports [list]
-    for int $interrupts {
-      lappend ports [create_bd_pin -type INTR -dir I "intr_${int}"]
+    foreach int $interrupts {
+      lappend ports [create_bd_pin -type INTR -dir I "S_intr_${int}"]
     }
     return ports
   }

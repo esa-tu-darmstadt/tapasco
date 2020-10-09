@@ -314,9 +314,7 @@ namespace eval arch {
       foreach pin [get_bd_pins -of $ip -filter { TYPE == intr }] {
           set intr_name "PE_${i}_${pe_sub_interrupt}"
           puts "Creating interrupt $intr_name"
-          ::tapasco::ip::add_interrupt $intr_name
-          set out_port [create_bd_pin -type INTR -dir O $intr_name]
-          connect_bd_net $pin $out_port
+          connect_bd_net $pin [::tapasco::ip::add_interrupt $intr_name]
       }
       incr i
     }
