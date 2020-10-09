@@ -45,7 +45,8 @@
     return [list [::tapasco::get_platform_num_slots]]
   }
 
-  proc number_of_interrupt_controllers {} {
+  proc 
+   {} {
     return 1
   }
 
@@ -114,36 +115,18 @@
     set p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
     set design_aclk [tapasco::subsystem::get_port "design" "clk"]
     set design_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
-    set dma_irq_read [create_bd_pin -type "intr" -dir I "dma_irq_read"]
-    set dma_irq_write [create_bd_pin -type "intr" -dir I "dma_irq_write"]
-
-    set num_irqs_threadpools [::tapasco::get_platform_num_slots]
-    set num_irqs [expr $num_irqs_threadpools + 4]
-
-    set irq_concat_ss [tapasco::ip::create_xlconcat "interrupt_concat" 4]
 
     set int_in [::tapasco::ip::create_interrupt_in_ports]
+    set int_list [::tapasco::ip::get_interrupt_list]
     set int_mapping [list]
+
+    puts "Starting mapping of interrupts $int_list"
 
     # create MSIX interrupt controller
     set msix_intr_ctrl [tapasco::ip::create_msix_intr_ctrl "msix_intr_ctrl"]
     connect_bd_net [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "dout"}] [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "interrupt_pcie"}]
 
     connect_bd_intf_net $msix_interface [get_bd_intf_pins msix_intr_ctrl/msix]
-
-    connect_bd_net $dma_irq_read [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In0"}]
-    connect_bd_net $dma_irq_write [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In1"}]
-    puts "Unused Interrupts: 2, 3 are tied to 0"
-    set irq_unused [tapasco::ip::create_constant "irq_unused" 1 0]
-    connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In2"}]
-    connect_bd_net [get_bd_pin -of_object $irq_unused -filter {NAME == "dout"}] [get_bd_pin -of_objects $irq_concat_ss -filter {NAME == "In3"}]
-
-    set irq_concat_design [tapasco::ip::create_xlconcat "interrupt_concat_design" 4]
-
-    for {set i 0} {$i < 4} {incr i} {
-      set port [create_bd_pin -from 31 -to 0 -dir I -type intr "intr_$i"]
-      connect_bd_net $port [get_bd_pin -of_objects $irq_concat_design -filter "NAME == In$i"]
-    }
 
     connect_bd_net [get_bd_pin -of_objects $irq_concat_design -filter {NAME == "dout"}] [get_bd_pin -of_objects $msix_intr_ctrl -filter {NAME == "interrupt_design"}]
 
@@ -180,9 +163,6 @@
     set ddr_p_aresetn  [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
     set design_p_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
 
-    set irq_read [create_bd_pin -type "intr" -dir "O" "dma_irq_read"]
-    set irq_write [create_bd_pin -type "intr" -dir "O" "dma_irq_write"]
-
     # create instances of cores: MIG core, DMA
     set mig [create_mig_core "mig"]
 
@@ -192,8 +172,8 @@
     } else {
       set dma [tapasco::ip::create_bluedma_x16 "dma"]
     }
-    connect_bd_net [get_bd_pins $dma/IRQ_read] $irq_read
-    connect_bd_net [get_bd_pins $dma/IRQ_write] $irq_write
+    connect_bd_net [get_bd_pins $dma/IRQ_read] [add_interrupt "PLATFORM_COMPONENT_DMA0_READ" "host"]
+    connect_bd_net [get_bd_pins $dma/IRQ_write] [add_interrupt "PLATFORM_COMPONENT_DMA0_WRITE" "host"]
 
     set mig_ic [tapasco::ip::create_axi_sc "mig_ic" 2 1]
     tapasco::ip::connect_sc_default_clocks $mig_ic "mem"
