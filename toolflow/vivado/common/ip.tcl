@@ -557,7 +557,7 @@ namespace eval ::tapasco::ip {
     set interrupt_json [list]
     foreach {name clk} $interrupts mapping $interrupt_mapping {
       puts "Interrupt $name @ $mapping"
-      lappend interrupt_json [json::write object "Name" [json::write string $name] "Mapping" [json::write string $mapping]]
+      lappend interrupt_json [json::write object "Name" [json::write string $name] "Mapping" $mapping]
     }
 
     # get platform component base addresses

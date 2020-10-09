@@ -25,24 +25,21 @@ extern crate common_failures;
 extern crate failure;
 extern crate env_logger;
 extern crate hex;
+extern crate regex;
 extern crate serde;
 extern crate serde_json;
 
-use prost::Message;
-use std::collections::HashMap;
-use std::u64;
-
+use clap::{App, AppSettings, Arg};
 use common_failures::prelude::*;
-
+use prost::Message;
+use regex::Regex;
 use serde::Deserialize;
-
+use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
-use std::path::Path;
-
 use std::io::BufReader;
-
-use clap::{App, AppSettings, Arg};
+use std::path::Path;
+use std::u64;
 
 pub mod status {
     include!(concat!(env!("OUT_DIR"), "/tapasco.status.rs"));
@@ -94,6 +91,13 @@ struct Debug {
 
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug)]
+struct InterruptMapping {
+    Name: String,
+    Mapping: u64,
+}
+
+#[allow(non_snake_case)]
+#[derive(Deserialize, Debug)]
 struct ComponentAddresses {
     Base: String,
     Components: Vec<Component>,
@@ -115,6 +119,7 @@ struct Design {
     Clocks: Vec<Clocks>,
     Platform: ComponentAddresses,
     Debug: Vec<Debug>,
+    Interrupts: Vec<InterruptMapping>,
 }
 
 #[derive(Debug, Fail)]
@@ -269,8 +274,54 @@ fn run() -> Result<()> {
                 name: name.clone(),
                 offset: offset,
                 size: size,
+                interrupts: Vec::new(),
             },
         );
+    }
+
+    let mut interrupts_pes: HashMap<u64, Vec<status::Interrupt>> = HashMap::new();
+    let mut interrupts_plat: HashMap<String, Vec<status::Interrupt>> = HashMap::new();
+
+    let pe_re = Regex::new(r"PE_(\d)_(\d)")?;
+    let platform_re = Regex::new(r"(PLATFORM_COMPONENT_.*)_(READ)")?;
+
+    for interrupt in json.Interrupts {
+        if pe_re.is_match(&interrupt.Name) {
+            let g = pe_re.captures(&interrupt.Name).unwrap();
+            let peid = u64::from_str_radix(&g[0], 10).unwrap();
+
+            let v = match interrupts_pes.get_mut(&peid) {
+                Some(x) => x,
+                None => {
+                    interrupts_pes.insert(peid, Vec::new());
+                    interrupts_pes.get_mut(&peid).unwrap()
+                }
+            };
+
+            v.push(status::Interrupt {
+                mapping: interrupt.Mapping,
+                name: g[1].to_string(),
+            });
+        } else if platform_re.is_match(&interrupt.Name) {
+            let g = platform_re.captures(&interrupt.Name).unwrap();
+            let component = &g[0];
+            let name = &g[1];
+
+            let v = match interrupts_plat.get_mut(component) {
+                Some(x) => x,
+                None => {
+                    interrupts_plat.insert(component.to_string(), Vec::new());
+                    interrupts_plat.get_mut(component).unwrap()
+                }
+            };
+
+            v.push(status::Interrupt {
+                mapping: interrupt.Mapping,
+                name: name.to_string(),
+            });
+        } else {
+            trace!("Unknown interrupt mapping {:?}.", interrupt);
+        }
     }
 
     let mut pes: Vec<status::Pe> = Vec::new();
@@ -286,6 +337,10 @@ fn run() -> Result<()> {
                 size: size,
             });
         } else {
+            let int = match interrupts_pes.remove(&pe.SlotId) {
+                Some(x) => x,
+                None => Vec::new(),
+            };
             pes.push(status::Pe {
                 name: pe.VLNV,
                 id: pe.Kernel as u32,
@@ -293,6 +348,7 @@ fn run() -> Result<()> {
                 size: size,
                 local_memory: None,
                 debug: debugs.remove(&pe.SlotId),
+                interrupts: int,
             });
         }
     }
@@ -314,6 +370,10 @@ fn run() -> Result<()> {
             name: x.Name.clone(),
             offset: from_hex_str(&x.Offset).unwrap(),
             size: from_hex_str(&x.Size).unwrap(),
+            interrupts: match interrupts_plat.remove(&x.Name) {
+                Some(x) => x,
+                None => Vec::new(),
+            },
         })
         .collect();
 
