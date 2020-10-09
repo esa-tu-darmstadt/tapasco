@@ -121,10 +121,61 @@
 
     puts "Starting mapping of interrupts $int_list"
 
+    set int_design_total 0
+    set int_design 0
+    set int_host 0
+
+    set design_concats_last [tapasco::ip::create_xlconcat "int_cc_design_0" 32]
+    set design_concats [list $design_concats_last]
+    set host_concat [tapasco::ip::create_xlconcat "int_cc_host" 4]
+
+    foreach {name clk} $int_list port $int_in {
+      puts "Connecting ${name} (Clk: ${clk}) to ${port}"
+      if {$clk == "host"} {
+        connect_bd_net ${port} [get_bd_pins ${host_concat}/In${int_host}]
+
+        lappend int_mapping $int_host
+
+        incr int_host
+      } elseif {$clk == "design"} {
+        if { $int_design >= 32 } {
+          set n [llength $design_concats]
+          set design_concats_last [tapasco::ip::create_xlconcat "int_cc_design_${n}" 32]
+
+          lappend design_concats $design_concats_last
+
+          set int_design 0
+        }
+        connect_bd_net ${port} [get_bd_pins ${design_concats_last}/In${int_design}]
+
+        lappend int_mapping [expr 4 + $int_design_total]
+
+        incr int_design
+        incr int_design_total
+      } else {
+        error "Memory interrupts not supported"
+      }
+    }
+
+    ::tapasco::ip::set_interrupt_mapping $int_mapping
+
+    if {[llength $design_concats] > 1} {
+      set cntr 0
+      set design_concats_last [tapasco::ip::create_xlconcat "int_cc_design_merge" [llength $design_concats]]
+      foreach con $design_concats {
+        connect_bd_net [get_bd_pins $con/dout] [get_bd_pins ${design_concats_last}/In${cntr}]
+        incr cntr
+      }
+    }
+
     # create MSIX interrupt controller
     set msix_intr_ctrl [tapasco::ip::create_msix_intr_ctrl "msix_intr_ctrl"]
 
     connect_bd_intf_net $msix_interface [get_bd_intf_pins msix_intr_ctrl/msix]
+    save_bd_design
+
+    connect_bd_net [get_bd_pins ${design_concats_last}/dout] [get_bd_pins $msix_intr_ctrl/interrupt_design] 
+    connect_bd_net [get_bd_pins ${host_concat}/dout] [get_bd_pins $msix_intr_ctrl/interrupt_pcie] 
 
     # connect internal clocks
     connect_bd_net $aclk [get_bd_pins -of_objects $msix_intr_ctrl -filter {NAME == "S_AXI_ACLK"}]

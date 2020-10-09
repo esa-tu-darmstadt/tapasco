@@ -500,7 +500,7 @@ namespace eval ::tapasco::ip {
     foreach {int clk} $interrupts {
       lappend ports [create_bd_pin -type INTR -dir I "intr_${int}"]
     }
-    return ports
+    return $ports
   }
 
   # Generate JSON configuration for the status core.
