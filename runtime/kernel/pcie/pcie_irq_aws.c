@@ -97,9 +97,9 @@ irqreturn_t aws_irq_handler(int irq, void *data)
 	while ((status = intc[0])) {
 		do {
 			u32 slot = __builtin_ffs(status) - 1;
-			slot += s_off;
+			u32 slot_shifted = slot + s_off;
 
-			while (m_start->irq_no < slot) {
+			while (m_start->irq_no < slot_shifted) {
 				if (m_start->list.next !=
 				    mapping->mapping_base) {
 					m_start = list_entry(
@@ -109,13 +109,13 @@ irqreturn_t aws_irq_handler(int irq, void *data)
 					break;
 				}
 			}
-			if (m_start->irq_no == slot) {
+			if (m_start->irq_no == slot_shifted) {
 				eventfd_signal(m_start->eventfd, 1);
 			} else {
 				// Got interrupt for unregistered interrupt
 				LOG(TLKM_LF_IRQ,
 				    "Got interrupt %d which is not registered",
-				    slot);
+				    slot_shifted);
 			}
 
 			status ^= (1U << slot);
@@ -197,6 +197,7 @@ void pcie_aws_irqs_exit(struct tlkm_device *dev)
 	struct tlkm_pcie_device *pdev =
 		(struct tlkm_pcie_device *)dev->private_data;
 	int rirq = 0;
+	int irq = 0;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
 	const char *namebuf;
@@ -206,8 +207,9 @@ void pcie_aws_irqs_exit(struct tlkm_device *dev)
 
 	while (pdev->requested_irq_num) {
 		--pdev->requested_irq_num;
-		rirq = pci_irq_vector(pdev->pdev, pdev->requested_irq_num);
-		LOG(TLKM_LF_IRQ, "releasing IRQ #%d", rirq);
+		irq = NUM_DIRECT_IRQS + pdev->requested_irq_num;
+		rirq = pci_irq_vector(pdev->pdev, irq);
+		LOG(TLKM_LF_IRQ, "releasing IRQ %d -> #%d", irq, rirq);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 12, 0)
 		free_irq(rirq, &pdev->intc_bases[pdev->requested_irq_num]);
 		kfree(pdev->intc_bases[pdev->requested_irq_num].name);
@@ -268,7 +270,7 @@ void pcie_aws_irqs_release_platform_irq(struct tlkm_device *dev,
 	struct tlkm_irq_mapping *m_start = mapping;
 
 	if (mapping->irq_no < NUM_DIRECT_IRQS) {
-		pcie_aws_irqs_release_platform_irq(dev, mapping);
+		pcie_irqs_release_platform_irq(dev, mapping);
 	} else {
 		LOG(TLKM_LF_IRQ,
 		    "Got request to remove IRQ %d belonging to controller %d",
