@@ -68,7 +68,7 @@ if [ -n $BITSTREAM ] && [[ $BITSTREAM == agfi* ]]
 then
 	echo "AGFI = $BITSTREAM"
 
-	if ! type -P "fpga-load-local-image" ; then
+	if ! type -P "fpga-load-local-image" 1> /dev/null 2>&1; then
 		echo "Command 'fpga-load-local-image' not found."
 		echo "Please download the AWS F1 HDK and run 'source sdk_setup.sh'."
 		exit 1
