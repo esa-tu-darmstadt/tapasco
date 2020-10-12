@@ -63,6 +63,16 @@ struct DMABuffer {
     mapped: MmapMut,
 }
 
+/// Provides a DMA implementation using on device DMA engines controlled by user space
+///
+/// This implementation is highly configurable and is configured through the configuration options:
+///
+/// * dma.read_buffers: Number of read bounce buffers used
+/// * dma.read_buffer_size: Size of each read buffer
+/// * dma.write_buffers: Number of write bounce buffers used
+/// * dma.write_buffer_size: Size of each write buffer
+///
+/// The implementation uses TLKM to allocate the required bounce buffers and retrieve interrupts.
 #[derive(Debug, Getters)]
 pub struct UserSpaceDMA {
     tlkm_file: Arc<File>,
@@ -174,6 +184,9 @@ impl UserSpaceDMA {
         })
     }
 
+    /// Enqueue a DMA transfer in the DMA engine
+    ///
+    /// This function currently supports only BlueDMA.
     fn schedule_dma_transfer(
         &self,
         dma_engine_memory: &MutexGuard<Arc<MmapMut>>,
@@ -236,18 +249,20 @@ impl UserSpaceDMA {
         Ok(())
     }
 
+    /// Update the read completion counter
+    ///
+    /// Uses the eventfd interrupt mechanism
     fn update_interrupts(&self) -> Result<()> {
         let n = self
             .read_int
             .check_for_interrupt()
             .context(ErrorInterrupt)?;
-        for _ in 0..n {
-            self.read_int_cntr.fetch_add(1, Ordering::Relaxed);
-        }
+        self.read_int_cntr.fetch_add(n, Ordering::Relaxed);
 
         Ok(())
     }
 
+    /// Copy the read buffers that have been filled by the DMA engine to user space memory
     fn copyback_buffer(
         &self,
         data: &mut [u8],

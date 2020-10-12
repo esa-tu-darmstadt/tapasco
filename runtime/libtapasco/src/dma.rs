@@ -74,6 +74,9 @@ pub enum Error {
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+/// Specifies a method to interact with DMA methods
+///
+/// The methods will block and the transfer is assumed complete when they return.
 pub trait DMAControl: Debug {
     fn copy_to(&self, data: &[u8], ptr: DeviceAddress) -> Result<()>;
     fn copy_from(&self, ptr: DeviceAddress, data: &mut [u8]) -> Result<()>;
@@ -92,6 +95,9 @@ impl DriverDMA {
     }
 }
 
+/// Use TLKM IOCTLs to transfer data
+///
+/// Is currently used for Zynq based devices.
 impl DMAControl for DriverDMA {
     fn copy_to(&self, data: &[u8], ptr: DeviceAddress) -> Result<()> {
         trace!(
@@ -136,6 +142,11 @@ impl DMAControl for DriverDMA {
     }
 }
 
+/// Use the CPU to transfer data
+///
+/// Can be used for all memory that is directly accessible by the host.
+/// This might be BAR mapped device off-chip-memory or PE local memory.
+/// The latter is the main use case for this kind of transfer.
 #[derive(Debug, Getters)]
 pub struct DirectDMA {
     offset: DeviceAddress,

@@ -2,7 +2,7 @@
  * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
  *
  * This file is part of TaPaSCo
- * (see https:///github.com/esa-tu-darmstadt/tapasco).
+ * (see https://github.com/esa-tu-darmstadt/tapasco).
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by

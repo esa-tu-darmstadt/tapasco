@@ -51,6 +51,12 @@ pub enum Error {
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+/// Basic trait that allows memory allocations
+///
+/// Allocate returns a valid allocation of the given size in device address space.
+/// The fixed variant allows the user to specify a desired location for the allocation.
+/// The returned address will match the desired location or an error is return if that
+/// location is not free.
 pub trait Allocator: Debug {
     fn allocate(&mut self, size: DeviceSize) -> Result<DeviceAddress>;
     fn allocate_fixed(&mut self, size: DeviceSize, offset: DeviceAddress) -> Result<DeviceAddress>;
@@ -62,7 +68,11 @@ struct MemoryFree {
     base: DeviceAddress,
     size: DeviceSize,
 }
-
+/// Simple allocator for host handled device memory
+///
+/// Simply finds the first free memory on the device and returns it.
+/// Keeps track of allocated and free memory through lists.
+/// Supports memory alignment on byte granularity.
 #[derive(Debug, Getters)]
 pub struct GenericAllocator {
     memory_free: Vec<MemoryFree>,
@@ -71,6 +81,9 @@ pub struct GenericAllocator {
 }
 
 impl GenericAllocator {
+    /// Generate a new allocator with the given size and alignment
+    ///
+    /// The address parameter can be used to offset all returned addresses.
     pub fn new(
         address: DeviceAddress,
         size: DeviceSize,
@@ -399,6 +412,11 @@ mod allocator_tests {
     }
 }
 
+/// Allocate memory through TLKM
+///
+/// This version is currently used for Zynq based devices.
+/// No actual memory handling is performed, the request is simply
+/// translated to IOCTLs and forwarded to the driver.
 #[derive(Debug, Getters)]
 pub struct DriverAllocator {
     tlkm_file: Arc<File>,

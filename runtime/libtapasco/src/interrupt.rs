@@ -54,6 +54,10 @@ impl Drop for Interrupt {
     }
 }
 
+/// Handles interrupts using TLKM and Eventfd
+///
+/// Registers the eventfd with the driver and makes sure to release it after use.
+/// Supports blocking of the wait_for_interrupt method.
 impl Interrupt {
     pub fn new(tlkm_file: &File, interrupt_id: usize, blocking: bool) -> Result<Interrupt> {
         let fd = if blocking {
@@ -74,6 +78,11 @@ impl Interrupt {
         Ok(Interrupt { interrupt: fd })
     }
 
+    /// Wait for an interrupt as indicated by the eventfd
+    ///
+    /// Returns the number of interrupts that have occured since the last time
+    /// calling this function.
+    /// Returns at least 1
     pub fn wait_for_interrupt(&self) -> Result<u64> {
         let mut buf = [0u8; 8];
         loop {
@@ -101,6 +110,12 @@ impl Interrupt {
         }
     }
 
+    /// Check if any interrupts have occured
+    ///
+    /// Returns the number of interrupts that have occured since the last time
+    /// calling this function or 0 if none have occured.
+    /// This function behaves like wait_for_interrupt if blocking mode has been selected
+    /// as the `read` will block in this case until an interrupt occurs.
     pub fn check_for_interrupt(&self) -> Result<u64> {
         let mut buf = [0u8; 8];
         loop {

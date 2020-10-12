@@ -60,6 +60,10 @@ pub enum Error {
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+/// Main method to retrieve a PE for execution
+///
+/// Uses an unblocking Injector primitive usually used for job stealing.
+/// Retrieves PEs based on a first-come-first-serve basis.
 #[derive(Debug)]
 pub struct Scheduler {
     pes: Map<PEId, Injector<PE>>,

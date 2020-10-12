@@ -34,6 +34,10 @@ pub enum Error {
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+/// Create a DebugControl object
+///
+/// As the desired new function cannot be part of the DebugControl trait,
+/// this secondary trait is used to specify how new looks like.
 pub trait DebugGenerator: Debug {
     fn new(
         &self,
@@ -44,6 +48,12 @@ pub trait DebugGenerator: Debug {
     ) -> Result<Box<dyn DebugControl + Send + Sync>>;
 }
 
+/// Enable a debugging mechanism
+///
+/// Implementation is entirely debug controller specific.
+/// For instance an implementation for a soft core might start a GDB socket.
+/// This function may block if necessary and the user should assume this by e.g. running
+/// it in a secondary thread.
 pub trait DebugControl: Debug {
     fn enable_debug(&mut self) -> Result<()>;
 }
@@ -63,6 +73,9 @@ impl DebugGenerator for UnsupportedDebugGenerator {
     }
 }
 
+/// PE supports debug but no specific implementation is provided.
+///
+/// Only returns errors...
 #[derive(Debug, Getters)]
 pub struct UnsupportedDebug {
     name: String,

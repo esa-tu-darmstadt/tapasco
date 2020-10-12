@@ -83,6 +83,12 @@ pub enum CopyBack {
 
 pub type PEId = usize;
 
+/// Representation of a TaPaSCo PE
+///
+/// Supports starting and releasing a PE as well as
+/// interacting with its registers.
+/// Stores information of attached memory for copy back
+/// operations after PE execution.
 #[derive(Debug, Getters, Setters)]
 pub struct PE {
     #[get = "pub"]
@@ -157,6 +163,7 @@ impl PE {
         Ok((rv, self.get_copyback()))
     }
 
+    /// Waits for a PE interrupt and deactivates the PE afterwards
     fn wait_for_completion(&mut self) -> Result<()> {
         if self.active {
             self.interrupt
