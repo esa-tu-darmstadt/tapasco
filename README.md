@@ -5,6 +5,24 @@ The Task Parallel System Composer (TaPaSCo)
 Master Branch Status: [![pipeline status](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/badges/master/pipeline.svg)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/commits/master)
 Dev Branch Status: [![pipeline status](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/badges/develop/pipeline.svg)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/commits/develop)
 
+Introduction
+-------------------
+
+Specialized accelerators in a heterogeneous system play a vital role in providing enough compute power for current and upcoming computational tasks. Field-programmable gate arrays (FPGA) are an established platform for such custom and highly specialized accelerators. However, an accelerator implementation alone is only part of the way to a usable system. In order to be used as a specialized co-processor in a heterogeneous setup, the accelerator still needs to be integrated into the overall system and requires a connection to the host (typically a software-programmable CPU) and often also external memory.
+
+The open-source TaPaSCo (Task-Parallel System Composer) framework was created to serve exactly this purpose: The fast integration of FPGA-based accelerators into heterogeneous compute platforms or systems-on-chip (SoC) and their connection to relevant components on the FPGA board.
+
+TaPaSCo can support developers in all steps of the development process of heterogeneous systems:
+
+* From cores resulting from High-Level Synthesis or cores manually written in an HDL, a complete FPGA-design can be created. TaPaSCo will automatically connect all processing elements to the memory- and host-interface and generate a complete bitstream.
+
+* The TaPaSCo Runtime API allows to interface with accelerator from software and supports operations such as transferring data to the FPGA memory, pass values to accelerator cores and control the execution of the processing elements.
+    
+Next to the setup- and usage instructions in this README, you can find additional information about TaPaSCo in the [tutorial videos](https://github.com/esa-tu-darmstadt/tapasco/wiki/Talks-and-Tutorials) and the [scientific publications](https://github.com/esa-tu-darmstadt/tapasco/wiki/Publications) describing and using TaPaSCo. 
+
+We welcome contributions from anyone interested in this field, check the [contributor's guide](https://github.com/esa-tu-darmstadt/tapasco/wiki/Contributor's-Guide) for more information.
+
+
 System Requirements
 -------------------
 TaPaSCo is known to work in this environment:
