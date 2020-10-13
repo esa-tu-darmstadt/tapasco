@@ -14,11 +14,11 @@ The open-source TaPaSCo (Task-Parallel System Composer) framework was created to
 
 TaPaSCo can support developers in all steps of the development process of heterogeneous systems:
 
-* From cores resulting from High-Level Synthesis or cores manually written in an HDL, a complete FPGA-design can be created. TaPaSCo will automatically connect all processing elements to the memory- and host-interface and generate a complete bitstream.
+* TaPaSCo Toolflow: from cores resulting from High-Level Synthesis or cores manually written in an HDL, a complete FPGA-design can be created. TaPaSCo will automatically connect all processing elements to the memory- and host-interface and generate a complete bitstream.
 
-* The TaPaSCo Runtime API allows to interface with accelerator from software and supports operations such as transferring data to the FPGA memory, pass values to accelerator cores and control the execution of the processing elements.
+* TaPaSCo Runtime API: allows to interface with accelerator from software and supports operations such as transferring data to the FPGA memory, pass values to accelerator cores and control the execution of the processing elements.
     
-Next to the setup- and usage instructions in this README, you can find additional information about TaPaSCo in the [tutorial videos](https://github.com/esa-tu-darmstadt/tapasco/wiki/Talks-and-Tutorials) and the [scientific publications](https://github.com/esa-tu-darmstadt/tapasco/wiki/Publications) describing and using TaPaSCo. 
+Next to the setup and usage instructions in this README, you can find additional information about TaPaSCo in the [tutorial videos](https://github.com/esa-tu-darmstadt/tapasco/wiki/Talks-and-Tutorials) and the [scientific publications](https://github.com/esa-tu-darmstadt/tapasco/wiki/Publications) describing and using TaPaSCo.
 
 We welcome contributions from anyone interested in this field, check the [contributor's guide](https://github.com/esa-tu-darmstadt/tapasco/wiki/Contributor's-Guide) for more information.
 
