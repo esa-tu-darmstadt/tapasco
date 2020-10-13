@@ -98,9 +98,10 @@ if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit || $BITSTREAM == *.bin ]]; then
 		error_exit "Could not find fpga_manager instance under /sys/class/fpga_manager/fpga*."
 	fi
 
-	#if reload: unload driver if already running
-	if [[ $RELOADD -gt 0 ]]; then
-		(lsmod | grep $DRIVER > /dev/null) && sudo rmmod $DRIVER 2> /dev/null
+	# always reload driver for correct interrupt controller initialization
+	if [ `lsmod | grep $DRIVER | wc -l` -gt 0 ]; then
+		echo "unloading tlkm"
+		sudo rmmod $DRIVER
 	fi
 
 	# set flag for partial/full bitstream. 0 == full, 1 == partial
