@@ -23,6 +23,8 @@
 # Script usage e.g. ./bit_reload 'path_to_bitstream' drv_reload verbose
 # Pathes '*_path' have to be adapted to specific location
 
+set -e
+
 # init paths
 DRIVER=tlkm
 DRIVERPATH="$TAPASCO_HOME_RUNTIME/kernel"
@@ -36,8 +38,9 @@ Program first supported PCIe based FPGA found in JTAG chain with BITSTREAM.
 
 	-v	enable verbose output
 	-d	reload device driver
-	-p  program the device
-	-h  hotplug the device
+	-n	do not load device driver
+	-p	program the device
+	-h	hotplug the device
 EOF
 }
 
@@ -63,6 +66,7 @@ hotplug() {
 		echo "hotplugging finished"
 	else
 		echo "ERROR: Could not find the device after hotplugging."
+		echo "       Please try a reboot for PCIe re-enumeration."
 		exit 1
 	fi
 }
@@ -71,17 +75,21 @@ hotplug() {
 BITSTREAM=""
 VERBOSE=0
 RELOADD=0
+NOLOADD=0
 HOTPLUG=0
 PROGRAM=0
 
 OPTIND=1
-while getopts vdhp opt; do
+while getopts vdnhp opt; do
 	case $opt in
 		v)
 			VERBOSE=1
 			;;
 		d)
 			RELOADD=1
+			;;
+		n)
+			NOLOADD=1
 			;;
 		h)
 			HOTPLUG=1
@@ -105,7 +113,11 @@ then
 
 	# unload driver, if reload_driver was set
 	if [ $RELOADD -gt 0 ]; then
-		sudo rmmod $DRIVER
+		# don't try to unload a not loaded driver
+		if [ `lsmod | grep $DRIVER | wc -l` -gt 0 ]; then
+			echo "unloading tlkm"
+			sudo rmmod $DRIVER
+		fi
 	fi
 
 	# program the device
@@ -134,10 +146,14 @@ then
 		hotplug
 	fi
 
-	# reload driver?
-	if [ $RELOADD -gt 0 ]; then
-		sudo insmod $DRIVERPATH/${DRIVER}.ko
-		sudo chown $USER /dev/tlkm*
+	# load driver?
+	if [ $NOLOADD -eq 0 ]; then
+		# already loaded?
+		if [ `lsmod | grep $DRIVER | wc -l` -eq 0 ]; then
+			sudo insmod $DRIVERPATH/${DRIVER}.ko
+			sudo chown $USER /dev/tlkm*
+			echo "tlkm loaded successfully"
+		fi
 	fi
 
 	# output tail of dmesg in verbose mode

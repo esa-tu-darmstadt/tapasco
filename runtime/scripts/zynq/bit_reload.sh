@@ -27,6 +27,8 @@
 # Pathes '*_path' have to be adapted to specific location
 # Works for Zynq and ZynqMP
 
+set -e
+
 # init paths
 DRIVER=tlkm
 DRIVERPATH="$TAPASCO_HOME_RUNTIME/kernel"
@@ -38,6 +40,7 @@ Program Zynq PL via /sys/class/fpga_manager/.
 
 	-v	enable verbose output
 	-d	reload device driver
+	-n	do not load device driver
 	-pb	partial bitstream
 EOF
 }
@@ -50,18 +53,22 @@ error_exit() {
 BITSTREAM=""
 VERBOSE=0
 RELOADD=0
+NOLOADD=0
 HOTPLUG=0
 PARTIAL=0
 PROGRAM=0
 
 OPTIND=1
-while getopts vdhp opt; do
+while getopts vdnhp opt; do
 	case $opt in
 		v)
 			VERBOSE=1
 			;;
 		d)
 			RELOADD=1
+			;;
+		n)
+			NOLOADD=1
 			;;
 		pb)
 			PARTIAL=1
@@ -91,9 +98,10 @@ if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit || $BITSTREAM == *.bin ]]; then
 		error_exit "Could not find fpga_manager instance under /sys/class/fpga_manager/fpga*."
 	fi
 
-	#if reload: unload driver if already running
-	if [[ $RELOADD -gt 0 ]]; then
-		(lsmod | grep $DRIVER > /dev/null) && sudo rmmod $DRIVER 2> /dev/null
+	# always reload driver for correct interrupt controller initialization
+	if [ `lsmod | grep $DRIVER | wc -l` -gt 0 ]; then
+		echo "unloading tlkm"
+		sudo rmmod $DRIVER
 	fi
 
 	# set flag for partial/full bitstream. 0 == full, 1 == partial
@@ -115,16 +123,18 @@ if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit || $BITSTREAM == *.bin ]]; then
 	echo "Bitstream programmed successfully!"
 
 	# load driver if not already running
-	if ! lsmod | grep $DRIVER > /dev/null; then
-		sudo insmod $DRIVERPATH/${DRIVER}.ko
-		INSMOD_RET=$?
-		sudo chown $USER /dev/tlkm*
+	if [ $NOLOADD -eq 0 ]; then
+		if ! lsmod | grep $DRIVER > /dev/null; then
+			sudo insmod $DRIVERPATH/${DRIVER}.ko
+			INSMOD_RET=$?
+			sudo chown $USER /dev/tlkm*
 
-		# check return code
-		if [ $INSMOD_RET -ne 0 ]; then
-			echo "Loading driver failed, returned non-zero exit code $INSMOD_RET"
-		else
-			echo "Driver loaded sucessfully!"
+			# check return code
+			if [ $INSMOD_RET -ne 0 ]; then
+				echo "Loading driver failed, returned non-zero exit code $INSMOD_RET"
+			else
+				echo "Driver loaded sucessfully!"
+			fi
 		fi
 	fi
 
