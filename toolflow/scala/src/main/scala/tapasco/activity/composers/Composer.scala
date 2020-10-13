@@ -43,15 +43,16 @@ trait Composer {
 
   /** Start run of external tool.
     *
-    * @param bd       Composition to synthesize
-    * @param target   Platform and Architecture combination to synthesize for
-    * @param f        target design frequency (PE speed)
-    * @param features Features (optional)
-    * @param cfg      implicit Configuration instance
+    * @param bd        Composition to synthesize
+    * @param target    Platform and Architecture combination to synthesize for
+    * @param f         target design frequency (PE speed)
+    * @param features  Features (optional)
+    * @param skipSynth Skip final synthesis and bitstream generation (optional)
+    * @param cfg       implicit Configuration instance
     * @return Composer.Result with error code / additional data
     */
-  def compose(bd: Composition, target: Target, f: Double = 0, effortLevel: String, features: Seq[Feature] = Seq())
-             (implicit cfg: Configuration): Result
+  def compose(bd: Composition, target: Target, f: Double = 0, effortLevel: String, features: Seq[Feature] = Seq(),
+              skipSynth: Boolean) (implicit cfg: Configuration): Result
 
   /** Removes all intermediate files for the run, leaving results.
     *

@@ -1,0 +1,12 @@
+{
+	"Name" : "AU280",
+	"Description" : "Alveo U280 Data Center Accelerator Card",
+	"TclLibrary" : "AU280.tcl",
+	"Part" : "xcu280-fsvh2892-2L-e",
+	"BoardPart" : "xilinx.com:au280:part0:1.1",
+	"BoardPreset" : "AU280",
+	"TargetUtilization" : 90,
+	"Benchmark" : "AU280.benchmark",
+	"HostFrequency": 250.0,
+	"MemFrequency": 300.0
+}

@@ -36,6 +36,7 @@ import scala.io.Source
 final case class TimingReport(
                                override val file: Path,
                                worstNegativeSlack: Double,
+                               worstPulseWidthSlack: Double,
                                dataPathDelay: Double,
                                maxDelayPath: TimingReport.TimingPath,
                                minDelayPath: TimingReport.TimingPath,
@@ -56,6 +57,13 @@ object TimingReport {
     """^.*Design Timing Summary.*""".r,
     """^\s*WNS\(ns\)\s*TNS\(ns\).*""".r,
     """^\s*(-?\d+\.\d*).*""".r
+  )(cons = ms => ms(2).group(1).toDouble)
+
+  /** Extracts the WPWS line. **/
+  private def wpwsMatcher: SequenceMatcher[Double] = new SequenceMatcher(
+    """^.*Design Timing Summary.*""".r,
+    """^.*WPWS\(ns\)\s*TPWS\(ns\).*""".r,
+    """^\s*[^\s]*\s*[^\s]*\s*[^\s]*\s*[^\s]*\s*[^\s]*\s*[^\s]*\s*[^\s]*\s*[^\s]*\s*(-?\d+\.\d*).*""".r
   )(cons = ms => ms(2).group(1).toDouble)
 
   /** Extracts the maximal delay path. **/
@@ -88,23 +96,26 @@ object TimingReport {
   /** Extract min, max and average clock cycles from the timing report (if available). **/
   private def extract(sr: Path): Option[TimingReport] = try {
     val wns = wnsMatcher
+    val wpws = wpwsMatcher
     val dpd = dataPathDelayMatcher
     val max = maxDelayPathMatcher
     val min = minDelayPathMatcher
     Source.fromFile(sr.toString).getLines foreach { line =>
       wns.update(line)
+      wpws.update(line)
       dpd.update(line)
       max.update(line)
       min.update(line)
     }
-    if (wns.matched && dpd.matched && max.matched && min.matched) {
+    if (wns.matched && wpws.matched && dpd.matched && max.matched && min.matched) {
       Some(TimingReport(
         file = sr,
         worstNegativeSlack = wns.result.get,
+        worstPulseWidthSlack = wpws.result.get,
         dataPathDelay = dpd.result.get,
         maxDelayPath = max.result.get.sortBy(_.slack).head,
         minDelayPath = min.result.get.sortBy(_.slack).last,
-        timingMet = wns.result.get >= -0.3
+        timingMet = wns.result.get >= -0.3 && wpws.result.get >= 0.0
       ))
     } else {
       None

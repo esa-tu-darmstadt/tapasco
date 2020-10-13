@@ -88,6 +88,7 @@ private object PrettyPrinter {
     "Parallel = " + c.parallel,
     "MaxThreads = " + (c.maxThreads getOrElse "unlimited"),
     "MaxTasks = " + (c.maxTasks getOrElse "unlimited"),
+    "HlsTimeOut = " + (c.hlsTimeOut getOrElse "unlimited"),
     "Jobs = " + c.jobs
   ) mkString NL
 

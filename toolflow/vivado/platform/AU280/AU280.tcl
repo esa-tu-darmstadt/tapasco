@@ -18,8 +18,13 @@
 #
 
 namespace eval platform {
-  set platform_dirname "xupvvh"
+  set platform_dirname "AU280"
   set pcie_width "x16"
+
+  if { [::tapasco::vivado_is_newer "2020.1"] == 0 } {
+    puts "Vivado [version -short] is too old to support AU280."
+    exit 1
+  }
 
   source $::env(TAPASCO_HOME_TCL)/platform/pcie/pcie_base.tcl
 
@@ -28,14 +33,8 @@ namespace eval platform {
     proc get_ignored_segments { } {
       set hbmInterfaces [hbm::get_hbm_interfaces]
       set ignored [list]
-      set numInterfaces [llength $hbmInterfaces]
-      if {[expr $numInterfaces % 2] == 1} {
-        set max_mem_index [expr $numInterfaces + 1]
-      } else {
-        set max_mem_index $numInterfaces
-      }
-      for {set i 0} {$i < $numInterfaces} {incr i} {
-        for {set j 0} {$j < $max_mem_index} {incr j} {
+      for {set i 0} {$i < [llength $hbmInterfaces]} {incr i} {
+        for {set j 0} {$j < [llength $hbmInterfaces]} {incr j} {
           set axi_index [format %02s $i]
           set mem_index [format %02s $j]
           lappend ignored "/hbm/hbm_0/SAXI_${axi_index}/HBM_MEM${mem_index}"
@@ -48,97 +47,53 @@ namespace eval platform {
 
   proc create_mig_core {name} {
     puts "Creating MIG core for DDR ..."
+    set s_axi_host [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_CTRL"]
 
-
-    # create MIG core
     set mig [tapasco::ip::create_us_ddr ${name}]
-    make_bd_intf_pins_external [get_bd_intf_pins $mig/C0_DDR4]
-
-    # create system reset
-    set sys_rst_l [create_bd_port -dir I -type rst sys_rst_l]
-    set sys_rst_inverter [create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 sys_rst_inverter]
-    set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] $sys_rst_inverter
-    connect_bd_net $sys_rst_l [get_bd_pins $sys_rst_inverter/Op1]
-    connect_bd_net [get_bd_pins $sys_rst_inverter/Res] [get_bd_pins $mig/sys_rst]
-
-    # create system clock
-    set sys_clk [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 ddr4_sys_clk_1 ]
-    connect_bd_intf_net $sys_clk [get_bd_intf_pins $mig/C0_SYS_CLK]
-    set_property CONFIG.FREQ_HZ 100000000 $sys_clk
-
-    # configure MIG core
-    set part_file "[get_property DIRECTORY [current_project]]/MTA18ADF2G72PZ-2G3.csv"
-    if { [file exists $part_file] == 1} {
-      puts "Delete MIG configuration from project directory"
-      file delete $part_file
-    }
-    puts "Copying MIG configuration to project directory"
-    file copy "$::env(TAPASCO_HOME_TCL)/platform/xupvvh/MTA18ADF2G72PZ-2G3.csv" $part_file
-
-    set properties  [list CONFIG.C0.DDR4_TimePeriod {833} \
-      CONFIG.C0.DDR4_InputClockPeriod {9996} \
-      CONFIG.C0.DDR4_CLKOUT0_DIVIDE {5} \
-      CONFIG.C0.DDR4_MemoryType {RDIMMs} \
-      CONFIG.C0.DDR4_MemoryPart {MTA18ADF2G72PZ-2G3} \
-      CONFIG.C0.DDR4_DataWidth {72} \
-      CONFIG.C0.DDR4_DataMask {NONE} \
-      CONFIG.C0.DDR4_CasWriteLatency {16} \
-      CONFIG.C0.DDR4_AxiDataWidth {512} \
-      CONFIG.C0.DDR4_AxiAddressWidth {34} \
-      CONFIG.C0.DDR4_CustomParts $part_file \
-      CONFIG.C0.DDR4_isCustom {true} \
-      ]
+    apply_bd_automation -rule xilinx.com:bd_rule:board -config { Board_Interface {ddr4_sdram_c1 ( DDR4 SDRAM C1 ) } Manual_Source {Auto}}  [get_bd_intf_pins $mig/C0_DDR4]
+    apply_bd_automation -rule xilinx.com:bd_rule:board -config { Board_Interface {sysclk1 ( 100 MHz System differential clock1 ) } Manual_Source {Auto}}  [get_bd_intf_pins $mig/C0_SYS_CLK]
+    apply_bd_automation -rule xilinx.com:bd_rule:board -config { Board_Interface {resetn ( FPGA Resetn ) } Manual_Source {New External Port (ACTIVE_HIGH)}}  [get_bd_pins $mig/sys_rst]
 
 
-    set_property -dict $properties $mig
+    connect_bd_intf_net [get_bd_intf_pins $mig/C0_DDR4_S_AXI_CTRL] $s_axi_host
 
+    set const [tapasco::ip::create_constant constz 1 0]
+    make_bd_pins_external $const
 
-    # connect MEM_CTRL interface (ECC configuration + status)
-    set s_axi_mem_ctrl [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_MEM_CTRL]
-
-    set m_axi_mem_ctrl [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 /host/M_MEM_CTRL]
-
-    set num_mi_old [get_property CONFIG.NUM_MI [get_bd_cells /host/out_ic]]
-    set num_mi [expr "$num_mi_old + 1"]
-    set_property -dict [list CONFIG.NUM_MI $num_mi] [get_bd_cells /host/out_ic]
-
-    connect_bd_intf_net [get_bd_intf_pins $mig/C0_DDR4_S_AXI_CTRL] $s_axi_mem_ctrl
-    connect_bd_intf_net $s_axi_mem_ctrl $m_axi_mem_ctrl
-    connect_bd_intf_net $m_axi_mem_ctrl [get_bd_intf_pins /host/out_ic/[format "M%02d_AXI" $num_mi_old]]
-
-
-    create_ddr4_constraints
-
-    return $mig
-  }
-
-  proc create_ddr4_constraints {} {
-    set constraints_fn "$::env(TAPASCO_HOME_TCL)/platform/xupvvh/ddr4.xdc"
+    set constraints_fn "$::env(TAPASCO_HOME_TCL)/platform/AU280/board.xdc"
     read_xdc $constraints_fn
     set_property PROCESSING_ORDER EARLY [get_files $constraints_fn]
+
+    set inst [current_bd_instance -quiet .]
+    current_bd_instance -quiet
+
+    set m_si [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 host/M_MEM_CTRL]
+
+    set num_mi_old [get_property CONFIG.NUM_MI [get_bd_cells host/out_ic]]
+    set num_mi [expr "$num_mi_old + 1"]
+    set_property -dict [list CONFIG.NUM_MI $num_mi] [get_bd_cells host/out_ic]
+    connect_bd_intf_net $m_si [get_bd_intf_pins host/out_ic/[format "M%02d_AXI" $num_mi_old]]
+
+    current_bd_instance -quiet $inst
+
+    return $mig
   }
   
 
   proc create_pcie_core {} {
     puts "Creating AXI PCIe Gen3 bridge ..."
 
-    # create PCIe Clock
-    set pcie_sys_clk [create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 pcie_sys_clk]
-    set pcie_sys_clk_ibuf [tapasco::ip::create_util_buf refclk_ibuf]
-    set_property -dict [ list CONFIG.C_BUF_TYPE {IBUFDSGTE}  ] $pcie_sys_clk_ibuf
-
-    # create PCIe reset
-    set pcie_sys_reset_l [create_bd_port -dir I -type rst pcie_sys_reset_l]
-    set_property -dict [ list CONFIG.POLARITY {ACTIVE_LOW}  ] $pcie_sys_reset_l
-
-    # create PCIe core
-    set pcie_7x_mgt [create_bd_intf_port -mode Master -vlnv xilinx.com:interface:pcie_7x_mgt_rtl:1.0 pcie_7x_mgt]
     set pcie_core [tapasco::ip::create_axi_pcie3_0_usp axi_pcie3_0]
+
+    apply_bd_automation -rule xilinx.com:bd_rule:board -config { Board_Interface {pci_express_x16 ( PCI Express ) } Manual_Source {Auto}}  [get_bd_intf_pins $pcie_core/pcie_mgt]
+    apply_bd_automation -rule xilinx.com:bd_rule:board -config { Board_Interface {pcie_perstn ( PCI Express ) } Manual_Source {New External Port (ACTIVE_LOW)}}  [get_bd_pins $pcie_core/sys_rst_n]
+
+    apply_bd_automation -rule xilinx.com:bd_rule:xdma -config { accel {1} auto_level {IP Level} axi_clk {Maximum Data Width} axi_intf {AXI Memory Mapped} bar_size {Disable} bypass_size {Disable} c2h {4} cache_size {32k} h2c {4} lane_width {X16} link_speed {8.0 GT/s (PCIe Gen 3)}}  [get_bd_cells $pcie_core]
 
     set pcie_properties [list \
       CONFIG.functional_mode {AXI_Bridge} \
       CONFIG.mode_selection {Advanced} \
-      CONFIG.pcie_blk_locn {PCIE4C_X1Y1} \
+      CONFIG.pcie_blk_locn {PCIE4C_X1Y0} \
       CONFIG.pl_link_cap_max_link_width {X16} \
       CONFIG.pl_link_cap_max_link_speed {8.0_GT/s} \
       CONFIG.axi_addr_width {64} \
@@ -148,8 +103,8 @@ namespace eval platform {
       CONFIG.pf0_sub_class_interface_menu {Other_memory_controller} \
       CONFIG.pf0_interrupt_pin {NONE} \
       CONFIG.pf0_msi_enabled {false} \
-      CONFIG.SYS_RST_N_BOARD_INTERFACE {Custom} \
-      CONFIG.PCIE_BOARD_INTERFACE {Custom} \
+      CONFIG.SYS_RST_N_BOARD_INTERFACE {pcie_perstn} \
+      CONFIG.PCIE_BOARD_INTERFACE {pci_express_x16} \
       CONFIG.pf0_msix_enabled {true} \
       CONFIG.c_m_axi_num_write {32} \
       CONFIG.pf0_msix_impl_locn {External} \
@@ -173,27 +128,15 @@ namespace eval platform {
       CONFIG.bar0_indicator {0}
       ]
 
+    if {[catch {set_property -dict $pcie_properties $pcie_core}]} {
+      error "ERROR: Failed to configure PCIe bridge. This may be related to the format settings of your OS for numbers. Please check that it is set to 'United States' (see AR# 51331)"
+    }
     set_property -dict $pcie_properties $pcie_core
-
-    # create connections
-    connect_bd_intf_net $pcie_7x_mgt [get_bd_intf_pins $pcie_core/pcie_mgt]
-    connect_bd_intf_net $pcie_sys_clk [get_bd_intf_pins $pcie_sys_clk_ibuf/CLK_IN_D]
-    connect_bd_net [get_bd_pins $pcie_core/sys_clk] [get_bd_pins $pcie_sys_clk_ibuf/IBUF_DS_ODIV2]
-    connect_bd_net [get_bd_pins $pcie_core/sys_clk_gt] [get_bd_pins $pcie_sys_clk_ibuf/IBUF_OUT]
-    connect_bd_net $pcie_sys_reset_l [get_bd_pins $pcie_core/sys_rst_n]
 
 
     tapasco::ip::create_msixusptrans "MSIxTranslator" $pcie_core
 
-    create_constraints
-
     return $pcie_core
-  }
-
-  proc create_constraints {} {
-    set constraints_fn "$::env(TAPASCO_HOME_TCL)/platform/xupvvh/board.xdc"
-    read_xdc $constraints_fn
-    set_property PROCESSING_ORDER EARLY [get_files $constraints_fn]
   }
 
   # Checks if the optional register slice given by the name is enabled (based on regslice feature and default value)
@@ -232,10 +175,6 @@ namespace eval platform {
     insert_regslice "dma_host" true "/memory/M_HOST" "/host/S_HOST" "/clocks_and_resets/host_clk" "/clocks_and_resets/host_interconnect_aresetn" ""
     insert_regslice "host_arch" true "/host/M_ARCH" "/arch/S_ARCH" "/clocks_and_resets/design_clk" "/clocks_and_resets/design_interconnect_aresetn" ""
 
-    if {[tapasco::is_feature_enabled "SFPPLUS"]} {
-      insert_regslice "host_network" true "/host/M_NETWORK" "/network/S_NETWORK" "/clocks_and_resets/design_clk" "/clocks_and_resets/design_interconnect_aresetn" ""
-    }
-
     if {[is_regslice_enabled "pe" false]} {
       set ips [get_bd_cells /arch/target_ip_*]
       foreach ip $ips {
@@ -248,7 +187,7 @@ namespace eval platform {
     }
   }
 
-  namespace eval xupvvh {
+  namespace eval AU280 {
         namespace export addressmap
 
         proc addressmap {args} {
@@ -259,7 +198,7 @@ namespace eval platform {
     }
 
 
-  tapasco::register_plugin "platform::xupvvh::addressmap" "post-address-map"
+  tapasco::register_plugin "platform::AU280::addressmap" "post-address-map"
 
   tapasco::register_plugin "platform::insert_regslices" "post-platform"
 

@@ -17,6 +17,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+
 if {[tapasco::is_feature_enabled "HBM"]} {
   proc create_custom_subsystem_hbm {{args {}}} {
 
@@ -79,13 +80,8 @@ namespace eval hbm {
 
   # Creates input ports for reference clock(s)
   proc create_refclk_ports {bothStacks} {
-      set hbm_ref_clk_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 hbm_ref_clk_0 ]
+      set hbm_ref_clk_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 hbm_ref_clk ]
       set_property CONFIG.FREQ_HZ 100000000 $hbm_ref_clk_0
-
-      if {$bothStacks} {
-        set hbm_ref_clk_1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 hbm_ref_clk_1 ]
-        set_property CONFIG.FREQ_HZ 100000000 $hbm_ref_clk_1
-      }
   }
 
   # Creates HBM configuration for given number of active HBM ports
@@ -94,6 +90,7 @@ namespace eval hbm {
     # disable AXI crossbar (global addressing)
     # configure AXI clock freq
     set hbm_properties [list \
+      CONFIG.USER_APB_EN {false} \
       CONFIG.USER_SWITCH_ENABLE_00 {false} \
       CONFIG.USER_SWITCH_ENABLE_01 {false} \
       CONFIG.USER_AXI_INPUT_CLK_FREQ {450} \
@@ -149,6 +146,7 @@ namespace eval hbm {
     set instance [current_bd_instance .]
     current_bd_instance $group
 
+    set clk_in [create_bd_pin -type "clk" -dir "I" "clk_in"]
     set hbm_ref_clk [create_bd_pin -type "clk" -dir "O" "hbm_ref_clk"]
     set axi_clk_0 [create_bd_pin -type "clk" -dir "O" "axi_clk_0"]
     set axi_clk_1 [create_bd_pin -type "clk" -dir "O" "axi_clk_1"]
@@ -160,16 +158,11 @@ namespace eval hbm {
     set axi_reset [create_bd_pin -type "rst" -dir "O" "axi_reset"]
     set mem_peripheral_aresetn [create_bd_pin -type "rst" -dir "I" "mem_peripheral_aresetn"]
 
-    set ibuf [tapasco::ip::create_util_buf ibuf]
-    set_property -dict [ list CONFIG.C_BUF_TYPE {IBUFDS}  ] $ibuf
-
-    connect_bd_intf_net $port [get_bd_intf_pins $ibuf/CLK_IN_D]
-
     set clk_wiz [tapasco::ip::create_clk_wiz clk_wiz]
     set_property -dict [list CONFIG.PRIM_SOURCE {No_buffer} CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {450} CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {450} CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {450} CONFIG.CLKOUT4_REQUESTED_OUT_FREQ {450} CONFIG.CLKOUT5_REQUESTED_OUT_FREQ {450} CONFIG.CLKOUT6_REQUESTED_OUT_FREQ {450} CONFIG.CLKOUT7_REQUESTED_OUT_FREQ {450} CONFIG.CLKOUT2_USED {true} CONFIG.CLKOUT3_USED {true} CONFIG.CLKOUT4_USED {true} CONFIG.CLKOUT5_USED {true} CONFIG.CLKOUT6_USED {true} CONFIG.CLKOUT7_USED {true} CONFIG.RESET_TYPE {ACTIVE_LOW} CONFIG.NUM_OUT_CLKS {7} CONFIG.RESET_PORT {resetn}] $clk_wiz
 
-    connect_bd_net [get_bd_pins $ibuf/IBUF_OUT] $hbm_ref_clk
-    connect_bd_net [get_bd_pins $ibuf/IBUF_OUT] [get_bd_pins $clk_wiz/clk_in1]
+    connect_bd_net $port $clk_in
+    connect_bd_net $clk_in [get_bd_pins $clk_wiz/clk_in1] [get_bd_pins hbm_ref_clk]
 
     connect_bd_net $mem_peripheral_aresetn [get_bd_pins $clk_wiz/resetn]
 
@@ -216,19 +209,14 @@ namespace eval hbm {
       set hbm [ create_bd_cell -type ip -vlnv xilinx.com:ip:hbm:1.0 "hbm_0" ]
       set_property -dict $hbm_properties $hbm
 
-      # Disabling the APB debug port is only possible in Vivado 2019.2 and newer
-      if { [::tapasco::vivado_is_newer "2019.2"] == 0 } {
-        set const [tapasco::ip::create_constant const_zero 1 0]
-        connect_bd_net [get_bd_pins const_zero/dout] [get_bd_pins $hbm/APB_0_PENABLE]
-        if {$bothStacks} {
-          connect_bd_net [get_bd_pins const_zero/dout] [get_bd_pins $hbm/APB_1_PENABLE]
-        }
-      } else {
-        set_property CONFIG.USER_APB_EN {false} $hbm
-      }
+
+      set ibuf [tapasco::ip::create_util_buf ibuf]
+      set_property -dict [ list CONFIG.C_BUF_TYPE {IBUFDS}  ] $ibuf
+
+      connect_bd_intf_net [get_bd_intf_ports /hbm_ref_clk] [get_bd_intf_pins $ibuf/CLK_IN_D]
 
       # create and connect clocking infrastructure for left stack
-      set clocking_0 [create_clocking "clocking_0" [get_bd_intf_ports /hbm_ref_clk_0]]
+      set clocking_0 [create_clocking "clocking_0" [get_bd_pins $ibuf/IBUF_OUT]]
       connect_clocking $clocking_0 $hbm 0 [expr min($numInterfaces,16)]
       connect_bd_net [get_bd_pins $clocking_0/hbm_ref_clk] [get_bd_pins $hbm/HBM_REF_CLK_0]
 
@@ -237,7 +225,7 @@ namespace eval hbm {
 
       if {$bothStacks} {
         # create and connect clocking infrastructure for right stack
-        set clocking_1 [create_clocking "clocking_1" [get_bd_intf_ports /hbm_ref_clk_1]]
+        set clocking_1 [create_clocking "clocking_1" [get_bd_pins $ibuf/IBUF_OUT]]
         connect_clocking $clocking_1 $hbm 16 [expr $numInterfaces - 16]
         connect_bd_net [get_bd_pins $clocking_1/hbm_ref_clk] [get_bd_pins $hbm/HBM_REF_CLK_1]
 
@@ -280,24 +268,17 @@ namespace eval hbm {
           connect_bd_intf_net $pin [get_bd_intf_pins $converter/S00_AXI]
         }
 
-        set address_offset [tapasco::ip::create_axioffset_hbm offset_${i}]
-        set offset [format "0x0000000%02x0000000" $i]
-        set_property -dict [list CONFIG.offset $offset CONFIG.offset_bits {5}] $address_offset
-        connect_bd_intf_net [get_bd_intf_pins $converter/M00_AXI] [get_bd_intf_pins $address_offset/S_AXI]
-        connect_bd_net [get_bd_pins $hbm/AXI_${hbm_index}_ACLK] [get_bd_pins $address_offset/CLK]
-        connect_bd_net [get_bd_pins $hbm/AXI_${hbm_index}_ARESET_N] [get_bd_pins $address_offset/RST_N]
-
         if {[platform::is_regslice_enabled "hbm_hbm" false] || [platform::is_regslice_enabled [format "hbm_hbm%s" $hbm_index] false]} {
           # insert register slice between smartconnect and HBM
           set regslice_post [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 regslice_post_${i}]
           set_property -dict [list CONFIG.REG_AW {15} CONFIG.REG_AR {15} CONFIG.REG_W {15} CONFIG.REG_R {15} CONFIG.REG_B {15} CONFIG.USE_AUTOPIPELINING {1}] $regslice_post
 
-          connect_bd_intf_net [get_bd_intf_pins $address_offset/M_AXI] [get_bd_intf_pins $regslice_post/S_AXI]
+          connect_bd_intf_net [get_bd_intf_pins $converter/M00_AXI] [get_bd_intf_pins $regslice_post/S_AXI]
           connect_bd_intf_net [get_bd_intf_pins $regslice_post/M_AXI] [get_bd_intf_pins $hbm/SAXI_${hbm_index}]
           connect_bd_net [get_bd_pins $hbm/AXI_${hbm_index}_ACLK] [get_bd_pins $regslice_post/aclk]
           connect_bd_net [get_bd_pins $hbm/AXI_${hbm_index}_ARESET_N] [get_bd_pins $regslice_post/aresetn]
         } else {
-          connect_bd_intf_net [get_bd_intf_pins $address_offset/M_AXI] [get_bd_intf_pins $hbm/SAXI_${hbm_index}]
+          connect_bd_intf_net [get_bd_intf_pins $converter/M00_AXI] [get_bd_intf_pins $hbm/SAXI_${hbm_index}]
         }
 
       }
@@ -313,12 +294,12 @@ namespace eval hbm {
 
       # apply constraints for one or both stacks
       current_bd_instance /hbm
-      set constraints_l "$::env(TAPASCO_HOME_TCL)/platform/xupvvh/plugins/hbm_l.xdc"
+      set constraints_l "$::env(TAPASCO_HOME_TCL)/platform/AU280/plugins/hbm_l.xdc"
       read_xdc $constraints_l
       set_property PROCESSING_ORDER EARLY [get_files $constraints_l]
 
       if {$bothStacks} {
-        set constraints_r "$::env(TAPASCO_HOME_TCL)/platform/xupvvh/plugins/hbm_r.xdc"
+        set constraints_r "$::env(TAPASCO_HOME_TCL)/platform/AU280/plugins/hbm_r.xdc"
         read_xdc $constraints_r
         set_property PROCESSING_ORDER EARLY [get_files $constraints_r]
       }
@@ -331,7 +312,8 @@ namespace eval hbm {
     if {[tapasco::is_feature_enabled "HBM"]} {
       set hbmInterfaces [get_hbm_interfaces]
       for {set i 0} {$i < [llength $hbmInterfaces]} {incr i} {
-        set args [lappend args M_AXI_HBM_${i} [list 0 0 -1 ""]]
+        set base [expr {0x10000000 * $i}]
+        set args [lappend args M_AXI_HBM_${i} [list $base 0 -1 ""]]
       }
       
     }

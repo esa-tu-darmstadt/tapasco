@@ -45,11 +45,14 @@ private object ComposeParser {
   private val jobid = identity[ComposeJob] _
 
   private def options: Parser[ComposeJob => ComposeJob] =
-    (implementation | architectures | platforms | features | debugMode | effortLevel | delProj).rep
+    (implementation | architectures | platforms | features | debugMode | skipSynth | effortLevel | delProj).rep
       .map(opts => (opts map (applyOption _) fold jobid) (_ andThen _))
 
   private val effortModes: Set[String] = Set("fastest", "fast", "normal",
     "optimal", "aggressive_performance", "aggressive_area")
+
+  private def skipSynth: Parser[(String, Boolean)] =
+    (longOption("skipSynthesis", "SkipSynthesis") ~ ws) map { case s => (s, true) }
 
   private def applyOption(opt: (String, _)): ComposeJob => ComposeJob =
     opt match {
@@ -61,11 +64,11 @@ private object ComposeParser {
       case ("DeleteProjects", e: Boolean) => _.copy(deleteProjects = Some(e))
       case ("EffortLevel", effort: String) => if (effortModes.contains(effort.toLowerCase)) {
         _.copy(effortLevel = Some(effort))
-      }
-      else {
+      } else {
         logger.warn(s"Unknown effort level $effort, using default normal")
         _.copy(effortLevel = Some("normal"))
       }
+      case ("SkipSynthesis", s: Boolean) => _.copy(skipSynthesis = Some(s))
       case o => throw new Exception(s"parsed illegal option: $o")
     }
 }

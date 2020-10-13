@@ -68,6 +68,7 @@ final case class BulkImportJob(csvFile: Path) extends Job("bulkimport")
   * @param features        List of [[tapasco.base.Feature]] configurations for the design (opt.).
   * @param debugMode       Debug mode name (opt.).
   * @param effortLevel     Synthesis effort level (opt.).
+  * @param skipSynthesis   Skip final synthesis and bitstream generation (opt.).
   **/
 final case class ComposeJob(
                              composition: Composition,
@@ -78,6 +79,7 @@ final case class ComposeJob(
                              features: Option[Seq[Feature]] = None,
                              debugMode: Option[String] = None,
                              effortLevel: Option[String] = None,
+                             skipSynthesis: Option[Boolean] = None,
                              deleteProjects: Option[Boolean] = None) extends Job("compose") {
   /** Returns the selected composer tool implementation. */
   lazy val implementation: Composer.Implementation = Composer.Implementation(_implementation)

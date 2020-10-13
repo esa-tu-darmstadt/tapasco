@@ -97,6 +97,7 @@ namespace eval tapasco {
   namespace export get_number_of_processors
   namespace export get_speed_grade
   namespace export get_wns_from_timing_report
+  namespace export get_wpws_from_timing_report
   namespace export get_capabilities_flags
   namespace export set_capabilities_flags
   namespace export add_capabilities_flag
@@ -491,6 +492,19 @@ namespace eval tapasco {
     close $f
     if {[regexp {\s*WNS[^\n]*\n[^\n]*\n\s*(-?\d+\.\d+)} $tr line wns] > 0} {
       return $wns
+    } {
+      return 0
+    }
+  }
+
+  # Parses a Vivado timing report and report the worst pulse width slack (WPWS) value.
+  # @param reportfile Filename of timing report
+  proc get_wpws_from_timing_report {reportfile} {
+    set f [open $reportfile r]
+    set tr [read $f]
+    close $f
+    if {[regexp {\s*WPWS[^\n]*\n[^\n]*\n\s*[^\s]*\s*[^\s]*\s*[^\s]*\s*[^\s]*\s*[^\s]*\s*[^\s]*\s*[^\s]*\s*[^\s]*\s*(-?\d+\.\d+)} $tr line wpws] > 0} {
+      return $wpws
     } {
       return 0
     }

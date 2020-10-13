@@ -42,6 +42,7 @@ case class Kernel(
                    description: Option[String],
                    compilerFlags: Seq[String],
                    testbenchCompilerFlags: Seq[String],
+                   testbenchArgv: Seq[String],
                    args: Seq[Kernel.Argument],
                    private val _otherDirectives: Option[Path]
                  ) extends Description(descPath) {

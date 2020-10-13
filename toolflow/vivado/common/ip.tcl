@@ -121,6 +121,22 @@ namespace eval ::tapasco::ip {
     return $ic
   }
 
+  # Instantiates an AXI4-Stream Interconnect IP.
+  # @param name Name of the instance.
+  # @param no_slaves Number of AXI4-Stream Slave interfaces.
+  # @param no_masters Number of AXI4-Stream Master interfaces.
+  # @return bd_cell of the instance.
+  proc create_axis_ic {name no_slaves no_masters} {
+    variable stdcomps
+    puts "Creating AXI-Stream Interconnect $name with $no_slaves slaves and $no_masters masters..."
+    puts "  VLNV: [dict get $stdcomps axis_ic vlnv]"
+
+    set ic [create_bd_cell -type ip -vlnv [dict get $stdcomps axis_ic vlnv] $name]
+    set props [list CONFIG.NUM_SI $no_slaves CONFIG.NUM_MI $no_masters]
+    set_property -dict $props $ic
+    return $ic
+  }
+
   # Instantiates an AXI4 Smartconnect IP.
   # @param name Name of the instance.
   # @param no_slaves Number of AXI4 Slave interfaces.
