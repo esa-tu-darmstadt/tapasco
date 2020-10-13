@@ -47,12 +47,12 @@ else
 
     echo "if echo \"\${PATH}\" | grep --quiet \"cmake-3.3.2\";" >> tapasco-setup.sh
     echo "then" >> tapasco-setup.sh
-    echo "    if ! command -v python > /dev/null;" >> tapasco-setup.sh
+    echo "    if ! command -v python3 > /dev/null;" >> tapasco-setup.sh
     echo "    then" >> tapasco-setup.sh
-    echo "        echo \"Could not remove old CMake version from Path. Please install python\"" >> tapasco-setup.sh
+    echo "        echo \"Could not remove old CMake version from Path. Please install python3\"" >> tapasco-setup.sh
     echo "    else" >> tapasco-setup.sh
     echo "        echo \"Removing old CMake version 3.3.2 distributed with Vivado from Path\"" >> tapasco-setup.sh
-    echo "        export PATH=\`python -c \"import re; print(re.sub(r'[:][^:]*?cmake[-]3[.]3[.]2.*?[:]', ':', '\${PATH}'));\"\`" >> tapasco-setup.sh
+    echo "        export PATH=\`python3 -c \"import re; print(re.sub(r'[:][^:]*?cmake[-]3[.]3[.]2.*?[:]', ':', '\${PATH}'));\"\`" >> tapasco-setup.sh
     echo "    fi" >> tapasco-setup.sh
     echo "fi" >> tapasco-setup.sh
 
