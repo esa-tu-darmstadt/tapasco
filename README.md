@@ -44,7 +44,6 @@ To use TaPaSCo, you'll need working installations of
 *   git
 *   python
 *   GCC newer than 5.x.x for C++11 support
-*   *OPTIONAL:* libncurses for the tapasco-debug application
 *   *OPTIONAL:* Local Installation of gradle 5.0+, if you do not want to use the included wrapper.
 
 If you want to use the High-Level Synthesis flow for generating custom IP
@@ -108,18 +107,28 @@ If you want to use a specific (pre-release) version or branch, you can do the fo
 Whenever you want to use TaPaSCo in the future, just source the corresponding workspace using the `tapasco-setup.sh`.
 This also allows you to have multiple independent TaPaSCo-Workspaces.
 
-Prerequisites for the Runtime
+Prerequisites for compiling the runtime
 -------------
 
 *Ubuntu*:
 ```
-apt-get -y install build-essential linux-headers-generic python cmake libelf-dev libncurses-dev git rpm
+apt-get -y install build-essential linux-headers-generic python cmake libelf-dev git rpm
 ```
 
 *Fedora*:
 ```
-dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python libatomic git rpm-build
+dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake python libatomic git rpm-build
 ```
+
+*Rust*:
+
+The runtime uses Rust and requires a recent version of it. The versions provided by most distributions is too old. We recommend the official way of installing Rust through [rustup][1]:
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o /tmp/rustup.sh && sh /tmp/rustup.sh -y
+source ~/.cargo/env
+```
+
+[1]: https://rustup.rs
 
 TaPaSCo-Runtime Setup
 ---------------------
