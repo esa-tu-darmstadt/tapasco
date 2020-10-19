@@ -42,7 +42,7 @@ To use TaPaSCo, you'll need working installations of
 *   Vivado Design Suite 2017.4 or newer
 *   Java SDK 8 - 11
 *   git
-*   python
+*   python3
 *   GCC newer than 5.x.x for C++11 support
 *   *OPTIONAL:* Local Installation of gradle 5.0+, if you do not want to use the included wrapper.
 
@@ -112,12 +112,12 @@ Prerequisites for compiling the runtime
 
 *Ubuntu*:
 ```
-apt-get -y install build-essential linux-headers-generic python cmake libelf-dev git rpm
+apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev git rpm
 ```
 
 *Fedora*:
 ```
-dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake python libatomic git rpm-build
+dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake python3 libatomic git rpm-build
 ```
 
 *Rust*:
