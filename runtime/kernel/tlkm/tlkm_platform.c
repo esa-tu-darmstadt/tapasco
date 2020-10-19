@@ -38,8 +38,8 @@ int tlkm_platform_status_init(struct tlkm_device *dev,
 	       "I/O mapping 0x%px-0x%px for status",
 	       (void *)(dev->base_offset + p->status.base),
 	       (void *)(dev->base_offset + p->status.high));
-	mmap->status = ioremap(dev->base_offset + p->status.base,
-				       p->status.size);
+	mmap->status =
+		ioremap(dev->base_offset + p->status.base, p->status.size);
 	if (!mmap->status) {
 		DEVERR(dev->dev_id,
 		       "could not ioremap the AXI register space at 0x%px-0x%px",
@@ -76,8 +76,7 @@ int tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap)
 	       "I/O mapping 0x%px-0x%px for architecture",
 	       (void *)(dev->base_offset + dev->arch.base),
 	       (void *)(dev->base_offset + dev->arch.high));
-	mmap->arch = ioremap(dev->base_offset + dev->arch.base,
-				     dev->arch.size);
+	mmap->arch = ioremap(dev->base_offset + dev->arch.base, dev->arch.size);
 	if (!mmap->arch) {
 		DEVERR(dev->dev_id,
 		       "could not ioremap the AXI register space at 0x%px-0x%px",
@@ -91,8 +90,7 @@ int tlkm_platform_mmap_init(struct tlkm_device *dev, struct platform_mmap *mmap)
 	       "I/O mapping 0x%px-0x%px for platform",
 	       (void *)(dev->base_offset + dev->plat.base),
 	       (void *)(dev->base_offset + dev->plat.high));
-	mmap->plat = ioremap(dev->base_offset + dev->plat.base,
-				     dev->plat.size);
+	mmap->plat = ioremap(dev->base_offset + dev->plat.base, dev->plat.size);
 	if (!mmap->plat) {
 		DEVERR(dev->dev_id,
 		       "could not ioremap the AXI register space at 0x%px-0x%px",
@@ -129,17 +127,19 @@ void tlkm_platform_mmap_exit(struct tlkm_device *dev,
 	       "unmapped remaining I/O regions of '%s'", dev->name);
 }
 
-inline ulong addr2map_off(struct tlkm_device *dev, dev_addr_t const addr)
+inline void *addr2map_off(struct tlkm_device *dev, dev_addr_t const addr)
 {
 	struct platform *p = &dev->cls->platform;
-	ulong ptr = -1;
+	void *ptr = 0;
 	BUG_ON(!p);
 	if (addr == 0) {
-		ptr = p->status.base;
+		ptr = (void *)dev->base_offset + p->status.base;
 	} else if (addr == 4096) {
-		ptr = dev->arch.base;
+		ptr = (void *)dev->base_offset + dev->arch.base;
 	} else if (addr == 8192) {
-		ptr = dev->plat.base;
+		ptr = (void *)dev->base_offset + dev->plat.base;
+	} else if (dev->cls->addr2map) {
+		ptr = dev->cls->addr2map(dev, addr);
 	}
 	return ptr;
 }

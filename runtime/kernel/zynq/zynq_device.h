@@ -20,12 +20,30 @@
 #ifndef ZYNQ_DEVICE_H__
 #define ZYNQ_DEVICE_H__
 
+#include <linux/version.h>
+
 #include "tlkm_types.h"
 #include "tlkm_class.h"
 #include "tlkm_device.h"
 
+#define ZYNQ_MAX_NUM_INTCS 4
+
+struct zynq_irq_mapping {
+	struct list_head *mapping_base;
+	struct tlkm_irq_mapping *mapping;
+	volatile u32 *intc;
+	u32 start;
+	u32 id;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 12, 0)
+	const char *name;
+#endif
+};
+
 struct zynq_device {
 	struct tlkm_device *parent;
+	struct list_head *interrupts;
+	struct zynq_irq_mapping intc_bases[ZYNQ_MAX_NUM_INTCS];
+	int requested_irq_num;
 };
 
 int zynq_device_init(struct tlkm_device *dev, void *data);

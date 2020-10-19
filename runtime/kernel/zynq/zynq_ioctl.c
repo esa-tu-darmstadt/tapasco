@@ -42,6 +42,41 @@ static inline long zynq_ioctl_size(struct tlkm_device *inst,
 	return -EFAULT;
 }
 
+static inline long zynq_ioctl_reg_int(struct tlkm_device *inst,
+				      struct tlkm_register_interrupt *info)
+{
+	DEVERR(inst->dev_id, "should never be called");
+	return -EFAULT;
+}
+
+long zynq_ioctl_dma_buffer_allocate(
+	struct tlkm_device *inst, struct tlkm_dma_buffer_allocate __user *param)
+{
+	ERR("Eventfd for platform interrupts is not implemented, yet.");
+	return -EFAULT;
+}
+
+long zynq_ioctl_dma_buffer_free(struct tlkm_device *inst,
+				struct tlkm_dma_buffer_op __user *param)
+{
+	ERR("Eventfd for platform interrupts is not implemented, yet.");
+	return -EFAULT;
+}
+
+long zynq_ioctl_dma_buffer_to_dev(struct tlkm_device *inst,
+				  struct tlkm_dma_buffer_op __user *param)
+{
+	ERR("Eventfd for platform interrupts is not implemented, yet.");
+	return -EFAULT;
+}
+
+long zynq_ioctl_dma_buffer_from_dev(struct tlkm_device *inst,
+				    struct tlkm_dma_buffer_op __user *param)
+{
+	ERR("Eventfd for platform interrupts is not implemented, yet.");
+	return -EFAULT;
+}
+
 static inline long zynq_ioctl_alloc(struct tlkm_device *inst,
 				    struct tlkm_mm_cmd *cmd)
 {

@@ -46,6 +46,7 @@ static struct tlkm_class *const _tlkm_class[] = {
 	(struct tlkm_class *)&zynq_cls,
 	(struct tlkm_class *)&zynqmp_cls,
 	(struct tlkm_class *)&pcie_cls,
+	(struct tlkm_class *)&pcie_aws_cls,
 };
 
 static void tlkm_bus_add_device(struct tlkm_device *pdev)

@@ -25,23 +25,21 @@ extern crate common_failures;
 extern crate failure;
 extern crate env_logger;
 extern crate hex;
+extern crate regex;
 extern crate serde;
 extern crate serde_json;
 
-use prost::Message;
-use std::u64;
-
+use clap::{App, AppSettings, Arg};
 use common_failures::prelude::*;
-
+use prost::Message;
+use regex::Regex;
 use serde::Deserialize;
-
+use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
-use std::path::Path;
-
 use std::io::BufReader;
-
-use clap::{App, AppSettings, Arg};
+use std::path::Path;
+use std::u64;
 
 pub mod status {
     include!(concat!(env!("OUT_DIR"), "/tapasco.status.rs"));
@@ -55,6 +53,7 @@ struct Composition {
     Kernel: u64,
     Offset: String,
     Size: String,
+    VLNV: String,
 }
 
 #[allow(non_snake_case)]
@@ -83,6 +82,22 @@ struct Component {
 
 #[allow(non_snake_case)]
 #[derive(Deserialize, Debug)]
+struct Debug {
+    Name: String,
+    Size: String,
+    Offset: String,
+    PE_ID: u64,
+}
+
+#[allow(non_snake_case)]
+#[derive(Deserialize, Debug)]
+struct InterruptMapping {
+    Name: String,
+    Mapping: u64,
+}
+
+#[allow(non_snake_case)]
+#[derive(Deserialize, Debug)]
 struct ComponentAddresses {
     Base: String,
     Components: Vec<Component>,
@@ -103,6 +118,8 @@ struct Design {
     Versions: Vec<Version>,
     Clocks: Vec<Clocks>,
     Platform: ComponentAddresses,
+    Debug: Vec<Debug>,
+    Interrupts: Vec<InterruptMapping>,
 }
 
 #[derive(Debug, Fail)]
@@ -245,6 +262,68 @@ fn run() -> Result<()> {
         arch_base, platform_base
     );
 
+    let mut debugs: HashMap<u64, status::Platform> = HashMap::new();
+    for debug in json.Debug {
+        let offset = from_hex_str(&debug.Offset)?;
+        let size = from_hex_str(&debug.Size)?;
+        let name = &debug.Name;
+        let pe_id = &debug.PE_ID;
+        debugs.insert(
+            *pe_id,
+            status::Platform {
+                name: name.clone(),
+                offset: offset,
+                size: size,
+                interrupts: Vec::new(),
+            },
+        );
+    }
+
+    let mut interrupts_pes: HashMap<u64, Vec<status::Interrupt>> = HashMap::new();
+    let mut interrupts_plat: HashMap<String, Vec<status::Interrupt>> = HashMap::new();
+
+    let pe_re = Regex::new(r"PE_(\d)_(\d)")?;
+    let platform_re = Regex::new(r"(PLATFORM_COMPONENT_.*)_(.*)")?;
+
+    for interrupt in json.Interrupts {
+        if pe_re.is_match(&interrupt.Name) {
+            let g = pe_re.captures(&interrupt.Name).unwrap();
+            let peid = u64::from_str_radix(&g[1], 10).unwrap();
+
+            let v = match interrupts_pes.get_mut(&peid) {
+                Some(x) => x,
+                None => {
+                    interrupts_pes.insert(peid, Vec::new());
+                    interrupts_pes.get_mut(&peid).unwrap()
+                }
+            };
+
+            v.push(status::Interrupt {
+                mapping: interrupt.Mapping,
+                name: g[2].to_string(),
+            });
+        } else if platform_re.is_match(&interrupt.Name) {
+            let g = platform_re.captures(&interrupt.Name).unwrap();
+            let component = &g[1];
+            let name = &g[2];
+
+            let v = match interrupts_plat.get_mut(component) {
+                Some(x) => x,
+                None => {
+                    interrupts_plat.insert(component.to_string(), Vec::new());
+                    interrupts_plat.get_mut(component).unwrap()
+                }
+            };
+
+            v.push(status::Interrupt {
+                mapping: interrupt.Mapping,
+                name: name.to_string(),
+            });
+        } else {
+            trace!("Unknown interrupt mapping {:?}.", interrupt);
+        }
+    }
+
     let mut pes: Vec<status::Pe> = Vec::new();
     for pe in json.Architecture.Composition {
         let addr = from_hex_str(&pe.Offset)?;
@@ -258,12 +337,18 @@ fn run() -> Result<()> {
                 size: size,
             });
         } else {
+            let int = match interrupts_pes.remove(&pe.SlotId) {
+                Some(x) => x,
+                None => Vec::new(),
+            };
             pes.push(status::Pe {
-                name: "UNNAMED KERNEL".to_string(),
+                name: pe.VLNV,
                 id: pe.Kernel as u32,
                 offset: addr,
                 size: size,
                 local_memory: None,
+                debug: debugs.remove(&pe.SlotId),
+                interrupts: int,
             });
         }
     }
@@ -285,6 +370,10 @@ fn run() -> Result<()> {
             name: x.Name.clone(),
             offset: from_hex_str(&x.Offset).unwrap(),
             size: from_hex_str(&x.Size).unwrap(),
+            interrupts: match interrupts_plat.remove(&x.Name) {
+                Some(x) => x,
+                None => Vec::new(),
+            },
         })
         .collect();
 

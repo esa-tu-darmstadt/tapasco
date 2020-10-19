@@ -32,17 +32,6 @@ namespace eval addressmap {
     set processing_elements [dict create]
   }
 
-  proc get_known_platform_components {} {
-    set f [open "$::env(TAPASCO_HOME_RUNTIME)/platform/include/platform_components.h" "r"]
-    set fl [split [read $f] "\n"]
-    foreach line $fl {
-      if {[regexp {.*(PLATFORM_COMPONENT_[^\s,]*)} $line _ name]} {
-        lappend components $name
-      }
-    }
-    return $components
-  }
-
   proc add_platform_component {name base size} {
     variable platform_components
     puts "Adding platform component $name at [format "0x%08x" $base] ..."
@@ -52,27 +41,13 @@ namespace eval addressmap {
     dict set platform_components $name $base $size
   }
 
-  proc get_platform_component {name} {
-    variable platform_components
-    if {[dict exists $platform_components $name]} {
-      set comp [dict get $platform_components $name]
-      set base [lindex $comp 0]
-      set size [lindex $comp 1]
-      puts "  platform component $name found at $base ($size B)"
-      return [list $base $size]
-    }
-    return [list 0xFFFFFFFFF 0xFFFFFFFFF]
-  }
-
   proc get_platform_component_bases {} {
+    variable platform_components
     set ret [list]
-    foreach c [get_known_platform_components] {
-      set comp [get_platform_component $c]
+    dict for {c comp} $platform_components {
       set comp_addr [lindex $comp 0]
       set size [lindex $comp 1]
-      if {$comp_addr != 0xFFFFFFFFF} {
-        lappend ret $c $comp_addr $size
-      }
+      lappend ret $c $comp_addr $size
     }
     puts "Platform component bases: $ret"
     return $ret

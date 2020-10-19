@@ -240,17 +240,22 @@ build_kernel_fedora_31_debug:
   variables:
     MODE: "release"
     TARGET: ""
+    PACKAGE_TYPE: "ZIP"
   dependencies: []
   tags:
     - Normal
   script:
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o /tmp/rustup.sh && sh /tmp/rustup.sh -y
+    - source ~/.cargo/env
     - ./tapasco-init.sh && source tapasco-setup.sh
     - tapasco-build-libs --mode=$MODE --target=$TARGET --skip_driver
-    - cd build* && make package
+    - cd build* && cpack -G $PACKAGE_TYPE
 
 .build_tapasco_fedora:
+  variables:
+    PACKAGE_TYPE: "RPM"
   before_script:
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python3 libatomic git rpm-build
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python3 libatomic git rpm-build curl
   artifacts:
     paths:
       - build/tapasco-*-Linux.rpm
@@ -277,8 +282,10 @@ build_tapasco_fedora_31_debug:
   extends: .build_tapasco_fedora
 
 .build_tapasco_ubuntu:
+  variables:
+    PACKAGE_TYPE: "DEB"
   before_script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git rpm
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git curl
   artifacts:
     paths:
       - build/tapasco-*-Linux.deb
@@ -297,7 +304,7 @@ build_tapasco_ubuntu_16_04_cross:
     TARGET: "zynq"
   image: ubuntu:xenial
   before_script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
   extends: .build_tapasco_ubuntu
 
 build_tapasco_ubuntu_16_04_clang:
@@ -305,7 +312,7 @@ build_tapasco_ubuntu_16_04_clang:
     TARGET: "clang"
   image: ubuntu:xenial
   before_script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git rpm clang
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git clang
   extends: .build_tapasco_ubuntu
 
 build_tapasco_ubuntu_16_04_debug:
@@ -324,6 +331,14 @@ build_tapasco_arm32v7_debug:
   variables:
     MODE: "debug"
   image: arm32v7/ubuntu:16.04
+  before_script:
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git rpm curl
+    - curl http://launchpadlibrarian.net/332033977/libprotobuf10_3.0.0-9ubuntu5_armhf.deb -o /tmp/libprotobuf.deb
+    - curl http://launchpadlibrarian.net/332033978/libprotoc10_3.0.0-9ubuntu5_armhf.deb -o /tmp/libprotoc.deb
+    - curl http://launchpadlibrarian.net/332033979/protobuf-compiler_3.0.0-9ubuntu5_armhf.deb -o /tmp/protobuf.deb
+    - dpkg -i /tmp/libprotobuf.deb
+    - dpkg -i /tmp/libprotoc.deb
+    - dpkg -i /tmp/protobuf.deb
   extends: .build_tapasco_ubuntu
 
 build_tapasco_arm64v8_debug:
@@ -338,7 +353,7 @@ build_tapasco_ubuntu_16_04_cross_debug:
     TARGET: "zynq"
   image: ubuntu:xenial
   before_script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
   extends: .build_tapasco_ubuntu
 
 tapasco_compose_ubuntu:

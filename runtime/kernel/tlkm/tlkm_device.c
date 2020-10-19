@@ -28,104 +28,6 @@
 #define TLKM_STATUS_SZ 0x1000
 #define TLKM_STATUS_REG_OFFSET 0x1000
 
-static int dma_engines_init(struct tlkm_device *dev)
-{
-	int i, ret = 0, irqn = -1;
-	u64 dma_base[TLKM_DEVICE_MAX_DMA_ENGINES] = {
-		0ULL,
-	};
-	u64 dma_size[TLKM_DEVICE_MAX_DMA_ENGINES] = {
-		0ULL,
-	};
-	char dma_name[TLKM_COMPONENTS_NAME_MAX];
-	BUG_ON(!dev);
-
-	for (i = 0; i < TLKM_DEVICE_MAX_DMA_ENGINES; ++i) {
-		dma_addr_t addr;
-		snprintf(dma_name, TLKM_COMPONENTS_NAME_MAX,
-			 "PLATFORM_COMPONENT_DMA%d", i);
-		addr = tlkm_status_get_component_base(dev, dma_name);
-		if (addr != -1) {
-			dma_base[i] = addr;
-			dma_size[i] =
-				tlkm_status_get_component_size(dev, dma_name);
-			DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
-			       "DMA #%d found at %llx with size %llx", i,
-			       (uint64_t)addr, (uint64_t)dma_size[i]);
-		}
-	}
-
-	for (i = 0; i < TLKM_DEVICE_MAX_DMA_ENGINES; ++i) {
-		struct dma_operations *o = &dev->dma[i].ops;
-		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA%d base: 0x%08llx", i,
-		       dma_base[i]);
-		if (!dma_base[i] || dma_base[i] >= (uintptr_t)-1)
-			continue;
-		dma_base[i] += dev->base_offset;
-		ret = tlkm_dma_init(dev, &dev->dma[i], dma_base[i],
-				    dma_size[i]);
-		if (ret) {
-			DEVERR(dev->dev_id, "failed to initialize DMA%d: %d", i,
-			       ret);
-			goto err_dma_engine;
-		}
-
-		BUG_ON(!o->intr_read);
-		DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
-		       "DMA #%d: registering read interrupt", i);
-		if (o->intr_read &&
-		    (ret = tlkm_device_request_platform_irq(
-			     dev, ++irqn, o->intr_read, &dev->dma[i]))) {
-			DEVERR(dev->dev_id,
-			       "could not register interrupt #%d: %d", irqn,
-			       ret);
-			goto err_dma_engine;
-		}
-		DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
-		       "DMA #%d: registering write interrupt", i);
-		if (o->intr_write && o->intr_write != o->intr_read &&
-		    (ret = tlkm_device_request_platform_irq(
-			     dev, ++irqn, o->intr_write, &dev->dma[i]))) {
-			DEVERR(dev->dev_id,
-			       "could not register interrupt #%d: %d", irqn,
-			       ret);
-			goto err_dma_engine;
-		}
-		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d: done", i);
-	}
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA initialization complete");
-	return ret;
-
-err_dma_engine:
-	for (; irqn >= 0; --irqn) {
-		tlkm_device_release_platform_irq(dev, irqn);
-	}
-	for (; i >= 0; --i) {
-		tlkm_dma_exit(&dev->dma[i]);
-	}
-	return ret;
-}
-
-static void dma_engines_exit(struct tlkm_device *dev)
-{
-	int i, irqn = 0;
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "releasing DMA engines ...");
-	for (i = 0; i < TLKM_DEVICE_MAX_DMA_ENGINES; ++i) {
-		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA #%d @ 0x%px", i,
-		       (void *)dev->dma[i].base);
-		if (dev->dma[i].base) {
-			if (dev->dma[i].ops.intr_read)
-				tlkm_device_release_platform_irq(dev, irqn++);
-			if (dev->dma[i].ops.intr_write &&
-			    dev->dma[i].ops.intr_write !=
-				    dev->dma[i].ops.intr_read)
-				tlkm_device_release_platform_irq(dev, irqn++);
-			tlkm_dma_exit(&dev->dma[i]);
-		}
-	}
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "DMA engines destroyed");
-}
-
 int tlkm_device_init(struct tlkm_device *dev, void *data)
 {
 	int ret = 0;
@@ -194,17 +96,22 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 		}
 	}
 
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup DMA engines ...");
-	if ((ret = dma_engines_init(dev))) {
-		DEVERR(dev->dev_id,
-		       "could not setup DMA engines for devices: %d", ret);
-		goto err_dma;
+	if (dev->cls->init_interrupts) {
+		DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
+		       "setting up device-specific interrupt handling ...");
+		if ((ret = dev->cls->init_interrupts(dev,
+						     &dev->ctrl->interrupts))) {
+			DEVERR(dev->dev_id,
+			       "failed to initialize private data struct: %d",
+			       ret);
+			goto err_interrupts;
+		}
 	}
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "device setup complete");
 	return ret;
 
-err_dma:
+err_interrupts:
 	if (dev->cls->exit_subsystems)
 		dev->cls->exit_subsystems(dev);
 err_sub:
@@ -226,7 +133,8 @@ err_nperfc:
 void tlkm_device_exit(struct tlkm_device *dev)
 {
 	if (dev) {
-		dma_engines_exit(dev);
+		if (dev->cls->exit_interrupts)
+			dev->cls->exit_interrupts(dev);
 		if (dev->cls->exit_subsystems)
 			dev->cls->exit_subsystems(dev);
 		tlkm_status_exit(&dev->status, dev);

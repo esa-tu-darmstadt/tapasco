@@ -42,7 +42,7 @@ namespace eval platform {
     set ss_intc    [tapasco::subsystem::create "intc"]
     set ss_tapasco [tapasco::subsystem::create "tapasco"]
 
-    set sss [list $ss_cnrs $ss_host $ss_intc $ss_mem $ss_tapasco]
+    set sss [list $ss_cnrs $ss_host $ss_mem $ss_tapasco]
 
     foreach ss $sss {
       set name [string trim $ss "/"]
@@ -64,6 +64,21 @@ namespace eval platform {
       current_bd_instance [tapasco::subsystem::create $name]
       eval $ss
       current_bd_instance $instance
+    }
+
+    set sss [list $ss_intc]
+
+    foreach ss $sss {
+      set name [string trim $ss "/"]
+      set cmd  "create_subsystem_$name"
+      puts "Creating subsystem $name ..."
+      if {[llength [info commands $cmd]] == 0} {
+        error "Platform does not implement mandatory command $cmd!"
+      }
+      current_bd_instance $ss
+      eval $cmd
+      current_bd_instance $instance
+      puts "Subsystem $name complete."
     }
 
     wire_subsystem_wires

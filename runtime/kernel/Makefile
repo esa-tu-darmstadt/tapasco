@@ -18,7 +18,6 @@ CPPFLAGS+=-Werror -Wno-missing-attributes -I$(MODULE_DIR) \
 				  -I$(MODULE_DIR)/device \
 				  -I$(MODULE_DIR)/tlkm \
 				  -I$(MODULE_DIR)/user \
-				  -I$(MODULE_DIR)/hsa \
 				  -I$(MODULE_DIR)/nanopb \
 				  -DPB_SYSTEM_HEADER=\<pb_system.h\>
 

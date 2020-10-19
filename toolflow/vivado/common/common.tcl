@@ -532,42 +532,11 @@ namespace eval tapasco {
 
   # Adds a specific bit to the CAPABILITIES_0 bitfield.
   proc add_capabilities_flag {bit} {
-    variable capabilities_0
-    if {[string is integer $bit]} {
-      if {$bit < 0 || $bit > 31} { error "Invalid bit index: $bit" }
-      set flag [expr "(1 << $bit)"]
-    } else {
-      set caps_file [open "$::env(TAPASCO_HOME_RUNTIME)/platform/include/platform_caps.h" "r"]
-      set caps_cnts [split [read $caps_file] "\n"]
-      close $caps_file
-
-      set caps [dict create]
-      foreach line $caps_cnts {
-        if {[regexp {(PLATFORM_CAP[^\s]*)\s*=\s*([^,]+)\s*,} $line _ n v]} {
-          dict set caps $n [expr $v]
-        }
-      }
-
-      if {[dict exists $caps $bit]} {
-        set flag [dict get $caps $bit]
-        puts "  matched $bit to value $v, adding ..."
-      } else {
-        error "ERROR: unknown capability flag: $bit - known caps: [dict keys $caps]"
-      }
-    }
-    set flags [get_capabilities_flags]
-    set nflags [expr "$flags | $flag"]
-    puts [format "Adding bit $flag to capability bitfield: 0x%08x (%d) -> 0x%08x (%d)." $flags $flags $nflags $nflags]
-    set capabilities_0 $nflags
+      puts "Capability flags are deprecated and will be replaced with capability array in a future version of TaPaSCo."
   }
 
   proc get_platform_num_slots {} {
-    set f [open "$::env(TAPASCO_HOME_RUNTIME)/platform/include/platform_global.h" "r"]
-    set fl [split [read $f] "\n"]
-    foreach line $fl {
-      if {[regexp {define\s*PLATFORM_NUM_SLOTS\s*(\d+)} $line _ ret]} {
-        return $ret
-      }
-    }
+    puts "Number of slots is hard coded as 128 right now"
+    return 128
   }
 }
