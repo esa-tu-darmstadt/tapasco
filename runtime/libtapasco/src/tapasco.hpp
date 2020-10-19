@@ -18,6 +18,17 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+/*
+  Interface changes since Tapasco 2020.4:
+
+    * `RetVal` now takes a pointer parameter instead of a reference.
+    * All other wrappers use move constructors instead of references, e.g. `T
+  &&t` instead of `T &t`.
+    * `make` functions can be chained, e.g. makeInOnly(makeLocal(v));
+    * `tapasco_info_t` is no longer available. Instead dedicated functions, e.g.
+  `tapasco::design_frequency` can be used to retrieve the desired information.
+*/
+
 #ifndef TAPASCO_HPP__
 #define TAPASCO_HPP__
 
