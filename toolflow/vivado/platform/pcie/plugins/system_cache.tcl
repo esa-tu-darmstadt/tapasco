@@ -18,11 +18,14 @@
 #
 
 namespace eval system_cache {
-	proc get_platform_port {} {
-		return [get_bd_intf_pins mig_ic/M00_AXI]
-	}
 
-	proc get_memory_port {} {
-		return [get_bd_intf_pins -regexp mig/(C0_DDR4_)?S_AXI]
+	proc get_mem_connections {} {
+		set subsystem "/memory"
+		set instance [current_bd_instance]
+		current_bd_instance $subsystem
+		set clock [tapasco::subsystem::get_port "mem" "clk"]
+		set reset [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
+		current_bd_instance $subsystem
+		return [list [get_bd_intf_pins /memory/mig_ic/M00_AXI] [get_bd_intf_pins -regexp /memory/mig/(C0_DDR4_)?S_AXI] $subsystem $clock $reset]
 	}
 }
