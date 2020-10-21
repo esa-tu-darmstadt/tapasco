@@ -31,8 +31,10 @@ namespace eval system_cache {
 				set cache [tapasco::ip::create_axi_cache "cache_l2_$i" 1 \
 				  [tapasco::get_feature_option "Cache" "size" 32768] \
 				  [tapasco::get_feature_option "Cache" "associativity" 2]]
-				# set slave port width to 512bit, otherwise uses (not working) width conversion in SmartConnect
-				set_property CONFIG.C_S0_AXI_GEN_DATA_WIDTH {512} $cache
+				if {[get_property CONFIG.DATA_WIDTH $platform_port] > 32} {
+					# set slave port width to 512bit, otherwise uses (not working) width conversion in SmartConnect
+					set_property CONFIG.C_S0_AXI_GEN_DATA_WIDTH [get_property CONFIG.DATA_WIDTH $platform_port] $cache
+				}
 				if {[tapasco::get_feature_option "Cache" "force_allocate_read"]} {
 					# force caching for master (otherwise relies on axi cache signals)
 					puts "  Force allocate read"
