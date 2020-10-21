@@ -96,8 +96,8 @@ private object GlobalOptions {
   def inputFiles: Parser[(String, Path)] =
     jobsFile | configFile | logFile
 
-  def slurm: Parser[(String, Boolean)] =
-    longOption("slurm", "Slurm").map((_, true)) ~ ws
+  def slurm: Parser[(String, String)] =
+    longOption("slurm", "Slurm") ~ ws ~/ string.opaque("slurm template name") ~ ws
 
   def parallel: Parser[(String, Boolean)] =
     longOption("parallel", "Parallel").map((_, true)) ~ ws
@@ -131,7 +131,7 @@ private object GlobalOptions {
         case ("Core", p: Path) => mkConfig(as, Some(c getOrElse Configuration() coreDir p))
         case ("Kernel", p: Path) => mkConfig(as, Some(c getOrElse Configuration() kernelDir p))
         case ("Platform", p: Path) => mkConfig(as, Some(c getOrElse Configuration() platformDir p))
-        case ("Slurm", e: Boolean) => mkConfig(as, Some(c getOrElse Configuration() slurm e))
+        case ("Slurm", t: String) => mkConfig(as, Some(c getOrElse Configuration() slurm Some(t)))
         case ("Parallel", e: Boolean) => mkConfig(as, Some(c getOrElse Configuration() parallel e))
         case ("JobsFile", p: Path) => mkConfig(as, Some(c getOrElse Configuration() jobs readJobsFile(p)))
         case ("LogFile", p: Path) => mkConfig(as, Some(c getOrElse Configuration() logFile Some(p)))
