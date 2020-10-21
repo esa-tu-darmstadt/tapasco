@@ -437,6 +437,18 @@ package object json {
   }
 
   /* Configuration @} */
+
+  /* @{ SlurmRemoteConfig */
+  implicit val slurmRemoteConfigReads: Reads[SlurmRemoteConfig] = (
+      (JsPath \ "Name").read[String](minimumLength(length = 1)) ~
+      (JsPath \ "SlurmHost").read[String](minimumLength(length = 1)) ~
+      (JsPath \ "WorkstationHost").read[String](minimumLength(length = 1)) ~
+      (JsPath \ "Workdir").read[Path] ~
+      (JsPath \ "TapascoInstallDir").read[Path] ~
+      (JsPath \ "JobFile").read[String](minimumLength(length = 1))
+    ) (SlurmRemoteConfig.apply _)
+  /* SlurmRemoteConfig @} */
+
 }
 
 // vim: foldmarker=@{,@} foldmethod=marker foldlevel=0
