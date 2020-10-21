@@ -247,6 +247,8 @@ namespace eval hbm {
 
         # create interconnect for clock domain conversion, protocol conversion (AXI4->AXI3) and data width conversion
         set converter [tapasco::ip::create_axi_ic converter_ic_${i} 1 1]
+        # set regslice to auto for correct protocol conversion
+        set_property -dict [list CONFIG.S00_HAS_REGSLICE {3}] $converter
         
         # create connections between PE and interconnect, and interconnect and HBM
         connect_bd_net [get_bd_pins design_clk] [get_bd_pins $converter/S00_ACLK]
@@ -350,5 +352,29 @@ namespace eval hbm {
 
 }
 
+if {[tapasco::is_feature_enabled "HBM"]} {
+	namespace eval system_cache {
+		proc get_mem_connections {} {
+			set subsystem "/hbm"
+			# retrieve clk and rst port of /hbm subsystem
+			set instance [current_bd_instance]
+			current_bd_instance $subsystem
+			set clock [tapasco::subsystem::get_port "design" "clk"]
+			set reset [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
+			current_bd_instance $subsystem
+
+			# existing memory controller cache location
+			set cons [list [get_bd_intf_pins /memory/mig_ic/M00_AXI] [get_bd_intf_pins -regexp /memory/mig/(C0_DDR4_)?S_AXI] "/memory" [tapasco::subsystem::get_port "mem" "clk"] [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]]
+
+			# get all HBM AXI connections
+			foreach pin [get_bd_intf_pins -of_objects [get_bd_cells /hbm/converter_ic_*] -filter "VLNV == [tapasco::ip::get_vlnv aximm_intf] && MODE == Slave"] {
+				set pinA [lindex [get_bd_intf_pins -of [get_bd_intf_nets -of_objects $pin]] 1]
+				set pinB [lindex [get_bd_intf_pins -of [get_bd_intf_nets -of_objects $pin]] 0]
+				lappend cons $pinA $pinB "/hbm" $clock $reset
+			}
+			return $cons
+		}
+	}
+}
 
 tapasco::register_plugin "platform::hbm::addressmap" "post-address-map"
