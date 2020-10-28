@@ -87,7 +87,12 @@ object Tapasco {
       logger.trace("configuring FileAssetManager...")
       FileAssetManager(cfg)
       logger.trace("SLURM: {}", cfg.slurm)
-      if (cfg.slurm) Slurm.enabled = cfg.slurm
+      if (cfg.slurm.isDefined) {
+        Slurm.set_cfg(cfg.slurm.get match {
+          case "local" => Slurm.EnabledLocal()
+          case t       => Slurm.EnabledRemote(t)
+        })
+      }
       FileAssetManager.start()
       logger.trace("parallel: {}", cfg.parallel)
       cfg.logFile map { logfile: Path => setupLogFileAppender(logfile.toString) }

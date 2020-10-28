@@ -110,17 +110,32 @@ final object Slurm extends Publisher {
   }
 
   /** Enables or disables SLURM, returns new value for enabled. */
-  def enabled_=(en: Boolean): Boolean = if (en && available) {
-    Slurm.synchronized {
-      _enabled = en
+  def set_cfg(cfg: SlurmConfig): Boolean = cfg match {
+    case Disabled() => false
+    case EnabledLocal() => if (available) {
+      Slurm.synchronized {
+        _enabled = true
+      }
+      publish(Events.SlurmModeEnabled(true))
+      true
+    } else {
+      logger.warn("SLURM local mode was selected, but could be not activated (sbatch not found)")
+      false
     }
-    publish(Events.SlurmModeEnabled(en))
-    enabled
-  } else {
-    if (en) {
-      logger.warn("SLURM mode was selected, but could be not activated (sbatch not found)")
+    case EnabledRemote(template_name) => {
+      val template_path = SLURM_TEMPLATE_DIR.resolve(template_name + ".json")
+      if (template_path.toFile.exists()) {
+        Slurm.synchronized {
+          _enabled = true
+          slurm_remote_cfg = SlurmRemoteConfig.from(template_path).toOption
+        }
+        publish(Events.SlurmModeEnabled(true))
+        true
+      } else {
+        logger.warn("SLURM mode was selected, but the specified template was not found")
+        false
+      }
     }
-    false
   }
 
   /** Helper function: Sets correct file permissions on job scripts. */
@@ -230,4 +245,12 @@ final object Slurm extends Publisher {
 
   /** Use SLURM? */
   private var _enabled = false
+
+  /** Host for executing SLURM */
+  private var slurm_remote_cfg: Option[SlurmRemoteConfig] = None
+
+  sealed trait SlurmConfig
+  final case class EnabledLocal() extends SlurmConfig
+  final case class EnabledRemote(template_name: String) extends SlurmConfig
+  final case class Disabled() extends SlurmConfig
 }
