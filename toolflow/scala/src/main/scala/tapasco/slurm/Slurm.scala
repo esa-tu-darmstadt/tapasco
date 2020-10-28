@@ -174,6 +174,85 @@ final object Slurm extends Publisher {
   }
 
   /**
+    * Preamble is run before the SLURM job is started.
+    * Copy required files from host to SLURM workstation.
+    * @param slurm_job  Job to execute.
+    * @param files List of files that need to be copied to SLURM node
+    * @param update_paths Function that converts local workdir file paths to valid paths on a remote SLURM node.
+    **/
+  def slurm_preamble(slurm_job: Job, files: Seq[Path], update_paths: Path => Path)(implicit cfg: Configuration): Unit = {
+    val local_files: Seq[Path] = slurm_job.job match {
+      case ComposeJob(c, _, _, a, p, _, _, _, _, _) => {
+        val tgt = Target.fromString(a.get.head, p.get.head).get
+        val cores = c.composition.map(ce => FileAssetManager.entities.core(ce.kernel, tgt))
+
+        // TODO: In case there are no local ipcores, they are synth'ed prior to compose job, This is done LOCALLY
+        files ++ cores.map(_.get.zipPath) ++ cores.map(_.get.descPath)
+      }
+      case HighLevelSynthesisJob(_, _, _, k, _) => {
+        val kernels = FileAssetManager.entities.kernels.filter( kernel => k.get.contains(kernel.name) ).toSeq
+        files ++ kernels.map(_.descPath.getParent)
+      }
+      case _ => files
+    }
+
+    val remote_files = local_files map update_paths
+    file_transfer(local_files.zip(remote_files).toMap, tx = true)
+  }
+
+  /**
+    * Postamble is run after the SLURM job is finished.
+    * Copy generated artefacts back from the SLURM node.
+    * @param slurm_job  Job to execute.
+    * @param files List of (local) filenames that need to be copied from SLURM node to local machine
+    * @param update_paths Function that converts local workdir file paths to valid paths on a remote SLURM node.
+    **/
+  def slurm_postamble(slurm_job: Job, files: Seq[Path], update_paths: Path => Path): Unit = {
+    val loc_files = slurm_job.job match {
+      case ComposeJob(c, f, _, a, p, _, _, _, _, _) => {
+        val tgt = Target.fromString(a.get.head, p.get.head).get
+        val bit = slurm_job.log.resolveSibling( Composer.mkProjectName(c, tgt, f) + ".bit" )
+        val bin = slurm_job.log.resolveSibling( Composer.mkProjectName(c, tgt, f) + ".bit.bin" )
+
+        // TODO: Is this sufficient, or do we also need the timing/utilization report (or simply pull whole composition folder) ?
+        files ++ Seq(bit, bin)
+      }
+      case HighLevelSynthesisJob(_, a,p, kernels, _) => {
+        val tgt = Target.fromString(a.get.head, p.get.head).get
+        val cores = kernels.get.map(k => FileAssetManager.entities.core(k, tgt))
+        files ++ cores.map(_.get.zipPath) ++ cores.map(_.get.descPath)
+      }
+      case _ => files
+    }
+
+    val remote_files = loc_files map update_paths
+    file_transfer(remote_files.zip(loc_files).toMap, tx=false)
+  }
+
+  /**
+    * Copy a set of files either from a host to a remote SLURM node or vice versa, depending on the @param tx
+    * @param tfer A map from SRC to DST file paths
+    * @param tx indicates the direction of transfer. If value is true (false), the direction is push (pull).
+    **/
+  def file_transfer(tfer: Map[Path, Path], tx: Boolean): Boolean = {
+    for ((from, to) <- tfer) {
+      val target_host = slurm_remote_cfg.get.workstation;
+      logger.info("Copying %s to %s on %s".format(from, to, target_host))
+
+      // parent directory may not exist
+      exec_cmd("mkdir -p %s".format(to.getParent), hostname = Some(target_host))
+
+      val cpy_cmd = if (tx)
+        "scp -r %s %s:%s".format(from, target_host, to)
+      else
+        "scp -r %s:%s %s".format(target_host, from, to)
+      logger.info("Copy Command: " + cpy_cmd)
+      if (cpy_cmd.! != 0)  throw new Exception("Could not copy file %s to %s!".format(from, to))
+    }
+    true
+  }
+
+  /**
     * Schedules a job on SLURM.
     *
     * @param script Job script file to schedule via `sbatch`.
