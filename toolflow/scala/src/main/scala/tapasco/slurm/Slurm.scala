@@ -146,26 +146,27 @@ final object Slurm extends Publisher {
     *
     * @param job  Job to execute.
     * @param file File to write script to.
+    * @param upd_wd Function that converts local workdir file paths to valid paths on a remote SLURM node.
     * @return True, iff successful.
     **/
-  def writeJobScript(job: Job, file: Path): Boolean = (catchDefault[Boolean](false, Seq(classOf[java.io.IOException]),
-    prefix = "could not write %s: ".format(file.toString)) _) {
+  def writeJobScript(job: Job, file: Path, upd_wd: Path => Path): Boolean =
+    (catchDefault[Boolean](false, Seq(classOf[java.io.IOException]), prefix = "could not write %s: ".format(file.toString)) _) {
     // fill in template needles
     val jobScript = new Template
     jobScript("JOB_NAME") = job.name
-    jobScript("SLURM_LOG") = job.slurmLog
-    jobScript("ERROR_LOG") = job.errorLog
+    jobScript("SLURM_LOG") = upd_wd(job.slurmLog).toString
+    jobScript("ERROR_LOG") = upd_wd(job.errorLog).toString
     jobScript("MEM_PER_CPU") = (job.consumer.memory / 1024).toString
     jobScript("CPUS") = (job.consumer.cpus).toString
     jobScript("TIMELIMIT") = "%02d:00:00".format(job.maxHours)
-    jobScript("TAPASCO_HOME") = FileAssetManager.TAPASCO_HOME.toString
-    jobScript("COMMANDS") = job.commands mkString "\n"
+    jobScript("TAPASCO_HOME") = upd_wd(FileAssetManager.TAPASCO_WORK_DIR).toString
+    jobScript("COMMANDS") = "tapasco --configFile %s".format(upd_wd(job.cfg_file).toString)
     jobScript("COMMENT") = job.comment getOrElse ""
     // create parent directory
     Files.createDirectories(file.getParent())
     // write file
     val fw = new java.io.FileWriter(file.toString)
-    fw.append(jobScript.interpolateFile(Slurm.slurmTemplate.toString))
+    fw.append(jobScript.interpolateFile(SLURM_TEMPLATE_DIR.resolve(slurm_remote_cfg.get.jobFile).toString))
     fw.flush()
     fw.close()
     // set executable permissions
