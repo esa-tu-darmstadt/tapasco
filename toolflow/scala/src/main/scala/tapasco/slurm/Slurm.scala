@@ -24,13 +24,18 @@ package tapasco.slurm
 import java.nio.file._
 import java.nio.file.attribute.PosixFilePermission._
 
+import tapasco.Common
 import tapasco.Logging._
+import tapasco.activity.composers.Composer
+import tapasco.base.{Configuration, SlurmRemoteConfig, Target}
 import tapasco.filemgmt._
 import tapasco.task.ResourceConsumer
 import tapasco.util.{Publisher, Template}
 
 import scala.collection.JavaConverters._
 import scala.sys.process._
+import tapasco.base.json._
+import tapasco.jobs.{ComposeJob, HighLevelSynthesisJob}
 
 /**
   * Primitive interface to SLURM scheduler:
@@ -88,7 +93,7 @@ final object Slurm extends Publisher {
   }
 
   /** Template file for job script. */
-  final val slurmTemplate = FileAssetManager.TAPASCO_HOME.resolve("common").resolve("slurm.job.template")
+  final val SLURM_TEMPLATE_DIR =  Common.commonDir.resolve("SLURM");
   /** Default output directory for SLURM-related outputs. */
   final val slurmOutput = FileAssetManager.TAPASCO_HOME.resolve("slurm")
   /** Regular expression: Positive ACK from `sbatch`. */
@@ -256,32 +261,74 @@ final object Slurm extends Publisher {
   /**
     * Schedules a job on SLURM.
     *
-    * @param script Job script file to schedule via `sbatch`.
+    * @param slurm_job Job script to schedule via `sbatch`.
     * @return Either a positive integer (SLURM id), or an Exception.
     **/
-  def apply(script: Path, retries: Int = SLURM_RETRIES): Option[Int] =
-    catchAllDefault[Option[Int]](None, "Slurm scheduling failed: ") {
-      val cmd = "sbatch %s".format(script.toAbsolutePath().normalize().toString)
-      logger.debug("running slurm batch job: '%s'".format(cmd))
-      val res = exec_cmd(cmd)
-      val id = slurmSubmissionAck.findFirstMatchIn(res) map (_ group (1) toInt)
-      if (id.isEmpty) {
-        if (retries > 0) {
-          // wait for 10 secs + random up to 5 secs to avoid congestion
-          Thread.sleep(slurmRetryDelay + scala.util.Random.nextInt() % (slurmRetryDelay / 2))
-          apply(script, retries - 1)
-        } else {
-          throw new SlurmException(script.toString, res)
-        }
-      } else {
-        logger.debug("received SLURM id: {}", id)
-        id
+  def apply(slurm_job: Job)(implicit cfg: Configuration): Option[Int] = {
+    val local_base = slurm_job.cfg_file.getParent
+    val jobFile = local_base.resolveSibling("slurm-job.slurm") // SLURM job script
+
+    /** replace a prefix of a Path by a different prefix. Used to convert local file paths to paths that are valid on SLURM node */
+    def prefix_subst(old_pre: Path, new_pre: Path): (Path => Path) = {
+      f => {
+        val postfix = f.toString.stripPrefix(old_pre.toString).stripPrefix("/")
+        new_pre.resolve(postfix)
       }
     }
+    val wd_to_rmt   = if (slurm_remote_cfg.isDefined) prefix_subst(cfg.kernelDir.getParent, slurm_remote_cfg.get.workdir) else (x: Path) => x
+    val tpsc_to_rmt = if (slurm_remote_cfg.isDefined) prefix_subst(cfg.platformDir.getParent.getParent.getParent, slurm_remote_cfg.get.installdir) else (x: Path) => x
+
+    /** Create non-slurm cfg, with updated paths such that they match the folder structure on SLURM node */
+    val newCfg = cfg
+      .descPath(wd_to_rmt(cfg.descPath))
+      .compositionDir(wd_to_rmt(cfg.compositionDir))
+      .coreDir(wd_to_rmt(cfg.coreDir))
+      .kernelDir(wd_to_rmt(cfg.kernelDir))
+      .platformDir(tpsc_to_rmt(cfg.platformDir))
+      .archDir(tpsc_to_rmt(cfg.archDir))
+      .jobs(Seq(slurm_job.job))
+      .slurm(None)
+
+    logger.info("starting " + slurm_job.name + " job on SLURM ({})", slurm_job.cfg_file)
+    catchAllDefault[Option[Int]](None, "error during SLURM job execution (%s): ".format(jobFile)) {
+      Files.createDirectories(local_base) // create base directory
+
+      Slurm.writeJobScript(slurm_job, jobFile, wd_to_rmt) // write job script
+      Configuration.to(newCfg, slurm_job.cfg_file) // write Configuration to file
+
+      /** preamble: copy required files to SLURM node */
+      if (slurm_remote_cfg.isDefined) {
+        val files_to_copy = Seq(jobFile, slurm_job.cfg_file)
+        slurm_preamble(slurm_job, files_to_copy, wd_to_rmt)
+      }
+
+      val cmd = "sbatch %s".format(wd_to_rmt(jobFile.toAbsolutePath()).normalize().toString)
+      logger.debug("running slurm batch job: '%s'".format(cmd))
+
+      var id: Option[Int] = None
+      var retries = SLURM_RETRIES
+      while (id.isEmpty) {
+        val res = exec_cmd(cmd)
+        id = slurmSubmissionAck.findFirstMatchIn(res) map (_ group (1) toInt)
+        if (id.isEmpty) {
+          if (retries > 0) {
+            // wait for 10 secs + random up to 5 secs to avoid congestion
+            Thread.sleep(slurmRetryDelay + scala.util.Random.nextInt() % (slurmRetryDelay / 2))
+            retries -= 1
+          } else {
+            throw new SlurmException(jobFile.toString, res)
+          }
+        }
+      }
+      logger.debug("received SLURM id: {}", id)
+
+      id
+    }
+  }
 
   /** Check via `squeue` if the SLURM job is still running. */
   def isRunning(id: Int): Boolean = catchAllDefault[Boolean](true, "Slurm `squeue` failed: ") {
-   val squeue = exec_cmd("squeue -h")
+    val squeue = exec_cmd("squeue -h")
     logger.trace("squeue output: {}", squeue)
     !"%d".format(id).r.findFirstIn(squeue).isEmpty
   }
