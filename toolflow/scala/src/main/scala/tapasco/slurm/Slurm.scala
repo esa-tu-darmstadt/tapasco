@@ -105,6 +105,8 @@ final object Slurm extends Publisher {
   final val slurmScriptPermissions = Set(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE, GROUP_READ, OTHERS_READ).asJava
   /** Wait interval between retries. */
   final val slurmRetryDelay = 10000 // 10 secs
+  /** Stores a closure for every slurm job id, which is called once that job finishes. */
+  var postambles: Map[Int, Int => Unit] = Map()
 
   /** Returns true if SLURM is available on host running iTPC. */
   lazy val available: Boolean = "which sbatch".! == 0
@@ -322,6 +324,13 @@ final object Slurm extends Publisher {
       }
       logger.debug("received SLURM id: {}", id)
 
+      /** define postamble that shall be run once job is finished */
+      if (slurm_remote_cfg.isDefined) {
+        postambles += (id.get -> {slurm_id =>
+          logger.info("Running postamble for SLURM id: {}", slurm_id)
+          slurm_postamble(slurm_job, Seq(slurm_job.log, slurm_job.slurmLog, slurm_job.errorLog), wd_to_rmt)
+        })
+      }
       id
     }
   }
@@ -339,6 +348,9 @@ final object Slurm extends Publisher {
       logger.trace("SLURM job #%d is still running, sleeping for %d secs ...".format(id, slurmDelay / 1000))
       Thread.sleep(slurmDelay)
     }
+
+    // callback that pulls generated files from remote node
+    postambles(id)(id)
   }
 
   /** Returns a list of all SLURM job ids which are registered under the
