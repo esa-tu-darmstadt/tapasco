@@ -46,11 +46,14 @@ final object Slurm extends Publisher {
                         /** Name of the job. */
                         name: String,
 
-                        /** File name of the stdout logfile. */
-                        slurmLog: String,
+                        /** File name of the tapasco logfile. */
+                        log: Path,
 
-                        /** File name of the stderr logfile. */
-                        errorLog: String,
+                        /** File name of the stdout slurm logfile. */
+                        slurmLog: Path,
+
+                        /** File name of the stderr slurm logfile. */
+                        errorLog: Path,
 
                         /** Consumer to schedule. */
                         consumer: ResourceConsumer,
@@ -62,7 +65,13 @@ final object Slurm extends Publisher {
                         commands: Seq[String],
 
                         /** Optional comment. */
-                        comment: Option[String] = None
+                        comment: Option[String] = None,
+
+                        /** The job to execute */
+                        job: tapasco.jobs.Job,
+
+                        /** Filename of the tapasco configuration file */
+                        cfg_file: Path
                       )
 
   /** Exception class for negative SLURM responses. */

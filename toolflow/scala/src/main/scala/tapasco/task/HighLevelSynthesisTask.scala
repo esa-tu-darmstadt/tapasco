@@ -40,7 +40,6 @@ class HighLevelSynthesisTask(val k: Kernel, val t: Target, val cfg: Configuratio
   private[this] val slurm = Slurm.enabled
   private[this] val r = HighLevelSynthesizer(hls)
   private[this] val l = r.logFile(k, t)(cfg).resolveSibling("hls.log")
-  private[this] val e = l.resolveSibling("hls-slurm.errors.log")
 
   def synthesizer: HighLevelSynthesizer = r
 
@@ -56,35 +55,30 @@ class HighLevelSynthesisTask(val k: Kernel, val t: Target, val cfg: Configuratio
     LogFileTracker.stopLogFileAppender(appender)
     result map (_.toBoolean) getOrElse false
   } else {
-    val cfgFile = l.resolveSibling("slurm-hls.cfg") // Configuration Json
-    val jobFile = l.resolveSibling("hls.slurm") // SLURM job script
-    val slurmLog = l.resolveSibling("slurm-hls.log") // raw log file (stdout w/colors)
+
+    val cfgFile   = l.resolveSibling("slurm-hls.cfg") // Configuration Json
+    val slurmLog  = l.resolveSibling("slurm-hls.log") // raw log file (stdout w/colors)
+    val e         = l.resolveSibling("hls-slurm.errors.log")
+
     val hlsJob = HighLevelSynthesisJob(hls.toString, Some(Seq(t.ad.name)), Some(Seq(t.pd.name)), Some(Seq(k.name)))
+
     // define SLURM job
     val job = Slurm.Job(
       name = "hls-%s-%s-%s".format(t.ad.name, t.pd.name, k.name),
-      slurmLog = slurmLog.toString,
-      errorLog = e.toString,
+      log  = l,
+      slurmLog = slurmLog,
+      errorLog = e,
       consumer = this,
       maxHours = HighLevelSynthesisTask.MAX_SYNTH_HOURS,
-      commands = Seq("tapasco --configFile %s".format(cfgFile.toString, k.name.toString))
+      commands = Seq("tapasco --configFile %s".format(cfgFile.toString, k.name.toString)),
+      job      = hlsJob,
+      cfg_file = cfgFile
     )
-    // generate non-SLURM config with single job
-    val newCfg = cfg
-      .logFile(Some(l))
-      .jobs(Seq(hlsJob))
-      .slurm(false)
 
-    logger.info("starting HLS job on SLURM ({})", cfgFile)
-
-    catchAllDefault(false, "error during SLURM job execution (%s): ".format(jobFile)) {
-      Files.createDirectories(l.getParent()) // create base directory
-      Slurm.writeJobScript(job, jobFile) // write job script
-      Configuration.to(newCfg, cfgFile) // write Configuration to file
-      val r = (Slurm(jobFile) map (Slurm.waitFor(_))).nonEmpty // execute sbatch to enqueue job, then wait for it
-      FileAssetManager.reset()
-      r
-    }
+    // execute sbatch to enqueue job, then wait for it
+    val r = (Slurm(job)(cfg) map (Slurm.waitFor(_))).nonEmpty
+    FileAssetManager.reset()
+    r
   }
 
   def logFiles: Set[String] = Set(l.toString)
