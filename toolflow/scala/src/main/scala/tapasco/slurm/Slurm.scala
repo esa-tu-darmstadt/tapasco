@@ -183,7 +183,7 @@ final object Slurm extends Publisher {
     catchAllDefault[Option[Int]](None, "Slurm scheduling failed: ") {
       val cmd = "sbatch %s".format(script.toAbsolutePath().normalize().toString)
       logger.debug("running slurm batch job: '%s'".format(cmd))
-      val res = cmd.!!
+      val res = exec_cmd(cmd)
       val id = slurmSubmissionAck.findFirstMatchIn(res) map (_ group (1) toInt)
       if (id.isEmpty) {
         if (retries > 0) {
@@ -201,7 +201,7 @@ final object Slurm extends Publisher {
 
   /** Check via `squeue` if the SLURM job is still running. */
   def isRunning(id: Int): Boolean = catchAllDefault[Boolean](true, "Slurm `squeue` failed: ") {
-    val squeue = "squeue -h".!!
+   val squeue = exec_cmd("squeue -h")
     logger.trace("squeue output: {}", squeue)
     !"%d".format(id).r.findFirstIn(squeue).isEmpty
   }
@@ -220,7 +220,7 @@ final object Slurm extends Publisher {
     Seq()
   } else {
     catchAllDefault(Seq[Int](), "could not get squeue output: ") {
-      val lines = "squeue -u %s".format(sys.env("USER")).!!
+      val lines = exec_cmd("squeue -u %s".format(sys.env("USER")))
       val ids = ("""\n\s*(\d+)""".r.unanchored.findAllMatchIn(lines) map (m => m.group(1).toInt)).toSeq
       logger.debug("running SLURM jobs: {}", ids mkString " ")
       ids
@@ -229,7 +229,7 @@ final object Slurm extends Publisher {
 
   /** Cancels the SLURM job with the given ID. */
   def cancel(id: Int): Unit = catchAllDefault((), "canceling SLURM job %d failed: ".format(id)) {
-    "scancel %d".format(id).!!
+    exec_cmd("scancel %d".format(id))
   }
 
   /** Cancels all currently running SLURM jobs. */
@@ -239,8 +239,19 @@ final object Slurm extends Publisher {
       val cmd = "scancel %s" format (ids mkString " ")
       logger.info("canceling SLURM jobs: {}", ids mkString ", ")
       logger.debug("command: '{}'", cmd)
-      cmd.!
+      exec_cmd(cmd, get_ret_code = true).toInt
     }
+  }
+
+  /** Execute a SLURM command, either locally or on a remote host */
+  def exec_cmd(c: String, get_ret_code: Boolean = false, hostname: Option[String] = None): String = {
+    val cmd = if (slurm_remote_cfg.isEmpty) c else {
+      val host = hostname.getOrElse(slurm_remote_cfg.get.host)
+      "ssh %s %s".format(host, c)
+    }
+
+    logger.info("Executing command: %s".format(cmd))
+    if (get_ret_code) cmd.!.toString else cmd.!!
   }
 
   /** Use SLURM? */
