@@ -214,6 +214,16 @@ build_kernel_arm64v8_debug:
     paths:
       - runtime/kernel/tlkm.ko
 
+build_kernel_centos_8:
+  image: centos:8
+  extends: .build_kernel_fedora
+
+build_kernel_centos_8_debug:
+  image: centos:8
+  variables:
+    MODE: "all"
+  extends: .build_kernel_fedora
+
 build_kernel_fedora_30:
   image: fedora:30
   extends: .build_kernel_fedora
@@ -260,6 +270,16 @@ build_kernel_fedora_31_debug:
     paths:
       - build/tapasco-*-Linux.rpm
   extends: .build_tapasco
+
+build_tapasco_centos_8:
+  image: centos:8
+  extends: .build_tapasco_fedora
+
+build_tapasco_centos_8_debug:
+  variables:
+    MODE: "debug"
+  image: centos:8
+  extends: .build_tapasco_fedora
 
 build_tapasco_fedora_30:
   image: fedora:30
