@@ -29,7 +29,7 @@ TaPaSCo is known to work in this environment:
 
 *   Intel x86_64 arch
 *   Linux kernel 4.4+
-*   Fedora 30+, Ubuntu 16.04+
+*   CentOS 8, Fedora 30+, Ubuntu 16.04+
 *   Fedora 24/25 does not support debug mode due to GCC bug
 *   Bash Shell 4.2.x+
 
