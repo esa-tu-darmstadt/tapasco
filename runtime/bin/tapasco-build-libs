@@ -25,7 +25,6 @@ import subprocess
 from socket import gethostname
 import os
 
-tools = ['tapasco-debug', 'tapasco-benchmark']
 default_cmd = 'mkdir -p {0} && cd {0} && cmake {1} {2} && make -j $(nproc) install DESTDIR={0}/install'
 tlkm_cmd = 'cd {0} && make -j $(nproc) {1}'
 
@@ -91,10 +90,6 @@ shared_flags = '-DBUILD_SHARED_LIBS:BOOL={}'.format(
 print('Build mode: {}'.format(args.mode))
 
 mdir = '{}/kernel'.format(os.environ['TAPASCO_HOME_RUNTIME'])
-pdir = '{}/platform/build'.format(os.environ['TAPASCO_HOME_RUNTIME'])
-adir = '{}/arch/build'.format(os.environ['TAPASCO_HOME_RUNTIME'])
-tdir = '{}/arch/tests/build'.format(os.environ['TAPASCO_HOME_RUNTIME'])
-ldir = '{}/lib'.format(os.environ['TAPASCO_HOME_RUNTIME'])
 bdir = '{}/{}'.format(os.environ['TAPASCO_WORK_DIR'], build_folder)
 
 if clean or args.rebuild:

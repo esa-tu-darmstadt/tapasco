@@ -46,6 +46,7 @@ class ComposeTask(composition: Composition,
                   features: Option[Seq[Feature]] = None,
                   logFile: Option[String] = None,
                   debugMode: Option[String] = None,
+                  skipSynth: Option[Boolean] = None,
                   val deleteOnFail: Option[Boolean] = None,
                   private val effortLevel: String = "normal",
                   val onComplete: Boolean => Unit)
@@ -71,7 +72,8 @@ class ComposeTask(composition: Composition,
       target.ad.name: Object, target.pd.name: Object, Thread.currentThread.getName(): Object, _logFile: Object)
     if (debugMode.isEmpty) {
       _composerResult = Some(try {
-        composer.compose(composition, target, designFrequency, effortLevel, features getOrElse Seq())
+        composer.compose(composition, target, designFrequency, effortLevel, features getOrElse Seq(),
+                         skipSynth getOrElse false)
       }
       catch {
         case e: Exception =>
@@ -227,6 +229,7 @@ object ComposeTask {
       timing = Some(TimingReport(
         file = java.nio.file.Paths.get("feckedyfeck"),
         worstNegativeSlack = -scala.util.Random.nextInt(500) / 100.0,
+        worstPulseWidthSlack = -scala.util.Random.nextInt(500) / 100.0,
         dataPathDelay = 0,
         maxDelayPath = TimingReport.TimingPath("your brain", "your mouth", -42),
         minDelayPath = TimingReport.TimingPath("your ass", "your mouth", 3),

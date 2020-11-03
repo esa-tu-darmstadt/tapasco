@@ -92,6 +92,8 @@ configuration via `tapasco -n config.json`.
       Arg("--parallel", "Execute all jobs in parallel (careful!)") &
       Arg("--maxThreads NUM", "Limit internal parallelism of tasks (e.g., Vivado)" ~
         "to the given number of threads.") &
+      Arg("--hlsTimeOut NUM", "Limit runtime of Vivado HLS to" ~
+        "the given number of seconds.") &
       Arg("--maxTasks NUM", "Limit the parallelism of TaPaSCo to the given number." ~
         "This includes the main thread, so at most NUM-1 tasks are started in addition to the main thread."))
 
@@ -184,7 +186,9 @@ configuration via `tapasco -n config.json`.
           Arg("normal", "default options") &
           Arg("optimal", "slower, get best QoR possible") &
           Arg("aggressive_performance", "maximal optimization for performance") &
-          Arg("aggressive_area", "maximal optimization for area"))) &
+          Arg("aggressive_area", "maximal optimization for area")) &
+        Arg("--skipSynthesis", "For testing purposes, execute composition without final" ~
+          "synthesis and bitstream generation")) &
       "" &
       s"NOTE: Currently the  total number of PEs must be <= ${PLATFORM_NUM_SLOTS}." &
       s"IMPORTANT: The maximum runtime of a compose job is limited is limited dependent on the platform.")
@@ -261,7 +265,9 @@ configuration via `tapasco -n config.json`.
         Arg("-p | --platforms P+", "list of Platforms , e.g.," ~
           "-p vc709, pynq") &
         Arg("--implementation NAME", "selects a HLS tool by name" &
-          """default: "VivadoHLS"""")) &
+          """default: "VivadoHLS"""") &
+        Arg("--skipEvaluation", "import the HLS result without performing" ~
+          "an out-of-context synthesis to get resource estimates")) &
       "" &
       Section("Note",
         Block("All HLS kernels are located in the directories below the currently" ~

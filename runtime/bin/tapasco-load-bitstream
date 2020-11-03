@@ -44,6 +44,10 @@ parser.add_argument(
     help='reload driver, if loaded (default: %(default)s)',
     action='store_true')
 parser.add_argument(
+    '--no-load-driver',
+    help='do not load driver (default: %(default)s)',
+    action='store_true')
+parser.add_argument(
     '--verbose',
     help='verbose output (default: %(default)s)',
     action='store_true')
@@ -88,11 +92,12 @@ if args.verbose:
 if 'TAPASCO_HOME_RUNTIME' not in os.environ:
     os.environ['TAPASCO_HOME_RUNTIME'] = "{}/../".format(os.getcwd())
 
-path = 'module/'
 reld = '-d' if args.reload_driver else ''
+nold = '-n' if args.no_load_driver else ''
 verb = '-v' if args.verbose else ''
 program = '-p' if args.mode == 'normal' or args.mode == 'program' else ''
 hotplug = '-h' if args.mode == 'normal' or args.mode == 'hotplug' else ''
-cmd = '$TAPASCO_HOME_RUNTIME/platform/$TAPASCO_PLATFORM/{0}bit_reload.sh {1} {2} {3} {4} {5}'.format(
-    path, verb, reld, hotplug, program, args.bitstream)
+
+cmd = '$TAPASCO_HOME_RUNTIME/scripts/$TAPASCO_PLATFORM/bit_reload.sh {0} {1} {2} {3} {4} {5}'.format(
+    verb, reld, nold, hotplug, program, args.bitstream)
 subprocess.call([cmd], shell=True)

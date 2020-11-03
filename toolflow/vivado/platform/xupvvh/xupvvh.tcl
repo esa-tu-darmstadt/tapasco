@@ -28,9 +28,14 @@ namespace eval platform {
     proc get_ignored_segments { } {
       set hbmInterfaces [hbm::get_hbm_interfaces]
       set ignored [list]
-      #lappend ignored "hbm/hbm_0/SAXI_"
-      for {set i 0} {$i < [llength $hbmInterfaces]} {incr i} {
-        for {set j 0} {$j < [llength $hbmInterfaces]} {incr j} {
+      set numInterfaces [llength $hbmInterfaces]
+      if {[expr $numInterfaces % 2] == 1} {
+        set max_mem_index [expr $numInterfaces + 1]
+      } else {
+        set max_mem_index $numInterfaces
+      }
+      for {set i 0} {$i < $numInterfaces} {incr i} {
+        for {set j 0} {$j < $max_mem_index} {incr j} {
           set axi_index [format %02s $i]
           set mem_index [format %02s $j]
           lappend ignored "/hbm/hbm_0/SAXI_${axi_index}/HBM_MEM${mem_index}"
@@ -226,6 +231,10 @@ namespace eval platform {
     insert_regslice "host_dma" true "/host/M_DMA" "/memory/S_DMA" "/clocks_and_resets/host_clk" "/clocks_and_resets/host_interconnect_aresetn" ""
     insert_regslice "dma_host" true "/memory/M_HOST" "/host/S_HOST" "/clocks_and_resets/host_clk" "/clocks_and_resets/host_interconnect_aresetn" ""
     insert_regslice "host_arch" true "/host/M_ARCH" "/arch/S_ARCH" "/clocks_and_resets/design_clk" "/clocks_and_resets/design_interconnect_aresetn" ""
+
+    if {[tapasco::is_feature_enabled "SFPPLUS"]} {
+      insert_regslice "host_network" true "/host/M_NETWORK" "/network/S_NETWORK" "/clocks_and_resets/design_clk" "/clocks_and_resets/design_interconnect_aresetn" ""
+    }
 
     if {[is_regslice_enabled "pe" false]} {
       set ips [get_bd_cells /arch/target_ip_*]

@@ -25,24 +25,32 @@
 #include <linux/sched.h>
 #include <linux/miscdevice.h>
 #include "tlkm_types.h"
+#include "tlkm_slots.h"
+
+// Temporary definition... will be replaced with dynamic interrupt assignments later on
+#define TLKM_PLATFORM_INTERRUPTS 4
 
 #define TLKM_CONTROL_BUFFER_SZ 1024U
+
+struct tlkm_irq_mapping {
+	struct list_head list;
+	int irq_no;
+	struct tlkm_device *dev;
+	struct eventfd_ctx *eventfd;
+};
 
 struct tlkm_control {
 	dev_id_t dev_id;
 	struct miscdevice miscdev;
-	wait_queue_head_t read_q;
-	wait_queue_head_t write_q;
-	volatile u32 out_slots[TLKM_CONTROL_BUFFER_SZ];
-	volatile u32 out_r_idx;
-	volatile u32 out_w_idx;
-	struct mutex out_mutex;
-	volatile u32 outstanding;
+	struct list_head interrupts;
 };
 
 ssize_t tlkm_control_signal_slot_interrupt(struct tlkm_control *pctl,
 					   const u32 s_id);
+ssize_t tlkm_control_signal_platform_interrupt(struct tlkm_control *pctl,
+					       const u32 s_id);
 int tlkm_control_init(dev_id_t dev_id, struct tlkm_control **ppctl);
 void tlkm_control_exit(struct tlkm_control *pctl);
+int tlkm_control_release(struct inode *inode, struct file *file);
 
 #endif /* TLKM_CONTROL_H__ */

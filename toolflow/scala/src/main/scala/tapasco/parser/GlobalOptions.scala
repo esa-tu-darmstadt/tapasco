@@ -51,7 +51,8 @@ private object GlobalOptions {
       longOption("parallel") |
       longOption("slurm") |
       longOption("maxThreads") |
-      longOption("maxTasks")
+      longOption("maxTasks") |
+      longOption("hlsTimeOut")
     ).opaque("a global option")
 
   def help: Parser[(String, String)] =
@@ -112,8 +113,11 @@ private object GlobalOptions {
   def maxTasks: Parser[(String, Int)] =
     longOption("maxTasks", "MaxTasks") ~/ ws ~ posint ~ ws
 
+  def hlsTimeOut: Parser[(String, Int)] =
+    longOption("hlsTimeOut", "HlsTimeOut") ~/ ws ~ posint ~ ws
+
   def globalOptionsSeq: Parser[Seq[(String, _)]] =
-    ws ~ (help | verbose | dirs | inputFiles | slurm | parallel | dryRun | maxThreads | maxTasks).rep
+    ws ~ (help | verbose | dirs | inputFiles | slurm | parallel | dryRun | maxThreads | maxTasks | hlsTimeOut).rep
 
   def globalOptions: Parser[Configuration] =
     globalOptionsSeq map (as => mkConfig(as))
@@ -135,6 +139,7 @@ private object GlobalOptions {
         case ("DryRun", p: Path) => mkConfig(as, Some(c getOrElse Configuration() dryRun Some(p)))
         case ("MaxThreads", i: Int) => mkConfig(as, Some(c getOrElse Configuration() maxThreads Some(i)))
         case ("MaxTasks", i: Int) => mkConfig(as, Some(c getOrElse Configuration() maxTasks Some(i)))
+        case ("HlsTimeOut", i: Int) => mkConfig(as, Some(c getOrElse Configuration() hlsTimeOut Some(i)))
         case ("Verbose", m: String) => mkConfig(as, Some(c getOrElse Configuration() verbose Some(m)))
         case _ => c getOrElse Configuration()
       }

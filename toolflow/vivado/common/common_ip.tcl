@@ -19,6 +19,8 @@
 
 # create a dictionary of compatible VLNVs
 dict set stdcomps   axi_ic               vlnv   "xilinx.com:ip:axi_interconnect:2.1"
+dict set stdcomps   axis_ic              vlnv   "xilinx.com:ip:axis_interconnect:2.1"
+dict set stdcomps   axis_broadcast       vlnv   "xilinx.com:ip:axis_broadcaster:1.1"
 dict set stdcomps   axi_sc               vlnv   "xilinx.com:ip:smartconnect:1.0"
 dict set stdcomps   ps                   vlnv   "xilinx.com:ip:processing_system7:5.5"
 dict set stdcomps   ps_bfm               vlnv   "xilinx.com:ip:processing_system7_bfm:2.0"
@@ -62,3 +64,4 @@ dict set stdcomps   axi_bram_ctrl        vlnv   "xilinx.com:ip:axi_bram_ctrl"
 dict set stdcomps   bram_ctrl            vlnv   "xilinx.com:ip:blk_mem_gen"
 dict set stdcomps   axi_gpio             vlnv   "xilinx.com:ip:axi_gpio:2.0"
 dict set stdcomps   axioffset_hbm        vlnv   "esa.informatik.tu-darmstadt.de:user:AXIOffsetHBM:1.0"
+dict set stdcomps   sume_clock_prog		 vlnv   "esa.informatik.tu-darmstadt.de:user:SumeClockProgrammer:1.0"

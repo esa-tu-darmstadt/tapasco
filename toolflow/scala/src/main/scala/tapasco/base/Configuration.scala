@@ -77,6 +77,10 @@ trait Configuration {
 
   def maxThreads(mt: Option[Int]): Configuration
 
+  def hlsTimeOut: Option[Int]
+
+  def hlsTimeOut(p: Option[Int]): Configuration
+
   def maxTasks: Option[Int]
 
   def maxTasks(mt: Option[Int]): Configuration

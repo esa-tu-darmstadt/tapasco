@@ -29,7 +29,6 @@
 #include "tlkm_perfc.h"
 #include "tlkm_access.h"
 #include "tlkm_status.h"
-#include "dma/tlkm_dma.h"
 #include "tlkm_class.h"
 
 #define TLKM_DEVICE_NAME_LEN 30
@@ -52,7 +51,6 @@ struct tlkm_device {
 	struct platform_regspace arch;
 	struct platform_regspace plat;
 	struct tlkm_control *ctrl; /* main device file */
-	struct dma_engine dma[TLKM_DEVICE_MAX_DMA_ENGINES];
 	tlkm_component_t components[TLKM_COMPONENT_MAX];
 #ifndef NPERFC
 	struct miscdevice perfc_dev; /* performance counter device */
@@ -64,32 +62,5 @@ int tlkm_device_init(struct tlkm_device *pdev, void *data);
 void tlkm_device_exit(struct tlkm_device *pdev);
 int tlkm_device_acquire(struct tlkm_device *pdev, tlkm_access_t access);
 void tlkm_device_release(struct tlkm_device *pdev, tlkm_access_t access);
-
-static inline int tlkm_device_request_platform_irq(struct tlkm_device *dev,
-						   int irq_no, irq_handler_t h,
-						   void *data)
-{
-	BUG_ON(!dev);
-	BUG_ON(!dev->cls);
-	if (!dev->cls->pirq) {
-		DEVERR(dev->dev_id,
-		       "platform interrupt request callback not defined");
-		return -ENXIO;
-	}
-	return dev->cls->pirq(dev, irq_no, h, data);
-}
-
-static inline void tlkm_device_release_platform_irq(struct tlkm_device *dev,
-						    int irq_no)
-{
-	BUG_ON(!dev);
-	BUG_ON(!dev->cls);
-	if (!dev->cls->rirq) {
-		DEVERR(dev->dev_id,
-		       "platform interrupt release callback not defined");
-	} else {
-		dev->cls->rirq(dev, irq_no);
-	}
-}
 
 #endif /* TLKM_DEVICE_H__ */

@@ -37,6 +37,7 @@ static const struct platform pcie_def = PCIE_DEF;
 #include "tlkm_class.h"
 #include "pcie/pcie_device.h"
 #include "pcie/pcie_irq.h"
+#include "pcie/pcie_irq_aws.h"
 #include "pcie/pcie_ioctl.h"
 
 int pcie_init(struct tlkm_class *cls);
@@ -48,15 +49,40 @@ static const struct tlkm_class pcie_cls = {
 	.destroy = pcie_device_destroy,
 	.init_subsystems = pcie_device_init_subsystems,
 	.exit_subsystems = pcie_device_exit_subsystems,
+	.miscdev_close = pcie_device_miscdev_close,
 	.probe = pcie_init,
 	.remove = pcie_exit,
+	.init_interrupts = pcie_irqs_init,
+	.exit_interrupts = pcie_irqs_exit,
 	.pirq = pcie_irqs_request_platform_irq,
 	.rirq = pcie_irqs_release_platform_irq,
 	.ioctl = pcie_ioctl,
-	.npirqs = 4,
+	.addr2map = pcie_device_addr2map_off,
+	.number_of_interrupts = 132,
 	.platform = PCIE_DEF,
 	.private_data = NULL,
 };
+
+static const struct tlkm_class pcie_aws_cls = {
+	.name = PCIE_CLS_NAME,
+	.create = pcie_device_create,
+	.destroy = pcie_device_destroy,
+	.init_subsystems = pcie_device_init_subsystems,
+	.exit_subsystems = pcie_device_exit_subsystems,
+	.miscdev_close = pcie_device_miscdev_close,
+	.probe = pcie_init,
+	.remove = pcie_exit,
+	.init_interrupts = pcie_aws_irqs_init,
+	.exit_interrupts = pcie_aws_irqs_exit,
+	.pirq = pcie_aws_irqs_request_platform_irq,
+	.rirq = pcie_aws_irqs_release_platform_irq,
+	.ioctl = pcie_ioctl,
+	.addr2map = pcie_device_addr2map_off,
+	.number_of_interrupts = 16,
+	.platform = PCIE_DEF,
+	.private_data = NULL,
+};
+
 #endif /* __KERNEL__ */
 
 #endif /* PCIE_H__ */

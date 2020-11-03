@@ -53,8 +53,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
   def maxMemoryUsagePerProcess: Int = VIVADO_PROCESS_PEAK_MEM
 
   /** @inheritdoc*/
-  def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, effortLevel: String, features: Seq[Feature] = Seq())
-             (implicit cfg: Configuration): Composer.Result = {
+  def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, effortLevel: String,
+              features: Seq[Feature] = Seq(), skipSynth: Boolean) (implicit cfg: Configuration): Composer.Result = {
     logger.debug("VivadoComposer uses at most {} threads", cfg.maxThreads getOrElse "unlimited")
     // create output struct
     val frequency = checkFrequency(f, target.pd)
@@ -72,7 +72,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       header = makeHeader(bd, target, frequency, features),
       target = target,
       composition = composition(bd, target),
-      effort = effortLevel)
+      effort = effortLevel,
+      skipSynth = skipSynth)
 
     logger.info("Vivado starting run {}: show progress with `vivado_progress {}`", files.runName: Any, files.logFile)
     files.logFile.toFile.delete
@@ -106,21 +107,31 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       logger.error("Vivado timeout for %s in '%s'".format(files.runName, files.outdir))
       Composer.Result(Timeout, log = files.log, util = None, timing = None)
     } else if (r != 0) {
-      if(files.tim.isDefined){
+      if(files.tim.isDefined) {
+        logger.warn("Bitstream might be unusable: A timing report was produced but Vivado finished with non-zero exit code %d for %s in '%s'"
+          .format(r, files.runName, files.outdir))
         Composer.Result(checkTimingFailure(files), Some(files.bitFile.toString),
           files.log, files.util, files.tim)
-      }
-      else{
+      } else {
         logger.error("Vivado finished with non-zero exit code: %d for %s in '%s'"
           .format(r, files.runName, files.outdir))
         Composer.Result(files.log map (_.result(true)) getOrElse OtherError, log = files.log,
           util = None, timing = None)
       }
     } else {
-      // check for timing failure
-      if (files.tim.isEmpty) {
+      if (skipSynth) {
+        logger.info("Skipped synthesis and bitstream generation.")
+        Composer.Result(Success)
+      } else if (files.tim.isEmpty) {
         throw new Exception("could not parse timing report: '%s'".format(files.timFile.toString))
+      } else if (files.log.isEmpty) {
+        throw new Exception("could not parse log file: '%s'".format(files.logFile.toString))
       } else {
+        if (files.log.get.errors.nonEmpty) {
+          logger.warn("Vivado finished successfully, but the log file contains the following errors:")
+          for (e <- files.log.get.errors)
+            logger.warn(e._1)
+        }
         Composer.Result(checkTimingFailure(files), Some(files.bitFile.toString),
           files.log, files.util, files.tim)
       }
@@ -163,10 +174,15 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
   /** Check for timing failure in report. */
   private def checkTimingFailure(files: Files): ComposeResult = {
     val wns = files.tim map (_.worstNegativeSlack) getOrElse Double.NegativeInfinity
-    if (wns < SLACK_THRESHOLD) {
-      logger.error("Vivado finished, but did not achieve timing closure for %s, WNS: %1.3f, max delay path: %s in '%s'"
-        .format(files.runName, wns, files.tim.map(_.maxDelayPath), files.outdir))
+    val wpws = files.tim map (_.worstPulseWidthSlack) getOrElse Double.NegativeInfinity
+    if (wns < SLACK_THRESHOLD || wpws < 0.0) {
+      logger.error("Vivado finished, but did not achieve timing closure for %s, WNS: %1.3f, WPWS: %1.3f, max delay path: %s in '%s'"
+        .format(files.runName, wns, wpws, files.tim.map(_.maxDelayPath), files.outdir))
       TimingFailure
+    } else if (wns < 0 && wns >= SLACK_THRESHOLD) {
+      logger.warn("Bitstream might be unusable: Vivado finished, but did not achieve timing closure for %s, WNS: %1.3f, WPWS: %1.3f, max delay path: %s in '%s'"
+        .format(files.runName, wns, wpws, files.tim.map(_.maxDelayPath), files.outdir))
+        Success
     } else {
       logger.info("Vivado finished successfully for %s, WNS: %1.3f, resulting file is here: '%s'"
         .format(files.runName, wns, files.bitFile))
@@ -176,7 +192,7 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
 
   /** Writes the .tcl script for Vivado. */
   private def mkTclScript(fromTemplate: Path, to: Path, projectName: String, header: String, target: Target,
-                          composition: String, effort: String): Unit = {
+                          composition: String, effort: String, skipSynth: Boolean): Unit = {
     // needles for template
     val needles: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map(
       "PROJECT_NAME" -> "microarch",
@@ -190,7 +206,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       "PLATFORM_TCL" -> target.pd.tclLibrary.toString,
       "ARCHITECTURE_TCL" -> target.ad.tclLibrary.toString,
       "COMPOSITION" -> composition,
-      "EFFORT_LEVEL" -> effort.toUpperCase
+      "EFFORT_LEVEL" -> effort.toUpperCase,
+      "SKIP_SYNTH" -> (if (skipSynth) "true" else "false")
     )
 
     // write Tcl script

@@ -2,18 +2,26 @@ syntax = "proto3";
 
 package tapasco.status;
 
+message Interrupt {
+    uint64 mapping = 1;
+    string name = 2;
+}
+
 message PE {
     string name = 1;
     uint32 id = 2;
     uint64 offset = 3;
     uint64 size = 4;
     MemoryArea local_memory = 5;
+    Platform debug = 6;
+    repeated Interrupt interrupts = 7;
 }
 
 message Platform {
     string name = 1;
     uint64 offset = 2;
     uint64 size = 3;
+    repeated Interrupt interrupts = 4;
 }
 
 message Clock {

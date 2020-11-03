@@ -17,4 +17,4 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-cd src && protoc --python_out=../print_message/ --nanopb_out=$TAPASCO_HOME_RUNTIME/kernel/nanopb status_core.proto
+cd src && protoc --python_out=../print_message/ --nanopb_out=../../../../../runtime/kernel/nanopb status_core.proto

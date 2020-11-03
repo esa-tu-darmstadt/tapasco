@@ -56,7 +56,7 @@ config_interface -m_axi_addr64
 csynth_design
 # execute co-simulation (if set)
 if {$do_cosim > 0} {
-  cosim_design -rtl verilog -O -trace_level all
+  cosim_design -rtl verilog -argv "@@TBARGV@@" -O -trace_level all
   set script [list {set cs [current_scope .]} \
                    {current_scope AESL_inst_@@TOP@@} \
 		   {open_saif @@TOP@@.saif} \

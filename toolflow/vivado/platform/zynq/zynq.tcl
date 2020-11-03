@@ -48,13 +48,28 @@ namespace eval ::platform {
     if {$pe_base == ""} { set pe_base [get_pe_base_address] }
     puts "Computing addresses for PEs ..."
     set peam [::arch::get_address_map $pe_base]
+    set extra_masters_t [tapasco::call_plugins "post-address-map"]
+    set extra_masters [dict create ]
+    foreach {key value} $extra_masters_t {
+        dict set extra_masters $key $value
+    }
     puts "Computing addresses for masters ..."
     foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
       switch -glob [get_property NAME $m] {
         "M_TAPASCO" { foreach {base stride range comp} [list 0x80000000 0       0 "PLATFORM_COMPONENT_STATUS"] {} }
         "M_INTC"    { foreach {base stride range comp} [list 0x80010000 0x10000 0 "PLATFORM_COMPONENT_INTC0"] {} }
         "M_ARCH"    { set base "skip" }
-        default     { foreach {base stride range comp} [list 0 0 0 ""] {} }
+        default     { if { [dict exists $extra_masters [get_property NAME $m]] } {
+                          set l [dict get $extra_masters [get_property NAME $m]]
+                          set base [lindex $l 0]
+                          set stride [lindex $l 1]
+                          set range [lindex $l 2]
+                          set comp [lindex $l 3]
+                          puts "Special address for [get_property NAME $m] base: $base stride: $stride range: $range comp: $comp"
+                        } else {
+                          foreach {base stride range comp} [list 0 0 0 ""] {}
+                        }
+                    }
       }
       if {$base != "skip"} { set peam [addressmap::assign_address $peam $m $base $stride $range $comp] }
     }
@@ -187,30 +202,55 @@ namespace eval ::platform {
   # Create interrupt controller subsystem:
   # Consists of AXI_INTC IP cores (as many as required), which are connected by an internal
   # AXI Interconnect (S_AXI port) and to the Zynq interrupt lines.
-  # @param irqs List of the interrupts from the threadpool.
-  # @param ps_irq_in interrupt port of host
   proc create_subsystem_intc {} {
-    set irqs [arch::get_irqs]
-    puts "Number of architecture interrupts: [llength $irqs]"
-
     # create hierarchical ports
     set s_axi [create_bd_intf_pin -mode Slave -vlnv [::tapasco::ip::get_vlnv "aximm_intf"] "S_INTC"]
     set aclk [::tapasco::subsystem::get_port "host" "clk"]
     set ic_aresetn [::tapasco::subsystem::get_port "host" "rst" "interconnect"]
     set p_aresetn [::tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
-    set irq_out [create_bd_pin -type "intr" -dir O -to [expr "[llength $irqs] - 1"] "irq_0"]
 
-    # create interrupt controllers and connect them to GP1
-    set intcs [list]
-    foreach irq $irqs {
-      set intc [tapasco::ip::create_axi_irqc [format "axi_intc_%02d" [llength $intcs]]]
-      connect_bd_net $irq [get_bd_pins -of $intc -filter {NAME=="intr"}]
-      lappend intcs $intc
+    set int_in [::tapasco::ip::create_interrupt_in_ports]
+    set int_list [::tapasco::ip::get_interrupt_list]
+    set int_mapping [list]
+
+    puts "Starting mapping of interrupts $int_list"
+
+    set int_design_total 0
+    set int_design 0
+
+    set intcs_last [tapasco::ip::create_axi_irqc [format "axi_intc_0"]]
+    set concats_last [tapasco::ip::create_xlconcat "axi_intc_0_cc" 32]
+    connect_bd_net [get_bd_pins $concats_last/dout] [get_bd_pins ${intcs_last}/intr]
+    set intcs [list $intcs_last]
+
+    foreach {name clk} $int_list port $int_in {
+      puts "Connecting ${name} (Clk: ${clk}) to ${port}"
+
+      if { $int_design >= 32 } {
+        set n [llength $intcs]
+        set intcs_last [tapasco::ip::create_axi_irqc [format "axi_intc_${n}"]]
+        set concats_last [tapasco::ip::create_xlconcat "axi_intc_${n}_cc" 32]
+        connect_bd_net [get_bd_pins $concats_last/dout] [get_bd_pins ${intcs_last}/intr]
+
+        lappend intcs $intcs_last
+
+        set int_design 0
+      }
+      connect_bd_net ${port} [get_bd_pins ${concats_last}/In${int_design}]
+
+      lappend int_mapping $int_design_total
+
+      incr int_design
+      incr int_design_total
     }
 
+    ::tapasco::ip::set_interrupt_mapping $int_mapping
+
+    set irq_out [create_bd_pin -type "intr" -dir O -to [expr "[llength $intcs] - 1"] "irq_0"]
+
     # concatenate interrupts and connect them to port
-    set int_cc [tapasco::ip::create_xlconcat "int_cc" [llength $irqs]]
-    for {set i 0} {$i < [llength $irqs]} {incr i} {
+    set int_cc [tapasco::ip::create_xlconcat "int_cc" [llength $intcs]]
+    for {set i 0} {$i < [llength $intcs]} {incr i} {
       connect_bd_net [get_bd_pins "[lindex $intcs $i]/irq"] [get_bd_pins "$int_cc/In$i"]
     }
     connect_bd_net [get_bd_pins "$int_cc/dout"] $irq_out

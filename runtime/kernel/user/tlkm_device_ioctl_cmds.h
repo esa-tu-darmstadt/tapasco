@@ -55,6 +55,22 @@ struct tlkm_size_cmd {
 	size_t platform;
 };
 
+struct tlkm_register_interrupt {
+	int32_t pe_id;
+	int32_t fd;
+};
+
+struct tlkm_dma_buffer_allocate {
+	size_t size;
+	bool from_device;
+	size_t buffer_id;
+	int64_t addr;
+};
+
+struct tlkm_dma_buffer_op {
+	size_t buffer_id;
+};
+
 #define TLKM_DEV_IOCTL_FN "tlkm_%02u"
 #define TLKM_DEV_PERFC_FN "tlkm_perfc_%02u"
 
@@ -69,12 +85,22 @@ struct tlkm_size_cmd {
 	_TLKM_DEV_IOCTL(FREE, free, 0x11, struct tlkm_mm_cmd)                  \
 	_TLKM_DEV_IOCTL(COPYTO, copyto, 0x12, struct tlkm_copy_cmd)            \
 	_TLKM_DEV_IOCTL(COPYFROM, copyfrom, 0x13, struct tlkm_copy_cmd)        \
+	_TLKM_DEV_IOCTL(REGISTER_INTERRUPT, reg_int, 0x14,                     \
+			struct tlkm_register_interrupt)                        \
 	_TLKM_DEV_IOCTL(ALLOC_COPYTO, alloc_copyto, 0x20,                      \
 			struct tlkm_bulk_cmd)                                  \
 	_TLKM_DEV_IOCTL(COPYFROM_FREE, copyfrom_free, 0x21,                    \
 			struct tlkm_bulk_cmd)                                  \
 	_TLKM_DEV_IOCTL(READ, read, 0x30, struct tlkm_copy_cmd)                \
-	_TLKM_DEV_IOCTL(WRITE, write, 0x31, struct tlkm_copy_cmd)
+	_TLKM_DEV_IOCTL(WRITE, write, 0x31, struct tlkm_copy_cmd)              \
+	_TLKM_DEV_IOCTL(DMA_BUFFER_ALLOCATE, dma_buffer_allocate, 0x40,        \
+			struct tlkm_dma_buffer_allocate)                       \
+	_TLKM_DEV_IOCTL(DMA_BUFFER_FREE, dma_buffer_free, 0x41,                \
+			struct tlkm_dma_buffer_op)                             \
+	_TLKM_DEV_IOCTL(DMA_BUFFER_TO_DEV, dma_buffer_to_dev, 0x42,            \
+			struct tlkm_dma_buffer_op)                             \
+	_TLKM_DEV_IOCTL(DMA_BUFFER_FROM_DEV, dma_buffer_from_dev, 0x43,        \
+			struct tlkm_dma_buffer_op)
 
 enum {
 #define _TLKM_DEV_IOCTL(NAME, name, id, dt)                                    \

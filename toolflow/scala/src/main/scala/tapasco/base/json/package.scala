@@ -327,6 +327,7 @@ package object json {
       (JsPath \ "Description").readNullable[String] ~
       (JsPath \ "CompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
       (JsPath \ "TestbenchCompilerFlags").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
+      (JsPath \ "TestbenchArgv").readNullable[Seq[String]].map(_ getOrElse Seq()) ~
       (JsPath \ "Arguments").read[Seq[Kernel.Argument]] ~
       (JsPath \ "OtherDirectives").readNullable[Path](pathExistsValidation(sourcePath))
     ) (Kernel.apply _)
@@ -341,6 +342,7 @@ package object json {
       (JsPath \ "Description").writeNullable[String] ~
       (JsPath \ "CompilerFlags").write[Seq[String]] ~
       (JsPath \ "TestbenchCompilerFlags").write[Seq[String]] ~
+      (JsPath \ "TestbenchArgv").write[Seq[String]] ~
       (JsPath \ "Arguments").write[Seq[Kernel.Argument]] ~
       (JsPath \ "OtherDirectives").writeNullable[Path]
     ) (unlift(Kernel.unapply _))
@@ -404,6 +406,7 @@ package object json {
       (JsPath \ "Parallel").readNullable[Boolean].map(_ getOrElse false) ~
       (JsPath \ "MaxThreads").readNullable[Int] ~
       (JsPath \ "MaxTasks").readNullable[Int] ~
+      (JsPath \ "HlsTimeOut").readNullable[Int] ~
       (JsPath \ "DryRun").readNullable[Path] ~
       (JsPath \ "Verbose").readNullable[String] ~
       (JsPath \ "Jobs").read[Seq[Job]]
@@ -419,6 +422,7 @@ package object json {
       (JsPath \ "Slurm").write[Boolean] ~
       (JsPath \ "Parallel").write[Boolean] ~
       (JsPath \ "MaxThreads").writeNullable[Int] ~
+      (JsPath \ "HlsTimeOut").writeNullable[Int] ~
       (JsPath \ "MaxTasks").writeNullable[Int] ~
       (JsPath \ "DryRun").writeNullable[Path].transform((js: JsObject) => js - "DryRun") ~
       (JsPath \ "Verbose").writeNullable[String] ~

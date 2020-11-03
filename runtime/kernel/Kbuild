@@ -11,7 +11,6 @@ tlkm-objs := \
     device/tlkm_perfc.o \
     device/tlkm_perfc_miscdev.o \
     device/tlkm_control.o \
-    device/tlkm_device_rw.o \
     device/tlkm_device_ioctl.o \
     device/tlkm_device_mmap.o \
     zynq/zynq_device.o \
@@ -21,10 +20,10 @@ tlkm-objs := \
     pcie/pcie.o \
     pcie/pcie_device.o \
     pcie/pcie_irq.o \
+    pcie/pcie_irq_aws.o \
     pcie/pcie_ioctl.o \
     dma/tlkm_dma.o \
     dma/blue_dma.o \
-    hsa/char_device_hsa.o \
     nanopb/pb_common.o \
     nanopb/pb_encode.o \
     nanopb/pb_decode.o \

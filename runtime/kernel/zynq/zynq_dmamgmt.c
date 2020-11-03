@@ -71,7 +71,8 @@ void zynq_dmamgmt_exit(struct tlkm_device *inst)
 	LOG(TLKM_LF_DMAMGMT, "DMA buffer management exited");
 }
 
-dma_addr_t zynq_dmamgmt_alloc(struct tlkm_device *inst, size_t const len, handle_t *hid)
+dma_addr_t zynq_dmamgmt_alloc(struct tlkm_device *inst, size_t const len,
+			      handle_t *hid)
 {
 	fsp_idx_t id;
 	int mask;
@@ -86,12 +87,14 @@ dma_addr_t zynq_dmamgmt_alloc(struct tlkm_device *inst, size_t const len, handle
 #else
 	of_dma_configure(inst->ctrl->miscdev.this_device, NULL);
 #endif
-	mask = dma_set_coherent_mask(inst->ctrl->miscdev.this_device, 0xFFFFFFFF);
-	if(mask) {
+	mask = dma_set_coherent_mask(inst->ctrl->miscdev.this_device,
+				     0xFFFFFFFF);
+	if (mask) {
 		WRN("could not set DMA mask");
 	}
 	_dmabuf.elems[id].kvirt_addr =
-		dma_alloc_coherent(inst->ctrl->miscdev.this_device, len, &_dmabuf.elems[id].dma_addr,
+		dma_alloc_coherent(inst->ctrl->miscdev.this_device, len,
+				   &_dmabuf.elems[id].dma_addr,
 				   GFP_KERNEL | __GFP_MEMALLOC);
 	if (!_dmabuf.elems[id].kvirt_addr) {
 		WRN("could not allocate DMA buffer of size %zu byte!", len);
@@ -116,7 +119,8 @@ int zynq_dmamgmt_dealloc(struct tlkm_device *inst, handle_t const id)
 		    id, _dmabuf.elems[id].len,
 		    (unsigned long)_dmabuf.elems[id].kvirt_addr,
 		    (unsigned long)_dmabuf.elems[id].dma_addr);
-		dma_free_coherent(inst->ctrl->miscdev.this_device, _dmabuf.elems[id].len,
+		dma_free_coherent(inst->ctrl->miscdev.this_device,
+				  _dmabuf.elems[id].len,
 				  _dmabuf.elems[id].kvirt_addr,
 				  _dmabuf.elems[id].dma_addr);
 		init_dma_buf_t(&_dmabuf.elems[id], id);
