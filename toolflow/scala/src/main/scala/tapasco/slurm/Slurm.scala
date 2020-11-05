@@ -189,24 +189,21 @@ final object Slurm extends Publisher {
     * Preamble is run before the SLURM job is started.
     * Copy required files from host to SLURM workstation.
     * @param slurm_job  Job to execute.
-    * @param files List of files that need to be copied to SLURM node
     * @param update_paths Function that converts local workdir file paths to valid paths on a remote SLURM node.
     **/
-  def slurm_preamble(slurm_job: Job, files: Seq[Path], update_paths: Path => Path)(implicit cfg: Configuration): Unit = {
-    val local_files: Seq[Path] = slurm_job.job match {
+  def slurm_preamble(slurm_job: Job, update_paths: Path => Path)(implicit cfg: Configuration): Unit = {
+    val local_files = Seq(slurm_job.cfg_file) ++ (slurm_job.job match {
       case ComposeJob(c, _, _, a, p, _, _, _, _, _) => {
         val tgt = Target.fromString(a.get.head, p.get.head).get
         val cores = c.composition.map(ce => FileAssetManager.entities.core(ce.kernel, tgt))
-
-        // TODO: In case there are no local ipcores, they are synth'ed prior to compose job, This is done LOCALLY
-        files ++ cores.map(_.get.zipPath) ++ cores.map(_.get.descPath)
+        cores.map(_.get.zipPath) ++ cores.map(_.get.descPath)
       }
       case HighLevelSynthesisJob(_, _, _, k, _) => {
         val kernels = FileAssetManager.entities.kernels.filter( kernel => k.get.contains(kernel.name) ).toSeq
-        files ++ kernels.map(_.descPath.getParent)
+        kernels.map(_.descPath.getParent)
       }
-      case _ => files
-    }
+      case _ => Seq()
+    })
     val remote_files = local_files map update_paths
     file_transfer(local_files.zip(remote_files).toMap, tx = true)
 
@@ -219,24 +216,22 @@ final object Slurm extends Publisher {
     * Postamble is run after the SLURM job is finished.
     * Copy generated artefacts back from the SLURM node.
     * @param slurm_job  Job to execute.
-    * @param files List of (local) filenames that need to be copied from SLURM node to local machine
     * @param update_paths Function that converts local workdir file paths to valid paths on a remote SLURM node.
     **/
-  def slurm_postamble(slurm_job: Job, files: Seq[Path], update_paths: Path => Path): Unit = {
-    val loc_files = slurm_job.job match {
+  def slurm_postamble(slurm_job: Job, update_paths: Path => Path): Unit = {
+    val loc_files = Seq(slurm_job.log, slurm_job.slurmLog, slurm_job.errorLog) ++ (slurm_job.job match {
       case ComposeJob(c, f, _, a, p, _, _, _, _, _) => {
         val bit_name = Composer.mkProjectName(c, Target.fromString(a.get.head, p.get.head).get, f)
         val fnames = Seq(bit_name + ".bit", bit_name + ".bit.bin", "timing.txt", "utilization.txt")
-
-        files ++ fnames.map(f => slurm_job.log.resolveSibling(f))
+        fnames.map(f => slurm_job.log.resolveSibling(f))
       }
       case HighLevelSynthesisJob(_, a,p, kernels, _) => {
         val tgt = Target.fromString(a.get.head, p.get.head).get
         val cores = kernels.get.map(k => FileAssetManager.entities.core(k, tgt))
-        files ++ cores.map(_.get.zipPath) ++ cores.map(_.get.descPath)
+        cores.map(_.get.zipPath) ++ cores.map(_.get.descPath)
       }
-      case _ => files
-    }
+      case _ => Seq()
+    })
     val remote_files = loc_files map update_paths
     file_transfer(remote_files.zip(loc_files).toMap, tx=false)
 
@@ -250,13 +245,13 @@ final object Slurm extends Publisher {
     * @param tfer A map from SRC to DST file paths
     * @param tx indicates the direction of transfer. If value is true (false), the direction is push (pull).
     **/
-  def file_transfer(tfer: Map[Path, Path], tx: Boolean): Boolean = {
+  def file_transfer(tfer: Map[Path, Path], tx: Boolean, host: Option[String] = None): Boolean = {
     for ((from, to) <- tfer) {
-      val target_host = slurm_remote_cfg.get.workstation;
+      val target_host = host.getOrElse(slurm_remote_cfg.get.workstation)
       logger.info("Copying %s to %s on %s".format(from, to, target_host))
 
       // parent directory may not exist
-      exec_cmd("mkdir -p %s".format(to.getParent), hostname = Some(target_host))
+      if (tx) exec_cmd("mkdir -p %s".format(to.getParent), hostname = Some(target_host))
 
       val cpy_cmd = if (tx)
         "scp -r %s %s:%s".format(from, target_host, to)
@@ -312,17 +307,17 @@ final object Slurm extends Publisher {
 
       /** preamble: copy required files to SLURM node */
       if (slurm_remote_cfg.isDefined) {
-        val files_to_copy = Seq(jobFile, slurm_job.cfg_file)
-        slurm_preamble(slurm_job, files_to_copy, wd_to_rmt)
+        // copy all required files to workstation
+        slurm_preamble(slurm_job, wd_to_rmt)
+
+        // copy slurm job file to slurm login node
+        file_transfer(Map(jobFile -> Path.of("~/slurm-job.slurm")), tx = true, host=Some(slurm_remote_cfg.get.host))
       }
 
-      val cmd = "sbatch %s %s".format(
-        slurm_remote_cfg match {
-          case Some(c) => c.SbatchOptions
-          case None => ""
-        },
-        wd_to_rmt(jobFile.toAbsolutePath()).normalize().toString
-      )
+      val cmd = "sbatch " ++ (slurm_remote_cfg match {
+          case Some(c) => "%s %s".format(c.SbatchOptions, "~/slurm-job.slurm")
+          case None => jobFile.toAbsolutePath().normalize().toString
+        })
       logger.debug("running slurm batch job: '%s'".format(cmd))
 
       var id: Option[Int] = None
@@ -346,7 +341,7 @@ final object Slurm extends Publisher {
       if (slurm_remote_cfg.isDefined) {
         postambles += (id.get -> {slurm_id =>
           logger.info("Running postamble for SLURM id: {}", slurm_id)
-          slurm_postamble(slurm_job, Seq(slurm_job.log, slurm_job.slurmLog, slurm_job.errorLog), wd_to_rmt)
+          slurm_postamble(slurm_job, wd_to_rmt)
         })
       }
       id
