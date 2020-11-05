@@ -310,7 +310,13 @@ final object Slurm extends Publisher {
         slurm_preamble(slurm_job, files_to_copy, wd_to_rmt)
       }
 
-      val cmd = "sbatch %s".format(wd_to_rmt(jobFile.toAbsolutePath()).normalize().toString)
+      val cmd = "sbatch %s %s".format(
+        slurm_remote_cfg match {
+          case Some(c) => c.SbatchOptions
+          case None => ""
+        },
+        wd_to_rmt(jobFile.toAbsolutePath()).normalize().toString
+      )
       logger.debug("running slurm batch job: '%s'".format(cmd))
 
       var id: Option[Int] = None
