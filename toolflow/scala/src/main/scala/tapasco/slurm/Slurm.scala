@@ -169,6 +169,8 @@ final object Slurm extends Publisher {
     jobScript("TAPASCO_HOME") = upd_wd(FileAssetManager.TAPASCO_WORK_DIR).toString
     jobScript("COMMANDS") = "tapasco --configFile %s".format(upd_wd(job.cfg_file).toString)
     jobScript("COMMENT") = job.comment getOrElse ""
+    if (slurm_remote_cfg.isDefined)
+      jobScript("WORKSTATION") = slurm_remote_cfg.get.workstation
     // create parent directory
     Files.createDirectories(file.getParent())
     // write file

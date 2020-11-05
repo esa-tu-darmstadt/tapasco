@@ -2,8 +2,8 @@
 	"Name" : "ESA Cluster",
 	"SlurmHost" : "slurm",
 	"WorkstationHost" : "balin",
-	"Workdir" : "/scratch/tapasco_workdir",
-	"TapascoInstallDir" : "/scratch/tapasco",
+	"Workdir" : "/scratch/SLURM/tapasco_workdir",
+	"TapascoInstallDir" : "/scratch/SLURM/tapasco",
 	"JobFile" : "slurm_ESA.job.template"
 }
 

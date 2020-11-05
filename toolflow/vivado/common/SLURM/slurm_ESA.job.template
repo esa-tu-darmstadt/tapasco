@@ -26,9 +26,13 @@
 #SBATCH -t @@TIMELIMIT@@
 #SBATCH --comment="@@COMMENT@@"
 
+# Setup env
 source @@TAPASCO_HOME@@/tapasco-setup.sh
+export PATH="/opt/cad/xilinx/vivado/Vivado/2019.2/bin/:$PATH"
 
 # user commands begin here
 echo "SLURM job #$SLURM_JOB_ID started at $(date)"
+rsync -a /net/@@WORKSTATION@@/SLURM/tapasco_workdir/ @@TAPASCO_HOME@@
 @@COMMANDS@@
+rsync -a @@TAPASCO_HOME@@/ /net/@@WORKSTATION@@/SLURM/tapasco_workdir
 echo "SLURM job #$SLURM_JOB_ID finished at $(date)"
