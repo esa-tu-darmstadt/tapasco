@@ -397,19 +397,19 @@ final object Slurm extends Publisher {
       val cmd = "scancel %s" format (ids mkString " ")
       logger.info("canceling SLURM jobs: {}", ids mkString ", ")
       logger.debug("command: '{}'", cmd)
-      exec_cmd(cmd, get_ret_code = true).toInt
+      exec_cmd(cmd)
     }
   }
 
   /** Execute a SLURM command, either locally or on a remote host */
-  def exec_cmd(c: String, get_ret_code: Boolean = false, hostname: Option[String] = None): String = {
+  def exec_cmd(c: String, hostname: Option[String] = None): String = {
     val cmd = if (slurm_remote_cfg.isEmpty) c else {
       val host = hostname.getOrElse(slurm_remote_cfg.get.host)
       "ssh %s %s".format(host, c)
     }
 
     logger.info("Executing command: %s".format(cmd))
-    if (get_ret_code) cmd.!.toString else cmd.!!
+    cmd.!!
   }
 
   /** Use SLURM? */
