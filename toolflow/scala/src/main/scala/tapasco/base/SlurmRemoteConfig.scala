@@ -37,7 +37,9 @@ case class SlurmRemoteConfig(
                               workdir: Path,
                               installdir: Path,
                               jobFile: String,
-                              SbatchOptions: String
+                              SbatchOptions: String,
+                              PreambleScript: Option[String],
+                              PostambleScript: Option[String]
                             )
 
 object SlurmRemoteConfig extends Builds[SlurmRemoteConfig]

@@ -446,7 +446,9 @@ package object json {
       (JsPath \ "Workdir").read[Path] ~
       (JsPath \ "TapascoInstallDir").read[Path] ~
       (JsPath \ "JobFile").read[String](minimumLength(length = 1)) ~
-      (JsPath \ "SbatchOptions").readNullable[String].map(_.getOrElse(""))
+      (JsPath \ "SbatchOptions").readNullable[String].map(_.getOrElse("")) ~
+      (JsPath \ "PreambleScript").readNullable[String] ~
+      (JsPath \ "PostambleScript").readNullable[String]
     ) (SlurmRemoteConfig.apply _)
   /* SlurmRemoteConfig @} */
 

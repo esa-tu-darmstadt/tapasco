@@ -207,9 +207,12 @@ final object Slurm extends Publisher {
       }
       case _ => files
     }
-
     val remote_files = local_files map update_paths
     file_transfer(local_files.zip(remote_files).toMap, tx = true)
+
+    // run preamble script, if specified
+    if (slurm_remote_cfg.get.PreambleScript.isDefined)
+      "sh %s".format(slurm_remote_cfg.get.PreambleScript.get).!
   }
 
   /**
@@ -234,9 +237,12 @@ final object Slurm extends Publisher {
       }
       case _ => files
     }
-
     val remote_files = loc_files map update_paths
     file_transfer(remote_files.zip(loc_files).toMap, tx=false)
+
+    // run postamble script, if specified
+    if (slurm_remote_cfg.get.PostambleScript.isDefined)
+      "sh %s".format(slurm_remote_cfg.get.PostambleScript.get).!
   }
 
   /**
