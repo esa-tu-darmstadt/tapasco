@@ -218,12 +218,10 @@ final object Slurm extends Publisher {
   def slurm_postamble(slurm_job: Job, files: Seq[Path], update_paths: Path => Path): Unit = {
     val loc_files = slurm_job.job match {
       case ComposeJob(c, f, _, a, p, _, _, _, _, _) => {
-        val tgt = Target.fromString(a.get.head, p.get.head).get
-        val bit = slurm_job.log.resolveSibling( Composer.mkProjectName(c, tgt, f) + ".bit" )
-        val bin = slurm_job.log.resolveSibling( Composer.mkProjectName(c, tgt, f) + ".bit.bin" )
+        val bit_name = Composer.mkProjectName(c, Target.fromString(a.get.head, p.get.head).get, f)
+        val fnames = Seq(bit_name + ".bit", bit_name + ".bit.bin", "timing.txt", "utilization.txt")
 
-        // TODO: Is this sufficient, or do we also need the timing/utilization report (or simply pull whole composition folder) ?
-        files ++ Seq(bit, bin)
+        files ++ fnames.map(f => slurm_job.log.resolveSibling(f))
       }
       case HighLevelSynthesisJob(_, a,p, kernels, _) => {
         val tgt = Target.fromString(a.get.head, p.get.head).get
