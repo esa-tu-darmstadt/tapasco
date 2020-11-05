@@ -173,7 +173,11 @@ final object Slurm extends Publisher {
     Files.createDirectories(file.getParent())
     // write file
     val fw = new java.io.FileWriter(file.toString)
-    fw.append(jobScript.interpolateFile(SLURM_TEMPLATE_DIR.resolve(slurm_remote_cfg.get.jobFile).toString))
+    val template_name = slurm_remote_cfg match {
+      case Some(c) => c.jobFile
+      case None => "default.job.template"
+    }
+    fw.append(jobScript.interpolateFile(SLURM_TEMPLATE_DIR.resolve(template_name).toString))
     fw.flush()
     fw.close()
     // set executable permissions
@@ -352,7 +356,8 @@ final object Slurm extends Publisher {
     }
 
     // callback that pulls generated files from remote node
-    postambles(id)(id)
+    if (slurm_remote_cfg.isDefined)
+      postambles(id)(id)
   }
 
   /** Returns a list of all SLURM job ids which are registered under the
