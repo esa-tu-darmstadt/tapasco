@@ -277,8 +277,12 @@ final object Slurm extends Publisher {
         new_pre.resolve(postfix)
       }
     }
-    val wd_to_rmt   = if (slurm_remote_cfg.isDefined) prefix_subst(cfg.kernelDir.getParent, slurm_remote_cfg.get.workdir) else (x: Path) => x
-    val tpsc_to_rmt = if (slurm_remote_cfg.isDefined) prefix_subst(cfg.platformDir.getParent.getParent.getParent, slurm_remote_cfg.get.installdir) else (x: Path) => x
+    val wd_to_rmt   = if (slurm_remote_cfg.isDefined)
+      prefix_subst(cfg.kernelDir.getParent, slurm_remote_cfg.get.workdir)
+    else identity[Path] _
+    val tpsc_to_rmt = if (slurm_remote_cfg.isDefined)
+      prefix_subst(cfg.platformDir.getParent.getParent.getParent, slurm_remote_cfg.get.installdir)
+    else identity[Path] _
 
     /** Create non-slurm cfg, with updated paths such that they match the folder structure on SLURM node */
     val newCfg = cfg
