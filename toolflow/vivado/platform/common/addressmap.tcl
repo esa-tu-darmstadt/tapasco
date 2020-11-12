@@ -158,6 +158,10 @@ namespace eval addressmap {
             set range  [expr "max([dict get $me range], 4096)"]
             set offset [expr "max([dict get $me "offset"], [get_property OFFSET $intf])"]
             set range  [expr "min($range, [get_property RANGE $intf])"]
+            if {$space == "/cascabel/Cascabel/M_AXI"} {
+              puts "Remove PE offset for Cascabel core"
+              set offset [expr "$offset - [::platform::get_pe_base_address]"]
+            }
             puts "      range: $range"
             puts "      offset: $offset"
             puts "      space: $space"

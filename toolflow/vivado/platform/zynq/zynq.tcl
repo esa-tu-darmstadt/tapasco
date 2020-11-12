@@ -58,6 +58,8 @@ namespace eval ::platform {
       switch -glob [get_property NAME $m] {
         "M_TAPASCO" { foreach {base stride range comp} [list 0x80000000 0       0 "PLATFORM_COMPONENT_STATUS"] {} }
         "M_INTC"    { foreach {base stride range comp} [list 0x80010000 0x10000 0 "PLATFORM_COMPONENT_INTC0"] {} }
+        "M_CASCABEL" { foreach {base stride range comp} [list 0x90000000 0x10000 0 "PLATFORM_COMPONENT_CASCABEL0"] {} }
+        "M_ARCH_CASCABEL" { set base "skip" }
         "M_ARCH"    { set base "skip" }
         default     { if { [dict exists $extra_masters [get_property NAME $m]] } {
                           set l [dict get $extra_masters [get_property NAME $m]]
