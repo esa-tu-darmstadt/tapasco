@@ -274,7 +274,8 @@ namespace eval tapasco {
   # @param name Name of the group cell
   # @param n Number of connnections (outside)
   # @param masters if true, will create n master connections, otherwise slaves
-  proc create_interconnect_tree {name n {masters true}} {
+  # @param no Number of opposite connections (default to 1)
+  proc create_interconnect_tree {name n {masters true} {no 1}} {
     puts "Creating AXI Interconnect tree $name for $n [expr $masters ? {"masters"} : {"slaves"}]"
     puts "  tree depth: [expr int(ceil(log($n) / log(16)))]"
     puts "  instance : [current_bd_instance .]"
@@ -358,7 +359,7 @@ namespace eval tapasco {
       for {set i 0} {$i < $n} {incr i} {
         set rest_ports [expr "$nports - $i * 16"]
         set rest_ports [expr "min($rest_ports, 16)"]
-        set nic [ip::create_axi_ic [format "ic_%03d" $ic_n] [expr "$masters ? $rest_ports : 1"] [expr "$masters ? 1 : $rest_ports"]]
+        set nic [ip::create_axi_ic [format "ic_%03d" $ic_n] [expr "$masters ? $rest_ports : [expr [llength $ics] == 0 ? $no : 1]"] [expr "$masters ? [expr $n == 1 ? $no : 1] : $rest_ports"]]
         incr ic_n
         lappend curr_ics $nic
       }
