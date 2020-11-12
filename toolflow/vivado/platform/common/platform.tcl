@@ -141,6 +141,16 @@ namespace eval platform {
         }
       }
     }
+    if {[tapasco::is_feature_enabled "Cascabel"]} {
+      # manually wire the interrupt lines for Cascabel
+      set int_host [get_bd_pins /intc/msix_intr_ctrl/interrupt_design]
+      lappend int_host [get_bd_pins /intc/axi_intc_0/intr]
+      set int_net [get_bd_nets -of $int_host]
+      set int_arch [lindex [get_bd_pins -of $int_net] 0]
+      delete_bd_objs $int_net
+      connect_bd_net [get_bd_pins /cascabel/intr_0] $int_host
+      connect_bd_net $int_arch [get_bd_pins /cascabel/intr_cascabel_0]
+    }
   }
 
   proc wire_subsystem_intfs {} {

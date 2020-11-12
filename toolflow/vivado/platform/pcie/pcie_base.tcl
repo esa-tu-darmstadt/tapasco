@@ -293,6 +293,11 @@
     set m_intc [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_INTC"]
     set m_tapasco [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_TAPASCO"]
     set m_dma [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DMA"]
+    set m_intf_count 4
+    if {[tapasco::is_feature_enabled "Cascabel"]} {
+      set m_cascabel [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_CASCABEL"]
+      incr m_intf_count
+    }
     set pcie_aclk [create_bd_pin -type "clk" -dir "O" "pcie_aclk"]
     set pcie_aresetn [create_bd_pin -type "rst" -dir "O" "pcie_aresetn"]
     set msix_interface [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:pcie3_cfg_msix_rtl:1.0 "S_MSIX"]
@@ -307,7 +312,7 @@
         connect_bd_intf_net $msix_interface [get_bd_intf_pins $pcie/pcie_cfg_msix]
     }
 
-    set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 4]
+    set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 $m_intf_count]
     tapasco::ip::connect_sc_default_clocks $out_ic "host"
 
     connect_bd_intf_net [get_bd_intf_pins -regexp $pcie/M_AXI(_B)?] \
@@ -324,6 +329,9 @@
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M01_AXI}] $m_intc
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M02_AXI}] $m_tapasco
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M03_AXI}] $m_dma
+    if {[tapasco::is_feature_enabled "Cascabel"]} {
+      connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M04_AXI}] $m_cascabel
+    }
 
     # forward PCIe clock to external ports
     connect_bd_net [get_bd_pins axi_pcie3_0/axi_aclk] $pcie_aclk

@@ -194,17 +194,25 @@ namespace eval arch {
     }
 
     set out_port [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_ARCH"]
+    set out_port_count 1
+    if {[tapasco::is_feature_enabled "Cascabel"]} {
+      set out_port_cascabel [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_ARCH_CASCABEL"]
+      incr out_port_count
+    }
 
     if {$ic_s == 1} {
       puts "Connecting one slave to host"
       return $out_port
     } {
-      set in1 [tapasco::create_interconnect_tree "in1" $ic_s false]
+      set in1 [tapasco::create_interconnect_tree "in1" $ic_s false $out_port_count]
 
       puts "Creating interconnects toward peripherals ..."
       puts "  $ic_s slaves to connect to host"
 
       connect_bd_intf_net $out_port [get_bd_intf_pins -of_objects $in1 -filter {NAME == "S000_AXI"}]
+      if {[tapasco::is_feature_enabled "Cascabel"]} {
+        connect_bd_intf_net $out_port_cascabel [get_bd_intf_pins -of_objects $in1 -filter {NAME == "S001_AXI"}]
+      }
     }
 
     return $in1
