@@ -327,7 +327,7 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
             let a = mem
                 .allocator()
                 .lock()?
-                .allocate(256 * 4)
+                .allocate(len as u64)
                 .context(AllocatorError)?;
 
             let mut golden_samples: Vec<u8> = Vec::new();
