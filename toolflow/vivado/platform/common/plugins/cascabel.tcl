@@ -18,9 +18,40 @@
 #
 
 if {[tapasco::is_feature_enabled "Cascabel"]} {
+	proc create_cascabel_ip_core {} {
+		set composition [tapasco::get_composition]
+		set pe_count 0
+		set kid_count 0
+		set pe_arr ""
+		set kid_arr ""
+		dict for {k v} $composition {
+			set id [dict get $composition $k id]
+			set no [dict get $composition $k count]
+			set pe_count [expr "$pe_count + $no"]
+			for {set i 0} {$i < $no} {incr i} {
+				set pe_arr "$pe_arr,$id"
+			}
+			incr kid_count
+			set kid_arr "$kid_arr,$id"
+		}
+		set pe_arr [string trimleft $pe_arr ,]
+		set kid_arr [string trimleft $kid_arr ,]
+		set config_fd [open "$::env(TAPASCO_HOME_TCL)/common/ip/Cascabel/src/CascabelConfiguration.bsv" "w"]
+		puts $config_fd "package CascabelConfiguration;"
+		puts $config_fd "import CascabelTypes::*;"
+		puts $config_fd "typedef $pe_count PE_COUNT;"
+		puts $config_fd "typedef $kid_count KID_COUNT;"
+		puts $config_fd "KID_TYPE pe_arr[$pe_count] = {$pe_arr};"
+		puts $config_fd "KID_TYPE kid_arr[$kid_count] = {$kid_arr};"
+		puts $config_fd "endpackage"
+		close $config_fd
+		exec cd $::env(TAPASCO_HOME_TCL)/common/ip/Cascabel/ && make clean ip SIM_TYPE=VERILOG
+	}
+
 	proc create_custom_subsystem_cascabel {} {
 		# currently runs in design_clk clock domain
 		puts "  instantiating cascabel core ..."
+		create_cascabel_ip_core
 		set cascabel [create_bd_cell -type ip -vlnv esa.informatik.tu-darmstadt.de:user:Cascabel Cascabel]
 		puts "  creating slave port S_CASCABEL ..."
 		set s_port [create_bd_intf_pin -vlnv [tapasco::ip::get_vlnv "aximm_intf"] -mode Slave "S_CASCABEL"]
