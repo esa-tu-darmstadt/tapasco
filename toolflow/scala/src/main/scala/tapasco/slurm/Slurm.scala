@@ -313,7 +313,7 @@ final object Slurm extends Publisher {
         slurm_preamble(slurm_job, wd_to_rmt)
 
         // copy slurm job file to slurm login node
-        file_transfer(Map(jobFile -> Path.of("~/slurm-job.slurm")), tx = true, host=Some(slurm_remote_cfg.get.host))
+        file_transfer(Map(jobFile -> Paths.get("~/slurm-job.slurm")), tx = true, host=Some(slurm_remote_cfg.get.host))
       }
 
       val cmd = "sbatch " ++ (slurm_remote_cfg match {
