@@ -229,8 +229,9 @@ final object Slurm extends Publisher {
       }
       case HighLevelSynthesisJob(_, a,p, kernels, _) => {
         val tgt = Target.fromString(a.get.head, p.get.head).get
-        val cores = kernels.get.map(k => FileAssetManager.entities.core(k, tgt))
-        cores.map(_.get.zipPath) ++ cores.map(_.get.descPath)
+        val core_dir = slurm_job.log.getParent.resolveSibling("ipcore")
+        val core_zip = kernels.get.map(k => core_dir.resolve("%s_%s.zip".format(k, tgt.ad.name)))
+        core_zip ++ core_zip.map(z => z.resolveSibling("core.json"))
       }
       case _ => Seq()
     })
@@ -253,7 +254,8 @@ final object Slurm extends Publisher {
       logger.info("Copying %s to %s on %s".format(from, to, target_host))
 
       // parent directory may not exist
-      if (tx) exec_cmd("mkdir -p %s".format(to.getParent), hostname = Some(target_host))
+      val mkdir = "mkdir -p %s".format(to.getParent)
+      if (tx) exec_cmd(mkdir, hostname = Some(target_host)) else mkdir.!
 
       val cpy_cmd = if (tx)
         "scp -r %s %s:%s".format(from, target_host, to)
