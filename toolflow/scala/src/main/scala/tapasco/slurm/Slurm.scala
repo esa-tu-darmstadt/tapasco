@@ -273,7 +273,7 @@ final object Slurm extends Publisher {
     **/
   def apply(slurm_job: Job)(implicit cfg: Configuration): Option[Int] = {
     val local_base = slurm_job.cfg_file.getParent
-    val jobFile = local_base.resolveSibling("slurm-job.slurm") // SLURM job script
+    val jobFile = local_base.resolveSibling("%s.slurm".format(slurm_job.name)) // SLURM job script
 
     /** replace a prefix of a Path by a different prefix. Used to convert local file paths to paths that are valid on SLURM node */
     def prefix_subst(old_pre: Path, new_pre: Path): (Path => Path) = {
@@ -313,11 +313,12 @@ final object Slurm extends Publisher {
         slurm_preamble(slurm_job, wd_to_rmt)
 
         // copy slurm job file to slurm login node
-        file_transfer(Map(jobFile -> Paths.get("~/slurm-job.slurm")), tx = true, host=Some(slurm_remote_cfg.get.host))
+        file_transfer(Map(jobFile -> Paths.get("~/%s.slurm".format(slurm_job.name))),
+                      tx = true, host=Some(slurm_remote_cfg.get.host))
       }
 
       val cmd = "sbatch " ++ (slurm_remote_cfg match {
-          case Some(c) => "%s %s".format(c.SbatchOptions, "~/slurm-job.slurm")
+          case Some(c) => "%s ~/%s.slurm".format(c.SbatchOptions, slurm_job.name)
           case None => jobFile.toAbsolutePath().normalize().toString
         })
       logger.debug("running slurm batch job: '%s'".format(cmd))
