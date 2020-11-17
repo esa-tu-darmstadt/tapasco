@@ -34,5 +34,13 @@ export PATH="/opt/cad/xilinx/vivado/Vivado/2019.2/bin/:$PATH"
 echo "SLURM job #$SLURM_JOB_ID started at $(date)"
 rsync -a /net/@@WORKSTATION@@/SLURM/tapasco_workdir/ @@TAPASCO_HOME@@
 @@COMMANDS@@
+
+retVal=$?
+if [ $retVal -ne 0 ]; then
+	echo "SLURM job #$SLURM_JOB_ID failed at $(date)"
+else
+	echo "SLURM job #$SLURM_JOB_ID finished at $(date)"
+fi
+
 rsync -a @@TAPASCO_HOME@@/ /net/@@WORKSTATION@@/SLURM/tapasco_workdir
-echo "SLURM job #$SLURM_JOB_ID finished at $(date)"
+exit $retVal
