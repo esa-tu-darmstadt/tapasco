@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 # Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
 #
 # This file is part of TaPaSCo
@@ -29,6 +29,8 @@
 # Setup env
 source @@TAPASCO_HOME@@/tapasco-setup.sh
 export PATH="/opt/cad/xilinx/vivado/Vivado/2019.2/bin/:$PATH"
+# Vivado will hang otherwise, since it has no write permissions to real $HOME
+export HOME=@@TAPASCO_HOME@@/../
 
 # user commands begin here
 echo "SLURM job #$SLURM_JOB_ID started at $(date)"
