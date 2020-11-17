@@ -60,7 +60,13 @@ class HighLevelSynthesisTask(val k: Kernel, val t: Target, val cfg: Configuratio
     val slurmLog  = l.resolveSibling("slurm-hls.log") // raw log file (stdout w/colors)
     val e         = l.resolveSibling("hls-slurm.errors.log")
 
-    val hlsJob = HighLevelSynthesisJob(hls.toString, Some(Seq(t.ad.name)), Some(Seq(t.pd.name)), Some(Seq(k.name)))
+    val hlsJob = HighLevelSynthesisJob(
+      hls.toString,
+      Some(Seq(t.ad.name)),
+      Some(Seq(t.pd.name)),
+      Some(Seq(k.name)),
+      Some(true) // skip Evaluation on cluster
+    )
 
     // define SLURM job
     val job = Slurm.Job(
@@ -70,7 +76,7 @@ class HighLevelSynthesisTask(val k: Kernel, val t: Target, val cfg: Configuratio
       errorLog = e,
       consumer = this,
       maxHours = HighLevelSynthesisTask.MAX_SYNTH_HOURS,
-      commands = Seq("tapasco --configFile %s".format(cfgFile.toString, k.name.toString)),
+      commands = Seq("tapasco --configFile %s".format(cfgFile.toString)),
       job      = hlsJob,
       cfg_file = cfgFile
     )

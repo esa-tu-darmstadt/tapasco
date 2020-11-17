@@ -210,8 +210,7 @@ final object Slurm extends Publisher {
     file_transfer(local_files.zip(remote_files).toMap, tx = true)
 
     // run preamble script, if specified
-    if (slurm_remote_cfg.get.PreambleScript.isDefined)
-      "sh %s".format(slurm_remote_cfg.get.PreambleScript.get).!
+    slurm_remote_cfg.get.PreambleScript map ("sh %s".format(_).!)
   }
 
   /**
@@ -231,7 +230,7 @@ final object Slurm extends Publisher {
       case HighLevelSynthesisJob(_, a,p, kernels, _) if slurm_success => {
         val tgt = Target.fromString(a.get.head, p.get.head).get
         val core_dir = slurm_job.log.getParent.resolveSibling("ipcore")
-        val core_zip = kernels.get.map(k => core_dir.resolve("%s_%s.zip".format(k, tgt.ad.name)))
+        val core_zip = kernels.get.map(k => core_dir.resolve("%s.zip".format(k)))
         core_zip ++ core_zip.map(z => z.resolveSibling("core.json"))
       }
       case _ => Seq()
@@ -240,8 +239,7 @@ final object Slurm extends Publisher {
     file_transfer(remote_files.zip(loc_files).toMap, tx=false)
 
     // run postamble script, if specified
-    if (slurm_remote_cfg.get.PostambleScript.isDefined)
-      "sh %s".format(slurm_remote_cfg.get.PostambleScript.get).!
+    slurm_remote_cfg.get.PostambleScript map ("sh %s".format(_).!)
   }
 
   /**
@@ -258,11 +256,12 @@ final object Slurm extends Publisher {
       val mkdir = "mkdir -p %s".format(to.getParent)
       if (tx) exec_cmd(mkdir, hostname = Some(target_host)) else mkdir.!
 
-      val cpy_cmd = if (tx)
+      val cpy_cmd = if (tx) {
         "scp -r %s %s:%s".format(from, target_host, to)
-      else
+      } else {
         "scp -r %s:%s %s".format(target_host, from, to)
-      logger.info("Copy Command: " + cpy_cmd)
+      }
+      logger.debug("Copy Command: " + cpy_cmd)
       if (cpy_cmd.! != 0)  throw new Exception("Could not copy file %s to %s!".format(from, to))
     }
     true
@@ -285,12 +284,10 @@ final object Slurm extends Publisher {
         new_pre.resolve(postfix)
       }
     }
-    val wd_to_rmt   = if (slurm_remote_cfg.isDefined)
-      prefix_subst(cfg.kernelDir.getParent, slurm_remote_cfg.get.workdir)
-    else identity[Path] _
-    val tpsc_to_rmt = if (slurm_remote_cfg.isDefined)
-      prefix_subst(cfg.platformDir.getParent.getParent.getParent, slurm_remote_cfg.get.installdir)
-    else identity[Path] _
+    val (wd_to_rmt, tpsc_to_rmt) = if (slurm_remote_cfg.isDefined)
+      (prefix_subst(cfg.kernelDir.getParent, slurm_remote_cfg.get.workdir),
+       prefix_subst(cfg.platformDir.getParent.getParent.getParent, slurm_remote_cfg.get.installdir))
+    else (identity[Path] _, identity[Path] _)
 
     /** Create non-slurm cfg, with updated paths such that they match the folder structure on SLURM node */
     val newCfg = cfg
@@ -379,7 +376,7 @@ final object Slurm extends Publisher {
   def waitFor(id: Int): SlurmStatus = {
     var status: SlurmStatus = Slurm.Running()
     while (status == Running()) {
-      logger.trace("SLURM job #%d is still running, sleeping for %d secs ...".format(id, slurmDelay / 1000))
+      logger.info("SLURM job #%d is still running, sleeping for %d secs ...".format(id, slurmDelay / 1000))
       Thread.sleep(slurmDelay)
       status = getSlurmStatus(id)
     }
@@ -426,7 +423,7 @@ final object Slurm extends Publisher {
       "ssh %s %s".format(host, c)
     }
 
-    logger.info("Executing command: %s".format(cmd))
+    logger.debug("Executing command: %s".format(cmd))
     cmd.!!
   }
 
