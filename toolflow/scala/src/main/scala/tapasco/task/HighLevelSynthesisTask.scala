@@ -76,7 +76,7 @@ class HighLevelSynthesisTask(val k: Kernel, val t: Target, val cfg: Configuratio
     )
 
     // execute sbatch to enqueue job, then wait for it
-    val r = (Slurm(job)(cfg) map (Slurm.waitFor(_))).nonEmpty
+    val r = (Slurm(job)(cfg) map Slurm.waitFor).getOrElse(false) == Slurm.Completed()
     FileAssetManager.reset()
     r
   }

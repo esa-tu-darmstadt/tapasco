@@ -376,7 +376,7 @@ final object Slurm extends Publisher {
   }
 
   /** Wait until the given SLURM job is not listed as RUNNING anymore in `sacct` output. */
-  def waitFor(id: Int): Unit = {
+  def waitFor(id: Int): SlurmStatus = {
     var status: SlurmStatus = Slurm.Running()
     while (status == Running()) {
       logger.trace("SLURM job #%d is still running, sleeping for %d secs ...".format(id, slurmDelay / 1000))
@@ -387,6 +387,7 @@ final object Slurm extends Publisher {
     // callback that pulls generated files from remote node
     if (slurm_remote_cfg.isDefined)
       postambles(id)(id)(status == Slurm.Completed())
+    status
   }
 
   /** Returns a list of all SLURM job ids which are registered under the
