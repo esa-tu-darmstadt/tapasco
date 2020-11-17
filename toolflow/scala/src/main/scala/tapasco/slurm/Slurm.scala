@@ -99,14 +99,14 @@ final object Slurm extends Publisher {
   /** Regular expression: Positive ACK from `sbatch`. */
   final val slurmSubmissionAck =
     """[Ss]ubmitted batch job (\d+)""".r
-  /** Polling interval for `squeue`. */
+  /** Polling interval for `sacct`. */
   final val slurmDelay = 15000 // 15 secs
   /** Set of POSIX permissions for SLURM job scripts. */
   final val slurmScriptPermissions = Set(OWNER_READ, OWNER_WRITE, OWNER_EXECUTE, GROUP_READ, OTHERS_READ).asJava
   /** Wait interval between retries. */
   final val slurmRetryDelay = 10000 // 10 secs
   /** Stores a closure for every slurm job id, which is called once that job finishes. */
-  var postambles: Map[Int, Int => Unit] = Map()
+  var postambles: Map[Int, Int => Boolean => Unit] = Map()
 
   /** Returns true if SLURM is available on host running iTPC. */
   lazy val available: Boolean = "which sbatch".! == 0
@@ -218,16 +218,17 @@ final object Slurm extends Publisher {
     * Postamble is run after the SLURM job is finished.
     * Copy generated artefacts back from the SLURM node.
     * @param slurm_job  Job to execute.
+    * @param slurm_success  Indicates if the SLURM job finished successfully.
     * @param update_paths Function that converts local workdir file paths to valid paths on a remote SLURM node.
     **/
-  def slurm_postamble(slurm_job: Job, update_paths: Path => Path): Unit = {
+  def slurm_postamble(slurm_job: Job, slurm_success: Boolean, update_paths: Path => Path): Unit = {
     val loc_files = Seq(slurm_job.log, slurm_job.slurmLog, slurm_job.errorLog) ++ (slurm_job.job match {
-      case ComposeJob(c, f, _, a, p, _, _, _, _, _) => {
+      case ComposeJob(c, f, _, a, p, _, _, _, _, _) if slurm_success => {
         val bit_name = Composer.mkProjectName(c, Target.fromString(a.get.head, p.get.head).get, f)
         val fnames = Seq(bit_name + ".bit", bit_name + ".bit.bin", "timing.txt", "utilization.txt")
         fnames.map(f => slurm_job.log.resolveSibling(f))
       }
-      case HighLevelSynthesisJob(_, a,p, kernels, _) => {
+      case HighLevelSynthesisJob(_, a,p, kernels, _) if slurm_success => {
         val tgt = Target.fromString(a.get.head, p.get.head).get
         val core_dir = slurm_job.log.getParent.resolveSibling("ipcore")
         val core_zip = kernels.get.map(k => core_dir.resolve("%s_%s.zip".format(k, tgt.ad.name)))
@@ -344,32 +345,48 @@ final object Slurm extends Publisher {
 
       /** define postamble that shall be run once job is finished */
       if (slurm_remote_cfg.isDefined) {
-        postambles += (id.get -> {slurm_id =>
+        postambles += (id.get -> {slurm_id:Int => slurm_success:Boolean =>
           logger.info("Running postamble for SLURM id: {}", slurm_id)
-          slurm_postamble(slurm_job, wd_to_rmt)
+          slurm_postamble(slurm_job, slurm_success, wd_to_rmt)
         })
       }
       id
     }
   }
 
-  /** Check via `squeue` if the SLURM job is still running. */
-  def isRunning(id: Int): Boolean = catchAllDefault[Boolean](true, "Slurm `squeue` failed: ") {
-    val squeue = exec_cmd("squeue -h")
-    logger.trace("squeue output: {}", squeue)
-    !"%d".format(id).r.findFirstIn(squeue).isEmpty
+  /** Check via `sacct` if the SLURM job is still running. */
+  def getSlurmStatus(id: Int): SlurmStatus = catchAllDefault[SlurmStatus](Unknown(), "Slurm `sacct` failed: ") {
+    val sacct = exec_cmd("sacct -pn")
+    val pattern = """%d\|([^|]*)\|[^|]*\|[^|]*\|[^|]*\|([A-Z]*)( [^|]*)?\|[^|]*\|""".format(id).r
+    pattern.findFirstIn(sacct) match {
+      case None =>
+        logger.warn("Job ID %d not listed in sacct".format(id))
+        Slurm.Unknown()
+      case Some(m) => m match {
+        case pattern(name, status, cancelledBy) => status match {
+          case "RUNNING" => Slurm.Running ()
+          case "COMPLETED" => Slurm.Completed ()
+          case "CANCELLED" => Slurm.Cancelled (cancelledBy)
+          case _ =>
+            logger.warn ("Job %s (ID=%d) has status %s".format (name, id, status) )
+            Slurm.Unknown ()
+        }
+      }
+    }
   }
 
-  /** Wait until the given SLURM job disappears from `squeue` output. */
+  /** Wait until the given SLURM job is not listed as RUNNING anymore in `sacct` output. */
   def waitFor(id: Int): Unit = {
-    while (isRunning(id)) {
+    var status: SlurmStatus = Slurm.Running()
+    while (status == Running()) {
       logger.trace("SLURM job #%d is still running, sleeping for %d secs ...".format(id, slurmDelay / 1000))
       Thread.sleep(slurmDelay)
+      status = getSlurmStatus(id)
     }
 
     // callback that pulls generated files from remote node
     if (slurm_remote_cfg.isDefined)
-      postambles(id)(id)
+      postambles(id)(id)(status == Slurm.Completed())
   }
 
   /** Returns a list of all SLURM job ids which are registered under the
@@ -417,6 +434,12 @@ final object Slurm extends Publisher {
 
   /** Host for executing SLURM */
   private var slurm_remote_cfg: Option[SlurmRemoteConfig] = None
+
+  sealed trait SlurmStatus
+  final case class Completed() extends SlurmStatus
+  final case class Cancelled(by: String) extends SlurmStatus
+  final case class Running() extends SlurmStatus
+  final case class Unknown() extends SlurmStatus
 
   sealed trait SlurmConfig
   final case class EnabledLocal() extends SlurmConfig
