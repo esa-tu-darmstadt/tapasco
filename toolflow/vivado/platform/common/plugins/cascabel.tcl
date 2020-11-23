@@ -45,7 +45,8 @@ if {[tapasco::is_feature_enabled "Cascabel"]} {
 		puts $config_fd "KID_TYPE kid_arr[$kid_count] = {$kid_arr};"
 		puts $config_fd "endpackage"
 		close $config_fd
-		exec cd $::env(TAPASCO_HOME_TCL)/common/ip/Cascabel/ && make clean ip SIM_TYPE=VERILOG
+		exec -ignorestderr $::env(TAPASCO_HOME_TCL)/common/ip/Cascabel/build_ip.sh
+		update_ip_catalog -rebuild
 	}
 
 	proc create_custom_subsystem_cascabel {} {
