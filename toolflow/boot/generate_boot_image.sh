@@ -676,7 +676,7 @@ make clean
 rm -rf source
 
 sudo -u tapasco git clone https://github.com/esa-tu-darmstadt/tapasco.git /home/tapasco/tapasco
-echo '' /etc/resolv.conf
+echo '' > /etc/resolv.conf
 EOF"
 	dusudo rm $TO/usr/bin/qemu-*
 	dusudo cp $SCRIPTDIR/misc/resizefs $TO/home/tapasco/
