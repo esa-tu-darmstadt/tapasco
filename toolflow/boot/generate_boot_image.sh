@@ -11,8 +11,8 @@ LINUX_XLNX_URL="https://github.com/xilinx/linux-xlnx.git"
 UBOOT_URL="https://github.com/xilinx/u-boot-xlnx.git"
 ATF_URL="https://github.com/Xilinx/arm-trusted-firmware.git"
 ARTYZ7_DTS_URL="https://raw.githubusercontent.com/Digilent/linux-digilent/master/arch/arm/boot/dts/zynq-artyz7.dts"
-ROOTFS_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04-base-armhf.tar.gz"
-ROOTFS64_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04-base-arm64.tar.gz"
+ROOTFS_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04.1-base-armhf.tar.gz"
+ROOTFS64_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04.1-base-arm64.tar.gz"
 ROOTFS_TAR_GZ="$DIR/ubuntu_armhf_20.04.tar.gz"
 ROOTFS64_TAR_GZ="$DIR/ubuntu_arm64_20.04.tar.gz"
 UDEV_RULES="$TAPASCO_HOME/platform/zynq/module/99-tapasco.rules"
@@ -676,7 +676,7 @@ make clean
 rm -rf source
 
 sudo -u tapasco git clone https://github.com/esa-tu-darmstadt/tapasco.git /home/tapasco/tapasco
-echo '' /etc/resolv.conf
+echo '' > /etc/resolv.conf
 EOF"
 	dusudo rm $TO/usr/bin/qemu-*
 	dusudo cp $SCRIPTDIR/misc/resizefs $TO/home/tapasco/
