@@ -33,6 +33,7 @@ import tapasco.task.ResourceConsumer
 import tapasco.util.{Publisher, Template}
 
 import scala.collection.JavaConverters._
+import scala.sys.ShutdownHookThread
 import scala.sys.process._
 import tapasco.base.json._
 import tapasco.jobs.{ComposeJob, HighLevelSynthesisJob}
@@ -228,7 +229,6 @@ final object Slurm extends Publisher {
         fnames.map(f => slurm_job.log.resolveSibling(f))
       }
       case HighLevelSynthesisJob(_, a,p, kernels, _) if slurm_success => {
-        val tgt = Target.fromString(a.get.head, p.get.head).get
         val core_dir = slurm_job.log.getParent.resolveSibling("ipcore")
         val core_zip = kernels.get.map(k => core_dir.resolve("%s.zip".format(k)))
         core_zip ++ core_zip.map(z => z.resolveSibling("core.json"))
@@ -374,12 +374,14 @@ final object Slurm extends Publisher {
 
   /** Wait until the given SLURM job is not listed as RUNNING anymore in `sacct` output. */
   def waitFor(id: Int): SlurmStatus = {
+    val hook = ShutdownHookThread(Slurm.cancel(id))
     var status: SlurmStatus = Slurm.Running()
-    while (status == Running()) {
+    while (status == Running()) { // can be cancelled by SIGINT
       logger.info("SLURM job #%d is still running, sleeping for %d secs ...".format(id, slurmDelay / 1000))
       Thread.sleep(slurmDelay)
       status = getSlurmStatus(id)
     }
+    hook.remove()
 
     // callback that pulls generated files from remote node
     if (slurm_remote_cfg.isDefined)
