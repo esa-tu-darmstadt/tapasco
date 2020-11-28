@@ -32,6 +32,7 @@ import tapasco.filemgmt._
 import tapasco.task.ResourceConsumer
 import tapasco.util.{Publisher, Template}
 
+import scala.concurrent.duration.Duration
 import scala.collection.JavaConverters._
 import scala.sys.ShutdownHookThread
 import scala.sys.process._
@@ -375,9 +376,12 @@ final object Slurm extends Publisher {
   /** Wait until the given SLURM job is not listed as RUNNING anymore in `sacct` output. */
   def waitFor(id: Int): SlurmStatus = {
     val hook = ShutdownHookThread(Slurm.cancel(id))
+    val start = System.currentTimeMillis()
     var status: SlurmStatus = Slurm.Running()
     while (status == Running()) { // can be cancelled by SIGINT
-      logger.info("SLURM job #%d is still running, sleeping for %d secs ...".format(id, slurmDelay / 1000))
+      val dur = Duration(System.currentTimeMillis() - start, "millis")
+      logger.info("SLURM job #%d is running since %dh %02dm %02ds"
+        .format(id, dur.toHours, dur.toMinutes % 60, dur.toSeconds % 60))
       Thread.sleep(slurmDelay)
       status = getSlurmStatus(id)
     }
