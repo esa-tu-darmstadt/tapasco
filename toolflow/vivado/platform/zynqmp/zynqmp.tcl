@@ -398,6 +398,17 @@
     ]
     foreach ms $mem_offsets pms $ps_mem_slaves { connect_bd_intf_net $ms $pms }
 
+    # configure AxPROT + AxCACHE signals of HPC0 port for coherent memory accesses
+    create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 constant_HPC0_prot
+    set_property -dict [list CONFIG.CONST_WIDTH {3} CONFIG.CONST_VAL {2}] [get_bd_cells constant_HPC0_prot]
+    connect_bd_net [get_bd_pins $ps/saxigp0_awprot] [get_bd_pins constant_HPC0_prot/dout]
+    connect_bd_net [get_bd_pins $ps/saxigp0_arprot] [get_bd_pins constant_HPC0_prot/dout]
+
+    create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 constant_HPC0_cache
+    set_property -dict [list CONFIG.CONST_WIDTH {4} CONFIG.CONST_VAL {15}] [get_bd_cells constant_HPC0_cache]
+    connect_bd_net [get_bd_pins $ps/saxigp0_awcache] [get_bd_pins constant_HPC0_cache/dout]
+    connect_bd_net [get_bd_pins $ps/saxigp0_arcache] [get_bd_pins constant_HPC0_cache/dout]
+
     # connect interrupt
     set irq_top [tapasco::ip::create_xlslice irq_top 16 0]
     set_property -dict [list CONFIG.DIN_FROM {7} CONFIG.DIN_WIDTH {16} CONFIG.DOUT_WIDTH {8} CONFIG.DIN_TO {0}] $irq_top
