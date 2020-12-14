@@ -453,8 +453,14 @@ build_bootbin() {
 	if [[ ! -f $DIR/BOOT.BIN ]]; then
 		echo "Building BOOT.BIN ..."
 		if [[ $ARCH == arm64 ]]; then
+			# set brdc_inner bit of the lpd_apu register in the LPD_SLCR module for VFIO/SMMU support
+			cat > $DIR/regs.init << EOF
+				.set. 0xFF41A040 = 0x3;
+EOF
+
 			cat > $DIR/bootimage.bif << EOF
                 image: {
+                    [init] $DIR/regs.init
                     [bootloader,destination_cpu=a53-0] $DIR/fsbl/executable.elf
                     [pmufw_image] $DIR/pmufw/executable.elf
                     [destination_cpu=a53-0, exception_level=el-3,trustzone] $DIR/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf
