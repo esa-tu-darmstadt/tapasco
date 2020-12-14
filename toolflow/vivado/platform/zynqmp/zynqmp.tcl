@@ -63,10 +63,10 @@
 
   proc get_ignored_segments { } {
     set ignored [list]
-    lappend ignored "/host/zynqmp/SAXIGP2/HP0_DDR_LOW"
-    lappend ignored "/host/zynqmp/SAXIGP2/HP0_LPS_OCM"
-    lappend ignored "/host/zynqmp/SAXIGP2/HP0_PCIE_LOW"
-    lappend ignored "/host/zynqmp/SAXIGP2/HP0_QSPI"
+    lappend ignored "/host/zynqmp/SAXIGP0/HPC0_DDR_LOW"
+    lappend ignored "/host/zynqmp/SAXIGP0/HPC0_LPS_OCM"
+    lappend ignored "/host/zynqmp/SAXIGP0/HPC0_PCIE_LOW"
+    lappend ignored "/host/zynqmp/SAXIGP0/HPC0_QSPI"
     lappend ignored "/host/zynqmp/SAXIGP4/HP2_DDR_LOW"
     lappend ignored "/host/zynqmp/SAXIGP4/HP2_LPS_OCM"
     lappend ignored "/host/zynqmp/SAXIGP4/HP2_PCIE_LOW"
@@ -179,7 +179,7 @@
     set mem_slaves  [list]
     set mem_masters [list]
     set arch_masters [::arch::get_masters]
-    set ps_slaves [list "HP0" "HP1"]
+    set ps_slaves [list "HPC0" "HP1"]
     puts "Creating memory slave ports for [llength $arch_masters] masters ..."
     if {[llength $arch_masters] > [llength $ps_slaves]} {
       error "  trying to connect [llength $arch_masters] architecture masters, " \
@@ -317,7 +317,7 @@
     }
 
     # create hierarchical ports
-    set hp_ports [list "HP0" "HP1"]
+    set hp_ports [list "HPC0" "HP1"]
     set mem_slaves [list]
     foreach s $hp_ports {
       lappend mem_slaves [create_bd_intf_pin -mode Slave -vlnv $aximm_vlnv "S_$s"]
@@ -370,10 +370,11 @@
     puts "  PS generated..."
     puts "  PS configuration ..."
 
-    # activate ACP, HP0, HP2 and GP0/1 (+ FCLK1 @10MHz)
+    # activate ACP, HPC0, HP2 and GP0/1 (+ FCLK1 @10MHz)
     set_property -dict [list \
       CONFIG.PSU__FPGA_PL1_ENABLE {1} \
-      CONFIG.PSU__USE__S_AXI_GP2 {1}  \
+      CONFIG.PSU__USE__S_AXI_GP0 {1}  \
+      CONFIG.PSU__USE__S_AXI_GP2 {0}  \
       CONFIG.PSU__USE__S_AXI_GP4 {1}  \
       CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ [tapasco::get_design_frequency] \
       CONFIG.PSU__CRL_APB__PL1_REF_CTRL__FREQMHZ {10} \
@@ -392,7 +393,7 @@
 
     # connect slaves
     set ps_mem_slaves [list \
-      [get_bd_intf_pins "$ps/S_AXI_HP0_FPD"] \
+      [get_bd_intf_pins "$ps/S_AXI_HPC0_FPD"] \
       [get_bd_intf_pins "$ps/S_AXI_HP2_FPD"]
     ]
     foreach ms $mem_offsets pms $ps_mem_slaves { connect_bd_intf_net $ms $pms }
