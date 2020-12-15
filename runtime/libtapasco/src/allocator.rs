@@ -23,6 +23,7 @@ use crate::device::DeviceSize;
 use crate::tlkm::tlkm_ioctl_alloc;
 use crate::tlkm::tlkm_ioctl_free;
 use crate::tlkm::tlkm_mm_cmd;
+use crate::vfio::*;
 use core::fmt::Debug;
 use snafu::ResultExt;
 use std::fs::File;
@@ -48,6 +49,8 @@ pub enum Error {
     IOCTLFree { source: nix::Error },
     #[snafu(display("Fixed allocator is not implemented in driver."))]
     NoFixedInDriver {},
+    #[snafu(display("VFIO ioctl failed: {}", func))]
+    VfioError {func: String},
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -461,5 +464,71 @@ impl Allocator for DriverAllocator {
         };
         unsafe { tlkm_ioctl_free(self.tlkm_file.as_raw_fd(), &mut cmd).context(IOCTLFree)? };
         Ok(())
+    }
+}
+
+
+/// Allocate memory through VFIO
+///
+/// This version may be used on ZynqMP based devices as an alternative to DriverAllocator.
+/// Allocator keeps track of memory regions that are mapped using the SMMU of the ZynqMP.
+#[derive(Debug, Getters)]
+pub struct VfioAllocator {
+    tlkm_file: Arc<File>,
+    vfio_dev: Arc<VfioDev>,
+}
+impl VfioAllocator {
+    pub fn new(tlkm_file: &Arc<File>, vfio_dev: &Arc<VfioDev>) -> Result<VfioAllocator> {
+        Ok(VfioAllocator {
+            tlkm_file: tlkm_file.clone(),
+            vfio_dev: vfio_dev.clone(),
+        })
+    }
+}
+
+impl Allocator for VfioAllocator {
+    fn allocate(&mut self, size: DeviceSize) -> Result<DeviceAddress> {
+        trace!("Allocating {} bytes through vfio.", size);
+
+        let mut maps = self.vfio_dev.mappings.lock().unwrap();
+        let offset = 0x800000000; // AXI Offset IP block between PE and PS
+        let iova = match maps.last() {
+            None => offset,
+            Some(e) => e.iova + e.size
+        };
+
+        let pagesize = 4096;
+        let num_pages = size / pagesize + 1; // round to next highest page boundary
+        let map_len = num_pages * pagesize;
+
+        maps.push(VfioMapping{
+            size: map_len,
+            iova,
+            mem: None
+        });
+        Ok(iova)
+    }
+
+    fn allocate_fixed(
+        &mut self,
+        _size: DeviceSize,
+        _offset: DeviceAddress,
+    ) -> Result<DeviceAddress> {
+        Err(Error::NoFixedInDriver {})
+    }
+
+    fn free(&mut self, ptr: DeviceAddress) -> Result<()> {
+        trace!("Deallocating address 0x{:x} through vfio.", ptr);
+
+        let maps = self.vfio_dev.mappings.lock().unwrap();
+        match maps.iter().find(|x| x.iova == ptr) {
+            Some(e) => {
+                match vfio_dma_unmap(&self.vfio_dev, e.iova, e.size) {
+                    Err(e) => Err(Error::VfioError {func: e.to_string()}),
+                    Ok(()) => Ok(())
+                }
+            },
+            None => Err(Error::UnknownMemory{ptr})
+        }
     }
 }
