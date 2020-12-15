@@ -21,7 +21,6 @@
 use snafu::ResultExt;
 use std::ffi::CString;
 use std::os::unix::io::FromRawFd;
-use std::io::Read;
 use memmap::MmapMut;
 use std::fs::{File, OpenOptions, read_link};
 use std::os::unix::io::AsRawFd;
@@ -332,4 +331,3 @@ pub fn vfio_dma_unmap(dev: &VfioDev, iova: u64, size: u64) -> Result<(), Error> 
     }
 }
 
-pub fn vfio_test(dev: &VfioDev) {
