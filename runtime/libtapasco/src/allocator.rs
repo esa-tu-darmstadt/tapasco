@@ -520,13 +520,11 @@ impl Allocator for VfioAllocator {
     fn free(&mut self, ptr: DeviceAddress) -> Result<()> {
         trace!("Deallocating address 0x{:x} through vfio.", ptr);
 
-        let maps = self.vfio_dev.mappings.lock().unwrap();
-        match maps.iter().find(|x| x.iova == ptr) {
-            Some(e) => {
-                match vfio_dma_unmap(&self.vfio_dev, e.iova, e.size) {
-                    Err(e) => Err(Error::VfioError {func: e.to_string()}),
-                    Ok(()) => Ok(())
-                }
+        let mut maps = self.vfio_dev.mappings.lock().unwrap();
+        match maps.iter().position(|x| x.iova == ptr) {
+            Some(idx) => match vfio_dma_unmap(&self.vfio_dev, maps[idx].iova, maps[idx].size) {
+                Ok(()) => { maps.remove(idx); Ok(()) }
+                Err(e) => Err(Error::VfioError {func: e.to_string()}),
             },
             None => Err(Error::UnknownMemory{ptr})
         }
