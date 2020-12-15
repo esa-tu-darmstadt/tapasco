@@ -115,6 +115,9 @@ pub enum Error {
 
     #[snafu(display("IOCTL {} failed", name))]
     IoctlError { name: String },
+
+    #[snafu(display("IOMMU mapping for iova=0x{:x} not found", iova))]
+    MappingError { iova: u64 },
 }
 
 /// Instance of an SMMU mapping
@@ -124,7 +127,8 @@ pub enum Error {
 #[derive(Debug)]
 pub struct VfioMapping {
     pub iova: u64,
-    pub size: u64
+    pub size: u64,
+    pub mem: Option<Arc<MmapMut>>
 }
 
 /// Instance of the current VFIO context
@@ -134,6 +138,23 @@ pub struct VfioDev {
     group: File,
     device: File,
     pub mappings: Mutex<Vec<VfioMapping>>
+}
+impl VfioDev {
+    pub fn add_mem_to_map(&self, iova: u64, mem: Arc<MmapMut>) -> Result<(), Error> {
+        let mut m = self.mappings.lock().unwrap();
+        match m.iter_mut().find(|x| x.iova == iova) {
+            Some(e) => { e.mem = Some(mem); Ok(()) }
+            None => Err(Error::MappingError { iova })
+        }
+    }
+
+    pub fn get_mem_from_map(&self, iova: u64) -> Result<Arc<MmapMut>, Error> {
+        let m = self.mappings.lock().unwrap();
+        match m.iter().find(|x| x.iova == iova) {
+            Some(e) => Ok(e.mem.as_ref().unwrap().clone()),
+            None => Err(Error::MappingError { iova })
+        }
+    }
 }
 
 // get VFIO group number of tapasco platform device from sysfs

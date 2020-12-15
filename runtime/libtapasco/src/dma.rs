@@ -24,6 +24,7 @@ use crate::tlkm::tlkm_copy_cmd_from;
 use crate::tlkm::tlkm_copy_cmd_to;
 use crate::tlkm::tlkm_ioctl_copy_from;
 use crate::tlkm::tlkm_ioctl_copy_to;
+use crate::vfio::*;
 use core::fmt::Debug;
 use memmap::MmapMut;
 use snafu::ResultExt;
@@ -71,6 +72,12 @@ pub enum Error {
         "Got interrupt but outstanding buffers are empty. This should never happen."
     ))]
     TooManyInterrupts {},
+
+    #[snafu(display("VFIO ioctl failed: {}", source))]
+    VfioError {source: crate::vfio::Error},
+
+    #[snafu(display("VFIO alloc failed: {}", source))]
+    AllocError {source: crate::vfio::Error},
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -138,6 +145,71 @@ impl DMAControl for DriverDMA {
             )
             .context(DMAFromDevice)?;
         };
+        Ok(())
+    }
+}
+
+#[derive(Debug, Getters)]
+pub struct VfioDMA {
+    tlkm_file: Arc<File>,
+    vfio_dev: Arc<VfioDev>,
+}
+
+impl VfioDMA {
+    pub fn new(tlkm_file: &Arc<File>, vfio_dev: &Arc<VfioDev>) -> VfioDMA {
+        VfioDMA {
+            tlkm_file: tlkm_file.clone(),
+            vfio_dev: vfio_dev.clone(),
+        }
+    }
+}
+
+/// Use VFIO to transfer data
+///
+/// This version may be used on ZynqMP based devices as an alternative to DriverDMA.
+/// It makes use of the SMMU to provide direct access to userspace memory to the PL.
+impl DMAControl for VfioDMA {
+    fn copy_to(&self, data: &[u8], iova: DeviceAddress) -> Result<()> {
+        trace!(
+            "Copy Host({:?}) -> Device(0x{:x}) ({} Bytes)",
+            data.as_ptr(),
+            iova,
+            data.len()
+        );
+
+        let pagesize = 4096;
+        let num_pages = data.len() / pagesize + 1; // round to next highest page boundary
+        let map_len = num_pages * pagesize;
+
+        // FIXME: this is only POC code: This copy is unnecessary
+        let mut buf = MmapMut::map_anon(map_len).unwrap();
+        buf[0..data.len()].copy_from_slice(data);
+
+        trace!("Allocating {} bytes [{} page(s)] for iova 0x{:x}", map_len, num_pages, iova);
+        match vfio_dma_map(&self.vfio_dev, map_len as u64, iova, buf.as_ptr() as u64) {
+            Err(e) => return Err(Error::VfioError {source: e}),
+            _ => {}
+        }
+
+        // add a reference to mmap to the vfio_dev, so that memory persists while PE uses it
+        let buf_ref = Arc::new(buf);
+        self.vfio_dev.add_mem_to_map(iova, buf_ref.clone()).context(AllocError)?;
+        Ok(())
+    }
+
+    fn copy_from(&self, iova: DeviceAddress, data: &mut [u8]) -> Result<()> {
+        trace!(
+            "Copy Device(0x{:x}) -> Host({:?}) ({} Bytes)",
+            iova,
+            data.as_mut_ptr(),
+            data.len()
+        );
+
+        // FIXME: copy_from is not actually needed since PE can operate in-place on userspace buffers
+        let len = data.len();
+        let m = self.vfio_dev.get_mem_from_map(iova).context(AllocError)?;
+        data[..].copy_from_slice(&m[0..len]);
+
         Ok(())
     }
 }
