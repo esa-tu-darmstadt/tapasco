@@ -248,8 +248,6 @@ impl Device {
     ) -> Result<Device> {
         trace!("Open driver device file.");
 
-        let vfio_mode = true; // FIXME: proper integration
-
         let tlkm_dma_file = Arc::new(
             OpenOptions::new()
                 .read(true)
@@ -327,6 +325,7 @@ impl Device {
         // has been updated to contain the required information.
         info!("Using static memory allocation due to lack of dynamic data in the status core.");
         let mut allocator = Vec::new();
+        let zynqmp_vfio_mode = true;
         let mut is_pcie = false;
         if name == "pcie" {
             info!("Allocating the default of 4GB at 0x0 for a PCIe platform");
@@ -381,7 +380,7 @@ impl Device {
                     .context(DMAError)?,
                 ),
             }));
-        } else if name == "zynq" || (name == "zynqmp" && !vfio_mode) {
+        } else if name == "zynq" || (name == "zynqmp" && !zynqmp_vfio_mode) {
             info!("Using driver allocation for Zynq/ZynqMP based platform.");
             allocator.push(Arc::new(OffchipMemory {
                 allocator: Mutex::new(Box::new(
@@ -391,10 +390,12 @@ impl Device {
             }));
         } else if name == "zynqmp" {
             info!("Using VFIO mode for ZynqMP based platform.");
-            let vfio_dev = Arc::new(init_vfio(settings.clone()).context(VfioInitError)?);
+            let vfio_dev = Arc::new(init_vfio(settings.clone())
+                .context(VfioInitError)?
+            );
             allocator.push(Arc::new(OffchipMemory {
                 allocator: Mutex::new(Box::new(
-                    VfioAllocator::new(&tlkm_dma_file, &vfio_dev).context(AllocatorError)?,
+                    VfioAllocator::new(&vfio_dev).context(AllocatorError)?,
                 )),
                 dma: Box::new(VfioDMA::new(&tlkm_dma_file, &vfio_dev)),
             }));

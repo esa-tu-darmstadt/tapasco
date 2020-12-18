@@ -290,7 +290,10 @@ mod allocator_tests {
     use crate::allocator::Allocator;
     use crate::allocator::Error;
     use crate::allocator::GenericAllocator;
+    use crate::allocator::VfioAllocator;
     use crate::allocator::Result;
+    use crate::vfio::*;
+    use std::sync::Arc;
 
     fn init() {
         let _ = env_logger::builder().is_test(true).try_init();
@@ -300,7 +303,7 @@ mod allocator_tests {
     fn complete_allocate() -> Result<()> {
         init();
         let mut a = GenericAllocator::new(0, 1024, 64)?;
-        let m = a.allocate(1024)?;
+        let m = a.allocate(1024, None)?;
         assert_eq!(m, 0);
         assert_eq!(a.free(m), Ok(()));
         Ok(())
@@ -313,7 +316,7 @@ mod allocator_tests {
         let m = a.allocate_fixed(128, 512)?;
         assert_eq!(m, 512);
         assert_eq!(a.free(m), Ok(()));
-        let m2 = a.allocate(1024)?;
+        let m2 = a.allocate(1024, None)?;
         assert_eq!(m2, 0);
         assert_eq!(a.free(m2), Ok(()));
         Ok(())
@@ -339,7 +342,7 @@ mod allocator_tests {
     fn allocated_fixed_large() -> Result<()> {
         init();
         let mut a = GenericAllocator::new(0, 0x100000, 64)?;
-        let m = a.allocate(1228)?;
+        let m = a.allocate(1228, None)?;
         assert_eq!(m, 0);
         let m2 = a.allocate_fixed(2048, 0x80000)?;
         assert_eq!(m2, 0x80000);
@@ -352,10 +355,10 @@ mod allocator_tests {
     fn alloc_free_alloc() -> Result<()> {
         init();
         let mut a = GenericAllocator::new(0, 1024, 64)?;
-        let m = a.allocate(1024)?;
+        let m = a.allocate(1024, None)?;
         assert_eq!(m, 0);
         assert_eq!(a.free(m), Ok(()));
-        let m2 = a.allocate(1024)?;
+        let m2 = a.allocate(1024, None)?;
         assert_eq!(m2, 0);
         assert_eq!(a.free(m2), Ok(()));
         Ok(())
@@ -365,14 +368,14 @@ mod allocator_tests {
     fn alloc_free_alloc2() -> Result<()> {
         init();
         let mut a = GenericAllocator::new(0, 1024, 64)?;
-        let m = a.allocate(512)?;
-        let m2 = a.allocate(512)?;
+        let m = a.allocate(512, None)?;
+        let m2 = a.allocate(512, None)?;
         assert_eq!(m, 0);
         assert_eq!(m2, 512);
         assert_eq!(a.free(m), Ok(()));
-        assert_eq!(a.allocate(1024), Err(Error::OutOfMemory { size: 1024 }));
+        assert_eq!(a.allocate(1024, None), Err(Error::OutOfMemory { size: 1024 }));
         assert_eq!(a.free(m2), Ok(()));
-        let m3 = a.allocate(768)?;
+        let m3 = a.allocate(768, None)?;
         assert_eq!(m3, 0);
         assert_eq!(a.free(m3), Ok(()));
         Ok(())
@@ -382,20 +385,20 @@ mod allocator_tests {
     fn alloc_free_alloc3() -> Result<()> {
         init();
         let mut a = GenericAllocator::new(0, 1024, 64)?;
-        let m = a.allocate(512)?;
-        let m2 = a.allocate(512)?;
+        let m = a.allocate(512, None)?;
+        let m2 = a.allocate(512, None)?;
         assert_eq!(m, 0);
         assert_eq!(m2, 512);
         assert_eq!(a.free(m), Ok(()));
-        let m4 = a.allocate(8)?;
-        let m5 = a.allocate(32)?;
-        assert_eq!(a.allocate(1024), Err(Error::OutOfMemory { size: 1024 }));
+        let m4 = a.allocate(8, None)?;
+        let m5 = a.allocate(32, None)?;
+        assert_eq!(a.allocate(1024, None), Err(Error::OutOfMemory { size: 1024 }));
         assert_eq!(a.free(m2), Ok(()));
-        let m3 = a.allocate(768)?;
+        let m3 = a.allocate(768, None)?;
         assert_eq!(a.free(m3), Ok(()));
         assert_eq!(a.free(m4), Ok(()));
         assert_eq!(a.free(m5), Ok(()));
-        let _ = a.allocate(1024)?;
+        let _ = a.allocate(1024, None)?;
         Ok(())
     }
 
@@ -411,8 +414,35 @@ mod allocator_tests {
     fn empty_allocate() -> Result<()> {
         init();
         let mut a = GenericAllocator::new(0, 1024, 64)?;
-        let m = a.allocate(0);
+        let m = a.allocate(0, None);
         assert_eq!(m, Err(Error::InvalidSize { size: 0 }));
+        Ok(())
+    }
+
+    #[test]
+    fn vfio_alloc() -> Result<()> {
+        init();
+        let vfio_dev = Arc::new(VfioDev::default());
+        let mut a = VfioAllocator::new(&vfio_dev)?;
+        let r0 = a.allocate(100, Some(1000));
+        let m = vfio_dev.mappings.lock().unwrap();
+        assert_eq!(r0, Ok(1000));
+        assert_eq!(m[0].size, IOMMU_PAGESIZE);
+        assert_eq!(m[0].iova, 0);
+        std::mem::drop(m);
+
+        let r1 = a.allocate(100, Some(4090));
+        let m = vfio_dev.mappings.lock().unwrap();
+        assert_eq!(r1, Ok(IOMMU_PAGESIZE + 4090));
+        assert_eq!(m[1].size, 2*IOMMU_PAGESIZE);
+        assert_eq!(m[1].iova, IOMMU_PAGESIZE);
+        std::mem::drop(m);
+
+        let r2 = a.allocate(5000, Some(4090));
+        let m = vfio_dev.mappings.lock().unwrap();
+        assert_eq!(r2, Ok(3*IOMMU_PAGESIZE + 4090));
+        assert_eq!(m[2].size, 3*IOMMU_PAGESIZE);
+        assert_eq!(m[2].iova, 3*IOMMU_PAGESIZE);
         Ok(())
     }
 }
@@ -476,13 +506,11 @@ impl Allocator for DriverAllocator {
 /// Allocator keeps track of memory regions that are mapped using the SMMU of the ZynqMP.
 #[derive(Debug, Getters)]
 pub struct VfioAllocator {
-    tlkm_file: Arc<File>,
     vfio_dev: Arc<VfioDev>,
 }
 impl VfioAllocator {
-    pub fn new(tlkm_file: &Arc<File>, vfio_dev: &Arc<VfioDev>) -> Result<VfioAllocator> {
+    pub fn new(vfio_dev: &Arc<VfioDev>) -> Result<VfioAllocator> {
         Ok(VfioAllocator {
-            tlkm_file: tlkm_file.clone(),
             vfio_dev: vfio_dev.clone(),
         })
     }

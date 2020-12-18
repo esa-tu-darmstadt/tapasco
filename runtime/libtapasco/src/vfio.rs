@@ -148,6 +148,17 @@ impl VfioDev {
         }
     }
 }
+impl Default for VfioDev {
+    // only used for testing
+    fn default() -> VfioDev {
+        VfioDev {
+            container: File::open("/dev/null").unwrap(),
+            group: File::open("/dev/null").unwrap(),
+            device: File::open("/dev/null").unwrap(),
+            mappings: Mutex::new(Vec::new())
+        }
+    }
+}
 
 pub fn to_page_boundary(x: u64) -> u64 {
     return x - (x % IOMMU_PAGESIZE);
