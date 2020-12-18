@@ -760,7 +760,7 @@ pub extern "C" fn tapasco_memory_allocate(
         .allocator()
         .lock()
         .unwrap()
-        .allocate(len as u64)
+        .allocate(len as u64, None)
         .context(AllocatorError)
     {
         Ok(x) => x,

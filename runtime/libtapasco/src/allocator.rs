@@ -61,7 +61,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 /// The returned address will match the desired location or an error is return if that
 /// location is not free.
 pub trait Allocator: Debug {
-    fn allocate(&mut self, size: DeviceSize) -> Result<DeviceAddress>;
+    fn allocate(&mut self, size: DeviceSize, va: Option<u64>) -> Result<DeviceAddress>;
     fn allocate_fixed(&mut self, size: DeviceSize, offset: DeviceAddress) -> Result<DeviceAddress>;
     fn free(&mut self, ptr: DeviceAddress) -> Result<()>;
 }
@@ -139,7 +139,7 @@ impl GenericAllocator {
 }
 
 impl Allocator for GenericAllocator {
-    fn allocate(&mut self, size: DeviceSize) -> Result<DeviceAddress> {
+    fn allocate(&mut self, size: DeviceSize, _va: Option<u64>) -> Result<DeviceAddress> {
         if size == 0 {
             return Err(Error::InvalidSize { size: size });
         }
@@ -433,7 +433,7 @@ impl DriverAllocator {
 }
 
 impl Allocator for DriverAllocator {
-    fn allocate(&mut self, size: DeviceSize) -> Result<DeviceAddress> {
+    fn allocate(&mut self, size: DeviceSize, _va: Option<u64>) -> Result<DeviceAddress> {
         trace!("Allocating {} bytes through driver.", size);
         let mut cmd = tlkm_mm_cmd {
             sz: size as usize,
@@ -487,9 +487,7 @@ impl VfioAllocator {
 }
 
 impl Allocator for VfioAllocator {
-    fn allocate(&mut self, size: DeviceSize) -> Result<DeviceAddress> {
-        trace!("Allocating {} bytes through vfio.", size);
-
+    fn allocate(&mut self, size: DeviceSize, va: Option<u64>) -> Result<DeviceAddress> {
         let mut maps = self.vfio_dev.mappings.lock().unwrap();
         let offset = 0x800000000; // AXI Offset IP block between PE and PS
         let iova = match maps.last() {
