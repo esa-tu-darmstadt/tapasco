@@ -51,6 +51,8 @@ pub enum Error {
     NoFixedInDriver {},
     #[snafu(display("VFIO ioctl failed: {}", func))]
     VfioError {func: String},
+    #[snafu(display("VFIO allocator requires va argument, none given"))]
+    VfioNoVa {},
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -489,22 +491,28 @@ impl VfioAllocator {
 impl Allocator for VfioAllocator {
     fn allocate(&mut self, size: DeviceSize, va: Option<u64>) -> Result<DeviceAddress> {
         let mut maps = self.vfio_dev.mappings.lock().unwrap();
-        let offset = 0x800000000; // AXI Offset IP block between PE and PS
-        let iova = match maps.last() {
-            None => offset,
-            Some(e) => e.iova + e.size
+        let iova_start = match maps.last() {
+            Some(e) => e.iova + e.size, // new alloc starts right of last alloc
+            None => 0
+        };
+        let offset = match va {
+            Some(a) => (a % IOMMU_PAGESIZE), // position of data within page
+            None => return Err(Error::VfioNoVa{})
+        };
+        // check if new buffer extends over a page boundary
+        let num_pages = if offset + size > IOMMU_PAGESIZE {
+            size / IOMMU_PAGESIZE + 2
+        } else {
+            size / IOMMU_PAGESIZE + 1
         };
 
-        let pagesize = 4096;
-        let num_pages = size / pagesize + 1; // round to next highest page boundary
-        let map_len = num_pages * pagesize;
-
-        maps.push(VfioMapping{
-            size: map_len,
-            iova,
-            mem: None
+        trace!("Allocating {} bytes ({} pages) starting at iova=0x{:x} through vfio.",
+               size, num_pages, iova_start);
+        maps.push(VfioMapping {
+            size: num_pages * IOMMU_PAGESIZE,
+            iova: iova_start
         });
-        Ok(iova)
+        Ok(iova_start + offset)
     }
 
     fn allocate_fixed(
@@ -519,12 +527,13 @@ impl Allocator for VfioAllocator {
         trace!("Deallocating address 0x{:x} through vfio.", ptr);
 
         let mut maps = self.vfio_dev.mappings.lock().unwrap();
-        match maps.iter().position(|x| x.iova == ptr) {
-            Some(idx) => match vfio_dma_unmap(&self.vfio_dev, maps[idx].iova, maps[idx].size) {
+        let iova = to_page_boundary(ptr);
+        match maps.iter().position(|x| x.iova == iova) {
+            Some(idx) => match vfio_dma_unmap(&self.vfio_dev, HP_OFFS + maps[idx].iova, maps[idx].size) {
                 Ok(()) => { maps.remove(idx); Ok(()) }
                 Err(e) => Err(Error::VfioError {func: e.to_string()}),
             },
-            None => Err(Error::UnknownMemory{ptr})
+            None => Err(Error::UnknownMemory { ptr: iova })
         }
     }
 }

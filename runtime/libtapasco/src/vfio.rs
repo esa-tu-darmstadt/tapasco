@@ -21,12 +21,14 @@
 use snafu::ResultExt;
 use std::ffi::CString;
 use std::os::unix::io::FromRawFd;
-use memmap::MmapMut;
 use std::fs::{File, OpenOptions, read_link};
 use std::os::unix::io::AsRawFd;
 use std::sync::{Mutex, Arc};
 use vfio_bindings::bindings::vfio::*;
 use config::Config;
+
+pub const IOMMU_PAGESIZE: u64 = 4096;
+pub const HP_OFFS: u64 = 0x800000000; // AXI Offset IP block between PE and PS
 
 // VFIO ioctl import
 //
@@ -126,8 +128,7 @@ pub enum Error {
 #[derive(Debug)]
 pub struct VfioMapping {
     pub iova: u64,
-    pub size: u64,
-    pub mem: Option<Arc<MmapMut>>
+    pub size: u64
 }
 
 /// Instance of the current VFIO context
@@ -139,21 +140,17 @@ pub struct VfioDev {
     pub mappings: Mutex<Vec<VfioMapping>>
 }
 impl VfioDev {
-    pub fn add_mem_to_map(&self, iova: u64, mem: Arc<MmapMut>) -> Result<(), Error> {
-        let mut m = self.mappings.lock().unwrap();
-        match m.iter_mut().find(|x| x.iova == iova) {
-            Some(e) => { e.mem = Some(mem); Ok(()) }
-            None => Err(Error::MappingError { iova })
-        }
-    }
-
-    pub fn get_mem_from_map(&self, iova: u64) -> Result<Arc<MmapMut>, Error> {
+    pub fn get_region_size(&self, iova: u64) -> Result<u64, Error> {
         let m = self.mappings.lock().unwrap();
         match m.iter().find(|x| x.iova == iova) {
-            Some(e) => Ok(e.mem.as_ref().unwrap().clone()),
+            Some(e) => Ok(e.size),
             None => Err(Error::MappingError { iova })
         }
     }
+}
+
+pub fn to_page_boundary(x: u64) -> u64 {
+    return x - (x % IOMMU_PAGESIZE);
 }
 
 // get VFIO group number of tapasco platform device from sysfs
@@ -330,4 +327,3 @@ pub fn vfio_dma_unmap(dev: &VfioDev, iova: u64, size: u64) -> Result<(), Error> 
         Ok(())
     }
 }
-
