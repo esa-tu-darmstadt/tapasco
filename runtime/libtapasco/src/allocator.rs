@@ -527,17 +527,12 @@ impl Allocator for VfioAllocator {
             Some(a) => (a % IOMMU_PAGESIZE), // position of data within page
             None => return Err(Error::VfioNoVa{})
         };
-        // check if new buffer extends over a page boundary
-        let num_pages = if offset + size > IOMMU_PAGESIZE {
-            size / IOMMU_PAGESIZE + 2
-        } else {
-            size / IOMMU_PAGESIZE + 1
-        };
+        let iova_end = to_page_boundary(iova_start + offset + size + IOMMU_PAGESIZE - 1);
 
-        trace!("Allocating {} bytes ({} pages) starting at iova=0x{:x} through vfio.",
-               size, num_pages, iova_start);
+        trace!("Allocating {} bytes starting at iova=0x{:x} offs=0x{:x} through vfio.",
+               size, iova_start, offset);
         maps.push(VfioMapping {
-            size: num_pages * IOMMU_PAGESIZE,
+            size: iova_end - iova_start,
             iova: iova_start
         });
         Ok(iova_start + offset)
