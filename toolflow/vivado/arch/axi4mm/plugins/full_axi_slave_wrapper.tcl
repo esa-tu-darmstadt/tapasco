@@ -22,65 +22,56 @@ namespace eval full_axi_wrapper {
     # check interfaces: AXI3/AXI4 slaves will be wrappped
     set inst [get_bd_cells $inst]
     set full_slave_ifs [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave && (CONFIG.PROTOCOL == AXI3 || CONFIG.PROTOCOL == AXI4)}]
-    # if {[llength $full_slave_ifs] > 1} { error "full_axi_wrapper plugin: Found [llength $full_slave_ifs] full slave interfaces, this is not supported at the moment" }
     if {[llength $full_slave_ifs] > 0} {
       puts "  IP has full slaves, will add protocol converter"
       puts "  found full slave interfaces: $full_slave_ifs"
-      set name [get_property NAME $inst]
-    
-      set bd_inst [current_bd_instance .]
-      # create group, move instance into group
-      set_property NAME "internal_$name" $inst
-      set group [create_bd_cell -type hier $name]
-      move_bd_cells $group $inst
-      set ninst [get_bd_cells $group/internal_$name]
-      current_bd_instance $group
-
-      # rewire full slaves
-      set si 0
-      foreach fs $full_slave_ifs {
-        # create slave port
-        set saxi_port [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave "S_AXI_LITE_$si"]
-        set conv [tapasco::ip::create_proto_conv "conv_$si" "AXI4LITE" [get_property CONFIG.PROTOCOL $fs]]
-        connect_bd_intf_net $saxi_port [get_bd_intf_pins -of_objects $conv -filter {MODE == Slave}]
-        connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master} -of_objects $conv] $fs
-        incr si
-      }
-
-      # bypass existing AXI4Lite slaves
-      set lite_ports [list]
-      set lites [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave && CONFIG.PROTOCOL == AXI4LITE}]
-      foreach ls $lites {
-        set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave [get_property NAME $ls]]
-        connect_bd_intf_net $op $ls
-        lappend lite_ports $ls
-      }
-      puts "lite_ports = $lite_ports"
-    
-      # create master ports
-      set maxi_ports [list]
-      foreach mp [get_bd_intf_pins -of_objects $ninst -filter {MODE == Master}] {
-        set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Master [get_property NAME $mp]]
-        connect_bd_intf_net $mp $op
-        lappend maxi_ports $mp
-      }
-      puts "maxi_ports = $maxi_ports"
-    
-      # create clock and reset ports
-      set clks [get_bd_pins -filter {DIR == I && TYPE == clk} -of_objects [get_bd_cells $group/*]]
-      set rsts [get_bd_pins -filter {DIR == I && TYPE == rst && CONFIG.POLARITY == ACTIVE_LOW} -of_objects [get_bd_cells $group/*]]
-      set clk [create_bd_pin -type clk -dir I "aclk"]
-      set rst [create_bd_pin -type rst -dir I "aresetn"]
-    
-      connect_bd_net $clk $clks
-      connect_bd_net $rst $rsts
-    
-      # create interrupt port
-      connect_bd_net [get_bd_pin -of_objects $ninst -filter {NAME == interrupt}] [create_bd_pin -type intr -dir O "interrupt"]
-    
-      current_bd_instance $bd_inst
-      return [list $group $args]
     }
+    set name [get_property NAME $inst]
+
+    set bd_inst [current_bd_instance .]
+
+    # rewire full slaves
+    set si 0
+    foreach fs $full_slave_ifs {
+      # create slave port
+      set saxi_port [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave "S_AXI_LITE_$si"]
+      set conv [tapasco::ip::create_proto_conv "conv_$si" "AXI4LITE" [get_property CONFIG.PROTOCOL $fs]]
+      connect_bd_intf_net $saxi_port [get_bd_intf_pins -of_objects $conv -filter {MODE == Slave}]
+      connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master} -of_objects $conv] $fs
+      incr si
+    }
+
+    # bypass existing AXI4Lite slaves
+    set lite_ports [list]
+    set lites [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave && CONFIG.PROTOCOL == AXI4LITE}]
+    foreach ls $lites {
+      set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave [get_property NAME $ls]]
+      connect_bd_intf_net $op $ls
+      lappend lite_ports $ls
+    }
+    puts "lite_ports = $lite_ports"
+
+    # create master ports
+    set maxi_ports [list]
+    foreach mp [get_bd_intf_pins -of_objects $inst -filter {MODE == Master}] {
+      set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Master [get_property NAME $mp]]
+      connect_bd_intf_net $mp $op
+      lappend maxi_ports $mp
+    }
+    puts "maxi_ports = $maxi_ports"
+    
+    # create clock and reset ports
+    set clks [get_bd_pins -filter {DIR == I && TYPE == clk} -of_objects [get_bd_cells $bd_inst/*]]
+    set rsts [get_bd_pins -filter {DIR == I && TYPE == rst && CONFIG.POLARITY == ACTIVE_LOW} -of_objects [get_bd_cells $bd_inst/*]]
+    set clk [create_bd_pin -type clk -dir I "aclk"]
+    set rst [create_bd_pin -type rst -dir I "aresetn"]
+    
+    connect_bd_net $clk $clks
+    connect_bd_net $rst $rsts
+    
+    # create interrupt port
+    connect_bd_net [get_bd_pin -of_objects $inst -filter {NAME == interrupt}] [create_bd_pin -type intr -dir O "interrupt"]
+    
     return [list $inst $args]
   }
 

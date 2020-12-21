@@ -99,8 +99,20 @@ namespace eval arch {
       puts "  VLNV: $vlnv"
       for {set j 0} {$j < $no_inst} {incr j} {
         set name [format "target_ip_%02d_%03d" $i $j]
-        set inst [lindex [tapasco::call_plugins "post-pe-create" [create_bd_cell -type ip -vlnv "$vlnv" $name]] 0]
-        lappend insts $inst
+
+        # Create PE instance
+        set inst [create_bd_cell -type ip -vlnv "$vlnv" "internal_$name"]
+        set bd_inst [current_bd_instance .]
+        # create group, move instance into group
+        set group [create_bd_cell -type hier $name]
+        move_bd_cells $group $inst
+
+        # Current bd instance is the wrapper around PE instance
+        current_bd_instance $group
+        set inst [lindex [tapasco::call_plugins "post-pe-create" $inst] 0]
+        current_bd_instance $bd_inst
+
+        lappend insts $group
       }
     }
     puts "insts = $insts"
