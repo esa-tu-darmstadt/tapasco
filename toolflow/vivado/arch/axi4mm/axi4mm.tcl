@@ -98,9 +98,26 @@ namespace eval arch {
       puts "Creating $no_inst instances of target IP core ..."
       puts "  VLNV: $vlnv"
       for {set j 0} {$j < $no_inst} {incr j} {
+        # Create PE instance
         set name [format "target_ip_%02d_%03d" $i $j]
-        set inst [lindex [tapasco::call_plugins "post-pe-create" [create_bd_cell -type ip -vlnv "$vlnv" $name]] 0]
-        lappend insts $inst
+        set inst [create_bd_cell -type ip -vlnv "$vlnv" "internal_$name"]
+
+        # Only create a wrapper around PEs if atleast one plugin is present
+        if {[llength [tapasco::get_plugins "post-pe-create"]] > 0} {
+          set bd_inst [current_bd_instance .]
+          # create group, move instance into group
+          set group [create_bd_cell -type hier $name]
+          move_bd_cells $group $inst
+
+          # Current bd instance is the wrapper around PE instance
+          current_bd_instance $group
+          set inst [lindex [tapasco::call_plugins "post-pe-create" $inst] 0]
+          current_bd_instance $bd_inst
+
+          lappend insts $group
+        } else {
+          lappend insts $inst
+        }
       }
     }
     puts "insts = $insts"
