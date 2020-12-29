@@ -68,9 +68,6 @@ final object Slurm extends Publisher {
                         /** Time limit (in hours). */
                         maxHours: Int,
 
-                        /** Sequence of commands to execute (bash). */
-                        commands: Seq[String],
-
                         /** Optional comment. */
                         comment: Option[String] = None,
 
@@ -197,10 +194,16 @@ final object Slurm extends Publisher {
     **/
   def slurm_preamble(slurm_job: Job, update_paths: Path => Path)(implicit cfg: Configuration): Unit = {
     val local_files = Seq(slurm_job.cfg_file) ++ (slurm_job.job match {
-      case ComposeJob(c, _, _, a, p, _, _, _, _, _) => {
-        val tgt = Target.fromString(a.get.head, p.get.head).get
-        val cores = c.composition.map(ce => FileAssetManager.entities.core(ce.kernel, tgt))
-        cores.map(_.get.zipPath) ++ cores.map(_.get.descPath)
+      case j@ComposeJob(c, _, _, _, _, _, _, _, _, _) => {
+        val cores = for {
+          p <- j.platforms
+          a <- j.architectures
+          tgt = Target(a, p)
+        } yield {
+          val tgt_cores = c.composition.map(ce => FileAssetManager.entities.core(ce.kernel, tgt))
+          tgt_cores.map(_.get.zipPath) ++ tgt_cores.map(_.get.descPath)
+        }
+        cores flatten
       }
       case HighLevelSynthesisJob(_, _, _, k, _) => {
         val kernels = FileAssetManager.entities.kernels.filter( kernel => k.get.contains(kernel.name) ).toSeq
@@ -222,17 +225,32 @@ final object Slurm extends Publisher {
     * @param slurm_success  Indicates if the SLURM job finished successfully.
     * @param update_paths Function that converts local workdir file paths to valid paths on a remote SLURM node.
     **/
-  def slurm_postamble(slurm_job: Job, slurm_success: Boolean, update_paths: Path => Path): Unit = {
+  def slurm_postamble(slurm_job: Job, cfg: Configuration, slurm_success: Boolean, update_paths: Path => Path): Unit = {
     val loc_files = Seq(slurm_job.log, slurm_job.slurmLog, slurm_job.errorLog) ++ (slurm_job.job match {
-      case ComposeJob(c, f, _, a, p, _, _, _, _, _) if slurm_success => {
-        val bit_name = Composer.mkProjectName(c, Target.fromString(a.get.head, p.get.head).get, f)
-        val fnames = Seq(bit_name + ".bit", bit_name + ".bit.bin", "timing.txt", "utilization.txt")
-        fnames.map(f => slurm_job.log.resolveSibling(f))
+      case j@ComposeJob(c, f, _, _, _, feat, _, _, _, _) if slurm_success => {
+        val compose_out = for {
+          p <- j.platforms
+          a <- j.architectures
+          tgt = Target(a, p)
+        } yield {
+          val out_dir = cfg.outputDir(c,tgt,f,feat.getOrElse(Seq()))
+          val bit_name = Composer.mkProjectName(c, tgt, f)
+          val fnames = Seq(bit_name + ".bit", "timing.txt", "utilization.txt")
+          fnames.map(out_dir.resolve)
+        }
+        compose_out flatten
       }
-      case HighLevelSynthesisJob(_, a,p, kernels, _) if slurm_success => {
-        val core_dir = slurm_job.log.getParent.resolveSibling("ipcore")
-        val core_zip = kernels.get.map(k => core_dir.resolve("%s.zip".format(k)))
-        core_zip ++ core_zip.map(z => z.resolveSibling("core.json"))
+      case j@HighLevelSynthesisJob(_, _,_, _, _) if slurm_success => {
+        val cores = for {
+          p <- j.platforms
+          a <- j.architectures
+          k <- j.kernels
+          tgt = Target(a, p)
+        } yield {
+          val core_dir = cfg.outputDir(k, tgt).resolve("ipcore")
+          Seq(core_dir.resolve("%s.zip".format(k.name)), core_dir.resolve("core.json"))
+        }
+        cores flatten
       }
       case _ => Seq()
     })
@@ -276,7 +294,7 @@ final object Slurm extends Publisher {
     **/
   def apply(slurm_job: Job)(implicit cfg: Configuration): Option[Int] = {
     val local_base = slurm_job.cfg_file.getParent
-    val jobFile = local_base.resolveSibling("%s.slurm".format(slurm_job.name)) // SLURM job script
+    val jobFile = local_base.resolve("%s.slurm".format(slurm_job.name)) // SLURM job script
 
     /** replace a prefix of a Path by a different prefix. Used to convert local file paths to paths that are valid on SLURM node */
     def prefix_subst(old_pre: Path, new_pre: Path): (Path => Path) = {
@@ -300,6 +318,7 @@ final object Slurm extends Publisher {
       .archDir(tpsc_to_rmt(cfg.archDir))
       .jobs(Seq(slurm_job.job))
       .slurm(None)
+      .logFile(Some(wd_to_rmt(slurm_job.log)))
 
     logger.info("starting " + slurm_job.name + " job on SLURM ({})", slurm_job.cfg_file)
     catchAllDefault[Option[Int]](None, "error during SLURM job execution (%s): ".format(jobFile)) {
@@ -345,7 +364,7 @@ final object Slurm extends Publisher {
       if (slurm_remote_cfg.isDefined) {
         postambles += (id.get -> {slurm_id:Int => slurm_success:Boolean =>
           logger.info("Running postamble for SLURM id: {}", slurm_id)
-          slurm_postamble(slurm_job, slurm_success, wd_to_rmt)
+          slurm_postamble(slurm_job, cfg, slurm_success, wd_to_rmt)
         })
       }
       id
