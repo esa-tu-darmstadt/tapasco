@@ -37,7 +37,6 @@ class HighLevelSynthesisTask(val k: Kernel, val t: Target, val cfg: Configuratio
                              val onComplete: Boolean => Unit) extends Task with LogTracking {
   private[this] implicit val logger = tapasco.Logging.logger(getClass)
   private[this] var result: Option[HighLevelSynthesizer.Result] = None
-  private[this] val slurm = Slurm.enabled
   private[this] val r = HighLevelSynthesizer(hls)
   private[this] val l = r.logFile(k, t)(cfg).resolveSibling("hls.log")
 
@@ -48,43 +47,12 @@ class HighLevelSynthesisTask(val k: Kernel, val t: Target, val cfg: Configuratio
   def description: String =
     "High-Level-Synthesis for '%s' with target %s @ %s".format(k.name, t.pd.name, t.ad.name)
 
-  def job: Boolean = if (!slurm) {
+  def job: Boolean = {
     val appender = LogFileTracker.setupLogFileAppender(l.toString)
     logger.trace("current thread name: {}", Thread.currentThread.getName())
     result = Some(r.synthesize(k, t)(cfg))
     LogFileTracker.stopLogFileAppender(appender)
     result map (_.toBoolean) getOrElse false
-  } else {
-
-    val cfgFile   = l.resolveSibling("slurm-hls.cfg") // Configuration Json
-    val slurmLog  = l.resolveSibling("slurm-hls.log") // raw log file (stdout w/colors)
-    val e         = l.resolveSibling("hls-slurm.errors.log")
-
-    val hlsJob = HighLevelSynthesisJob(
-      hls.toString,
-      Some(Seq(t.ad.name)),
-      Some(Seq(t.pd.name)),
-      Some(Seq(k.name)),
-      Some(true) // skip Evaluation on cluster
-    )
-
-    // define SLURM job
-    val job = Slurm.Job(
-      name = "hls-%s-%s-%s".format(t.ad.name, t.pd.name, k.name),
-      log  = l,
-      slurmLog = slurmLog,
-      errorLog = e,
-      consumer = this,
-      maxHours = HighLevelSynthesisTask.MAX_SYNTH_HOURS,
-      commands = Seq("tapasco --configFile %s".format(cfgFile.toString)),
-      job      = hlsJob,
-      cfg_file = cfgFile
-    )
-
-    // execute sbatch to enqueue job, then wait for it
-    val r = (Slurm(job)(cfg) map Slurm.waitFor).getOrElse(false) == Slurm.Completed()
-    FileAssetManager.reset()
-    r
   }
 
   def logFiles: Set[String] = Set(l.toString)
@@ -100,6 +68,6 @@ class HighLevelSynthesisTask(val k: Kernel, val t: Target, val cfg: Configuratio
   )
 }
 
-private object HighLevelSynthesisTask {
+object HighLevelSynthesisTask {
   final val MAX_SYNTH_HOURS = 8
 }
