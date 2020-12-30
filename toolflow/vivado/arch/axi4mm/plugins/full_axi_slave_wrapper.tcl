@@ -38,39 +38,13 @@ namespace eval full_axi_wrapper {
       set conv [tapasco::ip::create_proto_conv "conv_$si" "AXI4LITE" [get_property CONFIG.PROTOCOL $fs]]
       connect_bd_intf_net $saxi_port [get_bd_intf_pins -of_objects $conv -filter {MODE == Slave}]
       connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master} -of_objects $conv] $fs
+
+      connect_bd_net [get_bd_pins $bd_inst/aclk] [get_bd_pins $conv/aclk]
+      connect_bd_net [get_bd_pins $bd_inst/aresetn] [get_bd_pins $conv/aresetn]
+
       incr si
     }
 
-    # bypass existing AXI4Lite slaves
-    set lite_ports [list]
-    set lites [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave && CONFIG.PROTOCOL == AXI4LITE}]
-    foreach ls $lites {
-      set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave [get_property NAME $ls]]
-      connect_bd_intf_net $op $ls
-      lappend lite_ports $ls
-    }
-    puts "lite_ports = $lite_ports"
-
-    # create master ports
-    set maxi_ports [list]
-    foreach mp [get_bd_intf_pins -of_objects $inst -filter {MODE == Master}] {
-      set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Master [get_property NAME $mp]]
-      connect_bd_intf_net $mp $op
-      lappend maxi_ports $mp
-    }
-    puts "maxi_ports = $maxi_ports"
-    
-    # create clock and reset ports
-    set clks [get_bd_pins -filter {DIR == I && TYPE == clk} -of_objects [get_bd_cells $bd_inst/*]]
-    set rsts [get_bd_pins -filter {DIR == I && TYPE == rst && CONFIG.POLARITY == ACTIVE_LOW} -of_objects [get_bd_cells $bd_inst/*]]
-    set clk [create_bd_pin -type clk -dir I "aclk"]
-    set rst [create_bd_pin -type rst -dir I "aresetn"]
-    
-    connect_bd_net $clk $clks
-    connect_bd_net $rst $rsts
-    
-    # create interrupt port
-    connect_bd_net [get_bd_pin -of_objects $inst -filter {NAME == interrupt}] [create_bd_pin -type intr -dir O "interrupt"]
     
     return [list $inst $args]
   }

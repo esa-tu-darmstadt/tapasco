@@ -105,15 +105,13 @@ namespace eval arch {
         # Only create a wrapper around PEs if atleast one plugin is present
         if {[llength [tapasco::get_plugins "post-pe-create"]] > 0} {
           set bd_inst [current_bd_instance .]
-          # create group, move instance into group
-          set group [create_bd_cell -type hier $name]
-          move_bd_cells $group $inst
+          set group [create_wrapper_around_pe $inst $name]
 
-          # Current bd instance is the wrapper around PE instance
-          current_bd_instance $group
           set inst [lindex [tapasco::call_plugins "post-pe-create" $inst] 0]
+          # Return to the same block design instance as before
           current_bd_instance $bd_inst
 
+          # return the wrapper so that it can be connected
           lappend insts $group
         } else {
           lappend insts $inst
@@ -122,6 +120,49 @@ namespace eval arch {
     }
     puts "insts = $insts"
     return $insts
+  }
+
+  # Create a wrapper around a PE to embed plugins
+  proc create_wrapper_around_pe {inst name} {
+    # create group, move instance into group
+    set group [create_bd_cell -type hier $name]
+    move_bd_cells $group $inst
+
+    current_bd_instance $group
+    set bd_inst [current_bd_instance .]
+
+    # bypass existing AXI4Lite slaves
+    set lite_ports [list]
+    set lites [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave && CONFIG.PROTOCOL == AXI4LITE}]
+    foreach ls $lites {
+      set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave [get_property NAME $ls]]
+      connect_bd_intf_net $op $ls
+      lappend lite_ports $ls
+    }
+    puts "lite_ports = $lite_ports"
+
+    # create master ports
+    set maxi_ports [list]
+    foreach mp [get_bd_intf_pins -of_objects $inst -filter {MODE == Master}] {
+      set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Master [get_property NAME $mp]]
+      connect_bd_intf_net $mp $op
+      lappend maxi_ports $mp
+    }
+    puts "maxi_ports = $maxi_ports"
+
+    # create clock and reset ports
+    set clks [get_bd_pins -filter {DIR == I && TYPE == clk} -of_objects [get_bd_cells $bd_inst/*]]
+    set rsts [get_bd_pins -filter {DIR == I && TYPE == rst && CONFIG.POLARITY == ACTIVE_LOW} -of_objects [get_bd_cells $bd_inst/*]]
+    set clk [create_bd_pin -type clk -dir I "aclk"]
+    set rst [create_bd_pin -type rst -dir I "aresetn"]
+
+    connect_bd_net $clk $clks
+    connect_bd_net $rst $rsts
+
+    # create interrupt port
+    connect_bd_net [get_bd_pin -of_objects $inst -filter {NAME == interrupt}] [create_bd_pin -type intr -dir O "interrupt"]
+
+    return $group
   }
 
   # Retrieve AXI-MM interfaces of given instance of kernel kind and mode.
