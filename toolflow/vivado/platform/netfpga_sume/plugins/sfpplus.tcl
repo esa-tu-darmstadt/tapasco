@@ -326,17 +326,6 @@ namespace eval sfpplus {
   }
 
 
-  proc addressmap {{args {}}} {
-      ::platform::addressmap::add_platform_component "SFP_SI5324_I2C" 0x22ff000 0x10000
-      set args [lappend args "M_SI5324"  [list 0x22ff000 0 0x10000 "SFP_SI5324_I2C"]]
-      ::platform::addressmap::add_platform_component "SFP_NETWORK_CONTROLLER" 0x2500000 0x10000
-      set args [lappend args "M_NETWORK" [list 0x2500000 0 0x10000 "SFP_NETWORK_CONTROLLER"]]
-      return $args
-  }
-
-
 }
-
-tapasco::register_plugin "platform::sfpplus::addressmap" "post-address-map"
 
 }
