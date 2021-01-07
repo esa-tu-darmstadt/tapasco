@@ -52,7 +52,7 @@ namespace eval sfpplus {
     set refclk_p [create_bd_port -dir I gt_refclk_p]
     set refclk_n [create_bd_port -dir I gt_refclk_n]
     puts $constraints_file {set_property PACKAGE_PIN E10 [get_ports gt_refclk_p]}
-    puts $constraints_file {create_clock -period 6.400 -name gt_ref_clk [get_ports gt_refclk_p]}
+    puts $constraints_file {create_clock -period 6.400 -name gt_refclk_p [get_ports gt_refclk_p]}
 
     # AXI Interconnect for Configuration
     set axi_config [tapasco::ip::create_axi_ic axi_config 1 $num_streams]
@@ -209,20 +209,20 @@ namespace eval sfpplus {
     puts $constraints_file [format {# SFP-Port %d} $port_number]
     set txp [create_bd_port -dir O txp_${port_number}]
     set txn [create_bd_port -dir O txn_${port_number}]
-    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $tx_ports $port_number] $txp]
+    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $tx_ports $port_number] txp_${port_number}]
     set tx_disable [create_bd_port -dir O tx_disable_${port_number}]
-    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $disable_pins $port_number] $tx_disable]
-    puts $constraints_file [format {set_property IOSTANDARD %s [get_ports %s]} [lindex $disable_pins_voltages $port_number] $tx_disable]
+    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $disable_pins $port_number] tx_disable_${port_number}]
+    puts $constraints_file [format {set_property IOSTANDARD %s [get_ports %s]} [lindex $disable_pins_voltages $port_number] tx_disable_${port_number}]
     set rxp [create_bd_port -dir I rxp_${port_number}]
     set rxn [create_bd_port -dir I rxn_${port_number}]
-    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $rx_ports $port_number] $rxp]
+    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $rx_ports $port_number] rxp_${port_number}]
     set tx_fault [create_bd_port -dir I tx_fault_${port_number}]
-    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $fault_pins $port_number] $tx_fault]
-    puts $constraints_file [format {set_property IOSTANDARD %s [get_ports %s]} [lindex $disable_pins_voltages $port_number] $tx_fault]
+    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $fault_pins $port_number] tx_fault_${port_number}]
+    puts $constraints_file [format {set_property IOSTANDARD %s [get_ports %s]} [lindex $disable_pins_voltages $port_number] tx_fault_${port_number}]
     set signal_detect [create_bd_port -dir I sfp_signal_detect_${port_number}]
     set detect_inverter [create_inverter detect_inverter_${port_number}]
-    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $signal_detect_pins $port_number] $signal_detect]
-    puts $constraints_file [format {set_property IOSTANDARD %s [get_ports %s]} [lindex $disable_pins_voltages $port_number] $signal_detect]
+    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $signal_detect_pins $port_number] sfp_signal_detect_${port_number}]
+    puts $constraints_file [format {set_property IOSTANDARD %s [get_ports %s]} [lindex $disable_pins_voltages $port_number] sfp_signal_detect_${port_number}]
 
     connect_bd_net [get_bd_pins $core/txp] $txp
     connect_bd_net [get_bd_pins $core/txn] $txn
