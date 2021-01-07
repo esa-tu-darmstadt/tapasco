@@ -234,13 +234,13 @@ namespace eval sfpplus {
     connect_bd_net $signal_detect [get_bd_pins $detect_inverter/Op1]
     connect_bd_net [get_bd_pins $detect_inverter/Res] [get_bd_pins $core/signal_detect]
 
-    puts $constraints_file [format {set_property LOC %s [get_cells -hier -filter name=~*ethernet_*gthe2_i]} [lindex $locations $port_number]]
+    puts $constraints_file [format {set_property LOC %s [get_cells -hier -filter name=~*ethernet_%d*gthe2_i]} [lindex $locations $port_number] $port_number]
 
-    puts $constraints_file {set_false_path -from [get_clocks -filter name=~*ethernet_*gthe2_i/RXOUTCLK] -to [get_clocks gt_refclk_p]}
-    puts $constraints_file {set_false_path -from [get_clocks gt_refclk_p] -to [get_clocks -filter name=~*ethernet_*gthe2_i/RXOUTCLK]}
+    puts $constraints_file [format {set_false_path -from [get_clocks -filter name=~*ethernet_%d*gthe2_i/RXOUTCLK] -to [get_clocks gt_refclk_p]} $port_number]
+    puts $constraints_file [format {set_false_path -from [get_clocks gt_refclk_p] -to [get_clocks -filter name=~*ethernet_%d*gthe2_i/RXOUTCLK]} $port_number]
 
-    puts $constraints_file {set_false_path -from [get_clocks -filter name=~*ethernet_*gthe2_i/TXOUTCLK] -to [get_clocks gt_refclk_p]}
-    puts $constraints_file {set_false_path -from [get_clocks gt_refclk_p] -to [get_clocks -filter name=~*ethernet_*gthe2_i/TXOUTCLK]}
+    puts $constraints_file [format {set_false_path -from [get_clocks -filter name=~*ethernet_%d*gthe2_i/TXOUTCLK] -to [get_clocks gt_refclk_p]} $port_number]
+    puts $constraints_file [format {set_false_path -from [get_clocks gt_refclk_p] -to [get_clocks -filter name=~*ethernet_%d*gthe2_i/TXOUTCLK]} $port_number]
   }
 
 
