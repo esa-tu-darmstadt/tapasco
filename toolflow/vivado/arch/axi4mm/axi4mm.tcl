@@ -367,6 +367,7 @@ namespace eval arch {
           set intr_name "PE_${i}_${pe_sub_interrupt}"
           puts "Creating interrupt $intr_name"
           connect_bd_net $pin [::tapasco::ip::add_interrupt $intr_name "design"]
+	  incr pe_sub_interrupt
       }
       incr i
     }
