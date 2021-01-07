@@ -326,6 +326,15 @@ namespace eval sfpplus {
   }
 
 
+  proc addressmap {{args {}}} {
+      ::platform::addressmap::add_platform_component "SFP_NETWORK_CONTROLLER" 0x2500000 0x10000
+      set args [lappend args "M_NETWORK" [list 0x100000 0x10000 0x10000 "SFP_NETWORK_CONTROLLER"]]
+      return $args
+  }
+
+
 }
+
+tapasco::register_plugin "platform::sfpplus::addressmap" "post-address-map"
 
 }
