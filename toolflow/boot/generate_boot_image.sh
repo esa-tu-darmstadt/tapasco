@@ -613,6 +613,11 @@ copy_files_to_boot() {
 			echo >&2 "$LINENO: WARNING: could not copy Image"
 		echo "Copying $DIR/devicetree.dtb to $TO/system.dtb ..."
 		dusudo cp $DIR/devicetree.dtb $TO/system.dtb || echo >&2 "$LINENO: WARNING: could not copy devicetree"
+		if [[ -f uenv/uEnv-$BOARD.txt ]]; then
+			echo "Copying uenv/uEnv-$BOARD.txt to $TO/uEnv.txt ..."
+			dusudo cp uenv/uEnv-$BOARD.txt $TO/uEnv.txt ||
+				echo >&2 "$LINENO: WARNING: could not copy uEnv.txt"
+		fi
 	else
 		echo "Copying $DIR/linux-xlnx/arch/arm/boot/uImage to $TO ..."
 		dusudo cp $DIR/linux-xlnx/arch/arm/boot/uImage $TO ||
