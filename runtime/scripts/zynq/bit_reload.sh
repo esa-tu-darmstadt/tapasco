@@ -135,6 +135,18 @@ if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit || $BITSTREAM == *.bin ]]; then
 			else
 				echo "Driver loaded sucessfully!"
 			fi
+
+			# register tapasco device with VFIO
+			sudo sh -c "echo vfio-platform > /sys/bus/platform/devices/tapasco/driver_override"
+			sudo sh -c "echo tapasco > /sys/bus/platform/drivers_probe"
+			PROBE_RET=$?
+
+			# check return code
+			if [ $PROBE_RET -ne 0 ]; then
+				echo "Probing VFIO platform driver failed, returned non-zero exit code $PROBE_RET"
+			else
+				echo "VFIO loaded sucessfully!"
+			fi
 		fi
 	fi
 
