@@ -459,7 +459,7 @@ build_bootbin() {
 EOF
 
 			cat > $DIR/bootimage.bif << EOF
-                image: {
+                boot_image : {
                     [init] $DIR/regs.init
                     [bootloader,destination_cpu=a53-0] $DIR/fsbl/executable.elf
                     [pmufw_image] $DIR/pmufw/executable.elf
@@ -471,7 +471,7 @@ EOF
 				return $(error_ret "$LINENO: could not generate BOOT.bin")
 		else
 			cat > $DIR/bootimage.bif << EOF
-                image : {
+                boot_image : {
     	            [bootloader]$DIR/fsbl/executable.elf
     	            $DIR/u-boot-xlnx/u-boot.elf
                 }
