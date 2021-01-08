@@ -766,7 +766,7 @@ if [[ $ARCH == arm64 ]]; then
 	echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and Arm Trusted Firmware (output in $BUILD_ARM_TRUSTED_FIRMWARE_LOG) ... "
 	build_arm_trusted_firmware &> $BUILD_ARM_TRUSTED_FIRMWARE_LOG &
 	BUILD_ARM_TRUSTED_FIRMWARE_OK=$!
-	wait $BUILD_ARM_TRUSTED_FIRMWARE || error_exit "Building Arm Trusted Firmware failed, check log: $ARM_TRUSTED_FIRMWARE_LOG"
+	wait $BUILD_ARM_TRUSTED_FIRMWARE_OK || error_exit "Building Arm Trusted Firmware failed, check log: $ARM_TRUSTED_FIRMWARE_LOG"
 else
 	echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and uImage (output in $BUILD_UIMAGE_LOG) ..."
 	build_uimage &> $BUILD_UIMAGE_LOG &
