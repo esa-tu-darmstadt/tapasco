@@ -19,11 +19,12 @@
  */
 
 use crate::allocator::{Allocator, DriverAllocator, GenericAllocator, VfioAllocator};
-use crate::debug::DebugGenerator;
+use crate::debug::{DebugGenerator,NonDebugGenerator};
 use crate::dma::{DMAControl, DirectDMA, DriverDMA, VfioDMA};
 use crate::dma_user_space::UserSpaceDMA;
 use crate::job::Job;
 use crate::pe::PEId;
+use crate::pe::PE;
 use crate::scheduler::Scheduler;
 use crate::tlkm::tlkm_access;
 use crate::tlkm::tlkm_ioctl_create;
@@ -104,6 +105,21 @@ pub enum Error {
 
     #[snafu(display("Could not initialize VFIO subsystem: {}", source))]
     VfioInitError  { source: crate::vfio::Error },
+    
+    #[snafu(display("Could not find component {}.", name))]
+    ComponentNotFound { name: String },
+
+    #[snafu(display(
+        "Component {} has no associated interrupt. Cannot be used as PE.",
+        name
+    ))]
+    MissingInterrupt { name: String },
+
+    #[snafu(display("PE Error: {}", source))]
+    PEError { source: crate::pe::Error },
+
+    #[snafu(display("Debug Error: {}", source))]
+    DebugError { source: crate::debug::Error },
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -596,5 +612,83 @@ impl Device {
     /// Return the PEId of the PE with the given name
     pub fn get_pe_id(&self, name: &str) -> Result<PEId> {
         self.scheduler.get_pe_id(name).context(SchedulerError)
+    }
+
+    /// Get a list of platform components names available on this device
+    pub fn get_available_platform_components(&self) -> Vec<String> {
+        let mut platform_components = Vec::new();
+
+        for p in &self.status.platform {
+            trace!("Found platform component {}.", p.name);
+            platform_components.push(p.name.clone());
+        }
+
+        platform_components
+    }
+
+    /// Get memory of a platform component
+    /// Treated unsafe as a user can change anything about the memory without any checks
+    /// and might try using the memory after the device has been released.
+    pub unsafe fn get_platform_component_memory(&self, name: &str) -> Result<&mut [u8]> {
+        for p in &self.status.platform {
+            if p.name == name {
+                trace!(
+                    "Found platform component {} at {:X} (Size {}).",
+                    p.name,
+                    p.offset,
+                    p.size
+                );
+
+                let ptr = self.platform.as_ptr().offset(p.offset as isize) as *mut u8;
+                let s = std::slice::from_raw_parts_mut(ptr, p.size as usize);
+                return Ok(s);
+            }
+        }
+        Err(Error::ComponentNotFound {
+            name: name.to_string(),
+        })
+    }
+
+    /// Returns a PE interface to the platform component
+    /// Can be used like any other PE but is not integrated
+    /// into the scheduling and job mechanisms
+    pub fn get_platform_component_as_pe(&self, name: &str) -> Result<PE> {
+        for p in &self.status.platform {
+            if p.name == name {
+                trace!(
+                    "Found platform component {} at {:X} (Size {}).",
+                    p.name,
+                    p.offset,
+                    p.size
+                );
+
+                let d = NonDebugGenerator {};
+                let debug = d
+                    .new(&self.platform, "Unused".to_string(), 0, 0)
+                    .context(DebugError)?;
+
+                if p.interrupts.len() > 0 {
+                    return Ok(PE::new(
+                        42,
+                        42 as PEId,
+                        p.offset,
+                        p.size,
+                        p.name.to_string(),
+                        self.platform.clone(),
+                        &self.tlkm_device_file,
+                        p.interrupts[0].mapping as usize,
+                        debug,
+                    )
+                    .context(PEError)?);
+                } else {
+                    return Err(Error::MissingInterrupt {
+                        name: name.to_string(),
+                    });
+                }
+            }
+        }
+        Err(Error::ComponentNotFound {
+            name: name.to_string(),
+        })
     }
 }
