@@ -43,7 +43,7 @@ if {[tapasco::is_feature_enabled "SFPPLUS"]} {
     sfpplus::create_network_pins $port_names
     # START platform specific
     puts "Creating Network Interfaces for Ports: $port_names"
-    sfpplus::generate_cores $physical_ports
+    sfpplus::generate_cores [sfpplus::parse_mode] $physical_ports 
     # END platform specific
 
     sfpplus::connect_ports $ports
@@ -57,7 +57,7 @@ namespace eval sfpplus {
   ###### START PLATFORM SPECIFIC ######
 
   # To add SFP+-Support for a new platform, create a new plugin file for the platform.
-  # In the plugin file you need to source this file and overwrite these three functions.
+  # In the plugin file you need to source this file and overwrite these four functions.
 
   # Overwrite this function with "return true" to enable SPF+ for a new platform
   # @return whether SFP+ is supported on this platform
@@ -66,8 +66,13 @@ namespace eval sfpplus {
   }
 
   # @return the number of physical ports available on this platform
-  proc num_available_ports {} {
+  proc num_available_ports {mode} {
     return 0
+  }
+
+  # @return a list of the available modes for this platform. the first item is the default mode
+  proc get_available_modes {} {
+    return {}
   }
 
   # Generate the required platform specific IP to use the SFP+Ports.
@@ -79,7 +84,7 @@ namespace eval sfpplus {
   #  - sfp_rx_resetn_port_name: the reset for the recieving stream
   #  - sfp_tx_resetn_port_name: the reset for the sending stream
   # @param physical_ports a dictionary mapping physical ports to the port_name. See Physical Port configuration at the top of this file
-  proc generate_cores {physical_ports} {
+  proc generate_cores {mode physical_ports} {
 
   }
 
@@ -87,6 +92,18 @@ namespace eval sfpplus {
 
 
   ###### START PARSE CONFIGURATION ######
+
+  # Retrieves the configured mode from the JSON configuration
+  # @return the configured mode; if no mode is given the default for this platform
+  proc parse_mode {} {
+    variable config [tapasco::get_feature "SFPPLUS"]
+    dict with config {
+      if {![info exists mode]} {
+        set mode [lindex [get_available_modes] 0]
+      }
+      return $mode
+    }
+  }
 
   # Parses the JSON configuration
   # @param true if currently in the phase of validating the configuration
@@ -202,7 +219,7 @@ namespace eval sfpplus {
       }
       set ports [parse_configuration true]
       set num_ports [dict size $ports]
-      set available_ports [num_available_ports]
+      set available_ports [num_available_ports [parse_mode]]
       if { $num_ports > $available_ports} {
         puts "Invalid SFP+ Configuration: Too many SFP-Ports specified (Max: $available_ports)"
         exit

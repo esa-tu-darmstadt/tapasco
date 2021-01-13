@@ -8,9 +8,10 @@ can be found [here](tapasco-features.md).
 
 ## Configuration format
 
-The configuration format is split into two parts:
+The configuration format is split into three parts:
  1. The [Port Definition](#port-definition)
  2. The [Connections of PEs](#pe-connections) to ports
+ 3. (Optional) The [Mode](#mode) if the platform supports multiple modes
 
 
 ### Port Definition
@@ -101,6 +102,22 @@ SFPPLUS {
         }
       ]
     }
-  ]
+  ],
+  ...
+}
+```
+
+
+### Mode
+
+Some platforms provide multiple modes. This can be configured by supplying the name of the mode which should be used.
+If no mode is given the default mode for this platform is used.
+
+Example:
+
+```
+SFPPLUS {
+  ...
+  "Mode": "100G"
 }
 ```

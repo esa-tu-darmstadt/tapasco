@@ -55,12 +55,16 @@ namespace eval sfpplus {
   variable iic_rst               {"AY42" "16" "SLOW" "LVCMOS18"}
   variable si5324_rst            {"AT36" "16" "SLOW" "LVCMOS18"}
 
-  proc num_available_ports {} {
+  proc num_available_ports {mode} {
     variable available_ports
     return $available_ports
   }
 
-  proc generate_cores {ports} {
+  proc get_available_modes {} {
+    return {"10G"}
+  }
+
+  proc generate_cores {mode ports} {
     variable refclk_pins
 
     set num_streams [dict size $ports]
