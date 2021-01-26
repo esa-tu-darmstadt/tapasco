@@ -20,6 +20,8 @@
 #The following two properties should be set for every design
 set_property CFGBVS GND [current_design]
 set_property CONFIG_VOLTAGE 1.8 [current_design]
+set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]
+set_property BITSTREAM.CONFIG.UNUSEDPIN Pullup [current_design]
 
 #PCIe Transceiver clock (100 MHz)
 # Note: This clock is attached to a MGTREFCLK pin
