@@ -132,6 +132,11 @@ int main(int argc, char **argv) {
 
     // Acquire arrayinit PE
     Job *j = tapasco_device_acquire_pe(d, PE_ID);
+
+
+    tapasco_pe_set_arg_32(j, 10, 0x5);
+    tapasco_pe_set_arg_64(j, 20, 0x10);
+
     if (j == 0) {
       handle_error();
       ret = -1;

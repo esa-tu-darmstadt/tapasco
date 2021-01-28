@@ -50,6 +50,9 @@ pub enum Error {
     #[snafu(display("Error during Device operation: {}", source))]
     DeviceError { source: crate::device::Error },
 
+    #[snafu(display("Error during PE operation: {}", source))]
+    PEError { source: crate::pe::Error },
+
     #[snafu(display("Error during DMA operation: {}", source))]
     DMAError { source: crate::dma::Error },
 
@@ -555,6 +558,50 @@ pub extern "C" fn tapasco_device_get_pe_id(dev: *mut Device, name: *const c_char
             return PEId::MAX;
         }
     };
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_pe_set_arg_32(job: *mut Job, argn: usize, arg: u32) {
+    if job.is_null() {
+        warn!("Null pointer passed into tapasco_job_start() as the job");
+        update_last_error(Error::NullPointerTLKM {});
+        return;
+    }
+
+    let tl = unsafe { &mut *job };
+    match tl.get_pe().context(JobError) {
+        Ok(l) => {
+            match l.set_arg(argn, PEParameter::Single32(arg)).context(PEError) {
+                Ok(()) => trace!("Set Arg successful!"),
+                Err(e) => update_last_error(e),
+            }
+        }
+        Err(e) => {
+            update_last_error(e);
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn tapasco_pe_set_arg_64(job: *mut Job, argn: usize, arg: u64) {
+    if job.is_null() {
+        warn!("Null pointer passed into tapasco_job_start() as the job");
+        update_last_error(Error::NullPointerTLKM {});
+        return;
+    }
+
+    let tl = unsafe { &mut *job };
+    match tl.get_pe().context(JobError) {
+        Ok(l) => {
+            match l.set_arg(argn, PEParameter::Single64(arg)).context(PEError) {
+                Ok(()) => trace!("Set Arg successful!"),
+                Err(e) => update_last_error(e),
+            }
+        }
+        Err(e) => {
+            update_last_error(e);
+        }
+    }
 }
 
 /////////////////

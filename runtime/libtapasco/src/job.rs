@@ -342,4 +342,10 @@ impl Job {
         }
         Ok(())
     }
+
+
+
+    pub fn get_pe(&self) -> Result<&PE> {
+        return Ok(self.pe.as_ref().unwrap());
+    }
 }
