@@ -50,6 +50,7 @@ private case class ConfigurationImpl(
                                       parallel: Boolean = false,
                                       maxThreads: Option[Int] = None,
                                       maxTasks: Option[Int] = None,
+                                      hlsTimeOut: Option[Int] = None,
                                       dryRun: Option[Path] = None,
                                       verbose: Option[String] = None,
                                       jobs: Seq[Job] = Seq()
@@ -85,6 +86,8 @@ private case class ConfigurationImpl(
   def parallel(enabled: Boolean): Configuration = this.copy(parallel = enabled)
 
   def maxThreads(mt: Option[Int]): Configuration = this.copy(maxThreads = mt)
+
+  def hlsTimeOut(timeout: Option[Int]): Configuration = this.copy(hlsTimeOut = timeout)
 
   def maxTasks(mt: Option[Int]): Configuration = this.copy(maxTasks = mt)
 

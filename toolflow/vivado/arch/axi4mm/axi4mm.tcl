@@ -19,7 +19,6 @@
 
 namespace eval arch {
   namespace export create
-  namespace export get_irqs
   namespace export get_masters
   namespace export get_processing_elements
   namespace export get_slaves
@@ -27,7 +26,6 @@ namespace eval arch {
   set arch_mem_ics [list]
   set arch_mem_ports [list]
   set arch_host_ics [list]
-  set arch_irq_concats [list]
 
   # scan plugin directory
   foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/arch/axi4mm/plugins" "*.tcl"] {
@@ -51,11 +49,6 @@ namespace eval arch {
 
   proc get_processing_elements {} {
     return [get_bd_cells -of_objects [::tapasco::subsystem::get arch] -filter { NAME =~ target*}]
-  }
-
-  # Returns a list of interrupt lines from the threadpool.
-  proc get_irqs {} {
-    return [get_bd_pins -of_objects [::tapasco::subsystem::get arch] -filter {TYPE == "intr" && DIR == "O"}]
   }
 
   # Checks, if the current composition can be instantiated. Exits script with
@@ -105,13 +98,71 @@ namespace eval arch {
       puts "Creating $no_inst instances of target IP core ..."
       puts "  VLNV: $vlnv"
       for {set j 0} {$j < $no_inst} {incr j} {
+        # Create PE instance
         set name [format "target_ip_%02d_%03d" $i $j]
-        set inst [lindex [tapasco::call_plugins "post-pe-create" [create_bd_cell -type ip -vlnv "$vlnv" $name]] 0]
-        lappend insts $inst
+        set inst [create_bd_cell -type ip -vlnv "$vlnv" "internal_$name"]
+
+        # Only create a wrapper around PEs if atleast one plugin is present
+        if {[llength [tapasco::get_plugins "post-pe-create"]] > 0} {
+          set bd_inst [current_bd_instance .]
+          set group [create_wrapper_around_pe $inst $name]
+
+          set inst [lindex [tapasco::call_plugins "post-pe-create" $inst] 0]
+          # Return to the same block design instance as before
+          current_bd_instance $bd_inst
+
+          # return the wrapper so that it can be connected
+          lappend insts $group
+        } else {
+          lappend insts $inst
+        }
       }
     }
     puts "insts = $insts"
     return $insts
+  }
+
+  # Create a wrapper around a PE to embed plugins
+  proc create_wrapper_around_pe {inst name} {
+    # create group, move instance into group
+    set group [create_bd_cell -type hier $name]
+    move_bd_cells $group $inst
+
+    current_bd_instance $group
+    set bd_inst [current_bd_instance .]
+
+    # bypass existing AXI4Lite slaves
+    set lite_ports [list]
+    set lites [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave && CONFIG.PROTOCOL == AXI4LITE}]
+    foreach ls $lites {
+      set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave [get_property NAME $ls]]
+      connect_bd_intf_net $op $ls
+      lappend lite_ports $ls
+    }
+    puts "lite_ports = $lite_ports"
+
+    # create master ports
+    set maxi_ports [list]
+    foreach mp [get_bd_intf_pins -of_objects $inst -filter {MODE == Master}] {
+      set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Master [get_property NAME $mp]]
+      connect_bd_intf_net $mp $op
+      lappend maxi_ports $mp
+    }
+    puts "maxi_ports = $maxi_ports"
+
+    # create clock and reset ports
+    set clks [get_bd_pins -filter {DIR == I && TYPE == clk} -of_objects [get_bd_cells $bd_inst/*]]
+    set rsts [get_bd_pins -filter {DIR == I && TYPE == rst && CONFIG.POLARITY == ACTIVE_LOW} -of_objects [get_bd_cells $bd_inst/*]]
+    set clk [create_bd_pin -type clk -dir I "aclk"]
+    set rst [create_bd_pin -type rst -dir I "aresetn"]
+
+    connect_bd_net $clk $clks
+    connect_bd_net $rst $rsts
+
+    # create interrupt port
+    connect_bd_net [get_bd_pin -of_objects $inst -filter {NAME == interrupt}] [create_bd_pin -type intr -dir O "interrupt"]
+
+    return $group
   }
 
   # Retrieve AXI-MM interfaces of given instance of kernel kind and mode.
@@ -300,66 +351,23 @@ namespace eval arch {
 
   # Connects the architecture interrupt lines.
   proc arch_connect_interrupts {ips} {
-    variable arch_irq_concats
     puts "Connecting [llength $ips] target IP interrupts ..."
 
     set i 0
-    set j 0
     set num_slaves [llength [tapasco::get_aximm_interfaces $ips "Slave"]]
     set left $num_slaves
     puts "  total number of slave interfaces: $num_slaves"
-    set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "$num_slaves > 32 ? 32 : $num_slaves"]]
-    lappend arch_irq_concats $cc
-    set zero [tapasco::ip::create_constant "zero" 1 0]
+
     # Only one Interrupt per IP is connected
     foreach ip [lsort $ips] {
-      set selected 0
+
+      set pe_sub_interrupt 0
+
       foreach pin [get_bd_pins -of $ip -filter { TYPE == intr }] {
-        if { $selected == 0 } {
-          set selected 1
-          connect_bd_net $pin [get_bd_pins -of $cc -filter "NAME == In$i"]
-        } else {
-          puts "Skipping pin $pin because ip $ip is already connected to the interrupt controller."
-        }
+          set intr_name "PE_${i}_${pe_sub_interrupt}"
+          puts "Creating interrupt $intr_name"
+          connect_bd_net $pin [::tapasco::ip::add_interrupt $intr_name "design"]
       }
-
-      if { $selected == 0 } {
-        puts "IP $ip does not seem to have any interrupts. Skipping."
-      }
-
-      incr i
-      incr left -1
-      if {$i > 31} {
-        set i 0
-        incr j
-        if { $left > 0 } {
-          set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "$left > 32 ? 32 : $left"]]
-          lappend arch_irq_concats $cc
-        }
-      }
-
-      set num_slaves [llength [tapasco::get_aximm_interfaces $ip "Slave"]]
-      puts "    number of slave interfaces on $ip: $num_slaves"
-      for {set tieoff 1} {$tieoff < $num_slaves} {incr tieoff} {
-        connect_bd_net [get_bd_pins -of $zero] [get_bd_pins -of $cc -filter "NAME == In$i"]
-        incr i
-        incr left -1
-        if {$i > 31} {
-          set i 0
-          incr j
-          if { $left > 0 } {
-            set cc [tapasco::ip::create_xlconcat "xlconcat_$j" [expr "$left > 32 ? 32 : $left"]]
-            lappend arch_irq_concats $cc
-          }
-        }
-      }
-    }
-    set i 0
-    foreach irq_concat $arch_irq_concats {
-      # create hierarchical port with correct width
-      set port [get_bd_pins -of_objects $irq_concat -filter {DIR == "O"}]
-      set out_port [create_bd_pin -type INTR -dir O -from [get_property LEFT $port] -to [get_property RIGHT $port] "intr_$i"]
-      connect_bd_net $port $out_port
       incr i
     }
   }

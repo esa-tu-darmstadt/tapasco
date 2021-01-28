@@ -42,7 +42,7 @@ namespace eval platform {
     set ss_intc    [tapasco::subsystem::create "intc"]
     set ss_tapasco [tapasco::subsystem::create "tapasco"]
 
-    set sss [list $ss_cnrs $ss_host $ss_intc $ss_mem $ss_tapasco]
+    set sss [list $ss_cnrs $ss_host $ss_mem $ss_tapasco]
 
     foreach ss $sss {
       set name [string trim $ss "/"]
@@ -64,6 +64,21 @@ namespace eval platform {
       current_bd_instance [tapasco::subsystem::create $name]
       eval $ss
       current_bd_instance $instance
+    }
+
+    set sss [list $ss_intc]
+
+    foreach ss $sss {
+      set name [string trim $ss "/"]
+      set cmd  "create_subsystem_$name"
+      puts "Creating subsystem $name ..."
+      if {[llength [info commands $cmd]] == 0} {
+        error "Platform does not implement mandatory command $cmd!"
+      }
+      current_bd_instance $ss
+      eval $cmd
+      current_bd_instance $instance
+      puts "Subsystem $name complete."
     }
 
     wire_subsystem_wires
@@ -258,7 +273,8 @@ namespace eval platform {
     report_utilization -file utilization.txt
     report_utilization -file utilization_userlogic.txt -cells [get_cells -hierarchical -filter {NAME =~ *target_ip_*}]
     set wns [tapasco::get_wns_from_timing_report "timing.txt"]
-    if {$wns >= -0.3} {
+    set wpws [tapasco::get_wpws_from_timing_report "timing.txt"]
+    if {$wns >= -0.3 && $wpws >= 0.0} {
       variable disable_write_bitstream
       if {[info exists disable_write_bitstream] == 0 || [string is false $disable_write_bitstream]} {
         write_bitstream -force "${bitstreamname}.bit"
@@ -266,7 +282,7 @@ namespace eval platform {
         tapasco::call_plugins "post-bitstream"
       }
     } else {
-      error "timing failure, WNS: $wns"
+      error "timing failure, WNS: $wns, WPWS: $wpws"
     }
   }
 

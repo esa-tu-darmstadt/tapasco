@@ -82,24 +82,16 @@ int zynq_device_init_subsystems(struct tlkm_device *dev, void *data)
 		goto err_dmamgmt;
 	}
 
-	if ((ret = zynq_irq_init(&_zynq_dev))) {
-		DEVERR(dev->dev_id, "could not initialize interrupts: %d", ret);
-		goto err_irq;
-	}
+	_zynq_dev.requested_irq_num = 0;
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
 	       "successfully initialized subsystems");
 err_dmamgmt:
 	return ret;
-
-err_irq:
-	zynq_dmamgmt_exit(dev);
-	return ret;
 }
 
 void zynq_device_exit_subsystems(struct tlkm_device *dev)
 {
-	zynq_irq_exit(&_zynq_dev);
 	zynq_dmamgmt_exit(dev);
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "exited subsystems");
 }

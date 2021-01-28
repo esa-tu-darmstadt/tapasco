@@ -35,24 +35,21 @@ else
     echo "export TAPASCO_HOME_RUNTIME=\"${TAPASCO_HOME}/runtime\"" >> tapasco-setup.sh
     echo "export TAPASCO_WORK_DIR=\"$PWD\"" >> tapasco-setup.sh
 
-    echo "export PATH=\"${TAPASCO_HOME_TOOLFLOW}/bin:${TAPASCO_HOME_RUNTIME}/bin:${TAPASCO_WORK_DIR}/build/install/usr/local/bin/:${TAPASCO_HOME_TOOLFLOW}/scala/build/install/tapasco/bin:\$PATH\"" >> tapasco-setup.sh
-    echo "export MANPATH=\"\$MANPATH:$TAPASCO_HOME/man\"" >> tapasco-setup.sh
-    echo "export MYVIVADO=\"\$MYVIVADO:${TAPASCO_HOME_TCL}/common\"" >> tapasco-setup.sh
-    echo "export XILINX_PATH=\"\$XILINX_PATH:${TAPASCO_HOME_TCL}/common\"" >> tapasco-setup.sh
+    echo "export PATH=\"${TAPASCO_HOME_TOOLFLOW}/bin:${TAPASCO_HOME_RUNTIME}/bin:${TAPASCO_WORK_DIR}/build/install/usr/local/bin/:${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/bin:${TAPASCO_HOME_TOOLFLOW}/scala/build/install/tapasco/bin:\$PATH\"" >> tapasco-setup.sh
+    echo "export MANPATH=\$MANPATH:$TAPASCO_HOME/man" >> tapasco-setup.sh
+    echo "export MYVIVADO=\$MYVIVADO:${TAPASCO_HOME_TCL}/common" >> tapasco-setup.sh
+    echo "export XILINX_PATH=\$XILINX_PATH:${TAPASCO_HOME_TCL}/common" >> tapasco-setup.sh
 
-    echo "export Tapasco_DIR=\"${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/\"" >> tapasco-setup.sh
-    echo "export TapascoPlatform_DIR=\"${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/\"" >> tapasco-setup.sh
-    echo "export TapascoCommon_DIR=\"${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/\"" >> tapasco-setup.sh
-    echo "export TapascoTLKM_DIR=\"${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/\"" >> tapasco-setup.sh
+    echo "export Tapasco_DIR=${TAPASCO_WORK_DIR}/build/install/usr/local/share/Tapasco/cmake/" >> tapasco-setup.sh
 
     echo "if echo \"\${PATH}\" | grep --quiet \"cmake-3.3.2\";" >> tapasco-setup.sh
     echo "then" >> tapasco-setup.sh
-    echo "    if ! command -v python > /dev/null;" >> tapasco-setup.sh
+    echo "    if ! command -v python3 > /dev/null;" >> tapasco-setup.sh
     echo "    then" >> tapasco-setup.sh
-    echo "        echo \"Could not remove old CMake version from Path. Please install python\"" >> tapasco-setup.sh
+    echo "        echo \"Could not remove old CMake version from Path. Please install python3\"" >> tapasco-setup.sh
     echo "    else" >> tapasco-setup.sh
     echo "        echo \"Removing old CMake version 3.3.2 distributed with Vivado from Path\"" >> tapasco-setup.sh
-    echo "        export PATH=\`python -c \"import re; print(re.sub(r'[:][^:]*?cmake[-]3[.]3[.]2.*?[:]', ':', '\${PATH}'));\"\`" >> tapasco-setup.sh
+    echo "        export PATH=\`python3 -c \"import re; print(re.sub(r'[:][^:]*?cmake[-]3[.]3[.]2.*?[:]', ':', '\${PATH}'));\"\`" >> tapasco-setup.sh
     echo "    fi" >> tapasco-setup.sh
     echo "fi" >> tapasco-setup.sh
 

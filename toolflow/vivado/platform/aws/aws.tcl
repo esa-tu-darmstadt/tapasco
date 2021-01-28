@@ -102,16 +102,6 @@ namespace eval platform {
 
   proc create_subsystem_intc {} {
 
-    set irqs [arch::get_irqs]
-    set num_design_irqs 0
-    foreach irq_port $irqs {
-      set i [expr [get_property LEFT $irq_port] + 1]
-      puts "Interrupt line $irq_port width is $i"
-      incr num_design_irqs $i
-    }
-
-    puts "Connecting $num_design_irqs design interrupt(s)..."
-
     set s_axi [create_bd_intf_pin -mode Slave -vlnv [tapasco::ip::get_vlnv "aximm_intf"] "S_INTC"]
     set aclk [tapasco::subsystem::get_port "host" "clk"]
     set p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
@@ -119,58 +109,68 @@ namespace eval platform {
     set design_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
     set ic_aresetn [::tapasco::subsystem::get_port "host" "rst" "interconnect"]
 
-    set dma_irq_read [create_bd_pin -type "intr" -dir I "dma_irq_read"]
-    set dma_irq_write [create_bd_pin -type "intr" -dir I "dma_irq_write"]
-
     # using type "undef" instead of "intr" to be compatible with F1 shell
     set irq_output [create_bd_pin -from 15 -to 0 -type "undef" -dir O "interrupts"]
     set ack_input [create_bd_pin -from 15 -to 0 -type "undef" -dir I "interrupts_ack"]
 
-    # Concat for design interrupts
-    set irq_concat_design [tapasco::ip::create_xlconcat "interrupt_concat_design" 4]
-    set_property -dict [list \
-      {CONFIG.IN0_WIDTH.VALUE_SRC} {USER} \
-      {CONFIG.IN1_WIDTH.VALUE_SRC} {USER} \
-      {CONFIG.IN2_WIDTH.VALUE_SRC} {USER} \
-      {CONFIG.IN3_WIDTH.VALUE_SRC} {USER} \
-      {CONFIG.IN0_WIDTH} {32} \
-      {CONFIG.IN1_WIDTH} {32} \
-      {CONFIG.IN2_WIDTH} {32} \
-      {CONFIG.IN3_WIDTH} {32} \
-    ] $irq_concat_design
+    set int_in [::tapasco::ip::create_interrupt_in_ports]
+    set int_list [::tapasco::ip::get_interrupt_list]
+    set int_mapping [list]
 
-    # Concat for DMA interrupts
-    set irq_concat_dma [tapasco::ip::create_xlconcat "interrupt_concat_dma" 4]
+    puts "Starting mapping of interrupts $int_list"
+
+    set int_design_total 0
+    set int_design 0
+    set int_host 0
+
+    set design_concats_last [tapasco::ip::create_xlconcat "int_cc_design_0" 32]
+    set design_concats [list $design_concats_last]
+    set host_concat [tapasco::ip::create_xlconcat "int_cc_host" 4]
+
+    foreach {name clk} $int_list port $int_in {
+      puts "Connecting ${name} (Clk: ${clk}) to ${port}"
+      if {$clk == "host"} {
+        connect_bd_net ${port} [get_bd_pins ${host_concat}/In${int_host}]
+
+        lappend int_mapping $int_host
+
+        incr int_host
+      } elseif {$clk == "design"} {
+        if { $int_design >= 32 } {
+          set n [llength $design_concats]
+          set design_concats_last [tapasco::ip::create_xlconcat "int_cc_design_${n}" 32]
+
+          lappend design_concats $design_concats_last
+
+          set int_design 0
+        }
+        connect_bd_net ${port} [get_bd_pins ${design_concats_last}/In${int_design}]
+
+        lappend int_mapping [expr 4 + $int_design_total]
+
+        incr int_design
+        incr int_design_total
+      } else {
+        error "Memory interrupts not supported"
+      }
+    }
+
+    ::tapasco::ip::set_interrupt_mapping $int_mapping
+
+    if {[llength $design_concats] > 1} {
+      set cntr 0
+      set design_concats_last [tapasco::ip::create_xlconcat "int_cc_design_merge" [llength $design_concats]]
+      foreach con $design_concats {
+        connect_bd_net [get_bd_pins $con/dout] [get_bd_pins ${design_concats_last}/In${cntr}]
+        incr cntr
+      }
+    }
+
     # Interrupt Controller
     set intr_ctrl [tapasco::ip::create_aws_intr_ctrl "aws_intr_ctrl"]
 
-    connect_bd_net [get_bd_pins -of_objects $irq_concat_design -filter {NAME == "dout"}] \
-      [get_bd_pins -of_objects $intr_ctrl -filter {NAME == "interrupt_design"}]
-
-    connect_bd_net [get_bd_pins -of_objects $irq_concat_dma -filter {NAME == "dout"}] \
-      [get_bd_pins -of_objects $intr_ctrl -filter {NAME == "interrupt_pcie"}]
-
-    # Connect DMA interrupts
-    connect_bd_net $dma_irq_read [get_bd_pins -of_objects $irq_concat_dma -filter {NAME == "In0"}]
-    connect_bd_net $dma_irq_write [get_bd_pins -of_objects $irq_concat_dma -filter {NAME == "In1"}]
-    puts "Unused Interrupts: 2, 3 are tied to 0"
-    set irq_unused [tapasco::ip::create_constant "irq_unused_dma" 1 0]
-    connect_bd_net [get_bd_pins -of_object $irq_unused -filter {NAME == "dout"}] \
-      [get_bd_pins -of_objects $irq_concat_dma -filter {NAME == "In2"}]
-    connect_bd_net [get_bd_pins -of_object $irq_unused -filter {NAME == "dout"}] \
-      [get_bd_pins -of_objects $irq_concat_dma -filter {NAME == "In3"}]
-
-    for {set i 0} {$i < [llength $irqs]} {incr i} {
-      set port [create_bd_pin -from 31 -to 0 -dir I -type intr "intr_$i"]
-      connect_bd_net $port [get_bd_pins -of_objects $irq_concat_design -filter "NAME == In$i"]
-    }
-    if {$i < 4} {
-      set unused [tapasco::ip::create_constant "irq_unused_design" 32 0]
-      for {set j $i} {$j < 4} {incr j} {
-        connect_bd_net [get_bd_pins -of_objects $unused -filter {NAME == "dout"}] \
-          [get_bd_pins -of_objects $irq_concat_design -filter "NAME == In$j"]
-      }
-    }
+    connect_bd_net [get_bd_pins ${design_concats_last}/dout] [get_bd_pins $intr_ctrl/interrupt_design] 
+    connect_bd_net [get_bd_pins ${host_concat}/dout] [get_bd_pins $intr_ctrl/interrupt_pcie]
 
     # connect internal clocks
     connect_bd_net $aclk [get_bd_pins -of_objects $intr_ctrl -filter {NAME == "S_AXI_ACLK"}]
@@ -195,9 +195,6 @@ namespace eval platform {
 
     set pcie_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
 
-    set irq_read [create_bd_pin -type "intr" -dir "O" "dma_irq_read"]
-    set irq_write [create_bd_pin -type "intr" -dir "O" "dma_irq_write"]
-
     set ddr_ready [create_bd_pin -type "undef" -dir "I" "ddr_ready"]
 
     set gpio [tapasco::ip::create_axi_gpio "axi_gpio"]
@@ -217,8 +214,8 @@ namespace eval platform {
       [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
 
     set dma [tapasco::ip::create_bluedma_x16 "dma"]
-    connect_bd_net [get_bd_pins -of_objects $dma -filter {NAME == "IRQ_read"}] $irq_read
-    connect_bd_net [get_bd_pins -of_objects $dma -filter {NAME == "IRQ_write"}] $irq_write
+    connect_bd_net [get_bd_pins -of_objects $dma -filter {NAME == "IRQ_read"}] [::tapasco::ip::add_interrupt "PLATFORM_COMPONENT_DMA0_READ" "host"]
+    connect_bd_net [get_bd_pins -of_objects $dma -filter {NAME == "IRQ_write"}] [::tapasco::ip::add_interrupt "PLATFORM_COMPONENT_DMA0_WRITE" "host"]
 
     # connect DMA 64bit to external port
     connect_bd_intf_net [get_bd_intf_pins -of_objects $dma -filter {NAME == "m64_axi"}] $m_axi_mem

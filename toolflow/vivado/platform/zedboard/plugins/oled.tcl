@@ -21,21 +21,12 @@ if {[tapasco::is_feature_enabled "OLED"]} {
   # Creates the optional OLED controller indicating interrupts.
   # @param ps Processing System instance
   proc create_custom_subsystem_oled {} {
-    # number of INTC's
-    set irqs [::arch::get_irqs]
-    set no_intcs [llength $irqs]
-
     # create OLED controller
     set oled_ctrl [tapasco::ip::create_oled_ctrl oled_ctrl]
 
     # create ports
     set initialized [create_bd_port -dir O "initialized"]
     set heartbeat [create_bd_port -dir O "heartbeat"]
-    set op_cc [tapasco::ip::create_xlconcat "op_cc" $no_intcs]
-    connect_bd_net [get_bd_pins -of_objects $op_cc -filter { DIR == "O" }] [get_bd_pins $oled_ctrl/intr]
-    for {set i 0} {$i < $no_intcs} {incr i} {
-      connect_bd_net [lindex $irqs $i] [get_bd_pins "$op_cc/In$i"]
-    }
 
     # create clock
     set clk_wiz [::tapasco::ip::create_clk_wiz "clk_wiz"]

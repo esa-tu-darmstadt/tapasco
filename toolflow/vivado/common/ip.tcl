@@ -475,8 +475,56 @@ namespace eval ::tapasco::ip {
                          CONFIG.Coe_File $outfile] [get_bd_cells -filter "NAME == ${name}_base"]
   }
 
+  set debugable_pes [list]
+
+  namespace export add_debug_to_pe
+  proc add_debug_to_pe {pe_id name offset size} {
+    variable debugable_pes
+    puts "Adding debug functionality to PE $pe_id"
+    puts "$name @ $offset -> $offset + $size"
+    lappend debugable_pes [list $pe_id $name $offset $size]
+  }
+
+  set interrupts [list]
+  set interrupt_mapping [list]
+
+  namespace export add_interrupt
+  proc add_interrupt { name clk } {
+    variable interrupts
+    variable interrupt_cntr
+    lappend interrupts "$name" "$clk"
+
+    return [create_bd_pin -type INTR -dir O "intr_${name}"]
+  }
+
+  namespace export add_interrupt
+  proc set_interrupt_mapping { mapping } {
+    variable interrupt_mapping
+    set interrupt_mapping $mapping
+  }
+
+  namespace export get_interrupt_list
+  proc get_interrupt_list { } {
+    variable interrupts
+    return $interrupts
+  }
+
+  namespace export create_interrupt_in_ports
+  proc create_interrupt_in_ports {} {
+    variable interrupts
+    set ports [list]
+    foreach {int clk} $interrupts {
+      lappend ports [create_bd_pin -type INTR -dir I "intr_${int}"]
+    }
+    return $ports
+  }
+
   # Generate JSON configuration for the status core.
   proc make_status_config_json {} {
+    variable debugable_pes
+    variable interrupts
+    variable interrupt_mapping
+
     platform::addressmap::reset
     puts "  getting address map ..."
     set addr [platform::get_address_map [platform::get_pe_base_address]]
@@ -490,15 +538,19 @@ namespace eval ::tapasco::ip {
           "register" {
             set kind [format "%d" [regsub {.*target_ip_([0-9][0-9]).*} $intf {\1}]]
             set kid [dict get [::tapasco::get_composition] $kind id]
+            set vlnv [dict get [::tapasco::get_composition] $kind vlnv]
+
             lappend slots [json::write object "Type" [json::write string "Kernel"] "SlotId" $slot_id "Kernel" $kid \
                                               "Offset" [json::write string [format "0x%016x" [expr "[dict get $addr $intf "offset"] - [::platform::get_pe_base_address]"]]]          \
-                                              "Size" [json::write string [format "0x%016x" [dict get $addr $intf "range"]]]]
+                                              "Size" [json::write string [format "0x%016x" [dict get $addr $intf "range"]]] \
+                                              "VLNV" [json::write string $vlnv]]
             incr slot_id
           }
           "memory" {
             lappend slots [json::write object "Type" [json::write string "Memory"] "SlotId" $slot_id "Kernel" 0 \
                                               "Offset" [json::write string [format "0x%016x" [expr "[dict get $addr $intf "offset"] - [::platform::get_pe_base_address]"]]] \
-                                              "Size" [json::write string [format "0x%016x" [dict get $addr $intf "range"]]]]
+                                              "Size" [json::write string [format "0x%016x" [dict get $addr $intf "range"]]] \
+                                              "VLNV" [json::write string "None"]]
             incr slot_id
           }
           "master" {}
@@ -507,6 +559,22 @@ namespace eval ::tapasco::ip {
       }
     }
     puts "  finished composition map, composing JSON ..."
+
+    set debug [list]
+    foreach t $debugable_pes {
+        puts $t
+        set pe_id [lindex $t 0]
+        set name [json::write string [lindex $t 1]]
+        set offset [json::write string [format "0x%016x" [lindex $t 2]]]
+        set size [json::write string [format "0x%016x" [lindex $t 3]]]
+        lappend debug [json::write object "PE_ID" $pe_id "Name" $name "Offset" $offset "Size" $size]
+    }
+
+    set interrupt_json [list]
+    foreach {name clk} $interrupts mapping $interrupt_mapping {
+      puts "Interrupt $name @ $mapping"
+      lappend interrupt_json [json::write object "Name" [json::write string $name] "Mapping" $mapping]
+    }
 
     # get platform component base addresses
     set pc_bases [list]
@@ -541,6 +609,8 @@ namespace eval ::tapasco::ip {
                                        "Composition" [json::write array {*}$slots]] \
         "Platform" [json::write object "Base" [json::write string [format "0x%016x" [::platform::get_platform_base_address]]] \
                                        "Components" [json::write array {*}$pc_bases]] \
+      "Debug" [json::write array {*}$debug] \
+      "Interrupts" [json::write array {*}$interrupt_json] \
     ]
   }
 }

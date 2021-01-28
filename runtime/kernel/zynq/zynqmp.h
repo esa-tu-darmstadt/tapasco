@@ -48,9 +48,11 @@ static const struct tlkm_class zynqmp_cls = {
 	.probe = zynqmp_device_probe,
 	.remove = zynq_remove,
 	.ioctl = zynq_ioctl,
+	.init_interrupts = zynq_irq_init,
+	.exit_interrupts = zynq_irq_exit,
 	.pirq = zynq_irq_request_platform_irq,
 	.rirq = zynq_irq_release_platform_irq,
-	.npirqs = 16,
+	.number_of_interrupts = 140,
 	.platform = ZYNQMP_DEF,
 	.private_data = NULL,
 };

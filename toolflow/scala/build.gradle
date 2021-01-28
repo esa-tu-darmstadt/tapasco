@@ -72,7 +72,7 @@ application {
 ospackage {
     packageName = "tapasco"
     version = "2020"
-    release = "04"
+    release = "10"
     license = "GNU Lesser General Public License v3.0"
     vendor = "Embedded Systems and Applications Group, TU Darmstadt"
     url = "https://github.com/esa-tu-darmstadt/tapasco"

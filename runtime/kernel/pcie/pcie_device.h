@@ -25,10 +25,11 @@
 #include <linux/version.h>
 #include "tlkm_types.h"
 #include "dma/tlkm_dma.h"
+#include "pcie/pcie_irq.h"
+#include "pcie/pcie_irq_aws.h"
+#include "zynq/zynq_irq.h"
 
-#define TLKM_PLATFORM_INTERRUPTS 4
-#define TLKM_SLOT_INTERRUPTS 128
-#define REQUIRED_INTERRUPTS (TLKM_PLATFORM_INTERRUPTS + TLKM_SLOT_INTERRUPTS)
+#define TLKM_PCIE_NUM_DMA_BUFFERS 32
 
 uint32_t get_xdma_reg_addr(uint32_t target, uint32_t channel, uint32_t offset);
 
@@ -54,6 +55,18 @@ int pcie_device_dma_sync_buffer_dev(dev_id_t dev_id, struct tlkm_device *dev,
 				    void **buffer, dma_addr_t *dev_handle,
 				    dma_direction_t direction, size_t size);
 
+void pcie_device_miscdev_close(struct tlkm_device *dev);
+
+inline void *pcie_device_addr2map_off(struct tlkm_device *dev,
+				      dev_addr_t const addr);
+
+struct dma_buf {
+	void *ptr;
+	dma_addr_t ptr_dev;
+	size_t size;
+	dma_direction_t direction;
+};
+
 /* struct to hold data related to the pcie device */
 struct tlkm_pcie_device {
 	struct tlkm_device *parent;
@@ -61,14 +74,16 @@ struct tlkm_pcie_device {
 	u64 phy_addr_bar0;
 	u64 phy_len_bar0;
 	u64 phy_flags_bar0;
-	int irq_mapping[REQUIRED_INTERRUPTS];
-	void *irq_data[REQUIRED_INTERRUPTS];
 	int link_width;
 	int link_speed;
-	struct work_struct irq_work[TLKM_SLOT_INTERRUPTS];
+	struct dma_buf dma_buffer[TLKM_PCIE_NUM_DMA_BUFFERS];
 	volatile uint32_t *ack_register;
+	volatile uint32_t *ack_register_aws;
+	struct list_head *interrupts;
+	struct zynq_irq_mapping intc_bases[AWS_NUM_IRQ_CONTROLLERS];
+	int requested_irq_num;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
-	struct msix_entry msix_entries[REQUIRED_INTERRUPTS];
+	struct msix_entry *msix_entries;
 #endif
 };
 
