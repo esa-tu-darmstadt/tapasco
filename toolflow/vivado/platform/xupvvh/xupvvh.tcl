@@ -88,9 +88,7 @@ namespace eval platform {
       CONFIG.C0.DDR4_isCustom {true} \
       ]
 
-    save_bd_design
     set_property -dict $properties $mig
-    save_bd_design
 
     # connect MEM_CTRL interface (ECC configuration + status)
     set s_axi_mem_ctrl [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_MEM_CTRL]
