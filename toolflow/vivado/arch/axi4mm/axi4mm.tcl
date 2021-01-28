@@ -100,10 +100,10 @@ namespace eval arch {
       for {set j 0} {$j < $no_inst} {incr j} {
         # Create PE instance
         set name [format "target_ip_%02d_%03d" $i $j]
-        set inst [create_bd_cell -type ip -vlnv "$vlnv" "internal_$name"]
 
         # Only create a wrapper around PEs if atleast one plugin is present
-        if {[llength [tapasco::get_plugins "post-pe-create"]] > 0} {
+        if {[llength [tapasco::get_plugins "post-pe-create"]] < 0} {
+          set inst [create_bd_cell -type ip -vlnv "$vlnv" "internal_$name"]
           set bd_inst [current_bd_instance .]
           set group [create_wrapper_around_pe $inst $name]
 
@@ -114,6 +114,7 @@ namespace eval arch {
           # return the wrapper so that it can be connected
           lappend insts $group
         } else {
+          set inst [create_bd_cell -type ip -vlnv "$vlnv" "$name"]
           lappend insts $inst
         }
       }
