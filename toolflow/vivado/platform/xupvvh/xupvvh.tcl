@@ -231,7 +231,7 @@ namespace eval platform {
     insert_regslice "dma_host" true "/memory/M_HOST" "/host/S_HOST" "/clocks_and_resets/host_clk" "/clocks_and_resets/host_interconnect_aresetn" ""
     insert_regslice "host_arch" true "/host/M_ARCH" "/arch/S_ARCH" "/clocks_and_resets/design_clk" "/clocks_and_resets/design_interconnect_aresetn" ""
 
-    if {[tapasco::is_feature_enabled "SFPPLUS"]} {
+    if {[get_bd_intf_pins "/network/S_NETWORK"] ne ""} {
       insert_regslice "host_network" true "/host/M_NETWORK" "/network/S_NETWORK" "/clocks_and_resets/design_clk" "/clocks_and_resets/design_interconnect_aresetn" ""
     }
 

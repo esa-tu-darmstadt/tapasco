@@ -121,3 +121,42 @@ SFPPLUS {
   "Mode": "100G"
 }
 ```
+
+
+
+## 100G (UltraScale+)
+
+The CMAC-IP (100G Ethernet) for Xilinx UltraScale(+) FPGAs has some specialities which need to be respected when using it.
+Some of these concern the FPGA itself, others are for the connection partner (switch, nic, ...).
+TaPaSCo will automate the FPGA-related specialities to some extent. You need to do the following:
+ 
+ - Configure the link partner: Disable "Auto Negotiation", fix speed to 100G, activate RS-FEC
+ - Load Bitstream
+ - Open Hardware Manager
+ - Find VIO-Core in Hardware Manger and open it
+ - "Refresh Input and Output Values from VIO Core" (rightclick on VIO)
+ - The VIO drives to Resets (beware: different polarities!) and receives one Interrupt
+ - "Deactivate" QSFP-Reset by setting it to 1
+ - Wait for Interrupt to switch to 1
+ - "Deactivate" Core-Reset by setting it to 0
+
+
+
+The complete procedure as a reference:
+
+ - IP Configuration: Typically you want to configure with "Enable FCS Insertion/Stripping", "Flow Control", "RS-FEC", "Check Preamble" and "Check SFD" enabled.
+   "Auto Negotiation/Link Training" can also be useful but needs a separate license and is *not* required.
+ - The link partner needs to be configured to match these settings (if "Auto Negotiation" is disabled): It is (at least) necessary to also disable "Auto Negotiation", fix the speed to 100G and enable RS-FEC.
+ - Depending on the board there may be specific QSFP28-related board pins (Enable, LowPower, Reset, Interrupt, ...) which need to be respected
+ - The CMAC-IP has a required startup procedure (which is only partly documented in PG203). All of these steps can be done via the input pins of the IP or via the optional AXI-Lite Interface. These are the steps for the input pins, see PG203 for the AXI-Lite:
+   - Enable RS-FEC: Set ctl_rx_rsfec_enable, ctl_tx_rsfec_enable, ctl_rx_rsfec_enable_correction, ctl_rx_rsfec_enable_indication to 0x1
+   - Reset the core via core_rx_reset and core_tx_reset
+   - Enable RX: ctl_rx_enable = 0x1 and ctl_tx_send_rfi = 0x1
+   - Wait for stat_rx_aligned (output of IP core)
+   - Enable TX: ctl_tx_send_rfi = 0x0 and ctl_tx_enable = 0x1
+   - Configure Control Flow: ctl_tx_pause_req = 0x100 ctl_tx_pause_enable = 0x1ff ctl_rx_pause_enable = 0x1ff ctl_tx_pause_quanta8 = 0xffff ctl_tx_pause_refresh_timer = 0xffff
+ - Sometimes it may be necessary to configure the QSFP28-Transceiver. On the FPGA this is typically possible via I2C. The Transceiver has some status and configuration registers which are specified in SFF-8636. Important registers include
+   - Interrupt Flags (Byte 3-5, 9-14)
+   - Power Monitoring (Byte 34-57)
+   - Control (Byte 86-99)
+

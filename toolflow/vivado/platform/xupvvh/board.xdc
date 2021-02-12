@@ -51,7 +51,5 @@ set_property IS_SOFT TRUE [get_pblocks pblock_axi_pcie]
 add_cells_to_pblock pblock_axi_pcie [get_cells [list system_i/host/axi_pcie3_0]]
 
 
-create_pblock pblock_eth_2_3
-resize_pblock pblock_eth_2_3 -add SLR1
-set_property IS_SOFT TRUE [get_pblocks pblock_eth_2_3]
-add_cells_to_pblock pblock_eth_2_3 [get_cells [list system_i/network/ethernet_2 system_i/network/ethernet_3]]
+
+set_false_path -from [get_pins -hierarchical -filter { NAME =~  "*design_rst_gen*" && REF_PIN_NAME =~  "C" }] -to [get_pins -hierarchical -filter { NAME =~  "*network/dclk_wiz*" }]

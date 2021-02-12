@@ -25,6 +25,11 @@ namespace eval sfpplus {
     variable refclk_pins           {"P13" "V13" "AD13" "AJ15"}
     variable cmac_cores            {"CMACE4_X0Y7" "CMACE4_X0Y6" "CMACE4_X0Y4" "CMACE4_X0Y2"}
     variable gt_groups             {"X1Y44~X1Y47" "X1Y36~X1Y39" "X1Y24~X1Y27" "X1Y16~X1Y19"}
+    variable fpga_i2c_master       "E17"
+    variable qsfp_ctl_en           "C18"
+    variable qsfp_rst              {"A21" "A19" "B16" "C19"}
+    variable qsfp_int_l            "B20"
+    variable qsfp_lp               "B18"
 
     proc num_available_ports {} {
       variable available_ports
@@ -35,14 +40,43 @@ namespace eval sfpplus {
 
       set num_streams [dict size $ports]
 
-      create_network_config_master
-
       puts "Generating $num_streams SFPPLUS cores"
       set constraints_fn "[get_property DIRECTORY [current_project]]/sfpplus.xdc"
       set constraints_file [open $constraints_fn w+]
 
-      # AXI Interconnect for Configuration
-      set axi_config [tapasco::ip::create_axi_ic axi_config 1 $num_streams]
+      # QSFP Ports
+      set const_zero [tapasco::ip::create_constant const_zero 1 0]
+      set const_one [tapasco::ip::create_constant const_one 1 1]
+
+      variable fpga_i2c_master
+      variable qsfp_ctl_en
+      variable qsfp_int_l
+      variable qsfp_lp
+
+      set port_fpga_i2c_master [create_bd_port -dir O fpga_i2c_master]
+      puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports fpga_i2c_master]} $fpga_i2c_master]
+      puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports fpga_i2c_master]}
+      connect_bd_net [get_bd_pins $const_zero/dout] $port_fpga_i2c_master
+
+      set port_qsfp_ctl_en [create_bd_port -dir O qsfp_ctl_en]
+      puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports qsfp_ctl_en]} $qsfp_ctl_en]
+      puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports qsfp_ctl_en]}
+      connect_bd_net [get_bd_pins $const_one/dout] $port_qsfp_ctl_en
+
+      set port_qsfp_int_l [create_bd_port -dir I qsfp_int_l]
+      puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports qsfp_int_l]} $qsfp_int_l]
+      puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports qsfp_int_l]}
+
+      set port_qsfp_lp [create_bd_port -dir O qsfp_lp]
+      puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports qsfp_lp]} $qsfp_lp]
+      puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports qsfp_lp]}
+      connect_bd_net [get_bd_pins $const_zero/dout] $port_qsfp_lp
+
+
+      set const_x100 [tapasco::ip::create_constant const_x100 9 256]
+      set const_x1ff [tapasco::ip::create_constant const_x1ff 9 511]
+      set const_xffff [tapasco::ip::create_constant const_xffff 16 65535]
+
 
       # Clocking wizard for creating clock dclk; Used for dclk and AXI-Lite clocks of core
       set dclk_wiz [tapasco::ip::create_clk_wiz dclk_wiz]
@@ -51,17 +85,15 @@ namespace eval sfpplus {
       # Reset Generator for dclk reset
       set dclk_reset [tapasco::ip::create_rst_gen dclk_reset]
 
+      set vio [create_bd_cell -type ip -vlnv xilinx.com:ip:vio:3.0 vio_0]
+      set_property -dict [list CONFIG.C_NUM_PROBE_OUT {2}] $vio
+      set_property -dict [list CONFIG.C_PROBE_OUT1_INIT_VAL {0x1}] $vio
+      connect_bd_net $port_qsfp_int_l [get_bd_pins $vio/probe_in0]
+      connect_bd_net [get_bd_pins design_clk] [get_bd_pins $vio/clk]
+
       connect_bd_net [get_bd_pins $dclk_wiz/clk_out1] [get_bd_pins $dclk_reset/slowest_sync_clk]
       connect_bd_net [get_bd_pins design_peripheral_aresetn] [get_bd_pins $dclk_reset/ext_reset_in]
       connect_bd_net [get_bd_pins design_clk] [get_bd_pins $dclk_wiz/clk_in1]
-      connect_bd_net [get_bd_pins $axi_config/M*_ACLK] [get_bd_pins $dclk_wiz/clk_out1]
-      connect_bd_net [get_bd_pins $axi_config/M*_ARESETN] [get_bd_pins $dclk_reset/peripheral_aresetn]
-
-      connect_bd_intf_net [get_bd_intf_pins $axi_config/S00_AXI] [get_bd_intf_pins S_NETWORK]
-      connect_bd_net [get_bd_pins $axi_config/S00_ACLK] [get_bd_pins design_clk]
-      connect_bd_net [get_bd_pins $axi_config/S00_ARESETN] [get_bd_pins design_interconnect_aresetn]
-      connect_bd_net [get_bd_pins $axi_config/ACLK] [get_bd_pins design_clk]
-      connect_bd_net [get_bd_pins $axi_config/ARESETN] [get_bd_pins design_interconnect_aresetn]
 
       set first_port 0
       foreach port [dict keys $ports] {
@@ -69,6 +101,10 @@ namespace eval sfpplus {
         generate_core $port $name $first_port $constraints_file
         incr first_port 1
       }
+
+      set_property name qsfp_reset_l [get_bd_nets -of [get_bd_pins $vio/probe_out0]]
+      set_property name core_reset [get_bd_nets -of [get_bd_pins $vio/probe_out1]]
+      set_property name qsfp_int_l [get_bd_nets -of [get_bd_pins $vio/probe_in0]]
 
       close $constraints_file
       read_xdc $constraints_fn
@@ -84,6 +120,12 @@ namespace eval sfpplus {
       variable refclk_pins
       variable cmac_cores
       variable gt_groups
+      variable qsfp_rst
+
+      set port_qsfp_rst [create_bd_port -dir O qsfp_rst_l_$physical_port]
+      puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $qsfp_rst $physical_port] qsfp_rst_l_$physical_port]
+      puts $constraints_file [format {set_property IOSTANDARD LVCMOS18 [get_ports %s]} qsfp_rst_l_$physical_port]
+      connect_bd_net [get_bd_pins vio_0/probe_out0] $port_qsfp_rst
 
       # Create and constrain refclk pin
       set gt_refclk [create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 gt_refclk_$physical_port]
@@ -98,15 +140,20 @@ namespace eval sfpplus {
         CONFIG.CMAC_CAUI4_MODE {1} \
         CONFIG.NUM_LANES {4x25} \
         CONFIG.USER_INTERFACE {AXIS} \
-        CONFIG.TX_FRAME_CRC_CHECKING {Disable FCS Insertion} \
-        CONFIG.RX_FRAME_CRC_CHECKING {Disable FCS Stripping} \
+        CONFIG.TX_FRAME_CRC_CHECKING {Enable FCS Insertion} \
+        CONFIG.RX_FRAME_CRC_CHECKING {Enable FCS Stripping} \
         CONFIG.GT_REF_CLK_FREQ {322.265625} \
-        CONFIG.TX_FLOW_CONTROL {0} \
-        CONFIG.RX_FLOW_CONTROL {0} \
-        CONFIG.ENABLE_AXI_INTERFACE {1} \
+        CONFIG.TX_FLOW_CONTROL {1} \
+        CONFIG.RX_FLOW_CONTROL {1} \
+        CONFIG.ENABLE_AXI_INTERFACE {0} \
         CONFIG.INCLUDE_STATISTICS_COUNTERS {0} \
         CONFIG.RX_GT_BUFFER {1} \
         CONFIG.GT_RX_BUFFER_BYPASS {0} \
+        CONFIG.INCLUDE_RS_FEC {1} \
+        CONFIG.RX_CHECK_ACK {1} \
+        CONFIG.RX_CHECK_PREAMBLE {1} \
+        CONFIG.RX_CHECK_SFD {1} \
+        CONFIG.RX_MAX_PACKET_LEN {16383} \
         CONFIG.CMAC_CORE_SELECT [lindex $cmac_cores $physical_port] \
         CONFIG.GT_GROUP_SELECT [lindex $gt_groups $physical_port]
         ] $core
@@ -122,9 +169,8 @@ namespace eval sfpplus {
       # Connect core
       connect_bd_intf_net [get_bd_intf_pins $core/axis_rx] [get_bd_intf_pins AXIS_RX_${name}]
       connect_bd_intf_net [get_bd_intf_pins $core/axis_tx] [get_bd_intf_pins AXIS_TX_${name}]
-      connect_bd_intf_net [get_bd_intf_pins $core/s_axi] [get_bd_intf_pins /Network/AXI_Config/M[format %02d [expr $first_port]]_AXI]
-      connect_bd_net [get_bd_pins $core/s_axi_aclk] [get_bd_pins dclk_wiz/clk_out1]
-      connect_bd_net [get_bd_pins $core/s_axi_sreset] [get_bd_pins dclk_reset/peripheral_reset]
+      #connect_bd_net [get_bd_pins $core/s_axi_aclk] [get_bd_pins dclk_wiz/clk_out1]
+      #connect_bd_net [get_bd_pins $core/s_axi_sreset] [get_bd_pins dclk_reset/peripheral_reset]
       connect_bd_net [get_bd_pins $core/gt_txusrclk2] [get_bd_pins $core/rx_clk]
 
       connect_bd_net [get_bd_pins $core/gt_txusrclk2] [get_bd_pins /Network/sfp_tx_clock_${name}]
@@ -138,24 +184,42 @@ namespace eval sfpplus {
       connect_bd_net [get_bd_pins $core/usr_rx_reset] [get_bd_pins $out_inv/Op1]
       connect_bd_net [get_bd_pins /Network/sfp_rx_resetn_${name}] [get_bd_pins $out_inv/Res]
 
+      set reset_generator [tapasco::ip::create_logic_vector reset_generator]
+      set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {and} CONFIG.LOGO_FILE {data/sym_andgate.png}] $reset_generator
+      set reset_inverter [tapasco::ip::create_logic_vector reset_inverter]
+      set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] $reset_inverter
+      connect_bd_net [get_bd_pins dclk_reset/peripheral_aresetn] [get_bd_pins $reset_generator/Op1]
+      connect_bd_net [get_bd_ports /qsfp_int_l] [get_bd_pins $reset_generator/Op2]
+      connect_bd_net [get_bd_pins $reset_generator/Res] [get_bd_pins $reset_inverter/Op1]
+      connect_bd_net [get_bd_pins vio_0/probe_out1] [get_bd_pins $core/core_rx_reset]
+      connect_bd_net [get_bd_pins vio_0/probe_out1] [get_bd_pins $core/core_tx_reset]
+      connect_bd_net [get_bd_pins vio_0/probe_out1] [get_bd_pins $core/gtwiz_reset_tx_datapath]
+      connect_bd_net [get_bd_pins vio_0/probe_out1] [get_bd_pins $core/gtwiz_reset_rx_datapath]
 
-      ::platform::insert_regslice "netic_eth_$physical_port" true [get_bd_intf_pins /Network/AXI_Config/M[format %02d [expr $first_port]]_AXI] [get_bd_intf_pins $core/s_axi] [get_bd_pins dclk_wiz/clk_out1] [get_bd_pins dclk_reset/peripheral_aresetn] "/network"
+
+      connect_bd_net [get_bd_pins const_one/dout] [get_bd_pins $core/ctl_rx_enable]
+      connect_bd_net [get_bd_pins const_one/dout] [get_bd_pins $core/ctl_rx_rsfec_enable]
+      connect_bd_net [get_bd_pins const_one/dout] [get_bd_pins $core/ctl_rx_rsfec_enable_correction]
+      connect_bd_net [get_bd_pins const_one/dout] [get_bd_pins $core/ctl_rx_rsfec_enable_indication]
+      connect_bd_net [get_bd_pins const_one/dout] [get_bd_pins $core/ctl_tx_rsfec_enable]
+      connect_bd_net [get_bd_pins const_x100/dout] [get_bd_pins $core/ctl_tx_pause_req]
+      connect_bd_net [get_bd_pins const_x1ff/dout] [get_bd_pins $core/ctl_rx_pause_enable]
+      connect_bd_net [get_bd_pins const_x1ff/dout] [get_bd_pins $core/ctl_tx_pause_enable]
+      connect_bd_net [get_bd_pins const_xffff/dout] [get_bd_pins $core/ctl_tx_pause_quanta8]
+      connect_bd_net [get_bd_pins const_xffff/dout] [get_bd_pins $core/ctl_tx_pause_refresh_timer8]
+
+      connect_bd_net [get_bd_pins $core/stat_rx_aligned] [get_bd_pins $core/ctl_tx_enable]
+
+      set aligned_inverter [tapasco::ip::create_logic_vector aligned_inverter]
+      set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] $aligned_inverter
+      connect_bd_net [get_bd_pins $core/stat_rx_aligned] [get_bd_pins $aligned_inverter/Op1]
+      connect_bd_net [get_bd_pins $aligned_inverter/Res] [get_bd_pins $core/ctl_tx_send_rfi]
     }
 
     proc create_inverter {name} {
       variable ret [create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 $name]
       set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] [get_bd_cells $name]
       return $ret
-    }
-
-    # Create AXI connection to Host interconnect for network configuration interfaces
-    proc create_network_config_master {} {
-      create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_NETWORK
-      set m_si [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 /host/M_NETWORK]
-      set num_mi_old [get_property CONFIG.NUM_MI [get_bd_cells /host/out_ic]]
-      set num_mi [expr "$num_mi_old + 1"]
-      set_property -dict [list CONFIG.NUM_MI $num_mi] [get_bd_cells /host/out_ic]
-      connect_bd_intf_net $m_si [get_bd_intf_pins /host/out_ic/[format "M%02d_AXI" $num_mi_old]]
     }
 
   }
