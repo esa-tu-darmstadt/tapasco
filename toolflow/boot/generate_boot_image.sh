@@ -182,7 +182,6 @@ build_u-boot() {
 		case $BOARD in
 			"pynq")
 				# based on zybo z7, but requires a few changes
-				DEFCONFIG=zynq_zybo_z7_defconfig
 				echo "CONFIG_DEBUG_UART_BASE=0xe0000000" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
 				# modify devicetree
 				# change uart1 to uart0
@@ -191,23 +190,30 @@ build_u-boot() {
 				sed -i 's/33333333/50000000/' $DIR/u-boot-xlnx/arch/arm/dts/zynq-zybo-z7.dts
 				# set memory size to 512 MB
 				sed -i 's/40000000/20000000/' $DIR/u-boot-xlnx/arch/arm/dts/zynq-zybo-z7.dts
+				DEVICE_TREE="zynq-zybo-z7"
 				;;
 			"zedboard")
-				DEFCONFIG=zynq_zed_defconfig
+				DEVICE_TREE="zynq-zed"
 				;;
 			"zc706")
-				DEFCONFIG=zynq_zc706_defconfig
+				DEVICE_TREE="zynq-zc706"
 				;;
 			"ultra96v2")
-				DEFCONFIG=avnet_ultra96_rev1_defconfig
+				DEVICE_TREE="avnet-ultra96-rev1"
 				;;
 			"zcu102")
-				DEFCONFIG=xilinx_zynqmp_zcu102_rev1_0_defconfig
+				DEVICE_TREE="zynqmp-zcu102-rev1.0"
 				;;
 			*)
 				return $(error_ret "unknown board: $BOARD")
 				;;
 		esac
+		# use common defconfigs introduced with Vivado 2020.1
+		if [[ $ARCH == arm ]]; then
+			DEFCONFIG=xilinx_zynq_virt_defconfig
+		else
+			DEFCONFIG=xilinx_zynqmp_virt_defconfig
+		fi
 		cd $DIR/u-boot-xlnx
 		# disable network boot for all devices
 		echo "# CONFIG_CMD_NET is not set" >> configs/$DEFCONFIG
@@ -215,10 +221,10 @@ build_u-boot() {
 			echo "CONFIG_OF_EMBED=y" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
 			echo "# CONFIG_OF_SEPARATE is not set" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
 		fi
-		make CROSS_COMPILE=$CROSS_COMPILE $DEFCONFIG ||
+		make CROSS_COMPILE=$CROSS_COMPILE $DEFCONFIG DEVICE_TREE=$DEVICE_TREE ||
 			return $(error_ret "$LINENO: could not make defconfig $DEFCONFIG")
 		if [[ $ARCH != arm64 ]]; then
-			make CROSS_COMPILE=$CROSS_COMPILE HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" tools -j $JOBCOUNT ||
+			make CROSS_COMPILE=$CROSS_COMPILE HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" DEVICE_TREE=$DEVICE_TREE tools -j $JOBCOUNT ||
 				return $(error_ret "$LINENO: could not build u-boot tools")
 		fi
 	else
