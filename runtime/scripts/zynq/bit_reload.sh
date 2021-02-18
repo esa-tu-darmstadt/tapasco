@@ -33,6 +33,7 @@ set -e
 DRIVER=tlkm
 DRIVERPATH="$TAPASCO_HOME_RUNTIME/kernel"
 VFIO_RST_REQ="/sys/module/vfio_platform/parameters/reset_required"
+VFIO_UNSAFE_INTR="/sys/module/vfio_iommu_type1/parameters/allow_unsafe_interrupts"
 
 show_usage() {
 	cat << EOF
@@ -149,6 +150,11 @@ if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit || $BITSTREAM == *.bin ]]; then
 				else
 					echo "VFIO loaded successfully!"
 				fi
+			fi
+
+			# is required on the zcu102
+			if [ -f "$VFIO_UNSAFE_INTR" ] && [ "$(cat $VFIO_UNSAFE_INTR)" == "N" ]; then
+				sudo sh -c "echo Y > $VFIO_UNSAFE_INTR"
 			fi
 		fi
 	fi
