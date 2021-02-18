@@ -293,6 +293,10 @@ build_ssbl() {
 		echo "$DIR/u-boot-xlnx/u-boot already exists, skipping."
 	fi
 
+	if [[ ! -f $DIR/boot.scr && -e $SCRIPTDIR/bootscr/boot-$BOARD.txt ]]; then
+		$DIR/u-boot-xlnx/tools/mkimage -A arm -T script -O linux -d $SCRIPTDIR/bootscr/boot-$BOARD.txt $DIR/boot.scr
+	fi
+
 	if [[ $ARCH != arm64 ]]; then
 		cp $DIR/u-boot-xlnx/u-boot $DIR/u-boot-xlnx/u-boot.elf ||
 			return $(error_ret "$LINENO: could not copy to $DIR/u-boot-xlnx/u-boot.elf failed")
@@ -633,6 +637,10 @@ copy_files_to_boot() {
 			echo >&2 "$LINENO: WARNING: could not copy uEnv.txt"
 		echo "Copying $DIR/devicetree.dtb to $TO ..."
 		dusudo cp $DIR/devicetree.dtb $TO || echo >&2 "$LINENO: WARNING: could not copy devicetree"
+	fi
+	if [[ -f $DIR/boot.scr ]]; then
+		echo "Copying $DIR/boot.scr to $TO/boot.scr ..."
+		dusudo cp $DIR/boot.scr $TO/boot.scr || echo >&2 "$LINENO: WARNING: could not copy boot.scr"
 	fi
 	dusudo umount $TO
 	rmdir $TO 2> /dev/null &&
