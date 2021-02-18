@@ -150,6 +150,7 @@ if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit || $BITSTREAM == *.bin ]]; then
 				else
 					echo "VFIO loaded successfully!"
 				fi
+				sudo chmod a+rw /dev/vfio/*
 			fi
 
 			# is required on the zcu102
