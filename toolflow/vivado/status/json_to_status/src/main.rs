@@ -325,6 +325,7 @@ fn run() -> Result<()> {
     }
 
     let mut pes: Vec<status::Pe> = Vec::new();
+    let mut peid = 0;
     for pe in json.Architecture.Composition {
         let addr = from_hex_str(&pe.Offset)?;
         let size = from_hex_str(&pe.Size)?;
@@ -337,7 +338,7 @@ fn run() -> Result<()> {
                 size: size,
             });
         } else {
-            let int = match interrupts_pes.remove(&pe.SlotId) {
+            let int = match interrupts_pes.remove(&peid) {
                 Some(x) => x,
                 None => Vec::new(),
             };
@@ -350,6 +351,7 @@ fn run() -> Result<()> {
                 debug: debugs.remove(&pe.SlotId),
                 interrupts: int,
             });
+            peid += 1;
         }
     }
 
