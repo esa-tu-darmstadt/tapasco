@@ -24,7 +24,7 @@ namespace eval sfpplus {
   }
 
   variable available_ports 8
-  variable refclk_pins           {"U38" "U104"}
+  variable refclk_pins           {"W9" "H32"}
   variable gt_quads              {"Quad_X1Y12" "Quad_X1Y13"}
   variable gt_lanes              {"X1Y48" "X1Y49" "X1Y50" "X1Y51" "X1Y52" "X1Y53" "X1Y54" "X1Y55"}
 
