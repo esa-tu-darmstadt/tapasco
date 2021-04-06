@@ -327,7 +327,7 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
             let a = mem
                 .allocator()
                 .lock()?
-                .allocate(len as u64)
+                .allocate(len as u64, None)
                 .context(AllocatorError)?;
 
             let mut golden_samples: Vec<u8> = Vec::new();
@@ -417,7 +417,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
             let a = mem
                 .allocator()
                 .lock()?
-                .allocate(chunk as u64)
+                .allocate(chunk as u64, None)
                 .context(AllocatorError)?;
 
             let now = Instant::now();
@@ -505,7 +505,7 @@ fn transfer_to(
     let a = mem
         .allocator()
         .lock()?
-        .allocate(chunk as u64)
+        .allocate(chunk as u64, None)
         .context(AllocatorError)?;
     let mut transferred = 0;
     let mut incr = 0;
@@ -534,7 +534,7 @@ fn transfer_from(
     let a = mem
         .allocator()
         .lock()?
-        .allocate(chunk as u64)
+        .allocate(chunk as u64, None)
         .context(AllocatorError)?;
     let mut transferred = 0;
     let mut incr = 0;
