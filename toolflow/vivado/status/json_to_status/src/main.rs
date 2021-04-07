@@ -282,7 +282,7 @@ fn run() -> Result<()> {
     let mut interrupts_pes: HashMap<u64, Vec<status::Interrupt>> = HashMap::new();
     let mut interrupts_plat: HashMap<String, Vec<status::Interrupt>> = HashMap::new();
 
-    let pe_re = Regex::new(r"PE_(\d)_(\d)")?;
+    let pe_re = Regex::new(r"PE_(\d+)_(\d+)")?;
     let platform_re = Regex::new(r"(PLATFORM_COMPONENT_.*)_(.*)")?;
 
     for interrupt in json.Interrupts {
