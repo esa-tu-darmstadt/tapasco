@@ -27,7 +27,15 @@ import scala.io.Source
 import scala.sys.process._
 import scala.util.Properties.{lineSeparator => NL}
 
+import tapasco.Common
+import tapasco.Logging._
+import tapasco.base._
+import tapasco.filemgmt.LogTrackingFileWatcher
+import tapasco.util._
+
 private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
+
+  import HighLevelSynthesizer._
 
   private[this] implicit final val logger =
     tapasco.Logging.logger(getClass)
@@ -142,6 +150,7 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
   }
 
   private def kernelArgs(k: Kernel, t: Target): String = {
+    import Kernel.PassingConvention._
     val base = 0x20
     val offs = 0x10
     var i = 0
@@ -181,6 +190,7 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
   private def performAdditionalSteps(k: Kernel, t: Target)(implicit cfg: Configuration): Boolean = {
     import scala.reflect.runtime._
     import scala.reflect.runtime.universe._
+    import scala.tools.reflect.ToolBox
 
     lazy val tb = universe.runtimeMirror(this.getClass.getClassLoader).mkToolBox()
     (t.ad.additionalSteps map { step =>
