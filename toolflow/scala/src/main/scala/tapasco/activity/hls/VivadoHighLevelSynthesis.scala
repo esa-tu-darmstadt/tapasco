@@ -23,20 +23,11 @@ package tapasco.activity.hls
 
 import java.io.FileWriter
 import java.nio.file._
-
-import tapasco.Common
-import tapasco.Logging._
-import tapasco.base._
-import tapasco.filemgmt.LogTrackingFileWatcher
-import tapasco.util._
-
 import scala.io.Source
 import scala.sys.process._
 import scala.util.Properties.{lineSeparator => NL}
 
 private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
-
-  import HighLevelSynthesizer._
 
   private[this] implicit final val logger =
     tapasco.Logging.logger(getClass)
@@ -70,10 +61,17 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
       }
 
       // execute Vivado HLS (max. runtime: 1 day)
-      val vivado_hls_cmd = Seq("timeout", (cfg.hlsTimeOut getOrElse (24 * 60 * 60)).toString, "vivado_hls",
+      if(hlsCommand.isEmpty){
+        // If the command to use for HLS is still undefined, try to auto-detect it
+        if(!detectHLSCommand()){
+          logger.error("Neither vitis_hls nor vivado_hls were available on the PATH")
+          OtherError(HighLevelSynthesizerLog(logfile), new RuntimeException())
+        }
+      }
+      val vivado_hls_cmd = Seq("timeout", (cfg.hlsTimeOut getOrElse (24 * 60 * 60)).toString, hlsCommand.get,
         "-f", script.toString,
         "-l", logfile.toString)
-      val process = Process(vivado_hls_cmd, script.getParent.toFile) 
+      val process = Process(vivado_hls_cmd, script.getParent.toFile)
       val vivadoRet = InterruptibleProcess(process,
          waitMillis = Some(( cfg.hlsTimeOut getOrElse (24 * 60 * 60) ) * 1000 + 1000) )
         .!(ProcessLogger(line => logger.trace("Vivado HLS: {}", line),
@@ -144,7 +142,6 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
   }
 
   private def kernelArgs(k: Kernel, t: Target): String = {
-    import Kernel.PassingConvention._
     val base = 0x20
     val offs = 0x10
     var i = 0
@@ -184,7 +181,6 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
   private def performAdditionalSteps(k: Kernel, t: Target)(implicit cfg: Configuration): Boolean = {
     import scala.reflect.runtime._
     import scala.reflect.runtime.universe._
-    import scala.tools.reflect.ToolBox
 
     lazy val tb = universe.runtimeMirror(this.getClass.getClassLoader).mkToolBox()
     (t.ad.additionalSteps map { step =>
@@ -204,5 +200,32 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
           false
       }
     } fold true) (_ && _)
+  }
+
+  private var hlsCommand : Option[String] = None
+
+  private def detectHLSCommand(): Boolean = {
+    // Vivado/Vitis 2020.2 has renamed vivado_hls to vitis_hls, but the interfaces are still compatible.
+    // We try to detect the correct command here by trying to run each command and see which gives us
+    // a zero return value.
+    try {
+      if(Seq("vitis_hls", "-version").! == 0) {
+        hlsCommand = Some("vitis_hls")
+        return true
+      }
+    } catch {
+      // If vitis_hls is not available, the test might result in an exception that we catch here.
+      case _ : Throwable => logger.trace("vitis_hls not available")
+    }
+    try{
+      if(Seq("vivado_hls", "-version").! == 0){
+        hlsCommand = Some("vivado_hls")
+        return true
+      }
+    } catch {
+      // If vivado_hls is not available, the test might result in an exception that we catch here.
+      case _ : Throwable => logger.trace("vivado_hls not available")
+    }
+    return false
   }
 }
