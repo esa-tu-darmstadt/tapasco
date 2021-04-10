@@ -419,7 +419,7 @@ tapasco_compose_ubuntu:
   script:
     - source $XILINX_VIVADO/settings64.sh
     - which vivado
-    - which vivado_hls
+    - which vivado_hls || which vitis_hls
     - dnf -y install toolflow/scala/build/distributions/tapasco-2020-10.x86_64.rpm
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
