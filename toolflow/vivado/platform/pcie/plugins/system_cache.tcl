@@ -25,7 +25,7 @@ namespace eval system_cache {
 		current_bd_instance $subsystem
 		set clock [tapasco::subsystem::get_port "mem" "clk"]
 		set reset [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]
-		current_bd_instance $subsystem
+		current_bd_instance $instance
 		return [list [get_bd_intf_pins /memory/mig_ic/M00_AXI] [get_bd_intf_pins -regexp /memory/mig/(C0_DDR4_)?S_AXI] $subsystem $clock $reset]
 	}
 }

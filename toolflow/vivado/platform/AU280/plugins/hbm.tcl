@@ -361,7 +361,7 @@ if {[tapasco::is_feature_enabled "HBM"]} {
 			current_bd_instance $subsystem
 			set clock [tapasco::subsystem::get_port "design" "clk"]
 			set reset [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
-			current_bd_instance $subsystem
+			current_bd_instance $instance
 
 			# existing memory controller cache location
 			set cons [list [get_bd_intf_pins /memory/mig_ic/M00_AXI] [get_bd_intf_pins -regexp /memory/mig/(C0_DDR4_)?S_AXI] "/memory" [tapasco::subsystem::get_port "mem" "clk"] [tapasco::subsystem::get_port "mem" "rst" "peripheral" "resetn"]]
