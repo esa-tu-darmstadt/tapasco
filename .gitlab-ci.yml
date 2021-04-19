@@ -423,8 +423,9 @@ tapasco_compose_ubuntu:
     - dnf -y install toolflow/scala/build/distributions/tapasco-2020-10.x86_64.rpm
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
-    - tapasco hls counter -p $PLATFORM --skipEvaluation
-    - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p $PLATFORM $FLAGS
+    - tapasco hls arrayinit -p $PLATFORM --skipEvaluation
+    - tapasco import toolflow/examples/Counter.zip as 14 -p $PLATFORM --skipEvaluation
+    - tapasco -v --maxThreads 3 compose [arrayinit x 2, counter x 3] @ 100 MHz -p $PLATFORM $FLAGS
 
 tapasco_compose_17_4:
   variables:
