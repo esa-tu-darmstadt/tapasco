@@ -395,8 +395,9 @@ tapasco_compose_ubuntu:
     - apt -y install ./toolflow/scala/build/distributions/tapasco_2020-10_amd64.deb
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
-    - tapasco -v hls counter -p pynq
-    - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p pynq
+    - tapasco -v hls arrayinit -p pynq
+    - tapasco import toolflow/examples/Counter.zip as 14 -p pynq
+    - tapasco -v --maxThreads 3 compose [arrayinit x 2, Counter x 3] @ 100 MHz -p pynq
 
 .tapasco_compose:
   stage: build_hw
