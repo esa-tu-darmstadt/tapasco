@@ -425,7 +425,7 @@ tapasco_compose_ubuntu:
     - source tapasco-setup-toolflow.sh
     - tapasco hls arrayinit -p $PLATFORM --skipEvaluation
     - tapasco import toolflow/examples/Counter.zip as 14 -p $PLATFORM --skipEvaluation
-    - tapasco -v --maxThreads 3 compose [arrayinit x 2, counter x 3] @ 100 MHz -p $PLATFORM $FLAGS
+    - tapasco -v --maxThreads 3 compose [arrayinit x 2, Counter x 3] @ 100 MHz -p $PLATFORM $FLAGS
 
 tapasco_compose_17_4:
   variables:
