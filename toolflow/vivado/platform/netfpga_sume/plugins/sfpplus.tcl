@@ -286,15 +286,7 @@ if {[tapasco::is_feature_enabled "SFPPLUS"]} {
       set num_mi [expr "$num_mi_old + 1"]
       set_property -dict [list CONFIG.NUM_MI $num_mi] [get_bd_cells /host/out_ic]
       connect_bd_intf_net $m_si [get_bd_intf_pins /host/out_ic/[format "M%02d_AXI" $num_mi_old]]
-
-      # TODO: REMOVE DEBUG
-      create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 /memory/ila_0
-      set_property -dict [list CONFIG.C_INPUT_PIPE_STAGES {2} CONFIG.C_NUM_OF_PROBES {2} CONFIG.C_ADV_TRIGGER {true} CONFIG.C_ENABLE_ILA_AXI_MON {false} CONFIG.C_MONITOR_TYPE {Native}] [get_bd_cells /memory/ila_0]
-      set_property -dict [list CONFIG.C_PROBE0_WIDTH {1} CONFIG.C_DATA_DEPTH {8192} CONFIG.C_NUM_OF_PROBES {44} CONFIG.C_ENABLE_ILA_AXI_MON {true} CONFIG.C_MONITOR_TYPE {AXI}] [get_bd_cells /memory/ila_0]
-      connect_bd_net [get_bd_pins /memory/mem_clk] [get_bd_pins /memory/ila_0/clk]
-      connect_bd_intf_net [get_bd_intf_pins /memory/ila_0/SLOT_0_AXI] [get_bd_intf_pins /memory/mig_ic/M00_AXI]
     }
-
 
     proc addressmap {{args {}}} {
       ::platform::addressmap::add_platform_component "PLATFORM_COMPONENT_SFP_NETWORK_CONTROLLER_0" 0x100000 0x10000
