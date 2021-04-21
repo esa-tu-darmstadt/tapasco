@@ -251,7 +251,7 @@ proc create_subsystem_memory {} {
 
   set design_clk_wiz [tapasco::ip::create_clk_wiz design_clk_wiz]
   set_property -dict [list CONFIG.CLK_OUT1_PORT {design_clk} \
-    CONFIG.USE_SAFE_CLOCK_STARTUP {true} \
+    CONFIG.USE_SAFE_CLOCK_STARTUP {false} \
     CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
     CONFIG.USE_LOCKED {true} \
     CONFIG.USE_RESET {true} \
