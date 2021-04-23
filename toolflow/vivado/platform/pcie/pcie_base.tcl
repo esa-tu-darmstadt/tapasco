@@ -265,7 +265,7 @@ proc create_subsystem_memory {} {
 
   set constraints_fn  "[get_property DIRECTORY [current_project]]/mig_reset_calib.xdc"
   set constraints_file [open $constraints_fn w+]
-  puts $constraints_file "set_false_path -through [get_pins -filter {name=~*resetn*} -of_objects [get_cells system_i/memory/design_clk_wiz]]"
+  puts $constraints_file {set_false_path -through [get_pins -filter {name=~*resetn*} -of_objects [get_cells system_i/memory/design_clk_wiz]]}
   close $constraints_file
   read_xdc $constraints_fn
   set_property PROCESSING_ORDER LATE [get_files $constraints_fn]
