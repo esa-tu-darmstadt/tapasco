@@ -143,7 +143,7 @@ namespace eval arch {
 
     # create master ports
     set maxi_ports [list]
-    foreach mp [get_bd_intf_pins -of_objects $inst -filter {MODE == Master}] {
+    foreach mp [get_bd_intf_pins -of_objects $inst -filter {MODE == Master && CONFIG.PROTOCOL == AXI4}] {
       set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Master [get_property NAME $mp]]
       connect_bd_intf_net $mp $op
       lappend maxi_ports $mp
