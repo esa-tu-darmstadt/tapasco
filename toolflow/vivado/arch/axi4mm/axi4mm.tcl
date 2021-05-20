@@ -160,7 +160,9 @@ namespace eval arch {
     connect_bd_net $rst $rsts
 
     # create interrupt port
-    connect_bd_net [get_bd_pin -of_objects $inst -filter {NAME == interrupt}] [create_bd_pin -type intr -dir O "interrupt"]
+    foreach interrupt [get_bd_pins -of_objects $inst -filter {TYPE == intr}] {
+      connect_bd_net $interrupt [create_bd_pin -type intr -dir O [get_property NAME $interrupt]]
+    }
 
     return $group
   }
