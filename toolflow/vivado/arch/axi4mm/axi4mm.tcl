@@ -150,15 +150,6 @@ namespace eval arch {
     }
     puts "maxi_ports = $maxi_ports"
 
-    # create clock and reset ports
-    set clks [get_bd_pins -filter {DIR == I && TYPE == clk} -of_objects [get_bd_cells $bd_inst/*]]
-    set rsts [get_bd_pins -filter {DIR == I && TYPE == rst && CONFIG.POLARITY == ACTIVE_LOW} -of_objects [get_bd_cells $bd_inst/*]]
-    set clk [create_bd_pin -type clk -dir I "aclk"]
-    set rst [create_bd_pin -type rst -dir I "aresetn"]
-
-    connect_bd_net $clk $clks
-    connect_bd_net $rst $rsts
-
     # create interrupt port
     foreach interrupt [get_bd_pins -of_objects $inst -filter {TYPE == intr}] {
       connect_bd_net $interrupt [create_bd_pin -type intr -dir O [get_property NAME $interrupt]]
@@ -377,7 +368,8 @@ namespace eval arch {
   # Connect internal clock lines.
   proc arch_connect_clocks {} {
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
-      [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == clk && DIR == I"]
+      [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == clk && DIR == I"] \
+      [get_bd_pins -of_objects [get_bd_cells -hier -filter {NAME =~ "*target_ip*"}] -filter "TYPE == clk && DIR == I"]
   }
 
   # Connect internal reset lines.
@@ -386,8 +378,8 @@ namespace eval arch {
       [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && NAME =~ *interconnect_aresetn && DIR == I"]
     connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects [get_bd_cells -of_objects [current_bd_instance .]] -filter "TYPE == rst && NAME =~ *peripheral_aresetn && DIR == I"] \
-      [get_bd_pins -filter { TYPE == rst && DIR == I && CONFIG.POLARITY != ACTIVE_HIGH } -of_objects [get_bd_cells -filter {NAME =~ "target_ip*"}]]
-    set active_high_resets [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && DIR == I && CONFIG.POLARITY == ACTIVE_HIGH"]
+      [get_bd_pins -filter { TYPE == rst && DIR == I && CONFIG.POLARITY != ACTIVE_HIGH } -of_objects [get_bd_cells -hier -filter {NAME =~ "*target_ip*"}]]
+    set active_high_resets [get_bd_pins -of_objects [get_bd_cells -hier] -filter "TYPE == rst && DIR == I && CONFIG.POLARITY == ACTIVE_HIGH"]
     if {[llength $active_high_resets] > 0} {
       connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] $active_high_resets
     }
