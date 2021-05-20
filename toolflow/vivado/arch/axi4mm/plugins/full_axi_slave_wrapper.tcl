@@ -39,9 +39,6 @@ namespace eval full_axi_wrapper {
       connect_bd_intf_net $saxi_port [get_bd_intf_pins -of_objects $conv -filter {MODE == Slave}]
       connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master} -of_objects $conv] $fs
 
-      connect_bd_net [get_bd_pins $bd_inst/aclk] [get_bd_pins $conv/aclk]
-      connect_bd_net [get_bd_pins $bd_inst/aresetn] [get_bd_pins $conv/aresetn]
-
       incr si
     }
 

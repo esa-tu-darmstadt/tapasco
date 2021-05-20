@@ -29,10 +29,6 @@ namespace eval dmi_over_axi {
         # Connect DMI port
         connect_bd_intf_net $convert_interface $dmi_pin
 
-        # Connect clock and reset
-        connect_bd_net [get_bd_pins $bd_inst/aclk] [get_bd_pins $axi_to_dmi_converter/ACLK]
-        connect_bd_net [get_bd_pins $bd_inst/aresetn] [get_bd_pins $axi_to_dmi_converter/ARESETN]
-
         return [list $inst $args]
     }
 }
