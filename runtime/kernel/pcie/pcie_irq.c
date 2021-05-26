@@ -50,7 +50,8 @@ irqreturn_t intr_handler_platform(int irq, void *data)
 {
 	struct tlkm_irq_mapping *mapping = (struct tlkm_irq_mapping *)data;
 	struct tlkm_pcie_device *dev = mapping->dev->private_data;
-	eventfd_signal(mapping->eventfd, 1);
+	if (mapping->eventfd != 0)
+		eventfd_signal(mapping->eventfd, 1);
 	dev->ack_register[0] = mapping->irq_no;
 	return IRQ_HANDLED;
 }
