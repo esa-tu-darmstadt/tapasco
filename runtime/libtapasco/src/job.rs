@@ -79,7 +79,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug)]
 pub struct Job {
     pe: Option<PE>,
-    scheduler: Arc<Scheduler>,
+    scheduler: Arc<Box<dyn Scheduler>>,
 }
 
 /// Release the PE if it's no longer needed.
@@ -100,7 +100,7 @@ impl Job {
     /// Not used directly. Request a Job through [`acquire_pe`].
     ///
     /// [`acquire_pe`]: ../device/struct.Device.html#method.acquire_pe
-    pub fn new(pe: PE, scheduler: &Arc<Scheduler>) -> Job {
+    pub fn new(pe: PE, scheduler: &Arc<Box<dyn Scheduler>>) -> Job {
         Job {
             pe: Some(pe),
             scheduler: scheduler.clone(),

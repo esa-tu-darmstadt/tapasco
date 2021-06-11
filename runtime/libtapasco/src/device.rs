@@ -24,7 +24,7 @@ use crate::dma::{DMAControl, DirectDMA, DriverDMA};
 use crate::dma_user_space::UserSpaceDMA;
 use crate::job::Job;
 use crate::pe::PEId;
-use crate::scheduler::Scheduler;
+use crate::scheduler::{Scheduler,DefaultScheduler};
 use crate::tlkm::tlkm_access;
 use crate::tlkm::tlkm_ioctl_create;
 use crate::tlkm::tlkm_ioctl_destroy;
@@ -216,7 +216,7 @@ pub struct Device {
     #[get = "pub"]
     name: String,
     access: tlkm_access,
-    scheduler: Arc<Scheduler>,
+    scheduler: Arc<Box<dyn Scheduler>>,
     platform: Arc<MmapMut>,
     arch: Arc<MmapMut>,
     offchip_memory: Vec<Arc<OffchipMemory>>,
@@ -404,16 +404,18 @@ impl Device {
         }
 
         trace!("Initialize PE scheduler.");
-        let scheduler = Arc::new(
-            Scheduler::new(
-                &s.pe,
-                &arch,
-                pe_local_memories,
-                &tlkm_dma_file,
-                &debug_impls,
-                is_pcie,
+        let scheduler : Arc<Box<dyn Scheduler>> = Arc::new(
+            Box::new(
+                DefaultScheduler::new(
+                    &s.pe,
+                    &arch,
+                    pe_local_memories,
+                    &tlkm_dma_file,
+                    &debug_impls,
+                    is_pcie,
+                )
+                .context(SchedulerError)?
             )
-            .context(SchedulerError)?,
         );
 
         trace!("Device creation completed.");

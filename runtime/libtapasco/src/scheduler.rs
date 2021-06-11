@@ -60,18 +60,33 @@ pub enum Error {
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+pub trait Scheduler : Send + Sync {
+    fn acquire_pe(&self, id: PEId) -> Result<PE>;
+    fn release_pe(&self, pe: PE) -> Result<()>;
+    fn reset_interrupts(&self) -> Result<()>;
+    fn num_pes(&self, id: PEId) -> usize;
+    fn get_pe_id(&self, name: &str) -> Result<PEId>;
+}
+
+impl std::fmt::Debug for dyn Scheduler {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Scheduler")
+         .finish()
+    }
+}
+
 /// Main method to retrieve a PE for execution
 ///
 /// Uses an unblocking Injector primitive usually used for job stealing.
 /// Retrieves PEs based on a first-come-first-serve basis.
 #[derive(Debug)]
-pub struct Scheduler {
+pub struct DefaultScheduler {
     pes: Map<PEId, Injector<PE>>,
     pes_overview: HashMap<PEId, usize>,
     pes_name: HashMap<PEId, String>,
 }
 
-impl Scheduler {
+impl DefaultScheduler {
     pub fn new(
         pes: &Vec<crate::device::status::Pe>,
         mmap: &Arc<MmapMut>,
@@ -79,7 +94,7 @@ impl Scheduler {
         completion: &File,
         debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
         is_pcie: bool,
-    ) -> Result<Scheduler> {
+    ) -> Result<DefaultScheduler> {
         let pe_hashed: Map<PEId, Injector<PE>> = Map::new();
         let mut pes_overview: HashMap<PEId, usize> = HashMap::new();
         let mut pes_name: HashMap<PEId, String> = HashMap::new();
@@ -163,14 +178,16 @@ impl Scheduler {
             };
         }
 
-        Ok(Scheduler {
+        Ok(DefaultScheduler {
             pes: pe_hashed,
             pes_overview: pes_overview,
             pes_name: pes_name,
         })
     }
+}
 
-    pub fn acquire_pe(&self, id: PEId) -> Result<PE> {
+impl Scheduler for DefaultScheduler {
+    fn acquire_pe(&self, id: PEId) -> Result<PE> {
         match self.pes.get(&id) {
             Some(l) => loop {
                 match l.val().steal() {
@@ -184,7 +201,7 @@ impl Scheduler {
         }
     }
 
-    pub fn release_pe(&self, pe: PE) -> Result<()> {
+    fn release_pe(&self, pe: PE) -> Result<()> {
         ensure!(!pe.active(), PEStillActive { pe: pe });
 
         match self.pes.get(&pe.type_id()) {
@@ -194,7 +211,7 @@ impl Scheduler {
         Ok(())
     }
 
-    pub fn reset_interrupts(&self) -> Result<()> {
+    fn reset_interrupts(&self) -> Result<()> {
         for v in self.pes.iter() {
             let mut remove_pes = Vec::new();
             let mut maybe_pe = v.val().steal();
@@ -216,14 +233,14 @@ impl Scheduler {
         Ok(())
     }
 
-    pub fn num_pes(&self, id: PEId) -> usize {
+    fn num_pes(&self, id: PEId) -> usize {
         match self.pes_overview.get(&id) {
             Some(l) => *l,
             None => 0,
         }
     }
 
-    pub fn get_pe_id(&self, name: &str) -> Result<PEId> {
+    fn get_pe_id(&self, name: &str) -> Result<PEId> {
         for (id, pe_name) in &self.pes_name {
             if name == pe_name {
                 return Ok(*id);
