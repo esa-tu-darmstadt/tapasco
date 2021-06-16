@@ -75,6 +75,24 @@ pub enum Error {
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+pub trait PEInteraction : Send + Sync {
+    fn start(&mut self) -> Result<()>;
+    fn interrupt_set(&self) -> Result<bool>;
+    fn reset_interrupt(&self, v: bool) -> Result<()>;
+    fn interrupt_status(&self) -> Result<(bool, bool)>;
+    fn enable_interrupt(&self) -> Result<()>;
+    fn set_arg(&self, argn: usize, arg: PEParameter) -> Result<()>;
+    fn read_arg(&self, argn: usize, bytes: usize) -> Result<PEParameter>;
+    fn return_value(&self) -> u64;
+}
+
+impl std::fmt::Debug for dyn PEInteraction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Scheduler")
+         .finish()
+    }
+}
+
 #[derive(Debug)]
 pub enum CopyBack {
     Transfer(DataTransferPrealloc),
@@ -95,18 +113,16 @@ pub struct PE {
     id: usize,
     #[get = "pub"]
     type_id: PEId,
-    offset: DeviceAddress,
-    size: DeviceSize,
     name: String,
     #[get = "pub"]
     active: bool,
     copy_back: Option<Vec<CopyBack>>,
-    memory: Arc<MmapMut>,
 
     #[set = "pub"]
     #[get = "pub"]
     local_memory: Option<Arc<OffchipMemory>>,
 
+    interaction: Box<dyn PEInteraction>,
     interrupt: Interrupt,
 
     debug: Box<dyn DebugControl + Sync + Send>,
@@ -119,21 +135,27 @@ impl PE {
         offset: DeviceAddress,
         size: DeviceSize,
         name: String,
-        memory: Arc<MmapMut>,
+        memory: Option<Arc<MmapMut>>, // set for MmioPE
         completion: &File,
         interrupt_id: usize,
         debug: Box<dyn DebugControl + Sync + Send>,
     ) -> Result<PE> {
+        let interaction : Box<dyn PEInteraction> = match memory {
+            Some(m) => {
+                Box::new(MmioPE::new(offset, size, m)?)
+            },
+            None => {
+                return Err(Error::CouldNotInsertPE { pe_id: id })
+            }
+        };
         Ok(PE {
             id: id,
             type_id: type_id,
-            offset: offset,
-            size: size,
             name: name,
             active: false,
             copy_back: None,
-            memory: memory,
             local_memory: None,
+            interaction: interaction,
             interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterrupt)?,
             debug: debug,
         })
@@ -142,14 +164,9 @@ impl PE {
     pub fn start(&mut self) -> Result<()> {
         ensure!(!self.active, PEAlreadyActive { id: self.id });
         trace!("Starting PE {}.", self.id);
-        let offset = self.offset as isize;
-        unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u32>;
-            (*volatile_ptr).write(1);
-        }
+        let r = self.interaction.start();
         self.active = true;
-        Ok(())
+        r
     }
 
     pub fn release(&mut self, return_value: bool) -> Result<(u64, Option<Vec<CopyBack>>)> {
@@ -179,6 +196,81 @@ impl PE {
     }
 
     pub fn interrupt_set(&self) -> Result<bool> {
+        self.interaction.interrupt_set()
+    }
+
+    pub fn reset_interrupt(&self, v: bool) -> Result<()> {
+        self.interaction.reset_interrupt(v)
+    }
+
+    pub fn interrupt_status(&self) -> Result<(bool, bool)> {
+        self.interaction.interrupt_status()
+    }
+
+    pub fn enable_interrupt(&self) -> Result<()> {
+        ensure!(!self.active, PEAlreadyActive { id: self.id });
+        self.interaction.enable_interrupt()
+    }
+
+    pub fn set_arg(&self, argn: usize, arg: PEParameter) -> Result<()> {
+        self.interaction.set_arg(argn, arg)
+    }
+
+    pub fn read_arg(&self, argn: usize, bytes: usize) -> Result<PEParameter> {
+        self.interaction.read_arg(argn, bytes)
+    }
+
+    pub fn return_value(&self) -> u64 {
+        self.interaction.return_value()
+    }
+
+    pub fn add_copyback(&mut self, param: CopyBack) {
+        self.copy_back.get_or_insert(Vec::new()).push(param);
+    }
+
+    fn get_copyback(&mut self) -> Option<Vec<CopyBack>> {
+        self.copy_back.take()
+    }
+
+    pub fn enable_debug(&mut self) -> Result<()> {
+        self.debug
+            .enable_debug()
+            .context(DebugError { id: self.id })
+    }
+}
+
+pub struct MmioPE {
+    offset: DeviceAddress,
+    size: DeviceSize,
+    memory: Arc<MmapMut>,
+}
+
+impl MmioPE {
+    pub fn new(
+        offset: DeviceAddress,
+        size: DeviceSize,
+        memory: Arc<MmapMut>,
+    ) -> Result<MmioPE> {
+        Ok(MmioPE {
+            offset: offset,
+            size: size,
+            memory: memory,
+        })
+    }
+}
+
+impl PEInteraction for MmioPE {
+    fn start(&mut self) -> Result<()> {
+        let offset = self.offset as isize;
+        unsafe {
+            let ptr = self.memory.as_ptr().offset(offset);
+            let volatile_ptr = ptr as *mut Volatile<u32>;
+            (*volatile_ptr).write(1);
+        }
+        Ok(())
+    }
+
+    fn interrupt_set(&self) -> Result<bool> {
         let offset = (self.offset as usize + 0x0c) as isize;
         let r = unsafe {
             let ptr = self.memory.as_ptr().offset(offset);
@@ -190,7 +282,7 @@ impl PE {
         Ok(s)
     }
 
-    pub fn reset_interrupt(&self, v: bool) -> Result<()> {
+    fn reset_interrupt(&self, v: bool) -> Result<()> {
         let offset = (self.offset as usize + 0x0c) as isize;
         trace!("Resetting interrupts: 0x{:x} -> {}", offset, v);
         unsafe {
@@ -201,7 +293,7 @@ impl PE {
         Ok(())
     }
 
-    pub fn interrupt_status(&self) -> Result<(bool, bool)> {
+    fn interrupt_status(&self) -> Result<(bool, bool)> {
         let mut offset = (self.offset as usize + 0x04) as isize;
         let g = unsafe {
             let ptr = self.memory.as_ptr().offset(offset);
@@ -220,8 +312,7 @@ impl PE {
         Ok((g, l))
     }
 
-    pub fn enable_interrupt(&self) -> Result<()> {
-        ensure!(!self.active, PEAlreadyActive { id: self.id });
+    fn enable_interrupt(&self) -> Result<()> {
         let mut offset = (self.offset as usize + 0x04) as isize;
         trace!("Enabling interrupts: 0x{:x} -> 1", offset);
         unsafe {
@@ -239,7 +330,7 @@ impl PE {
         Ok(())
     }
 
-    pub fn set_arg(&self, argn: usize, arg: PEParameter) -> Result<()> {
+    fn set_arg(&self, argn: usize, arg: PEParameter) -> Result<()> {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
         trace!("Writing argument: 0x{:x} ({}) -> {:?}", offset, argn, arg);
         unsafe {
@@ -253,7 +344,7 @@ impl PE {
         Ok(())
     }
 
-    pub fn read_arg(&self, argn: usize, bytes: usize) -> Result<PEParameter> {
+    fn read_arg(&self, argn: usize, bytes: usize) -> Result<PEParameter> {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
         let r = unsafe {
             let ptr = self.memory.as_ptr().offset(offset);
@@ -277,7 +368,7 @@ impl PE {
         r
     }
 
-    pub fn return_value(&self) -> u64 {
+    fn return_value(&self) -> u64 {
         let offset = (self.offset as usize + 0x10) as isize;
         let r = unsafe {
             let ptr = self.memory.as_ptr().offset(offset);
@@ -285,19 +376,5 @@ impl PE {
         };
         trace!("Reading return value: {}", r);
         r
-    }
-
-    pub fn add_copyback(&mut self, param: CopyBack) {
-        self.copy_back.get_or_insert(Vec::new()).push(param);
-    }
-
-    fn get_copyback(&mut self) -> Option<Vec<CopyBack>> {
-        self.copy_back.take()
-    }
-
-    pub fn enable_debug(&mut self) -> Result<()> {
-        self.debug
-            .enable_debug()
-            .context(DebugError { id: self.id })
     }
 }

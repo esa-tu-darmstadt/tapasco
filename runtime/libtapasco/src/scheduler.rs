@@ -144,7 +144,7 @@ impl DefaultScheduler {
                 pe.offset,
                 pe.size,
                 pe.name.to_string(),
-                mmap.clone(),
+                Some(mmap.clone()),
                 &completion,
                 interrupt_id,
                 debug,
