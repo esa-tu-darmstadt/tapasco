@@ -247,14 +247,14 @@ impl Job {
             trace!("Setting argument {} => {:?}.", i, arg);
             match arg {
                 PEParameter::Single32(_) => {
-                    self.pe.as_ref().unwrap().set_arg(i, arg).context(PEError)?
+                    self.pe.as_mut().unwrap().set_arg(i, arg).context(PEError)?
                 }
                 PEParameter::Single64(_) => {
-                    self.pe.as_ref().unwrap().set_arg(i, arg).context(PEError)?
+                    self.pe.as_mut().unwrap().set_arg(i, arg).context(PEError)?
                 }
                 PEParameter::DeviceAddress(x) => self
                     .pe
-                    .as_ref()
+                    .as_mut()
                     .unwrap()
                     .set_arg(i, PEParameter::Single64(x))
                     .context(PEError)?,

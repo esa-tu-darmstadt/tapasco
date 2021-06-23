@@ -25,6 +25,7 @@ use crate::dma_user_space::UserSpaceDMA;
 use crate::job::Job;
 use crate::pe::PEId;
 use crate::scheduler::{Scheduler,DefaultScheduler};
+use crate::cascabel::CascabelScheduler;
 use crate::tlkm::tlkm_access;
 use crate::tlkm::tlkm_ioctl_create;
 use crate::tlkm::tlkm_ioctl_destroy;
@@ -85,6 +86,9 @@ pub enum Error {
 
     #[snafu(display("Scheduler Error: {}", source))]
     SchedulerError { source: crate::scheduler::Error },
+
+    #[snafu(display("Cascabel Error: {}", source))]
+    CascabelError { source: crate::cascabel::CascabelError },
 
     #[snafu(display("DMA Error: {}", source))]
     DMAError { source: crate::dma::Error },
@@ -404,19 +408,38 @@ impl Device {
         }
 
         trace!("Initialize PE scheduler.");
-        let scheduler : Arc<Box<dyn Scheduler>> = Arc::new(
-            Box::new(
-                DefaultScheduler::new(
-                    &s.pe,
-                    &arch,
-                    pe_local_memories,
-                    &tlkm_dma_file,
-                    &debug_impls,
-                    is_pcie,
-                )
-                .context(SchedulerError)?
-            )
-        );
+        // searching for cascabel platform component
+        for x in &s.platform {
+            trace!("{}", x.name);
+        }
+        let cascabel = &s.platform.iter().find(|&x| x.name == "PLATFORM_COMPONENT_CASCABEL0");
+        let scheduler = match cascabel {
+            Some(_) => {
+                trace!("Using Cascabel hardware scheduler.");
+                let scheduler : Box<dyn Scheduler> =
+                    Box::new(CascabelScheduler::new(
+                        &s.pe,
+                        s.clone(),
+                        platform.clone(),
+                        &tlkm_dma_file,
+                        is_pcie,
+                    )
+                    .context(CascabelError)?);
+                Arc::new(scheduler)
+            },
+            None => {
+                let scheduler : Box<dyn Scheduler> = Box::new(DefaultScheduler::new(
+                        &s.pe,
+                        &arch,
+                        pe_local_memories,
+                        &tlkm_dma_file,
+                        &debug_impls,
+                        is_pcie,
+                    )
+                    .context(SchedulerError)?);
+                Arc::new(scheduler)
+            }
+        };
 
         trace!("Device creation completed.");
         let mut device = Device {

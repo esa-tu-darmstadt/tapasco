@@ -34,6 +34,7 @@ use std::sync::Arc;
 use std::thread;
 
 #[derive(Debug, Snafu)]
+#[snafu(visibility = "pub")]
 pub enum Error {
     #[snafu(display("PE Type {} unavailable.", id))]
     PEUnavailable { id: PEId },
@@ -142,11 +143,13 @@ impl DefaultScheduler {
                 i,
                 pe.id as PEId,
                 pe.offset,
-                pe.size,
+                Some(pe.size),
                 pe.name.to_string(),
                 Some(mmap.clone()),
-                &completion,
+                None,
+                Some(&completion),
                 interrupt_id,
+                None,
                 debug,
             )
             .context(PEError)?;

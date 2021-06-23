@@ -34,8 +34,11 @@ extern crate crossbeam;
 extern crate env_logger;
 extern crate lockfree;
 extern crate volatile;
+#[macro_use]
+extern crate packed_struct;
 
 pub mod allocator;
+pub mod cascabel;
 pub mod debug;
 pub mod device;
 pub mod dma;

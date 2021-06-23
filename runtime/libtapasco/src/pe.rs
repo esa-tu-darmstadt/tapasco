@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use crate::cascabel::CascabelPE;
 use crate::debug::DebugControl;
 use crate::device::DataTransferPrealloc;
 use crate::device::DeviceAddress;
@@ -32,6 +33,7 @@ use std::sync::Arc;
 use volatile::Volatile;
 
 #[derive(Debug, Snafu)]
+#[snafu(visibility = "pub")]
 pub enum Error {
     #[snafu(display(
         "Param {:?} is unsupported. Only 32 and 64 Bit value can interact with device registers.",
@@ -71,6 +73,12 @@ pub enum Error {
         source: crate::debug::Error,
         id: usize,
     },
+
+    #[snafu(display("Cascabel Error: {}", source))]
+    CascabelError { source: crate::cascabel::CascabelError },
+
+    #[snafu(display("Packing error: {}", source))]
+    PackingError { source: packed_struct::PackingError },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -81,7 +89,7 @@ pub trait PEInteraction : Send + Sync {
     fn reset_interrupt(&self, v: bool) -> Result<()>;
     fn interrupt_status(&self) -> Result<(bool, bool)>;
     fn enable_interrupt(&self) -> Result<()>;
-    fn set_arg(&self, argn: usize, arg: PEParameter) -> Result<()>;
+    fn set_arg(&mut self, argn: usize, arg: PEParameter) -> Result<()>;
     fn read_arg(&self, argn: usize, bytes: usize) -> Result<PEParameter>;
     fn return_value(&self) -> u64;
 }
@@ -123,7 +131,8 @@ pub struct PE {
     local_memory: Option<Arc<OffchipMemory>>,
 
     interaction: Box<dyn PEInteraction>,
-    interrupt: Interrupt,
+    pub interrupt_id: usize,
+    pub interrupt: Interrupt,
 
     debug: Box<dyn DebugControl + Sync + Send>,
 }
@@ -133,19 +142,27 @@ impl PE {
         id: usize,
         type_id: PEId,
         offset: DeviceAddress,
-        size: DeviceSize,
+        size: Option<DeviceSize>,
         name: String,
         memory: Option<Arc<MmapMut>>, // set for MmioPE
-        completion: &File,
+        cascabel: Option<Arc<MmapMut>>,
+        completion: Option<&File>,
         interrupt_id: usize,
+        interrupt: Option<Interrupt>,
         debug: Box<dyn DebugControl + Sync + Send>,
     ) -> Result<PE> {
         let interaction : Box<dyn PEInteraction> = match memory {
             Some(m) => {
-                Box::new(MmioPE::new(offset, size, m)?)
+                Box::new(MmioPE::new(offset, size.unwrap(), m)?)
             },
             None => {
-                return Err(Error::CouldNotInsertPE { pe_id: id })
+                Box::new(CascabelPE::new(offset, cascabel.unwrap(), interrupt_id, type_id).context(CascabelError)?)
+            }
+        };
+        let interrupt = match interrupt {
+            Some(i) => i,
+            None => {
+                Interrupt::new(completion.unwrap(), interrupt_id, false).context(ErrorInterrupt)?
             }
         };
         Ok(PE {
@@ -156,7 +173,8 @@ impl PE {
             copy_back: None,
             local_memory: None,
             interaction: interaction,
-            interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterrupt)?,
+            interrupt_id: interrupt_id,
+            interrupt: interrupt,
             debug: debug,
         })
     }
@@ -212,7 +230,7 @@ impl PE {
         self.interaction.enable_interrupt()
     }
 
-    pub fn set_arg(&self, argn: usize, arg: PEParameter) -> Result<()> {
+    pub fn set_arg(&mut self, argn: usize, arg: PEParameter) -> Result<()> {
         self.interaction.set_arg(argn, arg)
     }
 
@@ -330,7 +348,7 @@ impl PEInteraction for MmioPE {
         Ok(())
     }
 
-    fn set_arg(&self, argn: usize, arg: PEParameter) -> Result<()> {
+    fn set_arg(&mut self, argn: usize, arg: PEParameter) -> Result<()> {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
         trace!("Writing argument: 0x{:x} ({}) -> {:?}", offset, argn, arg);
         unsafe {
@@ -378,3 +396,4 @@ impl PEInteraction for MmioPE {
         r
     }
 }
+
