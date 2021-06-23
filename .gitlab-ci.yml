@@ -265,6 +265,7 @@ build_kernel_fedora_31_debug:
   variables:
     PACKAGE_TYPE: "RPM"
   before_script:
+    - dnf -y update libarchive
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python3 libatomic git rpm-build curl
   artifacts:
     paths:
