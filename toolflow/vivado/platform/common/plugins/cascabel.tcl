@@ -108,14 +108,18 @@ if {[tapasco::is_feature_enabled "Cascabel"]} {
 			set_property -dict [list CONFIG.NUM_SI [llength $pe_out] CONFIG.NUM_MI {1} CONFIG.ARB_ON_TLAST {1} CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF}] $in_ic
 			set in_ic_inputs [get_bd_intf_pins $in_ic/S*_AXIS]
 			for {set i 0} {$i < [llength $pe_out]} {incr i} {
-				connect_bd_intf_net [lindex $pe_out $i] [lindex $in_ic_inputs $i]
-				# TODO add tuser signal according to PE ID
+				# add tuser signal according to PE ID
+				set usermod [create_bd_cell -type ip -vlnv esa.cs.tu-darmstadt.de:axi:axis_usermod usermod_$i]
+				set_property CONFIG.DATA_WIDTH {512} $usermod
+				set_property CONFIG.USER_OVERWRITE $i $usermod
+				connect_bd_net $clk [get_bd_pins $usermod/clk]
+				connect_bd_intf_net [lindex $pe_out $i] [get_bd_intf_pins $usermod/s_axis]
+				connect_bd_intf_net [get_bd_intf_pins $usermod/m_axis] [lindex $in_ic_inputs $i]
 			}
 			set out_ic [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 onchip_launch_out]
+			set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI [llength $pe_in] CONFIG.ARB_ON_TLAST {1}] $out_ic
 			set out_ic_outputs [get_bd_intf_pins $out_ic/M*_AXIS]
-			set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI [llength $pe_out] CONFIG.ARB_ON_TLAST {1}] $out_ic
-			set out_ic_inputs [get_bd_intf_pins $out_ic/S*_AXIS]
-			for {set i 0} {$i < [llength $pe_out]} {incr i} {
+			for {set i 0} {$i < [llength $pe_in]} {incr i} {
 				connect_bd_intf_net [lindex $pe_in $i] [lindex $out_ic_outputs $i]
 			}
 			connect_bd_intf_net $cascabel_in [get_bd_intf_pins $in_ic/M00_AXIS]
