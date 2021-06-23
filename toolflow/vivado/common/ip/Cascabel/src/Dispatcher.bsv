@@ -35,7 +35,7 @@ endfunction
 module mkPEQueues(PEQueues#(gid))
 	provisos(Bits#(gid, a__));
 
-	Vector#(KID_COUNT, FIFO#(gid)) queueVec <- replicateM(mkSizedFIFO(16));
+	Vector#(KID_COUNT, FIFO#(gid)) queueVec <- replicateM(mkSizedFIFO(valueOf(PE_COUNT))); // TODO use pe count per kernel id instead of maximum count
 
 	method Action enq(KID_TYPE kid, gid pe);
 		$display("enqueue %d (PE #%d) -> Queue %02d", kid, pe, kid_lookup(kid));
@@ -79,10 +79,10 @@ module mkDispatcher(Dispatcher);
 	Reg#(Vector#(PE_COUNT, Bool)) externalInterrupts <-mkReg(replicate(False));
 	Reg#(Vector#(PE_COUNT, Bool)) externalInterrupts_buf <-mkReg(replicate(False));
 	Vector#(PE_COUNT, Reg#(Bool)) clearInts <- replicateM(mkDWire(False));
-	Vector#(PE_COUNT, Reg#(Bool)) barrierInts <- replicateM(mkDWire(False));
-	Reg#(Vector#(PE_COUNT, Bool)) hostInterrupts <-mkReg(replicate(False));
-	Vector#(PE_COUNT, Reg#(Bool)) forwardIntHost <- replicateM(mkReg(False));
-	Reg#(Vector#(PE_COUNT, Maybe#(JOBID_TYPE))) associatedJob <-mkReg(replicate(tagged Invalid));
+	Vector#(PE_COUNT, Reg#(Bool)) barrierInts <- replicateM(mkDWire(False)); // interrupts issued by Barriers
+	Vector#(PE_COUNT, Reg#(Bool)) hostInts <- replicateM(mkDWire(False)); // interrupts issued by finished PEs with specified host interrupt number
+	Reg#(Vector#(PE_COUNT, Bool)) hostInterrupts <- mkReg(replicate(False)); // barrier and host interrupts concatenated for external forwarding
+	Reg#(Vector#(PE_COUNT, Maybe#(JobRunning))) associatedJob <-mkReg(replicate(tagged Invalid));
 	PEQueues#(Bit#(TLog#(PE_COUNT))) emptyPEsQueues <- mkPEQueues();
 	Reg#(Bool) jobStatus <- mkReg(False);
 	Reg#(Bit#(8)) activeJobCount <- mkReg(0);
@@ -90,7 +90,7 @@ module mkDispatcher(Dispatcher);
 	Reg#(Job) job_reg <- mkRegU();
 	Reg#(Bit#(TLog#(PE_COUNT))) initPE <- mkReg(fromInteger(valueOf(PE_COUNT)-1));
 	Reg#(INIT_STATES) init <- mkReg(InitIER);
-	FIFO#(JOBID_TYPE) resultFetchJID <- mkFIFO();
+	FIFO#(JobRunning) resultFetchJobRunning <- mkFIFO();
 
 	// Create axi master port
 	AXI4_Lite_Master_Rd#(CONFIG_ADDR_WIDTH, CONFIG_DATA_WIDTH) rd_m <- mkAXI4_Lite_Master_Rd(16);
@@ -102,7 +102,7 @@ module mkDispatcher(Dispatcher);
 		queue.deq;
 		if (queue.first.signal_host) begin
 			// should issue an interrupt
-			barrierInts[queue.first.param0] <= True;
+			barrierInts[queue.first.irq_number] <= True;
 		end
 	endrule
 
@@ -116,11 +116,15 @@ module mkDispatcher(Dispatcher);
 			jobStatus <= True;
 			jobBaseAdr <= getBaseFromGID(pe);
 			job_reg <= queue.first;
-			forwardIntHost[pe] <= queue.first.signal_host;
+			let jr = JobRunning {job_id: queue.first.job_id, signal_host: queue.first.signal_host, irq_number: queue.first.irq_number
+`ifdef ONCHIP
+				, return_pe: queue.first.return_pe, merge: queue.first.merge, parent: queue.first.parent, async: queue.first.async, running_pe: zeroExtend(pack(pe))
+`endif
+			};
 			if (valueOf(PE_COUNT) == 1)
-				associatedJob[0] <= tagged Valid queue.first.job_id;
+				associatedJob[0] <= tagged Valid jr;
 			else
-				associatedJob[pe] <= tagged Valid queue.first.job_id;
+				associatedJob[pe] <= tagged Valid jr;
 		endrule
 	end
 
@@ -171,18 +175,23 @@ module mkDispatcher(Dispatcher);
 		clearInts[i] <= True;
 		if (externalInterrupts[i]) begin
 			// Acknowledge interrupt (ISR reg)
+			// only acknowledge if it is external (internal is used for enqueuing at startup)
 			axi4_lite_write_strb(wr_m, getBaseFromGID(pack(i)) + 'h8, 1 << 32, 1 << 4);
 			activeJobCount <= activeJobCount - 1;
 		end
 
 		// read result register
-		if (associatedJob[i] matches tagged Valid .jobid) begin
+		if (associatedJob[i] matches tagged Valid .jobrunning) begin
 			axi4_lite_read(rd_m, getBaseFromGID(pack(i)) + 'h10);
-			resultFetchJID.enq(jobid);
+			resultFetchJobRunning.enq(jobrunning);
+			if (jobrunning.signal_host) begin
+				hostInts[jobrunning.irq_number] <= True;
+			end
 		end
 	endrule
 
-	rule clearInterrupts;
+	// Detect rising edge of external interrupts and clear them on request
+	rule detectAndClearInterrupts;
 		Vector#(PE_COUNT, Bool) tmp;
 		for (Integer i = 0; i < valueOf(PE_COUNT); i = i + 1) begin
 			if (externalInterrupts[i] && !externalInterrupts_buf[i]) begin
@@ -195,11 +204,11 @@ module mkDispatcher(Dispatcher);
 		externalInterrupts_buf <= externalInterrupts;
 	endrule
 
-	// filter internal interrupts to forward to host
-	rule filterHostIntr;
+	// combine PE/job issued and barrier issued interrupts
+	rule mergeIrqSources;
 		Vector#(PE_COUNT, Bool) tmp;
 		for (Integer i = 0; i < valueOf(PE_COUNT); i = i + 1) begin
-			tmp[i] = (forwardIntHost[i] ? interrupts[i] : False) || barrierInts[i];
+			tmp[i] = hostInts[i] || barrierInts[i];
 		end
 		hostInterrupts <= tmp;
 	endrule
@@ -216,9 +225,13 @@ module mkDispatcher(Dispatcher);
 
 	method ActionValue#(JobResult) getResult();
 		let value <- axi4_lite_read_response(rd_m);
-		let jobid = resultFetchJID.first;
-		resultFetchJID.deq();
-		return JobResult {result: value, job_id: jobid};
+		let jr = resultFetchJobRunning.first;
+		resultFetchJobRunning.deq();
+		return JobResult {result: value, job_id: jr.job_id
+`ifdef ONCHIP
+			, return_pe: jr.return_pe, merge: jr.merge, parent: jr.parent, async: jr.async, running_pe: jr.running_pe
+`endif
+		};
 	endmethod
 
 	// Connect to tapasco architecture

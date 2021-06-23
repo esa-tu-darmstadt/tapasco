@@ -32,6 +32,10 @@ interface CascabelQueue;
 
 	(*prefix="S_AXI_PACKET"*) interface AXI4_Slave_Rd_Fab#(PACKET_AXI_ADDR_WIDTH, PACKET_AXI_DATA_WIDTH, PACKET_AXI_ID_WIDTH, 0) packet_rd;
 	(*prefix="S_AXI_PACKET"*) interface AXI4_Slave_Wr_Fab#(PACKET_AXI_ADDR_WIDTH, PACKET_AXI_DATA_WIDTH, PACKET_AXI_ID_WIDTH, 0) packet_wr;
+`ifdef ONCHIP
+	// on-chip launches
+	method Action enq(Job j);
+`endif
 
 	method Action deq();
 	method Job first();
@@ -62,8 +66,10 @@ module mkCascabelQueue(Clock design_clk, Reset design_rst, CascabelQueue intf);
 	Reg#(UInt#(CONF_AXI_DATA_WIDTH)) write_ptr <- mkReg(0);
 	Reg#(UInt#(CONF_AXI_DATA_WIDTH)) filllevel <- mkReg(0);
 	SyncFIFOIfc#(Job) jobs <- mkSyncBRAMFIFOFromCC(8, design_clk, design_rst);
+	SyncFIFOIfc#(Job) enqJobs <- mkSyncBRAMFIFOToCC(8, design_clk, design_rst);
 	Reg#(Bool) waitMem <- mkReg(False);
-	Reg#(Bool) firstFetch <-mkReg(True);
+	Reg#(Bool) writeBack <- mkReg(False);
+	Reg#(Job) job_writeback <- mkRegU();
 
 	// status
 	Bit#(QUEUE_POINTER_ADDR_WIDTH) read_truncate = pack(truncate(read_ptr));
@@ -105,26 +111,51 @@ module mkCascabelQueue(Clock design_clk, Reset design_rst, CascabelQueue intf);
 		filllevel <= write_ptr - read_ptr;
 	endrule
 
+`ifdef ONCHIP
+	rule insertMergeOnchipJob if (!full);
+		let j = enqJobs.first;
+		enqJobs.deq;
+		// atomic increment of write_ptr
+		write_ptr <= write_ptr + 1;
+		bram.portA.request.put(BRAMRequestBE { writeen: 'hffff_ffff_ffff_ffff, responseOnWrite: False, address: pack(truncate(write_ptr)), datain: zeroExtend(pack(j))});
+		$display("Enqueue on-chip job write %d", write_ptr);
+	endrule
+`endif
+
 	// use bram.portB to dequeue for dispatching
-	rule requestData if(!empty && waitMem == False);
-		bram.portB.request.put(BRAMRequestBE { writeen: 0, address: pack(truncate(read_ptr))});
+	rule requestData if(!empty && waitMem == False && writeBack == False && (!isValid(packet.write_addr) || fromMaybe(0, packet.write_addr) != pack(read_ptr)[valueOf(QUEUE_POINTER_ADDR_WIDTH)-1:0]));
+		bram.portB.request.put(BRAMRequestBE { writeen: 0, address: pack(read_ptr)[valueOf(QUEUE_POINTER_ADDR_WIDTH)-1:0]});
 		waitMem <= True;
+	endrule
+
+	rule collisionDetector if (!empty && waitMem == False && writeBack == False && (isValid(packet.write_addr) && fromMaybe(0, packet.write_addr) == pack(read_ptr)[valueOf(QUEUE_POINTER_ADDR_WIDTH)-1:0]));
+		$display("BRAM Collision! %d", read_ptr);
+	endrule
+
+	rule bramWriteBack if(waitMem == False && writeBack == True);
+		bram.portB.request.put(BRAMRequestBE { writeen: 'hffff_ffff_ffff_ffff, responseOnWrite: False, address: pack(read_ptr)[valueOf(QUEUE_POINTER_ADDR_WIDTH)-1:0], datain: zeroExtend(pack(job_writeback))});
+		read_ptr <= read_ptr + 1;
+		writeBack <= False;
 	endrule
 
 	rule readData if(waitMem);
 		let d <- bram.portB.response.get();
 		Job j = unpack(truncate(d));
-		if (j.valid && firstFetch) begin
-			firstFetch <= False;
-		end else if(j.valid) begin
-			firstFetch <= True;
+`ifdef SIM
+		// BRAM is initialized by 0xa pattern, so the valid bit can be set initially
+		if (j.magic != 0) begin
+			// invalid job
+		end else
+`endif
+		if(j.valid && j.valid2) begin
 			$display("valid job found");
 			// mark as invalid in memory
 			let invalidj = j;
 			invalidj.valid = False;
-			bram.portB.request.put(BRAMRequestBE { writeen: 'hffff_ffff_ffff_ffff, responseOnWrite: False, address: pack(truncate(read_ptr)), datain: zeroExtend(pack(invalidj))});
-			read_ptr <= read_ptr + 1;
+			invalidj.valid2 = False;
 			jobs.enq(j);
+			writeBack <= True;
+			job_writeback <= invalidj;
 		end else begin
 			// invalid job -> request again
 		end
@@ -138,6 +169,14 @@ module mkCascabelQueue(Clock design_clk, Reset design_rst, CascabelQueue intf);
 	method Job first();
 		return jobs.first();
 	endmethod
+
+`ifdef ONCHIP
+	method Action enq(Job j);
+		j.valid = True;
+		j.valid2 = True;
+		enqJobs.enq(j);
+	endmethod
+`endif
 
 	interface ctrl_rd = control.s_rd;
 	interface ctrl_wr = control.s_wr;

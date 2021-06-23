@@ -20,13 +20,23 @@ ifndef EXTRA_FLAGS
 EXTRA_FLAGS:=
 endif
 
+ifneq ($(SIM_TYPE), VERILOG)
+# simulation
+EXTRA_FLAGS+=-D SIM
+endif
+
 PROJECT_NAME=Cascabel
 
 EXTRA_FLAGS+=-D "RUN_TEST=$(RUN_TEST)"
+EXTRA_FLAGS+=-D ONCHIP
 EXTRA_FLAGS+=-show-schedule
 
 VIVADO_ADD_PARAMS += 'ipx::associate_bus_interfaces -busif M_AXI -clock CLK -remove [ipx::current_core]'
 VIVADO_ADD_PARAMS += 'ipx::associate_bus_interfaces -busif M_AXI -clock CLK_design_clk [ipx::current_core]'
+VIVADO_ADD_PARAMS += 'ipx::associate_bus_interfaces -busif ONCHIP_OUT -clock CLK -remove [ipx::current_core]'
+VIVADO_ADD_PARAMS += 'ipx::associate_bus_interfaces -busif ONCHIP_OUT -clock CLK_design_clk [ipx::current_core]'
+VIVADO_ADD_PARAMS += 'ipx::associate_bus_interfaces -busif ONCHIP_IN -clock CLK -remove [ipx::current_core]'
+VIVADO_ADD_PARAMS += 'ipx::associate_bus_interfaces -busif ONCHIP_IN -clock CLK_design_clk [ipx::current_core]'
 VIVADO_ADD_PARAMS += 'ipx::infer_bus_interface intr_host xilinx.com:signal:interrupt_rtl:1.0 [ipx::current_core]'
 VIVADO_ADD_PARAMS += 'set_property VALUE EDGE_RISING [ipx::get_bus_parameters -of_objects [ipx::get_bus_interfaces intr_host -of_objects [ipx::current_core]] SENSITIVITY]'
 VIVADO_ADD_PARAMS += 'ipx::add_bus_parameter PortWidth [ipx::get_bus_interfaces intr_host -of_objects [ipx::current_core]]'
