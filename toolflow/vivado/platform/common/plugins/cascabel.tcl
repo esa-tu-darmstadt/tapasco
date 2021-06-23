@@ -87,5 +87,47 @@ if {[tapasco::is_feature_enabled "Cascabel"]} {
 		connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] [get_bd_pins $ic/ARESETN] [get_bd_pins $ic/S00_ARESETN]
 		puts "  done!"
 	}
+
+	namespace eval cascabel {
+		proc onchip_connection {args} {
+			if {[llength [get_bd_intf_pins /cascabel/Cascabel/ONCHIP_IN]] == 0} {
+				puts "Cascabel core does not support on-chip launches."
+				return $args
+			}
+			puts "Wire on-chip launch interfaces"
+			set instance [current_bd_instance]
+			current_bd_instance /cascabel
+			set clk [tapasco::subsystem::get_port "design" "clk"]
+			set rstn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
+			set pe_out [get_bd_intf_pins /arch/*/M_AXIS_LAUNCH]
+			set pe_in [get_bd_intf_pins /arch/*/S_AXIS_LAUNCH]
+			set cascabel_in [get_bd_intf_pins /cascabel/Cascabel/ONCHIP_IN]
+			set cascabel_out [get_bd_intf_pins /cascabel/Cascabel/ONCHIP_OUT]
+			# create stream interconnects
+			set in_ic [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 onchip_launch_in]
+			set_property -dict [list CONFIG.NUM_SI [llength $pe_out] CONFIG.NUM_MI {1} CONFIG.ARB_ON_TLAST {1} CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF}] $in_ic
+			set in_ic_inputs [get_bd_intf_pins $in_ic/S*_AXIS]
+			for {set i 0} {$i < [llength $pe_out]} {incr i} {
+				connect_bd_intf_net [lindex $pe_out $i] [lindex $in_ic_inputs $i]
+				# TODO add tuser signal according to PE ID
+			}
+			set out_ic [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 onchip_launch_out]
+			set out_ic_outputs [get_bd_intf_pins $out_ic/M*_AXIS]
+			set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI [llength $pe_out] CONFIG.ARB_ON_TLAST {1}] $out_ic
+			set out_ic_inputs [get_bd_intf_pins $out_ic/S*_AXIS]
+			for {set i 0} {$i < [llength $pe_out]} {incr i} {
+				connect_bd_intf_net [lindex $pe_in $i] [lindex $out_ic_outputs $i]
+			}
+			connect_bd_intf_net $cascabel_in [get_bd_intf_pins $in_ic/M00_AXIS]
+			connect_bd_intf_net $cascabel_out [get_bd_intf_pins $out_ic/S00_AXIS]
+			connect_bd_net $clk [get_bd_pins $in_ic/*ACLK] [get_bd_pins $out_ic/*ACLK]
+			connect_bd_net $rstn [get_bd_pins $in_ic/*ARESETN] [get_bd_pins $out_ic/*ARESETN]
+			# add PE id
+			current_bd_instance $instance
+			return $args
+		}
+	}
+
+	tapasco::register_plugin "platform::cascabel::onchip_connection" "post-platform"
 }
 

@@ -74,7 +74,7 @@
         "M_MEM_0"    { foreach {base stride range comp} [list 0          0       $max64 ""] {} }
         "M_ARCH"    { set base "skip" }
         "M_ARCH_CASCABEL" { set base "skip" }
-        "M_CASCABEL" {foreach {base stride range comp} [list 0x00040000 0x10000 0      "PLATFORM_COMPONENT_CASCABEL0"] {} }
+        "M_CASCABEL" {foreach {base stride range comp} [list 0x00030000 0x10000 0      "PLATFORM_COMPONENT_CASCABEL0"] {} }
         default     { if { [dict exists $extra_masters [get_property NAME $m]] } {
                           set l [dict get $extra_masters [get_property NAME $m]]
                           set base [lindex $l 0]

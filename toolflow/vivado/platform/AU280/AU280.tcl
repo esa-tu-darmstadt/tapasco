@@ -192,7 +192,7 @@ namespace eval platform {
 
         proc addressmap {args} {
             # add ECC config to platform address map
-            set args [lappend args "M_MEM_CTRL" [list 0x40000 0x10000 0 "PLATFORM_COMPONENT_ECC"]]
+            set args [lappend args "M_MEM_CTRL" [list 0x50000 0x10000 0 "PLATFORM_COMPONENT_ECC"]]
             return $args
         }
     }
