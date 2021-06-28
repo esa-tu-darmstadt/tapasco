@@ -33,3 +33,5 @@ add_subdirectory(C++/tapasco-benchmark)
 add_subdirectory(C++/bandwidth)
 add_subdirectory(C++/job_completion)
 add_subdirectory(C++/memtest)
+
+add_subdirectory(Rust/libtapasco_tests)
