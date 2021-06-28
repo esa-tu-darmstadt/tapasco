@@ -539,4 +539,8 @@ namespace eval tapasco {
     puts "Number of slots is hard coded as 128 right now"
     return 128
   }
+
+  proc is_versal {} {
+    return [string match "versal*" [get_property FAMILY [get_parts -of_objects [current_project]]]]
+  }
 }

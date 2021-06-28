@@ -430,7 +430,11 @@ namespace eval ::tapasco::ip {
     puts "  IDs : $ids"
 
     # create the IP core
-    set base [tapasco::ip::create_bram_ctrl "${name}_base"]
+    if {[tapasco::is_versal]} {
+      set base [tapasco::ip::create_versal_emb_mem_gen "${name}_base"]
+    } else {
+      set base [tapasco::ip::create_bram_ctrl "${name}_base"]
+    }
     set axi [tapasco::ip::create_axi_bram_ctrl $name]
 
     set_property -dict [list CONFIG.DATA_WIDTH {64} \
@@ -469,7 +473,12 @@ namespace eval ::tapasco::ip {
     }
     puts "Wrote COE file to ${outfile}"
 
-    set_property -dict [list CONFIG.Memory_Type {Single_Port_ROM} \
+    if {[tapasco::is_versal]} {
+      set mem_type {Single_Port_RAM}
+    } else {
+      set mem_type {Single_Port_ROM}
+    }
+    set_property -dict [list CONFIG.Memory_Type $mem_type \
                          CONFIG.Load_Init_File {true}         \
                          CONFIG.EN_SAFETY_CKT {false}         \
                          CONFIG.Coe_File $outfile] [get_bd_cells -filter "NAME == ${name}_base"]
