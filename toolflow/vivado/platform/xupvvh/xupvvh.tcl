@@ -222,15 +222,6 @@ namespace eval platform {
     }
   }
 
-  proc write_ltx {args} {
-    global bitstreamname
-    puts "Writing debug probes into file ${bitstreamname}.ltx ..."
-    write_debug_probes -force -verbose "${bitstreamname}.ltx"
-    return $args
-  }
-
-  tapasco::register_plugin "arch::debug::debug_feature" "pre-wrapper"
-
   # Insert optional register slices
   proc insert_regslices {} {
     insert_regslice "dma_migic" false "/memory/dma/m32_axi" "/memory/mig_ic/S00_AXI" "/memory/mem_clk" "/memory/mem_peripheral_aresetn" "/memory"
@@ -270,6 +261,5 @@ namespace eval platform {
   tapasco::register_plugin "platform::xupvvh::addressmap" "post-address-map"
 
   tapasco::register_plugin "platform::insert_regslices" "post-platform"
-  tapasco::register_plugin "platform::write_ltx" "post-impl"
 
 }
