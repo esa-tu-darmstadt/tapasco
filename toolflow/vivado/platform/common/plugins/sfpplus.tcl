@@ -475,7 +475,7 @@ namespace eval sfpplus {
       current_bd_instance $transmitter_cell
       # Create Interconnect for transmitter synchronization
       set sync_ic_out [tapasco::ip::create_axis_ic transmitter_sync 1 1]
-      set_property -dict [list CONFIG.S00_FIFO_DEPTH {2048} CONFIG.M00_FIFO_DEPTH {2048} CONFIG.S00_FIFO_MODE {0} CONFIG.M00_FIFO_MODE {1}] $sync_ic_out
+      set_property -dict [list CONFIG.ARB_ON_TLAST {1} CONFIG.M00_FIFO_DEPTH {4096} CONFIG.S00_FIFO_DEPTH {4096} CONFIG.S00_FIFO_MODE {1} CONFIG.M00_FIFO_MODE {1}] $sync_ic_out
       connect_bd_net [get_bd_pins design_clk]  [get_bd_pins $sync_ic_out/ACLK] [get_bd_pins $sync_ic_out/S*_ACLK]
       connect_bd_net [get_bd_pins design_interconnect_aresetn] [get_bd_pins $sync_ic_out/ARESETN]
       connect_bd_net [get_bd_pins design_peripheral_aresetn] [get_bd_pins $sync_ic_out/S*_ARESETN]
