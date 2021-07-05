@@ -153,7 +153,7 @@ impl Job {
                             .memory
                             .allocator()
                             .lock()?
-                            .allocate(x.data.len() as u64)
+                            .allocate(x.data.len() as u64, Some(x.data.as_ptr() as u64))
                             .context(AllocatorError)?,
                     };
 

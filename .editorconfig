@@ -1,0 +1,38 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+
+[*.{v,md,rpt,xml}]
+charset = unset
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+indent_style = unset
+indent_size = unset
+
+[Makefile]
+indent_style = tab
+
+[*.{sh,py,rs}]
+indent_style = space
+indent_size = 4
+
+[*.{tcl,scala}]
+indent_style = space
+indent_size = 2
+
+[{runtime,toolflow}/bin/*]
+indent_style = space
+indent_size = 4
+
+[runtime/kernel/**.{c,h}]
+indent_style = tab
+
+[runtime/**.{c,h,cpp,hpp}]
+indent_style = space
+indent_size = 2
+

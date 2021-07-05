@@ -11,8 +11,8 @@ LINUX_XLNX_URL="https://github.com/xilinx/linux-xlnx.git"
 UBOOT_URL="https://github.com/xilinx/u-boot-xlnx.git"
 ATF_URL="https://github.com/Xilinx/arm-trusted-firmware.git"
 ARTYZ7_DTS_URL="https://raw.githubusercontent.com/Digilent/linux-digilent/master/arch/arm/boot/dts/zynq-artyz7.dts"
-ROOTFS_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04.1-base-armhf.tar.gz"
-ROOTFS64_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04.1-base-arm64.tar.gz"
+ROOTFS_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04.2-base-armhf.tar.gz"
+ROOTFS64_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04.2-base-arm64.tar.gz"
 ROOTFS_TAR_GZ="$DIR/ubuntu_armhf_20.04.tar.gz"
 ROOTFS64_TAR_GZ="$DIR/ubuntu_arm64_20.04.tar.gz"
 UDEV_RULES="$TAPASCO_HOME/platform/zynq/module/99-tapasco.rules"
@@ -182,7 +182,6 @@ build_u-boot() {
 		case $BOARD in
 			"pynq")
 				# based on zybo z7, but requires a few changes
-				DEFCONFIG=zynq_zybo_z7_defconfig
 				echo "CONFIG_DEBUG_UART_BASE=0xe0000000" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
 				# modify devicetree
 				# change uart1 to uart0
@@ -191,23 +190,30 @@ build_u-boot() {
 				sed -i 's/33333333/50000000/' $DIR/u-boot-xlnx/arch/arm/dts/zynq-zybo-z7.dts
 				# set memory size to 512 MB
 				sed -i 's/40000000/20000000/' $DIR/u-boot-xlnx/arch/arm/dts/zynq-zybo-z7.dts
+				DEVICE_TREE="zynq-zybo-z7"
 				;;
 			"zedboard")
-				DEFCONFIG=zynq_zed_defconfig
+				DEVICE_TREE="zynq-zed"
 				;;
 			"zc706")
-				DEFCONFIG=zynq_zc706_defconfig
+				DEVICE_TREE="zynq-zc706"
 				;;
 			"ultra96v2")
-				DEFCONFIG=avnet_ultra96_rev1_defconfig
+				DEVICE_TREE="avnet-ultra96-rev1"
 				;;
 			"zcu102")
-				DEFCONFIG=xilinx_zynqmp_zcu102_rev1_0_defconfig
+				DEVICE_TREE="zynqmp-zcu102-rev1.0"
 				;;
 			*)
 				return $(error_ret "unknown board: $BOARD")
 				;;
 		esac
+		# use common defconfigs introduced with Vivado 2020.1
+		if [[ $ARCH == arm ]]; then
+			DEFCONFIG=xilinx_zynq_virt_defconfig
+		else
+			DEFCONFIG=xilinx_zynqmp_virt_defconfig
+		fi
 		cd $DIR/u-boot-xlnx
 		# disable network boot for all devices
 		echo "# CONFIG_CMD_NET is not set" >> configs/$DEFCONFIG
@@ -215,10 +221,10 @@ build_u-boot() {
 			echo "CONFIG_OF_EMBED=y" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
 			echo "# CONFIG_OF_SEPARATE is not set" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
 		fi
-		make CROSS_COMPILE=$CROSS_COMPILE $DEFCONFIG ||
+		make CROSS_COMPILE=$CROSS_COMPILE $DEFCONFIG DEVICE_TREE=$DEVICE_TREE ||
 			return $(error_ret "$LINENO: could not make defconfig $DEFCONFIG")
 		if [[ $ARCH != arm64 ]]; then
-			make CROSS_COMPILE=$CROSS_COMPILE HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" tools -j $JOBCOUNT ||
+			make CROSS_COMPILE=$CROSS_COMPILE HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" DEVICE_TREE=$DEVICE_TREE tools -j $JOBCOUNT ||
 				return $(error_ret "$LINENO: could not build u-boot tools")
 		fi
 	else
@@ -285,6 +291,10 @@ build_ssbl() {
 		fi
 	else
 		echo "$DIR/u-boot-xlnx/u-boot already exists, skipping."
+	fi
+
+	if [[ ! -f $DIR/boot.scr && -e $SCRIPTDIR/bootscr/boot-$BOARD.txt ]]; then
+		$DIR/u-boot-xlnx/tools/mkimage -A arm -T script -O linux -d $SCRIPTDIR/bootscr/boot-$BOARD.txt $DIR/boot.scr
 	fi
 
 	if [[ $ARCH != arm64 ]]; then
@@ -453,8 +463,14 @@ build_bootbin() {
 	if [[ ! -f $DIR/BOOT.BIN ]]; then
 		echo "Building BOOT.BIN ..."
 		if [[ $ARCH == arm64 ]]; then
+			# set brdc_inner bit of the lpd_apu register in the LPD_SLCR module for VFIO/SMMU support
+			cat > $DIR/regs.init << EOF
+				.set. 0xFF41A040 = 0x3;
+EOF
+
 			cat > $DIR/bootimage.bif << EOF
-                image: {
+                boot_image : {
+                    [init] $DIR/regs.init
                     [bootloader,destination_cpu=a53-0] $DIR/fsbl/executable.elf
                     [pmufw_image] $DIR/pmufw/executable.elf
                     [destination_cpu=a53-0, exception_level=el-3,trustzone] $DIR/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf
@@ -465,7 +481,7 @@ EOF
 				return $(error_ret "$LINENO: could not generate BOOT.bin")
 		else
 			cat > $DIR/bootimage.bif << EOF
-                image : {
+                boot_image : {
     	            [bootloader]$DIR/fsbl/executable.elf
     	            $DIR/u-boot-xlnx/u-boot.elf
                 }
@@ -508,6 +524,9 @@ build_devtree() {
 	echo >> $DIR/devicetree.dts
 	if [[ $ARCH == arm64 ]]; then
 		echo "/include/ \"$SCRIPTDIR/misc/tapasco_zynqmp.dtsi\"" >> $DIR/devicetree.dts
+
+		# re-add label that was lost during compilation, so that we can reference it in dtsi
+		sed -i 's/smmu@fd800000/smmu: smmu@fd800000/' $DIR/devicetree.dts
 	else
 		echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
 	fi
@@ -604,6 +623,11 @@ copy_files_to_boot() {
 			echo >&2 "$LINENO: WARNING: could not copy Image"
 		echo "Copying $DIR/devicetree.dtb to $TO/system.dtb ..."
 		dusudo cp $DIR/devicetree.dtb $TO/system.dtb || echo >&2 "$LINENO: WARNING: could not copy devicetree"
+		if [[ -f uenv/uEnv-$BOARD.txt ]]; then
+			echo "Copying uenv/uEnv-$BOARD.txt to $TO/uEnv.txt ..."
+			dusudo cp uenv/uEnv-$BOARD.txt $TO/uEnv.txt ||
+				echo >&2 "$LINENO: WARNING: could not copy uEnv.txt"
+		fi
 	else
 		echo "Copying $DIR/linux-xlnx/arch/arm/boot/uImage to $TO ..."
 		dusudo cp $DIR/linux-xlnx/arch/arm/boot/uImage $TO ||
@@ -613,6 +637,10 @@ copy_files_to_boot() {
 			echo >&2 "$LINENO: WARNING: could not copy uEnv.txt"
 		echo "Copying $DIR/devicetree.dtb to $TO ..."
 		dusudo cp $DIR/devicetree.dtb $TO || echo >&2 "$LINENO: WARNING: could not copy devicetree"
+	fi
+	if [[ -f $DIR/boot.scr ]]; then
+		echo "Copying $DIR/boot.scr to $TO/boot.scr ..."
+		dusudo cp $DIR/boot.scr $TO/boot.scr || echo >&2 "$LINENO: WARNING: could not copy boot.scr"
 	fi
 	dusudo umount $TO
 	rmdir $TO 2> /dev/null &&
@@ -654,7 +682,7 @@ apt-get -y upgrade
 # runtime dependencies (without linux-headers)
 DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential python cmake libelf-dev libncurses-dev git rpm
 # additional tools
-apt-get install -y vim-tiny sudo iproute2 ssh kmod ifupdown net-tools jitterentropy-rngd haveged
+apt-get install -y vim-tiny sudo iproute2 ssh kmod ifupdown net-tools jitterentropy-rngd haveged libssl-dev bc rsync
 systemctl enable ssh
 systemctl enable getty@ttyPS0.service
 useradd -G sudo -m -s /bin/bash tapasco
@@ -752,7 +780,7 @@ if [[ $ARCH == arm64 ]]; then
 	echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and Arm Trusted Firmware (output in $BUILD_ARM_TRUSTED_FIRMWARE_LOG) ... "
 	build_arm_trusted_firmware &> $BUILD_ARM_TRUSTED_FIRMWARE_LOG &
 	BUILD_ARM_TRUSTED_FIRMWARE_OK=$!
-	wait $BUILD_ARM_TRUSTED_FIRMWARE || error_exit "Building Arm Trusted Firmware failed, check log: $ARM_TRUSTED_FIRMWARE_LOG"
+	wait $BUILD_ARM_TRUSTED_FIRMWARE_OK || error_exit "Building Arm Trusted Firmware failed, check log: $ARM_TRUSTED_FIRMWARE_LOG"
 else
 	echo "Building U-Boot SSBL (output in $BUILD_SSBL_LOG) and uImage (output in $BUILD_UIMAGE_LOG) ..."
 	build_uimage &> $BUILD_UIMAGE_LOG &

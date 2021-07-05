@@ -85,6 +85,7 @@ if {$do_cosim > 0} {
 # export to IP-XACT (skip evaluation, will be done manually)
 export_design -format ipxact -display_name {@@NAME@@} -vendor {@@VENDOR@@} -version {@@VERSION@@}
 # remove .zip
+file delete [glob -nocomplain "@@PROJECT@@/@@SOLUTION@@/impl/*.zip"]
 file delete [glob "@@PROJECT@@/@@SOLUTION@@/impl/ip/*.zip"]
 # replace logo
 file copy -force "$::env(TAPASCO_HOME_TCL)/common/logo.png" "@@PROJECT@@/@@SOLUTION@@/impl/ip/misc/logo.png"

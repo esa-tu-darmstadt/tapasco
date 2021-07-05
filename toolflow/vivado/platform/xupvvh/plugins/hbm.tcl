@@ -308,9 +308,14 @@ namespace eval hbm {
       set masters [ldiff [lsort -dictionary [tapasco::get_aximm_interfaces [get_bd_cells /arch/target_ip_*]]] $hbmInterfaces]
       set arch_mem_ics [arch::arch_create_mem_interconnects $mgroups [llength $masters]]
       arch::arch_connect_mem $arch_mem_ics $masters
-      catch {arch::arch_connect_clocks} issue
-      catch {arch::arch_connect_resets} issue
-
+      
+      connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
+        [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == clk && DIR == I"]
+      connect_bd_net -quiet [tapasco::subsystem::get_port "design" "rst" "interconnect"] \
+        [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && NAME =~ *interconnect_aresetn && DIR == I"]
+      connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
+        [get_bd_pins -of_objects [get_bd_cells -of_objects [current_bd_instance .]] -filter "TYPE == rst && NAME =~ *peripheral_aresetn && DIR == I"]
+        
       # apply constraints for one or both stacks
       current_bd_instance /hbm
       set constraints_l "$::env(TAPASCO_HOME_TCL)/platform/xupvvh/plugins/hbm_l.xdc"

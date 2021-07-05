@@ -184,7 +184,7 @@ namespace eval sfpplus {
         if {$validation} {
           dict set available_PEs $ip [lrepeat $count $ip]
         } else {
-          dict set available_PEs $ip [get_bd_cells /arch/target_ip_[format %02d $comp_index]_*]
+          dict set available_PEs $ip [get_bd_cells -filter "NAME =~ *target_ip_[format %02d $comp_index]_* && TYPE == ip" -of_objects [get_bd_cells /arch]]
         }
       }
     }

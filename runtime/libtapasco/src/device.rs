@@ -18,9 +18,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::allocator::{Allocator, DriverAllocator, GenericAllocator};
+use crate::allocator::{Allocator, DriverAllocator, GenericAllocator, VfioAllocator};
 use crate::debug::DebugGenerator;
-use crate::dma::{DMAControl, DirectDMA, DriverDMA};
+use crate::dma::{DMAControl, DirectDMA, DriverDMA, VfioDMA};
 use crate::dma_user_space::UserSpaceDMA;
 use crate::job::Job;
 use crate::pe::PEId;
@@ -30,6 +30,7 @@ use crate::tlkm::tlkm_ioctl_create;
 use crate::tlkm::tlkm_ioctl_destroy;
 use crate::tlkm::tlkm_ioctl_device_cmd;
 use crate::tlkm::DeviceId;
+use crate::vfio::*;
 use config::Config;
 use memmap::MmapMut;
 use memmap::MmapOptions;
@@ -100,6 +101,9 @@ pub enum Error {
 
     #[snafu(display("Could not parse configuration {}", source))]
     ConfigError { source: config::ConfigError },
+
+    #[snafu(display("Could not initialize VFIO subsystem: {}", source))]
+    VfioInitError  { source: crate::vfio::Error },
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -321,6 +325,7 @@ impl Device {
         // has been updated to contain the required information.
         info!("Using static memory allocation due to lack of dynamic data in the status core.");
         let mut allocator = Vec::new();
+        let zynqmp_vfio_mode = true;
         let mut is_pcie = false;
         if name == "pcie" {
             info!("Allocating the default of 4GB at 0x0 for a PCIe platform");
@@ -375,13 +380,24 @@ impl Device {
                     .context(DMAError)?,
                 ),
             }));
-        } else if name == "zynq" || name == "zynqmp" {
+        } else if name == "zynq" || (name == "zynqmp" && !zynqmp_vfio_mode) {
             info!("Using driver allocation for Zynq/ZynqMP based platform.");
             allocator.push(Arc::new(OffchipMemory {
                 allocator: Mutex::new(Box::new(
                     DriverAllocator::new(&tlkm_dma_file).context(AllocatorError)?,
                 )),
                 dma: Box::new(DriverDMA::new(&tlkm_dma_file)),
+            }));
+        } else if name == "zynqmp" {
+            info!("Using VFIO mode for ZynqMP based platform.");
+            let vfio_dev = Arc::new(init_vfio(settings.clone())
+                .context(VfioInitError)?
+            );
+            allocator.push(Arc::new(OffchipMemory {
+                allocator: Mutex::new(Box::new(
+                    VfioAllocator::new(&vfio_dev).context(AllocatorError)?,
+                )),
+                dma: Box::new(VfioDMA::new(&tlkm_dma_file, &vfio_dev)),
             }));
         } else {
             return Err(Error::DeviceType { name: name });
