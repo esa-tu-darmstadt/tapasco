@@ -23,10 +23,18 @@ project(libtapasco_tests)
 add_executable(libtapasco_tests .)
 
 # Use Cargo to build this project in debug mode by defining a custom target running after the tapasco target has been built.
-add_custom_target(libtapasco_tests_cargo_build_debug   COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} cargo build -q --debug   WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR} DEPENDS tapasco COMMENT "Building libtapasco_tests with Cargo")
+add_custom_target(libtapasco_tests_cargo_build_debug
+  COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} cargo build -q
+  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+  DEPENDS tapasco
+  COMMENT "Building libtapasco_tests with Cargo")
 
 # Use Cargo to build this project in release mode by defining a custom target running after the tapasco target has been built.
-add_custom_target(libtapasco_tests_cargo_build_release COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} cargo build -q --release WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR} DEPENDS tapasco COMMENT "Building libtapasco_tests with Cargo")
+add_custom_target(libtapasco_tests_cargo_build_release
+  COMMAND CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR} cargo build -q --release
+  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+  DEPENDS tapasco
+  COMMENT "Building libtapasco_tests with Cargo")
 
 # Check if building should be in Debug or Release mode
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
