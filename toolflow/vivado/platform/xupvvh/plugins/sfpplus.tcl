@@ -24,29 +24,34 @@ namespace eval sfpplus {
   }
 
   proc get_available_modes {} {
-    return {"10G" "100G"}
+    return {"10G" "100G" "Aurora"}
   }
 
   proc num_available_ports {mode} {
-  	if {$mode == "10G"} {
-  		return [10g::num_available_ports]
-  	}
-  	if {$mode == "100G"} {
-  		return [100g::num_available_ports]
-  	}
-  	puts "Invalid SFP+ mode: mode $mode is not supported by this platform. Available modes are 10G and 100G"
+    if {$mode == "10G"} {
+      return [10g::num_available_ports]
+    }
+    if {$mode == "100G"} {
+      return [100g::num_available_ports]
+    }
+    if {$mode == "Aurora"} {
+      return [Aurora::num_available_ports]
+    }
+    puts "Invalid SFP+ mode: mode $mode is not supported by this platform. Available modes are: 10G, 100G, Aurora"
     exit
   }
 
   proc generate_cores {mode ports} {
-  	if {$mode == "10G"} {
-  		10g::generate_cores $ports
-  	} elseif {$mode == "100G"} {
-  		100g::generate_cores $ports
-  	} else {
-		puts "Invalid SFP+ mode: mode $mode is not supported by this platform. Available modes are 10G and 100G"
-		exit
-	}
+    if {$mode == "10G"} {
+      10g::generate_cores $ports
+    } elseif {$mode == "100G"} {
+      100g::generate_cores $ports
+    } elseif {$mode == "Aurora"} {
+      Aurora::generate_cores $ports
+    } else {
+    puts "Invalid SFP+ mode: mode $mode is not supported by this platform. Available modes are: 10G, 100G, Aurora"
+    exit
+  }
   }
 
 
