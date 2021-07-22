@@ -22,6 +22,9 @@ namespace eval sfpplus {
   namespace eval 100g {
 
     variable available_ports 2
+    variable cmac_cores            {"CMACE4_X0Y6" "CMACE4_X0Y7"}
+    variable gt_groups             {"X0Y40~X0Y43" "X0Y44~X0Y47"}
+    variable refclk_pins           {"T42" "P42"}
 
     proc num_available_ports {} {
       variable available_ports
@@ -33,6 +36,8 @@ namespace eval sfpplus {
       set num_streams [dict size $ports]
 
       puts "Generating $num_streams SFPPLUS cores"
+      set constraints_fn "[get_property DIRECTORY [current_project]]/sfpplus.xdc"
+      set constraints_file [open $constraints_fn w+]
 
       # QSFP Ports
       set const_one [tapasco::ip::create_constant const_one 1 1]
@@ -56,23 +61,32 @@ namespace eval sfpplus {
       set first_port 0
       foreach port [dict keys $ports] {
         set name [dict get $ports $port]
-        generate_core $port $name $first_port
+        generate_core $port $name $first_port $constraints_file
         incr first_port 1
       }
+
+      close $constraints_file
+      read_xdc $constraints_fn
+      set_property PROCESSING_ORDER NORMAL [get_files $constraints_fn]
     }
 
     # Generate a SFP+-Core to handle the ports of one physical cage
     # @param physical_port the number of the physical cage
     # @param name name of the port
     # @param first_port the first free master on the AXI-Lite Config interconnect
-    proc generate_core {physical_port name first_port} {
+    # @param constraints_file the file used for constraints
+    proc generate_core {physical_port name first_port constraints_file} {
+      variable refclk_pins
+      variable cmac_cores
+      variable gt_groups
 
       # Create and configure core
       set core [tapasco::ip::create_100g_ethernet ethernet_$physical_port]
 
-      # auto connect refclk and GT serial
-      apply_board_connection -board_interface [format {qsfp%s_4x} $physical_port] -ip_intf "$core/gt_serial_port" -diagram [current_bd_design]
-      apply_board_connection -board_interface [format {qsfp%s_156mhz} $physical_port] -ip_intf "$core/gt_ref_clk" -diagram [current_bd_design]
+      # Create and constrain refclk pin
+      set gt_refclk [create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 qsfp${physical_port}_156mhz]
+      set_property CONFIG.FREQ_HZ 156250000 $gt_refclk
+      puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $refclk_pins $physical_port] qsfp${physical_port}_156mhz_clk_p]
 
       set_property -dict [list \
         CONFIG.CMAC_CAUI4_MODE {1} \
@@ -85,13 +99,18 @@ namespace eval sfpplus {
         CONFIG.ENABLE_AXI_INTERFACE {0} \
         CONFIG.INCLUDE_STATISTICS_COUNTERS {0} \
         CONFIG.RX_MAX_PACKET_LEN {16383} \
+        CONFIG.CMAC_CORE_SELECT [lindex $cmac_cores $physical_port] \
+        CONFIG.GT_GROUP_SELECT [lindex $gt_groups $physical_port] \
       ] $core
 
+      # Connect core
       connect_bd_net [get_bd_pins $core/sys_reset] [get_bd_pins dclk_reset/peripheral_reset]
       connect_bd_net [get_bd_pins $core/drp_clk] [get_bd_pins dclk_wiz/clk_out1]
       connect_bd_net [get_bd_pins $core/init_clk] [get_bd_pins dclk_wiz/clk_out1]
 
-      # Connect core
+      connect_bd_intf_net $gt_refclk [get_bd_intf_pins $core/gt_ref_clk]
+      make_bd_intf_pins_external [get_bd_intf_pins $core/gt_serial_port]
+
       connect_bd_intf_net [get_bd_intf_pins $core/axis_rx] [get_bd_intf_pins AXIS_RX_${name}]
       connect_bd_intf_net [get_bd_intf_pins $core/axis_tx] [get_bd_intf_pins AXIS_TX_${name}]
       connect_bd_net [get_bd_pins $core/gt_txusrclk2] [get_bd_pins $core/rx_clk]
