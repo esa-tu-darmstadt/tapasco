@@ -22,6 +22,12 @@ Next to the setup and usage instructions in this README, you can find additional
 
 We welcome contributions from anyone interested in this field, check the [contributor's guide](https://github.com/esa-tu-darmstadt/tapasco/wiki/Contributor's-Guide) for more information.
 
+Supported FPGA devices
+----------------------
+
+* Zynq-based: PYNQ-Z1, ZC706, ZedBoard, Ultra96V2, ZCU102
+* PCIe cards: VC709, NetFPGA-SUME, VCU108, VCU118, VCU1525, Alveo U250, Alveo U280, BittWare XUP-VVH
+
 
 System Requirements
 -------------------
