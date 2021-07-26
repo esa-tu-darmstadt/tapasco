@@ -32,6 +32,8 @@ set -e
 # init paths
 DRIVER=tlkm
 DRIVERPATH="$TAPASCO_HOME_RUNTIME/kernel"
+VFIO_RST_REQ="/sys/module/vfio_platform/parameters/reset_required"
+VFIO_UNSAFE_INTR="/sys/module/vfio_iommu_type1/parameters/allow_unsafe_interrupts"
 
 show_usage() {
 	cat << EOF
@@ -133,7 +135,27 @@ if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit || $BITSTREAM == *.bin ]]; then
 			if [ $INSMOD_RET -ne 0 ]; then
 				echo "Loading driver failed, returned non-zero exit code $INSMOD_RET"
 			else
-				echo "Driver loaded sucessfully!"
+				echo "Driver loaded successfully!"
+			fi
+
+			if [ ! -f "$VFIO_RST_REQ" ] || [ "$(cat $VFIO_RST_REQ)" != "N" ]; then
+				echo "VFIO configuration error! Need to add bootarg 'vfio_platform.reset_required=0'"
+			else
+				# register tapasco device with VFIO
+				sudo sh -c "echo vfio-platform > /sys/bus/platform/devices/tapasco/driver_override"
+				sudo sh -c "echo tapasco > /sys/bus/platform/drivers_probe"
+				PROBE_RET=$?
+				if [ $PROBE_RET -ne 0 ]; then
+					echo "Probing VFIO platform driver failed, returned non-zero exit code $PROBE_RET"
+				else
+					echo "VFIO loaded successfully!"
+				fi
+				sudo chmod a+rw /dev/vfio/*
+			fi
+
+			# is required on the zcu102
+			if [ -f "$VFIO_UNSAFE_INTR" ] && [ "$(cat $VFIO_UNSAFE_INTR)" == "N" ]; then
+				sudo sh -c "echo Y > $VFIO_UNSAFE_INTR"
 			fi
 		fi
 	fi
