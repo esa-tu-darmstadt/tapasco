@@ -195,10 +195,8 @@ A List of publications about TaPaSCo or TaPaSCo-related research can be found [h
 
 If you want to cite TaPaSCo, please use the following information:
 
-[Korinth2019] Korinth, Jens, Jaco Hofmann, Carsten Heinz, and Andreas Koch. 2019. **The
-Tapasco Open-Source Toolflow for the Automated Composition of Task-Based
-Parallel Reconfigurable Computing Systems.** In *International Symposium
-on Applied Reconfigurable Computing (Arc)*.
+[Heinz2021a] Heinz, Carsten, Jaco Hofmann, Jens Korinth, Lukas Sommer, Lukas Weber, and Andreas Koch. 2021. **The
+Tapasco Open-Source Toolflow.** In *Journal of Signal Processing Systems*.
 
 Releases
 ----------------
