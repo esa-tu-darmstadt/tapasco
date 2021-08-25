@@ -135,7 +135,7 @@ namespace eval sfpplus {
       connect_bd_net [get_bd_pins const_one/dout] [get_bd_pins $core/ctl_rx_rsfec_enable_indication]
       connect_bd_net [get_bd_pins const_one/dout] [get_bd_pins $core/ctl_tx_rsfec_enable]
 
-      set aligned_inverter [tapasco::ip::create_logic_vector aligned_inverter]
+      set aligned_inverter [tapasco::ip::create_logic_vector aligned_inverter_$physical_port]
       set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] $aligned_inverter
       connect_bd_net [get_bd_pins $core/stat_rx_aligned] [get_bd_pins $aligned_inverter/Op1]
       connect_bd_net [get_bd_pins $aligned_inverter/Res] [get_bd_pins $core/ctl_tx_send_rfi]
