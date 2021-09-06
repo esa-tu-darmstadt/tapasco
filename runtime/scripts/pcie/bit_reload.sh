@@ -27,7 +27,7 @@ set -e
 
 # init paths
 DRIVER=tlkm
-DRIVERPATH="$TAPASCO_HOME_RUNTIME/kernel"
+DRIVERPATH="$TAPASCO_WORK_DIR/build/tlkm"
 BITLOAD_SCRIPT="$TAPASCO_HOME_RUNTIME/scripts/pcie/program_pcie.tcl"
 LOG_ID=$DRIVER"|""pci"
 

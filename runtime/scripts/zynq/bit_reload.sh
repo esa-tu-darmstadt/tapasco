@@ -31,7 +31,7 @@ set -e
 
 # init paths
 DRIVER=tlkm
-DRIVERPATH="$TAPASCO_HOME_RUNTIME/kernel"
+DRIVERPATH="$TAPASCO_WORK_DIR/build/tlkm"
 VFIO_RST_REQ="/sys/module/vfio_platform/parameters/reset_required"
 VFIO_UNSAFE_INTR="/sys/module/vfio_iommu_type1/parameters/allow_unsafe_interrupts"
 
