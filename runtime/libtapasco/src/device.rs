@@ -20,7 +20,7 @@
 
 use crate::allocator::{Allocator, DriverAllocator, GenericAllocator, VfioAllocator};
 use crate::debug::DebugGenerator;
-use crate::dma::{DMAControl, DirectDMA, DriverDMA, VfioDMA};
+use crate::dma::{DMAControl, DirectDMA, DriverDMA, MonitorDMA, VfioDMA};
 use crate::dma_user_space::UserSpaceDMA;
 use crate::job::Job;
 use crate::pe::PEId;
@@ -330,20 +330,9 @@ impl Device {
         if name == "pcie" {
             info!("Allocating the default of 4GB at 0x0 for a PCIe platform");
             let mut dma_offset = 0;
-            let mut dma_interrupt_read = 0;
-            let mut dma_interrupt_write = 1;
             for comp in &s.platform {
                 if comp.name == "PLATFORM_COMPONENT_DMA0" {
                     dma_offset = comp.offset;
-                    for v in &comp.interrupts {
-                        if v.name == "READ" {
-                            dma_interrupt_read = v.mapping as usize;
-                        } else if v.name == "WRITE" {
-                            dma_interrupt_write = v.mapping as usize;
-                        } else {
-                            trace!("Unknown DMA interrupt: {}.", v.name);
-                        }
-                    }
                 }
             }
             if dma_offset == 0 {
@@ -357,28 +346,7 @@ impl Device {
                 allocator: Mutex::new(Box::new(
                     GenericAllocator::new(0, 4 * 1024 * 1024 * 1024, 64).context(AllocatorError)?,
                 )),
-                dma: Box::new(
-                    UserSpaceDMA::new(
-                        &tlkm_dma_file,
-                        dma_offset as usize,
-                        dma_interrupt_read,
-                        dma_interrupt_write,
-                        &platform,
-                        settings
-                            .get::<usize>("dma.read_buffer_size")
-                            .context(ConfigError)?,
-                        settings
-                            .get::<usize>("dma.read_buffers")
-                            .context(ConfigError)?,
-                        settings
-                            .get::<usize>("dma.write_buffer_size")
-                            .context(ConfigError)?,
-                        settings
-                            .get::<usize>("dma.write_buffers")
-                            .context(ConfigError)?,
-                    )
-                    .context(DMAError)?,
-                ),
+                dma: Box::new(MonitorDMA {}),
             }));
         } else if name == "zynq" || (name == "zynqmp" && !zynqmp_vfio_mode) {
             info!("Using driver allocation for Zynq/ZynqMP based platform.");
@@ -386,7 +354,7 @@ impl Device {
                 allocator: Mutex::new(Box::new(
                     DriverAllocator::new(&tlkm_dma_file).context(AllocatorError)?,
                 )),
-                dma: Box::new(DriverDMA::new(&tlkm_dma_file)),
+                dma: Box::new(MonitorDMA {}),
             }));
         } else if name == "zynqmp" {
             info!("Using VFIO mode for ZynqMP based platform.");
@@ -397,7 +365,7 @@ impl Device {
                 allocator: Mutex::new(Box::new(
                     VfioAllocator::new(&vfio_dev).context(AllocatorError)?,
                 )),
-                dma: Box::new(VfioDMA::new(&tlkm_dma_file, &vfio_dev)),
+                dma: Box::new(MonitorDMA {}),
             }));
         } else {
             return Err(Error::DeviceType { name: name });
@@ -510,11 +478,96 @@ impl Device {
         self.access = access;
 
         if access == tlkm_access::TlkmAccessExclusive {
+            trace!("Re-initializing DMAEngine for exclusive access mode.");
+
+            // Now re-initialize the DMAEngine.
+            // TODO: I don't know if this way of doing things is correct.
+            // First remove the MonitorDMA:
+            self.offchip_memory.clear();
+
+            // Currently falls back to PCIe and Zynq allocation using the default 4GB at 0x0.
+            // This will be replaced with proper dynamic initialization after the status core
+            // has been updated to contain the required information.
+            info!("Again using static memory allocation due to lack of dynamic data in the status core.");
+            let zynqmp_vfio_mode = true;
+            if self.name == "pcie" {
+                info!("Allocating the default of 4GB at 0x0 for a PCIe platform");
+                let mut dma_offset = 0;
+                let mut dma_interrupt_read = 0;
+                let mut dma_interrupt_write = 1;
+                for comp in &self.status.platform {
+                    if comp.name == "PLATFORM_COMPONENT_DMA0" {
+                        dma_offset = comp.offset;
+                        for v in &comp.interrupts {
+                            if v.name == "READ" {
+                                dma_interrupt_read = v.mapping as usize;
+                            } else if v.name == "WRITE" {
+                                dma_interrupt_write = v.mapping as usize;
+                            } else {
+                                trace!("Unknown DMA interrupt: {}.", v.name);
+                            }
+                        }
+                    }
+                }
+                if dma_offset == 0 {
+                    trace!("Could not find DMA engine.");
+                    return Err(Error::DMAEngineMissing {});
+                }
+
+                self.offchip_memory.push(Arc::new(OffchipMemory {
+                    allocator: Mutex::new(Box::new(
+                        GenericAllocator::new(0, 4 * 1024 * 1024 * 1024, 64).context(AllocatorError)?,
+                    )),
+                    dma: Box::new(
+                        UserSpaceDMA::new(
+                            &self.tlkm_device_file,
+                            dma_offset as usize,
+                            dma_interrupt_read,
+                            dma_interrupt_write,
+                            &self.platform,
+                            self.settings
+                                .get::<usize>("dma.read_buffer_size")
+                                .context(ConfigError)?,
+                            self.settings
+                                .get::<usize>("dma.read_buffers")
+                                .context(ConfigError)?,
+                            self.settings
+                                .get::<usize>("dma.write_buffer_size")
+                                .context(ConfigError)?,
+                            self.settings
+                                .get::<usize>("dma.write_buffers")
+                                .context(ConfigError)?,
+                        )
+                        .context(DMAError)?,
+                    ),
+                }));
+            } else if self.name == "zynq" || (self.name == "zynqmp" && !zynqmp_vfio_mode) {
+                info!("Using driver allocation for Zynq/ZynqMP based platform.");
+                self.offchip_memory.push(Arc::new(OffchipMemory {
+                    allocator: Mutex::new(Box::new(
+                        DriverAllocator::new(&self.tlkm_device_file).context(AllocatorError)?,
+                    )),
+                    dma: Box::new(DriverDMA::new(&self.tlkm_device_file)),
+                }));
+            } else if self.name == "zynqmp" {
+                info!("Using VFIO mode for ZynqMP based platform.");
+                let vfio_dev = Arc::new(init_vfio(self.settings.clone()).context(VfioInitError)?);
+                self.offchip_memory.push(Arc::new(OffchipMemory {
+                    allocator: Mutex::new(Box::new(
+                        VfioAllocator::new(&vfio_dev).context(AllocatorError)?,
+                    )),
+                    dma: Box::new(VfioDMA::new(&self.tlkm_device_file, &vfio_dev)),
+                }));
+            } else {
+                return Err(Error::DeviceType { name: self.name.clone() });
+            }
+
             trace!("Access changed to exclusive, resetting all interrupts.");
             self.scheduler.reset_interrupts().context(SchedulerError)?;
         }
 
         trace!("Successfully acquired access.");
+
         Ok(())
     }
 

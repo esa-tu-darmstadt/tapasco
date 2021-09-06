@@ -278,3 +278,23 @@ impl DMAControl for DirectDMA {
         Ok(())
     }
 }
+
+
+/// Use MonitorDMA for applications that only monitor other applications like tapasco-debug
+/// This implementation simply does nothing
+#[derive(Debug)]
+pub struct MonitorDMA;
+
+impl DMAControl for MonitorDMA {
+    fn copy_to(&self, _data: &[u8], _ptr: DeviceAddress) -> Result<()> {
+        trace!("MonitorDMA copy_to: Doing nothing.");
+
+        Ok(())
+    }
+
+    fn copy_from(&self, _ptr: DeviceAddress, _data: &mut [u8]) -> Result<()> {
+        trace!("MonitorDMA copy_to: Doing nothing.");
+
+        Ok(())
+    }
+}
