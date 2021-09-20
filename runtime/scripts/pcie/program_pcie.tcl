@@ -44,7 +44,7 @@ if { $argc > 0 } {
   exit 1
 }
 
-proc init {} {
+proc init {server} {
   open_hw
   connect_hw_server $server:3121
 }
@@ -56,7 +56,7 @@ proc deinit {{retcode 0}} {
 }
 
 # open server
-init
+init $server
 
 foreach t [get_hw_targets] {
   puts "opening target $t ..."

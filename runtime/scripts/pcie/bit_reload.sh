@@ -47,22 +47,20 @@ EOF
 hotplug() {
 	VENDOR=10EE
 	DEVICE=7038
-	PCIEDEVICE=`$SSH lspci -d $VENDOR:$DEVICE | sed -e "s/ .*//"`
+	PCIEDEVICE=`$SSH lspci -d $VENDOR:$DEVICE $SSHEND | sed -e "s/ .*//"`
 	echo "hotplugging device: $PCIEDEVICE"
 	# remove device, if it exists
 	if [ -n "$PCIEDEVICE" ]; then
-		else
-			$SSH sudo sh -c "echo 1 >/sys/bus/pci/devices/0000:$PCIEDEVICE/remove"
-		fi
+			$SSH sudo sh -c "echo 1 >/sys/bus/pci/devices/0000:$PCIEDEVICE/remove" $SSHEND
 
 	fi
 
 	sleep 1
 
 	# Scan for new hotplugable device, like the one may deleted before
-	$SSH sudo sh -c "echo 1 > /sys/bus/pci/rescan"
+	$SSH sudo sh -c "echo 1 > /sys/bus/pci/rescan" $SSHEND
 
-	PCIEDEVICE=`$SSH lspci -d $VENDOR:$DEVICE | sed -e "s/ .*//"`
+	PCIEDEVICE=`$SSH lspci -d $VENDOR:$DEVICE $SSHEND | sed -e "s/ .*//"`
 
 	if [ -n "$PCIEDEVICE" ]; then
 		echo "hotplugging finished"
@@ -114,9 +112,11 @@ SERVER="$1"
 BITSTREAM="$2"
 USER="$3"
 if [ $SERVER != "localhost" ]; then
-	SSH="ssh $USER@$SERVER "
+	SSH="ssh -t $USER@$SERVER '"
+	SSHEND="'"
 else
 	SSH=""
+	SSHEND=""
 fi
 if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit ]]
 then
@@ -125,9 +125,9 @@ then
 	# unload driver, if reload_driver was set
 	if [ $RELOADD -gt 0 ]; then
 		# don't try to unload a not loaded driver
-		if [ `$SSH lsmod | grep $DRIVER | wc -l` -gt 0 ]; then
+		if [ `$SSH lsmod $SSHEND | grep $DRIVER | wc -l` -gt 0 ]; then
 			echo "unloading tlkm"
-			$SSH sudo rmmod $DRIVER
+			$SSH sudo rmmod $DRIVER $SSHEND
 		fi
 	fi
 
@@ -160,16 +160,16 @@ then
 	# load driver?
 	if [ $NOLOADD -eq 0 ]; then
 		# already loaded?
-		if [ `$SSH lsmod | grep $DRIVER | wc -l` -eq 0 ]; then
-			$SSH sudo insmod $DRIVERPATH/${DRIVER}.ko
-			$SSH sudo chown $USER /dev/tlkm*
+		if [ `$SSH lsmod $SSHEND | grep $DRIVER | wc -l` -eq 0 ]; then
+			$SSH sudo insmod $DRIVERPATH/${DRIVER}.ko $SSHEND
+			$SSH sudo chown $USER /dev/tlkm* $SSHEND
 			echo "tlkm loaded successfully"
 		fi
 	fi
 
 	# output tail of dmesg in verbose mode
 	if [ $VERBOSE -gt 0 ]; then
-		$SSH dmesg | tail -7 | grep -iE $LOG_ID
+		$SSH dmesg $SSHEND | tail -7 | grep -iE $LOG_ID
 	fi
 else
 	show_usage
