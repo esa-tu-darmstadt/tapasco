@@ -46,7 +46,7 @@ if { $argc > 0 } {
 
 proc init {server} {
   open_hw
-  connect_hw_server $server:3121
+  connect_hw_server -url $server:3121
 }
 
 proc deinit {{retcode 0}} {
