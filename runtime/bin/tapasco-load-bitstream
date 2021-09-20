@@ -59,6 +59,14 @@ parser.add_argument(
         'normal',
         'program',
          'hotplug'])
+parser.add_argument(
+    '--server',
+    help='execute actions on remote server',
+    default='')
+parser.add_argument(
+    '--user',
+    help='the remote ssh user',
+    default='')
 args = parser.parse_args()
 
 if 'TAPASCO_HOME_RUNTIME' not in os.environ:
@@ -97,7 +105,8 @@ nold = '-n' if args.no_load_driver else ''
 verb = '-v' if args.verbose else ''
 program = '-p' if args.mode == 'normal' or args.mode == 'program' else ''
 hotplug = '-h' if args.mode == 'normal' or args.mode == 'hotplug' else ''
+server = args.server if args.server != '' else 'localhost'
 
-cmd = '$TAPASCO_HOME_RUNTIME/scripts/$TAPASCO_PLATFORM/bit_reload.sh {0} {1} {2} {3} {4} {5}'.format(
-    verb, reld, nold, hotplug, program, args.bitstream)
+cmd = '$TAPASCO_HOME_RUNTIME/scripts/$TAPASCO_PLATFORM/bit_reload.sh {0} {1} {2} {3} {4} {5} {6} {7}'.format(
+    verb, reld, nold, hotplug, program, server, args.bitstream, args.user)
 subprocess.call([cmd], shell=True)

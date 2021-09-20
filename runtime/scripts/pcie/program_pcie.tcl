@@ -26,13 +26,18 @@ set probes_file {}
 set program_file {}
 set devid -1
 set target {}
+set server {}
 
 if { $argc > 0 } {
   set program_file [lindex $argv 0]
 	puts "using $program_file as bitstream"
+
   if { $argc > 1 } {
-    set probes_file [lindex $argv 1]
-	  puts "using $probe_file for probes"
+    set server [lindex $argv 1]
+    if { $argc > 2 } {
+      set probes_file [lindex $argv 2]
+	    puts "using $probe_file for probes"
+    }
   }
 } else {
   puts "no bitstream file given, aborting"
@@ -41,7 +46,7 @@ if { $argc > 0 } {
 
 proc init {} {
   open_hw
-  connect_hw_server
+  connect_hw_server $server:3121
 }
 
 proc deinit {{retcode 0}} {

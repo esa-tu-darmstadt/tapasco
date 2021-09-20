@@ -33,7 +33,7 @@ LOG_ID=$DRIVER"|""pci"
 
 show_usage() {
 	cat << EOF
-Usage: ${0##*/} [-v|--verbose] [--d|--drv-reload] BITSTREAM
+Usage: ${0##*/} [-v|--verbose] [--d|--drv-reload] SERVER BITSTREAM
 Program first supported PCIe based FPGA found in JTAG chain with BITSTREAM.
 
 	-v	enable verbose output
@@ -47,20 +47,22 @@ EOF
 hotplug() {
 	VENDOR=10EE
 	DEVICE=7038
-	PCIEDEVICE=`lspci -d $VENDOR:$DEVICE | sed -e "s/ .*//"`
+	PCIEDEVICE=`$SSH lspci -d $VENDOR:$DEVICE | sed -e "s/ .*//"`
 	echo "hotplugging device: $PCIEDEVICE"
 	# remove device, if it exists
 	if [ -n "$PCIEDEVICE" ]; then
-		sudo sh -c "echo 1 >/sys/bus/pci/devices/0000:$PCIEDEVICE/remove"
+		else
+			$SSH sudo sh -c "echo 1 >/sys/bus/pci/devices/0000:$PCIEDEVICE/remove"
+		fi
 
 	fi
 
 	sleep 1
 
 	# Scan for new hotplugable device, like the one may deleted before
-	sudo sh -c "echo 1 > /sys/bus/pci/rescan"
+	$SSH sudo sh -c "echo 1 > /sys/bus/pci/rescan"
 
-	PCIEDEVICE=`lspci -d $VENDOR:$DEVICE | sed -e "s/ .*//"`
+	PCIEDEVICE=`$SSH lspci -d $VENDOR:$DEVICE | sed -e "s/ .*//"`
 
 	if [ -n "$PCIEDEVICE" ]; then
 		echo "hotplugging finished"
@@ -73,6 +75,8 @@ hotplug() {
 
 # init vars
 BITSTREAM=""
+SERVER=""
+USER=""
 VERBOSE=0
 RELOADD=0
 NOLOADD=0
@@ -106,7 +110,14 @@ while getopts vdnhp opt; do
 done
 shift "$((OPTIND-1))"
 
-BITSTREAM="$1"
+SERVER="$1"
+BITSTREAM="$2"
+USER="$3"
+if [ $SERVER != "localhost" ]; then
+	SSH="ssh $USER@$SERVER "
+else
+	SSH=""
+fi
 if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit ]]
 then
 	echo "bitstream = $BITSTREAM"
@@ -114,9 +125,9 @@ then
 	# unload driver, if reload_driver was set
 	if [ $RELOADD -gt 0 ]; then
 		# don't try to unload a not loaded driver
-		if [ `lsmod | grep $DRIVER | wc -l` -gt 0 ]; then
+		if [ `$SSH lsmod | grep $DRIVER | wc -l` -gt 0 ]; then
 			echo "unloading tlkm"
-			sudo rmmod $DRIVER
+			$SSH sudo rmmod $DRIVER
 		fi
 	fi
 
@@ -124,11 +135,11 @@ then
 	if [ $PROGRAM -gt 0 ]; then
 
 		if [ $VERBOSE -gt 0 ]; then
-			vivado -nolog -nojournal -notrace -mode tcl -source $BITLOAD_SCRIPT -tclargs $BITSTREAM
+			vivado -nolog -nojournal -notrace -mode tcl -source $BITLOAD_SCRIPT -tclargs $BITSTREAM $SERVER
 			VIVADORET=$?
 		else
 			echo "programming bitstream silently, this could take a while ..."
-			vivado -nolog -nojournal -notrace -mode batch -source $BITLOAD_SCRIPT -tclargs $BITSTREAM > /dev/null
+			vivado -nolog -nojournal -notrace -mode batch -source $BITLOAD_SCRIPT -tclargs $BITSTREAM $SERVER > /dev/null
 			VIVADORET=$?
 		fi
 
@@ -149,16 +160,16 @@ then
 	# load driver?
 	if [ $NOLOADD -eq 0 ]; then
 		# already loaded?
-		if [ `lsmod | grep $DRIVER | wc -l` -eq 0 ]; then
-			sudo insmod $DRIVERPATH/${DRIVER}.ko
-			sudo chown $USER /dev/tlkm*
+		if [ `$SSH lsmod | grep $DRIVER | wc -l` -eq 0 ]; then
+			$SSH sudo insmod $DRIVERPATH/${DRIVER}.ko
+			$SSH sudo chown $USER /dev/tlkm*
 			echo "tlkm loaded successfully"
 		fi
 	fi
 
 	# output tail of dmesg in verbose mode
 	if [ $VERBOSE -gt 0 ]; then
-		dmesg | tail -7 | grep -iE $LOG_ID
+		$SSH dmesg | tail -7 | grep -iE $LOG_ID
 	fi
 else
 	show_usage
