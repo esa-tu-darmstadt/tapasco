@@ -33,7 +33,6 @@ extern crate bytes;
 extern crate crossbeam;
 extern crate env_logger;
 extern crate lockfree;
-extern crate volatile;
 
 pub mod allocator;
 pub mod debug;

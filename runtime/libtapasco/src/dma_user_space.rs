@@ -45,7 +45,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::thread;
-use volatile::Volatile;
+use std::ptr::write_volatile;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
     fn from(_error: std::sync::PoisonError<T>) -> Self {
@@ -198,29 +198,25 @@ impl UserSpaceDMA {
         let mut offset = (self.engine_offset as usize) as isize;
         unsafe {
             let ptr = dma_engine_memory.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u64>;
-            (*volatile_ptr).write(addr_host);
+            write_volatile(ptr as *mut u64, addr_host);
         };
 
         offset = (self.engine_offset as usize + 0x08) as isize;
         unsafe {
             let ptr = dma_engine_memory.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u64>;
-            (*volatile_ptr).write(addr_device);
+            write_volatile(ptr as *mut u64, addr_device);
         };
 
         offset = (self.engine_offset as usize + 0x10) as isize;
         unsafe {
             let ptr = dma_engine_memory.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u64>;
-            (*volatile_ptr).write(size);
+            write_volatile(ptr as *mut u64, size);
         };
 
         offset = (self.engine_offset as usize + 0x20) as isize;
         unsafe {
             let ptr = dma_engine_memory.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u64>;
-            (*volatile_ptr).write(if from_device { 0x1000_1000 } else { 0x1000_0001 });
+            write_volatile(ptr as *mut u64, if from_device { 0x1000_1000 } else { 0x1000_0001 });
         };
     }
 

@@ -92,18 +92,10 @@ impl Interrupt {
                     return Ok(u64::from_ne_bytes(buf));
                 }
                 Err(e) => {
-                    let e_no = e.as_errno();
-                    match e_no {
-                        Some(e_no_matched) => {
-                            if e_no_matched == nix::errno::Errno::EAGAIN {
-                                std::thread::yield_now();
-                            } else {
-                                r.context(ErrorEventFDRead)?;
-                            }
-                        }
-                        None => {
-                            r.context(ErrorEventFDRead)?;
-                        }
+                    if e == nix::errno::Errno::EAGAIN {
+                        std::thread::yield_now();
+                    } else {
+                        r.context(ErrorEventFDRead)?;
                     }
                 }
             }
@@ -125,18 +117,10 @@ impl Interrupt {
                     return Ok(u64::from_ne_bytes(buf));
                 }
                 Err(e) => {
-                    let e_no = e.as_errno();
-                    match e_no {
-                        Some(e_no_matched) => {
-                            if e_no_matched == nix::errno::Errno::EAGAIN {
-                                return Ok(0);
-                            }
-
-                            r.context(ErrorEventFDRead)?;
-                        }
-                        None => {
-                            r.context(ErrorEventFDRead)?;
-                        }
+                    if e == nix::errno::Errno::EAGAIN {
+                        return Ok(0);
+                    } else {
+                        r.context(ErrorEventFDRead)?;
                     }
                 }
             }
