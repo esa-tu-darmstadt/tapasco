@@ -71,6 +71,15 @@ struct tlkm_dma_buffer_op {
 	size_t buffer_id;
 };
 
+struct tlkm_svm_init_cmd {
+	int32_t result;
+};
+
+struct tlkm_svm_migrate_cmd {
+	uint64_t vaddr;
+	uint64_t size;
+};
+
 #define TLKM_DEV_IOCTL_FN "tlkm_%02u"
 #define TLKM_DEV_PERFC_FN "tlkm_perfc_%02u"
 
@@ -100,7 +109,13 @@ struct tlkm_dma_buffer_op {
 	_TLKM_DEV_IOCTL(DMA_BUFFER_TO_DEV, dma_buffer_to_dev, 0x42,            \
 			struct tlkm_dma_buffer_op)                             \
 	_TLKM_DEV_IOCTL(DMA_BUFFER_FROM_DEV, dma_buffer_from_dev, 0x43,        \
-			struct tlkm_dma_buffer_op)
+			struct tlkm_dma_buffer_op)                             \
+	_TLKM_DEV_IOCTL(SVM_LAUNCH, svm_launch, 0x50,                          \
+			struct tlkm_svm_init_cmd)                              \
+	_TLKM_DEV_IOCTL(SVM_MIGRATE_TO_DEV, svm_migrate_to_dev, 0x52,          \
+			struct tlkm_svm_migrate_cmd)                           \
+	_TLKM_DEV_IOCTL(SVM_MIGRATE_TO_RAM, svm_migrate_to_ram, 0x53,          \
+			struct tlkm_svm_migrate_cmd)
 
 enum {
 #define _TLKM_DEV_IOCTL(NAME, name, id, dt)                                    \

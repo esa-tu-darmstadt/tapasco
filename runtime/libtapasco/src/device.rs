@@ -18,14 +18,14 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::allocator::{Allocator, DriverAllocator, GenericAllocator, VfioAllocator};
+use crate::allocator::{Allocator, DriverAllocator, DummyAllocator, GenericAllocator, VfioAllocator};
 use crate::debug::DebugGenerator;
-use crate::dma::{DMAControl, DirectDMA, DriverDMA, VfioDMA};
+use crate::dma::{DMAControl, DirectDMA, DriverDMA, VfioDMA, SVMDMA};
 use crate::dma_user_space::UserSpaceDMA;
 use crate::job::Job;
 use crate::pe::PEId;
 use crate::scheduler::Scheduler;
-use crate::tlkm::tlkm_access;
+use crate::tlkm::{tlkm_access, tlkm_ioctl_svm_launch, tlkm_svm_init_cmd};
 use crate::tlkm::tlkm_ioctl_create;
 use crate::tlkm::tlkm_ioctl_destroy;
 use crate::tlkm::tlkm_ioctl_device_cmd;
@@ -64,10 +64,10 @@ pub enum Error {
     StatusCoreDecoding { source: prost::DecodeError },
 
     #[snafu(display(
-        "Could not acquire desired mode {:?} for device {}: {}",
-        access,
-        id,
-        source
+    "Could not acquire desired mode {:?} for device {}: {}",
+    access,
+    id,
+    source
     ))]
     IOCTLCreate {
         source: nix::Error,
@@ -103,8 +103,12 @@ pub enum Error {
     ConfigError { source: config::ConfigError },
 
     #[snafu(display("Could not initialize VFIO subsystem: {}", source))]
-    VfioInitError  { source: crate::vfio::Error },
+    VfioInitError { source: crate::vfio::Error },
+
+    #[snafu(display("Could not launch SVM support in the TLKM"))]
+    SVMInitError { source: nix::Error },
 }
+
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
@@ -327,59 +331,85 @@ impl Device {
         let mut allocator = Vec::new();
         let zynqmp_vfio_mode = true;
         let mut is_pcie = false;
+        let mut svm_in_use = false;
         if name == "pcie" {
-            info!("Allocating the default of 4GB at 0x0 for a PCIe platform");
-            let mut dma_offset = 0;
-            let mut dma_interrupt_read = 0;
-            let mut dma_interrupt_write = 1;
+
+            // check whether SVM is in use
             for comp in &s.platform {
-                if comp.name == "PLATFORM_COMPONENT_DMA0" {
-                    dma_offset = comp.offset;
-                    for v in &comp.interrupts {
-                        if v.name == "READ" {
-                            dma_interrupt_read = v.mapping as usize;
-                        } else if v.name == "WRITE" {
-                            dma_interrupt_write = v.mapping as usize;
-                        } else {
-                            trace!("Unknown DMA interrupt: {}.", v.name);
+                if comp.name == "PLATFORM_COMPONENT_MMU" {
+                    svm_in_use = true;
+                }
+            }
+
+            if !svm_in_use {
+                info!("Allocating the default of 4GB at 0x0 for a PCIe platform");
+                let mut dma_offset = 0;
+                let mut dma_interrupt_read = 0;
+                let mut dma_interrupt_write = 1;
+                for comp in &s.platform {
+                    if comp.name == "PLATFORM_COMPONENT_DMA0" {
+                        dma_offset = comp.offset;
+                        for v in &comp.interrupts {
+                            if v.name == "READ" {
+                                dma_interrupt_read = v.mapping as usize;
+                            } else if v.name == "WRITE" {
+                                dma_interrupt_write = v.mapping as usize;
+                            } else {
+                                trace!("Unknown DMA interrupt: {}.", v.name);
+                            }
                         }
                     }
                 }
-            }
-            if dma_offset == 0 {
-                trace!("Could not find DMA engine.");
-                return Err(Error::DMAEngineMissing {});
-            }
+                if dma_offset == 0 {
+                    trace!("Could not find DMA engine.");
+                    return Err(Error::DMAEngineMissing {});
+                }
 
-            is_pcie = true;
+                is_pcie = true;
 
-            allocator.push(Arc::new(OffchipMemory {
-                allocator: Mutex::new(Box::new(
-                    GenericAllocator::new(0, 4 * 1024 * 1024 * 1024, 64).context(AllocatorError)?,
-                )),
-                dma: Box::new(
-                    UserSpaceDMA::new(
-                        &tlkm_dma_file,
-                        dma_offset as usize,
-                        dma_interrupt_read,
-                        dma_interrupt_write,
-                        &platform,
-                        settings
-                            .get::<usize>("dma.read_buffer_size")
-                            .context(ConfigError)?,
-                        settings
-                            .get::<usize>("dma.read_buffers")
-                            .context(ConfigError)?,
-                        settings
-                            .get::<usize>("dma.write_buffer_size")
-                            .context(ConfigError)?,
-                        settings
-                            .get::<usize>("dma.write_buffers")
-                            .context(ConfigError)?,
-                    )
-                    .context(DMAError)?,
-                ),
-            }));
+                allocator.push(Arc::new(OffchipMemory {
+                    allocator: Mutex::new(Box::new(
+                        GenericAllocator::new(0, 4 * 1024 * 1024 * 1024, 64).context(AllocatorError)?,
+                    )),
+                    dma: Box::new(
+                        UserSpaceDMA::new(
+                            &tlkm_dma_file,
+                            dma_offset as usize,
+                            dma_interrupt_read,
+                            dma_interrupt_write,
+                            &platform,
+                            settings
+                                .get::<usize>("dma.read_buffer_size")
+                                .context(ConfigError)?,
+                            settings
+                                .get::<usize>("dma.read_buffers")
+                                .context(ConfigError)?,
+                            settings
+                                .get::<usize>("dma.write_buffer_size")
+                                .context(ConfigError)?,
+                            settings
+                                .get::<usize>("dma.write_buffers")
+                                .context(ConfigError)?,
+                        )
+                            .context(DMAError)?,
+                    ),
+                }));
+            } else {
+                trace!("Using SVM...");
+                let mut init_cmd = tlkm_svm_init_cmd {
+                    result: 0,
+                };
+                unsafe {
+                    tlkm_ioctl_svm_launch(
+                        tlkm_dma_file.as_raw_fd(),
+                        &mut init_cmd,
+                    ).context(SVMInitError)?;
+                }
+                allocator.push(Arc::new(OffchipMemory {
+                    allocator: Mutex::new(Box::new(DummyAllocator::new())),
+                    dma: Box::new(SVMDMA::new(&tlkm_dma_file)),
+                }));
+            }
         } else if name == "zynq" || (name == "zynqmp" && !zynqmp_vfio_mode) {
             info!("Using driver allocation for Zynq/ZynqMP based platform.");
             allocator.push(Arc::new(OffchipMemory {
@@ -403,20 +433,24 @@ impl Device {
             return Err(Error::DeviceType { name: name });
         }
 
-        trace!("Initialize PE local memories.");
         let mut pe_local_memories = VecDeque::new();
-        for pe in s.pe.iter() {
-            match &pe.local_memory {
-                Some(l) => {
-                    pe_local_memories.push_back(Arc::new(OffchipMemory {
-                        allocator: Mutex::new(Box::new(
-                            GenericAllocator::new(0, l.size, 1).context(AllocatorError)?,
-                        )),
-                        dma: Box::new(DirectDMA::new(l.base, l.size, arch.clone())),
-                    }));
+        if !svm_in_use {
+            trace!("Initialize PE local memories.");
+            for pe in s.pe.iter() {
+                match &pe.local_memory {
+                    Some(l) => {
+                        pe_local_memories.push_back(Arc::new(OffchipMemory {
+                            allocator: Mutex::new(Box::new(
+                                GenericAllocator::new(0, l.size, 1).context(AllocatorError)?,
+                            )),
+                            dma: Box::new(DirectDMA::new(l.base, l.size, arch.clone())),
+                        }));
+                    }
+                    None => (),
                 }
-                None => (),
             }
+        } else {
+            warn!("PE local memories not compatible with SVM currently");
         }
 
         trace!("Initialize PE scheduler.");
@@ -428,8 +462,9 @@ impl Device {
                 &tlkm_dma_file,
                 &debug_impls,
                 is_pcie,
+                svm_in_use,
             )
-            .context(SchedulerError)?,
+                .context(SchedulerError)?,
         );
 
         trace!("Device creation completed.");

@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::device::DataTransferAlloc;
+use crate::device::{DataTransferAlloc, DeviceAddress};
 use crate::device::DataTransferPrealloc;
 use crate::device::PEParameter;
 use crate::pe::CopyBack;
@@ -142,19 +142,23 @@ impl Job {
             .into_iter()
             .map(|arg| match arg {
                 PEParameter::DataTransferAlloc(x) => {
-                    let a = match x.fixed {
-                        Some(offset) => x
-                            .memory
-                            .allocator()
-                            .lock()?
-                            .allocate_fixed(x.data.len() as u64, offset)
-                            .context(AllocatorError)?,
-                        None => x
-                            .memory
-                            .allocator()
-                            .lock()?
-                            .allocate(x.data.len() as u64, Some(x.data.as_ptr() as u64))
-                            .context(AllocatorError)?,
+                    let a = if *self.pe.as_ref().unwrap().svm_in_use() {
+                        x.data.as_ptr() as DeviceAddress
+                    } else {
+                        match x.fixed {
+                            Some(offset) => x
+                                .memory
+                                .allocator()
+                                .lock()?
+                                .allocate_fixed(x.data.len() as u64, offset)
+                                .context(AllocatorError)?,
+                            None => x
+                                .memory
+                                .allocator()
+                                .lock()?
+                                .allocate(x.data.len() as u64, Some(x.data.as_ptr() as u64))
+                                .context(AllocatorError)?,
+                        }
                     };
 
                     Ok(PEParameter::DataTransferPrealloc(DataTransferPrealloc {

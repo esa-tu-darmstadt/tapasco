@@ -23,6 +23,7 @@
 #include "dma/tlkm_dma.h"
 #include "user/tlkm_device_ioctl_cmds.h"
 #include "pcie/pcie_device.h"
+#include "pcie/pcie_svm.h"
 
 static inline long pcie_ioctl_info(struct tlkm_device *inst,
 				   struct tlkm_device_info *info)
@@ -186,6 +187,67 @@ static inline long pcie_ioctl_write(struct tlkm_device *inst,
 				    struct tlkm_copy_cmd *cmd)
 {
 	return tlkm_platform_write(inst, cmd);
+}
+
+static inline long pcie_ioctl_svm_launch(struct tlkm_device *inst,
+					 struct tlkm_svm_init_cmd *cmd)
+{
+#ifdef EN_SVM
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+	cmd->result = pcie_launch_svm(inst);
+	if (cmd->result) {
+		DEVERR(inst->dev_id, "failed to launch SVM");
+		return -EFAULT;
+	}
+	DEVLOG(inst->dev_id, TLKM_LF_SVM, "successfully launched SVM");
+	return 0;
+#else
+	DEVERR(inst->dev_id, "SVM not supported on this kernel version");
+	return -EFAULT;
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0) */
+#else
+	DEVERR(inst->dev_id,
+	       "SVM not enabeld, use '--enable_svm' flag during runtime compilation");
+	return -EFAULT;
+#endif /* EN_SVM */
+}
+
+static inline long
+pcie_ioctl_svm_migrate_to_dev(struct tlkm_device *inst,
+			      struct tlkm_svm_migrate_cmd *cmd)
+{
+#ifdef EN_SVM
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+	return pcie_svm_user_managed_migration_to_device(inst, cmd->vaddr,
+							 cmd->size);
+#else
+	DEVERR(inst->dev_id, "SVM not supported on this kernel version");
+	return -EFAULT;
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0) */
+#else
+	DEVERR(inst->dev_id,
+	       "SVM not enabeld, use '--enable_svm' flag during runtime compilation");
+	return -EFAULT;
+#endif /* EN_SVM */
+}
+
+static inline long
+pcie_ioctl_svm_migrate_to_ram(struct tlkm_device *inst,
+			      struct tlkm_svm_migrate_cmd *cmd)
+{
+#ifdef EN_SVM
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+	return pcie_svm_user_managed_migration_to_ram(inst, cmd->vaddr,
+						      cmd->size);
+#else
+	DEVERR(inst->dev_id, "SVM not supported on this kernel version");
+	return -EFAULT;
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0) */
+#else
+	DEVERR(inst->dev_id,
+	       "SVM not enabeld, use '--enable_svm' flag during runtime compilation");
+	return -EFAULT;
+#endif /* EN_SVM */
 }
 
 long pcie_ioctl(struct tlkm_device *inst, unsigned int ioctl,

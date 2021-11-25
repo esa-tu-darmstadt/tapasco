@@ -235,6 +235,29 @@ static inline long zynq_ioctl_write(struct tlkm_device *inst,
 	return tlkm_platform_write(inst, cmd);
 }
 
+static inline long zynq_ioctl_svm_launch(struct tlkm_device *inst,
+					 struct tlkm_svm_init_cmd *cmd)
+{
+	ERR("SVM is not implemented on the Zynq platform");
+	return -EFAULT;
+}
+
+static inline long
+zynq_ioctl_svm_migrate_to_dev(struct tlkm_device *inst,
+			      struct tlkm_svm_migrate_cmd *cmd)
+{
+	ERR("SVM is not implemented on the Zynq platform");
+	return -EFAULT;
+}
+
+static inline long
+zynq_ioctl_svm_migrate_to_ram(struct tlkm_device *inst,
+			      struct tlkm_svm_migrate_cmd *cmd)
+{
+	ERR("SVM is not implemented on the Zynq platform");
+	return -EFAULT;
+}
+
 long zynq_ioctl(struct tlkm_device *inst, unsigned int ioctl,
 		unsigned long data)
 {

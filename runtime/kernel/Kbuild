@@ -22,6 +22,7 @@ tlkm-objs := \
     pcie/pcie_irq.o \
     pcie/pcie_irq_aws.o \
     pcie/pcie_ioctl.o \
+    pcie/pcie_svm.o \
     dma/tlkm_dma.o \
     dma/blue_dma.o \
     nanopb/pb_common.o \

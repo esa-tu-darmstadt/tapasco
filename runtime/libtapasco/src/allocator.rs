@@ -560,3 +560,31 @@ impl Allocator for VfioAllocator {
         }
     }
 }
+
+/// Dummy allocator with no function
+///
+/// This allocator is used for SVM support since the allocation is handled in the TLKM in this case.
+/// The allocation function do always return Ok() so that as least changes as possible are required
+/// on the overall program flow.
+#[derive(Debug)]
+pub struct DummyAllocator {}
+
+impl DummyAllocator {
+    pub fn new() -> DummyAllocator {
+        DummyAllocator {}
+    }
+}
+
+impl Allocator for DummyAllocator {
+    fn allocate(&mut self, _size: DeviceSize, _va: Option<u64>) -> Result<DeviceAddress> {
+        Ok(u64::MAX)
+    }
+
+    fn allocate_fixed(&mut self, _size: DeviceSize, _offset: DeviceAddress) -> Result<DeviceAddress> {
+        Ok(u64::MAX)
+    }
+
+    fn free(&mut self, _ptr: DeviceAddress) -> Result<()> {
+        Ok(())
+    }
+}
