@@ -8,7 +8,7 @@ Table of Contents
 -----------------
   1. [Overview](#overview)
   2. [Usage](#usage)
-  3. [Compatibility](#compatibilty)
+  3. [Compatibility](#compatibility)
 
 Overview <a name="overview"/>
 --------

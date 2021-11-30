@@ -21,8 +21,8 @@ tapasco-build-libs --enable_svm
 
 ## Preparing a hardware design
 
-The example contains four test. One for the HLS example kernels ```arraysum```, ```arraysum```
-and ```arraysum``` each, and an additional testcase using all three kernels in a pipeline.
+The example contains four test. One for the HLS example kernels ```arrayinit```, ```arraysum```
+and ```arrayupdate``` each, and an additional testcase using all three kernels in a pipeline.
 The program detects automatically which kernels are available and executes the corresponding tests.
 You can create a hardware design containing one of the kernels e.g. with
 
