@@ -20,6 +20,8 @@
 #ifndef PCIE_SVM_H__
 #define PCIE_SVM_H__
 
+#include <linux/version.h>
+
 #if defined(EN_SVM) && LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0)
 
 #include <linux/sort.h>
