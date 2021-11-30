@@ -201,6 +201,8 @@ pub enum PEParameter {
     DataTransferAlloc(DataTransferAlloc),
     /// Transfer using any memory with preallocated space.
     DataTransferPrealloc(DataTransferPrealloc),
+    /// Virtual address parameter used for SVM.
+    VirtualAddress(*const u8),
 }
 
 // End of PE parameters.

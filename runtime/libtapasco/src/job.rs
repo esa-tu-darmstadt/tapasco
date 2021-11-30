@@ -59,6 +59,9 @@ pub enum Error {
     ))]
     UnsupportedTransferParameter { arg: PEParameter },
 
+    #[snafu(display("Parameter only supported for bitstreams with enabled SVM support: {:?}", arg))]
+    UnsupportedSVMParameter { arg: PEParameter },
+
     #[snafu(display("Scheduler Error: {}", source))]
     SchedulerError { source: crate::scheduler::Error },
 
@@ -262,6 +265,13 @@ impl Job {
                     .unwrap()
                     .set_arg(i, PEParameter::Single64(x))
                     .context(PEError)?,
+                PEParameter::VirtualAddress(p) => {
+                    if *self.pe.as_ref().unwrap().svm_in_use() {
+                        self.pe.as_ref().unwrap().set_arg(i, PEParameter::Single64(p as u64)).context(PEError)?;
+                    } else {
+                        return Err(Error::UnsupportedSVMParameter {arg: arg})
+                    }
+                }
                 _ => return Err(Error::UnsupportedRegisterParameter { arg: arg }),
             };
         }

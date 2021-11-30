@@ -494,6 +494,19 @@ pub extern "C" fn tapasco_job_param_prealloc(
     list
 }
 
+#[no_mangle]
+pub extern "C" fn tapasco_job_param_virtualaddress(addr: *const u8, list: *mut JobList) -> *mut JobList {
+    if list.is_null() {
+        warn!("Null pointer passed into tapasco_job_param_single32() as the list");
+        update_last_error(Error::NullPointerTLKM {});
+        return ptr::null_mut();
+    }
+
+    let tl = unsafe { &mut *list };
+    tl.push(PEParameter::VirtualAddress(addr));
+    list
+}
+
 /////////////////
 // Handle Device Access
 /////////////////
