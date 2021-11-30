@@ -79,6 +79,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 pub enum CopyBack {
     Transfer(DataTransferPrealloc),
     Free(DeviceAddress, Arc<OffchipMemory>),
+    Return(DataTransferPrealloc),               // used to return ownership only when using SVM
 }
 
 pub type PEId = usize;

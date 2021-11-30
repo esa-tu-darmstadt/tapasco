@@ -201,7 +201,11 @@ impl Job {
                     }
 
                     xs.push(PEParameter::DeviceAddress(x.device_address));
-                    if x.from_device {
+                    if *self.pe.as_ref().unwrap().svm_in_use() && !x.from_device {
+                        // return the buffer always if SVM is enabled to let the user
+                        // program regain ownership
+                        self.pe.as_mut().unwrap().add_copyback(CopyBack::Return(x));
+                    } else if x.from_device {
                         self.pe
                             .as_mut()
                             .unwrap()
@@ -291,6 +295,7 @@ impl Job {
     ///  * Tuple of
     ///    a: The return value if requested through the argument `return_value`,
     ///    b: The memories that have been used for copy backs after the job execution. Order is maintained according to the original argument list.
+    ///       If the SVM feature is in use return ALL memories so that the user can regain ownership of "in-only" buffers as well.
     pub fn release(
         &mut self,
         release_pe: bool,
@@ -336,6 +341,9 @@ impl Job {
                             }
                             CopyBack::Free(addr, mem) => {
                                 mem.allocator().lock()?.free(addr).context(AllocatorError)?;
+                            }
+                            CopyBack::Return(transfer) => {
+                                res.push(transfer.data);
                             }
                         }
                     }
