@@ -20,6 +20,8 @@
 #ifndef PCIE_SVM_H__
 #define PCIE_SVM_H__
 
+#if defined(EN_SVM) && LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0)
+
 #include <linux/sort.h>
 #include <linux/mmu_notifier.h>
 #include <linux/migrate.h>
@@ -29,7 +31,6 @@
 #include "pcie/pcie_device.h"
 #include "pcie/pcie.h"
 
-#if defined(EN_SVM) && LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0)
 
 #define MEM_SECTION_SIZE (128UL << 20)
 #define MEM_SECTION_NPAGES (MEM_SECTION_SIZE / PAGE_SIZE)
