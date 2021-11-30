@@ -136,3 +136,9 @@ Regslice {
 }
 ```
 If no value is given for a register slice (or for all), a default value is used. The default value for each register slice is the first value in the example above.
+
+### Alveo U280
+
+#### SVM
+
+The Shared Virtual Memory (SVM) extensions is documented [here](tapasco-svm.md)
