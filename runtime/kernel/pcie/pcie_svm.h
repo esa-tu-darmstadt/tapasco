@@ -33,6 +33,7 @@
 
 #define MEM_SECTION_SIZE (128UL << 20)
 #define MEM_SECTION_NPAGES (MEM_SECTION_SIZE / PAGE_SIZE)
+#define PHYS_MEM_SIZE (4UL << 30) // use standard 4 GB memory size
 
 // IOMMU
 #define MMU_DROP_FAULT 0x1UL
@@ -53,7 +54,8 @@
 #define MMU_INTR_ENABLE (1UL)
 #define MMU_ISSUE_FAULT_ENABLE (1UL << 1)
 
-#define VALID_ADDR_MASK (1UL << 63)
+#define VALID_ADDR_FLAG (1UL << 63)
+#define SECOND_TRY_FLAG (1UL << 62)
 #define VADDR_MASK (0xFFFFFFFFFFFF)
 #define MAX_NUM_FAULTS 32
 
