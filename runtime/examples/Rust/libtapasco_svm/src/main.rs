@@ -46,7 +46,7 @@ fn run_arrayinit(device: Arc<Device>, arrayinit_id: PEId) -> Result<()> {
         let arg_vec = vec![PEParameter::VirtualAddress(v_boxed.as_ptr())];
         let mut pe = device.acquire_pe(arrayinit_id).context(DeviceInit {})?;
         pe.start(arg_vec).context(JobError {})?;
-        info!("PE running");
+
         let _out_args = pe.release(true, false).context(JobError {})?;
 
         // check array

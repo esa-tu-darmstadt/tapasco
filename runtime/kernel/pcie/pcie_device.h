@@ -82,7 +82,7 @@ struct tlkm_pcie_device {
 	struct list_head *interrupts;
 	struct zynq_irq_mapping intc_bases[AWS_NUM_IRQ_CONTROLLERS];
 	int requested_irq_num;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0)
+#if defined(EN_SVM) && LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0)
 	struct tlkm_pcie_svm_data *svm_data;
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
