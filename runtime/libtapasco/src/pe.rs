@@ -79,6 +79,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 pub enum CopyBack {
     Transfer(DataTransferPrealloc),
     Free(DeviceAddress, Arc<OffchipMemory>),
+    Return(DataTransferPrealloc),               // used to return ownership only when using SVM
 }
 
 pub type PEId = usize;
@@ -110,6 +111,9 @@ pub struct PE {
     interrupt: Interrupt,
 
     debug: Box<dyn DebugControl + Sync + Send>,
+
+    #[get = "pub"]
+    svm_in_use: bool,
 }
 
 impl PE {
@@ -123,6 +127,7 @@ impl PE {
         completion: &File,
         interrupt_id: usize,
         debug: Box<dyn DebugControl + Sync + Send>,
+        svm_in_use: bool,
     ) -> Result<PE> {
         Ok(PE {
             id: id,
@@ -136,6 +141,7 @@ impl PE {
             local_memory: None,
             interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterrupt)?,
             debug: debug,
+            svm_in_use: svm_in_use,
         })
     }
 

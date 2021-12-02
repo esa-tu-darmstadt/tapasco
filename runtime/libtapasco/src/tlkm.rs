@@ -273,6 +273,42 @@ ioctl_readwrite!(
     tlkm_dma_buffer_op
 );
 
+// SVM
+#[repr(C)]
+#[derive(Debug, PartialEq)]
+pub struct tlkm_svm_init_cmd {
+    pub result: i32,
+}
+
+#[repr(C)]
+#[derive(Debug, PartialEq)]
+pub struct tlkm_svm_migrate_cmd {
+    pub vaddr: u64,
+    pub size: u64,
+}
+
+const TLKM_IOCTL_SVM_LAUNCH: u8 = 0x50;
+const TLKM_IOCTL_SVM_MIGRATE_TO_DEV: u8 = 0x52;
+const TLKM_IOCTL_SVM_MIGRATE_TO_RAM: u8 = 0x53;
+
+ioctl_readwrite!(tlkm_ioctl_svm_launch,
+    TLKM_DEVICE_IOC_MAGIC,
+    TLKM_IOCTL_SVM_LAUNCH,
+    tlkm_svm_init_cmd
+);
+
+ioctl_readwrite!(tlkm_ioctl_svm_migrate_to_dev,
+    TLKM_DEVICE_IOC_MAGIC,
+    TLKM_IOCTL_SVM_MIGRATE_TO_DEV,
+    tlkm_svm_migrate_cmd
+);
+
+ioctl_readwrite!(tlkm_ioctl_svm_migrate_to_ram,
+    TLKM_DEVICE_IOC_MAGIC,
+    TLKM_IOCTL_SVM_MIGRATE_TO_RAM,
+    tlkm_svm_migrate_cmd
+);
+
 // End of IOCTL definitions.
 
 /// TLKM IOCTL convenience access

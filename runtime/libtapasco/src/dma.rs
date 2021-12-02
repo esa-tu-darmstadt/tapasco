@@ -20,7 +20,7 @@
 
 use crate::device::DeviceAddress;
 use crate::device::DeviceSize;
-use crate::tlkm::tlkm_copy_cmd_from;
+use crate::tlkm::{tlkm_copy_cmd_from, tlkm_ioctl_svm_migrate_to_dev, tlkm_ioctl_svm_migrate_to_ram, tlkm_svm_migrate_cmd};
 use crate::tlkm::tlkm_copy_cmd_to;
 use crate::tlkm::tlkm_ioctl_copy_from;
 use crate::tlkm::tlkm_ioctl_copy_to;
@@ -275,6 +275,59 @@ impl DMAControl for DirectDMA {
             &self.memory[(self.offset + ptr) as usize..(self.offset + end) as usize],
         );
 
+        Ok(())
+    }
+}
+
+/// DMA implementation for SVM support
+///
+/// When using SVM buffer migrations to/from device memory can still be explicitly triggered,
+/// however, are controlled completely in the TLKM
+#[derive(Debug, Getters)]
+pub struct SVMDMA {
+    tlkm_file: Arc<File>,
+}
+
+impl SVMDMA {
+    pub fn new(tlkm_file: &Arc<File>) -> SVMDMA {
+        SVMDMA {
+            tlkm_file: tlkm_file.clone(),
+        }
+    }
+}
+
+impl DMAControl for SVMDMA {
+    fn copy_to(&self, data: &[u8], _ptr: DeviceAddress) -> Result<()> {
+        let base = data.as_ptr() as u64;
+        let size = data.len() as u64;
+        trace!("Start migration to device memory with base address = {:#02x} and size = {:#02x}.", base, size);
+        unsafe {
+            tlkm_ioctl_svm_migrate_to_dev(
+                self.tlkm_file.as_raw_fd(),
+                &mut tlkm_svm_migrate_cmd {
+                    vaddr: base,
+                    size: size,
+                },
+            ).context(DMAToDevice)?;
+        }
+        trace!("Migration to device memory complete.");
+        Ok(())
+    }
+
+    fn copy_from(&self, _ptr: DeviceAddress, data: &mut [u8]) -> Result<()> {
+        let base = data.as_ptr() as u64;
+        let size = data.len() as u64;
+        trace!("Start migration to host memory with base address = {:#02x} and size = {:#02x}.", base, size);
+        unsafe {
+            tlkm_ioctl_svm_migrate_to_ram(
+                self.tlkm_file.as_raw_fd(),
+                &mut tlkm_svm_migrate_cmd {
+                    vaddr: base,
+                    size: size,
+                },
+            ).context(DMAFromDevice)?;
+        }
+        trace!("Migration to host memory complete.");
         Ok(())
     }
 }

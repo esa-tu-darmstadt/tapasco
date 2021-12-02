@@ -79,6 +79,7 @@ impl Scheduler {
         completion: &File,
         debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
         is_pcie: bool,
+        svm_in_use: bool,
     ) -> Result<Scheduler> {
         let pe_hashed: Map<PEId, Injector<PE>> = Map::new();
         let mut pes_overview: HashMap<PEId, usize> = HashMap::new();
@@ -133,6 +134,7 @@ impl Scheduler {
                 &completion,
                 interrupt_id,
                 debug,
+                svm_in_use,
             )
             .context(PEError)?;
 

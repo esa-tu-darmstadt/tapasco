@@ -150,6 +150,19 @@ template <typename T> WrappedPointer<T> makeWrappedPointer(T *t, size_t sz) {
   return WrappedPointer<T>(t, sz);
 }
 
+/**
+ * Wrapped pointer that can be used to safely pass a virtual address to the PE when
+ * using the SVM feature
+ **/
+template <typename T> struct VirtualAddress final {
+	  VirtualAddress(T *addr) : addr(addr) {}
+	  T *addr;
+  };
+
+template <typename T> VirtualAddress<T> makeVirtualAddress(T *t) {
+	return VirtualAddress<T>(t);
+}
+
 /** A TAPASCO runtime error. **/
 class tapasco_error : public std::runtime_error {
 public:
@@ -225,6 +238,10 @@ public:
                               this->offset, this->list_inner);
     }
     this->reset_state();
+  }
+
+  void virtaddr(uint8_t *ptr) {
+	  tapasco_job_param_virtualaddress(ptr, this->list_inner);
   }
 
   void unset_from_device() { from_device = false; }
@@ -669,6 +686,11 @@ private:
   /** Sets a single pointer argument (alloc + copy). **/
   template <typename T> void set_arg(JobArgumentList &a, WrappedPointer<T> t) {
     a.memop((uint8_t *)t.value, t.sz);
+  }
+
+  /** Sets a virtual address argument used for virtual pointers in SVM feature **/
+  template <typename T> void set_arg(JobArgumentList &a, VirtualAddress<T> t) {
+	  a.virtaddr((uint8_t *)t.addr);
   }
 
   template <typename T> void set_args(JobArgumentList &a, T &t) {
