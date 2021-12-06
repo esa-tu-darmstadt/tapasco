@@ -286,6 +286,15 @@ impl Job {
         Ok(unused_mem)
     }
 
+    /// Just wait for a PE's completion. Useful for measuring execution time.
+    pub fn wait_for_completion(&mut self) -> Result<()> {
+        if self.pe.is_some() {
+            self.pe.as_mut().unwrap().wait_for_completion().context(PEError)
+        } else {
+            Err(Error::NoPEtoRelease {})
+        }
+    }
+
     /// Wait for job completion and handle copy back if necessary.
     ///
     /// # Arguments
