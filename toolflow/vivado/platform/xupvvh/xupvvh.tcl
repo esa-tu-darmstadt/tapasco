@@ -67,19 +67,19 @@ namespace eval platform {
     set_property CONFIG.FREQ_HZ 100000000 $sys_clk
 
     # configure MIG core
-    set part_file "[get_property DIRECTORY [current_project]]/M386AAK40B40-CWD6Y.csv"
+    set part_file "[get_property DIRECTORY [current_project]]/HMABAGL7ABR4N.csv"
     if { [file exists $part_file] == 1} {
       puts "Delete MIG configuration from project directory"
       file delete $part_file
     }
     puts "Copying MIG configuration to project directory"
-    file copy "$::env(TAPASCO_HOME_TCL)/platform/xupvvh/M386AAK40B40-CWD6Y.csv" $part_file
+    file copy "$::env(TAPASCO_HOME_TCL)/platform/xupvvh/HMABAGL7ABR4N.csv" $part_file
 
     set properties  [list CONFIG.C0.DDR4_TimePeriod {833} \
       CONFIG.C0.DDR4_InputClockPeriod {9996} \
       CONFIG.C0.DDR4_CLKOUT0_DIVIDE {5} \
       CONFIG.C0.DDR4_MemoryType {LRDIMMs} \
-      CONFIG.C0.DDR4_MemoryPart {M386AAK40B40-CWD6Y} \
+      CONFIG.C0.DDR4_MemoryPart {HMABAGL7ABR4N} \
       CONFIG.C0.DDR4_DataWidth {72} \
       CONFIG.C0.DDR4_DataMask {NONE} \
       CONFIG.C0.DDR4_AxiDataWidth {512} \
