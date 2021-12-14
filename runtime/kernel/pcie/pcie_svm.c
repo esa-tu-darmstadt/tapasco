@@ -353,8 +353,7 @@ static void free_device_page(struct tlkm_pcie_device *pdev, struct page *page)
  */
 static void kernel_page_free(struct page *page)
 {
-	struct pci_dev *pci_dev = page->pgmap->owner;
-	struct tlkm_pcie_device *pdev = dev_get_drvdata(&pci_dev->dev);
+	struct tlkm_pcie_device *pdev = page->pgmap->owner;
 	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
 	uint64_t paddr = (uint64_t)page->zone_device_data;
 
@@ -380,8 +379,8 @@ static vm_fault_t svm_migrate_to_ram(struct vm_fault *vmf)
 	struct migrate_vma migrate;
 	struct page *src_page, *dst_page;
 
-	struct pci_dev *pci_dev = vmf->page->pgmap->owner;
-	struct tlkm_pcie_device *pdev = dev_get_drvdata(&pci_dev->dev);
+	struct tlkm_pcie_device *pdev = vmf->page->pgmap->owner;
+	struct pci_dev *pci_dev = pdev->pdev;
 	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
 
 	DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM,
@@ -400,7 +399,7 @@ static vm_fault_t svm_migrate_to_ram(struct vm_fault *vmf)
 	migrate.src = &src;
 	migrate.start = vmf->address;
 	migrate.end = vmf->address + PAGE_SIZE;
-	migrate.pgmap_owner = pci_dev;
+	migrate.pgmap_owner = pdev;
 	migrate.flags = MIGRATE_VMA_SELECT_DEVICE_PRIVATE;
 	if (migrate_vma_setup(&migrate)) {
 		DEVERR(pdev->parent->dev_id,
@@ -515,7 +514,7 @@ static int request_mem_section(struct tlkm_pcie_device *pdev,
 	section->pagemap.range.end = section->resource->end;
 	section->pagemap.nr_range = 1;
 	section->pagemap.ops = &svm_pagemap_ops;
-	section->pagemap.owner = pdev->pdev;
+	section->pagemap.owner = pdev;
 
 	res_ptr = devm_memremap_pages(&pdev->pdev->dev, &section->pagemap);
 	if (IS_ERR(res_ptr)) {
@@ -694,7 +693,7 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 
 	// setup migration
 	migrate.vma = vma;
-	migrate.pgmap_owner = pdev->pdev;
+	migrate.pgmap_owner = pdev;
 	migrate.flags = MIGRATE_VMA_SELECT_SYSTEM;
 	res = migrate_vma_setup(&migrate);
 	if (res < 0) {
@@ -1092,7 +1091,7 @@ int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 	migrate.start = va_start;
 	migrate.end = va_end;
 	migrate.vma = vma;
-	migrate.pgmap_owner = pdev->pdev;
+	migrate.pgmap_owner = pdev;
 	migrate.flags = MIGRATE_VMA_SELECT_DEVICE_PRIVATE;
 	res = migrate_vma_setup(&migrate);
 	if (res < 0) {
@@ -1510,9 +1509,9 @@ svm_tlb_invalidate_range_start(struct mmu_notifier *subscription,
 	// MMU invalidation during migration is handled by respective functions
 	if (range->event == MMU_NOTIFY_MIGRATE
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
-	    && range->owner == env->svm_data->pdev->pdev
+	    && range->owner == env->svm_data->pdev
 #else
-	    && range->migrate_pgmap_owner == env->svm_data->pdev->pdev
+	    && range->migrate_pgmap_owner == env->svm_data->pdev
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(5,14,0) */
 	)
 		goto skip_invalidation;
