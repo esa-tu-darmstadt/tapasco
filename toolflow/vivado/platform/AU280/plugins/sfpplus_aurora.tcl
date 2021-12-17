@@ -80,8 +80,8 @@ namespace eval sfpplus {
       variable refclk_en_n_pins
       variable refclk_sel_pins
 
-      set const_zero [tapasco::ip::create_constant const_zero 1 0]
-      set const_one [tapasco::ip::create_constant const_one 1 1]
+      set const_zero [tapasco::ip::create_constant const_zero_$physical_port 1 0]
+      set const_one [tapasco::ip::create_constant const_one_$physical_port 1 1]
 
       # Create and constrain refclk pin
       set gt_refclk [create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 qsfp${physical_port}_161mhz]
@@ -89,15 +89,15 @@ namespace eval sfpplus {
       puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $refclk_pins $physical_port] qsfp${physical_port}_161mhz_clk_p]
 
       # Enable refclock
-      set refclk_en_n [create_bd_port -dir O reclk_en_n_$physical_port]
-      puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $refclk_en_n_pins $physical_port] reclk_en_n_$physical_port]
-      puts $constraints_file [format {set_property IOSTANDARD LVCMOS18 [get_ports %s]} reclk_en_n_$physical_port]
+      set refclk_en_n [create_bd_port -dir O refclk_en_n_$physical_port]
+      puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $refclk_en_n_pins $physical_port] refclk_en_n_$physical_port]
+      puts $constraints_file [format {set_property IOSTANDARD LVCMOS18 [get_ports %s]} refclk_en_n_$physical_port]
       connect_bd_net [get_bd_pins $const_zero/dout] $refclk_en_n
 
       # Select refclock frequency (0 = 156.25 MHz, 1 = 161.132812 MHz)
-      set refclk_sel [create_bd_port -dir O reclk_sel_$physical_port]
-      puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $refclk_sel_pins $physical_port] reclk_sel_$physical_port]
-      puts $constraints_file [format {set_property IOSTANDARD LVCMOS18 [get_ports %s]} reclk_sel_$physical_port]
+      set refclk_sel [create_bd_port -dir O refclk_sel_$physical_port]
+      puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $refclk_sel_pins $physical_port] refclk_sel_$physical_port]
+      puts $constraints_file [format {set_property IOSTANDARD LVCMOS18 [get_ports %s]} refclk_sel_$physical_port]
       connect_bd_net [get_bd_pins $const_one/dout] $refclk_sel
 
       # Create and configure core
