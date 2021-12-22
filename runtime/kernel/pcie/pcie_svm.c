@@ -23,6 +23,32 @@
 #if defined(EN_SVM) && LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0)
 
 /**
+ * translate device address to corresponding PFN
+ *
+ * @param svm_data SVM data struct
+ * @param dev_addr device address to translate
+ * @return PFN corresponding to given device address
+ */
+static inline unsigned long
+dev_addr_to_pfn(struct tlkm_pcie_svm_data *svm_data, uint64_t dev_addr)
+{
+	return ((dev_addr >> PAGE_SHIFT) + svm_data->base_pfn);
+}
+
+/**
+ * translate PFN to corresponding device address
+ *
+ * @param svm_data SVM data struct
+ * @param pfn PFN to translate
+ * @return device address corresponding to given PFN
+ */
+static inline uint64_t
+pfn_to_dev_addr(struct tlkm_pcie_svm_data *svm_data, unsigned long pfn)
+{
+	return ((pfn - svm_data->base_pfn) << PAGE_SHIFT);
+}
+
+/**
  * Initiate a card-to-host (C2H) DMA transfer using the PageDMA core
  *
  * @param svm_data SVM data struct
@@ -63,7 +89,7 @@ static void init_c2h_dma(struct tlkm_pcie_svm_data *svm_data,
  */
 static void init_h2c_dma(struct tlkm_pcie_svm_data *svm_data,
 			 dma_addr_t host_addr, uint64_t dev_addr, int npages,
-			 int clear)
+			 bool clear)
 {
 	uint64_t npages_cmd, wval;
 	struct page_dma_regs *dma_regs = svm_data->dma_regs;
@@ -123,6 +149,39 @@ static inline void add_al_tlb_entry(struct tlkm_pcie_svm_data *svm_data,
 	writeq(MMU_ADD_AL_ENTRY |
 		       ((unsigned long)npages << MMU_AL_LENGTH_SHIFT),
 	       &svm_data->mmu_regs->cmd);
+}
+
+/**
+ * invalidate a TLB entry of the on-FPGA IOMMU
+ *
+ * @param svm_data SVM data struct
+ * @param vaddr virtual address of entry to invalidate
+ */
+static inline void
+invalidate_tlb_entry(struct tlkm_pcie_svm_data *svm_data, uint64_t vaddr)
+{
+	DEVLOG(svm_data->pdev->parent->dev_id, TLKM_LF_SVM,
+	       "invalidate TLB entry: vaddr = %llx", vaddr);
+	writeq(vaddr, &svm_data->mmu_regs->vaddr);
+	writeq(MMU_INVALIDATE_ENTRY, &svm_data->mmu_regs->cmd);
+}
+
+/**
+ * invalidate all TLB entries of the on-FPGA IOMMU in a virtual address range
+ * @param svm_data SVM data struct
+ * @param base virtual base address of address range to invalidate
+ * @param npages length of address region to invalidate in pages
+ */
+static void
+invalidate_tlb_range(struct tlkm_pcie_svm_data *svm_data, uint64_t base,
+		     int npages)
+{
+	int i;
+	DEVLOG(svm_data->pdev->parent->dev_id, TLKM_LF_SVM,
+	       "invalidate TLB range: vaddr = %llx, length = %0d", base,
+	       npages);
+	for (i = 0; i < npages; ++i)
+		invalidate_tlb_entry(svm_data, base + i * PAGE_SIZE);
 }
 
 /**
@@ -317,9 +376,9 @@ static void handle_device_memory_free(struct work_struct *work)
  * @return true if work could be enqueued, false otherwise
  */
 static inline int queue_dev_mem_free_work(struct tlkm_pcie_device *pdev,
-					  struct tlkm_pcie_svm_data *svm_data,
 					  uint64_t dev_addr, uint64_t size)
 {
+	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
 	struct dev_mem_free_work_env *env = kmalloc(sizeof(*env), GFP_KERNEL);
 	env->pdev = pdev;
 	env->dev_addr = dev_addr;
@@ -328,21 +387,22 @@ static inline int queue_dev_mem_free_work(struct tlkm_pcie_device *pdev,
 	return queue_work(svm_data->dev_mem_free_queue, &env->work);
 }
 
+
 /**
- * Free a device private page by re-adding it to list of free pages
- * Attention: This function only frees the page entry, the actual memory
- * allocation must be freed separately
+ * Free a device page and the corresponding device memory
  *
  * @param pdev TLKM PCIe device struct
  * @param page page to free
  */
-static void free_device_page(struct tlkm_pcie_device *pdev, struct page *page)
+static inline void
+free_device_page(struct tlkm_pcie_device *pdev, struct page *page)
 {
 	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
-	spin_lock(&svm_data->page_lock);
-	page->zone_device_data = svm_data->free_pages;
-	svm_data->free_pages = page;
-	spin_unlock(&svm_data->page_lock);
+	if (!queue_dev_mem_free_work(pdev, pfn_to_dev_addr(svm_data,
+							   page_to_pfn(page)),
+				     PAGE_SIZE))
+		DEVERR(pdev->parent->dev_id,
+		       "failed to queue work struct for freeing device memory region");
 }
 
 /**
@@ -354,14 +414,7 @@ static void free_device_page(struct tlkm_pcie_device *pdev, struct page *page)
 static void kernel_page_free(struct page *page)
 {
 	struct tlkm_pcie_device *pdev = page->pgmap->owner;
-	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
-	uint64_t paddr = (uint64_t)page->zone_device_data;
-
 	free_device_page(pdev, page);
-	if (!queue_dev_mem_free_work(pdev, svm_data, paddr, PAGE_SIZE)) {
-		DEVERR(pdev->parent->dev_id,
-		       "failed to schedule worker thread for freeing device memory");
-	}
 }
 
 /**
@@ -434,7 +487,7 @@ static vm_fault_t svm_migrate_to_ram(struct vm_fault *vmf)
 		goto fail_map;
 	}
 
-	src_addr = (uint64_t)src_page->zone_device_data;
+	src_addr = pfn_to_dev_addr(svm_data, page_to_pfn(src_page));
 	init_c2h_dma(svm_data, dma_addr, src_addr, 1);
 
 	do {
@@ -472,116 +525,6 @@ static struct dev_pagemap_ops svm_pagemap_ops = {
 };
 
 /**
- * Request struct pages from the OS to use as device private pages
- * We always request 128 MB bunches as this is the standard size Linux allocates anyways
- *
- * @param pdev TLKM PCIe device struct
- * @param svm_data SVM data struct
- * @return error code in case of failure, zero when succeeding
- */
-static int request_mem_section(struct tlkm_pcie_device *pdev,
-			       struct tlkm_pcie_svm_data *svm_data)
-{
-	int res, i;
-	void *res_ptr;
-	struct page *page;
-	struct svm_mem_section *section;
-
-	DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM,
-	       "request device private page resources");
-
-	section = devm_kzalloc(&pdev->pdev->dev, sizeof(*section), GFP_KERNEL);
-	if (!section) {
-		DEVERR(pdev->parent->dev_id,
-		       "failed to allocate SVM memory section struct");
-		res = -ENOMEM;
-		goto fail_alloc;
-	}
-
-	// allocate memory region for device private pages
-	section->resource = devm_request_free_mem_region(
-		&pdev->pdev->dev, &iomem_resource, MEM_SECTION_SIZE);
-	if (IS_ERR(section->resource)) {
-		DEVERR(pdev->parent->dev_id,
-		       "failed to request memory region for device private pages");
-		res = -ENOMEM;
-		goto fail_region;
-	}
-
-	// prepare pagemap and remap pages as device private pages
-	section->pagemap.type = MEMORY_DEVICE_PRIVATE;
-	section->pagemap.range.start = section->resource->start;
-	section->pagemap.range.end = section->resource->end;
-	section->pagemap.nr_range = 1;
-	section->pagemap.ops = &svm_pagemap_ops;
-	section->pagemap.owner = pdev;
-
-	res_ptr = devm_memremap_pages(&pdev->pdev->dev, &section->pagemap);
-	if (IS_ERR(res_ptr)) {
-		DEVERR(pdev->parent->dev_id,
-		       "failed to remap device private pages");
-		res = -ENOMEM;
-		goto fail_remap;
-	}
-
-	// add section to list
-	mutex_lock(&svm_data->sections_mutex);
-	list_add(&section->list, &svm_data->mem_sections);
-	mutex_unlock(&svm_data->sections_mutex);
-
-	// add allocated pages to list of free pages
-	spin_lock(&svm_data->page_lock);
-	page = pfn_to_page(section->resource->start >> PAGE_SHIFT);
-	for (i = 0; i < MEM_SECTION_NPAGES; ++i) {
-		page->zone_device_data = svm_data->free_pages;
-		svm_data->free_pages = page;
-		++page;
-	}
-	spin_unlock(&svm_data->page_lock);
-
-	return 0;
-
-fail_remap:
-	devm_release_resource(&pdev->pdev->dev, section->resource);
-fail_region:
-	devm_kfree(&pdev->pdev->dev, section);
-fail_alloc:
-	return res;
-}
-
-/**
- * Allocate a device private page struct. The actual allocation of a physical
- * section in device memory is handled separately.
- *
- * @param svm_data SVM data struct
- * @return pointer to allocated page struct, or NULL in case of failure
- */
-static struct page *alloc_device_page(struct tlkm_pcie_svm_data *svm_data)
-{
-	int res;
-	struct tlkm_pcie_device *pdev = svm_data->pdev;
-	struct page *page;
-
-	spin_lock(&svm_data->page_lock);
-	if (!svm_data->free_pages) {
-		spin_unlock(&svm_data->page_lock);
-		res = request_mem_section(pdev, svm_data);
-		if (res) {
-			DEVERR(pdev->parent->dev_id,
-			       "failed to allocate additional device private pages");
-			return NULL;
-		}
-		spin_lock(&svm_data->page_lock);
-	}
-
-	page = svm_data->free_pages;
-	svm_data->free_pages = page->zone_device_data;
-	page->zone_device_data = NULL;
-	spin_unlock(&svm_data->page_lock);
-	return page;
-}
-
-/**
  * Check whether two addresses refer to contiguous pages
  *
  * @param addr first address
@@ -592,6 +535,11 @@ static struct page *alloc_device_page(struct tlkm_pcie_svm_data *svm_data)
 static inline int is_contiguous(uint64_t addr, uint64_t last)
 {
 	return ((addr & VADDR_MASK) == (last & VADDR_MASK) + PAGE_SIZE);
+}
+
+static inline int is_contiguous_page(struct page *page, struct page *last)
+{
+	return (page == (last + 1));
 }
 
 /**
@@ -652,8 +600,10 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 				 int npages, const bool mm_locked,
 				 uint8_t *failed_addrs)
 {
-	int res, i, j, ncontiguous, cmd_cnt, clear;
+	int res, i, j, ncontiguous, cmd_cnt;
+	bool clear;
 	uint64_t dev_base_addr;
+	unsigned long base_pfn;
 	dma_addr_t *dma_addrs;
 	struct page **src_pages, **dst_pages;
 	struct migrate_vma migrate;
@@ -707,26 +657,43 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 		goto skip_copy;
 	}
 
-	// allocate device private pages
-	for (i = 0; i < npages; ++i) {
-		if (migrate.src[i] & MIGRATE_PFN_MIGRATE) {
-			src_pages[i] = migrate_pfn_to_page(migrate.src[i]);
-			dst_pages[i] = alloc_device_page(svm_data);
-			if (!dst_pages[i]) {
-				DEVERR(pdev->parent->dev_id,
-				       "failed to allocate device page");
-				res = -ENOMEM;
-				goto fail_allocpage;
-			}
-		} else {
+	// allocate device memory
+	i = 0;
+	while (i < npages) {
+		if (!(migrate.src[i] & MIGRATE_PFN_MIGRATE)) {
+			++i;
 			continue;
 		}
-		get_page(dst_pages[i]);
-		lock_page(dst_pages[i]);
-		migrate.dst[i] = migrate_pfn(page_to_pfn(dst_pages[i])) |
-				 MIGRATE_PFN_LOCKED;
 
-		// map source pages for DMA access
+		ncontiguous = 1;
+		while (i + ncontiguous < npages &&
+		       (migrate.src[i + ncontiguous] & MIGRATE_PFN_MIGRATE))
+			++ncontiguous;
+
+		dev_base_addr = allocate_device_memory(svm_data,
+						       ncontiguous * PAGE_SIZE);
+		if (dev_base_addr == -1) {
+			DEVERR(pdev->parent->dev_id,
+			       "failed to allocate memory on device");
+			goto fail_allocmem;
+		}
+		base_pfn = dev_addr_to_pfn(svm_data, dev_base_addr);
+		for (j = 0; j < ncontiguous; ++j) {
+			dst_pages[i + j] = pfn_to_page(base_pfn + j);
+			get_page(dst_pages[i + j]);
+			lock_page(dst_pages[i + j]);
+			migrate.dst[i + j] =
+				migrate_pfn(base_pfn + j) | MIGRATE_PFN_LOCKED;
+		}
+		i += ncontiguous;
+	}
+
+	// map source pages for DMA transfer
+	for (i = 0; i < npages; ++i) {
+		if (!(migrate.src[i] & MIGRATE_PFN_MIGRATE))
+			continue;
+
+		src_pages[i] = migrate_pfn_to_page(migrate.src[i]);
 		if (src_pages[i]) {
 			dma_addrs[i] =
 				dma_map_page(&pdev->pdev->dev, src_pages[i], 0,
@@ -736,54 +703,12 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 				       "failed to map page for DMA");
 				unlock_page(dst_pages[i]);
 				put_page(dst_pages[i]);
-				free_device_page(pdev, dst_pages[i]);
+
 				dst_pages[i] = NULL;
 				migrate.dst[i] = 0;
 				dma_addrs[i] = 0;
 			}
 		}
-	}
-
-	i = 0;
-	while (i < npages) {
-		if (!migrate.dst[i]) {
-			++i;
-			continue;
-		}
-
-		// find virtual contiguous region to allocate memory
-		ncontiguous = 1;
-		while (i + ncontiguous < npages && migrate.dst[i + ncontiguous])
-			++ncontiguous;
-
-		dev_base_addr = allocate_device_memory(svm_data,
-						       ncontiguous * PAGE_SIZE);
-
-		if (dev_base_addr == -1) {
-			DEVERR(pdev->parent->dev_id,
-			       "failed to allocate memory on device");
-
-			// free previous allocations
-			for (j = 0; j < i; ++j) {
-				if (!queue_dev_mem_free_work(
-					    pdev, svm_data,
-					    (uint64_t)dst_pages[j]
-						    ->zone_device_data,
-					    PAGE_SIZE))
-					DEVERR(pdev->parent->dev_id,
-					       "failed to queue work struct for freeing device memory region");
-			}
-
-			res = -ENOMEM;
-			goto fail_allocmem;
-		}
-
-		// save physical address of page in device memory
-		for (j = 0; j < ncontiguous; ++j)
-			dst_pages[i + j]->zone_device_data =
-				(void *)(dev_base_addr + j * PAGE_SIZE);
-
-		i += ncontiguous;
 	}
 
 	i = 0;
@@ -798,7 +723,7 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 		// (always contiguous on device side due to allocation scheme)
 		ncontiguous = 1;
 		if (src_pages[i]) {
-			clear = 0;
+			clear = false;
 			while (i + ncontiguous < npages &&
 			       ncontiguous < PAGE_DMA_MAX_NPAGES &&
 			       src_pages[i + ncontiguous] &&
@@ -811,7 +736,7 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 					break;
 			}
 		} else {
-			clear = 1;
+			clear = true;
 			while (i + ncontiguous < npages &&
 			       ncontiguous < PAGE_DMA_MAX_NPAGES &&
 			       !src_pages[i + ncontiguous] &&
@@ -828,7 +753,7 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 			cmd_cnt = 0;
 		}
 		init_h2c_dma(svm_data, dma_addrs[i],
-			     (uint64_t)dst_pages[i]->zone_device_data,
+			     pfn_to_dev_addr(svm_data, page_to_pfn(dst_pages[i])),
 			     ncontiguous, clear);
 		++cmd_cnt;
 
@@ -859,14 +784,6 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 			if (dst_pages[i]) {
 				unlock_page(dst_pages[i]);
 				put_page(dst_pages[i]);
-				free_device_page(pdev, dst_pages[i]);
-				if (!queue_dev_mem_free_work(
-					    pdev, svm_data,
-					    (uint64_t)dst_pages[i]
-						    ->zone_device_data,
-					    PAGE_SIZE))
-					DEVERR(pdev->parent->dev_id,
-					       "failed to queue work struct for freeing device memory");
 			}
 		}
 	}
@@ -883,10 +800,8 @@ skip_copy:
 		}
 		ncontiguous = 1;
 		while (i + ncontiguous < npages &&
-		       is_contiguous((uint64_t)(dst_pages[i + ncontiguous]
-							->zone_device_data),
-				     (uint64_t)(dst_pages[i + ncontiguous - 1]
-							->zone_device_data)) &&
+		       is_contiguous_page(dst_pages[i + ncontiguous],
+					  dst_pages[i + ncontiguous - 1]) &&
 		       ncontiguous < MMU_MAX_MAPPING_LENGTH &&
 		       (migrate.src[i + ncontiguous] & MIGRATE_PFN_MIGRATE)) {
 			++ncontiguous;
@@ -894,16 +809,17 @@ skip_copy:
 		// only use arbitrary length TLB mappings for contiguous regions
 		// to save resources
 		if (ncontiguous >= 64) {
-			add_al_tlb_entry(
-				svm_data, vaddr + i * PAGE_SIZE,
-				(uint64_t)(dst_pages[i]->zone_device_data),
-				ncontiguous);
+			add_al_tlb_entry(svm_data, vaddr + i * PAGE_SIZE,
+					 pfn_to_dev_addr(svm_data,
+							 page_to_pfn(
+								 dst_pages[i])),
+					 ncontiguous);
 		} else {
 			for (j = i; j < (i + ncontiguous); ++j)
-				add_tlb_entry(
-					svm_data, vaddr + j * PAGE_SIZE,
-					(uint64_t)(dst_pages[j]
-							   ->zone_device_data));
+				add_tlb_entry(svm_data, vaddr + j * PAGE_SIZE,
+					      pfn_to_dev_addr(svm_data,
+							      page_to_pfn(
+								      dst_pages[j])));
 		}
 		i += ncontiguous;
 	}
@@ -926,27 +842,15 @@ skip_copy:
 
 fail_dma:
 	for (i = 0; i < npages; ++i) {
-		if (dst_pages[i]) {
-			if (!queue_dev_mem_free_work(
-				    pdev, svm_data,
-				    (uint64_t)dst_pages[i]->zone_device_data,
-				    PAGE_SIZE))
-				DEVERR(pdev->parent->dev_id,
-				       "failed to queue work struct for freeing device memory");
-		}
-	}
-fail_allocmem:
-	for (i = 0; i < npages; ++i) {
 		if (dma_addrs[i])
 			dma_unmap_page(&pdev->pdev->dev, dma_addrs[i],
 				       PAGE_SIZE, DMA_TO_DEVICE);
 	}
-fail_allocpage:
+fail_allocmem:
 	for (i = 0; i < npages; ++i) {
 		if (dst_pages[i]) {
 			unlock_page(dst_pages[i]);
 			put_page(dst_pages[i]);
-			free_device_page(pdev, dst_pages[i]);
 		}
 		migrate.dst[i] = 0;
 	}
@@ -1080,12 +984,8 @@ int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 	// deactivate MMU, invalidate all entries, and wait for active memory
 	// accesses to finish
 	writeq(MMU_DEACTIVATE, &svm_data->mmu_regs->cmd);
-	for (i = 0; i < npages; ++i) {
-		writeq(va_start + i * PAGE_SIZE, &svm_data->mmu_regs->vaddr);
-		writeq(MMU_INVALIDATE_ENTRY, &svm_data->mmu_regs->cmd);
-	}
-	while (readq(&svm_data->mmu_regs->status) & MMU_STATUS_ANY_MEM_ACCESS)
-		;
+	invalidate_tlb_range(svm_data, va_start, npages);
+	while (readq(&svm_data->mmu_regs->status) & MMU_STATUS_ANY_MEM_ACCESS);
 
 	// setup migration
 	migrate.start = va_start;
@@ -1150,11 +1050,8 @@ int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 		       migrate.dst[i + ncontiguous]) {
 			if (is_contiguous(dma_addrs[i + ncontiguous],
 					  dma_addrs[i + ncontiguous - 1]) &&
-			    is_contiguous(
-				    (uint64_t)src_pages[i + ncontiguous]
-					    ->zone_device_data,
-				    (uint64_t)src_pages[i + ncontiguous - 1]
-					    ->zone_device_data))
+			    is_contiguous_page(src_pages[i + ncontiguous],
+					       src_pages[i + ncontiguous - 1]))
 				++ncontiguous;
 			else
 				break;
@@ -1168,8 +1065,9 @@ int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 			wait_for_c2h_intr(svm_data);
 			cmd_cnt = 0;
 		}
-		init_c2h_dma(svm_data, dma_addrs[i],
-			     (uint64_t)src_pages[i]->zone_device_data,
+		init_c2h_dma(svm_data, dma_addrs[i], pfn_to_dev_addr(svm_data,
+								     page_to_pfn(
+									     src_pages[i])),
 			     ncontiguous);
 		++cmd_cnt;
 		i += ncontiguous;
@@ -1426,7 +1324,9 @@ static void handle_iommu_page_fault(struct work_struct *work)
 			page = svm_perform_ptw(svm_data, vaddrs[i] & VADDR_MASK);
 			if (page) {
 				add_tlb_entry(svm_data, vaddrs[i] & VADDR_MASK,
-					      (uint64_t)page->zone_device_data);
+					      pfn_to_dev_addr(svm_data,
+							      page_to_pfn(
+								      page)));
 				vaddrs[i] = 0;
 			}
 		}
@@ -1728,6 +1628,69 @@ irqreturn_t svm_h2c_intr_handler(int irq, void *data)
 }
 
 /**
+ * Request page entries to represent device memory
+ *
+ * @param pdev TLKM PCIe device struct
+ * @param svm_data SVM data struct
+ * @return SUCCESS - 0, FAILURE - error code
+ */
+static int request_device_pages(struct tlkm_pcie_device *pdev,
+			       struct tlkm_pcie_svm_data *svm_data)
+{
+	int res;
+	void *res_ptr;
+	struct resource *resource;
+	struct dev_pagemap *pagemap;
+
+	DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM,
+	       "request device private page resources");
+
+	pagemap = devm_kzalloc(&pdev->pdev->dev, sizeof(*pagemap), GFP_KERNEL);
+	if (!pagemap) {
+		DEVERR(pdev->parent->dev_id,
+		       "failed to allocate memory for device pagemap");
+		res = -ENOMEM;
+		goto fail_alloc;
+	}
+
+	// allocate memory region for device private pages
+	resource = devm_request_free_mem_region(&pdev->pdev->dev,
+						&iomem_resource, PHYS_MEM_SIZE);
+	if (IS_ERR(resource)) {
+		DEVERR(pdev->parent->dev_id,
+		       "failed to request memory region for device private pages");
+		res = -ENOMEM;
+		goto fail_region;
+	}
+
+	// prepare pagemap and remap pages as device private pages
+	pagemap->type = MEMORY_DEVICE_PRIVATE;
+	pagemap->range.start = resource->start;
+	pagemap->range.end = resource->end;
+	pagemap->nr_range = 1;
+	pagemap->ops = &svm_pagemap_ops;
+	pagemap->owner = pdev;
+
+	res_ptr = devm_memremap_pages(&pdev->pdev->dev, pagemap);
+	if (IS_ERR(res_ptr)) {
+		DEVERR(pdev->parent->dev_id,
+		       "failed to remap device private pages");
+		res = -ENOMEM;
+		goto fail_remap;
+	}
+
+	svm_data->base_pfn = resource->start >> PAGE_SHIFT;
+	return 0;
+
+fail_remap:
+	devm_release_resource(&pdev->pdev->dev, resource);
+fail_region:
+	devm_kfree(&pdev->pdev->dev, pagemap);
+fail_alloc:
+	return res;
+}
+
+/**
  * Initialize SVM functionality
  *
  * @param pdev TLKM PCIe device struct
@@ -1811,12 +1774,9 @@ int pcie_init_svm(struct tlkm_pcie_device *pdev)
 		goto fail_mmuirq;
 	}
 
-	mutex_init(&svm_data->sections_mutex);
-	spin_lock_init(&svm_data->page_lock);
-	INIT_LIST_HEAD(&svm_data->mem_sections);
-	res = request_mem_section(pdev, svm_data);
+	res = request_device_pages(pdev, svm_data);
 	if (res) {
-		goto fail_memregion;
+		goto fail_reqpages;
 	}
 
 	// save pointer to MMU and DMA registers for easier use later on
@@ -1835,7 +1795,7 @@ int pcie_init_svm(struct tlkm_pcie_device *pdev)
 
 	return 0;
 
-fail_memregion:
+fail_reqpages:
 	free_irq(mmu_irq_no, (void *)pdev);
 fail_mmuirq:
 	free_irq(h2c_irq_no, (void *)pdev);
@@ -1871,10 +1831,6 @@ void pcie_exit_svm(struct tlkm_pcie_device *pdev)
 
 	destroy_workqueue(svm_data->page_fault_queue);
 	destroy_workqueue(svm_data->dev_mem_free_queue);
-
-	spin_lock(&svm_data->page_lock);
-	svm_data->free_pages = NULL;
-	spin_unlock(&svm_data->page_lock);
 
 	pdev->svm_data = NULL;
 }

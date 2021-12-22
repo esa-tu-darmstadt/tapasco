@@ -30,12 +30,10 @@
 #include <linux/swap.h>
 #include <linux/swapops.h>
 #include <linux/sched/mm.h>
+#include <tlkm/tlkm_bus.h>
 #include "pcie/pcie_device.h"
 #include "pcie/pcie.h"
 
-
-#define MEM_SECTION_SIZE (128UL << 20)
-#define MEM_SECTION_NPAGES (MEM_SECTION_SIZE / PAGE_SIZE)
 #define PHYS_MEM_SIZE (4UL << 30) // use standard 4 GB memory size
 
 // IOMMU
@@ -100,15 +98,7 @@ struct tlkm_pcie_svm_data {
 	struct mmu_regs *mmu_regs;
 	struct page_dma_regs *dma_regs;
 
-	struct list_head mem_sections;
-	struct mutex sections_mutex;
-	struct page *free_pages;
-	spinlock_t page_lock;
-	struct mutex mem_alloc_mutex;
-	struct mutex mem_free_mutex;
-	uint64_t mem_alloc_param;
-	uint64_t mem_free_addr;
-	uint64_t mem_free_size;
+	unsigned long base_pfn;
 	struct list_head free_mem_blocks;
 	struct mutex mem_block_mutex;
 
@@ -121,13 +111,6 @@ struct tlkm_pcie_svm_data {
 	wait_queue_head_t wait_queue_c2h_intr;
 	atomic_t wait_flag_h2c_intr;
 	atomic_t wait_flag_c2h_intr;
-};
-
-/* struct to hold data for a device private memory section */
-struct svm_mem_section {
-	struct list_head list;
-	struct resource *resource;
-	struct dev_pagemap pagemap;
 };
 
 /* envelope around MMU notifier */
