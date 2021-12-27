@@ -199,6 +199,51 @@ static inline void drop_page_fault(struct tlkm_pcie_svm_data *svm_data,
 	writeq(MMU_DROP_FAULT, &svm_data->mmu_regs->cmd);
 }
 
+static void add_vmem_region(struct tlkm_pcie_svm_data *svm_data, uint64_t vaddr, struct page *page)
+{
+	struct vmem_region *new, *pos;
+
+	new = kmalloc(sizeof(*new), GFP_KERNEL);
+	if (!new) {
+		// TODO error handling
+		DEVERR(svm_data->pdev->parent->dev_id, "failed to allocate memory for vmem region struct");
+		return;
+	}
+	new->vaddr = vaddr;
+	new->page = page;
+
+	if (list_empty(&svm_data->vmem_regions)) {
+		list_add(&new->list, &svm_data->vmem_regions);
+		return;
+	}
+
+	list_for_each_entry(pos, &svm_data->vmem_regions, list) {
+		if (pos->vaddr > vaddr) {
+			list_add_tail(&new->list, &pos->list);
+			return;
+		}
+	}
+
+	// add as last entry
+	list_add_tail(&new->list, &svm_data->vmem_regions);
+}
+
+static void remove_vmem_region(struct tlkm_pcie_svm_data *svm_data, uint64_t vaddr)
+{
+	struct vmem_region *pos;
+
+	if (list_empty(&svm_data->vmem_regions))
+		return;
+
+	list_for_each_entry(pos, &svm_data->vmem_regions, list) {
+		if (pos->vaddr == vaddr) {
+			list_del(&pos->list);
+			kfree(pos);
+			break;
+		}
+	}
+}
+
 /**
  * Allocate a region in device memory
  *
@@ -440,11 +485,9 @@ static vm_fault_t svm_migrate_to_ram(struct vm_fault *vmf)
 	       "handle CPU page fault: vaddr = %lx", vmf->address);
 
 	// invalidate TLB entry and check for active access
-	writeq(vmf->address, &svm_data->mmu_regs->vaddr);
-	writeq(MMU_INVALIDATE_ENTRY, &svm_data->mmu_regs->cmd);
+	invalidate_tlb_entry(svm_data, vmf->address);
 	while (readq(&svm_data->mmu_regs->status) &
-	       MMU_STATUS_MEM_ACCESS_ACTIVE)
-		;
+	       MMU_STATUS_MEM_ACCESS_ACTIVE);
 
 	// populate migrate_vma struct and setup migration
 	migrate.vma = vmf->vma;
@@ -503,6 +546,9 @@ static vm_fault_t svm_migrate_to_ram(struct vm_fault *vmf)
 	// finalize migration
 	migrate_vma_pages(&migrate);
 	migrate_vma_finalize(&migrate);
+
+	// remove from virtual memory range list
+	remove_vmem_region(svm_data, vmf->address);
 
 	DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM, "finished migration to RAM");
 
@@ -825,6 +871,14 @@ skip_copy:
 	}
 
 	migrate_vma_finalize(&migrate);
+
+	// add to virtual memory ranges to list
+	for (i = 0; i < npages; ++i) {
+		if (dst_pages[i])
+			add_vmem_region(svm_data, vaddr + i * PAGE_SIZE,
+					dst_pages[i]);
+	}
+
 	if (!mm_locked) {
 		mmap_write_unlock(svm_data->mm);
 		mmput(svm_data->mm);
@@ -1099,12 +1153,19 @@ int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 			if (dst_pages[i]) {
 				unlock_page(dst_pages[i]);
 				__free_page(dst_pages[i]);
+				dst_pages[i] = NULL;
 			}
 		}
 	}
 
 skip_copy:
 	migrate_vma_finalize(&migrate);
+
+	// remove virtual memory ranges from list
+	for (i = 0; i < npages; ++i) {
+		if (dst_pages[i])
+			remove_vmem_region(svm_data, va_start + i * PAGE_SIZE);
+	}
 
 	writeq(MMU_ACTIVATE, &svm_data->mmu_regs->cmd);
 	mmap_write_unlock(svm_data->mm);
@@ -1151,68 +1212,22 @@ fail_nosvm:
 }
 
 /**
- * Perform a PTW to find the device private page for a virtual address
+ * Translate virtual address to physical device address
  *
  * @param svm_data SVM data struct
- * @param vaddr virtual address
- * @return pointer to device private page or NULL if the requested page is not
- * present in device memory
+ * @param vaddr virtual address to translate
+ * @return SUCCESS - physical address in device memory, FAILURE - '-1' (requested
+ * page is not present in device memory)
  */
-static struct page *svm_perform_ptw(struct tlkm_pcie_svm_data *svm_data,
-				    uint64_t vaddr)
+static uint64_t vaddr_to_dev_addr(struct tlkm_pcie_svm_data *svm_data, uint64_t vaddr)
 {
-	pgd_t *pgd;
-	p4d_t *p4d;
-	pud_t *pud;
-	pmd_t *pmd;
-	pte_t *pte;
-	spinlock_t *ptl;
-	swp_entry_t swp;
-	struct page *page;
+	struct vmem_region *pos;
 
-	pgd = pgd_offset(svm_data->mm, vaddr);
-	if (pgd_none(*pgd) || unlikely(pgd_bad(*pgd))) {
-		DEVWRN(svm_data->pdev->parent->dev_id,
-		       "PGD not found during page table walk");
-		goto no_pgd;
+	list_for_each_entry(pos, &svm_data->vmem_regions, list) {
+		if (pos->vaddr == vaddr)
+			return pfn_to_dev_addr(svm_data, page_to_pfn(pos->page));
 	}
-	p4d = p4d_offset(pgd, vaddr);
-	if (p4d_none(*p4d) || unlikely(p4d_bad(*p4d))) {
-		DEVWRN(svm_data->pdev->parent->dev_id,
-		       "P4D not found during page table walk");
-		goto no_p4d;
-	}
-	pud = pud_offset(p4d, vaddr);
-	if (pud_none(*pud) || unlikely(pud_bad(*pud))) {
-		DEVWRN(svm_data->pdev->parent->dev_id,
-		       "PUD not found during page table walk");
-		goto no_pud;
-	}
-	pmd = pmd_offset(pud, vaddr);
-	if (pmd_none(*pmd))
-		goto no_pmd;
-	pte = pte_offset_map_lock(svm_data->mm, pmd, vaddr, &ptl);
-	if (pte_none(*pte) || pte_present(*pte))
-		goto no_pte_or_present;
-	swp = pte_to_swp_entry(*pte);
-	if (!is_device_private_entry(swp))
-		goto not_dev_priv;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
-	page = pfn_swap_entry_to_page(swp);
-#else
-	page = device_private_entry_to_page(swp);
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(5,14,0) */
-	pte_unmap_unlock(pte, ptl);
-	return page;
-
-not_dev_priv:
-no_pte_or_present:
-	pte_unmap_unlock(pte, ptl);
-no_pmd:
-no_pud:
-no_p4d:
-no_pgd:
-	return NULL;
+	return -1;
 }
 
 /**
@@ -1287,7 +1302,7 @@ static void handle_iommu_page_fault(struct work_struct *work)
 	int res, i, nfaults, ncontiguous;
 	uint64_t rval, vaddrs[MAX_NUM_FAULTS];
 	uint8_t failed_vaddrs[MAX_NUM_FAULTS];
-	struct page *page;
+	uint64_t dev_addr;
 	struct page_fault_work_env *env =
 		container_of(work, typeof(*env), work);
 	struct tlkm_pcie_device *pdev = env->pdev;
@@ -1321,12 +1336,10 @@ static void handle_iommu_page_fault(struct work_struct *work)
 		mmap_write_lock(svm_data->mm);
 
 		for (i = 0; i < nfaults; ++i) {
-			page = svm_perform_ptw(svm_data, vaddrs[i] & VADDR_MASK);
-			if (page) {
+			dev_addr = vaddr_to_dev_addr(svm_data, vaddrs[i]);
+			if (dev_addr != -1) {
 				add_tlb_entry(svm_data, vaddrs[i] & VADDR_MASK,
-					      pfn_to_dev_addr(svm_data,
-							      page_to_pfn(
-								      page)));
+					      dev_addr);
 				vaddrs[i] = 0;
 			}
 		}
@@ -1416,11 +1429,14 @@ svm_tlb_invalidate_range_start(struct mmu_notifier *subscription,
 	)
 		goto skip_invalidation;
 
-	for (addr = range->start; addr < range->end; addr += PAGE_SIZE) {
-		writeq(addr, &env->svm_data->mmu_regs->vaddr);
-		writeq(MMU_INVALIDATE_ENTRY, &env->svm_data->mmu_regs->cmd);
-	}
+	// FIXME check for pagemap owner?
+	invalidate_tlb_range(env->svm_data, range->start,
+			     (range->end - range->start) >> PAGE_SHIFT);
 	wmb();
+
+	for (addr = range->start; addr < range->end; addr += PAGE_SIZE) {
+		remove_vmem_region(env->svm_data, addr);
+	}
 
 skip_invalidation:
 	return 0;
@@ -1546,10 +1562,18 @@ void pcie_teardown_svm(struct tlkm_device *inst)
 {
 	struct tlkm_pcie_device *pdev = inst->private_data;
 	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
+	struct vmem_region *pos, *tmp;
 
 	writeq(0, &svm_data->mmu_regs->intr_enable);
 	writeq(MMU_DEACTIVATE, &svm_data->mmu_regs->cmd);
 	writeq(MMU_INVALIDATE_ALL, &svm_data->mmu_regs->cmd);
+
+	if (!list_empty(&svm_data->vmem_regions)) {
+		list_for_each_entry_safe(pos, tmp, &svm_data->vmem_regions, list) {
+			list_del(&pos->list);
+			kfree(pos);
+		}
+	}
 
 	mmu_notifier_put(&svm_data->notifier_env->notifier);
 
@@ -1571,7 +1595,8 @@ irqreturn_t iommu_page_fault_handler(int irq, void *data)
 	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
 	struct page_fault_work_env *env;
 
-	// disable IOMMU page fault interrupt
+	// disable IOMMU page fault interrupt, but still allow enqueuing of
+	// further faults to internal FIFO
 	writeq(MMU_ISSUE_FAULT_ENABLE, &svm_data->mmu_regs->intr_enable);
 
 	// schedule worker thread
@@ -1729,6 +1754,7 @@ int pcie_init_svm(struct tlkm_pcie_device *pdev)
 	mem_block->size = PHYS_MEM_SIZE;
 	INIT_LIST_HEAD(&svm_data->free_mem_blocks);
 	list_add(&mem_block->list, &svm_data->free_mem_blocks);
+	INIT_LIST_HEAD(&svm_data->vmem_regions);
 
 	// initialize work queues
 	svm_data->page_fault_queue =

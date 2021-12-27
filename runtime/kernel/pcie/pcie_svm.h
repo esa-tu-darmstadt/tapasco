@@ -101,6 +101,7 @@ struct tlkm_pcie_svm_data {
 	unsigned long base_pfn;
 	struct list_head free_mem_blocks;
 	struct mutex mem_block_mutex;
+	struct list_head vmem_regions;
 
 	// work queues
 	struct workqueue_struct *page_fault_queue;
@@ -161,6 +162,13 @@ struct device_memory_block {
 	struct list_head list;
 	uint64_t base_addr;
 	uint64_t size;
+};
+
+
+struct vmem_region {
+	struct list_head list;
+	uint64_t vaddr;
+	struct page *page;
 };
 
 #endif /* defined(EN_SVM) && LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0) */
