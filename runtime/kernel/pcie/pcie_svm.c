@@ -49,6 +49,28 @@ pfn_to_dev_addr(struct tlkm_pcie_svm_data *svm_data, unsigned long pfn)
 }
 
 /**
+ * Translate virtual address to physical device address
+ *
+ * @param svm_data SVM data struct
+ * @param vaddr virtual address to translate
+ * @return SUCCESS - physical address in device memory, FAILURE - '-1' (requested
+ * page is not present in device memory)
+ */
+static uint64_t vaddr_to_dev_addr(struct tlkm_pcie_svm_data *svm_data, uint64_t vaddr)
+{
+	struct vmem_region *pos;
+
+	if (list_empty(&svm_data->vmem_regions))
+		return -1;
+
+	list_for_each_entry(pos, &svm_data->vmem_regions, list) {
+		if (pos->vaddr == vaddr)
+			return pfn_to_dev_addr(svm_data, page_to_pfn(pos->page));
+	}
+	return -1;
+}
+
+/**
  * Initiate a card-to-host (C2H) DMA transfer using the PageDMA core
  *
  * @param svm_data SVM data struct
@@ -633,20 +655,94 @@ static int wait_for_h2c_intr(struct tlkm_pcie_svm_data *svm_data)
 }
 
 /**
- * Migrate multiple pages with contiguous virtual addresses from host to device
- * memory
+ * Initialize the copy of a contiguous range of pages from one to another device.
+ * The data is copied in two steps: First from the source device to a buffer in
+ * host memory, and then to the second device
  *
- * @param pdev TLKM PCIe device struct
- * @param vaddr virtual address of the first page
- * @param npages number of contiguous pages
- * @param drop if true: send drop commands to IOMMU for failed migrations
- * @return Zero when succeeding, error code in case of failure
+ * @param src_dev TLKM PCIe device struct of source device
+ * @param dst_dev  TLKM PCIe device struct of destination device
+ * @param src_addr base address in memory of source device
+ * @param dst_addr base address in memory of destination device
+ * @param npages number of pages to copy
+ * @return zero in case of success, error code otherwise
  */
-static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
-				 int npages, const bool mm_locked,
-				 uint8_t *failed_addrs)
+static int init_dev_to_dev_copy(struct tlkm_pcie_device *src_dev,
+				struct tlkm_pcie_device *dst_dev,
+				uint64_t src_addr,
+				uint64_t dst_addr, int npages)
 {
-	int res, i, j, ncontiguous, cmd_cnt;
+	int res, copied_pages, move_cnt;
+	size_t buf_size;
+	void *buf;
+	dma_addr_t buf_addr = 0;
+
+	// maximum allocatable buffer is 4 MB (1024 pages)
+	buf_size = min(npages, DEV_TO_DEV_DMA_MAX_NPAGES) * PAGE_SIZE;
+	buf = kmalloc(buf_size, GFP_KERNEL);
+	if (!buf) {
+		DEVERR(dst_dev->parent->dev_id,
+		       "failed to allocate buffer for device-to-device transfer");
+		res = -ENOMEM;
+		goto fail_alloc;
+	}
+	buf_addr = dma_map_single(&dst_dev->pdev->dev, buf, buf_size,
+				  DMA_TO_DEVICE);
+	if (dma_mapping_error(&dst_dev->pdev->dev, buf_addr)) {
+		DEVERR(dst_dev->parent->dev_id,
+		       "failed to map buffer for device-to-host transfer");
+		res = -EACCES;
+		goto fail_map;
+	}
+
+	copied_pages = 0;
+	while (copied_pages < npages) {
+		move_cnt = min(npages - copied_pages,
+			       DEV_TO_DEV_DMA_MAX_NPAGES);
+		init_c2h_dma(src_dev->svm_data, buf_addr,
+			     src_addr + copied_pages * PAGE_SIZE, move_cnt);
+		res = wait_for_c2h_intr(src_dev->svm_data);
+		if (res)
+			goto fail_c2h;
+
+		init_h2c_dma(dst_dev->svm_data, buf_addr,
+			     dst_addr + copied_pages * PAGE_SIZE, move_cnt,
+			     false);
+		res = wait_for_h2c_intr(dst_dev->svm_data);
+		if (res)
+			goto fail_h2c;
+
+		copied_pages += move_cnt;
+	}
+
+	dma_unmap_single(&dst_dev->pdev->dev, buf_addr, buf_size,
+			 DMA_TO_DEVICE);
+	kfree(buf);
+	return 0;
+
+fail_h2c:
+fail_c2h:
+fail_map:
+	dma_unmap_single(&dst_dev->pdev->dev, buf_addr, buf_size,
+			 DMA_TO_DEVICE);
+	kfree(buf);
+fail_alloc:
+	return res;
+}
+
+/**
+ * Migrate range of virtually contiguous pages from RAM to device memory.
+ * All pages are expected to reside in RAM, otherwise the migration is aborted.
+ * Caller must hold the mmap_lock.
+ *
+ * @param pdev TLKM PCIe device struct of destination device
+ * @param vaddr base address of migration range
+ * @param npages number of pages to migrate
+ * @return SUCCESS - 0, FAILURE - error code
+ */
+static int svm_migrate_ram_to_dev(struct tlkm_pcie_device *pdev, uint64_t vaddr,
+				  int npages)
+{
+	int res, i, j, ncontiguous, cmd_cnt, retry_cnt;
 	bool clear;
 	uint64_t dev_base_addr;
 	unsigned long base_pfn;
@@ -674,10 +770,6 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 	}
 
 	// find matching VMA
-	if (!mm_locked) {
-		mmget(svm_data->mm);
-		mmap_write_lock(svm_data->mm);
-	}
 	migrate.start = vaddr;
 	migrate.end = vaddr + npages * PAGE_SIZE;
 	vma = find_vma_intersection(svm_data->mm, migrate.start, migrate.end);
@@ -691,54 +783,48 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 	migrate.vma = vma;
 	migrate.pgmap_owner = pdev;
 	migrate.flags = MIGRATE_VMA_SELECT_SYSTEM;
+
+retry:
 	res = migrate_vma_setup(&migrate);
 	if (res < 0) {
 		DEVERR(pdev->parent->dev_id,
 		       "failed to setup buffer migration");
 		goto fail_setup;
 	}
-	if (!migrate.cpages) {
-		DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM,
-		       "no pages to migrate");
-		goto skip_copy;
+
+	// only perform migration for all pages together (unlikely to fail)
+	if (migrate.cpages != npages) {
+		migrate_vma_finalize(&migrate);
+		++retry_cnt;
+		if (retry_cnt > 3) {
+			DEVERR(pdev->parent->dev_id,
+			       "failed to collect all pages for migration");
+			res = -ENOMEM;
+			goto fail_setup;
+		}
+		goto retry;
 	}
 
 	// allocate device memory
-	i = 0;
-	while (i < npages) {
-		if (!(migrate.src[i] & MIGRATE_PFN_MIGRATE)) {
-			++i;
-			continue;
-		}
-
-		ncontiguous = 1;
-		while (i + ncontiguous < npages &&
-		       (migrate.src[i + ncontiguous] & MIGRATE_PFN_MIGRATE))
-			++ncontiguous;
-
-		dev_base_addr = allocate_device_memory(svm_data,
-						       ncontiguous * PAGE_SIZE);
-		if (dev_base_addr == -1) {
-			DEVERR(pdev->parent->dev_id,
-			       "failed to allocate memory on device");
-			goto fail_allocmem;
-		}
-		base_pfn = dev_addr_to_pfn(svm_data, dev_base_addr);
-		for (j = 0; j < ncontiguous; ++j) {
-			dst_pages[i + j] = pfn_to_page(base_pfn + j);
-			get_page(dst_pages[i + j]);
-			lock_page(dst_pages[i + j]);
-			migrate.dst[i + j] =
-				migrate_pfn(base_pfn + j) | MIGRATE_PFN_LOCKED;
-		}
-		i += ncontiguous;
+	dev_base_addr = allocate_device_memory(svm_data,
+					       npages * PAGE_SIZE);
+	if (dev_base_addr == -1) {
+		DEVERR(pdev->parent->dev_id,
+		       "failed to allocate memory on device");
+		res = -ENOMEM;
+		goto fail_allocmem;
 	}
+	base_pfn = dev_addr_to_pfn(svm_data, dev_base_addr);
+	for (i = 0; i < npages; ++i) {
+		dst_pages[i] = pfn_to_page(base_pfn + i);
+		get_page(dst_pages[i]);
+		lock_page(dst_pages[i]);
+		migrate.dst[i] = migrate_pfn(base_pfn + i) | MIGRATE_PFN_LOCKED;
+	}
+
 
 	// map source pages for DMA transfer
 	for (i = 0; i < npages; ++i) {
-		if (!(migrate.src[i] & MIGRATE_PFN_MIGRATE))
-			continue;
-
 		src_pages[i] = migrate_pfn_to_page(migrate.src[i]);
 		if (src_pages[i]) {
 			dma_addrs[i] =
@@ -749,10 +835,11 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 				       "failed to map page for DMA");
 				unlock_page(dst_pages[i]);
 				put_page(dst_pages[i]);
-
-				dst_pages[i] = NULL;
-				migrate.dst[i] = 0;
+				dma_unmap_page(&pdev->pdev->dev, dma_addrs[i],
+					       PAGE_SIZE, DMA_TO_DEVICE);
 				dma_addrs[i] = 0;
+				res = -EACCES;
+				goto fail_dmamap;
 			}
 		}
 	}
@@ -760,11 +847,6 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 	i = 0;
 	cmd_cnt = 0;
 	while (i < npages) {
-		if (!migrate.dst[i]) {
-			++i;
-			continue;
-		}
-
 		// find physical contiguous region on host side
 		// (always contiguous on device side due to allocation scheme)
 		ncontiguous = 1;
@@ -772,8 +854,7 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 			clear = false;
 			while (i + ncontiguous < npages &&
 			       ncontiguous < PAGE_DMA_MAX_NPAGES &&
-			       src_pages[i + ncontiguous] &&
-			       migrate.dst[i + ncontiguous]) {
+			       src_pages[i + ncontiguous]) {
 				if (is_contiguous(
 					    dma_addrs[i + ncontiguous],
 					    dma_addrs[i + ncontiguous - 1]))
@@ -785,8 +866,7 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 			clear = true;
 			while (i + ncontiguous < npages &&
 			       ncontiguous < PAGE_DMA_MAX_NPAGES &&
-			       !src_pages[i + ncontiguous] &&
-			       migrate.dst[i + ncontiguous])
+			       !src_pages[i + ncontiguous] )
 				++ncontiguous;
 		}
 
@@ -799,7 +879,7 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 			cmd_cnt = 0;
 		}
 		init_h2c_dma(svm_data, dma_addrs[i],
-			     pfn_to_dev_addr(svm_data, page_to_pfn(dst_pages[i])),
+			     pfn_to_dev_addr(svm_data, base_pfn + i),
 			     ncontiguous, clear);
 		++cmd_cnt;
 
@@ -827,62 +907,56 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 	for (i = 0; i < npages; ++i) {
 		// check for successful migration
 		if (!(migrate.src[i] & MIGRATE_PFN_MIGRATE)) {
-			if (dst_pages[i]) {
-				unlock_page(dst_pages[i]);
-				put_page(dst_pages[i]);
+			for (j = 0; j < npages; ++j) {
+				unlock_page(dst_pages[j]);
+				put_page(dst_pages[j]);
+				dst_pages[j] = NULL;
+				migrate.dst[j] = 0;
 			}
+			migrate_vma_finalize(&migrate);
+			++retry_cnt;
+			if (retry_cnt > 4) {
+				DEVERR(pdev->parent->dev_id,
+				       "failed to migrate all pages");
+				res = -ENOMEM;
+				goto fail_migrate;
+			}
+			goto retry;
 		}
 	}
 
-skip_copy:
 	// add TLB entries and collect pages which could not be migrated
-	i = 0;
-	while (i < npages) {
-		if (!(migrate.src[i] & MIGRATE_PFN_MIGRATE)) {
-			if (failed_addrs)
-				failed_addrs[i] = 1;
-			++i;
-			continue;
-		}
-		ncontiguous = 1;
-		while (i + ncontiguous < npages &&
-		       is_contiguous_page(dst_pages[i + ncontiguous],
-					  dst_pages[i + ncontiguous - 1]) &&
-		       ncontiguous < MMU_MAX_MAPPING_LENGTH &&
-		       (migrate.src[i + ncontiguous] & MIGRATE_PFN_MIGRATE)) {
-			++ncontiguous;
-		}
+	// first and last page are always added independently
+	add_tlb_entry(svm_data, vaddr, pfn_to_dev_addr(svm_data, base_pfn));
+	i = 1;
+	while (i < npages - 1) {
+		ncontiguous = min(npages - 1 - i, MMU_MAX_MAPPING_LENGTH);
 		// only use arbitrary length TLB mappings for contiguous regions
 		// to save resources
 		if (ncontiguous >= 64) {
 			add_al_tlb_entry(svm_data, vaddr + i * PAGE_SIZE,
 					 pfn_to_dev_addr(svm_data,
-							 page_to_pfn(
-								 dst_pages[i])),
+							 base_pfn + i),
 					 ncontiguous);
 		} else {
 			for (j = i; j < (i + ncontiguous); ++j)
 				add_tlb_entry(svm_data, vaddr + j * PAGE_SIZE,
 					      pfn_to_dev_addr(svm_data,
-							      page_to_pfn(
-								      dst_pages[j])));
+							      base_pfn + j));
 		}
 		i += ncontiguous;
 	}
+	if (i < npages)
+		add_tlb_entry(svm_data, vaddr + i * PAGE_SIZE,
+			      pfn_to_dev_addr(svm_data, base_pfn + i));
 
 	migrate_vma_finalize(&migrate);
 
 	// add to virtual memory ranges to list
 	for (i = 0; i < npages; ++i) {
-		if (dst_pages[i])
-			add_vmem_region(svm_data, vaddr + i * PAGE_SIZE,
-					dst_pages[i]);
+		add_vmem_region(svm_data, vaddr + i * PAGE_SIZE, dst_pages[i]);
 	}
 
-	if (!mm_locked) {
-		mmap_write_unlock(svm_data->mm);
-		mmput(svm_data->mm);
-	}
 	kfree(dma_addrs);
 	kfree(dst_pages);
 	kfree(src_pages);
@@ -895,6 +969,7 @@ skip_copy:
 	return 0;
 
 fail_dma:
+fail_dmamap:
 	for (i = 0; i < npages; ++i) {
 		if (dma_addrs[i])
 			dma_unmap_page(&pdev->pdev->dev, dma_addrs[i],
@@ -909,12 +984,9 @@ fail_allocmem:
 		migrate.dst[i] = 0;
 	}
 	migrate_vma_finalize(&migrate);
+fail_migrate:
 fail_setup:
 fail_vma:
-	if (!mm_locked) {
-		mmap_write_unlock(svm_data->mm);
-		mmput(svm_data->mm);
-	}
 fail_alloc:
 	if (dma_addrs)
 		kfree(dma_addrs);
@@ -930,88 +1002,249 @@ fail_alloc:
 }
 
 /**
- * Execute user managed migration of a memory region from host to device memory
+ * Migrate range of virtually contiguous pages from one device to another.
+ * All pages must reside on the source device, otherwise the migration is aborted.
+ * Caller must hold mmap lock.
  *
- * @param inst TLKM device struct
- * @param vaddr virtual base address of the memory region
- * @param size size of the memory region in bytes
- * @return Zero when succeeding, error code in case of failure
+ * @param src_dev TLKM PCIe device struct of source device
+ * @param dst_dev TLKM PCIe device struct of destination device
+ * @param vaddr virtual base address of migration range
+ * @param npages number of pages to migrate
+ * @return SUCCESS - 0, FAILURE - error code
  */
-int pcie_svm_user_managed_migration_to_device(struct tlkm_device *inst,
-					      uint64_t vaddr, uint64_t size)
+static int svm_migrate_dev_to_dev(struct tlkm_pcie_device *src_dev,
+				  struct tlkm_pcie_device *dst_dev,
+				  uint64_t vaddr, int npages)
 {
-	int res, npages;
-	uint64_t va_start, va_end;
-	struct tlkm_pcie_device *pdev = inst->private_data;
-	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
+	int res, i, j, ncontiguous, retry_cnt;
+	uint64_t dev_base_addr;
+	unsigned long base_pfn;
+	struct page **src_pages, **dst_pages;
+	struct migrate_vma migrate;
+	struct vm_area_struct *vma;
+	struct tlkm_pcie_svm_data *src_svm, *dst_svm;
 
-	if (!svm_data) {
-		DEVERR(pdev->parent->dev_id, "SVM not supported by bitstream");
+	src_svm = src_dev->svm_data;
+	dst_svm = dst_dev->svm_data;
+
+	DEVLOG(dst_dev->parent->dev_id, TLKM_LF_SVM,
+	       "migrate %0d pages with base address %llx from device #%2d to device memory",
+	       npages, vaddr, src_dev->parent->dev_id);
+
+	migrate.src = migrate.dst = NULL;
+	migrate.src = kcalloc(npages, sizeof(*migrate.src), GFP_KERNEL);
+	migrate.dst = kcalloc(npages, sizeof(*migrate.dst), GFP_KERNEL);
+	src_pages = kcalloc(npages, sizeof(*src_pages), GFP_KERNEL);
+	dst_pages = kcalloc(npages, sizeof(*dst_pages), GFP_KERNEL);
+	if (!migrate.src || !migrate.dst || !src_pages || !dst_pages) {
+		DEVERR(dst_dev->parent->dev_id, "failed to allocate arrays");
+		res = -ENOMEM;
+		goto fail_alloc;
+	}
+
+	// find matching VMA
+	migrate.start = vaddr;
+	migrate.end = vaddr + npages * PAGE_SIZE;
+	vma = find_vma_intersection(dst_svm->mm, migrate.start, migrate.end);
+	if (!vma) {
+		DEVERR(dst_dev->parent->dev_id, "could not find matching VMA");
 		res = -EFAULT;
-		goto fail_nosvm;
+		goto fail_vma;
 	}
 
-	DEVLOG(inst->dev_id, TLKM_LF_SVM,
-	       "user managed migration to device with vaddr = %llx, size = %llx",
-	       vaddr, size);
+	// deactivate MMU, invalidate TLBs and wait for ongoing accesses
+	writeq(MMU_DEACTIVATE, &src_svm->mmu_regs->cmd);
+	invalidate_tlb_range(src_svm, vaddr, npages);
+	while (readq(&src_svm->mmu_regs->status) & MMU_STATUS_ANY_MEM_ACCESS);
+	writeq(MMU_ACTIVATE, &src_svm->mmu_regs->cmd);
 
-	// align start and end to page boundaries
-	va_start = vaddr & PAGE_MASK;
-	va_end = vaddr + size;
-	va_end = (va_end & ~PAGE_MASK) ? ((va_end & PAGE_MASK) + PAGE_SIZE) :
-					       (va_end & PAGE_MASK);
-	npages = (va_end - va_start) >> PAGE_SHIFT;
+	// setup migration
+	migrate.vma = vma;
+	migrate.pgmap_owner = src_dev;
+	migrate.flags = MIGRATE_VMA_SELECT_DEVICE_PRIVATE;
 
-	res = svm_migrate_to_device(pdev, va_start, npages, false, NULL);
-	if (res) {
-		DEVERR(inst->dev_id,
-		       "failed to migrate memory region to device");
-		goto fail_migrate;
+retry:
+	res = migrate_vma_setup(&migrate);
+	if (res < 0) {
+		DEVERR(dst_dev->parent->dev_id,
+		       "failed to setup buffer migration");
+		goto fail_setup;
 	}
+
+	// only perform migration for all pages together (unlikely to fail)
+	if (migrate.cpages != npages) {
+		migrate_vma_finalize(&migrate);
+		++retry_cnt;
+		if (retry_cnt > 3) {
+			DEVERR(dst_dev->parent->dev_id, "failed to collect all pages for migration");
+			res = -ENOMEM;
+			goto fail_setup;
+		}
+		goto retry;
+	}
+
+	// allocate device memory
+	dev_base_addr = allocate_device_memory(dst_svm,
+					       npages * PAGE_SIZE);
+	if (dev_base_addr == -1) {
+		DEVERR(dst_dev->parent->dev_id,
+		       "failed to allocate memory on device");
+		res = -ENOMEM;
+		goto fail_allocmem;
+	}
+	base_pfn = dev_addr_to_pfn(dst_svm, dev_base_addr);
+	for (i = 0; i < npages; ++i) {
+		src_pages[i] = migrate_pfn_to_page(migrate.src[i]);
+		dst_pages[i] = pfn_to_page(base_pfn + i);
+		get_page(dst_pages[i]);
+		lock_page(dst_pages[i]);
+		migrate.dst[i] = migrate_pfn(base_pfn + i) | MIGRATE_PFN_LOCKED;
+	}
+
+	i = 0;
+	while (i < npages) {
+		// find physical contiguous region on source device
+		// (always contiguous on destination device due to allocation scheme)
+		ncontiguous = 1;
+		while (i + ncontiguous < npages &&
+		       ncontiguous < PAGE_DMA_MAX_NPAGES) {
+			if (is_contiguous_page(src_pages[i + ncontiguous],
+					       src_pages[i + ncontiguous - 1]))
+				++ncontiguous;
+			else
+				break;
+		}
+		res = init_dev_to_dev_copy(src_dev, dst_dev,
+					   pfn_to_dev_addr(src_svm, page_to_pfn(
+						   src_pages[i])),
+					   pfn_to_dev_addr(dst_svm, page_to_pfn(
+						   dst_pages[i])), ncontiguous);
+		if (res) {
+			DEVERR(dst_dev->parent->dev_id,
+			       "DMA during migration failed");
+			goto fail_dma;
+		}
+		i += ncontiguous;
+	}
+
+	if (readq(&src_svm->dma_regs->c2h_status_ctrl) &
+	    PAGE_DMA_STAT_ERROR_FLAGS ||
+	    readq(&dst_svm->dma_regs->h2c_status_ctrl) &
+	    PAGE_DMA_STAT_ERROR_FLAGS) {
+		DEVERR(dst_dev->parent->dev_id, "DMA during migration failed");
+		res = -EACCES;
+		goto fail_dma;
+	}
+
+	migrate_vma_pages(&migrate);
+	for (i = 0; i < npages; ++i) {
+		// check for successful migration
+		if (!(migrate.src[i] & MIGRATE_PFN_MIGRATE)) {
+			for (j = 0; j < npages; ++j) {
+				unlock_page(dst_pages[j]);
+				put_page(dst_pages[j]);
+				dst_pages[j] = NULL;
+				migrate.dst[j] = 0;
+			}
+			migrate_vma_finalize(&migrate);
+			DEVERR(dst_dev->parent->dev_id,
+			       "failed to migrate all pages");
+			res = -ENOMEM;
+			goto fail_migrate;
+		}
+	}
+
+	// add TLB entries
+	// first and last page are always added independently
+	add_tlb_entry(dst_svm, vaddr, pfn_to_dev_addr(dst_svm, base_pfn));
+	i = 1;
+	while (i < npages - 1) {
+		ncontiguous = min(npages - 1 - i, MMU_MAX_MAPPING_LENGTH);
+		// only use arbitrary length TLB mappings for contiguous regions
+		// to save resources
+		if (ncontiguous >= 64) {
+			add_al_tlb_entry(dst_svm, vaddr + i * PAGE_SIZE,
+					 pfn_to_dev_addr(dst_svm,
+							 base_pfn + i),
+					 ncontiguous);
+		} else {
+			for (j = i; j < (i + ncontiguous); ++j)
+				add_tlb_entry(dst_svm, vaddr + j * PAGE_SIZE,
+					      pfn_to_dev_addr(dst_svm,
+							      base_pfn + j));
+		}
+		i += ncontiguous;
+	}
+	if (i < npages)
+		add_tlb_entry(dst_svm, vaddr + i * PAGE_SIZE,
+			      pfn_to_dev_addr(dst_svm, base_pfn + i));
+
+	migrate_vma_finalize(&migrate);
+
+	// remove/add from/to virtual memory ranges to list
+	for (i = 0; i < npages; ++i) {
+		remove_vmem_region(src_svm, vaddr + i * PAGE_SIZE);
+		add_vmem_region(dst_svm, vaddr + i * PAGE_SIZE, dst_pages[i]);
+	}
+
+	kfree(dst_pages);
+	kfree(src_pages);
+	kfree(migrate.dst);
+	kfree(migrate.src);
+
+	DEVLOG(dst_dev->parent->dev_id, TLKM_LF_SVM,
+	       "migration to device memory complete");
 
 	return 0;
 
+fail_dma:
+fail_allocmem:
+	for (i = 0; i < npages; ++i) {
+		if (dst_pages[i]) {
+			unlock_page(dst_pages[i]);
+			put_page(dst_pages[i]);
+		}
+		migrate.dst[i] = 0;
+	}
+	migrate_vma_finalize(&migrate);
 fail_migrate:
-fail_nosvm:
+fail_setup:
+fail_vma:
+fail_alloc:
+	if (dst_pages)
+		kfree(dst_pages);
+	if (src_pages)
+		kfree(src_pages);
+	if (migrate.dst)
+		kfree(migrate.dst);
+	if (migrate.src)
+		kfree(migrate.src);
 	return res;
 }
 
 /**
- * Execute user managed migration of a memory region form device to host memory
+ * Migrate virtually contiguous pages from device memory to RAM.
+ * All pages must reside in device memory, otherwise the migration is aborted.
+ * Caller must hold mmap lock.
  *
- * @param inst TLKM device struct
- * @param vaddr virtual base address of the memory region
- * @param size size of the memory region in bytes
- * @return Zero when succeeding, error code in case of failure
+ * @param pdev TLKM PCIe device struct of source device
+ * @param vaddr virtual base address of migration range
+ * @param npages number of pages to migrate
+ * @return SUCCESS - 0, FAILURE - error code
  */
-int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
-					   uint64_t vaddr, uint64_t size)
+static int svm_migrate_dev_to_ram(struct tlkm_pcie_device *pdev, uint64_t vaddr,
+				  int npages)
 {
-	int res, i, npages, ncontiguous, cmd_cnt;
-	uint64_t va_start, va_end;
+	int res, i, j, ncontiguous, cmd_cnt, retry_cnt;
 	dma_addr_t *dma_addrs;
 	struct page **src_pages, **dst_pages;
 	struct migrate_vma migrate;
 	struct vm_area_struct *vma;
-	struct tlkm_pcie_device *pdev = inst->private_data;
 	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
 
-	if (!svm_data) {
-		DEVERR(pdev->parent->dev_id, "SVM not supported by bitstream");
-		res = -EFAULT;
-		goto fail_nosvm;
-	}
-
-	DEVLOG(inst->dev_id, TLKM_LF_SVM,
-	       "user managed migration to host with vaddr = %llx, size = %llx",
-	       vaddr, size);
-
-	// align start and end to page boundaries
-	va_start = vaddr & PAGE_MASK;
-	va_end = vaddr + size;
-	va_end = (va_end & ~PAGE_MASK) ? ((va_end & PAGE_MASK) + PAGE_SIZE) :
-					       (va_end & PAGE_MASK);
-	npages = (va_end - va_start) >> PAGE_SHIFT;
+	DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM,
+	       "migrate %0d pages with base address %llx to RAM",
+	       npages, vaddr);
 
 	migrate.src = migrate.dst = NULL;
 	migrate.src = kcalloc(npages, sizeof(*migrate.src), GFP_KERNEL);
@@ -1026,9 +1259,9 @@ int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 	}
 
 	// find matching VMA
-	mmget(svm_data->mm);
-	mmap_write_lock(svm_data->mm);
-	vma = find_vma_intersection(svm_data->mm, va_start, va_end);
+	migrate.start = vaddr;
+	migrate.end = vaddr + npages * PAGE_SIZE;
+	vma = find_vma_intersection(svm_data->mm, migrate.start, migrate.end);
 	if (!vma) {
 		DEVERR(pdev->parent->dev_id, "could not find matching VMA");
 		res = -EFAULT;
@@ -1038,70 +1271,72 @@ int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 	// deactivate MMU, invalidate all entries, and wait for active memory
 	// accesses to finish
 	writeq(MMU_DEACTIVATE, &svm_data->mmu_regs->cmd);
-	invalidate_tlb_range(svm_data, va_start, npages);
+	invalidate_tlb_range(svm_data, vaddr, npages);
 	while (readq(&svm_data->mmu_regs->status) & MMU_STATUS_ANY_MEM_ACCESS);
 
 	// setup migration
-	migrate.start = va_start;
-	migrate.end = va_end;
 	migrate.vma = vma;
 	migrate.pgmap_owner = pdev;
 	migrate.flags = MIGRATE_VMA_SELECT_DEVICE_PRIVATE;
+
+retry:
 	res = migrate_vma_setup(&migrate);
 	if (res < 0) {
 		DEVERR(pdev->parent->dev_id, "failed to setup migration");
 		goto fail_setup;
 	}
-	if (!migrate.cpages) {
-		DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM,
-		       "no pages to migrate");
-		goto skip_copy;
+
+	// only perform migration for all pages together (unlikely to fail)
+	if (migrate.cpages != npages) {
+		migrate_vma_finalize(&migrate);
+		++retry_cnt;
+		if (retry_cnt > 3) {
+			DEVERR(pdev->parent->dev_id,
+			       "failed to collect all pages for migration");
+			res = -ENOMEM;
+			goto fail_setup;
+		}
+		goto retry;
 	}
 
 	// allocate pages in host memory and create DMA mappings
 	for (i = 0; i < npages; ++i) {
-		if (migrate.src[i] & MIGRATE_PFN_MIGRATE) {
-			src_pages[i] = migrate_pfn_to_page(migrate.src[i]);
-			dst_pages[i] = alloc_page_vma(GFP_HIGHUSER, vma,
-						      va_start + i + PAGE_SIZE);
-			if (!dst_pages[i]) {
-				DEVERR(pdev->parent->dev_id,
-				       "failed to allocate page on host for migration");
-				res = -ENOMEM;
-				goto fail_allocpage;
-			}
-			lock_page(dst_pages[i]);
-			migrate.dst[i] =
-				migrate_pfn(page_to_pfn(dst_pages[i])) |
-				MIGRATE_PFN_LOCKED;
-			dma_addrs[i] =
-				dma_map_page(&pdev->pdev->dev, dst_pages[i], 0,
-					     PAGE_SIZE, DMA_FROM_DEVICE);
-			if (dma_mapping_error(&pdev->pdev->dev, dma_addrs[i])) {
-				DEVWRN(pdev->parent->dev_id,
-				       "failed to map page for DMA");
-				unlock_page(dst_pages[i]);
-				__free_page(dst_pages[i]);
-				dst_pages[i] = NULL;
-				migrate.dst[i] = 0;
-				dma_addrs[i] = 0;
-			}
+		src_pages[i] = migrate_pfn_to_page(migrate.src[i]);
+		dst_pages[i] = alloc_page_vma(GFP_HIGHUSER, vma,
+					      vaddr + i * PAGE_SIZE);
+		if (!dst_pages[i]) {
+			DEVERR(pdev->parent->dev_id,
+			       "failed to allocate page on host for migration");
+			res = -ENOMEM;
+			goto fail_allocpage;
+		}
+		lock_page(dst_pages[i]);
+		migrate.dst[i] = migrate_pfn(page_to_pfn(dst_pages[i])) |
+				 MIGRATE_PFN_LOCKED;
+		dma_addrs[i] = dma_map_page(&pdev->pdev->dev, dst_pages[i], 0,
+					    PAGE_SIZE, DMA_FROM_DEVICE);
+		if (dma_mapping_error(&pdev->pdev->dev, dma_addrs[i])) {
+			DEVWRN(pdev->parent->dev_id,
+			       "failed to map page for DMA");
+			unlock_page(dst_pages[i]);
+			__free_page(dst_pages[i]);
+			dst_pages[i] = NULL;
+			dma_unmap_page(&pdev->pdev->dev, dma_addrs[i],
+				       PAGE_SIZE, DMA_TO_DEVICE);
+			migrate.dst[i] = 0;
+			dma_addrs[i] = 0;
+			res = -EACCES;
+			goto fail_dmamap;
 		}
 	}
 
 	i = 0;
 	cmd_cnt = 0;
 	while (i < npages) {
-		if (!migrate.dst[i]) {
-			++i;
-			continue;
-		}
-
 		// find physical contiguous regions on host and device side
 		ncontiguous = 1;
 		while (i + ncontiguous < npages &&
-		       ncontiguous < PAGE_DMA_MAX_NPAGES &&
-		       migrate.dst[i + ncontiguous]) {
+		       ncontiguous < PAGE_DMA_MAX_NPAGES) {
 			if (is_contiguous(dma_addrs[i + ncontiguous],
 					  dma_addrs[i + ncontiguous - 1]) &&
 			    is_contiguous_page(src_pages[i + ncontiguous],
@@ -1150,26 +1385,28 @@ int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 	migrate_vma_pages(&migrate);
 	for (i = 0; i < npages; ++i) {
 		if (!(migrate.src[i] & MIGRATE_PFN_MIGRATE)) {
-			if (dst_pages[i]) {
-				unlock_page(dst_pages[i]);
-				__free_page(dst_pages[i]);
-				dst_pages[i] = NULL;
+			// should never happen, but abort migration
+			for (j = 0; j < npages; ++j) {
+				unlock_page(dst_pages[j]);
+				__free_page(dst_pages[j]);
+				dst_pages[j] = NULL;
+				migrate.dst[j] = 0;
 			}
+			migrate_vma_finalize(&migrate);
+			DEVERR(pdev->parent->dev_id,
+			       "failed to migrate all pages");
+			res = -ENOMEM;
+			goto fail_migrate;
 		}
 	}
-
-skip_copy:
 	migrate_vma_finalize(&migrate);
 
 	// remove virtual memory ranges from list
 	for (i = 0; i < npages; ++i) {
-		if (dst_pages[i])
-			remove_vmem_region(svm_data, va_start + i * PAGE_SIZE);
+		remove_vmem_region(svm_data, vaddr + i * PAGE_SIZE);
 	}
 
 	writeq(MMU_ACTIVATE, &svm_data->mmu_regs->cmd);
-	mmap_write_unlock(svm_data->mm);
-	mmput(svm_data->mm);
 	kfree(dma_addrs);
 	kfree(dst_pages);
 	kfree(src_pages);
@@ -1179,6 +1416,7 @@ skip_copy:
 	return 0;
 
 fail_dma:
+fail_dmamap:
 fail_allocpage:
 	for (i = 0; i < npages; ++i) {
 		if (dst_pages[i]) {
@@ -1191,11 +1429,10 @@ fail_allocpage:
 		migrate.dst[i] = 0;
 	}
 	migrate_vma_finalize(&migrate);
+fail_migrate:
 fail_setup:
 	writeq(MMU_ACTIVATE, &svm_data->mmu_regs->cmd);
 fail_vma:
-	mmap_write_unlock(svm_data->mm);
-	mmput(svm_data->mm);
 fail_alloc:
 	if (migrate.src)
 		kfree(migrate.src);
@@ -1207,27 +1444,219 @@ fail_alloc:
 		kfree(dst_pages);
 	if (dma_addrs)
 		kfree(dma_addrs);
-fail_nosvm:
 	return res;
 }
 
 /**
- * Translate virtual address to physical device address
+ * Find TLKM device where the page for the given virtual address is currently located.
  *
- * @param svm_data SVM data struct
- * @param vaddr virtual address to translate
- * @return SUCCESS - physical address in device memory, FAILURE - '-1' (requested
- * page is not present in device memory)
+ * @param vaddr virtual address of page
+ * @param mm mm struct of page
+ * @return TLKM PCIe where the page is located, or NULL (page is located in host memory)
  */
-static uint64_t vaddr_to_dev_addr(struct tlkm_pcie_svm_data *svm_data, uint64_t vaddr)
+struct tlkm_pcie_device *get_owning_device(uint64_t vaddr, struct mm_struct *mm)
 {
-	struct vmem_region *pos;
+	int i;
+	struct tlkm_device *d;
+	struct tlkm_pcie_device *pdev;
+	struct tlkm_pcie_svm_data *svm_data;
+	struct vmem_region *region;
 
-	list_for_each_entry(pos, &svm_data->vmem_regions, list) {
-		if (pos->vaddr == vaddr)
-			return pfn_to_dev_addr(svm_data, page_to_pfn(pos->page));
+	for (i = 0; i < tlkm_bus_num_devices(); ++i) {
+		d = tlkm_bus_get_device(i);
+		if (d->vendor_id != 0x10EE || d->product_id != 0x7038)
+			continue;
+		pdev = d->private_data;
+		svm_data = pdev->svm_data;
+		if (!svm_data || svm_data->mm != mm)
+			continue;
+
+		if (list_empty(&svm_data->vmem_regions))
+			continue;
+		list_for_each_entry(region, &svm_data->vmem_regions, list) {
+			if (region->vaddr == vaddr)
+				return pdev;
+			if (region->vaddr > vaddr)
+				break;
+		}
 	}
-	return -1;
+	return NULL;
+}
+
+/**
+ * Migrate multiple pages with contiguous virtual addresses to device memory.
+ * Pages may reside in different memories. Function determines source memories
+ * and calls the respective sub-routines.
+ * Caller must hold the mmap lock.
+ *
+ * @param pdev TLKM PCIe device struct of destination device
+ * @param vaddr virtual address of the first page
+ * @param npages number of contiguous pages
+ * @param drop_failed if true: send drop commands to IOMMU for failed migrations
+ * @return SUCCESS - 0, FAILURE - error code
+ */
+static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
+				 int npages, bool drop_failed)
+{
+	int r, res = 0, i, j, ncontiguous;
+	struct tlkm_pcie_device *src_dev;
+	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
+
+	DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM,
+	       "migrate %0d pages with base address %llx to device memory",
+	       npages, vaddr);
+
+	// search for pages residing in a common memory and initiate migration
+	i = 0;
+	while (i < npages) {
+		src_dev = get_owning_device(vaddr + i * PAGE_SIZE,
+					    svm_data->mm);
+		if (src_dev == pdev) {
+			++i;
+			continue;
+		}
+
+		ncontiguous = 1;
+		while (i + ncontiguous < npages) {
+			if (get_owning_device(
+				vaddr + (i + ncontiguous) * PAGE_SIZE,
+				svm_data->mm) == src_dev)
+				++ncontiguous;
+			else
+				break;
+		}
+		r = src_dev ? svm_migrate_dev_to_dev(src_dev, pdev,
+						     vaddr + i * PAGE_SIZE,
+						     ncontiguous)
+			    : svm_migrate_ram_to_dev(pdev,
+						     vaddr + i * PAGE_SIZE,
+						     ncontiguous);
+		if (r) {
+			res = r;
+			if (drop_failed) {
+				for (j = 0; j < ncontiguous; ++j)
+					drop_page_fault(svm_data, vaddr +
+								  (i + j) *
+								  PAGE_SIZE);
+			}
+		}
+		i += ncontiguous;
+	}
+	return res;
+}
+
+/**
+ * Execute user managed migration of a memory regionto device memory.
+ * Source pages may reside in different memories.
+ *
+ * @param inst TLKM device struct
+ * @param vaddr virtual base address of the memory region
+ * @param size size of the memory region in bytes
+ * @return Zero when succeeding, error code in case of failure
+ */
+int pcie_svm_user_managed_migration_to_device(struct tlkm_device *inst,
+					      uint64_t vaddr, uint64_t size)
+{
+	int res, npages;
+	uint64_t va_start, va_end;
+	struct tlkm_pcie_device *pdev = inst->private_data;
+	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
+
+	if (!svm_data) {
+		DEVERR(pdev->parent->dev_id, "SVM not supported by bitstream");
+		return -EFAULT;
+	}
+
+	DEVLOG(inst->dev_id, TLKM_LF_SVM,
+	       "user managed migration to device with vaddr = %llx, size = %llx",
+	       vaddr, size);
+
+	// align start and end to page boundaries
+	va_start = vaddr & PAGE_MASK;
+	va_end = vaddr + size;
+	va_end = (va_end & ~PAGE_MASK) ? ((va_end & PAGE_MASK) + PAGE_SIZE) :
+					       (va_end & PAGE_MASK);
+	npages = (va_end - va_start) >> PAGE_SHIFT;
+
+	mmget(svm_data->mm);
+	mmap_write_lock(svm_data->mm);
+
+	res = svm_migrate_to_device(pdev, va_start, npages, false);
+
+	mmap_write_unlock(svm_data->mm);
+	mmput(svm_data->mm);
+
+	if (res) {
+		DEVERR(inst->dev_id,
+		       "failed to migrate memory region to device");
+		return res;
+	}
+
+	return 0;
+}
+
+/**
+ * Execute user managed migration of a memory region to host memory.
+ * Source pages may reside in different memories
+ *
+ * @param inst TLKM device struct
+ * @param vaddr virtual base address of the memory region
+ * @param size size of the memory region in bytes
+ * @return Zero when succeeding, error code in case of failure
+ */
+int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
+					   uint64_t vaddr, uint64_t size)
+{
+	int r, res = 0, i, npages, ncontiguous;
+	uint64_t va_start, va_end;
+	struct tlkm_pcie_device *pdev = inst->private_data, *src_dev;
+	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
+
+	if (!svm_data) {
+		DEVERR(pdev->parent->dev_id, "SVM not supported by bitstream");
+		return -EFAULT;
+	}
+
+	DEVLOG(inst->dev_id, TLKM_LF_SVM,
+	       "user managed migration to host with vaddr = %llx, size = %llx",
+	       vaddr, size);
+
+	// align start and end to page boundaries
+	va_start = vaddr & PAGE_MASK;
+	va_end = vaddr + size;
+	va_end = (va_end & ~PAGE_MASK) ? ((va_end & PAGE_MASK) + PAGE_SIZE) :
+					       (va_end & PAGE_MASK);
+	npages = (va_end - va_start) >> PAGE_SHIFT;
+
+	mmget(svm_data->mm);
+	mmap_write_lock(svm_data->mm);
+
+	// search for pages residing in a common memory and initiate migration
+	i = 0;
+	while (i < npages) {
+		src_dev = get_owning_device(va_start + i * PAGE_SIZE, svm_data->mm);
+		if (!src_dev) {
+			++i;
+			continue;
+		}
+
+		ncontiguous = 1;
+		while (i + ncontiguous < npages) {
+			if (get_owning_device(va_start + (i + ncontiguous) * PAGE_SIZE,svm_data->mm) == src_dev)
+				++ncontiguous;
+			else
+				break;
+		}
+		r = svm_migrate_dev_to_ram(src_dev, va_start + i * PAGE_SIZE, ncontiguous);
+		if (r)
+			res = r;
+		i += ncontiguous;
+	}
+
+	mmap_write_unlock(svm_data->mm);
+	mmput(svm_data->mm);
+
+	return res;
 }
 
 /**
@@ -1358,29 +1787,11 @@ static void handle_iommu_page_fault(struct work_struct *work)
 					     vaddrs[ncontiguous - 1]))
 				++ncontiguous;
 
-			res = svm_migrate_to_device(pdev, vaddrs[0] & VADDR_MASK,
-						    ncontiguous, true, failed_vaddrs);
-			if (res) {
-				DEVERR(pdev->parent->dev_id,
-				       "failed to migrate pages to device memory during page fault handling");
-				for (i = 0; i < ncontiguous; ++i)
-					drop_page_fault(svm_data, vaddrs[i] & VADDR_MASK);
-			}
-			for (i = 0; i < ncontiguous; ++i) {
-				// if the migration has failed, try a second
-				// time before dropping the page fault
-				if (failed_vaddrs[i]) {
-					if (vaddrs[i] & SECOND_TRY_FLAG) {
-						drop_page_fault(svm_data, vaddrs[i] & VADDR_MASK);
-						vaddrs[i] = 0;
-					} else {
-						vaddrs[i] |= SECOND_TRY_FLAG;
-					}
-					failed_vaddrs[i] = 0;
-				} else {
-					vaddrs[i] = 0;
-				}
-			}
+			res = svm_migrate_to_device(pdev,
+						    vaddrs[0] & VADDR_MASK,
+						    ncontiguous, true);
+			for (i = 0; i < ncontiguous; ++i)
+				vaddrs[i] = 0;
 			nfaults = pack_array(vaddrs, nfaults);
 		} while (nfaults > 0);
 
