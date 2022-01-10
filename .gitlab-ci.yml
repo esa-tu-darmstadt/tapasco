@@ -392,7 +392,7 @@ tapasco_compose_ubuntu:
   script:
     - source $XILINX_VIVADO/settings64.sh
     - apt-get -y update
-    - apt-get -y install libtinfo5 build-essential
+    - DEBIAN_FRONTEND=noninteractive apt-get -y install libtinfo5 build-essential tzdata
     - apt -y install ./toolflow/scala/build/distributions/tapasco_2021-01_amd64.deb
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
