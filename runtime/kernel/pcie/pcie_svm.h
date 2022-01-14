@@ -61,6 +61,7 @@
 #define MAX_NUM_FAULTS 32
 
 // DMA
+#define NETWORK_PAGE_DMA_ID 0x5A6ED4AE
 #define PAGE_DMA_STAT_BUSY (1UL)
 #define PAGE_DMA_STAT_INTR_PEND (1UL << 1)
 #define PAGE_DMA_STAT_ERROR_FLAGS (3UL << 2)
@@ -72,6 +73,7 @@
 #define PAGE_DMA_CTRL_INTR_DISABLE (1UL << 6)
 #define PAGE_DMA_CMD_START (1UL << 63)
 #define PAGE_DMA_CMD_CLEAR (1UL << 62)
+#define PAGE_DMA_CMD_NETWORK (1UL << 60)
 
 #define PAGE_DMA_MAX_NPAGES 4096UL
 #define DEV_TO_DEV_DMA_MAX_NPAGES 1024
@@ -98,6 +100,7 @@ struct tlkm_pcie_svm_data {
 	struct svm_mmu_notifier_env *notifier_env;
 	struct mmu_regs *mmu_regs;
 	struct page_dma_regs *dma_regs;
+	bool network_dma_enabled;
 
 	unsigned long base_pfn;
 	struct list_head free_mem_blocks;

@@ -79,22 +79,25 @@ static uint64_t vaddr_to_dev_addr(struct tlkm_pcie_svm_data *svm_data, uint64_t 
  * @param npages number of pages to transfer
  */
 static void init_c2h_dma(struct tlkm_pcie_svm_data *svm_data,
-			 dma_addr_t host_addr, uint64_t dev_addr, int npages)
+			 dma_addr_t host_addr, uint64_t dev_addr, int npages, bool network)
 {
 	uint64_t npages_cmd, wval;
 	struct page_dma_regs *dma_regs = svm_data->dma_regs;
 
 	DEVLOG(svm_data->pdev->parent->dev_id, TLKM_LF_SVM,
-	       "initiate C2H DMA: host addr = %llx, device addr = %llx, length = %0d",
-	       host_addr, dev_addr, npages);
+	       "initiate C2H DMA: host addr = %llx, device addr = %llx, length = %0d, network = %0d",
+	       host_addr, dev_addr, npages, network);
 
 	while (npages) {
 		writeq(dev_addr, &dma_regs->c2h_src_addr);
-		writeq(host_addr, &dma_regs->c2h_dst_addr);
+		if (!network)
+			writeq(host_addr, &dma_regs->c2h_dst_addr);
 		npages_cmd = (npages > PAGE_DMA_MAX_NPAGES) ?
 				     PAGE_DMA_MAX_NPAGES :
 					   npages;
 		wval = npages_cmd | PAGE_DMA_CMD_START;
+		if (network)
+			wval |= PAGE_DMA_CMD_NETWORK;
 		writeq(wval, &dma_regs->c2h_start_len);
 		npages -= npages_cmd;
 	}
@@ -111,14 +114,14 @@ static void init_c2h_dma(struct tlkm_pcie_svm_data *svm_data,
  */
 static void init_h2c_dma(struct tlkm_pcie_svm_data *svm_data,
 			 dma_addr_t host_addr, uint64_t dev_addr, int npages,
-			 bool clear)
+			 bool clear, bool network)
 {
 	uint64_t npages_cmd, wval;
 	struct page_dma_regs *dma_regs = svm_data->dma_regs;
 
 	DEVLOG(svm_data->pdev->parent->dev_id, TLKM_LF_SVM,
-	       "initiate H2C DMA: host addr = %llx, device addr = %llx, length = %0d, clear = %0d",
-	       host_addr, dev_addr, npages, clear);
+	       "initiate H2C DMA: host addr = %llx, device addr = %llx, length = %0d, clear = %0d, network = %0d",
+	       host_addr, dev_addr, npages, clear, network);
 
 	while (npages) {
 		npages_cmd = (npages > PAGE_DMA_MAX_NPAGES) ?
@@ -127,9 +130,12 @@ static void init_h2c_dma(struct tlkm_pcie_svm_data *svm_data,
 		wval = npages_cmd | PAGE_DMA_CMD_START;
 		if (clear)
 			wval |= PAGE_DMA_CMD_CLEAR;
-		else
+		if (network)
+			wval |= PAGE_DMA_CMD_NETWORK;
+		if (!network && !clear)
 			writeq(host_addr, &dma_regs->h2c_src_addr);
 		writeq(dev_addr, &dma_regs->h2c_dst_addr);
+
 		writeq(wval, &dma_regs->h2c_start_len);
 		npages -= npages_cmd;
 	}
@@ -553,7 +559,7 @@ static vm_fault_t svm_migrate_to_ram(struct vm_fault *vmf)
 	}
 
 	src_addr = pfn_to_dev_addr(svm_data, page_to_pfn(src_page));
-	init_c2h_dma(svm_data, dma_addr, src_addr, 1);
+	init_c2h_dma(svm_data, dma_addr, src_addr, 1, false);
 
 	do {
 		rval = readq(&svm_data->dma_regs->c2h_status_ctrl);
@@ -654,6 +660,27 @@ static int wait_for_h2c_intr(struct tlkm_pcie_svm_data *svm_data)
 	return res;
 }
 
+static int init_network_migration(struct tlkm_pcie_device *src_dev, struct tlkm_pcie_device *dst_dev, uint64_t src_addr, uint64_t dst_addr, int npages)
+{
+	int i, res, ncmd;
+	struct tlkm_pcie_svm_data *src_svm = src_dev->svm_data;
+	struct tlkm_pcie_svm_data *dst_svm = dst_dev->svm_data;
+
+	i = 0;
+	while (i < npages) {
+		ncmd = min((npages - i), (int)PAGE_DMA_MAX_NPAGES);
+		init_c2h_dma(src_svm, 0, src_addr + i * PAGE_SIZE, ncmd, true);
+		init_h2c_dma(dst_svm, 0, dst_addr + i * PAGE_SIZE, ncmd, false,
+			     true);
+		res = wait_for_h2c_intr(dst_svm);
+		if (res)
+			return res;
+
+		i += ncmd;
+	}
+	return 0;
+}
+
 /**
  * Initialize the copy of a contiguous range of pages from one to another device.
  * The data is copied in two steps: First from the source device to a buffer in
@@ -699,14 +726,15 @@ static int init_dev_to_dev_copy(struct tlkm_pcie_device *src_dev,
 		move_cnt = min(npages - copied_pages,
 			       DEV_TO_DEV_DMA_MAX_NPAGES);
 		init_c2h_dma(src_dev->svm_data, buf_addr,
-			     src_addr + copied_pages * PAGE_SIZE, move_cnt);
+			     src_addr + copied_pages * PAGE_SIZE, move_cnt,
+			     false);
 		res = wait_for_c2h_intr(src_dev->svm_data);
 		if (res)
 			goto fail_c2h;
 
 		init_h2c_dma(dst_dev->svm_data, buf_addr,
 			     dst_addr + copied_pages * PAGE_SIZE, move_cnt,
-			     false);
+			     false, false);
 		res = wait_for_h2c_intr(dst_dev->svm_data);
 		if (res)
 			goto fail_h2c;
@@ -880,7 +908,7 @@ retry:
 		}
 		init_h2c_dma(svm_data, dma_addrs[i],
 			     pfn_to_dev_addr(svm_data, base_pfn + i),
-			     ncontiguous, clear);
+			     ncontiguous, clear, false);
 		++cmd_cnt;
 
 		i += ncontiguous;
@@ -1114,11 +1142,25 @@ retry:
 			else
 				break;
 		}
-		res = init_dev_to_dev_copy(src_dev, dst_dev,
-					   pfn_to_dev_addr(src_svm, page_to_pfn(
-						   src_pages[i])),
-					   pfn_to_dev_addr(dst_svm, page_to_pfn(
-						   dst_pages[i])), ncontiguous);
+		if (src_svm->network_dma_enabled &&
+		    dst_svm->network_dma_enabled)
+			res = init_network_migration(src_dev, dst_dev,
+						     pfn_to_dev_addr(src_svm,
+								     page_to_pfn(
+									     src_pages[i])),
+						     pfn_to_dev_addr(dst_svm,
+								     page_to_pfn(
+									     dst_pages[i])),
+						     ncontiguous);
+		else
+			res = init_dev_to_dev_copy(src_dev, dst_dev,
+						   pfn_to_dev_addr(src_svm,
+								   page_to_pfn(
+									   src_pages[i])),
+						   pfn_to_dev_addr(dst_svm,
+								   page_to_pfn(
+									   dst_pages[i])),
+						   ncontiguous);
 		if (res) {
 			DEVERR(dst_dev->parent->dev_id,
 			       "DMA during migration failed");
@@ -1357,7 +1399,7 @@ retry:
 		init_c2h_dma(svm_data, dma_addrs[i], pfn_to_dev_addr(svm_data,
 								     page_to_pfn(
 									     src_pages[i])),
-			     ncontiguous);
+			     ncontiguous, false);
 		++cmd_cnt;
 		i += ncontiguous;
 	}
@@ -1840,7 +1882,8 @@ svm_tlb_invalidate_range_start(struct mmu_notifier *subscription,
 	)
 		goto skip_invalidation;
 
-	// FIXME check for pagemap owner?
+	// TODO check whether region is present on device using the vmem list before invalidating TLB?
+	//  -> beneficial e.g. if a huge page is splitted on host or some other memory freed
 	invalidate_tlb_range(env->svm_data, range->start,
 			     (range->end - range->start) >> PAGE_SHIFT);
 	wmb();
@@ -2227,6 +2270,11 @@ int pcie_init_svm(struct tlkm_pcie_device *pdev)
 					 tlkm_status_get_component_base(
 						 pdev->parent,
 						 "PLATFORM_COMPONENT_DMA0"));
+	if (readq(&svm_data->dma_regs->id) == NETWORK_PAGE_DMA_ID) {
+		DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM,
+		       "PageDMA capable of network page migrations");
+		svm_data->network_dma_enabled = true;
+	}
 	svm_data->pdev = pdev;
 	pdev->svm_data = svm_data;
 
