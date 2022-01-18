@@ -49,28 +49,6 @@ pfn_to_dev_addr(struct tlkm_pcie_svm_data *svm_data, unsigned long pfn)
 }
 
 /**
- * Translate virtual address to physical device address
- *
- * @param svm_data SVM data struct
- * @param vaddr virtual address to translate
- * @return SUCCESS - physical address in device memory, FAILURE - '-1' (requested
- * page is not present in device memory)
- */
-static uint64_t vaddr_to_dev_addr(struct tlkm_pcie_svm_data *svm_data, uint64_t vaddr)
-{
-	struct vmem_region *pos;
-
-	if (list_empty(&svm_data->vmem_regions))
-		return -1;
-
-	list_for_each_entry(pos, &svm_data->vmem_regions, list) {
-		if (pos->vaddr == vaddr)
-			return pfn_to_dev_addr(svm_data, page_to_pfn(pos->page));
-	}
-	return -1;
-}
-
-/**
  * Initiate a card-to-host (C2H) DMA transfer using the PageDMA core
  *
  * @param svm_data SVM data struct
@@ -227,49 +205,165 @@ static inline void drop_page_fault(struct tlkm_pcie_svm_data *svm_data,
 	writeq(MMU_DROP_FAULT, &svm_data->mmu_regs->cmd);
 }
 
-static void add_vmem_region(struct tlkm_pcie_svm_data *svm_data, uint64_t vaddr, struct page *page)
+/**
+ * Insert a virtual memory region into the device's interval tree. It is merged
+ * if preceeding/succeeding intervals exist.
+ *
+ * @param svm_data PCIe SVM data struct
+ * @param vaddr base address of new interval
+ * @param npages size of new interval in pages
+ * @return SUCCESS - 0, FAILURE - error code
+ */
+static int
+insert_vmem_interval(struct tlkm_pcie_svm_data *svm_data, uint64_t vaddr,
+		     int npages)
 {
-	struct vmem_region *new, *pos;
+	struct interval_tree_node *predecessor = NULL, *successor = NULL, *new;
+
+	DEVLOG(svm_data->pdev->parent->dev_id, TLKM_LF_SVM,
+	       "insert vmem interval at 0x%0llx with %0d pages", vaddr, npages);
 
 	new = kmalloc(sizeof(*new), GFP_KERNEL);
 	if (!new) {
-		// TODO error handling
-		DEVERR(svm_data->pdev->parent->dev_id, "failed to allocate memory for vmem region struct");
-		return;
-	}
-	new->vaddr = vaddr;
-	new->page = page;
-
-	if (list_empty(&svm_data->vmem_regions)) {
-		list_add(&new->list, &svm_data->vmem_regions);
-		return;
+		DEVERR(svm_data->pdev->parent->dev_id,
+		       "failed to allocate memory for vmem interval entry");
+		return -ENOMEM;
 	}
 
-	list_for_each_entry(pos, &svm_data->vmem_regions, list) {
-		if (pos->vaddr > vaddr) {
-			list_add_tail(&new->list, &pos->list);
-			return;
-		}
+	// check for preceding and succeeding interval
+	if (vaddr > 0) {
+		predecessor = interval_tree_iter_first(
+			&svm_data->vmem_intervals, vaddr - PAGE_SIZE,
+			vaddr - 1);
+	}
+	// TODO use interval_tree_iter_next if we found a predecessor previously for higher efficiency?
+	successor = interval_tree_iter_first(&svm_data->vmem_intervals,
+					     vaddr + npages * PAGE_SIZE,
+					     vaddr + npages * PAGE_SIZE);
+
+	if (predecessor) {
+		new->start = predecessor->start;
+		interval_tree_remove(predecessor, &svm_data->vmem_intervals);
+		kfree(predecessor);
+	} else {
+		new->start = vaddr;
 	}
 
-	// add as last entry
-	list_add_tail(&new->list, &svm_data->vmem_regions);
+	if (successor) {
+		new->last = successor->last;
+		interval_tree_remove(successor, &svm_data->vmem_intervals);
+		kfree(successor);
+	} else {
+		new->last = vaddr + npages * PAGE_SIZE - 1;
+	}
+
+	interval_tree_insert(new, &svm_data->vmem_intervals);
+
+	return 0;
 }
 
-static void remove_vmem_region(struct tlkm_pcie_svm_data *svm_data, uint64_t vaddr)
+/**
+ * Remove virtual memory interval from device's interval tree. All intervals
+ * falling in this region are removed. If the an existing interval exceeds the
+ * interval to be removed, it is split and re-inserted with the remaining bounds.
+ *
+ * @param svm_data PCIe SVM data struct
+ * @param vaddr base address of interval to remove
+ * @param npages size of interval to remove in pages
+ */
+static void
+remove_vmem_interval(struct tlkm_pcie_svm_data *svm_data, uint64_t vaddr,
+		     int npages)
 {
-	struct vmem_region *pos;
+	unsigned long start, next_start, end;
+	struct interval_tree_node *node, *next_node, *new;
 
-	if (list_empty(&svm_data->vmem_regions))
-		return;
+	DEVLOG(svm_data->pdev->parent->dev_id, TLKM_LF_SVM,
+	       "remove vmem interval at 0x%0llx with %0d pages", vaddr, npages);
 
-	list_for_each_entry(pos, &svm_data->vmem_regions, list) {
-		if (pos->vaddr == vaddr) {
-			list_del(&pos->list);
-			kfree(pos);
-			break;
+	start = vaddr;
+	end = vaddr + npages * PAGE_SIZE - 1;
+	node = interval_tree_iter_first(&svm_data->vmem_intervals, vaddr, end);
+	while (node) {
+		next_start = min(node->last + 1, end);
+		next_node = interval_tree_iter_next(node, start, end);
+
+		interval_tree_remove(node, &svm_data->vmem_intervals);
+
+		// if node must not be removed completely, update and re-insert
+		if (node->start != start) {
+			if (node->last > end) {
+				new = kmalloc(sizeof(*new), GFP_KERNEL);
+				if (!new) {
+					DEVERR(svm_data->pdev->parent->dev_id,
+					       "failed to allocate memory for new interval entry");
+				} else {
+					new->start = end + 1;
+					new->last = node->last;
+					interval_tree_insert(new,
+							     &svm_data->vmem_intervals);
+				}
+			}
+			node->last = start - 1;
+			interval_tree_insert(node, &svm_data->vmem_intervals);
+		} else if (node->last > end) {
+			node->start = end + 1;
+			interval_tree_insert(node, &svm_data->vmem_intervals);
+		} else {
+			kfree(node);
 		}
+
+		start = next_start;
+		node = next_node;
 	}
+}
+
+/**
+ * Find all overlapping virtual memory intervals in a device's interval tree.
+ *
+ * @param svm_data PCIe SVM data struct
+ * @param interval_list head of list for all found intervals
+ * @param vaddr base address of interval to search
+ * @param npages size of interval to search in pages
+ * @return SUCCESS - 0, FAILURE - error code
+ */
+static int search_vmem_intervals(struct tlkm_pcie_svm_data *svm_data,
+				 struct list_head *interval_list,
+				 uint64_t vaddr, int npages)
+{
+	unsigned long start, end;
+	struct interval_tree_node *node;
+	struct vmem_interval_list_entry *entry;
+
+	end = vaddr + npages * PAGE_SIZE - 1;
+	node = interval_tree_iter_first(&svm_data->vmem_intervals, vaddr, end);
+	while (node) {
+		entry = kmalloc(sizeof(*entry), GFP_KERNEL);
+		if (!entry) {
+			DEVERR(svm_data->pdev->parent->dev_id,
+			       "failed to allocate memory for list entry");
+			return -ENOMEM;
+		}
+		entry->interval_node = node;
+		list_add_tail(&entry->list, interval_list);
+
+		start = min(node->last + 1, end);
+		node = interval_tree_iter_next(node, start, end);
+	}
+	return 0;
+}
+
+/**
+ * Return whether the page for a given virtual address is present on the device.
+ */
+static inline bool
+
+is_page_present(struct tlkm_pcie_svm_data *svm_data, uint64_t vaddr)
+{
+	if (interval_tree_iter_first(&svm_data->vmem_intervals, vaddr,
+				     vaddr + PAGE_SIZE - 1))
+		return true;
+	return false;
 }
 
 /**
@@ -453,6 +547,11 @@ static inline int queue_dev_mem_free_work(struct tlkm_pcie_device *pdev,
 {
 	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
 	struct dev_mem_free_work_env *env = kmalloc(sizeof(*env), GFP_KERNEL);
+	if (!env) {
+		DEVERR(pdev->parent->dev_id,
+		       "failed to allocate memory for work struct");
+		return false;
+	}
 	env->pdev = pdev;
 	env->dev_addr = dev_addr;
 	env->size = size;
@@ -576,7 +675,7 @@ static vm_fault_t svm_migrate_to_ram(struct vm_fault *vmf)
 	migrate_vma_finalize(&migrate);
 
 	// remove from virtual memory range list
-	remove_vmem_region(svm_data, vmf->address);
+	remove_vmem_interval(svm_data, vmf->address, 1);
 
 	DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM, "finished migration to RAM");
 
@@ -980,10 +1079,8 @@ retry:
 
 	migrate_vma_finalize(&migrate);
 
-	// add to virtual memory ranges to list
-	for (i = 0; i < npages; ++i) {
-		add_vmem_region(svm_data, vaddr + i * PAGE_SIZE, dst_pages[i]);
-	}
+	// add virtual memory interval to interval tree
+	insert_vmem_interval(svm_data, vaddr, npages);
 
 	kfree(dma_addrs);
 	kfree(dst_pages);
@@ -1223,11 +1320,9 @@ retry:
 
 	migrate_vma_finalize(&migrate);
 
-	// remove/add from/to virtual memory ranges to list
-	for (i = 0; i < npages; ++i) {
-		remove_vmem_region(src_svm, vaddr + i * PAGE_SIZE);
-		add_vmem_region(dst_svm, vaddr + i * PAGE_SIZE, dst_pages[i]);
-	}
+	// remove/add virtual memory intervals
+	remove_vmem_interval(src_svm, vaddr, npages);
+	insert_vmem_interval(dst_svm, vaddr, npages);
 
 	kfree(dst_pages);
 	kfree(src_pages);
@@ -1443,10 +1538,8 @@ retry:
 	}
 	migrate_vma_finalize(&migrate);
 
-	// remove virtual memory ranges from list
-	for (i = 0; i < npages; ++i) {
-		remove_vmem_region(svm_data, vaddr + i * PAGE_SIZE);
-	}
+	// remove virtual memory interval from tree
+	remove_vmem_interval(svm_data, vaddr, npages);
 
 	writeq(MMU_ACTIVATE, &svm_data->mmu_regs->cmd);
 	kfree(dma_addrs);
@@ -1490,42 +1583,6 @@ fail_alloc:
 }
 
 /**
- * Find TLKM device where the page for the given virtual address is currently located.
- *
- * @param vaddr virtual address of page
- * @param mm mm struct of page
- * @return TLKM PCIe where the page is located, or NULL (page is located in host memory)
- */
-struct tlkm_pcie_device *get_owning_device(uint64_t vaddr, struct mm_struct *mm)
-{
-	int i;
-	struct tlkm_device *d;
-	struct tlkm_pcie_device *pdev;
-	struct tlkm_pcie_svm_data *svm_data;
-	struct vmem_region *region;
-
-	for (i = 0; i < tlkm_bus_num_devices(); ++i) {
-		d = tlkm_bus_get_device(i);
-		if (d->vendor_id != 0x10EE || d->product_id != 0x7038)
-			continue;
-		pdev = d->private_data;
-		svm_data = pdev->svm_data;
-		if (!svm_data || svm_data->mm != mm)
-			continue;
-
-		if (list_empty(&svm_data->vmem_regions))
-			continue;
-		list_for_each_entry(region, &svm_data->vmem_regions, list) {
-			if (region->vaddr == vaddr)
-				return pdev;
-			if (region->vaddr > vaddr)
-				break;
-		}
-	}
-	return NULL;
-}
-
-/**
  * Migrate multiple pages with contiguous virtual addresses to device memory.
  * Pages may reside in different memories. Function determines source memories
  * and calls the respective sub-routines.
@@ -1540,50 +1597,113 @@ struct tlkm_pcie_device *get_owning_device(uint64_t vaddr, struct mm_struct *mm)
 static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 				 int npages, bool drop_failed)
 {
-	int r, res = 0, i, j, ncontiguous;
+	int r, res = 0, i, j, ndevs, next_dev, nmigrate;
+	uint64_t curr_addr;
+	unsigned long next_start, end;
+	struct tlkm_device *d;
 	struct tlkm_pcie_device *src_dev;
-	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
+	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data, *src_svm;
+	struct list_head *vmem_intervals;
+	struct vmem_interval_list_entry *entry, *next_entry;
 
 	DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM,
 	       "migrate %0d pages with base address %llx to device memory",
 	       npages, vaddr);
 
-	// search for pages residing in a common memory and initiate migration
-	i = 0;
-	while (i < npages) {
-		src_dev = get_owning_device(vaddr + i * PAGE_SIZE,
-					    svm_data->mm);
-		if (src_dev == pdev) {
-			++i;
+	ndevs = tlkm_bus_num_devices();
+	vmem_intervals = kcalloc(ndevs, sizeof(*vmem_intervals), GFP_KERNEL);
+	if (!vmem_intervals) {
+		DEVERR(pdev->parent->dev_id, "failed to allocate array");
+		return -ENOMEM;
+	}
+
+	// get virtual memory intervals of all devices in same process
+	for (i = 0; i < ndevs; ++i) {
+		INIT_LIST_HEAD(&vmem_intervals[i]);
+		d = tlkm_bus_get_device(i);
+		if (d->vendor_id != 0x10EE || d->product_id != 0x7038)
+			continue;
+		src_dev = d->private_data;
+		src_svm = src_dev->svm_data;
+		if (!src_svm || src_svm->mm != svm_data->mm)
+			continue;
+
+		if (search_vmem_intervals(src_svm, &vmem_intervals[i], vaddr,
+					  npages)) {
+			DEVERR(src_dev->parent->dev_id,
+			       "error during search for vmem intervals");
 			continue;
 		}
+	}
 
-		ncontiguous = 1;
-		while (i + ncontiguous < npages) {
-			if (get_owning_device(
-				vaddr + (i + ncontiguous) * PAGE_SIZE,
-				svm_data->mm) == src_dev)
-				++ncontiguous;
-			else
-				break;
-		}
-		r = src_dev ? svm_migrate_dev_to_dev(src_dev, pdev,
-						     vaddr + i * PAGE_SIZE,
-						     ncontiguous)
-			    : svm_migrate_ram_to_dev(pdev,
-						     vaddr + i * PAGE_SIZE,
-						     ncontiguous);
-		if (r) {
-			res = r;
-			if (drop_failed) {
-				for (j = 0; j < ncontiguous; ++j)
-					drop_page_fault(svm_data, vaddr +
-								  (i + j) *
-								  PAGE_SIZE);
+	i = 0;
+	curr_addr = vaddr;
+	end = vaddr + npages * PAGE_SIZE;
+	while (i < npages) {
+		// search next interval on any device
+		next_dev = -1;
+		next_start = -1;
+		next_entry = NULL;
+		curr_addr = vaddr + i * PAGE_SIZE;
+		for (j = 0; j < ndevs; ++j) {
+			if (list_empty(&vmem_intervals[j]))
+				continue;
+
+			entry = list_first_entry(&vmem_intervals[j],
+			struct vmem_interval_list_entry, list);
+			if (entry->interval_node->start < next_start) {
+				next_start = entry->interval_node->start;
+				next_dev = j;
+				next_entry = entry;
 			}
 		}
-		i += ncontiguous;
+
+		// interval is located in RAM
+		if (next_start > curr_addr) {
+			nmigrate = (min(next_start, end) - curr_addr)
+				>> PAGE_SHIFT;
+			r = svm_migrate_ram_to_dev(pdev, curr_addr, nmigrate);
+			if (r) {
+				res = r;
+				if (drop_failed) {
+					for (j = 0; j < nmigrate; ++j)
+						drop_page_fault(svm_data,
+								curr_addr +
+								j * PAGE_SIZE);
+				}
+			}
+			i += nmigrate;
+			curr_addr = vaddr + i * PAGE_SIZE;
+		}
+
+		// migrate next interval
+		if (next_start != -1) {
+			nmigrate =
+				(min(next_entry->interval_node->last + 1, end) -
+				 curr_addr) >> PAGE_SHIFT;
+			src_dev = tlkm_bus_get_device(next_dev)->private_data;
+			if (src_dev != pdev) {
+				r = svm_migrate_dev_to_dev(src_dev, pdev,
+							   curr_addr, nmigrate);
+				if (r) {
+					res = r;
+					if (drop_failed) {
+						for (j = 0; j < nmigrate; ++j)
+							drop_page_fault(
+								svm_data,
+								curr_addr +
+								j * PAGE_SIZE);
+					}
+				}
+			}
+			list_del(&next_entry->list);
+			kfree(next_entry);
+			i += nmigrate;
+		}
+
 	}
+
+	kfree(vmem_intervals);
 	return res;
 }
 
@@ -1649,10 +1769,13 @@ int pcie_svm_user_managed_migration_to_device(struct tlkm_device *inst,
 int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 					   uint64_t vaddr, uint64_t size)
 {
-	int r, res = 0, i, npages, ncontiguous;
-	uint64_t va_start, va_end;
+	int r, res = 0, i, npages, ndevs, nmigrate;
+	unsigned long va_start, va_end, start, end;
+	struct tlkm_device *d;
 	struct tlkm_pcie_device *pdev = inst->private_data, *src_dev;
-	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
+	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data, *src_svm;
+	struct list_head vmem_intervals;
+	struct vmem_interval_list_entry *entry;
 
 	if (!svm_data) {
 		DEVERR(pdev->parent->dev_id, "SVM not supported by bitstream");
@@ -1673,26 +1796,38 @@ int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 	mmget(svm_data->mm);
 	mmap_write_lock(svm_data->mm);
 
-	// search for pages residing in a common memory and initiate migration
-	i = 0;
-	while (i < npages) {
-		src_dev = get_owning_device(va_start + i * PAGE_SIZE, svm_data->mm);
-		if (!src_dev) {
-			++i;
+	// search and migrate intervals from all devices
+	ndevs = tlkm_bus_num_devices();
+	INIT_LIST_HEAD(&vmem_intervals);
+	for (i = 0; i < ndevs; ++i) {
+		d = tlkm_bus_get_device(i);
+		if (d->vendor_id != 0x10EE || d->product_id != 0x7038)
+			continue;
+		src_dev = d->private_data;
+		src_svm = src_dev->svm_data;
+		if (!src_svm || src_svm->mm != svm_data->mm)
+			continue;
+
+		if (search_vmem_intervals(src_svm, &vmem_intervals, vaddr,
+					  npages)) {
+			DEVERR(src_dev->parent->dev_id,
+			       "error during search for vmem intervals");
 			continue;
 		}
 
-		ncontiguous = 1;
-		while (i + ncontiguous < npages) {
-			if (get_owning_device(va_start + (i + ncontiguous) * PAGE_SIZE,svm_data->mm) == src_dev)
-				++ncontiguous;
-			else
-				break;
+		while (!list_empty(&vmem_intervals)) {
+			entry = list_first_entry(&vmem_intervals,
+			struct vmem_interval_list_entry, list);
+			start = max(va_start, entry->interval_node->start);
+			end = min(entry->interval_node->last + 1, va_end);
+			nmigrate = (end - start) >> PAGE_SHIFT;
+			r = svm_migrate_dev_to_ram(src_dev, start, nmigrate);
+			if (r)
+				res = r;
+
+			list_del(&entry->list);
+			kfree(entry);
 		}
-		r = svm_migrate_dev_to_ram(src_dev, va_start + i * PAGE_SIZE, ncontiguous);
-		if (r)
-			res = r;
-		i += ncontiguous;
 	}
 
 	mmap_write_unlock(svm_data->mm);
@@ -1764,6 +1899,71 @@ static int pack_array(uint64_t *array, int size)
 }
 
 /**
+ * Perform a PTW to find the device private page for a virtual address
+ *
+ * @param svm_data SVM data struct
+ * @param vaddr virtual address
+ * @return pointer to device private page or NULL if the requested page is not
+ * present in device memory
+ */
+static struct page *svm_perform_ptw(struct tlkm_pcie_svm_data *svm_data,
+				    uint64_t vaddr)
+{
+	pgd_t *pgd;
+	p4d_t *p4d;
+	pud_t *pud;
+	pmd_t *pmd;
+	pte_t *pte;
+	spinlock_t *ptl;
+	swp_entry_t swp;
+	struct page *page;
+
+	pgd = pgd_offset(svm_data->mm, vaddr);
+	if (pgd_none(*pgd) || unlikely(pgd_bad(*pgd))) {
+		DEVWRN(svm_data->pdev->parent->dev_id,
+		       "PGD not found during page table walk");
+		goto no_pgd;
+	}
+	p4d = p4d_offset(pgd, vaddr);
+	if (p4d_none(*p4d) || unlikely(p4d_bad(*p4d))) {
+		DEVWRN(svm_data->pdev->parent->dev_id,
+		       "P4D not found during page table walk");
+		goto no_p4d;
+	}
+	pud = pud_offset(p4d, vaddr);
+	if (pud_none(*pud) || unlikely(pud_bad(*pud))) {
+		DEVWRN(svm_data->pdev->parent->dev_id,
+		       "PUD not found during page table walk");
+		goto no_pud;
+	}
+	pmd = pmd_offset(pud, vaddr);
+	if (pmd_none(*pmd))
+		goto no_pmd;
+	pte = pte_offset_map_lock(svm_data->mm, pmd, vaddr, &ptl);
+	if (pte_none(*pte) || pte_present(*pte))
+		goto no_pte_or_present;
+	swp = pte_to_swp_entry(*pte);
+	if (!is_device_private_entry(swp))
+		goto not_dev_priv;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 14, 0)
+	page = pfn_swap_entry_to_page(swp);
+#else
+	page = device_private_entry_to_page(swp);
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(5,14,0) */
+	pte_unmap_unlock(pte, ptl);
+	return page;
+
+not_dev_priv:
+no_pte_or_present:
+	pte_unmap_unlock(pte, ptl);
+no_pmd:
+no_pud:
+no_p4d:
+no_pgd:
+	return NULL;
+}
+
+/**
  * Handle device page faults by the on-FPGA IOMMU
  *
  * @param work work struct containing required data for the cmwq worker thread
@@ -1772,8 +1972,8 @@ static void handle_iommu_page_fault(struct work_struct *work)
 {
 	int res, i, nfaults, ncontiguous;
 	uint64_t rval, vaddrs[MAX_NUM_FAULTS];
-	uint8_t failed_vaddrs[MAX_NUM_FAULTS];
 	uint64_t dev_addr;
+	struct page *page;
 	struct page_fault_work_env *env =
 		container_of(work, typeof(*env), work);
 	struct tlkm_pcie_device *pdev = env->pdev;
@@ -1782,8 +1982,6 @@ static void handle_iommu_page_fault(struct work_struct *work)
 	DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM,
 	       "start IOMMU page fault handling");
 
-	for (i = 0; i < MAX_NUM_FAULTS; ++i)
-		failed_vaddrs[i] = 0;
 	nfaults = 0;
 	while (1) {
 		// stop issuing additional faults during fault handling
@@ -1807,10 +2005,20 @@ static void handle_iommu_page_fault(struct work_struct *work)
 		mmap_write_lock(svm_data->mm);
 
 		for (i = 0; i < nfaults; ++i) {
-			dev_addr = vaddr_to_dev_addr(svm_data, vaddrs[i]);
-			if (dev_addr != -1) {
-				add_tlb_entry(svm_data, vaddrs[i] & VADDR_MASK,
-					      dev_addr);
+			if (is_page_present(svm_data, vaddrs[i])) {
+				page = svm_perform_ptw(svm_data, vaddrs[i]);
+				if (!page) {
+					DEVERR(pdev->parent->dev_id,
+					       "PTW for address translation failed");
+					drop_page_fault(svm_data, vaddrs[i]);
+				} else {
+					dev_addr = pfn_to_dev_addr(svm_data,
+								   page_to_pfn(
+									   page));
+					add_tlb_entry(svm_data,
+						      vaddrs[i] & VADDR_MASK,
+						      dev_addr);
+				}
 				vaddrs[i] = 0;
 			}
 		}
@@ -1868,7 +2076,10 @@ static int
 svm_tlb_invalidate_range_start(struct mmu_notifier *subscription,
 			       const struct mmu_notifier_range *range)
 {
-	unsigned long addr;
+	int npages, inv_npages;
+	unsigned long inv_start, inv_end;
+	struct list_head intervals;
+	struct vmem_interval_list_entry *entry;
 	struct svm_mmu_notifier_env *env = container_of(
 		subscription, struct svm_mmu_notifier_env, notifier);
 
@@ -1882,14 +2093,25 @@ svm_tlb_invalidate_range_start(struct mmu_notifier *subscription,
 	)
 		goto skip_invalidation;
 
-	// TODO check whether region is present on device using the vmem list before invalidating TLB?
-	//  -> beneficial e.g. if a huge page is splitted on host or some other memory freed
-	invalidate_tlb_range(env->svm_data, range->start,
-			     (range->end - range->start) >> PAGE_SHIFT);
-	wmb();
+	// check whether region is present on device using the vmem list before invalidating TLB
+	INIT_LIST_HEAD(&intervals);
+	npages = (range->end - range->start) >> PAGE_SHIFT;
+	if (search_vmem_intervals(env->svm_data, &intervals, range->start,
+				  npages))
+		DEVERR(env->svm_data->pdev->parent->dev_id,
+		       "error during search for vmem intervals");
+	while (!list_empty(&intervals)) {
+		entry = list_first_entry(&intervals,
+			struct vmem_interval_list_entry, list);
+		inv_start = max(entry->interval_node->start, range->start);
+		inv_end = min(entry->interval_node->last + 1, range->end);
+		inv_npages = (inv_end - inv_start) >> PAGE_SHIFT;
+		invalidate_tlb_range(env->svm_data, inv_start, inv_npages);
+		wmb();
+		remove_vmem_interval(env->svm_data, inv_start, inv_npages);
 
-	for (addr = range->start; addr < range->end; addr += PAGE_SIZE) {
-		remove_vmem_region(env->svm_data, addr);
+		list_del(&entry->list);
+		kfree(entry);
 	}
 
 skip_invalidation:
@@ -2016,22 +2238,13 @@ void pcie_teardown_svm(struct tlkm_device *inst)
 {
 	struct tlkm_pcie_device *pdev = inst->private_data;
 	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
-	struct vmem_region *pos, *tmp;
 
 	writeq(0, &svm_data->mmu_regs->intr_enable);
 	writeq(MMU_DEACTIVATE, &svm_data->mmu_regs->cmd);
 	writeq(MMU_INVALIDATE_ALL, &svm_data->mmu_regs->cmd);
 
-	if (!list_empty(&svm_data->vmem_regions)) {
-		list_for_each_entry_safe(pos, tmp, &svm_data->vmem_regions, list) {
-			list_del(&pos->list);
-			kfree(pos);
-		}
-	}
-
-	mmu_notifier_put(&svm_data->notifier_env->notifier);
-
 	flush_workqueue(svm_data->page_fault_queue);
+	mmu_notifier_put(&svm_data->notifier_env->notifier);
 
 	DEVLOG(inst->dev_id, TLKM_LF_SVM, "torn down SVM successfully");
 }
@@ -2208,7 +2421,7 @@ int pcie_init_svm(struct tlkm_pcie_device *pdev)
 	mem_block->size = PHYS_MEM_SIZE;
 	INIT_LIST_HEAD(&svm_data->free_mem_blocks);
 	list_add(&mem_block->list, &svm_data->free_mem_blocks);
-	INIT_LIST_HEAD(&svm_data->vmem_regions);
+	svm_data->vmem_intervals = RB_ROOT_CACHED;
 
 	// initialize work queues
 	svm_data->page_fault_queue =

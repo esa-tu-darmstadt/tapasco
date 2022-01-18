@@ -30,6 +30,7 @@
 #include <linux/swap.h>
 #include <linux/swapops.h>
 #include <linux/sched/mm.h>
+#include <linux/interval_tree.h>
 #include <tlkm/tlkm_bus.h>
 #include "pcie/pcie_device.h"
 #include "pcie/pcie.h"
@@ -105,7 +106,7 @@ struct tlkm_pcie_svm_data {
 	unsigned long base_pfn;
 	struct list_head free_mem_blocks;
 	struct mutex mem_block_mutex;
-	struct list_head vmem_regions;
+	struct rb_root_cached vmem_intervals;
 
 	// work queues
 	struct workqueue_struct *page_fault_queue;
@@ -168,11 +169,10 @@ struct device_memory_block {
 	uint64_t size;
 };
 
-
-struct vmem_region {
+/* list entry for list of interval nodes */
+struct vmem_interval_list_entry {
 	struct list_head list;
-	uint64_t vaddr;
-	struct page *page;
+	struct interval_tree_node *interval_node;
 };
 
 #endif /* defined(EN_SVM) && LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0) */
