@@ -765,6 +765,7 @@ static int init_network_migration(struct tlkm_pcie_device *src_dev, struct tlkm_
 	struct tlkm_pcie_svm_data *src_svm = src_dev->svm_data;
 	struct tlkm_pcie_svm_data *dst_svm = dst_dev->svm_data;
 
+	writeq(dst_svm->mac_addr, &src_svm->dma_regs->dst_mac);
 	i = 0;
 	while (i < npages) {
 		ncmd = min((npages - i), (int)PAGE_DMA_MAX_NPAGES);
@@ -2487,6 +2488,13 @@ int pcie_init_svm(struct tlkm_pcie_device *pdev)
 		DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM,
 		       "PageDMA capable of network page migrations");
 		svm_data->network_dma_enabled = true;
+
+		// generate and set MAC address
+		svm_data->mac_addr = MAC_PREFIX
+				     | (pdev->pdev->bus->number << 16)
+				     | (PCI_SLOT(pdev->pdev->devfn) << 8)
+				     | PCI_FUNC(pdev->pdev->devfn);
+		writeq(svm_data->mac_addr, &svm_data->dma_regs->own_mac);
 	}
 	svm_data->pdev = pdev;
 	pdev->svm_data = svm_data;

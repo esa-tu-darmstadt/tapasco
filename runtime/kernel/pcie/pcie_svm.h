@@ -63,6 +63,7 @@
 
 // DMA
 #define NETWORK_PAGE_DMA_ID 0x5A6ED4AE
+#define MAC_PREFIX (0x005D03UL << 24)
 #define PAGE_DMA_STAT_BUSY (1UL)
 #define PAGE_DMA_STAT_INTR_PEND (1UL << 1)
 #define PAGE_DMA_STAT_ERROR_FLAGS (3UL << 2)
@@ -102,6 +103,7 @@ struct tlkm_pcie_svm_data {
 	struct mmu_regs *mmu_regs;
 	struct page_dma_regs *dma_regs;
 	bool network_dma_enabled;
+	uint64_t mac_addr;
 
 	unsigned long base_pfn;
 	struct list_head free_mem_blocks;
@@ -146,6 +148,8 @@ struct page_dma_regs {
 	uint64_t h2c_dst_addr;
 	uint64_t h2c_start_len;
 	uint64_t id;
+	uint64_t own_mac;
+	uint64_t dst_mac;
 };
 
 /* envelope around work struct for IOMMU page fault handling */
