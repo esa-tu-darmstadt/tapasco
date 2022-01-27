@@ -357,7 +357,6 @@ static int search_vmem_intervals(struct tlkm_pcie_svm_data *svm_data,
  * Return whether the page for a given virtual address is present on the device.
  */
 static inline bool
-
 is_page_present(struct tlkm_pcie_svm_data *svm_data, uint64_t vaddr)
 {
 	if (interval_tree_iter_first(&svm_data->vmem_intervals, vaddr,
@@ -434,6 +433,8 @@ create_mem_block_entry(uint64_t dev_addr, uint64_t size)
 {
 	struct device_memory_block *mem_block =
 		kmalloc(sizeof(*mem_block), GFP_KERNEL);
+	if (!mem_block)
+		return NULL;
 	mem_block->base_addr = dev_addr;
 	mem_block->size = size;
 	return mem_block;
@@ -458,7 +459,12 @@ static void free_device_memory(struct tlkm_pcie_svm_data *svm_data,
 	if (list_empty(&svm_data->free_mem_blocks)) {
 		// list is empty, add freed memory as new block
 		new_mem_block = create_mem_block_entry(dev_addr, size);
-		list_add(&new_mem_block->list, &svm_data->free_mem_blocks);
+		if (!new_mem_block)
+			DEVERR(svm_data->pdev->parent->dev_id,
+			       "failed to allocate memory for new mem block entry");
+		else
+			list_add(&new_mem_block->list,
+				 &svm_data->free_mem_blocks);
 		goto unlock;
 	}
 
@@ -489,8 +495,12 @@ static void free_device_memory(struct tlkm_pcie_svm_data *svm_data,
 			} else {
 				new_mem_block =
 					create_mem_block_entry(dev_addr, size);
-				list_add_tail(&new_mem_block->list,
-					      &mem_block->list);
+				if (!new_mem_block)
+					DEVERR(svm_data->pdev->parent->dev_id,
+					       "failed to allocate memory for new mem block entry");
+				else
+					list_add_tail(&new_mem_block->list,
+						      &mem_block->list);
 			}
 			break;
 		}
@@ -505,8 +515,12 @@ static void free_device_memory(struct tlkm_pcie_svm_data *svm_data,
 			} else {
 				new_mem_block =
 					create_mem_block_entry(dev_addr, size);
-				list_add(&new_mem_block->list,
-					 &mem_block->list);
+				if (!new_mem_block)
+					DEVERR(svm_data->pdev->parent->dev_id,
+					       "failed to allocate memory for new mem block entry");
+				else
+					list_add(&new_mem_block->list,
+						 &mem_block->list);
 			}
 			break;
 		}
