@@ -946,7 +946,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>7ffa0c13</spirit:value>
+            <spirit:value>1281398c</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -962,7 +962,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>7ffa0c13</spirit:value>
+            <spirit:value>1281398c</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -976,7 +976,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>f92e9879</spirit:value>
+            <spirit:value>8638dedc</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -2678,6 +2678,13 @@
         </spirit:wire>
       </spirit:port>
     </spirit:ports>
+    <spirit:modelParameters>
+      <spirit:modelParameter xsi:type="spirit:nameValueTypeType" spirit:dataType="std_logic_vector">
+        <spirit:name>mac_addr</spirit:name>
+        <spirit:displayName>Mac Addr</spirit:displayName>
+        <spirit:value spirit:format="bitString" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.mac_addr" spirit:bitStringLength="48">0x000000000000</spirit:value>
+      </spirit:modelParameter>
+    </spirit:modelParameters>
   </spirit:model>
   <spirit:choices>
     <spirit:choice>
@@ -2712,7 +2719,7 @@
       <spirit:file>
         <spirit:name>src/mkNetworkPageDMA.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_0e1b9aad</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_5b27c592</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -2747,13 +2754,18 @@
       <spirit:file>
         <spirit:name>xgui/NetworkPageDMA_v1_0.tcl</spirit:name>
         <spirit:fileType>tclSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_f92e9879</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_8638dedc</spirit:userFileType>
         <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
   </spirit:fileSets>
   <spirit:description>NetworkPageDMA</spirit:description>
   <spirit:parameters>
+    <spirit:parameter>
+      <spirit:name>mac_addr</spirit:name>
+      <spirit:displayName>Mac Addr</spirit:displayName>
+      <spirit:value spirit:format="bitString" spirit:resolve="user" spirit:id="PARAM_VALUE.mac_addr" spirit:bitStringLength="48">0x000000000000</spirit:value>
+    </spirit:parameter>
     <spirit:parameter>
       <spirit:name>Component_Name</spirit:name>
       <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.Component_Name" spirit:order="1">mkNetworkPageDMA_v1_0</spirit:value>
@@ -2790,7 +2802,7 @@
       <xilinx:displayName>NetworkPageDMA</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2022-01-06T14:40:19Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2022-01-26T10:42:01Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
@@ -2800,9 +2812,10 @@
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="0b200e15"/>
       <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="edee22e4"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="33b07054"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="d19ad0a9"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="2c6f0da1"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="6130ee34"/>
-      <xilinx:checksum xilinx:scope="parameters" xilinx:value="c44f9f50"/>
+      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="6963a0a2"/>
+      <xilinx:checksum xilinx:scope="parameters" xilinx:value="655df371"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>
 </spirit:component>

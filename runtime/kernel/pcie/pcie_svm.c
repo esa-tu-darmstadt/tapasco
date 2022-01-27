@@ -2544,13 +2544,7 @@ int pcie_init_svm(struct tlkm_pcie_device *pdev)
 		DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM,
 		       "PageDMA capable of network page migrations");
 		svm_data->network_dma_enabled = true;
-
-		// generate and set MAC address
-		svm_data->mac_addr = MAC_PREFIX
-				     | (pdev->pdev->bus->number << 16)
-				     | (PCI_SLOT(pdev->pdev->devfn) << 8)
-				     | PCI_FUNC(pdev->pdev->devfn);
-		writeq(svm_data->mac_addr, &svm_data->dma_regs->own_mac);
+		svm_data->mac_addr = readq(&svm_data->dma_regs->own_mac);
 	}
 	svm_data->pdev = pdev;
 	pdev->svm_data = svm_data;

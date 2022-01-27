@@ -21,6 +21,11 @@
 # FIXME make network port configurable (see sfpplus feature as reference)
 if {[tapasco::get_feature_option "SVM" "network_dma"] == "true"} {
   proc create_custom_subsystem_network_svm {} {
+    set mac_addr [tapasco::get_feature_option "SVM" "mac_addr"]
+    if {$mac_addr == "false"} {
+      puts "ERROR: parameter \"mac_addr\" required if network page migrations are enabled"
+      exit 1
+    }
     set pcie_aclk [tapasco::subsystem::get_port "host" "clk"]
     set pcie_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
 
@@ -51,6 +56,8 @@ if {[tapasco::get_feature_option "SVM" "network_dma"] == "true"} {
         CONFIG.GT_REF_CLK_FREQ {156.25} \
         CONFIG.TX_FLOW_CONTROL {1} \
         CONFIG.RX_FLOW_CONTROL {1} \
+        CONFIG.TX_SA_GPP $mac_addr \
+        CONFIG.TX_SA_PPP $mac_addr \
         CONFIG.INCLUDE_RS_FEC {1} \
         CONFIG.ENABLE_AXI_INTERFACE {0} \
         CONFIG.INCLUDE_STATISTICS_COUNTERS {0} \
@@ -250,7 +257,9 @@ namespace eval svm {
       set design_aclk [tapasco::subsystem::get_port "design" "clk"]
 
       if {[tapasco::get_feature_option "SVM" "network_dma"] == "true"} {
+        set mac_addr [tapasco::get_feature_option "SVM" "mac_addr"]
         set page_dma [tapasco::ip::create_network_page_dma dma_0]
+        set_property -dict [list CONFIG.mac_addr $mac_addr] $page_dma
       } else {
         set page_dma [tapasco::ip::create_page_dma dma_0]
       }
