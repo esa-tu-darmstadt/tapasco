@@ -584,11 +584,14 @@ static inline void
 free_device_page(struct tlkm_pcie_device *pdev, struct page *page)
 {
 	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
-	if (!queue_dev_mem_free_work(pdev, pfn_to_dev_addr(svm_data,
-							   page_to_pfn(page)),
-				     PAGE_SIZE))
-		DEVERR(pdev->parent->dev_id,
-		       "failed to queue work struct for freeing device memory region");
+	if (page->zone_device_data) {
+		if (!queue_dev_mem_free_work(pdev, pfn_to_dev_addr(svm_data,
+								   page_to_pfn(
+									   page)),
+					     PAGE_SIZE))
+			DEVERR(pdev->parent->dev_id,
+			       "failed to queue work struct for freeing device memory region");
+	}
 }
 
 /**
@@ -962,6 +965,7 @@ retry:
 		get_page(dst_pages[i]);
 		lock_page(dst_pages[i]);
 		migrate.dst[i] = migrate_pfn(base_pfn + i) | MIGRATE_PFN_LOCKED;
+		dst_pages[i]->zone_device_data = pdev;
 	}
 
 
@@ -1239,6 +1243,7 @@ retry:
 		get_page(dst_pages[i]);
 		lock_page(dst_pages[i]);
 		migrate.dst[i] = migrate_pfn(base_pfn + i) | MIGRATE_PFN_LOCKED;
+		dst_pages[i]->zone_device_data = dst_dev;
 	}
 
 	i = 0;
@@ -1332,6 +1337,24 @@ retry:
 	if (i < npages)
 		add_tlb_entry(dst_svm, vaddr + i * PAGE_SIZE,
 			      pfn_to_dev_addr(dst_svm, base_pfn + i));
+
+	i = 0;
+	while (i < npages) {
+		ncontiguous = 1;
+		src_pages[i]->zone_device_data = NULL;
+		while (i + ncontiguous < npages) {
+			if (is_contiguous_page(src_pages[i + ncontiguous], src_pages[i + ncontiguous - 1])) {
+				src_pages[i + ncontiguous]->zone_device_data = NULL;
+				++ncontiguous;
+			}
+			else {
+				break;
+			}
+		}
+		if (!queue_dev_mem_free_work(src_dev, pfn_to_dev_addr(src_svm, page_to_pfn(src_pages[i])), ncontiguous * PAGE_SIZE))
+			DEVERR(src_dev->parent->dev_id, "failed to queue work struct to free memory");
+		i += ncontiguous;
+	}
 
 	migrate_vma_finalize(&migrate);
 
@@ -1551,6 +1574,25 @@ retry:
 			goto fail_migrate;
 		}
 	}
+
+	i = 0;
+	while (i < npages) {
+		src_pages[i]->zone_device_data = NULL;
+		ncontiguous = 1;
+		while (i + ncontiguous < npages) {
+			if (is_contiguous_page(src_pages[i + ncontiguous], src_pages[i + ncontiguous - 1])) {
+				src_pages[i + ncontiguous]->zone_device_data = NULL;
+				++ncontiguous;
+			} else {
+				break;
+			}
+		}
+
+		if (!queue_dev_mem_free_work(pdev, pfn_to_dev_addr(svm_data, page_to_pfn(src_pages[i])), ncontiguous * PAGE_SIZE))
+			DEVERR(pdev->parent->dev_id, "failed to queue work struct to free memory");
+		i += ncontiguous;
+	}
+
 	migrate_vma_finalize(&migrate);
 
 	// remove virtual memory interval from tree
