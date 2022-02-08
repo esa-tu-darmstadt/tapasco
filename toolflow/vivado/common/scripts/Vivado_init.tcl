@@ -18,6 +18,3 @@
 #
 
 enable_beta_device "*xczu9eg*"
-
-puts "Using board repository $::env(TAPASCO_HOME_TCL)/board_parts"
-set_param board.repoPaths [list "$::env(TAPASCO_HOME_TCL)/board_parts"]
