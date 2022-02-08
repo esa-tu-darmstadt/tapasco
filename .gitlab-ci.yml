@@ -27,8 +27,8 @@ test_tapasco_centos_7:
   image: centos:7
   extends: .test_tapasco_centos
 
-test_tapasco_centos_8:
-  image: centos:8
+test_tapasco_rockylinux_8:
+  image: rockylinux:8
   extends: .test_tapasco_centos
 
 .test_tapasco_ubuntu:
@@ -90,8 +90,8 @@ build_scala_tapasco_centos_7:
   image: centos:7
   extends: .build_scala_tapasco_centos
 
-build_scala_tapasco_centos_8:
-  image: centos:8
+build_scala_tapasco_rockylinux_8:
+  image: rockylinux:8
   extends: .build_scala_tapasco_centos
 
 .build_scala_tapasco_fedora:
@@ -214,12 +214,12 @@ build_kernel_arm64v8_debug:
     paths:
       - runtime/kernel/tlkm.ko
 
-build_kernel_centos_8:
-  image: centos:8
+build_kernel_rockylinux_8:
+  image: rockylinux:8
   extends: .build_kernel_fedora
 
-build_kernel_centos_8_debug:
-  image: centos:8
+build_kernel_rockylinux_8_debug:
+  image: rockylinux:8
   variables:
     MODE: "all"
   extends: .build_kernel_fedora
@@ -272,14 +272,14 @@ build_kernel_fedora_31_debug:
       - build/tapasco-*-Linux.rpm
   extends: .build_tapasco
 
-build_tapasco_centos_8:
-  image: centos:8
+build_tapasco_rockylinux_8:
+  image: rockylinux:8
   extends: .build_tapasco_fedora
 
-build_tapasco_centos_8_debug:
+build_tapasco_rockylinux_8_debug:
   variables:
     MODE: "debug"
-  image: centos:8
+  image: rockylinux:8
   extends: .build_tapasco_fedora
 
 build_tapasco_fedora_30:
