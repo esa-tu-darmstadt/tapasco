@@ -536,7 +536,7 @@ namespace eval ::tapasco::ip {
         puts "  processing $intf: [dict get $addr $intf kind] ..."
         switch [dict get $addr $intf "kind"] {
           "register" {
-            set kind [format "%d" [regsub {.*target_ip_([0-9][0-9]).*} $intf {\1}]]
+            set kind [scan [regsub {.*target_ip_([0-9][0-9]).*} $intf {\1}] "%d"]
             set kid [dict get [::tapasco::get_composition] $kind id]
             set vlnv [dict get [::tapasco::get_composition] $kind vlnv]
 

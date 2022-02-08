@@ -54,23 +54,6 @@ tapasco compose [precision_counter x 1] @ 100 Mhz --features 'Debug { interfaces
 This will attach a System ILA to the `S00_AXI` interface nets of the first
 `precision_counter` instance.
 
-The `nets` mode allows to connect to arbitrary nets (including nets within IP
-cores which would not be visible in IP integrator). For this reason, it requires
-two synthesis runs: First, the whole design without the ILA must be synthesized
-into a netlist; then the ILA core is instantiated using a constraints file. This
-requires a re-run of synthesis to take effect. Nets can be specified with
-wildcards, patterns can be tested on a synthesized design using the Tcl console
-in Vivado (use `get_bd_nets <pattern>` to test the pattern).
-
-Example:
-
-```
-tapasco compose [precision_counter x 1] @ 100 Mhz --features 'Debug { nets: "{system_i/arch/target_ip_00_000/* system_i/arch/irq*}" }'
-```
-
-This would attach an ILA core to all nets attached to the first instance of the
-first PE and all interrupt outputs of the entire Architecture. 
-
 Exercise an ILA <a name="use-ila"/>
 ---------------
 

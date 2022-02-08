@@ -176,6 +176,8 @@ namespace eval platform {
     insert_regslice "host_arch" true "/host/M_ARCH" "/arch/S_ARCH" "/clocks_and_resets/design_clk" "/clocks_and_resets/design_interconnect_aresetn" ""
     insert_regslice "l2_cache" [tapasco::is_feature_enabled "Cache"] "/memory/cache_l2_0/M0_AXI" "/memory/mig/C0_DDR4_S_AXI" "/clocks_and_resets/mem_clk" "/clocks_and_resets/mem_peripheral_aresetn" "/memory"
 
+    insert_regslice "host_mmu" [tapasco::is_feature_enabled "SVM"] "/host/M_MMU" "/memory/S_MMU" "/clocks_and_resets/host_clk" "/clocks_and_resets/host_interconnect_aresetn" ""
+
     if {[is_regslice_enabled "pe" false]} {
       set ips [get_bd_cells /arch/target_ip_*]
       foreach ip $ips {

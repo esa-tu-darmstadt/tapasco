@@ -45,7 +45,8 @@
 	_LF(DMA, (1 << 12))                                                    \
 	_LF(STATUS, (1 << 13))                                                 \
 	_LF(PLATFORM, (1 << 14))                                               \
-	_LF(HSA, (1 << 15))
+	_LF(HSA, (1 << 15))                                                    \
+	_LF(SVM, (1 << 16))
 
 typedef enum {
 #define _LF(name, level) TLKM_LF_##name = level,

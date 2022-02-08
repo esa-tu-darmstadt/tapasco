@@ -49,3 +49,7 @@ create_pblock pblock_axi_pcie
 resize_pblock pblock_axi_pcie -add SLR0
 set_property IS_SOFT TRUE [get_pblocks pblock_axi_pcie]
 add_cells_to_pblock pblock_axi_pcie [get_cells [list system_i/host/axi_pcie3_0]]
+
+
+
+set_false_path -from [get_pins -hierarchical -filter { NAME =~  "*design_rst_gen*" && REF_PIN_NAME =~  "C" }] -to [get_pins -hierarchical -filter { NAME =~  "*network/dclk_wiz*" }]

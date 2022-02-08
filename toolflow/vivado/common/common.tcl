@@ -106,7 +106,7 @@ namespace eval tapasco {
 
   # Returns the Tapasco version.
   proc get_tapasco_version {} {
-    return "2020.10"
+    return "2021.1"
   }
 
   # Returns the interface pin groups for all AXI MM interfaces on cell.

@@ -1,0 +1,16 @@
+[package]
+name = "libtapasco_svm"
+version = "1.0.0"
+authors = ["Torben Kalhof kalkhof@esa.tu-darmstadt.de>"]
+edition = "2018"
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = "fat"
+
+[dependencies]
+tapasco = { path = "../../../libtapasco" }
+snafu = "0.6.6"
+log = "0.4.14"
+env_logger = "0.9.0"

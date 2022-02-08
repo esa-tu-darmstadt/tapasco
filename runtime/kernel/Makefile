@@ -12,6 +12,10 @@ CROSS_COMPILE?=arm-linux-gnueabihf-
 export CROSS_COMPILE
 endif
 
+ifeq ($(EN_SVM), 1)
+CPPFLAGS+=-DEN_SVM
+endif
+
 MODULE_DIR := $(PWD)
 
 CPPFLAGS+=-Werror -Wno-missing-attributes -I$(MODULE_DIR) \
