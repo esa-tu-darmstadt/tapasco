@@ -156,7 +156,7 @@ namespace eval platform {
   # Inserts a new register slice between given master and slave (for SLR crossing)
   proc insert_regslice {name default master slave clock reset subsystem} {
     if {[is_regslice_enabled $name $default]} {
-      set regslice [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 $subsystem/regslice_${name}]
+      set regslice [tapasco::ip::create_axi_reg_slice $subsystem/regslice_${name}]
       set_property -dict [list CONFIG.REG_AW {15} CONFIG.REG_AR {15} CONFIG.REG_W {15} CONFIG.REG_R {15} CONFIG.REG_B {15} CONFIG.USE_AUTOPIPELINING {1}] $regslice
       delete_bd_objs [get_bd_intf_nets -of_objects [get_bd_intf_pins $master]]
       connect_bd_intf_net [get_bd_intf_pins $master] [get_bd_intf_pins $regslice/S_AXI]

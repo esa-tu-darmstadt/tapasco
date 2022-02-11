@@ -205,7 +205,7 @@ namespace eval hbm {
       set hbm_properties [create_hbm_properties $numInterfaces]
 
       # create and configure HBM IP
-      set hbm [ create_bd_cell -type ip -vlnv xilinx.com:ip:hbm:1.0 "hbm_0" ]
+      set hbm [tapasco::ip::create_hbm "hbm_0"]
       set_property -dict $hbm_properties $hbm
 
 
@@ -257,7 +257,7 @@ namespace eval hbm {
 
         if {[platform::is_regslice_enabled "hbm_pe" false] || [platform::is_regslice_enabled [format "hbm_pe%s" $hbm_index] false]} {
           # insert register slice between PE and interconnect
-          set regslice_pre [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 regslice_pre_${i}]
+          set regslice_pre [tapasco::ip::create_axi_reg_slice regslice_pre_${i}]
           set_property -dict [list CONFIG.REG_AW {15} CONFIG.REG_AR {15} CONFIG.REG_W {15} CONFIG.REG_R {15} CONFIG.REG_B {15} CONFIG.USE_AUTOPIPELINING {1}] $regslice_pre
 
           connect_bd_intf_net $pin [get_bd_intf_pins $regslice_pre/S_AXI]
@@ -271,7 +271,7 @@ namespace eval hbm {
 
         if {[platform::is_regslice_enabled "hbm_hbm" false] || [platform::is_regslice_enabled [format "hbm_hbm%s" $hbm_index] false]} {
           # insert register slice between interconnect and HBM
-          set regslice_post [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 regslice_post_${i}]
+          set regslice_post [tapasco::ip::create_axi_reg_slice regslice_post_${i}]
           set_property -dict [list CONFIG.REG_AW {15} CONFIG.REG_AR {15} CONFIG.REG_W {15} CONFIG.REG_R {15} CONFIG.REG_B {15} CONFIG.USE_AUTOPIPELINING {1}] $regslice_post
 
           connect_bd_intf_net [get_bd_intf_pins $converter/M00_AXI] [get_bd_intf_pins $regslice_post/S_AXI]

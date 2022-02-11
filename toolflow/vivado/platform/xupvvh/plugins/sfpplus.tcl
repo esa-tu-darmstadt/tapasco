@@ -49,9 +49,9 @@ namespace eval sfpplus {
     } elseif {$mode == "Aurora"} {
       Aurora::generate_cores $ports
     } else {
-    puts "Invalid SFP+ mode: mode $mode is not supported by this platform. Available modes are: 10G, 100G, Aurora"
-    exit
-  }
+      puts "Invalid SFP+ mode: mode $mode is not supported by this platform. Available modes are: 10G, 100G, Aurora"
+      exit
+    }
   }
 
 

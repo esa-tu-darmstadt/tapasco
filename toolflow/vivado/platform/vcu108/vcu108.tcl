@@ -27,7 +27,7 @@ namespace eval platform {
     puts "Creating MIG core for DDR ..."
     # create ports
     set mig [tapasco::ip::create_us_ddr ${name}]
-    apply_board_connection -board_interface "ddr4_sdram_c1" -ip_intf "$mig/C0_DDR4" -diagram "system"
+    apply_board_connection -board_interface [get_board_part_interfaces "ddr4_sdram_c1" "ddr4_sdram_c1_DR"] -ip_intf "$mig/C0_DDR4" -diagram "system"
     apply_board_connection -board_interface "reset" -ip_intf "$mig/SYSTEM_RESET" -diagram "system"
     set_property -dict [list CONFIG.System_Clock {Differential}] $mig
     apply_board_connection -board_interface "default_sysclk1_300" -ip_intf "$mig/C0_SYS_CLK" -diagram "system"

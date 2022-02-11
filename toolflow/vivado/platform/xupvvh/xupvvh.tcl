@@ -56,7 +56,7 @@ namespace eval platform {
 
     # create system reset
     set sys_rst_l [create_bd_port -dir I -type rst sys_rst_l]
-    set sys_rst_inverter [create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 sys_rst_inverter]
+    set sys_rst_inverter [tapasco::ip::create_logic_vector sys_rst_inverter]
     set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] $sys_rst_inverter
     connect_bd_net $sys_rst_l [get_bd_pins $sys_rst_inverter/Op1]
     connect_bd_net [get_bd_pins $sys_rst_inverter/Res] [get_bd_pins $mig/sys_rst]
@@ -210,7 +210,7 @@ namespace eval platform {
   # Inserts a new register slice between given master and slave (for SLR crossing)
   proc insert_regslice {name default master slave clock reset subsystem} {
     if {[is_regslice_enabled $name $default]} {
-      set regslice [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 $subsystem/regslice_${name}]
+      set regslice [tapasco::ip::create_axi_reg_slice $subsystem/regslice_${name}]
       set_property -dict [list CONFIG.REG_AW {15} CONFIG.REG_AR {15} CONFIG.REG_W {15} CONFIG.REG_R {15} CONFIG.REG_B {15} CONFIG.USE_AUTOPIPELINING {1}] $regslice
       delete_bd_objs [get_bd_intf_nets -of_objects [get_bd_intf_pins $master]]
       connect_bd_intf_net [get_bd_intf_pins $master] [get_bd_intf_pins $regslice/S_AXI]

@@ -90,7 +90,7 @@ namespace eval platform {
     }
     set_property -dict $pcie_properties $axi_pcie3_0
     # create refclk_ibuf
-    set refclk_ibuf [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.1 refclk_ibuf ]
+    set refclk_ibuf [tapasco::ip::create_util_buf refclk_ibuf]
     set_property -dict [ list CONFIG.C_BUF_TYPE {IBUFDSGTE}  ] $refclk_ibuf
     # connect wires
     connect_bd_intf_net $pcie_7x_mgt [get_bd_intf_pins axi_pcie3_0/pcie_7x_mgt]

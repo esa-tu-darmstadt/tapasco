@@ -142,7 +142,7 @@ namespace eval sfpplus {
     }
 
     proc create_inverter {name} {
-      variable ret [create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 $name]
+      variable ret [tapasco::ip::create_logic_vector $name]
       set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] [get_bd_cells $name]
       return $ret
     }
