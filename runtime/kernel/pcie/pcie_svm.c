@@ -663,7 +663,7 @@ static vm_fault_t svm_migrate_to_ram(struct vm_fault *vmf)
 	}
 
 	lock_page(dst_page);
-	dst = migrate_pfn(page_to_pfn(dst_page)) | MIGRATE_PFN_LOCKED;
+	dst = migrate_pfn(page_to_pfn(dst_page));
 
 	// DMA transfer
 	dma_addr = dma_map_page(&pci_dev->dev, dst_page, 0, PAGE_SIZE,
@@ -964,7 +964,7 @@ retry:
 		dst_pages[i] = pfn_to_page(base_pfn + i);
 		get_page(dst_pages[i]);
 		lock_page(dst_pages[i]);
-		migrate.dst[i] = migrate_pfn(base_pfn + i) | MIGRATE_PFN_LOCKED;
+		migrate.dst[i] = migrate_pfn(base_pfn + i);
 		dst_pages[i]->zone_device_data = pdev;
 	}
 
@@ -1242,7 +1242,7 @@ retry:
 		dst_pages[i] = pfn_to_page(base_pfn + i);
 		get_page(dst_pages[i]);
 		lock_page(dst_pages[i]);
-		migrate.dst[i] = migrate_pfn(base_pfn + i) | MIGRATE_PFN_LOCKED;
+		migrate.dst[i] = migrate_pfn(base_pfn + i);
 		dst_pages[i]->zone_device_data = dst_dev;
 	}
 
@@ -1486,8 +1486,7 @@ retry:
 			goto fail_allocpage;
 		}
 		lock_page(dst_pages[i]);
-		migrate.dst[i] = migrate_pfn(page_to_pfn(dst_pages[i])) |
-				 MIGRATE_PFN_LOCKED;
+		migrate.dst[i] = migrate_pfn(page_to_pfn(dst_pages[i]));
 		dma_addrs[i] = dma_map_page(&pdev->pdev->dev, dst_pages[i], 0,
 					    PAGE_SIZE, DMA_FROM_DEVICE);
 		if (dma_mapping_error(&pdev->pdev->dev, dma_addrs[i])) {
