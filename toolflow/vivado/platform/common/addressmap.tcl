@@ -167,6 +167,12 @@ namespace eval addressmap {
             puts "      space: $space"
             puts "      seg: $seg"
             if {[expr "(1 << 64) == $range"]} { set range "16E" }
+            if {[get_property NAME $seg] == "DmiDebugMem"} {
+                puts "      Found Riscv Debug Memory"
+                set pe_id [scan [regsub {.*target_ip_.*([0-9][0-9][0-9])} $seg {\1}] %d]
+                ::tapasco::ip::add_debug_to_pe $pe_id "RiscvDebug" \
+                    [expr $offset - [::platform::get_pe_base_address]] $range
+            }
             create_bd_addr_seg \
               -offset $offset \
               -range $range \

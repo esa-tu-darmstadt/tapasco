@@ -29,6 +29,7 @@ libc = "0.2.70"
 config = "0.10.1"
 serde = "1.0.115"
 packed_struct = {version = "0.5", features = ["byte_types_64"] }
+vfio-bindings = "0.2.0"
 
 [build-dependencies]
 prost-build = "0.6.1"

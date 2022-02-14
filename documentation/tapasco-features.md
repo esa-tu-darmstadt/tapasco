@@ -40,7 +40,7 @@ FanControl {
 
 #### SFPPLUS
 The configuration for this feature can be found [here](sfpplus.md)
-The ZC706 provides one SFP+ Ports (0).
+The ZC706 provides one Mode (10G) with one SFP+ Ports (0).
 
 ### ZCU102
 
@@ -79,7 +79,7 @@ Cache {
 
 #### SFPPLUS
 The configuration for this feature can be found [here](sfpplus.md)
-The VC709 provides four SFP+ Ports (0 - 3).
+The VC709 provides one Mode (10G) with four SFP+ Ports (0 - 3).
 
 ### NetFPGA SUME
 
@@ -94,10 +94,10 @@ The VC709 provides four SFP+ Ports (0 - 3).
 
 #### SFPPLUS
 The configuration for this feature can be found [here](sfpplus.md)
-The XUP-VVH provides four QSFP28 Cages. In TaPaSCo each cage provides four physical ports (10GbE each).
-So in total you can use up to 16 ports (port numbers 0 - 15) in your design.
-The ports 0 - 3 are connected to the top QSFP28 Cage (farthest away from the PCIe connector),
-the ports 12 - 15 are connected to the bottom QSFP28 Cage (next to the PCIe connector)
+The XUP-VVH provides four QSFP28 Cages.
+There are two modes:
+ - In the default mode (10G) each cage provides four physical ports (10GbE each). So in total you can use up to 16 ports (port numbers 0 - 15) in your design. The ports 0 - 3 are connected to the top QSFP28 Cage (farthest away from the PCIe connector), the ports 12 - 15 are connected to the bottom QSFP28 Cage (next to the PCIe connector).
+ - In 100G mode there four physical ports (100GbE each). Port 0 is the top QSFP28 Cage, Port 3 is the bottom QSFP28 Cage.
 
 #### HBM
 Allows to connect a subset of the AXI master interfaces of PEs to HBM memory instead of DDR. Each AXI master will be connected to its individual memory block (-> no data sharing possible) of size 256 MB. Up to 32 AXI masters can be connected to HBM. This is configured by specifying "groups" consisting of a PE-ID, a count and one or multiple interface names.
@@ -136,3 +136,9 @@ Regslice {
 }
 ```
 If no value is given for a register slice (or for all), a default value is used. The default value for each register slice is the first value in the example above.
+
+### Alveo U280
+
+#### SVM
+
+The Shared Virtual Memory (SVM) extensions is documented [here](tapasco-svm.md)

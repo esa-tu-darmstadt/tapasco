@@ -105,6 +105,7 @@ impl std::fmt::Debug for dyn PEInteraction {
 pub enum CopyBack {
     Transfer(DataTransferPrealloc),
     Free(DeviceAddress, Arc<OffchipMemory>),
+    Return(DataTransferPrealloc),               // used to return ownership only when using SVM
 }
 
 pub type PEId = usize;
@@ -135,6 +136,9 @@ pub struct PE {
     pub interrupt: Interrupt,
 
     debug: Box<dyn DebugControl + Sync + Send>,
+
+    #[get = "pub"]
+    svm_in_use: bool,
 }
 
 impl PE {
@@ -150,6 +154,7 @@ impl PE {
         interrupt_id: usize,
         interrupt: Option<Interrupt>,
         debug: Box<dyn DebugControl + Sync + Send>,
+        svm_in_use: bool,
     ) -> Result<PE> {
         let interaction : Box<dyn PEInteraction> = match memory {
             Some(m) => {
@@ -176,6 +181,7 @@ impl PE {
             interrupt_id: interrupt_id,
             interrupt: interrupt,
             debug: debug,
+            svm_in_use: svm_in_use,
         })
     }
 

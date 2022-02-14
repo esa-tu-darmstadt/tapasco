@@ -422,8 +422,8 @@ package object json {
       (JsPath \ "Slurm").write[Boolean] ~
       (JsPath \ "Parallel").write[Boolean] ~
       (JsPath \ "MaxThreads").writeNullable[Int] ~
-      (JsPath \ "HlsTimeOut").writeNullable[Int] ~
       (JsPath \ "MaxTasks").writeNullable[Int] ~
+      (JsPath \ "HlsTimeOut").writeNullable[Int] ~
       (JsPath \ "DryRun").writeNullable[Path].transform((js: JsObject) => js - "DryRun") ~
       (JsPath \ "Verbose").writeNullable[String] ~
       (JsPath \ "Jobs").write[Seq[Job]]

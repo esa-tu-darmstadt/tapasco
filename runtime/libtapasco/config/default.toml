@@ -7,3 +7,4 @@ write_buffer_size = 262144
 [tlkm]
 main_driver_file = "/dev/tlkm"
 device_driver_file = "/dev/tlkm_"
+vfio_device = "/sys/devices/platform/tapasco/iommu_group"

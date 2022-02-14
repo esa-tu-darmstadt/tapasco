@@ -35,3 +35,8 @@ set_property BITSTREAM.CONFIG.SPI_32BIT_ADDR Yes [current_design]
 set_property PACKAGE_PIN D32 [get_ports {dout_0[0]}]
 
 set_property IOSTANDARD LVCMOS18 [get_ports {dout_0[0]}]
+
+create_pblock pblock_axi_pcie
+resize_pblock pblock_axi_pcie -add SLR0
+set_property IS_SOFT TRUE [get_pblocks pblock_axi_pcie]
+add_cells_to_pblock pblock_axi_pcie [get_cells [list system_i/host/axi_pcie3_0]]

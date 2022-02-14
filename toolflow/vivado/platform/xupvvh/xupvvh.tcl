@@ -56,7 +56,7 @@ namespace eval platform {
 
     # create system reset
     set sys_rst_l [create_bd_port -dir I -type rst sys_rst_l]
-    set sys_rst_inverter [create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 sys_rst_inverter]
+    set sys_rst_inverter [tapasco::ip::create_logic_vector sys_rst_inverter]
     set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] $sys_rst_inverter
     connect_bd_net $sys_rst_l [get_bd_pins $sys_rst_inverter/Op1]
     connect_bd_net [get_bd_pins $sys_rst_inverter/Res] [get_bd_pins $mig/sys_rst]
@@ -67,31 +67,28 @@ namespace eval platform {
     set_property CONFIG.FREQ_HZ 100000000 $sys_clk
 
     # configure MIG core
-    set part_file "[get_property DIRECTORY [current_project]]/MTA18ADF2G72PZ-2G3.csv"
+    set part_file "[get_property DIRECTORY [current_project]]/HMABAGL7ABR4N.csv"
     if { [file exists $part_file] == 1} {
       puts "Delete MIG configuration from project directory"
       file delete $part_file
     }
     puts "Copying MIG configuration to project directory"
-    file copy "$::env(TAPASCO_HOME_TCL)/platform/xupvvh/MTA18ADF2G72PZ-2G3.csv" $part_file
+    file copy "$::env(TAPASCO_HOME_TCL)/platform/xupvvh/HMABAGL7ABR4N.csv" $part_file
 
     set properties  [list CONFIG.C0.DDR4_TimePeriod {833} \
       CONFIG.C0.DDR4_InputClockPeriod {9996} \
       CONFIG.C0.DDR4_CLKOUT0_DIVIDE {5} \
-      CONFIG.C0.DDR4_MemoryType {RDIMMs} \
-      CONFIG.C0.DDR4_MemoryPart {MTA18ADF2G72PZ-2G3} \
+      CONFIG.C0.DDR4_MemoryType {LRDIMMs} \
+      CONFIG.C0.DDR4_MemoryPart {HMABAGL7ABR4N} \
       CONFIG.C0.DDR4_DataWidth {72} \
       CONFIG.C0.DDR4_DataMask {NONE} \
-      CONFIG.C0.DDR4_CasWriteLatency {16} \
       CONFIG.C0.DDR4_AxiDataWidth {512} \
-      CONFIG.C0.DDR4_AxiAddressWidth {34} \
+      CONFIG.C0.DDR4_AxiAddressWidth {37} \
       CONFIG.C0.DDR4_CustomParts $part_file \
       CONFIG.C0.DDR4_isCustom {true} \
       ]
 
-
     set_property -dict $properties $mig
-
 
     # connect MEM_CTRL interface (ECC configuration + status)
     set s_axi_mem_ctrl [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_MEM_CTRL]
@@ -213,7 +210,7 @@ namespace eval platform {
   # Inserts a new register slice between given master and slave (for SLR crossing)
   proc insert_regslice {name default master slave clock reset subsystem} {
     if {[is_regslice_enabled $name $default]} {
-      set regslice [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 $subsystem/regslice_${name}]
+      set regslice [tapasco::ip::create_axi_reg_slice $subsystem/regslice_${name}]
       set_property -dict [list CONFIG.REG_AW {15} CONFIG.REG_AR {15} CONFIG.REG_W {15} CONFIG.REG_R {15} CONFIG.REG_B {15} CONFIG.USE_AUTOPIPELINING {1}] $regslice
       delete_bd_objs [get_bd_intf_nets -of_objects [get_bd_intf_pins $master]]
       connect_bd_intf_net [get_bd_intf_pins $master] [get_bd_intf_pins $regslice/S_AXI]
@@ -232,7 +229,8 @@ namespace eval platform {
     insert_regslice "dma_host" true "/memory/M_HOST" "/host/S_HOST" "/clocks_and_resets/host_clk" "/clocks_and_resets/host_interconnect_aresetn" ""
     insert_regslice "host_arch" true "/host/M_ARCH" "/arch/S_ARCH" "/clocks_and_resets/design_clk" "/clocks_and_resets/design_interconnect_aresetn" ""
 
-    if {[tapasco::is_feature_enabled "SFPPLUS"]} {
+    # AXI control interface is only enabled in 10G mode
+    if {[get_bd_intf_pins "/network/S_NETWORK"] ne ""} {
       insert_regslice "host_network" true "/host/M_NETWORK" "/network/S_NETWORK" "/clocks_and_resets/design_clk" "/clocks_and_resets/design_interconnect_aresetn" ""
     }
 

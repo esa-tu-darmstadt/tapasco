@@ -48,4 +48,5 @@ pub mod interrupt;
 pub mod job;
 pub mod pe;
 pub mod scheduler;
+pub mod vfio;
 pub mod tlkm;

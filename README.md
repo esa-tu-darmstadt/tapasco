@@ -22,6 +22,12 @@ Next to the setup and usage instructions in this README, you can find additional
 
 We welcome contributions from anyone interested in this field, check the [contributor's guide](https://github.com/esa-tu-darmstadt/tapasco/wiki/Contributor's-Guide) for more information.
 
+Supported FPGA devices
+----------------------
+
+* Zynq-based: PYNQ-Z1, ZC706, ZedBoard, Ultra96V2, ZCU102
+* PCIe cards: VC709, NetFPGA-SUME, VCU108, VCU118, VCU1525, Alveo U250, Alveo U280, BittWare XUP-VVH
+
 
 System Requirements
 -------------------
@@ -189,40 +195,18 @@ A List of publications about TaPaSCo or TaPaSCo-related research can be found [h
 
 If you want to cite TaPaSCo, please use the following information:
 
-[Korinth2019] Korinth, Jens, Jaco Hofmann, Carsten Heinz, and Andreas Koch. 2019. **The
-Tapasco Open-Source Toolflow for the Automated Composition of Task-Based
-Parallel Reconfigurable Computing Systems.** In *International Symposium
-on Applied Reconfigurable Computing (Arc)*.
+[Heinz2021a] Heinz, Carsten, Jaco Hofmann, Jens Korinth, Lukas Sommer, Lukas Weber, and Andreas Koch. 2021. **The
+Tapasco Open-Source Toolflow.** In *Journal of Signal Processing Systems*.
 
 Releases
 ----------------
 
 We provided pre-compiled packages for many popular Linux distributions. All packages are build for the x86_64 variant.
+    
+| Distribution | Kernel Driver | Kernel Driver (Debug) | Runtime | Runtime (Debug) | Toolflow |
+|:-------------|:-------------:|:---------------------:|:-------:|:---------------:|:--------:|
+| Ubuntu 16.04 | [Download](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_16_04) | [Download](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_16_04_debug) | [DEB](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2021.01.0-Linux.deb?job=build_tapasco_ubuntu_16_04) | [DEB](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2021.01.0-Linux.deb?job=build_tapasco_ubuntu_16_04_debug) | [DEB](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco_2021-01_amd64.deb?job=build_scala_tapasco_ubuntu_16_04) |
+| Ubuntu 18.04 | [Download](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_18_04) | [Download](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_18_04_debug) | [DEB](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2021.01.0-Linux.deb?job=build_tapasco_ubuntu_18_04) | [DEB](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2021.01.0-Linux.deb?job=build_tapasco_ubuntu_18_04_debug) | [DEB](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco_2021-01_amd64.deb?job=build_scala_tapasco_ubuntu_18_04) |
+| Fedora 30 | [Download](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_fedora_30) | [Download](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_fedora_30_debug) | [RPM](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2021.01.0-Linux.rpm?job=build_tapasco_fedora_30) | [RPM](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2021.01.0-Linux.rpm?job=build_tapasco_fedora_30_debug) | [RPM](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco-2021-01.x86_64.rpm?job=build_scala_tapasco_fedora_30) |
+| Fedora 31 | [Download](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_fedora_31) | [Download](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_fedora_31_debug) | [RPM](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2021.01.0-Linux.rpm?job=build_tapasco_fedora_31) | [RPM](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2021.01.0-Linux.rpm?job=build_tapasco_fedora_31_debug) | [RPM](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco-2021-01.x86_64.rpm?job=build_scala_tapasco_fedora_31) | 
 
-### Ubuntu 16.04
-[Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_16_04)
-[Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_16_04_debug)
-[Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2020.10.0-Linux.deb?job=build_tapasco_ubuntu_16_04)
-[Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2020.10.0-Linux.deb?job=build_tapasco_ubuntu_16_04_debug)
-[Toolflow](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco_2020-10_amd64.deb?job=build_scala_tapasco_ubuntu_16_04)
-
-### Ubuntu 18.04
-[Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_18_04)
-[Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_ubuntu_18_04_debug)
-[Runtime (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2020.10.0-Linux.deb?job=build_tapasco_ubuntu_18_04)
-[Runtime Debug (DEB)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2020.10.0-Linux.deb?job=build_tapasco_ubuntu_18_04_debug)
-[Toolflow](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco_2020-10_amd64.deb?job=build_scala_tapasco_ubuntu_18_04)
-
-### Fedora 30
-[Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_fedora_30)
-[Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_fedora_30_debug)
-[Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2020.10.0-Linux.rpm?job=build_tapasco_fedora_30)
-[Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2020.10.0-Linux.rpm?job=build_tapasco_fedora_30_debug)
-[Toolflow](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco-2020-10.x86_64.rpm?job=build_scala_tapasco_fedora_30)
-
-### Fedora 31
-[Kernel Driver](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_fedora_31)
-[Kernel Driver Debug](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/runtime/kernel/tlkm.ko?job=build_kernel_fedora_31_debug)
-[Runtime (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2020.10.0-Linux.rpm?job=build_tapasco_fedora_31)
-[Runtime Debug (RPM)](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/build/tapasco-2020.10.0-Linux.rpm?job=build_tapasco_fedora_31_debug)
-[Toolflow](https://git.esa.informatik.tu-darmstadt.de/tapasco/tapasco/-/jobs/artifacts/master/raw/toolflow/scala/build/distributions/tapasco-2020-10.x86_64.rpm?job=build_scala_tapasco_fedora_31)

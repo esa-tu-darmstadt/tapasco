@@ -213,7 +213,7 @@ namespace eval hbm {
       set hbm_properties [create_hbm_properties $numInterfaces]
 
       # create and configure HBM IP
-      set hbm [ create_bd_cell -type ip -vlnv xilinx.com:ip:hbm:1.0 "hbm_0" ]
+      set hbm [tapasco::ip::create_hbm "hbm_0"]
       set_property -dict $hbm_properties $hbm
 
       # Disabling the APB debug port is only possible in Vivado 2019.2 and newer
@@ -258,7 +258,7 @@ namespace eval hbm {
         set hbm_index [format %02s $i]
 
         # create smartconnect for clock domain conversion, protocol conversion (AXI4->AXI3) and data width conversion
-        set converter [create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 smartconnect_${i}]
+        set converter [tapasco::ip::create_smartconnect smartconnect_${i}]onnect:1.0 smartconnect_${i}]
         set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_CLKS {2} CONFIG.HAS_ARESETN {0}] $converter
         
         # create connections between PE and smartconnect, and smartconnect and HBM
@@ -268,7 +268,7 @@ namespace eval hbm {
 
         if {[platform::is_regslice_enabled "hbm_pe" false] || [platform::is_regslice_enabled [format "hbm_pe%s" $hbm_index] false]} {
           # insert register slice between PE and smartconnect
-          set regslice_pre [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 regslice_pre_${i}]
+          set regslice_pre [tapasco::ip::create_axi_reg_slice regslice_pre_${i}]
           set_property -dict [list CONFIG.REG_AW {15} CONFIG.REG_AR {15} CONFIG.REG_W {15} CONFIG.REG_R {15} CONFIG.REG_B {15} CONFIG.USE_AUTOPIPELINING {1}] $regslice_pre
 
           connect_bd_intf_net $pin [get_bd_intf_pins $regslice_pre/S_AXI]
@@ -289,7 +289,7 @@ namespace eval hbm {
 
         if {[platform::is_regslice_enabled "hbm_hbm" false] || [platform::is_regslice_enabled [format "hbm_hbm%s" $hbm_index] false]} {
           # insert register slice between smartconnect and HBM
-          set regslice_post [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 regslice_post_${i}]
+          set regslice_post [tapasco::ip::create_axi_reg_slice regslice_post_${i}]
           set_property -dict [list CONFIG.REG_AW {15} CONFIG.REG_AR {15} CONFIG.REG_W {15} CONFIG.REG_R {15} CONFIG.REG_B {15} CONFIG.USE_AUTOPIPELINING {1}] $regslice_post
 
           connect_bd_intf_net [get_bd_intf_pins $address_offset/M_AXI] [get_bd_intf_pins $regslice_post/S_AXI]
@@ -306,10 +306,17 @@ namespace eval hbm {
       current_bd_instance /arch
       set mgroups [platform::max_masters]
       set masters [ldiff [lsort -dictionary [tapasco::get_aximm_interfaces [get_bd_cells /arch/target_ip_*]]] $hbmInterfaces]
-      set arch_mem_ics [arch::arch_create_mem_interconnects $mgroups [llength $masters]]
-      arch::arch_connect_mem $arch_mem_ics $masters
-      catch {arch::arch_connect_clocks} issue
-      catch {arch::arch_connect_resets} issue
+      if {[llength $masters] > 0} {
+        set arch_mem_ics [arch::arch_create_mem_interconnects $mgroups [llength $masters]]
+        arch::arch_connect_mem $arch_mem_ics $masters
+
+        connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
+          [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == clk && DIR == I"]
+        connect_bd_net -quiet [tapasco::subsystem::get_port "design" "rst" "interconnect"] \
+          [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && NAME =~ *interconnect_aresetn && DIR == I"]
+        connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
+          [get_bd_pins -of_objects [get_bd_cells -of_objects [current_bd_instance .]] -filter "TYPE == rst && NAME =~ *peripheral_aresetn && DIR == I"]
+      }
 
       # apply constraints for one or both stacks
       current_bd_instance /hbm

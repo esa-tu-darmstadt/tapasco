@@ -32,13 +32,17 @@ namespace eval sfpplus {
   variable signal_detect_pins    {"N18" "L19" "J37" "H36"}
   variable locations             {"GTHE2_CHANNEL_X1Y39" "GTHE2_CHANNEL_X1Y38" "GTHE2_CHANNEL_X1Y37" "GTHE2_CHANNEL_X1Y36"}
 
-  proc num_available_ports {} {
+  proc num_available_ports {mode} {
     variable available_ports
     return $available_ports
   }
 
+  proc get_available_modes {} {
+    return {"10G"}
+  }
 
-  proc generate_cores {ports} {
+
+  proc generate_cores {mode ports} {
 
     set num_streams [dict size $ports]
 
@@ -260,7 +264,7 @@ namespace eval sfpplus {
   }
 
   proc create_inverter {name} {
-    variable ret [create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 $name]
+    variable ret [tapasco::ip::create_logic_vector $name]
     set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {not} CONFIG.LOGO_FILE {data/sym_notgate.png}] [get_bd_cells $name]
     return $ret
   }

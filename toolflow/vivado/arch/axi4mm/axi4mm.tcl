@@ -98,13 +98,64 @@ namespace eval arch {
       puts "Creating $no_inst instances of target IP core ..."
       puts "  VLNV: $vlnv"
       for {set j 0} {$j < $no_inst} {incr j} {
+        # Create PE instance
         set name [format "target_ip_%02d_%03d" $i $j]
-        set inst [lindex [tapasco::call_plugins "post-pe-create" [create_bd_cell -type ip -vlnv "$vlnv" $name]] 0]
-        lappend insts $inst
+        set inst [create_bd_cell -type ip -vlnv "$vlnv" "internal_$name"]
+
+        # Only create a wrapper around PEs if atleast one plugin is present
+        if {[llength [tapasco::get_plugins "post-pe-create"]] > 0} {
+          set bd_inst [current_bd_instance .]
+          set group [create_wrapper_around_pe $inst $name]
+
+          set inst [lindex [tapasco::call_plugins "post-pe-create" $inst] 0]
+          # Return to the same block design instance as before
+          current_bd_instance $bd_inst
+
+          # return the wrapper so that it can be connected
+          lappend insts $group
+        } else {
+          lappend insts $inst
+        }
       }
     }
     puts "insts = $insts"
     return $insts
+  }
+
+  # Create a wrapper around a PE to embed plugins
+  proc create_wrapper_around_pe {inst name} {
+    # create group, move instance into group
+    set group [create_bd_cell -type hier $name]
+    move_bd_cells $group $inst
+
+    current_bd_instance $group
+    set bd_inst [current_bd_instance .]
+
+    # bypass existing AXI4Lite slaves
+    set lite_ports [list]
+    set lites [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave && CONFIG.PROTOCOL == AXI4LITE}]
+    foreach ls $lites {
+      set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave [get_property NAME $ls]]
+      connect_bd_intf_net $op $ls
+      lappend lite_ports $ls
+    }
+    puts "lite_ports = $lite_ports"
+
+    # create master ports
+    set maxi_ports [list]
+    foreach mp [get_bd_intf_pins -of_objects $inst -filter {MODE == Master && (CONFIG.PROTOCOL == AXI4 || CONFIG.PROTOCOL == AXI3)}] {
+      set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Master [get_property NAME $mp]]
+      connect_bd_intf_net $mp $op
+      lappend maxi_ports $mp
+    }
+    puts "maxi_ports = $maxi_ports"
+
+    # create interrupt port
+    foreach interrupt [get_bd_pins -of_objects $inst -filter {TYPE == intr}] {
+      connect_bd_net $interrupt [create_bd_pin -type intr -dir O [get_property NAME $interrupt]]
+    }
+
+    return $group
   }
 
   # Retrieve AXI-MM interfaces of given instance of kernel kind and mode.
@@ -325,7 +376,8 @@ namespace eval arch {
   # Connect internal clock lines.
   proc arch_connect_clocks {} {
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
-      [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == clk && DIR == I"]
+      [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == clk && DIR == I"] \
+      [get_bd_pins -of_objects [get_bd_cells -hier -filter {PATH =~ "*target_ip*"}] -filter "TYPE == clk && DIR == I"]
   }
 
   # Connect internal reset lines.
@@ -334,8 +386,8 @@ namespace eval arch {
       [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && NAME =~ *interconnect_aresetn && DIR == I"]
     connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects [get_bd_cells -of_objects [current_bd_instance .]] -filter "TYPE == rst && NAME =~ *peripheral_aresetn && DIR == I"] \
-      [get_bd_pins -filter { TYPE == rst && DIR == I && CONFIG.POLARITY != ACTIVE_HIGH } -of_objects [get_bd_cells -filter {NAME =~ "target_ip*"}]]
-    set active_high_resets [get_bd_pins -of_objects [get_bd_cells] -filter "TYPE == rst && DIR == I && CONFIG.POLARITY == ACTIVE_HIGH"]
+      [get_bd_pins -filter { TYPE == rst && DIR == I && CONFIG.POLARITY != ACTIVE_HIGH } -of_objects [get_bd_cells -hier -filter {PATH =~ "*target_ip*"}]]
+    set active_high_resets [get_bd_pins -of_objects [get_bd_cells -hier] -filter "TYPE == rst && DIR == I && CONFIG.POLARITY == ACTIVE_HIGH"]
     if {[llength $active_high_resets] > 0} {
       connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "reset"] $active_high_resets
     }

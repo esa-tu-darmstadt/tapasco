@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::device::DataTransferAlloc;
+use crate::device::{DataTransferAlloc, DeviceAddress};
 use crate::device::DataTransferPrealloc;
 use crate::device::PEParameter;
 use crate::pe::CopyBack;
@@ -58,6 +58,9 @@ pub enum Error {
         arg
     ))]
     UnsupportedTransferParameter { arg: PEParameter },
+
+    #[snafu(display("Parameter only supported for bitstreams with enabled SVM support: {:?}", arg))]
+    UnsupportedSVMParameter { arg: PEParameter },
 
     #[snafu(display("Scheduler Error: {}", source))]
     SchedulerError { source: crate::scheduler::Error },
@@ -142,19 +145,23 @@ impl Job {
             .into_iter()
             .map(|arg| match arg {
                 PEParameter::DataTransferAlloc(x) => {
-                    let a = match x.fixed {
-                        Some(offset) => x
-                            .memory
-                            .allocator()
-                            .lock()?
-                            .allocate_fixed(x.data.len() as u64, offset)
-                            .context(AllocatorError)?,
-                        None => x
-                            .memory
-                            .allocator()
-                            .lock()?
-                            .allocate(x.data.len() as u64)
-                            .context(AllocatorError)?,
+                    let a = if *self.pe.as_ref().unwrap().svm_in_use() {
+                        x.data.as_ptr() as DeviceAddress
+                    } else {
+                        match x.fixed {
+                            Some(offset) => x
+                                .memory
+                                .allocator()
+                                .lock()?
+                                .allocate_fixed(x.data.len() as u64, offset)
+                                .context(AllocatorError)?,
+                            None => x
+                                .memory
+                                .allocator()
+                                .lock()?
+                                .allocate(x.data.len() as u64, Some(x.data.as_ptr() as u64))
+                                .context(AllocatorError)?,
+                        }
                     };
 
                     Ok(PEParameter::DataTransferPrealloc(DataTransferPrealloc {
@@ -194,7 +201,11 @@ impl Job {
                     }
 
                     xs.push(PEParameter::DeviceAddress(x.device_address));
-                    if x.from_device {
+                    if *self.pe.as_ref().unwrap().svm_in_use() && !x.from_device {
+                        // return the buffer always if SVM is enabled to let the user
+                        // program regain ownership
+                        self.pe.as_mut().unwrap().add_copyback(CopyBack::Return(x));
+                    } else if x.from_device {
                         self.pe
                             .as_mut()
                             .unwrap()
@@ -258,6 +269,13 @@ impl Job {
                     .unwrap()
                     .set_arg(i, PEParameter::Single64(x))
                     .context(PEError)?,
+                PEParameter::VirtualAddress(p) => {
+                    if *self.pe.as_ref().unwrap().svm_in_use() {
+                        self.pe.as_ref().unwrap().set_arg(i, PEParameter::Single64(p as u64)).context(PEError)?;
+                    } else {
+                        return Err(Error::UnsupportedSVMParameter {arg: arg})
+                    }
+                }
                 _ => return Err(Error::UnsupportedRegisterParameter { arg: arg }),
             };
         }
@@ -277,6 +295,7 @@ impl Job {
     ///  * Tuple of
     ///    a: The return value if requested through the argument `return_value`,
     ///    b: The memories that have been used for copy backs after the job execution. Order is maintained according to the original argument list.
+    ///       If the SVM feature is in use return ALL memories so that the user can regain ownership of "in-only" buffers as well.
     pub fn release(
         &mut self,
         release_pe: bool,
@@ -322,6 +341,9 @@ impl Job {
                             }
                             CopyBack::Free(addr, mem) => {
                                 mem.allocator().lock()?.free(addr).context(AllocatorError)?;
+                            }
+                            CopyBack::Return(transfer) => {
+                                res.push(transfer.data);
                             }
                         }
                     }

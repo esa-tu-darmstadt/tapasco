@@ -66,6 +66,8 @@ namespace eval platform {
       current_bd_instance $instance
     }
 
+    tapasco::call_plugins "pre-wiring"
+
     set sss [list $ss_intc]
 
     foreach ss $sss {

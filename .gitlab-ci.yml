@@ -27,8 +27,8 @@ test_tapasco_centos_7:
   image: centos:7
   extends: .test_tapasco_centos
 
-test_tapasco_centos_8:
-  image: centos:8
+test_tapasco_rockylinux_8:
+  image: rockylinux:8
   extends: .test_tapasco_centos
 
 .test_tapasco_ubuntu:
@@ -90,8 +90,8 @@ build_scala_tapasco_centos_7:
   image: centos:7
   extends: .build_scala_tapasco_centos
 
-build_scala_tapasco_centos_8:
-  image: centos:8
+build_scala_tapasco_rockylinux_8:
+  image: rockylinux:8
   extends: .build_scala_tapasco_centos
 
 .build_scala_tapasco_fedora:
@@ -109,7 +109,7 @@ build_scala_tapasco_centos_8:
     - ./gradlew buildRPM
   artifacts:
     paths:
-      - toolflow/scala/build/distributions/tapasco-2020-10.x86_64.rpm
+      - toolflow/scala/build/distributions/tapasco-2021-01.x86_64.rpm
 
 build_scala_tapasco_fedora_30:
   image: fedora:30
@@ -136,7 +136,7 @@ build_scala_tapasco_fedora_31:
     - ./gradlew buildDEB
   artifacts:
     paths:
-      - toolflow/scala/build/distributions/tapasco_2020-10_amd64.deb
+      - toolflow/scala/build/distributions/tapasco_2021-01_amd64.deb
 
 build_scala_tapasco_ubuntu_16_04:
   image: ubuntu:xenial
@@ -214,12 +214,12 @@ build_kernel_arm64v8_debug:
     paths:
       - runtime/kernel/tlkm.ko
 
-build_kernel_centos_8:
-  image: centos:8
+build_kernel_rockylinux_8:
+  image: rockylinux:8
   extends: .build_kernel_fedora
 
-build_kernel_centos_8_debug:
-  image: centos:8
+build_kernel_rockylinux_8_debug:
+  image: rockylinux:8
   variables:
     MODE: "all"
   extends: .build_kernel_fedora
@@ -265,20 +265,21 @@ build_kernel_fedora_31_debug:
   variables:
     PACKAGE_TYPE: "RPM"
   before_script:
+    - dnf -y update libarchive
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python3 libatomic git rpm-build curl
   artifacts:
     paths:
       - build/tapasco-*-Linux.rpm
   extends: .build_tapasco
 
-build_tapasco_centos_8:
-  image: centos:8
+build_tapasco_rockylinux_8:
+  image: rockylinux:8
   extends: .build_tapasco_fedora
 
-build_tapasco_centos_8_debug:
+build_tapasco_rockylinux_8_debug:
   variables:
     MODE: "debug"
-  image: centos:8
+  image: rockylinux:8
   extends: .build_tapasco_fedora
 
 build_tapasco_fedora_30:
@@ -391,12 +392,13 @@ tapasco_compose_ubuntu:
   script:
     - source $XILINX_VIVADO/settings64.sh
     - apt-get -y update
-    - apt-get -y install libtinfo5 build-essential
-    - apt -y install ./toolflow/scala/build/distributions/tapasco_2020-10_amd64.deb
+    - DEBIAN_FRONTEND=noninteractive apt-get -y install libtinfo5 build-essential tzdata
+    - apt -y install ./toolflow/scala/build/distributions/tapasco_2021-01_amd64.deb
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
-    - tapasco -v hls counter -p pynq
-    - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p pynq
+    - tapasco -v hls arrayinit -p pynq
+    - tapasco import toolflow/examples/Counter.zip as 14 -p pynq
+    - tapasco -v --maxThreads 3 compose [arrayinit x 2, Counter x 3] @ 100 MHz -p pynq
 
 .tapasco_compose:
   stage: build_hw
@@ -419,12 +421,13 @@ tapasco_compose_ubuntu:
   script:
     - source $XILINX_VIVADO/settings64.sh
     - which vivado
-    - which vivado_hls
-    - dnf -y install toolflow/scala/build/distributions/tapasco-2020-10.x86_64.rpm
+    - which vivado_hls || which vitis_hls
+    - dnf -y install toolflow/scala/build/distributions/tapasco-2021-01.x86_64.rpm
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
-    - tapasco hls counter -p $PLATFORM --skipEvaluation
-    - tapasco -v --maxThreads 3 compose [counter x 3] @ 100 MHz -p $PLATFORM $FLAGS
+    - tapasco hls arrayinit -p $PLATFORM --skipEvaluation
+    - tapasco import toolflow/examples/Counter.zip as 14 -p $PLATFORM --skipEvaluation
+    - tapasco -v --maxThreads 3 compose [arrayinit x 2, Counter x 3] @ 100 MHz -p $PLATFORM $FLAGS
 
 tapasco_compose_17_4:
   variables:
@@ -461,6 +464,25 @@ tapasco_compose_20_1:
     VIVADO_VERSION: "2020.1"
     XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
   extends: .tapasco_compose
+
+tapasco_compose_20_2:
+  variables:
+    VIVADO_VERSION: "2020.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+  extends: .tapasco_compose
+
+tapasco_compose_21_1:
+  variables:
+    VIVADO_VERSION: "2021.1"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+  extends: .tapasco_compose
+
+tapasco_compose_21_2:
+  variables:
+    VIVADO_VERSION: "2021.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+  extends: .tapasco_compose
+
 
 tapasco_compose_pcie:
   variables:
