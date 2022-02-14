@@ -45,7 +45,7 @@ if {[tapasco::is_feature_enabled "Cascabel"]} {
 		puts $config_fd "KID_TYPE kid_arr[$kid_count] = {$kid_arr};"
 		puts $config_fd "endpackage"
 		close $config_fd
-		exec -ignorestderr $::env(TAPASCO_HOME_TCL)/common/ip/Cascabel/build_ip.sh
+		puts [exec $::env(TAPASCO_HOME_TCL)/common/ip/Cascabel/build_ip.sh]
 		update_ip_catalog -rebuild
 	}
 
@@ -104,28 +104,36 @@ if {[tapasco::is_feature_enabled "Cascabel"]} {
 			set cascabel_in [get_bd_intf_pins /cascabel/Cascabel/ONCHIP_IN]
 			set cascabel_out [get_bd_intf_pins /cascabel/Cascabel/ONCHIP_OUT]
 			# create stream interconnects
-			set in_ic [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 onchip_launch_in]
-			set_property -dict [list CONFIG.NUM_SI [llength $pe_out] CONFIG.NUM_MI {1} CONFIG.ARB_ON_TLAST {1} CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF}] $in_ic
-			set in_ic_inputs [get_bd_intf_pins $in_ic/S*_AXIS]
-			for {set i 0} {$i < [llength $pe_out]} {incr i} {
-				# add tuser signal according to PE ID
-				set usermod [create_bd_cell -type ip -vlnv esa.cs.tu-darmstadt.de:axi:axis_usermod usermod_$i]
-				set_property CONFIG.DATA_WIDTH {512} $usermod
-				set_property CONFIG.USER_OVERWRITE $i $usermod
-				connect_bd_net $clk [get_bd_pins $usermod/clk]
-				connect_bd_intf_net [lindex $pe_out $i] [get_bd_intf_pins $usermod/s_axis]
-				connect_bd_intf_net [get_bd_intf_pins $usermod/m_axis] [lindex $in_ic_inputs $i]
+			if {[llength $pe_out] > 0} {
+				set in_ic [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 onchip_launch_in]
+				set_property -dict [list CONFIG.M00_HAS_REGSLICE {1} CONFIG.NUM_SI [llength $pe_out] CONFIG.NUM_MI {1} CONFIG.ARB_ON_TLAST {1} CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF}] $in_ic
+				set in_ic_inputs [get_bd_intf_pins $in_ic/S*_AXIS]
+				for {set i 0} {$i < [llength $pe_out]} {incr i} {
+					# add tuser signal according to PE ID
+					set usermod [create_bd_cell -type ip -vlnv esa.cs.tu-darmstadt.de:axi:axis_usermod usermod_$i]
+					set_property CONFIG.DATA_WIDTH {512} $usermod
+					set_property CONFIG.USER_OVERWRITE $i $usermod
+					connect_bd_net $clk [get_bd_pins $usermod/clk]
+					connect_bd_intf_net [lindex $pe_out $i] [get_bd_intf_pins $usermod/s_axis]
+					connect_bd_intf_net [get_bd_intf_pins $usermod/m_axis] [lindex $in_ic_inputs $i]
+					set_property -dict [list CONFIG.S0${i}_HAS_REGSLICE {1}] $in_ic
+				}
+				connect_bd_intf_net $cascabel_in [get_bd_intf_pins $in_ic/M00_AXIS]
+				connect_bd_net $clk [get_bd_pins $in_ic/*ACLK]
+				connect_bd_net $rstn [get_bd_pins $in_ic/*ARESETN]
 			}
-			set out_ic [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 onchip_launch_out]
-			set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_MI [llength $pe_in] CONFIG.ARB_ON_TLAST {1}] $out_ic
-			set out_ic_outputs [get_bd_intf_pins $out_ic/M*_AXIS]
-			for {set i 0} {$i < [llength $pe_in]} {incr i} {
-				connect_bd_intf_net [lindex $pe_in $i] [lindex $out_ic_outputs $i]
+			if {[llength $pe_in] > 0} {
+				set out_ic [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 onchip_launch_out]
+				set_property -dict [list CONFIG.S00_HAS_REGSLICE {1} CONFIG.NUM_SI {1} CONFIG.NUM_MI [llength $pe_in] CONFIG.ARB_ON_TLAST {1}] $out_ic
+				set out_ic_outputs [get_bd_intf_pins $out_ic/M*_AXIS]
+				for {set i 0} {$i < [llength $pe_in]} {incr i} {
+					connect_bd_intf_net [lindex $pe_in $i] [lindex $out_ic_outputs $i]
+					set_property -dict [list CONFIG.M0${i}_HAS_REGSLICE {1}] $out_ic
+				}
+				connect_bd_intf_net $cascabel_out [get_bd_intf_pins $out_ic/S00_AXIS]
+				connect_bd_net $clk [get_bd_pins $out_ic/*ACLK]
+				connect_bd_net $rstn [get_bd_pins $out_ic/*ARESETN]
 			}
-			connect_bd_intf_net $cascabel_in [get_bd_intf_pins $in_ic/M00_AXIS]
-			connect_bd_intf_net $cascabel_out [get_bd_intf_pins $out_ic/S00_AXIS]
-			connect_bd_net $clk [get_bd_pins $in_ic/*ACLK] [get_bd_pins $out_ic/*ACLK]
-			connect_bd_net $rstn [get_bd_pins $in_ic/*ARESETN] [get_bd_pins $out_ic/*ARESETN]
 			# add PE id
 			current_bd_instance $instance
 			return $args
