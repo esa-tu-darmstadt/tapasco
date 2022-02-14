@@ -271,7 +271,7 @@ impl Job {
                     .context(PEError)?,
                 PEParameter::VirtualAddress(p) => {
                     if *self.pe.as_ref().unwrap().svm_in_use() {
-                        self.pe.as_ref().unwrap().set_arg(i, PEParameter::Single64(p as u64)).context(PEError)?;
+                        self.pe.as_mut().unwrap().set_arg(i, PEParameter::Single64(p as u64)).context(PEError)?;
                     } else {
                         return Err(Error::UnsupportedSVMParameter {arg: arg})
                     }

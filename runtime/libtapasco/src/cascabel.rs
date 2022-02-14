@@ -229,6 +229,7 @@ impl Scheduler for CascabelScheduler {
             interrupt.0 as usize, // interrupt_id
             Some(interrupt.1),
             Box::new(NonDebug {}),
+            false,
         )
         .context(PEError)?;
         Ok(the_pe)
