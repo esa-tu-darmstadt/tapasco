@@ -816,6 +816,47 @@ static int init_network_migration(struct tlkm_pcie_device *src_dev,
 }
 
 /**
+ * Initiate the copy of a contiguous range of pages from one to another device
+ * using PCIe endpoint-to-endpoint transfers. The destination device must have
+ * the second BAR activated to expose its memory.
+ *
+ * @param src_dev TLKM PCIe device struct of source device
+ * @param dst_dev TLLKM PCIe device struct of destination device
+ * @param src_addr base address in memory of source device
+ * @param dst_addr base address in memory of destination device
+ * @param npages number of pages to copy
+ * @return SUCCESS - 0, FAILURE - error code
+ */
+static int init_pcie_p2p_copy(struct tlkm_pcie_device *src_dev,
+			      struct tlkm_pcie_device *dst_dev,
+			      uint64_t src_addr, uint64_t dst_addr, int npages)
+{
+	int i, res, ncmd, cmd_cnt;
+	uint64_t dst_base, cmd_src, cmd_dst;
+	struct tlkm_pcie_svm_data *src_svm = src_dev->svm_data;
+	struct tlkm_pcie_svm_data *dst_svm = dst_dev->svm_data;
+
+	// TODO count issued DMA commands to prevent deadlock
+	DEVLOG(src_dev->parent->dev_id, TLKM_LF_SVM, "use PCIe P2P copy");
+
+	dst_base = dst_svm->rdma_bar + dst_addr;
+	i = 0;
+	cmd_cnt = 0;
+	while (i < npages) {
+		cmd_src = src_addr + i * PAGE_SIZE;
+		cmd_dst = dst_base + i * PAGE_SIZE;
+		ncmd = min((npages - i), (int)PAGE_DMA_MAX_NPAGES);
+		init_c2h_dma(src_svm, cmd_dst, cmd_src, ncmd, false);
+		i += ncmd;
+	}
+
+	res = wait_for_c2h_intr(src_svm);
+	if (res)
+		return res;
+	return 0;
+}
+
+/**
  * Initialize the copy of a contiguous range of pages from one to another device.
  * The data is copied in two steps: First from the source device to a buffer in
  * host memory, and then to the second device
@@ -1286,6 +1327,15 @@ retry:
 								     page_to_pfn(
 									     dst_pages[i])),
 						     ncontiguous);
+		else if (src_svm->rdma_bar && dst_svm->rdma_bar)
+			res = init_pcie_p2p_copy(src_dev, dst_dev,
+						 pfn_to_dev_addr(src_svm,
+								 page_to_pfn(
+									 src_pages[i])),
+						 pfn_to_dev_addr(dst_svm,
+								 page_to_pfn(
+									 dst_pages[i])),
+						 ncontiguous);
 		else
 			res = init_dev_to_dev_copy(src_dev, dst_dev,
 						   pfn_to_dev_addr(src_svm,
@@ -2562,6 +2612,10 @@ int pcie_init_svm(struct tlkm_pcie_device *pdev)
 		svm_data->network_dma_enabled = true;
 		svm_data->mac_addr = readq(&svm_data->dma_regs->own_mac);
 	}
+
+	if (pci_resource_len(pdev->pdev, 2) >= PHYS_MEM_SIZE)
+		svm_data->rdma_bar = pci_resource_start(pdev->pdev, 2);
+
 	svm_data->pdev = pdev;
 	pdev->svm_data = svm_data;
 

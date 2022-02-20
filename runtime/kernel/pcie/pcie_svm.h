@@ -103,6 +103,7 @@ struct tlkm_pcie_svm_data {
 	struct page_dma_regs *dma_regs;
 	bool network_dma_enabled;
 	uint64_t mac_addr;
+	resource_size_t rdma_bar;
 
 	unsigned long base_pfn;
 	struct list_head free_mem_blocks;
