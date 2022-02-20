@@ -776,7 +776,22 @@ static int wait_for_h2c_intr(struct tlkm_pcie_svm_data *svm_data)
 	return res;
 }
 
-static int init_network_migration(struct tlkm_pcie_device *src_dev, struct tlkm_pcie_device *dst_dev, uint64_t src_addr, uint64_t dst_addr, int npages)
+/**
+ * Initiate the copy of a contiguous range of pages from one to another device
+ * using the additional Ethernet connection. Both devices must have the network
+ * migration capability enabled.
+ *
+ * @param src_dev TLKM PCIe device struct of source device
+ * @param dst_dev TLKM PCIe device struct of destination device
+ * @param src_addr base address in source memory
+ * @param dst_addr base address in destination memory
+ * @param npages number of pages to copy
+ * @return SUCCESS - 0, FAILURE - error code
+ */
+static int init_network_migration(struct tlkm_pcie_device *src_dev,
+				  struct tlkm_pcie_device *dst_dev,
+				  uint64_t src_addr, uint64_t dst_addr,
+				  int npages)
 {
 	int i, res, ncmd;
 	struct tlkm_pcie_svm_data *src_svm = src_dev->svm_data;
@@ -785,16 +800,18 @@ static int init_network_migration(struct tlkm_pcie_device *src_dev, struct tlkm_
 	writeq(dst_svm->mac_addr, &src_svm->dma_regs->dst_mac);
 	i = 0;
 	while (i < npages) {
-		ncmd = min((npages - i), (int)PAGE_DMA_MAX_NPAGES);
+		ncmd = min((npages - i), (int) PAGE_DMA_MAX_NPAGES);
 		init_c2h_dma(src_svm, 0, src_addr + i * PAGE_SIZE, ncmd, true);
 		init_h2c_dma(dst_svm, 0, dst_addr + i * PAGE_SIZE, ncmd, false,
 			     true);
-		res = wait_for_h2c_intr(dst_svm);
-		if (res)
-			return res;
 
 		i += ncmd;
 	}
+
+	res = wait_for_h2c_intr(dst_svm);
+	if (res)
+		return res;
+
 	return 0;
 }
 
