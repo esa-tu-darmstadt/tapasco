@@ -321,7 +321,7 @@ namespace eval hbm {
       set hbmInterfaces [get_hbm_interfaces]
       for {set i 0} {$i < [llength $hbmInterfaces]} {incr i} {
         set base [expr {0x10000000 * $i}]
-        set args [lappend args M_AXI_HBM_${i} [list $base 0 -1 ""]]
+        set args [lappend args M_AXI_HBM_${i} [list 0 0 -1 ""]]
       }
       
     }
