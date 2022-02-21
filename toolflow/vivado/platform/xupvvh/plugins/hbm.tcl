@@ -258,8 +258,8 @@ namespace eval hbm {
         set hbm_index [format %02s $i]
 
         # create smartconnect for clock domain conversion, protocol conversion (AXI4->AXI3) and data width conversion
-        set converter [tapasco::ip::create_smartconnect smartconnect_${i}]onnect:1.0 smartconnect_${i}]
-        set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_CLKS {2} CONFIG.HAS_ARESETN {0}] $converter
+        set converter [tapasco::ip::create_axi_sc smartconnect_${i} 1 1 2]
+        #set_property -dict [list CONFIG.NUM_SI {1} CONFIG.NUM_CLKS {2} CONFIG.HAS_ARESETN {0}] $converter
         
         # create connections between PE and smartconnect, and smartconnect and HBM
 
