@@ -1148,7 +1148,9 @@ retry:
 		if (cmd_cnt >= 32 &&
 		    readq(&svm_data->dma_regs->h2c_status_ctrl) &
 			    PAGE_DMA_STAT_FIFO_FULL) {
-			wait_for_h2c_intr(svm_data);
+			res = wait_for_h2c_intr(svm_data);
+			if (res)
+				goto fail_dma;
 			cmd_cnt = 0;
 		}
 		init_h2c_dma(svm_data, dma_addrs[i],
