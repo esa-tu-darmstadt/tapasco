@@ -55,9 +55,11 @@ pfn_to_dev_addr(struct tlkm_pcie_svm_data *svm_data, unsigned long pfn)
  * @param host_addr DMA address in host memory (destination address)
  * @param dev_addr address in device memory (source address)
  * @param npages number of pages to transfer
+ * @param network if set transmit data over network connection
  */
-static void init_c2h_dma(struct tlkm_pcie_svm_data *svm_data,
-			 dma_addr_t host_addr, uint64_t dev_addr, int npages, bool network)
+static void
+init_c2h_dma(struct tlkm_pcie_svm_data *svm_data, dma_addr_t host_addr,
+	     uint64_t dev_addr, int npages, bool network)
 {
 	uint64_t npages_cmd, wval;
 	struct page_dma_regs *dma_regs = svm_data->dma_regs;
@@ -89,10 +91,11 @@ static void init_c2h_dma(struct tlkm_pcie_svm_data *svm_data,
  * @param dev_addr address in device memory (destination address)
  * @param pages number of pages to transfer
  * @param clear if set clear destination pages instead of copying data
+ * @param network if set receive data over network connection
  */
-static void init_h2c_dma(struct tlkm_pcie_svm_data *svm_data,
-			 dma_addr_t host_addr, uint64_t dev_addr, int npages,
-			 bool clear, bool network)
+static void
+init_h2c_dma(struct tlkm_pcie_svm_data *svm_data, dma_addr_t host_addr,
+	     uint64_t dev_addr, int npages, bool clear, bool network)
 {
 	uint64_t npages_cmd, wval;
 	struct page_dma_regs *dma_regs = svm_data->dma_regs;
@@ -727,6 +730,13 @@ static inline int is_contiguous(uint64_t addr, uint64_t last)
 	return ((addr & VADDR_MASK) == (last & VADDR_MASK) + PAGE_SIZE);
 }
 
+/**
+ * Check whether two pages are in contiguous page frames
+ *
+ * @param page first page
+ * @param last preceeding page
+ * @return true if pages are in contiguous page frames
+ */
 static inline int is_contiguous_page(struct page *page, struct page *last)
 {
 	return (page == (last + 1));
@@ -1450,16 +1460,22 @@ retry:
 		ncontiguous = 1;
 		src_pages[i]->zone_device_data = NULL;
 		while (i + ncontiguous < npages) {
-			if (is_contiguous_page(src_pages[i + ncontiguous], src_pages[i + ncontiguous - 1])) {
-				src_pages[i + ncontiguous]->zone_device_data = NULL;
+			if (is_contiguous_page(src_pages[i + ncontiguous],
+					       src_pages[i + ncontiguous -
+							 1])) {
+				src_pages[i +
+					  ncontiguous]->zone_device_data = NULL;
 				++ncontiguous;
-			}
-			else {
+			} else {
 				break;
 			}
 		}
-		if (!queue_dev_mem_free_work(src_dev, pfn_to_dev_addr(src_svm, page_to_pfn(src_pages[i])), ncontiguous * PAGE_SIZE))
-			DEVERR(src_dev->parent->dev_id, "failed to queue work struct to free memory");
+		if (!queue_dev_mem_free_work(src_dev, pfn_to_dev_addr(src_svm,
+								      page_to_pfn(
+									      src_pages[i])),
+					     ncontiguous * PAGE_SIZE))
+			DEVERR(src_dev->parent->dev_id,
+			       "failed to queue work struct to free memory");
 		i += ncontiguous;
 	}
 
@@ -1686,16 +1702,23 @@ retry:
 		src_pages[i]->zone_device_data = NULL;
 		ncontiguous = 1;
 		while (i + ncontiguous < npages) {
-			if (is_contiguous_page(src_pages[i + ncontiguous], src_pages[i + ncontiguous - 1])) {
-				src_pages[i + ncontiguous]->zone_device_data = NULL;
+			if (is_contiguous_page(src_pages[i + ncontiguous],
+					       src_pages[i + ncontiguous -
+							 1])) {
+				src_pages[i +
+					  ncontiguous]->zone_device_data = NULL;
 				++ncontiguous;
 			} else {
 				break;
 			}
 		}
 
-		if (!queue_dev_mem_free_work(pdev, pfn_to_dev_addr(svm_data, page_to_pfn(src_pages[i])), ncontiguous * PAGE_SIZE))
-			DEVERR(pdev->parent->dev_id, "failed to queue work struct to free memory");
+		if (!queue_dev_mem_free_work(pdev, pfn_to_dev_addr(svm_data,
+								   page_to_pfn(
+									   src_pages[i])),
+					     ncontiguous * PAGE_SIZE))
+			DEVERR(pdev->parent->dev_id,
+			       "failed to queue work struct to free memory");
 		i += ncontiguous;
 	}
 
