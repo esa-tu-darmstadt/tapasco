@@ -777,35 +777,46 @@ static int wait_for_h2c_intr(struct tlkm_pcie_svm_data *svm_data)
 }
 
 /**
- * Initiate the copy of a contiguous range of pages from one to another device
- * using the additional Ethernet connection. Both devices must have the network
- * migration capability enabled.
+ * Copy pages from one device to another using the Ethernet network connection.
+ * Caller must check that both devices support migrations over the network.
  *
  * @param src_dev TLKM PCIe device struct of source device
  * @param dst_dev TLKM PCIe device struct of destination device
- * @param src_addr base address in source memory
- * @param dst_addr base address in destination memory
- * @param npages number of pages to copy
+ * @param src_pages array with source pages to copy data from
+ * @param dst_pages arrray with destination pages to copy data to
+ * @param npages number of pages to migrate
  * @return SUCCESS - 0, FAILURE - error code
  */
-static int init_network_migration(struct tlkm_pcie_device *src_dev,
-				  struct tlkm_pcie_device *dst_dev,
-				  uint64_t src_addr, uint64_t dst_addr,
-				  int npages)
+static int copy_dev_to_dev_network(struct tlkm_pcie_device *src_dev,
+				   struct tlkm_pcie_device *dst_dev,
+				   struct page **src_pages,
+				   struct page **dst_pages, int npages)
 {
-	int i, res, ncmd;
+	int i, res, ncontiguous;
+	uint64_t dst_base;
 	struct tlkm_pcie_svm_data *src_svm = src_dev->svm_data;
 	struct tlkm_pcie_svm_data *dst_svm = dst_dev->svm_data;
 
+	dst_base = pfn_to_dev_addr(dst_svm, page_to_pfn(dst_pages[0]));
 	writeq(dst_svm->mac_addr, &src_svm->dma_regs->dst_mac);
 	i = 0;
 	while (i < npages) {
-		ncmd = min((npages - i), (int) PAGE_DMA_MAX_NPAGES);
-		init_c2h_dma(src_svm, 0, src_addr + i * PAGE_SIZE, ncmd, true);
-		init_h2c_dma(dst_svm, 0, dst_addr + i * PAGE_SIZE, ncmd, false,
-			     true);
-
-		i += ncmd;
+		// search for contiguous pages in source memory, always
+		// contiguous in destination memory thanks to allocation scheme
+		ncontiguous = 1;
+		while (i + ncontiguous < npages &&
+		       ncontiguous < PAGE_DMA_MAX_NPAGES) {
+			if (is_contiguous_page(src_pages[i + ncontiguous],
+					       src_pages[i + ncontiguous - 1]))
+				++ncontiguous;
+			else
+				break;
+		}
+		init_c2h_dma(src_svm, 0, pfn_to_dev_addr(src_svm, page_to_pfn(
+			src_pages[i])), ncontiguous, true);
+		init_h2c_dma(dst_svm, 0, dst_base + i * PAGE_SIZE, ncontiguous,
+			     false, true);
+		i += ncontiguous;
 	}
 
 	res = wait_for_h2c_intr(dst_svm);
@@ -816,38 +827,56 @@ static int init_network_migration(struct tlkm_pcie_device *src_dev,
 }
 
 /**
- * Initiate the copy of a contiguous range of pages from one to another device
- * using PCIe endpoint-to-endpoint transfers. The destination device must have
- * the second BAR activated to expose its memory.
+ * Copy pages from one device to another using endpoint-to-endpoint transfers
+ * over PCIe. Caller must ensure that destination device exposes its memory
+ * to the bus with an additional BAR.
  *
  * @param src_dev TLKM PCIe device struct of source device
- * @param dst_dev TLLKM PCIe device struct of destination device
- * @param src_addr base address in memory of source device
- * @param dst_addr base address in memory of destination device
- * @param npages number of pages to copy
+ * @param dst_dev TLKM PCIe device struct of destination device
+ * @param src_pages array with source pages to copy data from
+ * @param dst_pages array with destination pages to copy data to
+ * @param npages number of pages to migrate
  * @return SUCCESS - 0, FAILURE - error code
  */
-static int init_pcie_p2p_copy(struct tlkm_pcie_device *src_dev,
-			      struct tlkm_pcie_device *dst_dev,
-			      uint64_t src_addr, uint64_t dst_addr, int npages)
+static int copy_dev_to_dev_pcie_e2e(struct tlkm_pcie_device *src_dev,
+			      struct tlkm_pcie_device *dst_dev, struct page **src_pages, struct page **dst_pages, int npages)
 {
-	int i, res, ncmd, cmd_cnt;
+	int i, res, ncontiguous, cmd_cnt;
 	uint64_t dst_base, cmd_src, cmd_dst;
 	struct tlkm_pcie_svm_data *src_svm = src_dev->svm_data;
 	struct tlkm_pcie_svm_data *dst_svm = dst_dev->svm_data;
 
-	// TODO count issued DMA commands to prevent deadlock
 	DEVLOG(src_dev->parent->dev_id, TLKM_LF_SVM, "use PCIe P2P copy");
 
-	dst_base = dst_svm->rdma_bar + dst_addr;
+	dst_base = dst_svm->rdma_bar + pfn_to_dev_addr(dst_svm, page_to_pfn(dst_pages[0]));
 	i = 0;
 	cmd_cnt = 0;
 	while (i < npages) {
-		cmd_src = src_addr + i * PAGE_SIZE;
+		// search for contiguous pages in source memory, always
+		// contiguous in destination memory thanks to allocation scheme
+		ncontiguous = 1;
+		while (i + ncontiguous < npages && ncontiguous < PAGE_DMA_MAX_NPAGES) {
+			if (is_contiguous_page(src_pages[i + ncontiguous], src_pages[i + ncontiguous - 1]))
+				++ncontiguous;
+			else
+				break;
+		}
+
+		// check whether PageDMA can accept further commands to
+		// prevent deadlock on PCIe bus
+		if (cmd_cnt >= 32 && readq(&src_svm->dma_regs->c2h_status_ctrl) & PAGE_DMA_STAT_FIFO_FULL) {
+			res = wait_for_c2h_intr(src_svm);
+			if (res)
+				return res;
+			cmd_cnt = 0;
+		}
+
+		// push data from source device to destination device
+		cmd_src = pfn_to_dev_addr(src_svm, page_to_pfn(src_pages[i]));
 		cmd_dst = dst_base + i * PAGE_SIZE;
-		ncmd = min((npages - i), (int)PAGE_DMA_MAX_NPAGES);
-		init_c2h_dma(src_svm, cmd_dst, cmd_src, ncmd, false);
-		i += ncmd;
+		init_c2h_dma(src_svm, cmd_dst, cmd_src, ncontiguous, false);
+		++cmd_cnt;
+		i += ncontiguous;
 	}
 
 	res = wait_for_c2h_intr(src_svm);
@@ -857,26 +886,28 @@ static int init_pcie_p2p_copy(struct tlkm_pcie_device *src_dev,
 }
 
 /**
- * Initialize the copy of a contiguous range of pages from one to another device.
- * The data is copied in two steps: First from the source device to a buffer in
- * host memory, and then to the second device
+ * Copy pages from one device to another in two steps using a buffer in host memory.
  *
  * @param src_dev TLKM PCIe device struct of source device
- * @param dst_dev  TLKM PCIe device struct of destination device
- * @param src_addr base address in memory of source device
- * @param dst_addr base address in memory of destination device
- * @param npages number of pages to copy
- * @return zero in case of success, error code otherwise
+ * @param dst_dev TLKM PCIe device struct of destination device
+ * @param src_pages array of source pages to copy data from
+ * @param dst_pages array of destination pages to copy data to
+ * @param npages number of pages to migrate
+ * @return SUCCESS - 0, FAILURE - error code
  */
-static int init_dev_to_dev_copy(struct tlkm_pcie_device *src_dev,
-				struct tlkm_pcie_device *dst_dev,
-				uint64_t src_addr,
-				uint64_t dst_addr, int npages)
+static int copy_dev_to_dev_buffered(struct tlkm_pcie_device *src_dev,
+				    struct tlkm_pcie_device *dst_dev,
+				    struct page **src_pages,
+				    struct page **dst_pages, int npages)
 {
-	int res, copied_pages, move_cnt;
+	int res, copied_pages, move_cnt, ncontiguous, cmd_cnt;
 	size_t buf_size;
 	void *buf;
 	dma_addr_t buf_addr = 0;
+	struct tlkm_pcie_svm_data *src_svm, *dst_svm;
+
+	src_svm = src_dev->svm_data;
+	dst_svm = dst_dev->svm_data;
 
 	// maximum allocatable buffer is 4 MB (1024 pages)
 	buf_size = min(npages, DEV_TO_DEV_DMA_MAX_NPAGES) * PAGE_SIZE;
@@ -898,18 +929,56 @@ static int init_dev_to_dev_copy(struct tlkm_pcie_device *src_dev,
 
 	copied_pages = 0;
 	while (copied_pages < npages) {
-		move_cnt = min(npages - copied_pages,
-			       DEV_TO_DEV_DMA_MAX_NPAGES);
-		init_c2h_dma(src_dev->svm_data, buf_addr,
-			     src_addr + copied_pages * PAGE_SIZE, move_cnt,
-			     false);
+		move_cnt = 0;
+		cmd_cnt = 0;
+		// search for contiguous source pages and move them to the host
+		// buffer until it is filled completely
+		while (copied_pages + move_cnt < npages &&
+		       move_cnt < DEV_TO_DEV_DMA_MAX_NPAGES) {
+			ncontiguous = 1;
+			while (copied_pages + move_cnt + ncontiguous < npages &&
+			       move_cnt + ncontiguous <
+			       DEV_TO_DEV_DMA_MAX_NPAGES &&
+			       ncontiguous < PAGE_DMA_MAX_NPAGES) {
+				if (is_contiguous_page(
+					src_pages[copied_pages + move_cnt +
+						  ncontiguous],
+					src_pages[copied_pages + move_cnt +
+						  ncontiguous - 1]))
+					++ncontiguous;
+				else
+					break;
+			}
+
+			// check whether PageDMA can accept further commands to
+			// prevent deadlock on PCIe bus
+			if (cmd_cnt >= 32 &&
+			    readq(&src_svm->dma_regs->c2h_status_ctrl) &
+			    PAGE_DMA_STAT_FIFO_FULL) {
+				res = wait_for_c2h_intr(src_svm);
+				if (res)
+					goto fail_c2h;
+				cmd_cnt = 0;
+			}
+			init_c2h_dma(src_svm, buf_addr + move_cnt * PAGE_SIZE,
+				     pfn_to_dev_addr(src_svm, page_to_pfn(
+					     src_pages[copied_pages +
+						       move_cnt])), ncontiguous,
+				     false);
+			++cmd_cnt;
+			move_cnt += ncontiguous;
+		}
+
 		res = wait_for_c2h_intr(src_dev->svm_data);
 		if (res)
 			goto fail_c2h;
 
-		init_h2c_dma(dst_dev->svm_data, buf_addr,
-			     dst_addr + copied_pages * PAGE_SIZE, move_cnt,
-			     false, false);
+		// move all pages with one command to destination memory
+		// pages are always contiguous due to allocation scheme
+		init_h2c_dma(dst_svm, buf_addr, pfn_to_dev_addr(dst_svm,
+								page_to_pfn(
+									dst_pages[copied_pages])),
+			     move_cnt, false, false);
 		res = wait_for_h2c_intr(dst_dev->svm_data);
 		if (res)
 			goto fail_h2c;
@@ -1304,53 +1373,22 @@ retry:
 		dst_pages[i]->zone_device_data = dst_dev;
 	}
 
-	i = 0;
-	while (i < npages) {
-		// find physical contiguous region on source device
-		// (always contiguous on destination device due to allocation scheme)
-		ncontiguous = 1;
-		while (i + ncontiguous < npages &&
-		       ncontiguous < PAGE_DMA_MAX_NPAGES) {
-			if (is_contiguous_page(src_pages[i + ncontiguous],
-					       src_pages[i + ncontiguous - 1]))
-				++ncontiguous;
-			else
-				break;
-		}
-		if (src_svm->network_dma_enabled &&
-		    dst_svm->network_dma_enabled)
-			res = init_network_migration(src_dev, dst_dev,
-						     pfn_to_dev_addr(src_svm,
-								     page_to_pfn(
-									     src_pages[i])),
-						     pfn_to_dev_addr(dst_svm,
-								     page_to_pfn(
-									     dst_pages[i])),
-						     ncontiguous);
-		else if (src_svm->rdma_bar && dst_svm->rdma_bar)
-			res = init_pcie_p2p_copy(src_dev, dst_dev,
-						 pfn_to_dev_addr(src_svm,
-								 page_to_pfn(
-									 src_pages[i])),
-						 pfn_to_dev_addr(dst_svm,
-								 page_to_pfn(
-									 dst_pages[i])),
-						 ncontiguous);
-		else
-			res = init_dev_to_dev_copy(src_dev, dst_dev,
-						   pfn_to_dev_addr(src_svm,
-								   page_to_pfn(
-									   src_pages[i])),
-						   pfn_to_dev_addr(dst_svm,
-								   page_to_pfn(
-									   dst_pages[i])),
-						   ncontiguous);
-		if (res) {
-			DEVERR(dst_dev->parent->dev_id,
-			       "DMA during migration failed");
-			goto fail_dma;
-		}
-		i += ncontiguous;
+	// choose copy method based on capabilities
+	if (src_svm->network_dma_enabled && dst_svm->network_dma_enabled)
+		res = copy_dev_to_dev_network(src_dev, dst_dev, src_pages,
+					      dst_pages, npages);
+		// since data is pushed, only destination device must expose memory
+		// to the PCIe bus
+	else if (dst_svm->rdma_bar)
+		res = copy_dev_to_dev_pcie_e2e(src_dev, dst_dev, src_pages,
+					       dst_pages, npages);
+	else
+		res = copy_dev_to_dev_buffered(src_dev, dst_dev, src_pages,
+					       dst_pages, npages);
+	if (res) {
+		DEVERR(dst_dev->parent->dev_id,
+		       "DMA during migration failed");
+		goto fail_dma;
 	}
 
 	if (readq(&src_svm->dma_regs->c2h_status_ctrl) &
