@@ -185,12 +185,14 @@ static void
 invalidate_tlb_range(struct tlkm_pcie_svm_data *svm_data, uint64_t base,
 		     int npages)
 {
-	int i;
+	uint64_t w_val;
 	DEVLOG(svm_data->pdev->parent->dev_id, TLKM_LF_SVM,
 	       "invalidate TLB range: vaddr = %llx, length = %0d", base,
 	       npages);
-	for (i = 0; i < npages; ++i)
-		invalidate_tlb_entry(svm_data, base + i * PAGE_SIZE);
+	writeq(base, &svm_data->mmu_regs->vaddr);
+	w_val = ((uint64_t)npages) << MMU_INVALIDATE_LENGTH_SHIFT;
+	w_val |= MMU_INVALIDATE_ENTRY;
+	writeq(w_val, &svm_data->mmu_regs->cmd);
 }
 
 /**
