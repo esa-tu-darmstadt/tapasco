@@ -936,11 +936,14 @@ static int copy_dev_to_dev_pcie_e2e(struct tlkm_pcie_device *src_dev,
 
 		// check whether PageDMA can accept further commands to
 		// prevent deadlock on PCIe bus
-		if (cmd_cnt >= 32 && readq(&src_svm->dma_regs->c2h_status_ctrl) & PAGE_DMA_STAT_FIFO_FULL) {
-			res = wait_for_c2h_intr(src_svm);
-			if (res)
-				return res;
-			cmd_cnt = 0;
+		if (cmd_cnt >= 64) {
+			cmd_cnt = readq(&src_svm->dma_regs->c2h_cmd_cnt);
+			if (cmd_cnt >= 64) {
+				res = wait_for_c2h_intr(src_svm);
+				if (res)
+					return res;
+				cmd_cnt = 0;
+			}
 		}
 
 		// push data from source device to destination device
@@ -1024,13 +1027,14 @@ static int copy_dev_to_dev_buffered(struct tlkm_pcie_device *src_dev,
 
 			// check whether PageDMA can accept further commands to
 			// prevent deadlock on PCIe bus
-			if (cmd_cnt >= 32 &&
-			    readq(&src_svm->dma_regs->c2h_status_ctrl) &
-			    PAGE_DMA_STAT_FIFO_FULL) {
-				res = wait_for_c2h_intr(src_svm);
-				if (res)
-					goto fail_c2h;
-				cmd_cnt = 0;
+			if (cmd_cnt >= 64) {
+				cmd_cnt = readq(&src_svm->dma_regs->c2h_cmd_cnt);
+				if (cmd_cnt >= 64) {
+					res = wait_for_c2h_intr(src_svm);
+					if (res)
+						goto fail_c2h;
+					cmd_cnt = 0;
+				}
 			}
 			init_c2h_dma(src_svm, buf_addr + move_cnt * PAGE_SIZE,
 				     pfn_to_dev_addr(src_svm, page_to_pfn(
@@ -1217,13 +1221,14 @@ retry:
 
 		// check whether PageDMA can accept further commands to prevent
 		// deadlock on PCIe bus
-		if (cmd_cnt >= 32 &&
-		    readq(&svm_data->dma_regs->h2c_status_ctrl) &
-			    PAGE_DMA_STAT_FIFO_FULL) {
-			res = wait_for_h2c_intr(svm_data);
-			if (res)
-				goto fail_dma;
-			cmd_cnt = 0;
+		if (cmd_cnt >= 64) {
+			cmd_cnt = readq(&svm_data->dma_regs->h2c_cmd_cnt);
+			if (cmd_cnt >= 64) {
+				res = wait_for_h2c_intr(svm_data);
+				if (res)
+					goto fail_dma;
+				cmd_cnt = 0;
+			}
 		}
 		init_h2c_dma(svm_data, dma_addrs[i],
 			     pfn_to_dev_addr(svm_data, base_pfn + i),
@@ -1689,11 +1694,14 @@ retry:
 
 		// check whether PageDMA can accept further commands to prevent
 		// deadlock on PCIe bus
-		if (cmd_cnt >= 32 &&
-		    readq(&svm_data->dma_regs->c2h_status_ctrl) &
-			    PAGE_DMA_STAT_FIFO_FULL) {
-			wait_for_c2h_intr(svm_data);
-			cmd_cnt = 0;
+		if (cmd_cnt >= 64) {
+			cmd_cnt = readq(&svm_data->dma_regs->c2h_cmd_cnt);
+			if (cmd_cnt >= 64) {
+				res = wait_for_c2h_intr(svm_data);
+				if (res)
+					goto fail_dma;
+				cmd_cnt = 0;
+			}
 		}
 		init_c2h_dma(svm_data, dma_addrs[i], pfn_to_dev_addr(svm_data,
 								     page_to_pfn(

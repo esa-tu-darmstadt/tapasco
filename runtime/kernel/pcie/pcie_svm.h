@@ -145,10 +145,12 @@ struct page_dma_regs {
 	uint64_t c2h_src_addr;
 	uint64_t c2h_dst_addr;
 	uint64_t c2h_start_len;
+	uint64_t c2h_cmd_cnt;
 	uint64_t h2c_status_ctrl;
 	uint64_t h2c_src_addr;
 	uint64_t h2c_dst_addr;
 	uint64_t h2c_start_len;
+	uint64_t h2c_cmd_cnt;
 	uint64_t id;
 	uint64_t own_mac;
 	uint64_t dst_mac;
