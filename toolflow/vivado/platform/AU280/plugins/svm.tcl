@@ -78,8 +78,8 @@ namespace eval svm {
   proc addressmap {{args {}}} {
     if {[tapasco::is_feature_enabled "SVM"]} {
       set args [lappend args "M_MMU" [list 0x50000 0x10000 0 "PLATFORM_COMPONENT_MMU"]]
-      return $args
     }
+    return $args
   }
 }
 
