@@ -1994,7 +1994,7 @@ int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 		if (!src_svm || src_svm->mm != svm_data->mm)
 			continue;
 
-		if (search_vmem_intervals(src_svm, &vmem_intervals, vaddr,
+		if (search_vmem_intervals(src_svm, &vmem_intervals, va_start,
 					  npages)) {
 			DEVERR(src_dev->parent->dev_id,
 			       "error during search for vmem intervals");
