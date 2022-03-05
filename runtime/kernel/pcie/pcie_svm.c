@@ -371,6 +371,31 @@ is_page_present(struct tlkm_pcie_svm_data *svm_data, uint64_t vaddr)
 }
 
 /**
+ * Check whether two addresses refer to contiguous pages
+ *
+ * @param addr first address
+ * @param last second address
+ * @return true if the second address refers to the page preceding the page the
+ * first address is referring to
+ */
+static inline int is_contiguous(uint64_t addr, uint64_t last)
+{
+	return ((addr & VADDR_MASK) == (last & VADDR_MASK) + PAGE_SIZE);
+}
+
+/**
+ * Check whether two pages are in contiguous page frames
+ *
+ * @param page first page
+ * @param last preceeding page
+ * @return true if pages are in contiguous page frames
+ */
+static inline int is_contiguous_page(struct page *page, struct page *last)
+{
+	return (page == (last + 1));
+}
+
+/**
  * Allocate a region in device memory
  *
  * @param svm_data SVM data struct
@@ -553,10 +578,43 @@ static void handle_device_memory_free(struct work_struct *work)
 }
 
 /**
+ * Free device memory of multiple pages
+ *
+ * @param work work struct containing array with all device pages to be freed
+ */
+static void handle_device_pages_free(struct work_struct *work)
+{
+	int i, ncontiguous;
+	struct dev_pages_free_work_env *env = container_of(work,
+	typeof(*env), work);
+	struct tlkm_pcie_svm_data *svm_data = env->pdev->svm_data;
+	struct page **pages = env->pages;
+	int npages = env->npages;
+
+	i = 0;
+	while (i < npages) {
+		ncontiguous = 1;
+		while (i + ncontiguous < npages) {
+			if (is_contiguous_page(pages[i + ncontiguous],
+					       pages[i + ncontiguous - 1]))
+				++ncontiguous;
+			else
+				break;
+		}
+		free_device_memory(svm_data, pfn_to_dev_addr(svm_data,
+							     page_to_pfn(
+								     pages[i])),
+				   ncontiguous * PAGE_SIZE);
+		i += ncontiguous;
+	}
+	kfree(pages);
+	kfree(env);
+}
+
+/**
  * Enqueue a new work struct to the workqueue handling device memory freeing
  *
  * @param pdev TLKM PCIe device struct
- * @param svm_data SVM data struct
  * @param dev_addr base address of the memory region to be freed
  * @param size size of the memory region to be freed
  * @return true if work could be enqueued, false otherwise
@@ -578,6 +636,31 @@ static inline int queue_dev_mem_free_work(struct tlkm_pcie_device *pdev,
 	return queue_work(svm_data->dev_mem_free_queue, &env->work);
 }
 
+/**
+ * Enqueue a new work struct to the workqueue handling device memory freeing
+ * of multiple pages
+ *
+ * @param pdev TLKM PCIe device struct
+ * @param pages array of pages to be freed
+ * @param npages number of pages in array
+ * @return SUCCESS - true, FAILURE - false
+ */
+static inline bool
+queue_dev_pages_free_work(struct tlkm_pcie_device *pdev, struct page **pages,
+			  int npages)
+{
+	struct dev_pages_free_work_env *env = kmalloc(sizeof(*env), GFP_KERNEL);
+	if (!env) {
+		DEVERR(pdev->parent->dev_id,
+		       "failed to allocate memory for work struct");
+		return false;
+	}
+	env->pdev = pdev;
+	env->pages = pages;
+	env->npages = npages;
+	INIT_WORK(&env->work, handle_device_pages_free);
+	return queue_work(pdev->svm_data->dev_pages_free_queue, &env->work);
+}
 
 /**
  * Free a device page and the corresponding device memory
@@ -719,30 +802,7 @@ static struct dev_pagemap_ops svm_pagemap_ops = {
 	.migrate_to_ram = svm_migrate_to_ram,
 };
 
-/**
- * Check whether two addresses refer to contiguous pages
- *
- * @param addr first address
- * @param last second address
- * @return true if the second address refers to the page preceding the page the
- * first address is referring to
- */
-static inline int is_contiguous(uint64_t addr, uint64_t last)
-{
-	return ((addr & VADDR_MASK) == (last & VADDR_MASK) + PAGE_SIZE);
-}
 
-/**
- * Check whether two pages are in contiguous page frames
- *
- * @param page first page
- * @param last preceeding page
- * @return true if pages are in contiguous page frames
- */
-static inline int is_contiguous_page(struct page *page, struct page *last)
-{
-	return (page == (last + 1));
-}
 
 /**
  * Enable and wait for a C2H interrupt of the PageDMA core
@@ -1457,29 +1517,12 @@ retry:
 		add_tlb_entry(dst_svm, vaddr + i * PAGE_SIZE,
 			      pfn_to_dev_addr(dst_svm, base_pfn + i));
 
-	i = 0;
-	while (i < npages) {
-		ncontiguous = 1;
+	for (i = 0; i < npages; ++i)
 		src_pages[i]->zone_device_data = NULL;
-		while (i + ncontiguous < npages) {
-			if (is_contiguous_page(src_pages[i + ncontiguous],
-					       src_pages[i + ncontiguous -
-							 1])) {
-				src_pages[i +
-					  ncontiguous]->zone_device_data = NULL;
-				++ncontiguous;
-			} else {
-				break;
-			}
-		}
-		if (!queue_dev_mem_free_work(src_dev, pfn_to_dev_addr(src_svm,
-								      page_to_pfn(
-									      src_pages[i])),
-					     ncontiguous * PAGE_SIZE))
-			DEVERR(src_dev->parent->dev_id,
-			       "failed to queue work struct to free memory");
-		i += ncontiguous;
-	}
+
+	if (!queue_dev_pages_free_work(src_dev, src_pages, npages))
+		DEVERR(src_dev->parent->dev_id,
+		       "failed to queue work struct to free memory");
 
 	migrate_vma_finalize(&migrate);
 
@@ -1488,7 +1531,6 @@ retry:
 	insert_vmem_interval(dst_svm, vaddr, npages);
 
 	kfree(dst_pages);
-	kfree(src_pages);
 	kfree(migrate.dst);
 	kfree(migrate.src);
 
@@ -1699,30 +1741,12 @@ retry:
 		}
 	}
 
-	i = 0;
-	while (i < npages) {
+	for (i = 0; i < npages; ++i)
 		src_pages[i]->zone_device_data = NULL;
-		ncontiguous = 1;
-		while (i + ncontiguous < npages) {
-			if (is_contiguous_page(src_pages[i + ncontiguous],
-					       src_pages[i + ncontiguous -
-							 1])) {
-				src_pages[i +
-					  ncontiguous]->zone_device_data = NULL;
-				++ncontiguous;
-			} else {
-				break;
-			}
-		}
 
-		if (!queue_dev_mem_free_work(pdev, pfn_to_dev_addr(svm_data,
-								   page_to_pfn(
-									   src_pages[i])),
-					     ncontiguous * PAGE_SIZE))
-			DEVERR(pdev->parent->dev_id,
-			       "failed to queue work struct to free memory");
-		i += ncontiguous;
-	}
+	if (!queue_dev_pages_free_work(pdev, src_pages, npages))
+		DEVERR(pdev->parent->dev_id,
+		       "failed to queue work struct to free memory");
 
 	migrate_vma_finalize(&migrate);
 
@@ -1732,7 +1756,6 @@ retry:
 	writeq(MMU_ACTIVATE, &svm_data->mmu_regs->cmd);
 	kfree(dma_addrs);
 	kfree(dst_pages);
-	kfree(src_pages);
 	kfree(migrate.dst);
 	kfree(migrate.src);
 
@@ -2629,6 +2652,16 @@ int pcie_init_svm(struct tlkm_pcie_device *pdev)
 		goto fail_workqueue_devmemfree;
 	}
 
+	svm_data->dev_pages_free_queue = alloc_workqueue(TLKM_PCI_NAME,
+							 WQ_UNBOUND |
+							 WQ_MEM_RECLAIM, 0);
+	if (!svm_data->dev_pages_free_queue) {
+		DEVERR(pdev->parent->dev_id,
+		       "could not allocate work queue for freeing device pages");
+		res = -EFAULT;
+		goto fail_workqueue_devpagesfree;
+	}
+
 	// register DMA interrupts
 	c2h_irq_no = pci_irq_vector(pdev->pdev, C2H_IRQ_NO);
 	res = request_irq(c2h_irq_no, svm_c2h_intr_handler, IRQF_EARLY_RESUME,
@@ -2693,6 +2726,8 @@ fail_mmuirq:
 fail_h2cintr:
 	free_irq(c2h_irq_no, (void *)pdev);
 fail_c2hintr:
+	destroy_workqueue(svm_data->dev_pages_free_queue);
+fail_workqueue_devpagesfree:
 	destroy_workqueue(svm_data->dev_mem_free_queue);
 fail_workqueue_devmemfree:
 	destroy_workqueue(svm_data->page_fault_queue);
@@ -2713,8 +2748,9 @@ void pcie_exit_svm(struct tlkm_pcie_device *pdev)
 {
 	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
 
-	// do not flush this queue before exiting
+	// do not flush these queues before exiting
 	flush_workqueue(svm_data->dev_mem_free_queue);
+	flush_workqueue(svm_data->dev_pages_free_queue);
 
 	free_irq(pci_irq_vector(pdev->pdev, PAGE_FAULT_IRQ_NO), (void *)pdev);
 	free_irq(pci_irq_vector(pdev->pdev, H2C_IRQ_NO), (void *)pdev);
@@ -2722,6 +2758,7 @@ void pcie_exit_svm(struct tlkm_pcie_device *pdev)
 
 	destroy_workqueue(svm_data->page_fault_queue);
 	destroy_workqueue(svm_data->dev_mem_free_queue);
+	destroy_workqueue(svm_data->dev_pages_free_queue);
 
 	pdev->svm_data = NULL;
 }

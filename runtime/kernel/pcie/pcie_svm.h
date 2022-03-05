@@ -114,6 +114,7 @@ struct tlkm_pcie_svm_data {
 	// work queues
 	struct workqueue_struct *page_fault_queue;
 	struct workqueue_struct *dev_mem_free_queue;
+	struct workqueue_struct *dev_pages_free_queue;
 
 	// wait queues
 	wait_queue_head_t wait_queue_h2c_intr;
@@ -165,6 +166,14 @@ struct dev_mem_free_work_env {
 	struct work_struct work;
 	uint64_t dev_addr;
 	uint64_t size;
+};
+
+/* envelope around work struct for device pages free commands */
+struct dev_pages_free_work_env {
+	struct tlkm_pcie_device *pdev;
+	struct work_struct work;
+	struct page **pages;
+	int npages;
 };
 
 /* physical memory block for device memory allocator */
