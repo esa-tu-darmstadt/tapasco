@@ -871,10 +871,19 @@ static int copy_dev_to_dev_network(struct tlkm_pcie_device *src_dev,
 
 	dst_base = pfn_to_dev_addr(dst_svm, page_to_pfn(dst_pages[0]));
 	writeq(dst_svm->mac_addr, &src_svm->dma_regs->dst_mac);
+
+	i = 0;
+	// prepare destination device for receiving pages
+	while (i < npages) {
+		ncontiguous = min(npages - i, (int) PAGE_DMA_MAX_NPAGES);
+		init_h2c_dma(dst_svm, 0, dst_base + i * PAGE_SIZE, ncontiguous,
+			     false, true);
+		i += ncontiguous;
+	}
+
 	i = 0;
 	while (i < npages) {
-		// search for contiguous pages in source memory, always
-		// contiguous in destination memory thanks to allocation scheme
+		// search for contiguous pages in source memory
 		ncontiguous = 1;
 		while (i + ncontiguous < npages &&
 		       ncontiguous < PAGE_DMA_MAX_NPAGES) {
@@ -886,8 +895,6 @@ static int copy_dev_to_dev_network(struct tlkm_pcie_device *src_dev,
 		}
 		init_c2h_dma(src_svm, 0, pfn_to_dev_addr(src_svm, page_to_pfn(
 			src_pages[i])), ncontiguous, true);
-		init_h2c_dma(dst_svm, 0, dst_base + i * PAGE_SIZE, ncontiguous,
-			     false, true);
 		i += ncontiguous;
 	}
 
