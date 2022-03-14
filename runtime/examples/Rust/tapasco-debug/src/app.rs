@@ -310,15 +310,16 @@ impl<'a> App<'a> {
                         InputMode::Edit => {
                             // If the input cannot be parsed correctly, simply do nothing until
                             // we either hit Escape or enter a valid decimal integer.
-                            let new_value: Option<u64> = if let Some(hex_string) = self.input.strip_prefix("0x") {
-                                u64::from_str_radix(hex_string, 16).ok()
-                            } else if let Ok(new_value) = self.input.parse::<u64>() {
-                               Some(new_value)
-                            } else if let Ok(new_value) = self.input.parse::<i64>() {
-                               Some(new_value as u64)  // explicitly use as casting
-                            } else {
-                               None
-                            };
+                            let new_value: Option<u64> =
+                                if let Some(hex_string) = self.input.strip_prefix("0x") {
+                                    u64::from_str_radix(hex_string, 16).ok()
+                                } else if let Ok(new_value) = self.input.parse::<u64>() {
+                                    Some(new_value)
+                                } else if let Ok(new_value) = self.input.parse::<i64>() {
+                                    Some(new_value as u64) // explicitly use as casting
+                                } else {
+                                    None
+                                };
 
                             if let Some(new_value) = new_value {
                                 self.input.clear();
@@ -338,10 +339,12 @@ impl<'a> App<'a> {
                                             important. You should fix this app.", e);
                                 }
 
-                                self.messages.push(format!("In slot {} set argument register {} to new value: {}.",
-                                                           self.pe_infos.state.selected().unwrap(),
-                                                           self.register_list.selected().unwrap(),
-                                                           new_value));
+                                self.messages.push(format!(
+                                    "In slot {} set argument register {} to new value: {}.",
+                                    self.pe_infos.state.selected().unwrap(),
+                                    self.register_list.selected().unwrap(),
+                                    new_value
+                                ));
 
                                 self.input_mode = InputMode::Navigation;
                             }
@@ -403,7 +406,9 @@ impl<'a> App<'a> {
             //
             trace!("Starting PE with ID: {}.", pe.id());
 
-            let offset = (*pe.offset()).try_into().expect("Expected to be able to cast the PE offset.");
+            let offset = (*pe.offset())
+                .try_into()
+                .expect("Expected to be able to cast the PE offset.");
 
             unsafe {
                 // Access PE memory just like in `libtapasco`:
@@ -417,7 +422,13 @@ impl<'a> App<'a> {
                 (ptr as *mut u32).write_volatile(1);
             }
 
-            return format!("Send start signal to PE in slot: {}.", self.pe_infos.state.selected().expect("There needs to be a selected PE. This is a bug."))
+            return format!(
+                "Send start signal to PE in slot: {}.",
+                self.pe_infos
+                    .state
+                    .selected()
+                    .expect("There needs to be a selected PE. This is a bug.")
+            );
         }
 
         "No PE selected.".to_string()
@@ -441,10 +452,11 @@ impl<'a> App<'a> {
             //result += &format!("Interrupt pending: {}", interrupt_pending);
             result += &format!(
                 "Return: 0x{:16x} (i32: {:10})\n",
-                return_value, return_value as i32  // explicitly use as casting
+                return_value,
+                return_value as i32 // explicitly use as casting
             );
 
-            return result
+            return result;
         }
 
         "No PE selected.".to_string()
@@ -471,7 +483,7 @@ impl<'a> App<'a> {
                 result.push(format!("Arg#{:02}: 0x{:16x} ({:20})\n", i, a, a));
             }
 
-            return result
+            return result;
         }
 
         vec!["No PE selected.".to_string()]

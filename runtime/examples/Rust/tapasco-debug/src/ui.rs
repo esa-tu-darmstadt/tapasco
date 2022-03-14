@@ -235,7 +235,12 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
                 Constraint::Length(3),
             ]
             .as_ref(),
-            InputMode::Navigation => [Constraint::Length(15), Constraint::Min(30), Constraint::Length(15)].as_ref(),
+            InputMode::Navigation => [
+                Constraint::Length(15),
+                Constraint::Min(30),
+                Constraint::Length(15),
+            ]
+            .as_ref(),
         })
         .split(chunk);
 
@@ -305,7 +310,8 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
     f.render_stateful_widget(registers, register_chunks[1], &mut app.register_list);
 
     // TODO: Should local memory also be editable?
-    let local_memory = app.dump_current_pe_local_memory(horizontal_chunks[1].height.saturating_sub(2).into());
+    let local_memory =
+        app.dump_current_pe_local_memory(horizontal_chunks[1].height.saturating_sub(2).into());
     let local_memory: Vec<ListItem> = local_memory
         .iter()
         .map(|i| ListItem::new(vec![Spans::from(Span::raw(i))]))
@@ -343,7 +349,14 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
         draw_block_with_paragraph(
             f,
             "Messages",
-            app.messages.iter().rev().take(vertical_chunks[2].height.saturating_sub(2).into()).rev().cloned().collect::<Vec<String>>().join("\n"),
+            app.messages
+                .iter()
+                .rev()
+                .take(vertical_chunks[2].height.saturating_sub(2).into())
+                .rev()
+                .cloned()
+                .collect::<Vec<String>>()
+                .join("\n"),
             vertical_chunks[2],
         );
     }
