@@ -1,14 +1,10 @@
 mod app;
-use app::App;
-
 mod ui;
-use ui::setup;
 
 use snafu::{ResultExt, Snafu};
 
 #[derive(Debug, Snafu)]
-#[snafu(visibility(pub))]
-pub enum Error {
+enum Error {
     #[snafu(display("Failed to initialize TLKM object: {}. Have you loaded the kernel module?", source))]
     TLKMInit { source: tapasco::tlkm::Error },
 
@@ -22,11 +18,38 @@ pub enum Error {
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 use env_logger;
+use structopt::StructOpt;
 
+/// The interactive TaPaSCo Debugger can be used to retrieve information about the loaded
+/// bitstream, monitor other TaPaSCo runtimes and write values to the registers of your PEs
+#[derive(StructOpt, Debug)]
+#[structopt(rename_all = "kebab-case")]
+struct Opt {
+    /// The Device ID of the FPGA you want to use if you got more than one
+    #[structopt(short = "d", long = "device", default_value = "0")]
+    device_id: u32,
+
+    /// Specify the Access Mode as subcommand
+    #[structopt(subcommand)]
+    pub subcommand: Command,
+}
+
+#[derive(StructOpt, Debug, PartialEq)]
+pub enum Command {
+    /// Enter Monitor Mode where values cannot be modified, e.g. to monitor another runtime
+    Monitor {},
+    /// Enter Debug Mode where values can only be modified interactively in this debugger
+    Debug {},
+    /// Enter Unsafe Mode where values can be modified by this debugger and another runtime
+    Unsafe {},
+}
 
 fn init() -> Result<()> {
-    setup(&mut App::new().context(AppError {})?).context(UIError {})
+    let Opt { device_id, subcommand, } = Opt::from_args();
+    // Specify the Access Mode as subcommand
+    ui::setup(&mut app::App::new(device_id, subcommand).context(AppError {})?).context(UIError {})
 }
+
 fn main() {
     env_logger::init();
 
