@@ -372,10 +372,8 @@ impl<'a> App<'a> {
         Some(pe)
     }
 
-    pub fn start_current_pe(&self) -> Result<String> {
-        if (self.access_mode != AccessMode::Unsafe {}) {
-            panic!("Unsafe access mode necessary to start a PE! This function should not have been callable. This is a bug.");
-        }
+    pub fn start_current_pe(&self) -> String {
+        assert!(self.access_mode == AccessMode::Unsafe {}, "Unsafe access mode necessary to start a PE! This function should not have been callable. This is a bug.");
 
         if let Some(pe) = self.get_current_pe() {
             // This does not work because `libtapasco` does a really god job of protecting its PEs
@@ -412,10 +410,10 @@ impl<'a> App<'a> {
                 (ptr as *mut u32).write_volatile(1);
             }
 
-            return Ok(format!("Started PE with ID: {}.", pe.id()).to_string())
+            return format!("Started PE with ID: {}.", pe.id())
         }
 
-        Ok("No PE selected.".to_string())
+        "No PE selected.".to_string()
     }
 
     pub fn get_status_registers(&mut self) -> String {
@@ -439,10 +437,10 @@ impl<'a> App<'a> {
                 return_value, return_value as i32
             );
 
-            result
-        } else {
-            "No PE selected.".to_string()
+            return result
         }
+
+        "No PE selected.".to_string()
     }
 
     // TODO: add a function parameter for the number of registers that should be read to make it

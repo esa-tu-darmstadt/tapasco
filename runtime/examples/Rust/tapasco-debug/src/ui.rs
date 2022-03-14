@@ -1,6 +1,6 @@
 use std::{io::stdout, sync::mpsc, thread, time::Duration};
 
-use log::{error, info, trace, warn};
+use log::trace;
 
 use tui::{
     backend::{Backend, CrosstermBackend},
@@ -74,7 +74,7 @@ pub fn setup(app: &mut App) -> Result<()> {
     result
 }
 
-fn run_event_loop<B: Backend>(app: &mut App, mut terminal: &mut Terminal<B>) -> Result<()> {
+fn run_event_loop<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Result<()> {
     // Setup input handling as in the crossterm demo with a multi producer single consumer (mpsc) channel
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || loop {
@@ -97,7 +97,7 @@ fn run_event_loop<B: Backend>(app: &mut App, mut terminal: &mut Terminal<B>) -> 
     // Event loop
     loop {
         // Update UI
-        draw(app, &mut terminal)?;
+        draw(app, terminal)?;
 
         // Handle events
         match rx.recv().context(ReceiveInput {})? {
@@ -147,17 +147,8 @@ fn run_event_loop<B: Backend>(app: &mut App, mut terminal: &mut Terminal<B>) -> 
                             KeyCode::Enter | KeyCode::Right | KeyCode::Char('l') => app.on_enter(),
                             // Press 's' on a selected PE to start a job
                             KeyCode::Char('s') => match app.access_mode {
-                                AccessMode::Unsafe {} => match app.start_current_pe() {
-                                    Ok(s) => {
-                                        info!("Started PE.");
-                                        app.messages.push(s);
-                                    },
-                                    Err(e) => {
-                                        error!("{}", e);
-                                        app.messages.push(e.to_string());
-                                    }
-                                },
-                                AccessMode::Monitor {} => warn!("Unsafe access mode necessary to start a PE. Restart the app with `unsafe` parameter.")
+                                AccessMode::Unsafe {} => app.messages.push(app.start_current_pe()),
+                                AccessMode::Monitor {} => app.messages.push("Unsafe access mode necessary to start a PE. Restart the app with `unsafe` parameter.".to_string())
                             },
                             _ => {}
                         },
@@ -260,7 +251,7 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
     let pes_title = if (app.access_mode == AccessMode::Monitor {}) {
         "PE List (j:\u{2193}, k:\u{2191})"
     } else {
-        "PE List (j:\u{2193}, k:\u{2191}, Enter/l: switch to Register List)"
+        "PE List (j:\u{2193}, k:\u{2191}, s: start the selected PE, Enter/l: switch to Register List)"
     };
     let pes: Vec<ListItem> = app
         .pe_infos
@@ -388,7 +379,6 @@ fn draw_tab_bitstream_and_device_info<B: Backend>(f: &mut Frame<B>, app: &App, c
 }
 
 /// Draw a block with some text in it into the rectangular space given by chunk
-//fn draw_block_with_paragraph<B: Backend>(f: &mut Frame<B>, block_title: &str, paragraph_text: &str, chunk: Rect) {
 fn draw_block_with_paragraph<'a, B: Backend, T>(
     f: &mut Frame<B>,
     block_title: &str,
