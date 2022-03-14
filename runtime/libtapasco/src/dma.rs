@@ -246,7 +246,7 @@ impl DMAControl for DirectDMA {
         unsafe {
             let p = self.memory.as_ptr().offset((self.offset + ptr) as isize) as *mut u8;
             let s = std::ptr::slice_from_raw_parts_mut(p, data.len());
-            (*s).clone_from_slice(&data[..]);
+            (*s).clone_from_slice(data);
         }
 
         Ok(())

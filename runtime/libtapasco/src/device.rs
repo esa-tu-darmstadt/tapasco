@@ -417,7 +417,7 @@ impl Device {
             }));
         } else if name == "zynqmp" {
             info!("Using VFIO mode for ZynqMP based platform.");
-            let vfio_dev = Arc::new(init_vfio(settings.clone())
+            let vfio_dev = Arc::new(init_vfio(settings)
                 .context(VfioInitError)?
             );
             allocator.push(Arc::new(OffchipMemory {
@@ -457,7 +457,7 @@ impl Device {
                 &arch,
                 pe_local_memories,
                 &tlkm_dma_file,
-                &debug_impls,
+                debug_impls,
                 is_pcie,
                 svm_in_use,
             )

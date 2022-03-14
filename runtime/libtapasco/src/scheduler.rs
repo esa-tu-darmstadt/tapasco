@@ -73,7 +73,7 @@ pub struct Scheduler {
 
 impl Scheduler {
     pub fn new(
-        pes: &Vec<crate::device::status::Pe>,
+        pes: &[crate::device::status::Pe],
         mmap: &Arc<MmapMut>,
         mut local_memories: VecDeque<Arc<OffchipMemory>>,
         completion: &File,
@@ -109,7 +109,7 @@ impl Scheduler {
                 }
             };
 
-            if pe.interrupts.len() > 0 {
+            if !pe.interrupts.is_empty() {
                 interrupt_id = pe.interrupts[0].mapping as usize;
                 trace!(
                     "Using status core mapped interrupt ID for PE {} -> {}.",
@@ -129,7 +129,7 @@ impl Scheduler {
                 pe.id as PEId,
                 pe.offset,
                 mmap.clone(),
-                &completion,
+                completion,
                 interrupt_id,
                 debug,
                 svm_in_use,
@@ -187,7 +187,7 @@ impl Scheduler {
     pub fn release_pe(&self, pe: PE) -> Result<()> {
         ensure!(!pe.active(), PEStillActive { pe });
 
-        match self.pes.get(&pe.type_id()) {
+        match self.pes.get(pe.type_id()) {
             Some(l) => l.val().push(pe),
             None => return Err(Error::NoSuchPE { id: *pe.type_id() }),
         }
@@ -231,7 +231,7 @@ impl Scheduler {
         }
         Err(Error::PENotFound {
             name: name.to_string(),
-            possible: self.pes_name.values().map(|x| x.clone()).collect(),
+            possible: self.pes_name.values().cloned().collect(),
         })
     }
 }

@@ -369,7 +369,7 @@ impl Job {
     pub fn enable_debug(&mut self) -> Result<()> {
         match &mut self.pe {
             Some(x) => x.enable_debug().context(PEError)?,
-            None => Err(Error::NoPEtoDebug {})?,
+            None => return Err(Error::NoPEtoDebug {}),
         }
         Ok(())
     }

@@ -399,7 +399,7 @@ impl TLKM {
             .trim_matches(char::from(0))
             .to_string();
         trace!("Retrieved TLKM version as {}", s);
-        Ok(s.to_string())
+        Ok(s)
     }
 
     /// Retrieve length of device enumeration structure.

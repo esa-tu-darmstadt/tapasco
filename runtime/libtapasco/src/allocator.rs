@@ -117,7 +117,7 @@ impl GenericAllocator {
         (size + (self.alignment - 1)) & !(self.alignment - 1)
     }
 
-    fn merge_memory(&mut self) -> () {
+    fn merge_memory(&mut self) {
         let mut i = 0;
         trace!("Merging memory, currently at {:?}.", self.memory_free);
         while i < self.memory_free.len() {
@@ -168,12 +168,9 @@ impl Allocator for GenericAllocator {
             }
         }
 
-        match element_found {
-            Some(x) => {
-                trace!("Removing empty segment.");
-                self.memory_free.remove(x);
-            }
-            None => (),
+        if let Some(x) = element_found {
+            trace!("Removing empty segment.");
+            self.memory_free.remove(x);
         };
 
         match addr_found {
@@ -205,38 +202,35 @@ impl Allocator for GenericAllocator {
             }
         }
 
-        match element_found {
-            Some(x) => {
-                trace!("Splitting old segment.");
-                if self.memory_free[x].base == offset {
-                    self.memory_free[x].base += size_aligned;
-                    self.memory_free[x].size -= size_aligned;
-                } else {
-                    let left_size = offset - self.memory_free[x].base;
+        if let Some(x) = element_found {
+            trace!("Splitting old segment.");
+            if self.memory_free[x].base == offset {
+                self.memory_free[x].base += size_aligned;
+                self.memory_free[x].size -= size_aligned;
+            } else {
+                let left_size = offset - self.memory_free[x].base;
 
-                    let split_segment = MemoryFree {
-                        base: offset + size_aligned,
-                        size: self.memory_free[x].size - (left_size + size_aligned),
-                    };
+                let split_segment = MemoryFree {
+                    base: offset + size_aligned,
+                    size: self.memory_free[x].size - (left_size + size_aligned),
+                };
 
-                    if split_segment.size > 0 {
-                        self.memory_free.insert(x + 1, split_segment);
-                        trace!("New segment right of allocated area: {:?}.", split_segment);
-                    }
-
-                    self.memory_free[x].size = left_size;
+                if split_segment.size > 0 {
+                    self.memory_free.insert(x + 1, split_segment);
+                    trace!("New segment right of allocated area: {:?}.", split_segment);
                 }
-                if self.memory_free[x].size == 0 {
-                    trace!("Segment left of allocated area empty -> Removed.");
-                    self.memory_free.remove(x);
-                } else {
-                    trace!(
-                        "New segment left of allocated area: {:?}.",
-                        self.memory_free[x]
-                    );
-                }
+
+                self.memory_free[x].size = left_size;
             }
-            None => (),
+            if self.memory_free[x].size == 0 {
+                trace!("Segment left of allocated area empty -> Removed.");
+                self.memory_free.remove(x);
+            } else {
+                trace!(
+                    "New segment left of allocated area: {:?}.",
+                    self.memory_free[x]
+                );
+            }
         };
 
         match addr_found {
@@ -262,7 +256,7 @@ impl Allocator for GenericAllocator {
                 let m = self.memory_used[x];
                 self.memory_used.remove(x);
                 trace!("Freeing memory segment {:?}", m);
-                if self.memory_free.len() == 0 {
+                if self.memory_free.is_empty() {
                     trace!("No free memory right now, adding directly.");
                     self.memory_free.push(m);
                 } else {

@@ -36,7 +36,7 @@ pub const HP_OFFS: u64 = 0x800000000; // AXI Offset IP block between PE and PS
 // https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/vfio.h
 ioctl_none_bad!(
     vfio_get_api_version,
-    request_code_none!(VFIO_TYPE, VFIO_BASE + 0)
+    request_code_none!(VFIO_TYPE, VFIO_BASE)
 );
 
 ioctl_write_int_bad!(

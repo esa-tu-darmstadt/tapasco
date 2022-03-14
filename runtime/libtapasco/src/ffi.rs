@@ -860,7 +860,7 @@ pub extern "C" fn tapasco_device_design_frequency(dev: *mut Device) -> f32 {
     }
 }
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[no_mangle]
 pub unsafe extern "C" fn tapasco_version(buffer: *mut c_char, length: usize) -> usize {
