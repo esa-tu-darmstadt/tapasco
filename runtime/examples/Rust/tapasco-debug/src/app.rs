@@ -445,6 +445,8 @@ impl<'a> App<'a> {
         }
     }
 
+    // TODO: add a function parameter for the number of registers that should be read to make it
+    // dependent on the size of the UI frame.
     pub fn get_argument_registers(&mut self) -> Vec<String> {
         if let Some(pe) = self.get_current_pe() {
             let argument_registers = (0..self.register_list.items.len())

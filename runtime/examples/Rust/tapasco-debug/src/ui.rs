@@ -38,11 +38,11 @@ pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 use crate::app::{AccessMode, App, InputFrame, InputMode};
 
-// Define an Event which can consist of a pressed key or a Tick which occurs when the UI should be
-// updated while no key got pressed
+// Define an Event which can consist of a pressed key or the terminal got resized.
 enum Event<I, H> {
     Input(I),
     Resize(H, H),
+    // TODO: Maybe add a tick event which occurs when the UI should be updated while no key got pressed?
 }
 
 pub fn setup(app: &mut App) -> Result<()> {
@@ -107,6 +107,7 @@ fn run_event_loop<B: Backend>(app: &mut App, mut terminal: &mut Terminal<B>) -> 
 
                 // Match the input mode, either you're in line input mode where you enter new
                 // values for registers or you're in the default navigation mode.
+                // TODO: refactor app.on_enter and app.on_* into this match
                 match app.input_mode {
                     InputMode::Edit => match event.code {
                         KeyCode::Char(c) => app.input.push(c),
@@ -232,8 +233,8 @@ fn draw<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Result<()> {
 
 fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk: Rect) {
     // Create a vertical layout (top to bottom) first to split the Tab into 3 rows with a
-    // bottom line for keyboard input that is only shown when in Edit Mode (that replaces the
-    // messages view):
+    // bottom line for keyboard input that is only shown when in Edit Mode (that then replaces
+    // the messages view):
     let vertical_chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(0)
@@ -292,6 +293,7 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
     );
 
     // Argument Register List (also stateful list for editing)
+    // TODO: query and draw only as many registers as there is space in the frame
     let registers_title = if (app.access_mode == AccessMode::Monitor {}) {
         "Register List (r: Refresh)"
     //} else if (app.access_mode == AccessMode::Debug {}) {
@@ -314,6 +316,7 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
     f.render_stateful_widget(registers, register_chunks[1], &mut app.register_list.state);
 
     // Local Memory (also a stateful list for editing TODO?)
+    // TODO: query and draw only as many addresses as there is space in the frame
     let local_memory = app.dump_current_pe_local_memory();
     let local_memory: Vec<ListItem> = local_memory
         .iter()
@@ -349,6 +352,7 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
             input_chunks.y + 1,
         );
     // Or the messages view when not in Edit Mode
+    // TODO: show more messages e.g. when some register/address is changed
     } else {
         draw_block_with_paragraph(
             f,

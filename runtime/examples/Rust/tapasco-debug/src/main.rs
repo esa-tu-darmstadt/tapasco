@@ -1,4 +1,6 @@
+// The app module holds all state (of TaPaSCo) and interacts with PEs
 mod app;
+// The ui module handles (key press) events and displaying the app in the TUI
 mod ui;
 
 use snafu::{ResultExt, Snafu};
@@ -54,17 +56,21 @@ pub enum Command {
 }
 
 fn init() -> Result<()> {
+    // Parse command line arguments:
     let Opt {
         device_id,
         subcommand,
     } = Opt::from_args();
-    // Specify the Access Mode as subcommand
+
+    // Specify the Access Mode as subcommand and setup the App and UI
     ui::setup(&mut app::App::new(device_id, subcommand).context(App {})?).context(UI {})
 }
 
 fn main() {
+    // Initialize the env logger. Export `RUST_LOG=debug` to see logs on stderr.
     env_logger::init();
 
+    // Initialize app and error reporting with Snafu:
     match init() {
         Ok(_) => {}
         Err(e) => {
