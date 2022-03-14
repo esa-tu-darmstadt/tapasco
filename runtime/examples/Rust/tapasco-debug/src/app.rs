@@ -315,7 +315,7 @@ impl<'a> App<'a> {
                             } else if let Ok(new_value) = self.input.parse::<u64>() {
                                Some(new_value)
                             } else if let Ok(new_value) = self.input.parse::<i64>() {
-                               Some(new_value as u64)
+                               Some(new_value as u64)  // explicitly use as casting
                             } else {
                                None
                             };
@@ -403,7 +403,7 @@ impl<'a> App<'a> {
             //
             trace!("Starting PE with ID: {}.", pe.id());
 
-            let offset = *pe.offset() as isize;
+            let offset = (*pe.offset()).try_into().expect("Expected to be able to cast the PE offset.");
 
             unsafe {
                 // Access PE memory just like in `libtapasco`:
@@ -441,7 +441,7 @@ impl<'a> App<'a> {
             //result += &format!("Interrupt pending: {}", interrupt_pending);
             result += &format!(
                 "Return: 0x{:16x} (i32: {:10})\n",
-                return_value, return_value as i32
+                return_value, return_value as i32  // explicitly use as casting
             );
 
             return result
@@ -473,10 +473,10 @@ impl<'a> App<'a> {
                 result.push(format!("Arg#{:02}: 0x{:16x} ({:20})\n", i, a, a));
             }
 
-            result
-        } else {
-            vec!["No PE selected.".to_string()]
+            return result
         }
+
+        vec!["No PE selected.".to_string()]
     }
 
     pub fn dump_current_pe_local_memory(&self, number_of_lines: usize) -> Vec<String> {

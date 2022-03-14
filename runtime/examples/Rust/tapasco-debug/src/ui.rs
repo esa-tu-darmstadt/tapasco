@@ -283,7 +283,6 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
     );
 
     // Argument Register List (also stateful list for editing)
-    // TODO: query and draw only as many registers as there is space in the frame
     let registers_title = if (app.access_mode == AccessMode::Monitor {}) {
         "Register List (r: Refresh)"
     //} else if (app.access_mode == AccessMode::Debug {}) {
@@ -291,7 +290,7 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
     } else {
         "Register List (r: Refresh, Escape: back, j:\u{2193}, k:\u{2191}, Enter/l: set Register)"
     };
-    let registers = app.get_argument_registers((register_chunks[1].height - 2).into());
+    let registers = app.get_argument_registers(register_chunks[1].height.saturating_sub(2).into());
     let registers: Vec<ListItem> = registers
         .iter()
         .map(|i| ListItem::new(vec![Spans::from(Span::raw(i))]))
@@ -307,7 +306,7 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
 
     // Local Memory (also a stateful list for editing TODO?)
     // TODO: query and draw only as many addresses as there is space in the frame
-    let local_memory = app.dump_current_pe_local_memory((horizontal_chunks[1].height - 2).into());
+    let local_memory = app.dump_current_pe_local_memory(horizontal_chunks[1].height.saturating_sub(2).into());
     let local_memory: Vec<ListItem> = local_memory
         .iter()
         .map(|i| ListItem::new(vec![Spans::from(Span::raw(i))]))
@@ -322,7 +321,7 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
         &mut app.local_memory_list,
     );
 
-    // Draw an input line if in Edit Mode
+    // Draw an input line if in Edit Mode or the messages view when not in Edit Mode
     if app.input_mode == InputMode::Edit {
         let input = Paragraph::new(app.input.as_ref()).block(
             Block::default()
@@ -337,17 +336,15 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
         // Make the cursor visible and ask tui-rs to put it at the specified coordinates after rendering
         f.set_cursor(
             // Put cursor past the end of the input text
-            input_chunks.x + app.input.width() as u16 + 1,
+            input_chunks.x + (app.input.width() + 1).try_into().unwrap_or(0),
             // Move one line down, from the border to the input line
             input_chunks.y + 1,
         );
-    // Or the messages view when not in Edit Mode
-    // TODO: show more messages e.g. when some register/address is changed
     } else {
         draw_block_with_paragraph(
             f,
             "Messages",
-            app.messages.iter().rev().take((vertical_chunks[2].height - 2).into()).rev().cloned().collect::<Vec<String>>().join("\n"),
+            app.messages.iter().rev().take(vertical_chunks[2].height.saturating_sub(2).into()).rev().cloned().collect::<Vec<String>>().join("\n"),
             vertical_chunks[2],
         );
     }
