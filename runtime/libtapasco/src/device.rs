@@ -433,7 +433,7 @@ impl Device {
         let mut pe_local_memories = VecDeque::new();
         if !svm_in_use {
             trace!("Initialize PE local memories.");
-            for pe in s.pe.iter() {
+            for pe in &s.pe {
                 match &pe.local_memory {
                     Some(l) => {
                         pe_local_memories.push_back(Arc::new(OffchipMemory {
@@ -442,7 +442,7 @@ impl Device {
                             )),
                             dma: Box::new(DirectDMA::new(l.base, l.size, arch.clone())),
                         }));
-                    }
+                    },
                     None => (),
                 }
             }

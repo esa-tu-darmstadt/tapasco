@@ -204,7 +204,7 @@ impl Scheduler {
                 maybe_pe = v.val().steal();
             }
 
-            for pe in remove_pes.into_iter() {
+            for pe in remove_pes {
                 v.val().push(pe);
             }
         }

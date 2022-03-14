@@ -220,7 +220,7 @@ impl UserSpaceDMA {
         unsafe {
             let ptr = dma_engine_memory.as_ptr().offset(offset);
             let volatile_ptr = ptr as *mut Volatile<u64>;
-            (*volatile_ptr).write(if from_device { 0x10001000 } else { 0x10000001 });
+            (*volatile_ptr).write(if from_device { 0x1000_1000 } else { 0x1000_0001 });
         };
 
         Ok(())

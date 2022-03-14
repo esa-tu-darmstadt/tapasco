@@ -622,7 +622,7 @@ pub extern "C" fn tapasco_job_start(job: *mut Job, params: *mut *mut JobList) ->
     let tl = unsafe { &mut *job };
     match tl.start(jl).context(JobError) {
         Ok(x) => {
-            for d in x.into_iter() {
+            for d in x {
                 // Make sure Rust doesn't release the memory received from C
                 let _p = std::boxed::Box::<[u8]>::into_raw(d);
             }
@@ -658,7 +658,7 @@ pub extern "C" fn tapasco_job_release(
         .context(JobError)
     {
         Ok(x) => {
-            for d in x.1.into_iter() {
+            for d in x.1 {
                 // Make sure Rust doesn't release the memory received from C
                 let _p = std::boxed::Box::<[u8]>::into_raw(d);
             }

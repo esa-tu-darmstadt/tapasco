@@ -28,7 +28,8 @@ use vfio_bindings::bindings::vfio::*;
 use config::Config;
 
 pub const IOMMU_PAGESIZE: u64 = 4096;
-pub const HP_OFFS: u64 = 0x800000000; // AXI Offset IP block between PE and PS
+// TODO: Is this offset 0x0008_0000_0000 correct or should it be 0x8000_0000?
+pub const HP_OFFS: u64 = 0x0008_0000_0000; // AXI Offset IP block between PE and PS
 
 // VFIO ioctl import
 //
