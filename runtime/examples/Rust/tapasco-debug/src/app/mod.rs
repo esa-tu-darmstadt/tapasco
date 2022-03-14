@@ -86,9 +86,6 @@ impl<'a> App<'a> {
             }
             AccessMode::Unsafe {} => {
                 // Change device access to exclusive to be able to acquire PEs
-                tlkm_device
-                    .change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-                    .context(DeviceInit {})?;
                 warn!("Running in Unsafe Mode");
                 "Unsafe"
             }
