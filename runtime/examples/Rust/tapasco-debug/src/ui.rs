@@ -106,14 +106,14 @@ fn run_event_loop<B: Backend>(app: &mut App, mut terminal: &mut Terminal<B>) -> 
                         KeyCode::Char(c) => app.input.push(c),
                         KeyCode::Backspace => {
                             if app.input.pop().is_none() {
-                                app.input_mode = InputMode::Normal;
+                                app.input_mode = InputMode::Navigation;
                             }
                         }
                         KeyCode::Enter => app.on_enter(),
                         KeyCode::Esc => app.on_escape(),
                         _ => {}
                     },
-                    InputMode::Normal => match event {
+                    InputMode::Navigation => match event {
                         // Press 'Shift+Tab' to switch backward through tabs
                         KeyEvent {
                             modifiers: KeyModifiers::SHIFT,
@@ -225,7 +225,7 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
                 Constraint::Length(3),
             ]
             .as_ref(),
-            InputMode::Normal => [Constraint::Length(15), Constraint::Min(30)].as_ref(),
+            InputMode::Navigation => [Constraint::Length(15), Constraint::Min(30)].as_ref(),
         })
         .split(chunk);
 

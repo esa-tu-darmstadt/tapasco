@@ -32,7 +32,7 @@ pub use super::Command as AccessMode;
 
 #[derive(Debug, PartialEq)]
 pub enum InputMode {
-    Normal,
+    Navigation,
     Edit,
 }
 
@@ -95,8 +95,8 @@ impl<'a> App<'a> {
 
         // Empty string where input is stored
         let input = String::new();
-        // Initialize App in Normal mode
-        let input_mode = InputMode::Normal;
+        // Initialize App in Navigation mode
+        let input_mode = InputMode::Navigation;
         // Initialize UI with focus on the PE list
         let focus = InputFrame::PEList;
 
@@ -257,7 +257,7 @@ impl<'a> App<'a> {
     pub fn on_escape(&mut self) {
         if self.tabs.index == 0 {
             match self.input_mode {
-                InputMode::Normal => {
+                InputMode::Navigation => {
                     match self.focus {
                         InputFrame::PEList => self.pe_infos.unselect(),
                         InputFrame::RegisterList => {
@@ -267,7 +267,7 @@ impl<'a> App<'a> {
                     };
                 }
                 InputMode::Edit => {
-                    self.input_mode = InputMode::Normal;
+                    self.input_mode = InputMode::Navigation;
                     self.input.clear();
                 }
             };
@@ -282,7 +282,7 @@ impl<'a> App<'a> {
                 // AccessMode::Debug {} | AccessMode::Unsafe {} => {
                 AccessMode::Unsafe {} => {
                     match self.input_mode {
-                        InputMode::Normal => {
+                        InputMode::Navigation => {
                             match self.focus {
                                 // Change the focused component to the register list of the selected PE
                                 InputFrame::PEList => match self.pe_infos.state.selected() {
@@ -329,7 +329,7 @@ impl<'a> App<'a> {
                                             important. You should fix this app.", e);
                                 }
 
-                                self.input_mode = InputMode::Normal;
+                                self.input_mode = InputMode::Navigation;
                             }
                         }
                     };
