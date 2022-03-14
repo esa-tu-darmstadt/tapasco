@@ -287,8 +287,8 @@ pub struct SVMDMA {
 }
 
 impl SVMDMA {
-    pub fn new(tlkm_file: &Arc<File>) -> SVMDMA {
-        SVMDMA {
+    pub fn new(tlkm_file: &Arc<File>) -> Self {
+        Self {
             tlkm_file: tlkm_file.clone(),
         }
     }
@@ -304,7 +304,7 @@ impl DMAControl for SVMDMA {
                 self.tlkm_file.as_raw_fd(),
                 &mut tlkm_svm_migrate_cmd {
                     vaddr: base,
-                    size: size,
+                    size,
                 },
             ).context(DMAToDevice)?;
         }
@@ -321,7 +321,7 @@ impl DMAControl for SVMDMA {
                 self.tlkm_file.as_raw_fd(),
                 &mut tlkm_svm_migrate_cmd {
                     vaddr: base,
-                    size: size,
+                    size,
                 },
             ).context(DMAFromDevice)?;
         }

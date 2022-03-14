@@ -564,8 +564,14 @@ impl Allocator for VfioAllocator {
 pub struct DummyAllocator {}
 
 impl DummyAllocator {
-    pub fn new() -> DummyAllocator {
-        DummyAllocator {}
+    pub const fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Default for DummyAllocator {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

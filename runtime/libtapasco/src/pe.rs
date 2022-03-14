@@ -135,7 +135,6 @@ impl PE {
             interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterrupt)?,
             debug,
             svm_in_use,
-            debug,
         })
     }
 
