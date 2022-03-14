@@ -40,6 +40,12 @@ tapasco::call_plugins "pre-header"
 source -notrace "$env(TAPASCO_HOME_TCL)/arch/common/arch.tcl"
 source -notrace @@ARCHITECTURE_TCL@@
 
+if {[tapasco::is_feature_enabled "IPEC"]} {
+  # source ipec
+  set feature [tapasco::get_feature "IPEC"]
+  source -notrace [dict get $feature "path"]
+}
+
 # source platform-specific Tcl scripts
 source -notrace "$env(TAPASCO_HOME_TCL)/platform/common/platform.tcl"
 source -notrace @@PLATFORM_TCL@@

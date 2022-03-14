@@ -40,6 +40,10 @@ namespace eval hbm {
   proc get_hbm_interfaces {} {
     set hbmInterfaces [list]
 
+	if {[tapasco::is_feature_enabled "IPEC"]} {
+		return [tapasco::call_plugins "ipec_hbm"]
+	}
+
     set hbm [tapasco::get_feature "HBM"]
 
     set value [dict values [dict remove $hbm enabled]]
@@ -233,8 +237,10 @@ namespace eval hbm {
       }
 
       # remove standard memory interconnect network
-      delete_bd_objs [get_bd_cells /arch/out_*]
-      delete_bd_objs [get_bd_intf_pins /arch/M_MEM_*]
+      if {[tapasco::is_feature_enabled "IPEC"]} {} else {
+        delete_bd_objs [get_bd_cells /arch/out_*]
+        delete_bd_objs [get_bd_intf_pins /arch/M_MEM_*]
+      }
 
       for {set i 0} {$i < $numInterfaces} {incr i} {
         variable master [lindex $hbmInterfaces $i]

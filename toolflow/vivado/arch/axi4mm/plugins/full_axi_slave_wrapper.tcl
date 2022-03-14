@@ -47,6 +47,9 @@ namespace eval full_axi_wrapper {
   }
 
   proc fix_address_map {args} {
+    if {[tapasco::is_feature_enabled "IPEC"]} {
+      return $args
+    }
     assign_bd_address
     return $args
   }

@@ -387,6 +387,11 @@ namespace eval arch {
 
   # Instantiates the architecture.
   proc create {{mgroups 0}} {
+    if {[tapasco::is_feature_enabled "IPEC"]} {
+      tapasco::call_plugins "ipec_blockdesign"
+      return
+    }
+
     variable arch_mem_ics
     variable arch_host_ics
 

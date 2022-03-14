@@ -531,6 +531,9 @@ namespace eval ::tapasco::ip {
     set slots [list]
     set slot_id 0
     puts "  address map = $addr"
+    if {[tapasco::is_feature_enabled "IPEC"]} {
+      set slots [tapasco::call_plugins "ipec_statuscore" $slots]
+    }
     foreach intf [dict keys $addr] {
       if {[string match "/arch/*" "$intf"] == 1} {
         puts "  processing $intf: [dict get $addr $intf kind] ..."

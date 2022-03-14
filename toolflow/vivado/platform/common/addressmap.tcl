@@ -114,6 +114,7 @@ namespace eval addressmap {
   }
 
   proc construct_address_map {{map ""}} {
+    tapasco::call_plugins "ipec_addressmap"
     if {$map == ""} { set map [::platform::get_address_map [::platform::get_pe_base_address]] }
     set map [apply_address_map_mods $map]
     set ignored [::platform::get_ignored_segments]
@@ -132,6 +133,18 @@ namespace eval addressmap {
             if {[catch {dict get $map $intf}]} {
               if {[catch {dict get $map $sintf}]} {
                 puts "    neither $intf nor $sintf were found in address map for $seg: $::errorInfo"
+
+                if {[tapasco::is_feature_enabled "IPEC"]} {
+                  if {[string match "/arch/*" $space]} {
+                    puts "addressmap: skipping space $space handled by ipec"
+                    continue
+                  }
+                  if {[string match "/arch/*" $seg]} {
+                    puts "addressmap: skipping space $space handled by ipec"
+                    continue
+                  }
+                }
+
                 puts "    assuming internal connection, setting values as found in segment:"
                 set range  [get_property RANGE $seg]
                 if {$range eq ""} {
