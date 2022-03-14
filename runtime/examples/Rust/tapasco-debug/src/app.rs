@@ -486,7 +486,10 @@ impl<'a> App<'a> {
 
     pub fn get_dmaengine_statistics(&self) -> String {
         let dmaengine_memory = unsafe {
-                match self.tlkm_device.get_platform_component_memory("PLATFORM_COMPONENT_DMA0") {
+            match self
+                .tlkm_device
+                .get_platform_component_memory("PLATFORM_COMPONENT_DMA0")
+            {
                 Ok(m) => m,
                 Err(_) => return "No DMAEngine found!".to_string(),
             }
