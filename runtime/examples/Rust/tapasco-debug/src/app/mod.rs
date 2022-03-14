@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use log::{error, trace, warn};
 
@@ -42,12 +42,9 @@ pub enum InputFrame {
 }
 
 pub struct App<'a> {
-    _tlkm_option: Option<TLKM>,
-    _device_option: Option<Device>,
+    tlkm_device: Device,
     bitstream_info: String,
     platform_info: String,
-    platform: Arc<memmap::MmapMut>,
-    dmaengine_offset: Option<isize>,
     pub access_mode: AccessMode,
     pub input: String,
     pub input_mode: InputMode,
@@ -122,14 +119,6 @@ impl<'a> App<'a> {
             .arch_base
             .clone()
             .expect("Could not get arch_base!");
-        let platform = tlkm_device.platform().clone();
-
-        // Hold the TLKM if we are running in Debug mode, so it is not free'd after this method
-        let _tlkm_option = if (access_mode == AccessMode::Debug {}) {
-            Some(tlkm)
-        } else {
-            None
-        };
 
         // Parse info about PEs from the status core
         // Preallocate these vectors to set the acquired PE at the right position later
@@ -201,7 +190,6 @@ impl<'a> App<'a> {
         // Parse platform info from the Status core
         let mut platform_info = String::new();
 
-        let mut dmaengine_offset = None;
         platform_info += &format!(
             "Platform Base: 0x{:012x} (Size: 0x{:x} ({} Bytes))\n\n",
             platform_base.base, platform_base.size, platform_base.size
@@ -218,28 +206,14 @@ impl<'a> App<'a> {
                 p.size,
                 App::parse_interrupts(&p.interrupts)
             );
-
-            if p.name == "PLATFORM_COMPONENT_DMA0" {
-                dmaengine_offset = Some(p.offset as isize);
-            }
         }
-
-        // Hold the TLKM Device if we are running in Debug mode, so it is not free'd after this method
-        let _device_option = if (access_mode == AccessMode::Debug {}) {
-            Some(tlkm_device)
-        } else {
-            None
-        };
 
         trace!("Constructed App");
 
         Ok(App {
-            _tlkm_option,
-            _device_option,
+            tlkm_device,
             bitstream_info,
             platform_info,
-            platform,
-            dmaengine_offset,
             access_mode,
             input,
             input_mode,
@@ -384,21 +358,19 @@ impl<'a> App<'a> {
     //    }
 
     //    if let Some(pe) = self.get_current_pe() {
-    //        if let Some(device) = &self._device_option {
-    //            // TODO: This might not be the correct PE when there are multiple PEs with the same
-    //            // TypeID.
-    //            match device.acquire_pe(*pe.type_id()) {
-    //                Ok(mut pe) => {
-    //                    trace!("Acquired PE: {:?}", pe);
-    //                    if let Ok(_) = pe.start(vec![]) {
-    //                        trace!("Started PE: {:?}", pe);
-    //                        if let Ok(_) = pe.release(true, true) {
-    //                            trace!("Starting PE: {:?}", pe);
-    //                        }
+    //        // TODO: This might not be the correct PE when there are multiple PEs with the same
+    //        // TypeID.
+    //        match self.tlkm_device.acquire_pe(*pe.type_id()) {
+    //            Ok(mut pe) => {
+    //                trace!("Acquired PE: {:?}", pe);
+    //                if let Ok(_) = pe.start(vec![]) {
+    //                    trace!("Started PE: {:?}", pe);
+    //                    if let Ok(_) = pe.release(true, true) {
+    //                        trace!("Starting PE: {:?}", pe);
     //                    }
-    //                },
-    //                Err(e) => error!("Could not acquire PE: {}", e),
-    //            }
+    //                }
+    //            },
+    //            Err(e) => error!("Could not acquire PE: {}", e),
     //        }
     //    }
     //}
@@ -510,9 +482,11 @@ impl<'a> App<'a> {
     }
 
     pub fn get_dmaengine_statistics(&self) -> String {
-        let dmaengine_offset = match self.dmaengine_offset {
-            Some(s) => s,
-            _ => return "No DMAEngine found!".to_string(),
+        let dmaengine_memory = unsafe {
+                match self.tlkm_device.get_platform_component_memory("PLATFORM_COMPONENT_DMA0") {
+                Ok(m) => m,
+                Err(_) => return "No DMAEngine found!".to_string(),
+            }
         };
 
         let status_registers: Vec<(&str, isize)> = vec![
@@ -529,11 +503,7 @@ impl<'a> App<'a> {
             unsafe {
                 // Create a const pointer to the u64 register at the offset in the platform address
                 // space of the DMAEngine
-                let dmaengine_register_ptr = self
-                    .platform
-                    .as_ptr()
-                    .offset(dmaengine_offset + r.1)
-                    .cast::<u64>();
+                let dmaengine_register_ptr = dmaengine_memory.as_ptr().offset(r.1).cast::<u64>();
                 // Read IO register with volatile, see:
                 // https://doc.rust-lang.org/std/ptr/fn.read_volatile.html
                 let dmaengine_register = dmaengine_register_ptr.read_volatile();
