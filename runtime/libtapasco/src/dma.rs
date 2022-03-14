@@ -181,7 +181,7 @@ impl DMAControl for VfioDMA {
             "Copy Host({:?}) -> Device(0x{:x}) ({} Bytes). Map va=0x{:x} -> iova=0x{:x} len=0x{:x}",
             data.as_ptr(), iova, data.len(), va_start, iova_start, map_len
         );
-        return match vfio_dma_map(&self.vfio_dev, map_len, HP_OFFS + iova_start, va_start) {
+        match vfio_dma_map(&self.vfio_dev, map_len, HP_OFFS + iova_start, va_start) {
             Ok(_) => Ok(()),
             Err(e) => Err(Error::VfioError {source: e})
         }

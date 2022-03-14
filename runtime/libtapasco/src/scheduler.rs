@@ -180,7 +180,7 @@ impl Scheduler {
                 }
                 thread::yield_now();
             },
-            None => return Err(Error::NoSuchPE { id }),
+            None => Err(Error::NoSuchPE { id }),
         }
     }
 

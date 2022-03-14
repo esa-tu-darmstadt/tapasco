@@ -159,7 +159,7 @@ impl Default for VfioDev {
 }
 
 pub fn to_page_boundary(x: u64) -> u64 {
-    return x - (x % IOMMU_PAGESIZE);
+    x - (x % IOMMU_PAGESIZE)
 }
 
 // get VFIO group number of tapasco platform device from sysfs
@@ -171,7 +171,7 @@ fn get_vfio_group(settings: Arc<Config>) -> Result<i32, Error> {
         .context(VfioNoGroup {file: &dev_path} )?;
     let iommu_group = iommu_group_path.file_name().unwrap().to_str().unwrap();
 
-    return Ok(iommu_group.parse().unwrap())
+    Ok(iommu_group.parse().unwrap())
 }
 
 pub fn init_vfio(settings: Arc<Config>) -> Result<VfioDev, Error> {
@@ -260,7 +260,7 @@ pub fn vfio_get_info(dev: &VfioDev) -> Result<vfio_iommu_type1_info, Error> {
     };
     let ret = unsafe { vfio_iommu_get_info(dev.container.as_raw_fd(), &mut iommu_info) }.unwrap();
     if ret < 0 {
-        return Err(Error::IoctlError{ name: "vfio_iommu_get_info".to_string() });
+        Err(Error::IoctlError{ name: "vfio_iommu_get_info".to_string() })
     } else {
         trace!("flags={}, Pagesize bitvector=0x{:x}!\n", iommu_info.flags, iommu_info.iova_pgsizes);
         Ok(iommu_info)
@@ -312,7 +312,7 @@ pub fn vfio_dma_map(dev: &VfioDev, size: u64, iova: u64, vaddr: u64) -> Result<(
 
     let ret = unsafe { vfio_iommu_map_dma(dev.container.as_raw_fd(), &dma_map_src) }.unwrap();
     if ret < 0 {
-        return Err(Error::IoctlError{ name: "vfio_iommu_map_dma".to_string() });
+        Err(Error::IoctlError{ name: "vfio_iommu_map_dma".to_string() })
     } else {
         trace!("vfio_iommu_map_dma: va=0x{:x} -> iova=0x{:x}, size=0x{:x}\n", vaddr, iova, size);
         Ok(())
@@ -329,7 +329,7 @@ pub fn vfio_dma_unmap(dev: &VfioDev, iova: u64, size: u64) -> Result<(), Error> 
 
     let ret = unsafe { vfio_iommu_unmap_dma(dev.container.as_raw_fd(), &mut dma_unmap) }.unwrap();
     if ret < 0 {
-        return Err(Error::IoctlError{ name: "vfio_iommu_unmap_dma".to_string() });
+        Err(Error::IoctlError{ name: "vfio_iommu_unmap_dma".to_string() })
     } else {
         trace!("vfio_iommu_unmap_dma: iova=0x{:x}, size=0x{:x}\n", iova, size);
         Ok(())

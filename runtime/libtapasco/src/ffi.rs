@@ -203,7 +203,7 @@ pub extern "C" fn tapasco_tlkm_version(t: *const TLKM, vers: *mut c_char, len: u
             }
             is[..x.len()].copy_from_slice(x.as_bytes());
             is[len - 1] = 0;
-            return 0;
+            0
         }
         Err(e) => {
             update_last_error(e);
@@ -223,7 +223,7 @@ pub extern "C" fn tapasco_tlkm_device_len(t: *const TLKM) -> isize {
     let tl = unsafe { &*t };
     match tl.device_enum_len().context(TLKMError) {
         Ok(x) => {
-            return x as isize;
+            x as isize
         }
         Err(e) => {
             update_last_error(e);
@@ -250,7 +250,7 @@ pub extern "C" fn tapasco_tlkm_devices(t: *const TLKM, di: *mut DeviceInfo, len:
             let is = unsafe { slice::from_raw_parts_mut(di, len) };
             is[..x.len()].copy_from_slice(&x);
 
-            return 0;
+            0
         }
         Err(e) => {
             update_last_error(e);
@@ -271,7 +271,7 @@ pub extern "C" fn tapasco_tlkm_devices_destroy(di: *mut DeviceInfo, len: usize) 
         let p = i.name();
         let _s = unsafe { std::ffi::CString::from_raw(p as *mut c_char) };
     }
-    return 0;
+    0
 }
 
 #[no_mangle]
@@ -287,7 +287,7 @@ pub extern "C" fn tapasco_tlkm_device_alloc(t: *const TLKM, id: DeviceId) -> *mu
         Ok(x) => std::boxed::Box::<Device>::into_raw(Box::new(x)),
         Err(e) => {
             update_last_error(e);
-            return ptr::null_mut();
+            ptr::null_mut()
         }
     }
 }
@@ -520,10 +520,10 @@ pub extern "C" fn tapasco_device_access(dev: *mut Device, access: tlkm_access) -
 
     let tl = unsafe { &mut *dev };
     match tl.change_access(access).context(DeviceError) {
-        Ok(_) => return 0,
+        Ok(_) => 0,
         Err(e) => {
             update_last_error(e);
-            return -1;
+            -1
         }
     }
 }
@@ -562,12 +562,12 @@ pub extern "C" fn tapasco_device_get_pe_id(dev: *mut Device, name: *const c_char
     let tl = unsafe { &mut *dev };
 
     match tl.get_pe_id(name_r).context(DeviceError) {
-        Ok(x) => return x,
+        Ok(x) => x,
         Err(e) => {
             update_last_error(e);
-            return PEId::MAX;
+            PEId::MAX
         }
-    };
+    }
 }
 
 /////////////////
@@ -586,7 +586,7 @@ pub extern "C" fn tapasco_device_acquire_pe(dev: *mut Device, id: PEId) -> *mut 
         Ok(x) => std::boxed::Box::<Job>::into_raw(Box::new(x)),
         Err(e) => {
             update_last_error(e);
-            return ptr::null_mut();
+            ptr::null_mut()
         }
     }
 }
@@ -626,11 +626,11 @@ pub extern "C" fn tapasco_job_start(job: *mut Job, params: *mut *mut JobList) ->
                 // Make sure Rust doesn't release the memory received from C
                 let _p = std::boxed::Box::<[u8]>::into_raw(d);
             }
-            return 0;
+            0
         }
         Err(e) => {
             update_last_error(e);
-            return -1;
+            -1
         }
     }
 }
@@ -667,11 +667,11 @@ pub extern "C" fn tapasco_job_release(
                     *return_value = x.0;
                 }
             }
-            return 0;
+            0
         }
         Err(e) => {
             update_last_error(e);
-            return -1;
+            -1
         }
     }
 }
