@@ -301,7 +301,17 @@ impl<'a> App<'a> {
                         InputMode::Edit => {
                             // If the input cannot be parsed correctly, simply do nothing until
                             // we either hit Escape or enter a valid decimal integer.
-                            if let Ok(new_value) = self.input.parse::<i64>() {
+                            let new_value: Option<u64> = if let Some(hex_string) = self.input.strip_prefix("0x") {
+                                u64::from_str_radix(hex_string, 16).ok()
+                            } else if let Ok(new_value) = self.input.parse::<u64>() {
+                               Some(new_value)
+                            } else if let Ok(new_value) = self.input.parse::<i64>() {
+                               Some(new_value as u64)
+                            } else {
+                               None
+                            };
+
+                            if let Some(new_value) = new_value {
                                 self.input.clear();
 
                                 // Ignore the error because unless the code changes, there will
@@ -312,7 +322,7 @@ impl<'a> App<'a> {
                                     .expect("There should have been a PE for the selection. This is a bug.")
                                     .1 // ignore the index, select the PE from the tuple
                                     .set_arg(self.register_list.state.selected().unwrap(),
-                                             PEParameter::Single64(new_value as u64)) {
+                                             PEParameter::Single64(new_value)) {
                                     // but log this error in case the code changes
                                     error!("Error setting argument: {}.
                                             This is probably due to libtapasco having changed something
