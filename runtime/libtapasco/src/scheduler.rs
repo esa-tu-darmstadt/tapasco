@@ -85,11 +85,7 @@ impl Scheduler {
         let mut pes_overview: HashMap<PEId, usize> = HashMap::new();
         let mut pes_name: HashMap<PEId, String> = HashMap::new();
 
-        let mut interrupt_id = 0;
-
-        if is_pcie {
-            interrupt_id = 4;
-        }
+        let mut interrupt_id = if is_pcie { 4 } else { 0 };
 
         for (i, pe) in pes.iter().enumerate() {
             let debug = match &pe.debug {

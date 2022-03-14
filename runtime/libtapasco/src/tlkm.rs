@@ -390,7 +390,7 @@ impl TLKM {
     /// The version is provided as an undocumented string.
     /// Unstable and not intended for parsing by downstream code.
     pub fn version(&self) -> Result<String> {
-        let mut version: tlkm_ioctl_version_cmd = Default::default();
+        let mut version = tlkm_ioctl_version_cmd::default();
         unsafe {
             tlkm_ioctl_version(self.file.as_raw_fd(), &mut version).context(IOCTLVersion)?;
         };
@@ -410,7 +410,7 @@ impl TLKM {
     /// [`device_enum_info`]: #method.device_enum_info
     pub fn device_enum_len(&self) -> Result<usize> {
         trace!("Fetching available devices from driver.");
-        let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
+        let mut devices = tlkm_ioctl_enum_devices_cmd::default();
         unsafe {
             tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnum)?;
         };
@@ -427,7 +427,7 @@ impl TLKM {
     /// [`DeviceInfo`]: struct.DeviceInfo.html
     pub fn device_enum_info(&self) -> Result<Vec<DeviceInfo>> {
         trace!("Fetching available devices from driver.");
-        let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
+        let mut devices = tlkm_ioctl_enum_devices_cmd::default();
         unsafe {
             tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnum)?;
         };
@@ -477,7 +477,7 @@ impl TLKM {
         debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
     ) -> Result<Device> {
         trace!("Fetching available devices from driver.");
-        let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
+        let mut devices = tlkm_ioctl_enum_devices_cmd::default();
         unsafe {
             tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnum)?;
         };
@@ -520,7 +520,7 @@ impl TLKM {
         debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
     ) -> Result<Vec<Device>> {
         trace!("Fetching available devices from driver.");
-        let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
+        let mut devices = tlkm_ioctl_enum_devices_cmd::default();
         unsafe {
             tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnum)?;
         };
