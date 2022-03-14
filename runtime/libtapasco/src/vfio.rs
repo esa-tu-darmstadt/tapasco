@@ -164,7 +164,7 @@ pub const fn to_page_boundary(x: u64) -> u64 {
 }
 
 // get VFIO group number of tapasco platform device from sysfs
-fn get_vfio_group(settings: Arc<Config>) -> Result<i32, Error> {
+fn get_vfio_group(settings: &Arc<Config>) -> Result<i32, Error> {
     let dev_path = settings
         .get_str("tlkm.vfio_device")
         .context(ConfigError)?;
@@ -198,7 +198,7 @@ pub fn init_vfio(settings: Arc<Config>) -> Result<VfioDev, Error> {
     }
     trace!("VFIO_TYPE1_IOMMU okay!");
 
-    let group_path = format!("/dev/vfio/{}", get_vfio_group(settings)?);
+    let group_path = format!("/dev/vfio/{}", get_vfio_group(&settings)?);
     let group = OpenOptions::new()
         .read(true)
         .write(true)
