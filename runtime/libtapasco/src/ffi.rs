@@ -886,6 +886,9 @@ pub unsafe extern "C" fn tapasco_version(buffer: *mut c_char, length: usize) -> 
 }
 
 #[no_mangle]
+// TODO: either remove extern C or wait for const extern fn to be stabilized:
+//pub const fn tapasco_version_len() -> usize {
+//pub const extern "C" fn tapasco_version_len() -> usize {
 pub extern "C" fn tapasco_version_len() -> usize {
     VERSION.len() + 1
 }

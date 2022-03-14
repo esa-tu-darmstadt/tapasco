@@ -112,7 +112,7 @@ impl GenericAllocator {
         })
     }
 
-    fn fix_alignment(&self, size: DeviceSize) -> DeviceSize {
+    const fn fix_alignment(&self, size: DeviceSize) -> DeviceSize {
         // Works for 64 bit values, prone to overflow on 32 bit
         (size + (self.alignment - 1)) & !(self.alignment - 1)
     }

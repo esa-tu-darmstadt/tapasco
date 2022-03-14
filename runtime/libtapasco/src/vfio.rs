@@ -158,7 +158,7 @@ impl Default for VfioDev {
     }
 }
 
-pub fn to_page_boundary(x: u64) -> u64 {
+pub const fn to_page_boundary(x: u64) -> u64 {
     x - (x % IOMMU_PAGESIZE)
 }
 
