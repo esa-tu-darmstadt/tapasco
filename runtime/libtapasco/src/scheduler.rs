@@ -105,16 +105,16 @@ impl Scheduler {
                 }
             };
 
-            if !pe.interrupts.is_empty() {
-                interrupt_id = pe.interrupts[0].mapping as usize;
+            if pe.interrupts.is_empty() {
                 trace!(
-                    "Using status core mapped interrupt ID for PE {} -> {}.",
+                    "Using legacy guessed interrupt ID for PE {} -> {}.",
                     i,
                     interrupt_id
                 );
             } else {
+                interrupt_id = pe.interrupts[0].mapping as usize;
                 trace!(
-                    "Using legacy guessed interrupt ID for PE {} -> {}.",
+                    "Using status core mapped interrupt ID for PE {} -> {}.",
                     i,
                     interrupt_id
                 );

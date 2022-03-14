@@ -499,10 +499,10 @@ impl Device {
     }
 
     fn check_exclusive_access(&self) -> Result<()> {
-        if self.access != tlkm_access::TlkmAccessExclusive {
-            Err(Error::ExclusiveRequired {})
-        } else {
+        if self.access == tlkm_access::TlkmAccessExclusive {
             Ok(())
+        } else {
+            Err(Error::ExclusiveRequired {})
         }
     }
 
