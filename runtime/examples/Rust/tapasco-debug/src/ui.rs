@@ -1,5 +1,7 @@
 use std::{io::stdout, sync::mpsc, thread, time::Duration};
 
+use log::{error, info, trace, warn};
+
 use tui::{
     backend::{Backend, CrosstermBackend},
     layout::{Constraint, Direction, Layout, Rect},
@@ -101,6 +103,10 @@ fn run_event_loop<B: Backend>(app: &mut App, mut terminal: &mut Terminal<B>) -> 
         match rx.recv().context(ReceiveInput {})? {
             // Match key pressed events
             Event::Input(event) => {
+                trace!("Input event: {:?}", event);
+
+                // Match the input mode, either you're in line input mode where you enter new
+                // values for registers or you're in the default navigation mode.
                 match app.input_mode {
                     InputMode::Edit => match event.code {
                         KeyCode::Char(c) => app.input.push(c),
