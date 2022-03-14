@@ -5,23 +5,28 @@ use snafu::{ResultExt, Snafu};
 
 #[derive(Debug, Snafu)]
 enum Error {
-    #[snafu(display("Failed to initialize TLKM object: {}. Have you loaded the kernel module?", source))]
+    #[snafu(display(
+        "Failed to initialize TLKM object: {}. Have you loaded the kernel module?",
+        source
+    ))]
     TLKMInit { source: tapasco::tlkm::Error },
 
-    #[snafu(display("Failed to initialize App: {}. Have you loaded the kernel module?", source))]
-    AppError { source: app::Error },
+    #[snafu(display(
+        "Failed to initialize App: {}. Have you loaded the kernel module?",
+        source
+    ))]
+    App { source: app::Error },
 
     #[snafu(display("Failed to initialize UI: {}. Have you checked your Terminal?", source))]
-    UIError { source: ui::Error },
+    UI { source: ui::Error },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-use env_logger;
 use structopt::StructOpt;
 
-/// The interactive TaPaSCo Debugger can be used to retrieve information about the loaded
-/// bitstream, monitor other TaPaSCo runtimes and write values to the registers of your PEs
+/// The interactive `TaPaSCo` Debugger can be used to retrieve information about the loaded
+/// bitstream, monitor other `TaPaSCo` runtimes and write values to the registers of your PEs
 #[derive(StructOpt, Debug)]
 #[structopt(rename_all = "kebab-case")]
 struct Opt {
@@ -45,21 +50,24 @@ pub enum Command {
 }
 
 fn init() -> Result<()> {
-    let Opt { device_id, subcommand, } = Opt::from_args();
+    let Opt {
+        device_id,
+        subcommand,
+    } = Opt::from_args();
     // Specify the Access Mode as subcommand
-    ui::setup(&mut app::App::new(device_id, subcommand).context(AppError {})?).context(UIError {})
+    ui::setup(&mut app::App::new(device_id, subcommand).context(App {})?).context(UI {})
 }
 
 fn main() {
     env_logger::init();
 
     match init() {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(e) => {
             eprintln!("An error occurred: {}", e);
             if let Some(backtrace) = snafu::ErrorCompat::backtrace(&e) {
                 println!("{}", backtrace);
             }
-        },
+        }
     };
 }

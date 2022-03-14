@@ -1,25 +1,19 @@
-use std::{
-    io::stdout,
-    sync::mpsc,
-    thread,
-    time::Duration,
-};
+use std::{io::stdout, sync::mpsc, thread, time::Duration};
 
 use tui::{
-    Terminal,
-    Frame,
     backend::{Backend, CrosstermBackend},
-    widgets::{Tabs, Block, Borders, Paragraph, Wrap, BorderType, ListItem, List},
-    layout::{Layout, Constraint, Direction, Rect},
-    text::{Span, Spans, Text},
-    style::{Style, Color, Modifier},
+    layout::{Constraint, Direction, Layout, Rect},
+    style::{Color, Modifier, Style},
     symbols::DOT,
+    text::{Span, Spans, Text},
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph, Tabs, Wrap},
+    Frame, Terminal,
 };
 
 use crossterm::{
+    event::{self, Event as CEvent, KeyCode, KeyEvent, KeyModifiers},
     execute,
-    event::{self, Event as CEvent, KeyEvent, KeyCode, KeyModifiers},
-    terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
 use unicode_width::UnicodeWidthStr;
@@ -29,7 +23,7 @@ use snafu::{ResultExt, Snafu};
 #[derive(Debug, Snafu)]
 pub enum Error {
     #[snafu(display("Failure in Crossterm Terminal Backend: {}", source))]
-    CrosstermError { source: std::io::Error },
+    Crossterm { source: std::io::Error },
 
     #[snafu(display("Failed to receive Input event: {}", source))]
     ReceiveInput { source: std::sync::mpsc::RecvError },
@@ -40,8 +34,7 @@ pub enum Error {
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-use crate::app::{App, AccessMode, InputMode, InputFrame};
-
+use crate::app::{AccessMode, App, InputFrame, InputMode};
 
 // Define an Event which can consist of a pressed key or a Tick which occurs when the UI should be
 // updated while no key got pressed
@@ -50,29 +43,28 @@ enum Event<I, H> {
     Resize(H, H),
 }
 
-
 pub fn setup(app: &mut App) -> Result<()> {
     // Raw mode disables some common terminal functions that are unnecessary in the TUI environment
-    enable_raw_mode().context(CrosstermError {})?;
+    enable_raw_mode().context(Crossterm {})?;
 
     // Enter the Alternate Screen, so we don't break terminal history (it's like opening vim)
     let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen).context(CrosstermError {})?;
+    execute!(stdout, EnterAlternateScreen).context(Crossterm {})?;
 
     // Initialize Crossterm backend
     let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend).context(CrosstermError {})?;
+    let mut terminal = Terminal::new(backend).context(Crossterm {})?;
 
     // Clear the Alternate Screen if someone left it dirty
-    terminal.clear().context(CrosstermError {})?;
+    terminal.clear().context(Crossterm {})?;
 
     // Save the result of the main loop to return it after tearing down the backend
     let result = run_event_loop(app, &mut terminal);
 
     // Leave Alternate Screen to shut down cleanly regardless of the result
-    disable_raw_mode().context(CrosstermError {})?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen).context(CrosstermError {})?;
-    terminal.show_cursor().context(CrosstermError {})?;
+    disable_raw_mode().context(Crossterm {})?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen).context(Crossterm {})?;
+    terminal.show_cursor().context(Crossterm {})?;
 
     // Return the result of the main loop after restoring the previous terminal state in order to
     // not be stuck in the Alternate Screen / or Raw Mode which would make a `reset` of the shell
@@ -83,14 +75,19 @@ pub fn setup(app: &mut App) -> Result<()> {
 fn run_event_loop<B: Backend>(app: &mut App, mut terminal: &mut Terminal<B>) -> Result<()> {
     // Setup input handling as in the crossterm demo with a multi producer single consumer (mpsc) channel
     let (tx, rx) = mpsc::channel();
-    thread::spawn(move || {
-        loop {
-            if event::poll(Duration::from_millis(250)).expect("Event loop: could not poll for events!") {
-                if let CEvent::Key(key) = event::read().expect("Event loop: could not read a key event!") {
-                    tx.send(Event::Input(key)).expect("Event loop: could not send an input event!");
-                } else if let CEvent::Resize(w, h) = event::read().expect("Event loop: could not read a resize event!") {
-                    tx.send(Event::Resize(w, h)).expect("Event loop: could not send a resize event!");
-                }
+    thread::spawn(move || loop {
+        if event::poll(Duration::from_millis(250)).expect("Event loop: could not poll for events!")
+        {
+            if let CEvent::Key(key) =
+                event::read().expect("Event loop: could not read a key event!")
+            {
+                tx.send(Event::Input(key))
+                    .expect("Event loop: could not send an input event!");
+            } else if let CEvent::Resize(w, h) =
+                event::read().expect("Event loop: could not read a resize event!")
+            {
+                tx.send(Event::Resize(w, h))
+                    .expect("Event loop: could not send a resize event!");
             }
         }
     });
@@ -107,21 +104,21 @@ fn run_event_loop<B: Backend>(app: &mut App, mut terminal: &mut Terminal<B>) -> 
                 match app.input_mode {
                     InputMode::Edit => match event.code {
                         KeyCode::Char(c) => app.input.push(c),
-                        KeyCode::Backspace => if let None = app.input.pop() { app.input_mode = InputMode::Normal },
+                        KeyCode::Backspace => {
+                            if app.input.pop().is_none() {
+                                app.input_mode = InputMode::Normal;
+                            }
+                        }
                         KeyCode::Enter => app.on_enter(),
                         KeyCode::Esc => app.on_escape(),
                         _ => {}
                     },
                     InputMode::Normal => match event {
-                        // with Shift modifier
+                        // Press 'Shift+Tab' to switch backward through tabs
                         KeyEvent {
                             modifiers: KeyModifiers::SHIFT,
-                            code,
-                        } => match code {
-                            // Press 'Shift+Tab' to switch backward through tabs
-                            KeyCode::BackTab => app.previous_tab(),
-                            _ => {},
-                        },
+                            code: KeyCode::BackTab,
+                        } => app.previous_tab(),
                         // without any modifiers
                         KeyEvent {
                             modifiers: KeyModifiers::NONE,
@@ -143,12 +140,12 @@ fn run_event_loop<B: Backend>(app: &mut App, mut terminal: &mut Terminal<B>) -> 
                             KeyCode::Enter | KeyCode::Right | KeyCode::Char('l') => app.on_enter(),
                             // Press 's' on a selected PE to start a job
                             //KeyCode::Char('s') => app.start_current_pe(),
-                            _ => {},
+                            _ => {}
                         },
-                        _ => {},
+                        _ => {}
                     },
                 }
-            },
+            }
             // TODO: When opening a new pane in Tmux this app is not redrawn.
             Event::Resize(_, _) => continue,
         }
@@ -190,7 +187,7 @@ fn draw<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Result<()> {
             .collect();
         let tabs = Tabs::new(titles)
             .block(Block::default()
-                .title(Span::styled("Tabs (Shift+Tab: ←, Tab: →)",
+                .title(Span::styled("Tabs (Shift+Tab: \u{2190}, Tab: \u{2192})",
                                     Style::default().add_modifier(Modifier::DIM)))
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().add_modifier(Modifier::DIM))
@@ -210,7 +207,7 @@ fn draw<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Result<()> {
             2 => draw_tab_bitstream_and_device_info(f, app, tabs_chunks[2]),
             _ => {},
         }
-    }).context(CrosstermError {})?;
+    }).context(Crossterm {})?;
 
     Ok(())
 }
@@ -226,11 +223,9 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
                 Constraint::Length(15),
                 Constraint::Min(30),
                 Constraint::Length(3),
-            ].as_ref(),
-            _ => [
-                Constraint::Length(15),
-                Constraint::Min(30),
-            ].as_ref(),
+            ]
+            .as_ref(),
+            InputMode::Normal => [Constraint::Length(15), Constraint::Min(30)].as_ref(),
         })
         .split(chunk);
 
@@ -238,25 +233,26 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
     let horizontal_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .margin(0)
-        .constraints(
-            [
-                Constraint::Percentage(50),
-                Constraint::Percentage(50),
-            ].as_ref()
-        )
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
         .split(vertical_chunks[1]);
 
     // Draw the PEs as stateful list to be able to select one
     let pes_title = if (app.access_mode == AccessMode::Monitor {}) {
-        "PE List (j:↓, k:↑)"
+        "PE List (j:\u{2193}, k:\u{2191})"
     } else {
-        "PE List (j:↓, k:↑, Enter/l: switch to Register List)"
+        "PE List (j:\u{2193}, k:\u{2191}, Enter/l: switch to Register List)"
     };
-    let pes: Vec<ListItem> = app.pe_infos.items.iter()
+    let pes: Vec<ListItem> = app
+        .pe_infos
+        .items
+        .iter()
         .map(|i| ListItem::new(vec![Spans::from(Span::raw(i))]))
         .collect();
     let pes = List::new(pes)
-        .block(focusable_block(pes_title, app.focus == InputFrame::PEList {}))
+        .block(focusable_block(
+            pes_title,
+            app.focus == InputFrame::PEList {},
+        ))
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol("> ");
     f.render_stateful_widget(pes, vertical_chunks[0], &mut app.pe_infos.state);
@@ -265,54 +261,64 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
     let register_chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(0)
-        .constraints(
-            [
-                Constraint::Length(5),
-                Constraint::Min(10),
-            ].as_ref()
-        )
+        .constraints([Constraint::Length(5), Constraint::Min(10)].as_ref())
         .split(horizontal_chunks[0]);
 
     // Status registers
-    draw_block_with_paragraph(f, "Status Registers", app.get_status_registers(), register_chunks[0]);
+    draw_block_with_paragraph(
+        f,
+        "Status Registers",
+        app.get_status_registers(),
+        register_chunks[0],
+    );
 
     // Argument Register List (also stateful list for editing)
     let registers_title = if (app.access_mode == AccessMode::Monitor {}) {
         "Register List (r: Refresh)"
     //} else if (app.access_mode == AccessMode::Debug {}) {
-    //    "Register List (r: Refresh, Escape: back, j:↓, k:↑, Enter/l: set Register, s: Start PE)"
+    //    "Register List (r: Refresh, Escape: back, j:\u{2193}, k:\u{2191}, Enter/l: set Register, s: Start PE)"
     } else {
-        "Register List (r: Refresh, Escape: back, j:↓, k:↑, Enter/l: set Register)"
+        "Register List (r: Refresh, Escape: back, j:\u{2193}, k:\u{2191}, Enter/l: set Register)"
     };
     let registers = app.get_argument_registers();
-    let registers: Vec<ListItem> = registers.iter()
+    let registers: Vec<ListItem> = registers
+        .iter()
         .map(|i| ListItem::new(vec![Spans::from(Span::raw(i))]))
         .collect();
     let registers = List::new(registers)
-        .block(focusable_block(registers_title, app.focus == InputFrame::RegisterList))
+        .block(focusable_block(
+            registers_title,
+            app.focus == InputFrame::RegisterList,
+        ))
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol("> ");
     f.render_stateful_widget(registers, register_chunks[1], &mut app.register_list.state);
 
     // Local Memory (also a stateful list for editing TODO?)
     let local_memory = app.dump_current_pe_local_memory();
-    let local_memory: Vec<ListItem> = local_memory.iter()
+    let local_memory: Vec<ListItem> = local_memory
+        .iter()
         .map(|i| ListItem::new(vec![Spans::from(Span::raw(i))]))
         .collect();
     let local_memory = List::new(local_memory)
         .block(focusable_block("Local Memory (r: Refresh)", false))
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol("> ");
-    f.render_stateful_widget(local_memory, horizontal_chunks[1], &mut app.local_memory_list.state);
+    f.render_stateful_widget(
+        local_memory,
+        horizontal_chunks[1],
+        &mut app.local_memory_list.state,
+    );
 
     // Draw an input line if in Edit Mode
     if app.input_mode == InputMode::Edit {
-        let input = Paragraph::new(app.input.as_ref())
-            .block(Block::default()
-                   .borders(Borders::ALL)
-                   .border_type(BorderType::Rounded)
-                   .title("Input (Escape: abort, Enter: try to parse input as signed decimal i64)")
-                   .style(Style::default().fg(Color::Yellow)));
+        let input = Paragraph::new(app.input.as_ref()).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .title("Input (Escape: abort, Enter: try to parse input as signed decimal i64)")
+                .style(Style::default().fg(Color::Yellow)),
+        );
         let input_chunks = vertical_chunks[2];
         f.render_widget(input, input_chunks);
 
@@ -321,7 +327,8 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
             // Put cursor past the end of the input text
             input_chunks.x + app.input.width() as u16 + 1,
             // Move one line down, from the border to the input line
-            input_chunks.y + 1,)
+            input_chunks.y + 1,
+        );
     }
 }
 
@@ -330,19 +337,19 @@ fn draw_tab_platform_components<B: Backend>(f: &mut Frame<B>, app: &App, chunk: 
     let vertical_chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(0)
-        .constraints(
-            [
-                Constraint::Min(15),
-                Constraint::Length(10),
-            ].as_ref()
-        )
+        .constraints([Constraint::Min(15), Constraint::Length(10)].as_ref())
         .split(chunk);
 
     // Show general info about platform components
     draw_block_with_paragraph(f, "Overview", app.get_platform_info(), vertical_chunks[0]);
 
     // and DMAEngine Statistics
-    draw_block_with_paragraph(f, "DMAEngine Statistics (r: Refresh)", app.get_dmaengine_statistics(), vertical_chunks[1]);
+    draw_block_with_paragraph(
+        f,
+        "DMAEngine Statistics (r: Refresh)",
+        app.get_dmaengine_statistics(),
+        vertical_chunks[1],
+    );
 }
 
 fn draw_tab_bitstream_and_device_info<B: Backend>(f: &mut Frame<B>, app: &App, chunk: Rect) {
@@ -351,11 +358,16 @@ fn draw_tab_bitstream_and_device_info<B: Backend>(f: &mut Frame<B>, app: &App, c
 
 /// Draw a block with some text in it into the rectangular space given by chunk
 //fn draw_block_with_paragraph<B: Backend>(f: &mut Frame<B>, block_title: &str, paragraph_text: &str, chunk: Rect) {
-fn draw_block_with_paragraph<'a, B: Backend, T>(f: &mut Frame<B>, block_title: &str, text: T, chunk: Rect) where Text<'a>: From<T> {
+fn draw_block_with_paragraph<'a, B: Backend, T>(
+    f: &mut Frame<B>,
+    block_title: &str,
+    text: T,
+    chunk: Rect,
+) where
+    Text<'a>: From<T>,
+{
     let block = dim_block(block_title);
-    let paragraph = Paragraph::new(text)
-        .block(block)
-        .wrap(Wrap { trim: false });
+    let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: false });
     f.render_widget(paragraph, chunk);
 }
 
@@ -375,5 +387,12 @@ fn dim_block(title: &str) -> Block {
 
 /// Create a new Block with round corners which takes a boolean if it is focused
 fn focusable_block(title: &str, focused: bool) -> Block {
-    block_with_border_style(title, if focused { Modifier::BOLD } else { Modifier::DIM })
+    block_with_border_style(
+        title,
+        if focused {
+            Modifier::BOLD
+        } else {
+            Modifier::DIM
+        },
+    )
 }

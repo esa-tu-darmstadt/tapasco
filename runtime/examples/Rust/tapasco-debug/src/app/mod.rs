@@ -1,18 +1,12 @@
-use std::{
-    collections::HashMap,
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
-use log::{trace, warn, error};
+use log::{error, trace, warn};
 
 use tapasco::{
-    tlkm::*,
-    device::{
-        Device,
-        status::Interrupt,
-    },
-    pe::PE,
     device::PEParameter,
+    device::{status::Interrupt, Device},
+    pe::PE,
+    tlkm::TLKM,
 };
 
 use chrono::{TimeZone, Utc};
@@ -33,15 +27,19 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 // Import the Subcommand enum from super module as AccessMode to clarify intent
 pub use super::Command as AccessMode;
 
-
 // TODO: It would be nice to see when/how many interrupts were triggered.
 
+#[derive(Debug, PartialEq)]
+pub enum InputMode {
+    Normal,
+    Edit,
+}
 
-#[derive(Debug,PartialEq)]
-pub enum InputMode { Normal, Edit }
-
-#[derive(Debug,PartialEq)]
-pub enum InputFrame { PEList, RegisterList }
+#[derive(Debug, PartialEq)]
+pub enum InputFrame {
+    PEList,
+    RegisterList,
+}
 
 pub struct App<'a> {
     _tlkm_option: Option<TLKM>,
@@ -69,7 +67,9 @@ impl<'a> App<'a> {
         // Get Tapasco Loadable Linux Kernel Module
         let tlkm = TLKM::new().context(TLKMInit {})?;
         // Allocate the device with the given ID
-        let mut tlkm_device = tlkm.device_alloc(device_id, &HashMap::new()).context(TLKMInit {})?;
+        let mut tlkm_device = tlkm
+            .device_alloc(device_id, &HashMap::new())
+            .context(TLKMInit {})?;
 
         // For some access modes we need to take some special care to use them
         let access_mode_str = match access_mode {
@@ -78,18 +78,22 @@ impl<'a> App<'a> {
                 // access we implement a monitor mode where registers cannot be modified. For this
                 // no special access is necessary. This is a no-op.
                 "Monitor"
-            },
+            }
             AccessMode::Debug {} => {
                 // Change device access to exclusive to be able to acquire PEs
-                tlkm_device.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive).context(DeviceInit {})?;
+                tlkm_device
+                    .change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+                    .context(DeviceInit {})?;
                 "Debug"
-            },
+            }
             AccessMode::Unsafe {} => {
                 // Change device access to exclusive to be able to acquire PEs
-                tlkm_device.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive).context(DeviceInit {})?;
+                tlkm_device
+                    .change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+                    .context(DeviceInit {})?;
                 warn!("Running in Unsafe Mode");
                 "Unsafe"
-            },
+            }
         };
         trace!("Access Mode is: {}", access_mode_str);
 
@@ -100,12 +104,24 @@ impl<'a> App<'a> {
         // Initialize UI with focus on the PE list
         let focus = InputFrame::PEList;
 
-        let tabs = TabsState::new(vec!["Peek & Poke PEs", "Platform Components", "Bitstream & Device Info"]);
+        let tabs = TabsState::new(vec![
+            "Peek & Poke PEs",
+            "Platform Components",
+            "Bitstream & Device Info",
+        ]);
         let title = format!("TaPaSCo Debugger - {} Mode", access_mode_str);
 
         let tlkm_version = tlkm.version().context(TLKMInit {})?;
-        let platform_base = tlkm_device.status().platform_base.clone().expect("Could not get platform_base!");
-        let arch_base = tlkm_device.status().arch_base.clone().expect("Could not get arch_base!");
+        let platform_base = tlkm_device
+            .status()
+            .platform_base
+            .clone()
+            .expect("Could not get platform_base!");
+        let arch_base = tlkm_device
+            .status()
+            .arch_base
+            .clone()
+            .expect("Could not get arch_base!");
         let platform = tlkm_device.platform().clone();
 
         // Hold the TLKM if we are running in Debug mode, so it is not free'd after this method
@@ -122,14 +138,16 @@ impl<'a> App<'a> {
 
         for (index, pe) in tlkm_device.status().pe.iter().enumerate() {
             // Calculate the "real" address using arch base address plus PE offset
-            let address = &arch_base.base + pe.offset;
+            let address = arch_base.base + pe.offset;
             pe_infos.push(
                 format!("Slot {}: {} (ID: {})    Address: 0x{:016x} ({}), Size: 0x{:x} ({} Bytes), Interrupts: {}, Debug: {:?}",
                         index, pe.name, pe.id, address, address, pe.size, pe.size, App::parse_interrupts(&pe.interrupts), pe.debug));
 
             // Acquire the PE to be able to show its registers etc.
             // Warning: casting to usize can panic! On a <32-bit system..
-            let pe = tlkm_device.acquire_pe_without_job(pe.id as usize).context(DeviceInit {})?;
+            let pe = tlkm_device
+                .acquire_pe_without_job(pe.id as usize)
+                .context(DeviceInit {})?;
             // TODO: There is no way to check that you really got the PE that you wanted
             // so I have to use this workaround to set it at the ID of the PE struct which
             // confusingly is NOT the pe.id from above which is stored at type_id inside the PE.
@@ -139,10 +157,10 @@ impl<'a> App<'a> {
         }
 
         // Preselect the first element if the device's bitstream contains at least one PE
-        let pe_infos = if pe_infos.len() > 0 {
-            StatefulList::with_items_selected(pe_infos, 0)
-        } else {
+        let pe_infos = if pe_infos.is_empty() {
             StatefulList::with_items(pe_infos)
+        } else {
+            StatefulList::with_items_selected(pe_infos, 0)
         };
 
         // There are theoretically endless registers. 100 seems to be a good value.
@@ -152,38 +170,54 @@ impl<'a> App<'a> {
         // Parse bitstream info from the Status core
         let mut bitstream_info = String::new();
         // TODO: decode vendor and product IDs
-        bitstream_info += &format!("Device ID: {} ({}),\nVendor: {}, Product: {},\n\n",
-                                   tlkm_device.id(), tlkm_device.name(), tlkm_device.vendor(), tlkm_device.product());
+        bitstream_info += &format!(
+            "Device ID: {} ({}),\nVendor: {}, Product: {},\n\n",
+            tlkm_device.id(),
+            tlkm_device.name(),
+            tlkm_device.vendor(),
+            tlkm_device.product()
+        );
 
         // Warning: casting to i64 can panic! If the timestamp is bigger than 63 bit..
-        bitstream_info += &format!("Bitstream generated at: {} ({})\n\n",
-                                   Utc.timestamp(tlkm_device.status().timestamp as i64, 0).format("%Y-%m-%d"),
-                                   tlkm_device.status().timestamp);
+        bitstream_info += &format!(
+            "Bitstream generated at: {} ({})\n\n",
+            Utc.timestamp(tlkm_device.status().timestamp as i64, 0)
+                .format("%Y-%m-%d"),
+            tlkm_device.status().timestamp
+        );
 
         for v in &tlkm_device.status().versions {
-            bitstream_info += &format!("{} Version: {}.{}{}\n",
-                                       v.software, v.year, v.release, v.extra_version);
+            bitstream_info += &format!(
+                "{} Version: {}.{}{}\n",
+                v.software, v.year, v.release, v.extra_version
+            );
         }
         bitstream_info += &format!("TLKM Version: {}\n\n", tlkm_version);
 
         for c in &tlkm_device.status().clocks {
-            bitstream_info += &format!("{} Clock Frequency: {} MHz\n",
-                                       c.name, c.frequency_mhz);
+            bitstream_info += &format!("{} Clock Frequency: {} MHz\n", c.name, c.frequency_mhz);
         }
 
         // Parse platform info from the Status core
         let mut platform_info = String::new();
 
         let mut dmaengine_offset = None;
-        platform_info += &format!("Platform Base: 0x{:012x} (Size: 0x{:x} ({} Bytes))\n\n",
-                                  platform_base.base, platform_base.size, platform_base.size);
+        platform_info += &format!(
+            "Platform Base: 0x{:012x} (Size: 0x{:x} ({} Bytes))\n\n",
+            platform_base.base, platform_base.size, platform_base.size
+        );
 
         for p in &tlkm_device.status().platform {
-            let address = &platform_base.base + p.offset;
-            platform_info +=
-                &format!("{}:\n  Address: 0x{:012x} ({}), Size: 0x{:x} ({} Bytes)\n  Interrupts: {}\n\n",
-                         p.name.trim_start_matches("PLATFORM_COMPONENT_"), address, address,
-                         p.size, p.size, App::parse_interrupts(&p.interrupts));
+            let address = platform_base.base + p.offset;
+            platform_info += &format!(
+                "{}:\n  Address: 0x{:012x} ({}), Size: 0x{:x} ({} Bytes)\n  Interrupts: {}\n\n",
+                p.name.trim_start_matches("PLATFORM_COMPONENT_"),
+                address,
+                address,
+                p.size,
+                p.size,
+                App::parse_interrupts(&p.interrupts)
+            );
 
             if p.name == "PLATFORM_COMPONENT_DMA0" {
                 dmaengine_offset = Some(p.offset as isize);
@@ -228,104 +262,92 @@ impl<'a> App<'a> {
     }
 
     pub fn on_up(&mut self) {
-        match self.tabs.index {
-            0 => {
-                match self.focus {
-                    InputFrame::PEList => self.pe_infos.previous(),
-                    InputFrame::RegisterList => self.register_list.previous(),
-                };
-            },
-            _ => {},
+        if self.tabs.index == 0 {
+            match self.focus {
+                InputFrame::PEList => self.pe_infos.previous(),
+                InputFrame::RegisterList => self.register_list.previous(),
+            };
         };
     }
 
     pub fn on_down(&mut self) {
-        match self.tabs.index {
-            0 => {
-                match self.focus {
-                    InputFrame::PEList => self.pe_infos.next(),
-                    InputFrame::RegisterList => self.register_list.next(),
-                };
-            },
-            _ => {},
+        if self.tabs.index == 0 {
+            match self.focus {
+                InputFrame::PEList => self.pe_infos.next(),
+                InputFrame::RegisterList => self.register_list.next(),
+            };
         };
     }
 
     pub fn on_escape(&mut self) {
-        match self.tabs.index {
-            0 => {
-                match self.input_mode {
-                    InputMode::Normal => {
-                        match self.focus {
-                            InputFrame::PEList => self.pe_infos.unselect(),
-                            InputFrame::RegisterList => {
-                                self.register_list.unselect();
-                                self.focus = InputFrame::PEList;
-                            },
-                        };
-                    },
-                    InputMode::Edit => {
-                        self.input_mode = InputMode::Normal;
-                        self.input.clear();
-                    },
-                };
-            },
-            _ => {},
+        if self.tabs.index == 0 {
+            match self.input_mode {
+                InputMode::Normal => {
+                    match self.focus {
+                        InputFrame::PEList => self.pe_infos.unselect(),
+                        InputFrame::RegisterList => {
+                            self.register_list.unselect();
+                            self.focus = InputFrame::PEList;
+                        }
+                    };
+                }
+                InputMode::Edit => {
+                    self.input_mode = InputMode::Normal;
+                    self.input.clear();
+                }
+            };
         };
     }
 
     pub fn on_enter(&mut self) {
-        match self.tabs.index {
-            0 => {
-                match self.access_mode {
-                    AccessMode::Monitor {} => {},
-                    AccessMode::Debug {} | AccessMode::Unsafe {} => {
-                        match self.input_mode {
-                            InputMode::Normal => {
-                                match self.focus {
-                                    // Change the focused component to the register list of the selected PE
-                                    InputFrame::PEList => match self.pe_infos.state.selected() {
-                                        Some(_) => {
-                                            self.focus = InputFrame::RegisterList;
-                                            self.register_list.next();
-                                        },
-                                        _ => self.pe_infos.next(),
-                                    },
-                                    // Enter Edit Mode for a new register value
-                                    InputFrame::RegisterList => {
-                                        self.input_mode = InputMode::Edit;
-                                    },
-                                };
-                            },
-                            InputMode::Edit => {
-                                // If the input cannot be parsed correctly, simply do nothing until
-                                // we either hit Escape or enter a valid decimal integer.
-                                if let Ok(new_value) = self.input.parse::<i64>() {
-                                    self.input.clear();
-
-                                    // Ignore the error because unless the code changes, there will
-                                    // be no error returned by this function.
-                                    if let Err(e) = self.pes
-                                        .get_mut(self.pe_infos.state.selected()
-                                                 .expect("There should have been a selected PE. This is a bug."))
-                                        .expect("There should have been a PE for the selection. This is a bug.")
-                                        .1 // ignore the index, select the PE from the tuple
-                                        .set_arg(self.register_list.state.selected().unwrap(),
-                                                 PEParameter::Single64(new_value as u64)) {
-                                        // but log this error in case the code changes
-                                        error!("Error setting argument: {}.
-                                                This is probably due to libtapasco having changed something
-                                                important. You should fix this app.", e);
+        if self.tabs.index == 0 {
+            match self.access_mode {
+                AccessMode::Monitor {} => {}
+                AccessMode::Debug {} | AccessMode::Unsafe {} => {
+                    match self.input_mode {
+                        InputMode::Normal => {
+                            match self.focus {
+                                // Change the focused component to the register list of the selected PE
+                                InputFrame::PEList => match self.pe_infos.state.selected() {
+                                    Some(_) => {
+                                        self.focus = InputFrame::RegisterList;
+                                        self.register_list.next();
                                     }
-
-                                    self.input_mode = InputMode::Normal;
+                                    _ => self.pe_infos.next(),
+                                },
+                                // Enter Edit Mode for a new register value
+                                InputFrame::RegisterList => {
+                                    self.input_mode = InputMode::Edit;
                                 }
-                            },
-                        };
-                    },
-                };
-            },
-            _ => {},
+                            };
+                        }
+                        InputMode::Edit => {
+                            // If the input cannot be parsed correctly, simply do nothing until
+                            // we either hit Escape or enter a valid decimal integer.
+                            if let Ok(new_value) = self.input.parse::<i64>() {
+                                self.input.clear();
+
+                                // Ignore the error because unless the code changes, there will
+                                // be no error returned by this function.
+                                if let Err(e) = self.pes
+                                    .get_mut(self.pe_infos.state.selected()
+                                             .expect("There should have been a selected PE. This is a bug."))
+                                    .expect("There should have been a PE for the selection. This is a bug.")
+                                    .1 // ignore the index, select the PE from the tuple
+                                    .set_arg(self.register_list.state.selected().unwrap(),
+                                             PEParameter::Single64(new_value as u64)) {
+                                    // but log this error in case the code changes
+                                    error!("Error setting argument: {}.
+                                            This is probably due to libtapasco having changed something
+                                            important. You should fix this app.", e);
+                                }
+
+                                self.input_mode = InputMode::Normal;
+                            }
+                        }
+                    };
+                }
+            };
         };
     }
 
@@ -344,7 +366,9 @@ impl<'a> App<'a> {
         };
 
         // Get the PE with the real ID of the selected Slot
-        let (_, pe) = self.pes.iter()
+        let (_, pe) = self
+            .pes
+            .iter()
             .filter(|(id, _)| *id == pe_slot)
             .take(1)
             .collect::<Vec<&(usize, PE)>>()
@@ -381,7 +405,9 @@ impl<'a> App<'a> {
 
     pub fn get_status_registers(&mut self) -> String {
         if let Some(pe) = self.get_current_pe() {
-            let (global_interrupt, local_interrupt) = pe.interrupt_status().expect("Expected to get PE interrupt status.");
+            let (global_interrupt, local_interrupt) = pe
+                .interrupt_status()
+                .expect("Expected to get PE interrupt status.");
             let return_value = pe.return_value();
 
             // TODO: I have to get these from the runtime because there are no registers for that.
@@ -393,7 +419,10 @@ impl<'a> App<'a> {
             result += &format!("Local  Interrupt Enabled: {}\n", local_interrupt);
             result += &format!("Global Interrupt Enabled: {}\n", global_interrupt);
             //result += &format!("Interrupt pending: {}", interrupt_pending);
-            result += &format!("Return: 0x{:16x} (i32: {:10})\n", return_value, return_value as i32);
+            result += &format!(
+                "Return: 0x{:16x} (i32: {:10})\n",
+                return_value, return_value as i32
+            );
 
             result
         } else {
@@ -404,9 +433,14 @@ impl<'a> App<'a> {
     pub fn get_argument_registers(&mut self) -> Vec<String> {
         if let Some(pe) = self.get_current_pe() {
             let argument_registers = (0..self.register_list.items.len())
-                .map(|i| match pe.read_arg(i, 8).expect("Expected to be able to read PE registers!") {
-                    PEParameter::Single64(u) => u,
-                    _ => unreachable!()
+                .map(|i| {
+                    match pe
+                        .read_arg(i, 8)
+                        .expect("Expected to be able to read PE registers!")
+                    {
+                        PEParameter::Single64(u) => u,
+                        _ => unreachable!(),
+                    }
                 })
                 .collect::<Vec<u64>>();
 
@@ -428,20 +462,23 @@ impl<'a> App<'a> {
                 _ => return vec!["No local memory for this PE.".to_string()],
             };
 
-            let mut memory_cells: Box<[u8]> = Box::new([0u8; 16*100]);
+            let mut memory_cells: Box<[u8]> = Box::new([0_u8; 16 * 100]);
             match local_memory.dma().copy_from(0, &mut memory_cells) {
-                Ok(_) => {},
+                Ok(_) => {}
                 _ => return vec!["Could not read PE Local Memory!".to_string()],
             }
 
             let mut result: Vec<String> = Vec::new();
             for (i, s) in memory_cells.chunks_exact(16).enumerate() {
                 // format bytes like hexdump
-                result.push(format!("{:08x}: {}\n", 16 * i,
-                                    s.iter()
-                                    .map(|x| format!("{:02x}", x))
-                                    .collect::<Vec<String>>()
-                                    .join(" ")));
+                result.push(format!(
+                    "{:08x}: {}\n",
+                    16 * i,
+                    s.iter()
+                        .map(|x| format!("{:02x}", x))
+                        .collect::<Vec<String>>()
+                        .join(" ")
+                ));
             }
 
             result
@@ -450,13 +487,12 @@ impl<'a> App<'a> {
         }
     }
 
-    fn parse_interrupts(interrupts: &Vec<Interrupt>) -> String {
+    fn parse_interrupts(interrupts: &[Interrupt]) -> String {
         let mut result = String::new();
 
-        if interrupts.len() == 0 {
+        if interrupts.is_empty() {
             result += "None";
-        }
-        else {
+        } else {
             result += "[ ";
 
             for (index, interrupt) in interrupts.iter().enumerate() {
@@ -493,18 +529,31 @@ impl<'a> App<'a> {
             unsafe {
                 // Create a const pointer to the u64 register at the offset in the platform address
                 // space of the DMAEngine
-                let dmaengine_register_ptr = self.platform.as_ptr().offset(dmaengine_offset + r.1) as *const u64;
+                let dmaengine_register_ptr = self
+                    .platform
+                    .as_ptr()
+                    .offset(dmaengine_offset + r.1)
+                    .cast::<u64>();
                 // Read IO register with volatile, see:
                 // https://doc.rust-lang.org/std/ptr/fn.read_volatile.html
                 let dmaengine_register = dmaengine_register_ptr.read_volatile();
 
                 if index < 2 {
                     // Calculating ms doesn't make sense for the number of Reads/Writes
-                    result += &format!("{}    {:016x}    ({:20})\n", r.0, dmaengine_register, dmaengine_register);
+                    result += &format!(
+                        "{}    {:016x}    ({:20})\n",
+                        r.0, dmaengine_register, dmaengine_register
+                    );
                 } else {
                     // Warning: This assumes the host frequency to be 250MHz which should be the case
                     // everywhere.
-                    result += &format!("{}    {:016x}    ({:20} = {:9} ns)\n", r.0, dmaengine_register, dmaengine_register, dmaengine_register * 4);
+                    result += &format!(
+                        "{}    {:016x}    ({:20} = {:9} ns)\n",
+                        r.0,
+                        dmaengine_register,
+                        dmaengine_register,
+                        dmaengine_register * 4
+                    );
                 }
             }
 
@@ -518,7 +567,6 @@ impl<'a> App<'a> {
     }
 }
 
-
 // The following code is taken from libtui-rs demo:
 // https://github.com/fdehau/tui-rs/blob/v0.15.0/examples/util/mod.rs
 // licensed under MIT License by Florian Dehau, see:
@@ -530,10 +578,7 @@ pub struct TabsState<'a> {
 
 impl<'a> TabsState<'a> {
     pub fn new(titles: Vec<&'a str>) -> TabsState {
-        TabsState {
-            titles,
-            index: 0,
-        }
+        TabsState { titles, index: 0 }
     }
 
     pub fn next(&mut self) {
@@ -549,7 +594,6 @@ impl<'a> TabsState<'a> {
     }
 }
 
-
 use tui::widgets::ListState;
 
 pub struct StatefulList<T> {
@@ -558,22 +602,22 @@ pub struct StatefulList<T> {
 }
 
 impl<T> StatefulList<T> {
-    pub fn new() -> StatefulList<T> {
-        StatefulList {
+    pub fn new() -> Self {
+        Self {
             state: ListState::default(),
             items: Vec::new(),
         }
     }
 
-    pub fn with_items(items: Vec<T>) -> StatefulList<T> {
-        StatefulList {
+    pub fn with_items(items: Vec<T>) -> Self {
+        Self {
             state: ListState::default(),
             items,
         }
     }
 
-    pub fn with_items_selected(items: Vec<T>, selected: usize) -> StatefulList<T> {
-        let mut list = StatefulList {
+    pub fn with_items_selected(items: Vec<T>, selected: usize) -> Self {
+        let mut list = Self {
             state: ListState::default(),
             items,
         };
@@ -590,7 +634,7 @@ impl<T> StatefulList<T> {
                 } else {
                     m + 1
                 }
-            },
+            }
             None => 0,
         };
 
@@ -605,7 +649,7 @@ impl<T> StatefulList<T> {
                 } else {
                     m - 1
                 }
-            },
+            }
             None => self.items.len() - 1,
         };
 
