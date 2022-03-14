@@ -56,6 +56,7 @@ pub struct App<'a> {
     pub pes: Vec<(usize, PE)>, // Plural of Processing Element (PEs)
     pub register_list: StatefulList<String>,
     pub local_memory_list: StatefulList<String>,
+    pub messages: Vec<String>,
 }
 
 impl<'a> App<'a> {
@@ -209,6 +210,12 @@ impl<'a> App<'a> {
             );
         }
 
+        // Setup a new Vector to store (event) messages. It's kind of like logging but as there
+        // already is a real logger and we cannot add another logging implementation, we have to
+        // provide something a little bit different and simpler to inform users about things like
+        // started PEs.
+        let messages: Vec<String> = Vec::new();
+
         trace!("Constructed App");
 
         Ok(App {
@@ -225,6 +232,7 @@ impl<'a> App<'a> {
             pes,
             register_list,
             local_memory_list,
+            messages,
         })
     }
 
@@ -365,7 +373,7 @@ impl<'a> App<'a> {
         Some(pe)
     }
 
-    pub fn start_current_pe(&self) -> Result<()> {
+    pub fn start_current_pe(&self) -> Result<String> {
         if (self.access_mode != AccessMode::Unsafe {}) {
             panic!("Unsafe access mode necessary to start a PE! This function should not have been callable. This is a bug.");
         }
@@ -404,9 +412,11 @@ impl<'a> App<'a> {
                 let ptr = pe.memory().as_ptr().offset(offset);
                 (ptr as *mut u32).write_volatile(1);
             }
+
+            return Ok(format!("Started PE with ID: {}.", pe.id()).to_string())
         }
 
-        Ok(())
+        Ok("No PE selected.".to_string())
     }
 
     pub fn get_status_registers(&mut self) -> String {

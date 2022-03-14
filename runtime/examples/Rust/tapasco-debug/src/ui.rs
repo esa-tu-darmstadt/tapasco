@@ -147,12 +147,13 @@ fn run_event_loop<B: Backend>(app: &mut App, mut terminal: &mut Terminal<B>) -> 
                             // Press 's' on a selected PE to start a job
                             KeyCode::Char('s') => match app.access_mode {
                                 AccessMode::Unsafe {} => match app.start_current_pe() {
-                                    // TODO: let the UI show something like started or error..
-                                    Ok(_) => {
+                                    Ok(s) => {
                                         info!("Started PE.");
+                                        app.messages.push(s);
                                     },
                                     Err(e) => {
                                         error!("{}", e);
+                                        app.messages.push(e.to_string());
                                     }
                                 },
                                 AccessMode::Monitor {} => warn!("Unsafe access mode necessary to start a PE. Restart the app with `unsafe` parameter.")
@@ -230,8 +231,9 @@ fn draw<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Result<()> {
 }
 
 fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk: Rect) {
-    // Create a vertical layout (top to bottom) first to split the Tab into 2 rows with a
-    // bottom line for keyboard input that is only shown when in Edit Mode
+    // Create a vertical layout (top to bottom) first to split the Tab into 3 rows with a
+    // bottom line for keyboard input that is only shown when in Edit Mode (that replaces the
+    // messages view):
     let vertical_chunks = Layout::default()
         .direction(Direction::Vertical)
         .margin(0)
@@ -242,7 +244,7 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
                 Constraint::Length(3),
             ]
             .as_ref(),
-            InputMode::Navigation => [Constraint::Length(15), Constraint::Min(30)].as_ref(),
+            InputMode::Navigation => [Constraint::Length(15), Constraint::Min(30), Constraint::Length(15)].as_ref(),
         })
         .split(chunk);
 
@@ -345,6 +347,14 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
             input_chunks.x + app.input.width() as u16 + 1,
             // Move one line down, from the border to the input line
             input_chunks.y + 1,
+        );
+    // Or the messages view when not in Edit Mode
+    } else {
+        draw_block_with_paragraph(
+            f,
+            "Messages",
+            app.messages.iter().rev().take((f.size().height - 2).into()).rev().cloned().collect::<Vec<String>>().join("\n"),
+            vertical_chunks[2],
         );
     }
 }
