@@ -139,7 +139,18 @@ fn run_event_loop<B: Backend>(app: &mut App, mut terminal: &mut Terminal<B>) -> 
                             // Press Enter or 'l' to select a PE/Register
                             KeyCode::Enter | KeyCode::Right | KeyCode::Char('l') => app.on_enter(),
                             // Press 's' on a selected PE to start a job
-                            //KeyCode::Char('s') => app.start_current_pe(),
+                            KeyCode::Char('s') => match app.access_mode {
+                                AccessMode::Unsafe {} => match app.start_current_pe() {
+                                    // TODO: let the UI show something like started or error..
+                                    Ok(_) => {
+                                        info!("Started PE.");
+                                    },
+                                    Err(e) => {
+                                        error!("{}", e);
+                                    }
+                                },
+                                AccessMode::Monitor {} => warn!("Unsafe access mode necessary to start a PE. Restart the app with `unsafe` parameter.")
+                            },
                             _ => {}
                         },
                         _ => {}

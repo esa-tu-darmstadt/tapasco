@@ -365,28 +365,49 @@ impl<'a> App<'a> {
         Some(pe)
     }
 
-    //pub fn start_current_pe(&self) {
-    //    if (self.access_mode != AccessMode::Debug {}) {
-    //        return;
-    //    }
+    pub fn start_current_pe(&self) -> Result<()> {
+        if (self.access_mode != AccessMode::Unsafe {}) {
+            panic!("Unsafe access mode necessary to start a PE! This function should not have been callable. This is a bug.");
+        }
 
-    //    if let Some(pe) = self.get_current_pe() {
-    //        // TODO: This might not be the correct PE when there are multiple PEs with the same
-    //        // TypeID.
-    //        match self.tlkm_device.acquire_pe(*pe.type_id()) {
-    //            Ok(mut pe) => {
-    //                trace!("Acquired PE: {:?}", pe);
-    //                if let Ok(_) = pe.start(vec![]) {
-    //                    trace!("Started PE: {:?}", pe);
-    //                    if let Ok(_) = pe.release(true, true) {
-    //                        trace!("Starting PE: {:?}", pe);
-    //                    }
-    //                }
-    //            },
-    //            Err(e) => error!("Could not acquire PE: {}", e),
-    //        }
-    //    }
-    //}
+        if let Some(pe) = self.get_current_pe() {
+            // This does not work because `libtapasco` does a really god job of protecting its PEs
+            // and access to them with Rust's ownership rules.
+            //
+            // Besides, this might not be the correct PE when there are multiple PEs with the same
+            // TypeID.
+            //match self.tlkm_device.acquire_pe(*pe.type_id()) {
+            //    Ok(mut pe) => {
+            //        trace!("Acquired PE: {:?}", pe);
+            //        if let Ok(_) = pe.start(vec![]) {
+            //            trace!("Started PE: {:?}", pe);
+            //            if let Ok(_) = pe.release(true, true) {
+            //                trace!("Starting PE: {:?}", pe);
+            //            }
+            //        }
+            //    },
+            //    Err(e) => error!("Could not acquire PE: {}", e),
+            //}
+            //
+            trace!("Starting PE with ID: {}.", pe.id());
+
+            let offset = *pe.offset() as isize;
+
+            unsafe {
+                // Access PE memory just like in `libtapasco`:
+                //use volatile::Volatile;
+                //let ptr = pe.memory().as_ptr().offset(offset);
+                //let volatile_ptr: *mut Volatile<u32> = ptr as *mut Volatile<u32>;
+                //(*volatile_ptr).write(1);
+                //
+                // but instead of the `volatile` crate use std::ptr:
+                let ptr = pe.memory().as_ptr().offset(offset);
+                (ptr as *mut u32).write_volatile(1);
+            }
+        }
+
+        Ok(())
+    }
 
     pub fn get_status_registers(&mut self) -> String {
         if let Some(pe) = self.get_current_pe() {
