@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 tui = { version = "0.16.0", default-features = false, features = ['crossterm'] }
 crossterm = "0.21.0"
-tapasco = { path = "../../../libtapasco" }
+tapasco = { path = "../../../libtapasco", features = ["tapasco-debug"] }
 snafu = "0.6.10"
 chrono = "0.4.19"
 log = "0.4.14"
