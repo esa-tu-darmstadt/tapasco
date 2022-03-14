@@ -450,8 +450,6 @@ impl<'a> App<'a> {
         "No PE selected.".to_string()
     }
 
-    // TODO: add a function parameter for the number of registers that should be read to make it
-    // dependent on the size of the UI frame.
     pub fn get_argument_registers(&mut self, number_of_lines: usize) -> Vec<String> {
         let number_of_registers = self.register_list.selected().unwrap_or(0) + number_of_lines;
 

@@ -304,8 +304,7 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
         .highlight_symbol("> ");
     f.render_stateful_widget(registers, register_chunks[1], &mut app.register_list);
 
-    // Local Memory (also a stateful list for editing TODO?)
-    // TODO: query and draw only as many addresses as there is space in the frame
+    // TODO: Should local memory also be editable?
     let local_memory = app.dump_current_pe_local_memory(horizontal_chunks[1].height.saturating_sub(2).into());
     let local_memory: Vec<ListItem> = local_memory
         .iter()
