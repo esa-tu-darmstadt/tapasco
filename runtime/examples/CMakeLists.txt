@@ -37,3 +37,4 @@ add_subdirectory(C++/svm)
 
 add_subdirectory(Rust/libtapasco_tests)
 add_subdirectory(Rust/libtapasco_svm)
+add_subdirectory(Rust/tapasco-debug)
