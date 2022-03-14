@@ -276,7 +276,7 @@ impl Job {
                         return Err(Error::UnsupportedSVMParameter {arg: arg})
                     }
                 }
-                _ => return Err(Error::UnsupportedRegisterParameter { arg: arg }),
+                _ => return Err(Error::UnsupportedRegisterParameter { arg }),
             };
         }
         trace!("Arguments set.");

@@ -128,8 +128,6 @@ impl Scheduler {
                 i,
                 pe.id as PEId,
                 pe.offset,
-                pe.size,
-                pe.name.to_string(),
                 mmap.clone(),
                 &completion,
                 interrupt_id,
@@ -167,8 +165,8 @@ impl Scheduler {
 
         Ok(Scheduler {
             pes: pe_hashed,
-            pes_overview: pes_overview,
-            pes_name: pes_name,
+            pes_overview,
+            pes_name,
         })
     }
 
@@ -187,7 +185,7 @@ impl Scheduler {
     }
 
     pub fn release_pe(&self, pe: PE) -> Result<()> {
-        ensure!(!pe.active(), PEStillActive { pe: pe });
+        ensure!(!pe.active(), PEStillActive { pe });
 
         match self.pes.get(&pe.type_id()) {
             Some(l) => l.val().push(pe),

@@ -135,7 +135,6 @@ pub struct VfioMapping {
 #[derive(Debug)]
 pub struct VfioDev {
     container: File,
-    group: File,
     device: File,
     pub mappings: Mutex<Vec<VfioMapping>>
 }
@@ -153,7 +152,6 @@ impl Default for VfioDev {
     fn default() -> VfioDev {
         VfioDev {
             container: File::open("/dev/null").unwrap(),
-            group: File::open("/dev/null").unwrap(),
             device: File::open("/dev/null").unwrap(),
             mappings: Mutex::new(Vec::new())
         }
@@ -249,7 +247,6 @@ pub fn init_vfio(settings: Arc<Config>) -> Result<VfioDev, Error> {
 
     Ok(VfioDev{
         container,
-        group,
         device: unsafe { File::from_raw_fd(dev_fd) },
         mappings: Mutex::new(Vec::new())
     })

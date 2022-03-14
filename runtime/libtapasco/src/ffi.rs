@@ -244,7 +244,7 @@ pub extern "C" fn tapasco_tlkm_devices(t: *const TLKM, di: *mut DeviceInfo, len:
     match tl.device_enum_info().context(TLKMError) {
         Ok(x) => {
             if len < x.len() {
-                update_last_error(Error::DeviceInfoToShort { len: len });
+                update_last_error(Error::DeviceInfoToShort { len });
                 return -1;
             }
             let is = unsafe { slice::from_raw_parts_mut(di, len) };
@@ -405,9 +405,9 @@ pub extern "C" fn tapasco_job_param_alloc(
     let tl = unsafe { &mut *list };
     tl.push(PEParameter::DataTransferAlloc(DataTransferAlloc {
         data: v,
-        from_device: from_device,
-        to_device: to_device,
-        free: free,
+        from_device,
+        to_device,
+        free,
         memory: mem,
         fixed: f,
     }));
@@ -438,9 +438,9 @@ pub extern "C" fn tapasco_job_param_local(
     let tl = unsafe { &mut *list };
     tl.push(PEParameter::DataTransferLocal(DataTransferLocal {
         data: v,
-        from_device: from_device,
-        to_device: to_device,
-        free: free,
+        from_device,
+        to_device,
+        free,
         fixed: f,
     }));
     list
@@ -486,9 +486,9 @@ pub extern "C" fn tapasco_job_param_prealloc(
     tl.push(PEParameter::DataTransferPrealloc(DataTransferPrealloc {
         data: v,
         device_address: addr,
-        from_device: from_device,
-        to_device: to_device,
-        free: free,
+        from_device,
+        to_device,
+        free,
         memory: mem,
     }));
     list

@@ -95,20 +95,20 @@ impl GenericAllocator {
         alignment: DeviceSize,
     ) -> Result<GenericAllocator> {
         if size == 0 {
-            return Err(Error::InvalidSize { size: size });
+            return Err(Error::InvalidSize { size });
         }
         if alignment == 0 {
             return Err(Error::InvalidAlignment {
-                alignment: alignment,
+                alignment
             });
         }
         Ok(GenericAllocator {
             memory_free: vec![MemoryFree {
                 base: address,
-                size: size,
+                size,
             }],
             memory_used: Vec::new(),
-            alignment: alignment,
+            alignment,
         })
     }
 
@@ -143,7 +143,7 @@ impl GenericAllocator {
 impl Allocator for GenericAllocator {
     fn allocate(&mut self, size: DeviceSize, _va: Option<u64>) -> Result<DeviceAddress> {
         if size == 0 {
-            return Err(Error::InvalidSize { size: size });
+            return Err(Error::InvalidSize { size });
         }
         trace!("Looking for free memory.");
         let size_aligned = self.fix_alignment(size);
@@ -184,7 +184,7 @@ impl Allocator for GenericAllocator {
 
     fn allocate_fixed(&mut self, size: DeviceSize, offset: DeviceAddress) -> Result<DeviceAddress> {
         if size == 0 {
-            return Err(Error::InvalidSize { size: size });
+            return Err(Error::InvalidSize { size });
         }
         trace!("Looking for free memory at offset 0x{:x}.", offset);
         let size_aligned = self.fix_alignment(size);
@@ -250,7 +250,7 @@ impl Allocator for GenericAllocator {
                 );
                 Err(Error::FixedNotAvailable {
                     size: size_aligned,
-                    offset: offset,
+                    offset,
                 })
             }
         }
@@ -280,7 +280,7 @@ impl Allocator for GenericAllocator {
                 self.merge_memory();
                 Ok(())
             }
-            None => Err(Error::UnknownMemory { ptr: ptr }),
+            None => Err(Error::UnknownMemory { ptr }),
         }
     }
 }
@@ -476,7 +476,7 @@ impl Allocator for DriverAllocator {
                 trace!("Received address 0x{:x} from driver.", cmd.dev_addr);
                 Ok(cmd.dev_addr)
             }
-            Err(_e) => Err(Error::OutOfMemory { size: size }),
+            Err(_e) => Err(Error::OutOfMemory { size }),
         }
     }
 

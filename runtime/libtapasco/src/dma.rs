@@ -148,14 +148,12 @@ impl DMAControl for DriverDMA {
 
 #[derive(Debug, Getters)]
 pub struct VfioDMA {
-    tlkm_file: Arc<File>,
     vfio_dev: Arc<VfioDev>,
 }
 
 impl VfioDMA {
-    pub fn new(tlkm_file: &Arc<File>, vfio_dev: &Arc<VfioDev>) -> VfioDMA {
+    pub fn new(vfio_dev: &Arc<VfioDev>) -> VfioDMA {
         VfioDMA {
-            tlkm_file: tlkm_file.clone(),
             vfio_dev: vfio_dev.clone(),
         }
     }
@@ -217,9 +215,9 @@ pub struct DirectDMA {
 impl DirectDMA {
     pub fn new(offset: DeviceAddress, size: DeviceSize, memory: Arc<MmapMut>) -> DirectDMA {
         DirectDMA {
-            offset: offset,
-            size: size,
-            memory: memory,
+            offset,
+            size,
+            memory,
         }
     }
 }
@@ -229,8 +227,8 @@ impl DMAControl for DirectDMA {
         let end = ptr + data.len() as u64;
         if end > self.size {
             return Err(Error::OutOfRange {
-                ptr: ptr,
-                end: end,
+                ptr,
+                end,
                 size: self.size,
             });
         }
@@ -258,8 +256,8 @@ impl DMAControl for DirectDMA {
         let end = ptr + data.len() as u64;
         if end > self.size {
             return Err(Error::OutOfRange {
-                ptr: ptr,
-                end: end,
+                ptr,
+                end,
                 size: self.size,
             });
         }

@@ -32,7 +32,6 @@ use crate::tlkm::tlkm_ioctl_device_cmd;
 use crate::tlkm::DeviceId;
 use crate::vfio::*;
 use config::Config;
-use memmap::MmapMut;
 use memmap::MmapOptions;
 use prost::Message;
 use snafu::ResultExt;
@@ -227,12 +226,8 @@ pub struct Device {
     name: String,
     access: tlkm_access,
     scheduler: Arc<Scheduler>,
-    platform: Arc<MmapMut>,
-    arch: Arc<MmapMut>,
     offchip_memory: Vec<Arc<OffchipMemory>>,
     tlkm_file: Arc<File>,
-    tlkm_device_file: Arc<File>,
-    settings: Arc<Config>,
 }
 
 impl Device {
@@ -265,7 +260,7 @@ impl Device {
                         .context(ConfigError)?,
                     id
                 ))
-                .context(DeviceUnavailable { id: id })?,
+                .context(DeviceUnavailable { id })?,
         );
 
         trace!("Mapping status core.");
@@ -275,7 +270,7 @@ impl Device {
                     .len(8192)
                     .offset(0)
                     .map(&tlkm_dma_file)
-                    .context(DeviceUnavailable { id: id })?
+                    .context(DeviceUnavailable { id })?
             };
             trace!("Mapped status core: {}", mmap[0]);
 
@@ -307,7 +302,7 @@ impl Device {
                 .len(platform_size as usize)
                 .offset(8192)
                 .map_mut(&tlkm_dma_file)
-                .context(DeviceUnavailable { id: id })?
+                .context(DeviceUnavailable { id })?
         });
 
         let arch_size = match &s.arch_base {
@@ -322,7 +317,7 @@ impl Device {
                 .len(arch_size as usize)
                 .offset(4096)
                 .map_mut(&tlkm_dma_file)
-                .context(DeviceUnavailable { id: id })?
+                .context(DeviceUnavailable { id })?
         });
 
         // Initialize the global memories.
@@ -429,10 +424,10 @@ impl Device {
                 allocator: Mutex::new(Box::new(
                     VfioAllocator::new(&vfio_dev).context(AllocatorError)?,
                 )),
-                dma: Box::new(VfioDMA::new(&tlkm_dma_file, &vfio_dev)),
+                dma: Box::new(VfioDMA::new(&vfio_dev)),
             }));
         } else {
-            return Err(Error::DeviceType { name: name });
+            return Err(Error::DeviceType { name });
         }
 
         let mut pe_local_memories = VecDeque::new();
@@ -471,19 +466,15 @@ impl Device {
 
         trace!("Device creation completed.");
         let mut device = Device {
-            id: id,
-            vendor: vendor,
-            product: product,
+            id,
+            vendor,
+            product,
             access: tlkm_access::TlkmAccessTypes,
-            name: name,
+            name,
             status: s,
-            scheduler: scheduler,
-            platform: platform,
-            arch: arch,
+            scheduler,
             offchip_memory: allocator,
-            tlkm_file: tlkm_file,
-            tlkm_device_file: tlkm_dma_file,
-            settings: settings,
+            tlkm_file,
         };
 
         device.change_access(tlkm_access::TlkmAccessMonitor)?;
@@ -532,14 +523,14 @@ impl Device {
 
         let mut request = tlkm_ioctl_device_cmd {
             dev_id: self.id,
-            access: access,
+            access,
         };
 
         trace!("Device {}: Trying to change mode to {:?}", self.id, access,);
 
         unsafe {
             tlkm_ioctl_create(self.tlkm_file.as_raw_fd(), &mut request).context(IOCTLCreate {
-                access: access,
+                access,
                 id: self.id,
             })?;
         };

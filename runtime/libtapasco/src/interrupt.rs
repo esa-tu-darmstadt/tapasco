@@ -66,7 +66,7 @@ impl Interrupt {
             eventfd(0, EfdFlags::EFD_NONBLOCK).context(ErrorEventFD)?
         };
         let mut ioctl_fd = tlkm_register_interrupt {
-            fd: fd,
+            fd,
             pe_id: interrupt_id as i32,
         };
 

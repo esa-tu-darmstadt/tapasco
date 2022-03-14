@@ -505,7 +505,7 @@ impl TLKM {
                 .context(DeviceError)?);
             }
         }
-        Err(Error::DeviceNotFound { id: id })
+        Err(Error::DeviceNotFound { id })
     }
 
     /// Allocates all devices available.
