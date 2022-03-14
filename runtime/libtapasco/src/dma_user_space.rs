@@ -194,7 +194,7 @@ impl UserSpaceDMA {
         addr_device: DeviceAddress,
         size: DeviceSize,
         from_device: bool,
-    ) -> Result<()> {
+    ) {
         let mut offset = (self.engine_offset as usize) as isize;
         unsafe {
             let ptr = dma_engine_memory.as_ptr().offset(offset);
@@ -222,8 +222,6 @@ impl UserSpaceDMA {
             let volatile_ptr = ptr as *mut Volatile<u64>;
             (*volatile_ptr).write(if from_device { 0x1000_1000 } else { 0x1000_0001 });
         };
-
-        Ok(())
     }
 
     fn wait_for_write(&self, next: bool, cntr: u64) -> Result<()> {
@@ -364,7 +362,7 @@ impl DMAControl for UserSpaceDMA {
                     ptr_device,
                     btt_this as u64,
                     false,
-                )?;
+                );
                 highest_used = self.write_cntr.fetch_add(1, Ordering::Relaxed);
             }
 
@@ -424,7 +422,7 @@ impl DMAControl for UserSpaceDMA {
                     ptr_device,
                     btt_this as u64,
                     true,
-                )?;
+                );
                 self.read_cntr.fetch_add(1, Ordering::Relaxed)
             };
 
