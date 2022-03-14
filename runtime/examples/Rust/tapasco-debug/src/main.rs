@@ -20,7 +20,10 @@ pub enum Error {
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
+use env_logger;
 
 fn main() -> Result<()> {
+    env_logger::init();
+
     setup(&mut App::new().context(AppError {})?).context(UIError {})
 }
