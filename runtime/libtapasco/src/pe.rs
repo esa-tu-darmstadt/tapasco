@@ -170,7 +170,7 @@ impl PE {
     }
 
     /// Waits for a PE interrupt and deactivates the PE afterwards
-    fn wait_for_completion(&mut self) -> Result<()> {
+    pub fn wait_for_completion(&mut self) -> Result<()> {
         if self.active {
             self.interrupt
                 .wait_for_interrupt()
