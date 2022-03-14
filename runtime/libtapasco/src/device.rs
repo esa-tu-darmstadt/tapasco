@@ -505,10 +505,9 @@ impl Device {
     ///   * id: The ID of the desired PE.
     ///
     pub fn acquire_pe_without_job(&self, id: PEId) -> Result<PE> {
-        self.check_exclusive_access()?;
-        trace!("Trying to acquire PE of type {}.", id);
+        trace!("Trying to acquire PE of type {} without exclusive access.", id);
         let pe = self.scheduler.acquire_pe(id).context(SchedulerError)?;
-        trace!("Successfully acquired PE of type {}.", id);
+        trace!("Successfully acquired PE of type {} without exclusive access.", id);
         Ok(pe)
     }
 

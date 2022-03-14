@@ -46,9 +46,11 @@ impl<'a> App<'a> {
         let tlkm = TLKM::new().context(TLKMInit {})?;
         //let tlkm_device = tlkm.device_enum(&HashMap::new()).context(TLKMInit {})?;
         // Allocate the first device with ID 0 (because most devices will only have one FPGA)
-        let mut tlkm_device = tlkm.device_alloc(0, &HashMap::new()).context(TLKMInit {})?;
-        // Change device access to excluse to be able to acquire PEs
-        tlkm_device.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive).context(DeviceInit {})?;
+        let tlkm_device = tlkm.device_alloc(0, &HashMap::new()).context(TLKMInit {})?;
+        // Monitor Mode: In order to observe other Tapasco Host applications which need exclusive
+        // access we implement a monitor mode where registers cannot be modified.
+        // Change device access to exclusive to be able to acquire PEs
+        //tlkm_device.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive).context(DeviceInit {})?;
 
         let tlkm_version = tlkm.version().context(TLKMInit {})?;
         let platform_base = tlkm_device.status().platform_base.clone().expect("Could not get platform_base!");
