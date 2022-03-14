@@ -267,7 +267,7 @@ impl Allocator for GenericAllocator {
                         }
                         None => {
                             trace!("Adding memory to the end.");
-                            self.memory_free.push(m)
+                            self.memory_free.push(m);
                         }
                     };
                 }

@@ -258,10 +258,10 @@ impl Job {
             trace!("Setting argument {} => {:?}.", i, arg);
             match arg {
                 PEParameter::Single32(_) => {
-                    self.pe.as_ref().unwrap().set_arg(i, arg).context(PEError)?
+                    self.pe.as_ref().unwrap().set_arg(i, arg).context(PEError)?;
                 }
                 PEParameter::Single64(_) => {
-                    self.pe.as_ref().unwrap().set_arg(i, arg).context(PEError)?
+                    self.pe.as_ref().unwrap().set_arg(i, arg).context(PEError)?;
                 }
                 PEParameter::DeviceAddress(x) => self
                     .pe
