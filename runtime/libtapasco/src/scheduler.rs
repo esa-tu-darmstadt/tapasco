@@ -80,7 +80,7 @@ impl Scheduler {
         debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
         is_pcie: bool,
         svm_in_use: bool,
-    ) -> Result<Scheduler> {
+    ) -> Result<Self> {
         let pe_hashed: Map<PEId, Injector<PE>> = Map::new();
         let mut pes_overview: HashMap<PEId, usize> = HashMap::new();
         let mut pes_name: HashMap<PEId, String> = HashMap::new();
@@ -163,7 +163,7 @@ impl Scheduler {
             };
         }
 
-        Ok(Scheduler {
+        Ok(Self {
             pes: pe_hashed,
             pes_overview,
             pes_name,

@@ -49,7 +49,7 @@ use volatile::Volatile;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
     fn from(_error: std::sync::PoisonError<T>) -> Self {
-        Error::MutexError {}
+        Self::MutexError {}
     }
 }
 
@@ -100,7 +100,7 @@ impl UserSpaceDMA {
         read_num_buf: usize,
         write_buf_size: usize,
         write_num_buf: usize,
-    ) -> Result<UserSpaceDMA> {
+    ) -> Result<Self> {
         trace!(
             "Using setting: Read {} x {}B, Write {} x {}B",
             read_num_buf,
@@ -168,7 +168,7 @@ impl UserSpaceDMA {
             });
         }
 
-        Ok(UserSpaceDMA {
+        Ok(Self {
             tlkm_file: tlkm_file.clone(),
             memory: Mutex::new(memory.clone()),
             engine_offset: offset,

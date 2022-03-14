@@ -92,8 +92,8 @@ pub struct DriverDMA {
 }
 
 impl DriverDMA {
-    pub fn new(tlkm_file: &Arc<File>) -> DriverDMA {
-        DriverDMA {
+    pub fn new(tlkm_file: &Arc<File>) -> Self {
+        Self {
             tlkm_file: tlkm_file.clone(),
         }
     }
@@ -152,8 +152,8 @@ pub struct VfioDMA {
 }
 
 impl VfioDMA {
-    pub fn new(vfio_dev: &Arc<VfioDev>) -> VfioDMA {
-        VfioDMA {
+    pub fn new(vfio_dev: &Arc<VfioDev>) -> Self {
+        Self {
             vfio_dev: vfio_dev.clone(),
         }
     }
@@ -213,8 +213,8 @@ pub struct DirectDMA {
 }
 
 impl DirectDMA {
-    pub fn new(offset: DeviceAddress, size: DeviceSize, memory: Arc<MmapMut>) -> DirectDMA {
-        DirectDMA {
+    pub fn new(offset: DeviceAddress, size: DeviceSize, memory: Arc<MmapMut>) -> Self {
+        Self {
             offset,
             size,
             memory,

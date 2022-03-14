@@ -93,7 +93,7 @@ impl GenericAllocator {
         address: DeviceAddress,
         size: DeviceSize,
         alignment: DeviceSize,
-    ) -> Result<GenericAllocator> {
+    ) -> Result<Self> {
         if size == 0 {
             return Err(Error::InvalidSize { size });
         }
@@ -102,7 +102,7 @@ impl GenericAllocator {
                 alignment
             });
         }
-        Ok(GenericAllocator {
+        Ok(Self {
             memory_free: vec![MemoryFree {
                 base: address,
                 size,
@@ -451,8 +451,8 @@ pub struct DriverAllocator {
     tlkm_file: Arc<File>,
 }
 impl DriverAllocator {
-    pub fn new(tlkm_file: &Arc<File>) -> Result<DriverAllocator> {
-        Ok(DriverAllocator {
+    pub fn new(tlkm_file: &Arc<File>) -> Result<Self> {
+        Ok(Self {
             tlkm_file: tlkm_file.clone(),
         })
     }
@@ -503,8 +503,8 @@ pub struct VfioAllocator {
     vfio_dev: Arc<VfioDev>,
 }
 impl VfioAllocator {
-    pub fn new(vfio_dev: &Arc<VfioDev>) -> Result<VfioAllocator> {
-        Ok(VfioAllocator {
+    pub fn new(vfio_dev: &Arc<VfioDev>) -> Result<Self> {
+        Ok(Self {
             vfio_dev: vfio_dev.clone(),
         })
     }

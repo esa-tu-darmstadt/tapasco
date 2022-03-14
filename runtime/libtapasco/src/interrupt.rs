@@ -59,7 +59,7 @@ impl Drop for Interrupt {
 /// Registers the eventfd with the driver and makes sure to release it after use.
 /// Supports blocking of the wait_for_interrupt method.
 impl Interrupt {
-    pub fn new(tlkm_file: &File, interrupt_id: usize, blocking: bool) -> Result<Interrupt> {
+    pub fn new(tlkm_file: &File, interrupt_id: usize, blocking: bool) -> Result<Self> {
         let fd = if blocking {
             eventfd(0, EfdFlags::empty()).context(ErrorEventFD)?
         } else {
@@ -75,7 +75,7 @@ impl Interrupt {
                 .context(ErrorEventFDRegister)?;
         };
 
-        Ok(Interrupt { interrupt: fd })
+        Ok(Self { interrupt: fd })
     }
 
     /// Wait for an interrupt as indicated by the eventfd

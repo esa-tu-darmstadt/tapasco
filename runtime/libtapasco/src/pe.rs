@@ -123,8 +123,8 @@ impl PE {
         interrupt_id: usize,
         debug: Box<dyn DebugControl + Sync + Send>,
         svm_in_use: bool,
-    ) -> Result<PE> {
-        Ok(PE {
+    ) -> Result<Self> {
+        Ok(Self {
             id,
             type_id,
             offset,

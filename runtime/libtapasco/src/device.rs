@@ -112,7 +112,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
     fn from(_error: std::sync::PoisonError<T>) -> Self {
-        Error::MutexError {}
+        Self::MutexError {}
     }
 }
 
@@ -246,7 +246,7 @@ impl Device {
         name: String,
         settings: Arc<Config>,
         debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
-    ) -> Result<Device> {
+    ) -> Result<Self> {
         trace!("Open driver device file.");
 
         let tlkm_dma_file = Arc::new(
@@ -465,7 +465,7 @@ impl Device {
         );
 
         trace!("Device creation completed.");
-        let mut device = Device {
+        let mut device = Self {
             id,
             vendor,
             product,

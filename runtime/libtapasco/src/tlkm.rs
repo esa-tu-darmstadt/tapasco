@@ -345,7 +345,7 @@ impl Drop for TLKM {
 
 impl TLKM {
     /// Open the driver chardev.
-    pub fn new() -> Result<TLKM> {
+    pub fn new() -> Result<Self> {
         let default_config = include_str!("../config/default.toml");
         let mut settings = Config::default();
 
@@ -379,7 +379,7 @@ impl TLKM {
             .open(&path)
             .context(DriverOpen { filename: path })?;
 
-        Ok(TLKM {
+        Ok(Self {
             file: Arc::new(file),
             settings: Arc::new(settings),
         })
@@ -491,7 +491,7 @@ impl TLKM {
                 devices.devs[x].dev_id = x as u32;
             }
             if devices.devs[x].dev_id == id {
-                return Ok(Device::new(
+                return Device::new(
                     self.file.clone(),
                     devices.devs[x].dev_id,
                     devices.devs[x].vendor_id,
@@ -502,7 +502,7 @@ impl TLKM {
                     self.settings.clone(),
                     debug_impls,
                 )
-                .context(DeviceError)?);
+                .context(DeviceError);
             }
         }
         Err(Error::DeviceNotFound { id })

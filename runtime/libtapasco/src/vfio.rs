@@ -149,8 +149,8 @@ impl VfioDev {
 }
 impl Default for VfioDev {
     // only used for testing
-    fn default() -> VfioDev {
-        VfioDev {
+    fn default() -> Self {
+        Self {
             container: File::open("/dev/null").unwrap(),
             device: File::open("/dev/null").unwrap(),
             mappings: Mutex::new(Vec::new())

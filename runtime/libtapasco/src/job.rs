@@ -29,7 +29,7 @@ use std::sync::Arc;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
     fn from(_error: std::sync::PoisonError<T>) -> Self {
-        Error::MutexError {}
+        Self::MutexError {}
     }
 }
 
@@ -103,8 +103,8 @@ impl Job {
     /// Not used directly. Request a Job through [`acquire_pe`].
     ///
     /// [`acquire_pe`]: ../device/struct.Device.html#method.acquire_pe
-    pub fn new(pe: PE, scheduler: &Arc<Scheduler>) -> Job {
-        Job {
+    pub fn new(pe: PE, scheduler: &Arc<Scheduler>) -> Self {
+        Self {
             pe: Some(pe),
             scheduler: scheduler.clone(),
         }
