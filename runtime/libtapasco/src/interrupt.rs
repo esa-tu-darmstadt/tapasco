@@ -130,9 +130,9 @@ impl Interrupt {
                         Some(e_no_matched) => {
                             if e_no_matched == nix::errno::Errno::EAGAIN {
                                 return Ok(0);
-                            } else {
-                                r.context(ErrorEventFDRead)?;
                             }
+
+                            r.context(ErrorEventFDRead)?;
                         }
                         None => {
                             r.context(ErrorEventFDRead)?;
