@@ -65,7 +65,7 @@ impl<'a> App<'a> {
         // Get Tapasco Loadable Linux Kernel Module
         let tlkm = TLKM::new().context(TLKMInit {})?;
         // Allocate the device with the given ID
-        let mut tlkm_device = tlkm
+        let tlkm_device = tlkm
             .device_alloc(device_id, &HashMap::new())
             .context(TLKMInit {})?;
 
@@ -77,13 +77,14 @@ impl<'a> App<'a> {
                 // no special access is necessary. This is a no-op.
                 "Monitor"
             }
-            AccessMode::Debug {} => {
-                // Change device access to exclusive to be able to acquire PEs
-                tlkm_device
-                    .change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-                    .context(DeviceInit {})?;
-                "Debug"
-            }
+            // TODO: 3. When Issue #296 is fixed, enable debug mode here again, too.
+            //AccessMode::Debug {} => {
+            //    // Change device access to exclusive to be able to acquire PEs
+            //    tlkm_device
+            //        .change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+            //        .context(DeviceInit {})?;
+            //    "Debug"
+            //}
             AccessMode::Unsafe {} => {
                 // Change device access to exclusive to be able to acquire PEs
                 warn!("Running in Unsafe Mode");
@@ -277,7 +278,9 @@ impl<'a> App<'a> {
         if self.tabs.index == 0 {
             match self.access_mode {
                 AccessMode::Monitor {} => {}
-                AccessMode::Debug {} | AccessMode::Unsafe {} => {
+                // TODO: 4. Replace the second next line with the next line:
+                // AccessMode::Debug {} | AccessMode::Unsafe {} => {
+                AccessMode::Unsafe {} => {
                     match self.input_mode {
                         InputMode::Normal => {
                             match self.focus {

@@ -25,8 +25,11 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 
 use structopt::StructOpt;
 
+// TODO: 1. When issue #296 is fixed, remove the paragraph about the `EMFILE` error.
 /// The interactive `TaPaSCo` Debugger can be used to retrieve information about the loaded
 /// bitstream, monitor other `TaPaSCo` runtimes and write values to the registers of your PEs
+///
+/// Currently due to a `libtapasco` bug where DMA Buffers, Interrupts, etc. are allocated even in monitor mode, you will have to start your other runtime twice, where the first time the `EMFILE` error is to be expected.
 #[derive(StructOpt, Debug)]
 #[structopt(rename_all = "kebab-case")]
 struct Opt {
@@ -43,8 +46,9 @@ struct Opt {
 pub enum Command {
     /// Enter Monitor Mode where values cannot be modified, e.g. to monitor another runtime
     Monitor {},
-    /// Enter Debug Mode where values can only be modified interactively in this debugger
-    Debug {},
+    // TODO: 2. When issue #296 is fixed, enable debug mode again.
+    // /// Enter Debug Mode where values can only be modified interactively in this debugger
+    // Debug {},
     /// Enter Unsafe Mode where values can be modified by this debugger and another runtime
     Unsafe {},
 }
