@@ -1,6 +1,7 @@
 mod app;
-mod ui;
 use app::App;
+
+mod ui;
 use ui::setup;
 
 use snafu::{ResultExt, Snafu};
