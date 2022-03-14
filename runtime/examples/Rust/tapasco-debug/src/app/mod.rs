@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::TryInto;
 
 use log::{error, trace, warn};
 
@@ -167,11 +168,13 @@ impl<'a> App<'a> {
             tlkm_device.product()
         );
 
-        // Warning: casting to i64 can panic! If the timestamp is bigger than 63 bit..
         bitstream_info += &format!(
             "Bitstream generated at: {} ({})\n\n",
-            Utc.timestamp(tlkm_device.status().timestamp as i64, 0)
-                .format("%Y-%m-%d"),
+            if let Ok(i) = tlkm_device.status().timestamp.try_into() {
+                format!("{}", Utc.timestamp(i, 0).format("%Y-%m-%d"))
+            } else {
+                "the future".to_string()
+            },
             tlkm_device.status().timestamp
         );
 
