@@ -23,7 +23,7 @@ use crate::debug::DebugGenerator;
 use crate::dma::{DMAControl, DirectDMA, DriverDMA, VfioDMA, SVMDMA};
 use crate::dma_user_space::UserSpaceDMA;
 use crate::job::Job;
-use crate::pe::PEId;
+use crate::pe::{PE, PEId};
 use crate::scheduler::Scheduler;
 use crate::tlkm::{tlkm_access, tlkm_ioctl_svm_launch, tlkm_svm_init_cmd};
 use crate::tlkm::tlkm_ioctl_create;
@@ -496,6 +496,20 @@ impl Device {
         let pe = self.scheduler.acquire_pe(id).context(SchedulerError)?;
         trace!("Successfully acquired PE of type {}.", id);
         Ok(Job::new(pe, &self.scheduler))
+    }
+
+    /// Request a PE from the device but don't create a Job for it. Usually [`acquire_pe`] is used
+    /// if you don't want to do things manually.
+    ///
+    /// # Arguments
+    ///   * id: The ID of the desired PE.
+    ///
+    pub fn acquire_pe_without_job(&self, id: PEId) -> Result<PE> {
+        self.check_exclusive_access()?;
+        trace!("Trying to acquire PE of type {}.", id);
+        let pe = self.scheduler.acquire_pe(id).context(SchedulerError)?;
+        trace!("Successfully acquired PE of type {}.", id);
+        Ok(pe)
     }
 
     fn check_exclusive_access(&self) -> Result<()> {
