@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use tui::widgets::ListState;
+
 use log::{error, trace, warn};
 
 use tapasco::{
@@ -53,8 +55,8 @@ pub struct App<'a> {
     pub tabs: TabsState<'a>,
     pub pe_infos: StatefulList<String>,
     pub pes: Vec<(usize, PE)>, // Plural of Processing Element (PEs)
-    pub register_list: StatefulList<String>,
-    pub local_memory_list: StatefulList<String>,
+    pub register_list: ListState,
+    pub local_memory_list: ListState,
     pub messages: Vec<String>,
 }
 
@@ -151,9 +153,9 @@ impl<'a> App<'a> {
             StatefulList::with_items_selected(pe_infos, 0)
         };
 
-        // There are theoretically endless registers. 100 seems to be a good value.
-        let register_list = StatefulList::with_items(vec!["".to_string(); 100]);
-        let local_memory_list = StatefulList::new();
+        // There are theoretically endless registers and local memory
+        let register_list = ListState::default();
+        let local_memory_list = ListState::default();
 
         // Parse bitstream info from the Status core
         let mut bitstream_info = String::new();
@@ -328,13 +330,18 @@ impl<'a> App<'a> {
                                              .expect("There should have been a selected PE. This is a bug."))
                                     .expect("There should have been a PE for the selection. This is a bug.")
                                     .1 // ignore the index, select the PE from the tuple
-                                    .set_arg(self.register_list.state.selected().unwrap(),
+                                    .set_arg(self.register_list.selected().unwrap(),
                                              PEParameter::Single64(new_value)) {
                                     // but log this error in case the code changes
                                     error!("Error setting argument: {}.
                                             This is probably due to libtapasco having changed something
                                             important. You should fix this app.", e);
                                 }
+
+                                self.messages.push(format!("In slot {} set argument register {} to new value: {}.",
+                                                           self.pe_infos.state.selected().unwrap(),
+                                                           self.register_list.selected().unwrap(),
+                                                           new_value));
 
                                 self.input_mode = InputMode::Navigation;
                             }
@@ -359,7 +366,7 @@ impl<'a> App<'a> {
             _ => return None,
         };
 
-        // Get the PE with the real ID of the selected Slot
+        // Get the PE with the real ID of the selected slot
         let (_, pe) = self
             .pes
             .iter()
@@ -410,7 +417,7 @@ impl<'a> App<'a> {
                 (ptr as *mut u32).write_volatile(1);
             }
 
-            return format!("Started PE with ID: {}.", pe.id())
+            return format!("Send start signal to PE in slot: {}.", self.pe_infos.state.selected().expect("There needs to be a selected PE. This is a bug."))
         }
 
         "No PE selected.".to_string()
@@ -445,9 +452,11 @@ impl<'a> App<'a> {
 
     // TODO: add a function parameter for the number of registers that should be read to make it
     // dependent on the size of the UI frame.
-    pub fn get_argument_registers(&mut self) -> Vec<String> {
+    pub fn get_argument_registers(&mut self, number_of_lines: usize) -> Vec<String> {
+        let number_of_registers = self.register_list.selected().unwrap_or(0) + number_of_lines;
+
         if let Some(pe) = self.get_current_pe() {
-            let argument_registers = (0..self.register_list.items.len())
+            let argument_registers = (0..number_of_registers)
                 .map(|i| {
                     match pe
                         .read_arg(i, 8)
@@ -470,14 +479,14 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn dump_current_pe_local_memory(&self) -> Vec<String> {
+    pub fn dump_current_pe_local_memory(&self, number_of_lines: usize) -> Vec<String> {
         if let Some(pe) = self.get_current_pe() {
             let local_memory = match pe.local_memory() {
                 Some(m) => m,
                 _ => return vec!["No local memory for this PE.".to_string()],
             };
 
-            let mut memory_cells: Box<[u8]> = Box::new([0_u8; 16 * 100]);
+            let mut memory_cells: Vec<u8> = vec![0_u8; 16 * number_of_lines];
             match local_memory.dma().copy_from(0, &mut memory_cells) {
                 Ok(_) => {}
                 _ => return vec!["Could not read PE Local Memory!".to_string()],
@@ -610,21 +619,21 @@ impl<'a> TabsState<'a> {
     }
 }
 
-use tui::widgets::ListState;
-
 pub struct StatefulList<T> {
     pub state: ListState,
     pub items: Vec<T>,
 }
 
-impl<T> StatefulList<T> {
-    pub fn new() -> Self {
+impl<T> Default for StatefulList<T> {
+    fn default() -> Self {
         Self {
             state: ListState::default(),
             items: Vec::new(),
         }
     }
+}
 
+impl<T> StatefulList<T> {
     pub fn with_items(items: Vec<T>) -> Self {
         Self {
             state: ListState::default(),
@@ -641,8 +650,17 @@ impl<T> StatefulList<T> {
 
         list
     }
+}
 
-    pub fn next(&mut self) {
+// Define a new trait so we can implement methods for ListState
+pub trait Select {
+    fn next(&mut self);
+    fn previous(&mut self);
+    fn unselect(&mut self);
+}
+
+impl<T> Select for StatefulList<T> {
+    fn next(&mut self) {
         let n = match self.state.selected() {
             Some(m) => {
                 if m >= self.items.len() - 1 {
@@ -657,7 +675,7 @@ impl<T> StatefulList<T> {
         self.state.select(Some(n));
     }
 
-    pub fn previous(&mut self) {
+    fn previous(&mut self) {
         let n = match self.state.selected() {
             Some(m) => {
                 if m == 0 {
@@ -672,7 +690,37 @@ impl<T> StatefulList<T> {
         self.state.select(Some(n));
     }
 
-    pub fn unselect(&mut self) {
+    fn unselect(&mut self) {
         self.state.select(None);
+    }
+}
+
+impl Select for ListState {
+    fn next(&mut self) {
+        let n = match self.selected() {
+            Some(m) => m + 1,
+            None => 0,
+        };
+
+        self.select(Some(n));
+    }
+
+    fn previous(&mut self) {
+        let n = match self.selected() {
+            Some(m) => {
+                if m == 0 {
+                    0
+                } else {
+                    m - 1
+                }
+            }
+            None => 0,
+        };
+
+        self.select(Some(n));
+    }
+
+    fn unselect(&mut self) {
+        self.select(None);
     }
 }

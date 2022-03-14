@@ -107,7 +107,6 @@ fn run_event_loop<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Resu
 
                 // Match the input mode, either you're in line input mode where you enter new
                 // values for registers or you're in the default navigation mode.
-                // TODO: refactor app.on_enter and app.on_* into this match
                 match app.input_mode {
                     InputMode::Edit => match event.code {
                         KeyCode::Char(c) => app.input.push(c),
@@ -292,7 +291,7 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
     } else {
         "Register List (r: Refresh, Escape: back, j:\u{2193}, k:\u{2191}, Enter/l: set Register)"
     };
-    let registers = app.get_argument_registers();
+    let registers = app.get_argument_registers((register_chunks[1].height - 2).into());
     let registers: Vec<ListItem> = registers
         .iter()
         .map(|i| ListItem::new(vec![Spans::from(Span::raw(i))]))
@@ -304,11 +303,11 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
         ))
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol("> ");
-    f.render_stateful_widget(registers, register_chunks[1], &mut app.register_list.state);
+    f.render_stateful_widget(registers, register_chunks[1], &mut app.register_list);
 
     // Local Memory (also a stateful list for editing TODO?)
     // TODO: query and draw only as many addresses as there is space in the frame
-    let local_memory = app.dump_current_pe_local_memory();
+    let local_memory = app.dump_current_pe_local_memory((horizontal_chunks[1].height - 2).into());
     let local_memory: Vec<ListItem> = local_memory
         .iter()
         .map(|i| ListItem::new(vec![Spans::from(Span::raw(i))]))
@@ -320,7 +319,7 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
     f.render_stateful_widget(
         local_memory,
         horizontal_chunks[1],
-        &mut app.local_memory_list.state,
+        &mut app.local_memory_list,
     );
 
     // Draw an input line if in Edit Mode
@@ -348,7 +347,7 @@ fn draw_tab_peek_and_poke_pes<B: Backend>(f: &mut Frame<B>, app: &mut App, chunk
         draw_block_with_paragraph(
             f,
             "Messages",
-            app.messages.iter().rev().take((f.size().height - 2).into()).rev().cloned().collect::<Vec<String>>().join("\n"),
+            app.messages.iter().rev().take((vertical_chunks[2].height - 2).into()).rev().cloned().collect::<Vec<String>>().join("\n"),
             vertical_chunks[2],
         );
     }
