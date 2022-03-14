@@ -22,8 +22,20 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 
 use env_logger;
 
-fn main() -> Result<()> {
+
+fn init() -> Result<()> {
+    setup(&mut App::new().context(AppError {})?).context(UIError {})
+}
+fn main() {
     env_logger::init();
 
-    setup(&mut App::new().context(AppError {})?).context(UIError {})
+    match init() {
+        Ok(_) => {},
+        Err(e) => {
+            eprintln!("An error occurred: {}", e);
+            if let Some(backtrace) = snafu::ErrorCompat::backtrace(&e) {
+                println!("{}", backtrace);
+            }
+        },
+    };
 }
