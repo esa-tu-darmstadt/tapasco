@@ -724,13 +724,13 @@ fn main() -> Result<()> {
                 .about("Runs a copy benchmark for r, w and rw.")
                 .arg(
                     Arg::with_name("pb_disable")
-                        .short("p")
+                        .short('p')
                         .long("pb_disable")
                         .help("Disables the progress bar to avoid overhead."),
                 )
                 .arg(
                     Arg::with_name("pb_step")
-                        .short("s")
+                        .short('s')
                         .long("pb_step")
                         .help("Step size for the progress bar.")
                         .takes_value(true)
@@ -738,7 +738,7 @@ fn main() -> Result<()> {
                 )
                 .arg(
                     Arg::with_name("max_bytes")
-                        .short("m")
+                        .short('m')
                         .long("max_bytes")
                         .help("Maximum number of bytes in a single transfer transfer log_2.")
                         .takes_value(true)
@@ -746,7 +746,7 @@ fn main() -> Result<()> {
                 )
                 .arg(
                     Arg::with_name("total_bytes")
-                        .short("b")
+                        .short('b')
                         .long("total_bytes")
                         .help("Total number of bytes to transfer transfer log_2.")
                         .takes_value(true)
@@ -754,7 +754,7 @@ fn main() -> Result<()> {
                 )
                 .arg(
                     Arg::with_name("threads")
-                        .short("t")
+                        .short('t')
                         .long("threads")
                         .help("How many threads should be used? (-1 for auto)")
                         .takes_value(true)
@@ -766,13 +766,13 @@ fn main() -> Result<()> {
                 .about("Runs a counter benchmark with ID 14.")
                 .arg(
                     Arg::with_name("pb_disable")
-                        .short("p")
+                        .short('p')
                         .long("pb_disable")
                         .help("Disables the progress bar to avoid overhead."),
                 )
                 .arg(
                     Arg::with_name("pb_step")
-                        .short("s")
+                        .short('s')
                         .long("pb_step")
                         .help("Step size for the progress bar.")
                         .takes_value(true)
@@ -780,7 +780,7 @@ fn main() -> Result<()> {
                 )
                 .arg(
                     Arg::with_name("iterations")
-                        .short("i")
+                        .short('i')
                         .long("iterations")
                         .help("How many counter iterations.")
                         .takes_value(true)
@@ -788,7 +788,7 @@ fn main() -> Result<()> {
                 )
                 .arg(
                     Arg::with_name("threads")
-                        .short("t")
+                        .short('t')
                         .long("threads")
                         .help("How many threads should be used? (-1 for auto)")
                         .takes_value(true)
@@ -800,7 +800,7 @@ fn main() -> Result<()> {
                 .about("Runs a counter based latency check with ID 14.")
                 .arg(
                     Arg::with_name("steps")
-                        .short("s")
+                        .short('s')
                         .long("steps")
                         .help("Testing from 2**0 to 2**s.")
                         .takes_value(true)
@@ -808,7 +808,7 @@ fn main() -> Result<()> {
                 )
                 .arg(
                     Arg::with_name("iterations")
-                        .short("i")
+                        .short('i')
                         .long("iterations")
                         .help("How many counter iterations.")
                         .takes_value(true)
@@ -830,18 +830,18 @@ fn main() -> Result<()> {
         .get_matches();
 
     match match matches.subcommand() {
-        ("version", Some(m)) => print_version(m),
-        ("enum", Some(m)) => enum_devices(m),
-        ("allocate", Some(m)) => allocate_devices(m),
-        ("status", Some(m)) => print_status(m),
-        ("run_counter", Some(m)) => run_counter(m),
-        ("run_arrayinit", Some(m)) => run_arrayinit(m),
-        ("run_benchmark", Some(m)) => benchmark_counter(m),
-        ("run_latency", Some(m)) => latency_benchmark(m),
-        ("test_copy", Some(m)) => test_copy(m),
-        ("benchmark_copy", Some(m)) => benchmark_copy(m),
-        ("test_localmem", Some(m)) => test_localmem(m),
-        ("evaluate_copy", Some(m)) => evaluate_copy(m),
+        Some(("version", m)) => print_version(m),
+        Some(("enum", m)) => enum_devices(m),
+        Some(("allocate", m)) => allocate_devices(m),
+        Some(("status", m)) => print_status(m),
+        Some(("run_counter", m)) => run_counter(m),
+        Some(("run_arrayinit", m)) => run_arrayinit(m),
+        Some(("run_benchmark", m)) => benchmark_counter(m),
+        Some(("run_latency", m)) => latency_benchmark(m),
+        Some(("test_copy", m)) => test_copy(m),
+        Some(("benchmark_copy", m)) => benchmark_copy(m),
+        Some(("test_localmem", m)) => test_localmem(m),
+        Some(("evaluate_copy", m)) => evaluate_copy(m),
         _ => Err(Error::UnknownCommand {}),
     } {
         Ok(()) => Ok(()),
