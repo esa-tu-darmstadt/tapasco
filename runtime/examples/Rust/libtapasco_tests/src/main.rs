@@ -70,15 +70,15 @@ impl<T> From<std::sync::PoisonError<T>> for Error {
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 fn print_version(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let ver = tlkm.version().context(TLKMInit {})?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let ver = tlkm.version().context(TLKMInitSnafu {})?;
     println!("TLKM version is {}", ver);
     Ok(())
 }
 
 fn enum_devices(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit {})?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu {})?;
     println!("Got {} devices.", devices.len());
     for x in devices {
         println!(
@@ -93,21 +93,21 @@ fn enum_devices(_: &ArgMatches) -> Result<()> {
 }
 
 fn allocate_devices(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let mut devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit {})?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let mut devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu {})?;
 
     for x in devices.iter_mut() {
         println!("Allocating ID {} exclusively.", x.id());
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit {})?;
+            .context(DeviceInitSnafu {})?;
     }
 
     Ok(())
 }
 
 fn print_status(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for x in devices {
         println!("Device {}", x.id());
         println!("{:?}", x.status());
@@ -116,16 +116,16 @@ fn print_status(_: &ArgMatches) -> Result<()> {
 }
 
 fn run_arrayinit(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit {})?;
+            .context(DeviceInitSnafu {})?;
         let counter_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:arrayinit:1.0") {
             Ok(x) => x,
             Err(_e) => 11,
         };
-        let mut pe = x.acquire_pe(counter_id).context(DeviceInit)?;
+        let mut pe = x.acquire_pe(counter_id).context(DeviceInitSnafu)?;
 
         pe.start(vec![tapasco::device::PEParameter::DataTransferAlloc(
             tapasco::device::DataTransferAlloc {
@@ -133,23 +133,23 @@ fn run_arrayinit(_: &ArgMatches) -> Result<()> {
                 free: true,
                 from_device: true,
                 to_device: false,
-                memory: x.default_memory().context(DeviceInit)?,
+                memory: x.default_memory().context(DeviceInitSnafu)?,
                 fixed: None,
             },
         )])
-        .context(JobError)?;
+        .context(JobSnafu)?;
 
-        println!("{:?}", pe.release(true, false).context(JobError)?);
+        println!("{:?}", pe.release(true, false).context(JobSnafu)?);
     }
     Ok(())
 }
 
 fn run_counter(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit {})?;
+            .context(DeviceInitSnafu {})?;
 
         let counter_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:counter:0.9") {
             Ok(x) => x,
@@ -157,32 +157,32 @@ fn run_counter(_: &ArgMatches) -> Result<()> {
         };
 
         let mut pes = Vec::new();
-        pes.push(x.acquire_pe(counter_id).context(DeviceInit)?);
-        pes.push(x.acquire_pe(counter_id).context(DeviceInit)?);
-        pes.push(x.acquire_pe(counter_id).context(DeviceInit)?);
-        pes.push(x.acquire_pe(counter_id).context(DeviceInit)?);
+        pes.push(x.acquire_pe(counter_id).context(DeviceInitSnafu)?);
+        pes.push(x.acquire_pe(counter_id).context(DeviceInitSnafu)?);
+        pes.push(x.acquire_pe(counter_id).context(DeviceInitSnafu)?);
+        pes.push(x.acquire_pe(counter_id).context(DeviceInitSnafu)?);
         for _ in 0..10 {
             for pe in &mut pes.iter_mut() {
                 pe.start(vec![tapasco::device::PEParameter::Single64(1000)])
-                    .context(JobError)?;
+                    .context(JobSnafu)?;
             }
             for pe in &mut pes.iter_mut() {
-                pe.release(false, false).context(JobError)?;
+                pe.release(false, false).context(JobSnafu)?;
             }
         }
         for mut pe in pes {
-            pe.release(true, false).context(JobError)?;
+            pe.release(true, false).context(JobSnafu)?;
         }
     }
     Ok(())
 }
 
 fn benchmark_counter(m: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices.into_iter() {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit)?;
+            .context(DeviceInitSnafu)?;
 
         let counter_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:counter:0.9") {
             Ok(x) => x,
@@ -217,12 +217,12 @@ fn benchmark_counter(m: &ArgMatches) -> Result<()> {
                     s.spawn(|_| {
                         let x_local = x_l.clone();
                         let mut pe =
-                            { x_local.acquire_pe(counter_id).context(DeviceInit).unwrap() };
+                            { x_local.acquire_pe(counter_id).context(DeviceInitSnafu).unwrap() };
                         for i in 0..iterations_per_threads {
                             pe.start(vec![tapasco::device::PEParameter::Single64(1)])
-                                .context(JobError)
+                                .context(JobSnafu)
                                 .unwrap();
-                            pe.release(false, false).context(JobError).unwrap();
+                            pe.release(false, false).context(JobSnafu).unwrap();
                             if i > 0 && i % pb_step == 0 {
                                 pb.inc(pb_step as u64);
                             }
@@ -254,14 +254,14 @@ concatenate!(
 );
 
 fn latency_benchmark(m: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices {
         println!("Evaluating device {:?}", x.id());
-        let design_mhz = x.design_frequency_mhz().context(DeviceInit)?;
+        let design_mhz = x.design_frequency_mhz().context(DeviceInitSnafu)?;
         println!("Counter running with {:?} MHz.", design_mhz);
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit {})?;
+            .context(DeviceInitSnafu {})?;
         let mut iterations = value_t!(m, "iterations", usize).unwrap();
         let max_step = value_t!(m, "steps", u32).unwrap();
         println!("Starting benchmark.");
@@ -284,14 +284,14 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
                 "Checking {:.0} us execution (I {}): ",
                 step_duration_ns, iterations
             );
-            io::stdout().flush().context(IOError)?;
+            io::stdout().flush().context(IOSnafu)?;
 
             for _ in 0..iterations {
-                let mut pe = x.acquire_pe(counter_id).context(DeviceInit)?;
+                let mut pe = x.acquire_pe(counter_id).context(DeviceInitSnafu)?;
                 let now = Instant::now();
                 pe.start(vec![tapasco::device::PEParameter::Single64(step)])
-                    .context(JobError)?;
-                pe.release(true, false).context(JobError)?;
+                    .context(JobSnafu)?;
+                pe.release(true, false).context(JobSnafu)?;
                 let dur = now.elapsed();
                 let diff = Time::new::<nanosecond>(dur.as_nanos() as f32)
                     - Time::new::<nanosecond>(step_duration_ns);
@@ -310,14 +310,14 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
 }
 
 fn test_copy(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices {
         println!("Evaluating device {}", x.id());
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit {})?;
+            .context(DeviceInitSnafu {})?;
 
-        let mem = x.default_memory().context(DeviceInit)?;
+        let mem = x.default_memory().context(DeviceInitSnafu)?;
 
         let mut small_rng = StdRng::from_entropy();
 
@@ -328,7 +328,7 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
                 .allocator()
                 .lock()?
                 .allocate(len as u64, None)
-                .context(AllocatorError)?;
+                .context(AllocatorSnafu)?;
 
             let mut golden_samples: Vec<u8> = Vec::new();
             let mut result: Vec<u8> = Vec::new();
@@ -337,8 +337,8 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
                 result.push(255);
             }
 
-            mem.dma().copy_to(&golden_samples, a).context(DMAError)?;
-            mem.dma().copy_from(a, &mut result).context(DMAError)?;
+            mem.dma().copy_to(&golden_samples, a).context(DMASnafu)?;
+            mem.dma().copy_from(a, &mut result).context(DMASnafu)?;
 
             let not_matching = golden_samples
                 .iter()
@@ -360,7 +360,7 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
                 }
             }
 
-            mem.allocator().lock()?.free(a).context(AllocatorError)?;
+            mem.allocator().lock()?.free(a).context(AllocatorSnafu)?;
         }
     }
     Ok(())
@@ -397,9 +397,9 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
         env::set_var("tapasco_dma__write_buffers", format!("{}", num));
         env::set_var("tapasco_dma__read_buffer_size", format!("{}", size));
         env::set_var("tapasco_dma__write_buffer_size", format!("{}", size));
-        let tlkm = TLKM::new().context(TLKMInit {})?;
-        let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
-        let mem = devices[0].default_memory().context(DeviceInit)?;
+        let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+        let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
+        let mem = devices[0].default_memory().context(DeviceInitSnafu)?;
 
         println!("Testing {} x {}kB", num, size);
 
@@ -418,11 +418,11 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
                 .allocator()
                 .lock()?
                 .allocate(chunk as u64, None)
-                .context(AllocatorError)?;
+                .context(AllocatorSnafu)?;
 
             let now = Instant::now();
             for _ in 0..repetitions_used {
-                mem.dma().copy_to(&data[0..chunk], a).context(DMAError)?;
+                mem.dma().copy_to(&data[0..chunk], a).context(DMASnafu)?;
             }
             let done = now.elapsed().as_secs_f64();
 
@@ -446,7 +446,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
             for _ in 0..repetitions_used {
                 mem.dma()
                     .copy_from(a, &mut data[0..chunk])
-                    .context(DMAError)?;
+                    .context(DMASnafu)?;
             }
             let done = now.elapsed().as_secs_f64();
 
@@ -466,7 +466,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
                 }
             }
 
-            mem.allocator().lock()?.free(a).context(AllocatorError)?;
+            mem.allocator().lock()?.free(a).context(AllocatorSnafu)?;
         }
     }
 
@@ -506,12 +506,12 @@ fn transfer_to(
         .allocator()
         .lock()?
         .allocate(chunk as u64, None)
-        .context(AllocatorError)?;
+        .context(AllocatorSnafu)?;
     let mut transferred = 0;
     let mut incr = 0;
 
     while transferred < bytes {
-        mem.dma().copy_to(&data, a).context(DMAError)?;
+        mem.dma().copy_to(&data, a).context(DMASnafu)?;
         transferred += chunk;
         if incr % 1024 == 0 {
             pb.inc((chunk * 1024) as u64);
@@ -519,7 +519,7 @@ fn transfer_to(
         incr += 1;
     }
 
-    mem.allocator().lock()?.free(a).context(AllocatorError)?;
+    mem.allocator().lock()?.free(a).context(AllocatorSnafu)?;
 
     Ok(())
 }
@@ -535,12 +535,12 @@ fn transfer_from(
         .allocator()
         .lock()?
         .allocate(chunk as u64, None)
-        .context(AllocatorError)?;
+        .context(AllocatorSnafu)?;
     let mut transferred = 0;
     let mut incr = 0;
 
     while transferred < bytes {
-        mem.dma().copy_from(a, &mut data).context(DMAError)?;
+        mem.dma().copy_from(a, &mut data).context(DMASnafu)?;
         transferred += chunk;
         if incr % 1024 == 0 {
             pb.inc((chunk * 1024) as u64);
@@ -548,17 +548,17 @@ fn transfer_from(
         incr += 1;
     }
 
-    mem.allocator().lock()?.free(a).context(AllocatorError)?;
+    mem.allocator().lock()?.free(a).context(AllocatorSnafu)?;
 
     Ok(())
 }
 
 fn benchmark_copy(m: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices.into_iter() {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit)?;
+            .context(DeviceInitSnafu)?;
         let x_l = Arc::new(x);
         let max_size_power = value_t!(m, "max_bytes", usize).unwrap();
         let max_size = usize::pow(2, max_size_power as u32);
@@ -674,12 +674,12 @@ fn benchmark_copy(m: &ArgMatches) -> Result<()> {
 }
 
 fn test_localmem(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit {})?;
-        let mut pe = x.acquire_pe(42).context(DeviceInit)?;
+            .context(DeviceInitSnafu {})?;
+        let mut pe = x.acquire_pe(42).context(DeviceInitSnafu)?;
         pe.start(vec![tapasco::device::PEParameter::DataTransferLocal(
             tapasco::device::DataTransferLocal {
                 data: vec![0, 1, 2, 3, 4, 5, 6].into_boxed_slice(),
@@ -689,9 +689,9 @@ fn test_localmem(_: &ArgMatches) -> Result<()> {
                 fixed: None,
             },
         )])
-        .context(JobError)?;
+        .context(JobSnafu)?;
 
-        let r = pe.release(true, false).context(JobError)?;
+        let r = pe.release(true, false).context(JobSnafu)?;
         println!("{:?}", r);
     }
     Ok(())
