@@ -2,7 +2,7 @@
 name = "libtapasco_svm"
 version = "1.0.0"
 authors = ["Torben Kalkhof <kalkhof@esa.tu-darmstadt.de>"]
-edition = "2018"
+edition = "2021"
 
 [profile.release]
 opt-level = 3
