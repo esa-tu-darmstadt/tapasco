@@ -808,21 +808,35 @@ static struct dev_pagemap_ops svm_pagemap_ops = {
  * Enable and wait for a C2H interrupt of the PageDMA core
  *
  * @param svm_data SVM data struct
+ * @param poll poll status registers instead of waiting for an IRQ
+ * @return SUCCESS - 0, FAILURE - error code
  */
-static int wait_for_c2h_intr(struct tlkm_pcie_svm_data *svm_data)
+static int wait_for_c2h_intr(struct tlkm_pcie_svm_data *svm_data, bool poll)
 {
 	int res = 0;
-	writeq(PAGE_DMA_CTRL_INTR_ENABLE, &svm_data->dma_regs->c2h_status_ctrl);
-	if (wait_event_interruptible(
-		    svm_data->wait_queue_c2h_intr,
-		    atomic_read(&svm_data->wait_flag_c2h_intr))) {
-		DEVWRN(svm_data->pdev->parent->dev_id,
-		       "waiting for C2H IRQ interrupted by signal");
-		res = -EINTR;
+	uint64_t rval;
+	if (poll) {
+		do {
+			rval = readq(&svm_data->dma_regs->c2h_status_ctrl);
+		} while (rval & PAGE_DMA_STAT_BUSY);
+		if (rval & PAGE_DMA_STAT_ERROR_FLAGS) {
+			DEVERR(svm_data->pdev->parent->dev_id, "DMA error during C2H transfer");
+			return -EFAULT;
+		}
+	} else {
+		writeq(PAGE_DMA_CTRL_INTR_ENABLE,
+		       &svm_data->dma_regs->c2h_status_ctrl);
+		if (wait_event_interruptible(
+			svm_data->wait_queue_c2h_intr,
+			atomic_read(&svm_data->wait_flag_c2h_intr))) {
+			DEVWRN(svm_data->pdev->parent->dev_id,
+			       "waiting for C2H IRQ interrupted by signal");
+			res = -EINTR;
+		}
+		atomic_set(&svm_data->wait_flag_c2h_intr, 0);
+		writeq(PAGE_DMA_CTRL_INTR_DISABLE | PAGE_DMA_CTRL_RESET_INTR,
+		       &svm_data->dma_regs->c2h_status_ctrl);
 	}
-	atomic_set(&svm_data->wait_flag_c2h_intr, 0);
-	writeq(PAGE_DMA_CTRL_INTR_DISABLE | PAGE_DMA_CTRL_RESET_INTR,
-	       &svm_data->dma_regs->c2h_status_ctrl);
 	return res;
 }
 
@@ -830,21 +844,35 @@ static int wait_for_c2h_intr(struct tlkm_pcie_svm_data *svm_data)
  * Enable and wait for an H2C interrupt of the PageDMA core
  *
  * @param svm_data SVM data struct
+ * @param poll poll status register instead of waiting for an IRQ
+ * @return SUCCESS - 0, FAILURE - error code
  */
-static int wait_for_h2c_intr(struct tlkm_pcie_svm_data *svm_data)
+static int wait_for_h2c_intr(struct tlkm_pcie_svm_data *svm_data, bool poll)
 {
 	int res = 0;
-	writeq(PAGE_DMA_CTRL_INTR_ENABLE, &svm_data->dma_regs->h2c_status_ctrl);
-	if (wait_event_interruptible(
-		    svm_data->wait_queue_h2c_intr,
-		    atomic_read(&svm_data->wait_flag_h2c_intr))) {
-		DEVWRN(svm_data->pdev->parent->dev_id,
-		       "Waiting for H2C IRQ interrupted by signal");
-		res = -EINTR;
+	uint64_t rval;
+	if (poll) {
+		do {
+			rval = readq(&svm_data->dma_regs->h2c_status_ctrl);
+		} while (rval & PAGE_DMA_STAT_BUSY);
+		if (rval & PAGE_DMA_STAT_ERROR_FLAGS) {
+			DEVERR(svm_data->pdev->parent->dev_id, "DMA error during H2C transfer");
+			return -EFAULT;
+		}
+	} else {
+		writeq(PAGE_DMA_CTRL_INTR_ENABLE,
+		       &svm_data->dma_regs->h2c_status_ctrl);
+		if (wait_event_interruptible(
+			svm_data->wait_queue_h2c_intr,
+			atomic_read(&svm_data->wait_flag_h2c_intr))) {
+			DEVWRN(svm_data->pdev->parent->dev_id,
+			       "Waiting for H2C IRQ interrupted by signal");
+			res = -EINTR;
+		}
+		atomic_set(&svm_data->wait_flag_h2c_intr, 0);
+		writeq(PAGE_DMA_CTRL_INTR_DISABLE | PAGE_DMA_CTRL_RESET_INTR,
+		       &svm_data->dma_regs->h2c_status_ctrl);
 	}
-	atomic_set(&svm_data->wait_flag_h2c_intr, 0);
-	writeq(PAGE_DMA_CTRL_INTR_DISABLE | PAGE_DMA_CTRL_RESET_INTR,
-	       &svm_data->dma_regs->h2c_status_ctrl);
 	return res;
 }
 
@@ -898,7 +926,7 @@ static int copy_dev_to_dev_network(struct tlkm_pcie_device *src_dev,
 		i += ncontiguous;
 	}
 
-	res = wait_for_h2c_intr(dst_svm);
+	res = wait_for_h2c_intr(dst_svm, npages < PAGE_DMA_POLL_LIMIT);
 	if (res)
 		return res;
 
@@ -946,7 +974,7 @@ static int copy_dev_to_dev_pcie_e2e(struct tlkm_pcie_device *src_dev,
 		if (cmd_cnt >= 64) {
 			cmd_cnt = readq(&src_svm->dma_regs->c2h_cmd_cnt);
 			if (cmd_cnt >= 64) {
-				res = wait_for_c2h_intr(src_svm);
+				res = wait_for_c2h_intr(src_svm, false);
 				if (res)
 					return res;
 				cmd_cnt = 0;
@@ -961,7 +989,7 @@ static int copy_dev_to_dev_pcie_e2e(struct tlkm_pcie_device *src_dev,
 		i += ncontiguous;
 	}
 
-	res = wait_for_c2h_intr(src_svm);
+	res = wait_for_c2h_intr(src_svm, npages < PAGE_DMA_POLL_LIMIT);
 	if (res)
 		return res;
 	return 0;
@@ -1037,7 +1065,7 @@ static int copy_dev_to_dev_buffered(struct tlkm_pcie_device *src_dev,
 			if (cmd_cnt >= 64) {
 				cmd_cnt = readq(&src_svm->dma_regs->c2h_cmd_cnt);
 				if (cmd_cnt >= 64) {
-					res = wait_for_c2h_intr(src_svm);
+					res = wait_for_c2h_intr(src_svm, false);
 					if (res)
 						goto fail_c2h;
 					cmd_cnt = 0;
@@ -1052,7 +1080,8 @@ static int copy_dev_to_dev_buffered(struct tlkm_pcie_device *src_dev,
 			move_cnt += ncontiguous;
 		}
 
-		res = wait_for_c2h_intr(src_dev->svm_data);
+		res = wait_for_c2h_intr(src_dev->svm_data,
+					move_cnt < PAGE_DMA_POLL_LIMIT);
 		if (res)
 			goto fail_c2h;
 
@@ -1062,7 +1091,8 @@ static int copy_dev_to_dev_buffered(struct tlkm_pcie_device *src_dev,
 								page_to_pfn(
 									dst_pages[copied_pages])),
 			     move_cnt, false, false);
-		res = wait_for_h2c_intr(dst_dev->svm_data);
+		res = wait_for_h2c_intr(dst_dev->svm_data,
+					move_cnt < PAGE_DMA_POLL_LIMIT);
 		if (res)
 			goto fail_h2c;
 
@@ -1231,7 +1261,7 @@ retry:
 		if (cmd_cnt >= 64) {
 			cmd_cnt = readq(&svm_data->dma_regs->h2c_cmd_cnt);
 			if (cmd_cnt >= 64) {
-				res = wait_for_h2c_intr(svm_data);
+				res = wait_for_h2c_intr(svm_data, false);
 				if (res)
 					goto fail_dma;
 				cmd_cnt = 0;
@@ -1244,7 +1274,7 @@ retry:
 
 		i += ncontiguous;
 	}
-	res = wait_for_h2c_intr(svm_data);
+	res = wait_for_h2c_intr(svm_data, npages < PAGE_DMA_POLL_LIMIT);
 	if (res)
 		goto fail_dma;
 
@@ -1704,7 +1734,7 @@ retry:
 		if (cmd_cnt >= 64) {
 			cmd_cnt = readq(&svm_data->dma_regs->c2h_cmd_cnt);
 			if (cmd_cnt >= 64) {
-				res = wait_for_c2h_intr(svm_data);
+				res = wait_for_c2h_intr(svm_data, false);
 				if (res)
 					goto fail_dma;
 				cmd_cnt = 0;
@@ -1718,7 +1748,7 @@ retry:
 		i += ncontiguous;
 	}
 
-	res = wait_for_c2h_intr(svm_data);
+	res = wait_for_c2h_intr(svm_data, npages < PAGE_DMA_POLL_LIMIT);
 	if (res)
 		goto fail_dma;
 
