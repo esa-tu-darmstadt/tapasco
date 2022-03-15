@@ -2,7 +2,7 @@
 name = "libtapasco_tests"
 version = "1.0.0"
 authors = ["Jaco Hofmann <hofmann@esa.tu-darmstadt.de>"]
-edition = "2018"
+edition = "2021"
 
 [profile.release]
 opt-level = 3
