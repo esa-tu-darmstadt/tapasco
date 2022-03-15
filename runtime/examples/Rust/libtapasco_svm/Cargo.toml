@@ -1,7 +1,7 @@
 [package]
 name = "libtapasco_svm"
 version = "1.0.0"
-authors = ["Torben Kalhof kalkhof@esa.tu-darmstadt.de>"]
+authors = ["Torben Kalkhof <kalkhof@esa.tu-darmstadt.de>"]
 edition = "2018"
 
 [profile.release]
