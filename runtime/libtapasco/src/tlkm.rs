@@ -347,23 +347,15 @@ impl TLKM {
     /// Open the driver chardev.
     pub fn new() -> Result<Self> {
         let default_config = include_str!("../config/default.toml");
-        let mut settings = Config::default();
-
-        settings
-            .merge(config::File::from_str(
+        let settings = Config::builder()
+            .add_source(config::File::from_str(
                 default_config,
                 config::FileFormat::Toml,
             ))
-            .context(ConfigSnafu)?;
-
-        settings
-            .merge(config::File::with_name("/etc/tapasco/TapascoConfig").required(false))
-            .context(ConfigSnafu)?;
-        settings
-            .merge(config::File::with_name("TapascoConfig").required(false))
-            .context(ConfigSnafu)?;
-        settings
-            .merge(config::Environment::with_prefix("tapasco").separator("__"))
+            .add_source(config::File::with_name("/etc/tapasco/TapascoConfig").required(false))
+            .add_source(config::File::with_name("TapascoConfig").required(false))
+            .add_source(config::Environment::with_prefix("tapasco").separator("__"))
+            .build()
             .context(ConfigSnafu)?;
 
         trace!("Using config: {:?}", settings);
