@@ -7,12 +7,11 @@ extern crate tapasco;
 #[macro_use]
 extern crate log;
 extern crate indicatif;
-#[macro_use]
 extern crate clap;
 extern crate uom;
 
 use average::{concatenate, Estimate, Max, MeanWithError, Min};
-use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
+use clap::{Command, Arg, ArgMatches};
 use crossbeam::thread;
 use indicatif::{HumanBytes, ProgressBar, ProgressStyle};
 use itertools::Itertools;
@@ -190,12 +189,12 @@ fn benchmark_counter(m: &ArgMatches) -> Result<()> {
         };
 
         let x_l = Arc::new(x);
-        let iterations = value_t!(m, "iterations", usize).unwrap();
-        let mut num_threads = value_t!(m, "threads", i32).unwrap();
+        let iterations: usize = m.value_of_t("iterations").unwrap();
+        let mut num_threads = m.value_of_t("threads").unwrap();
         if num_threads == -1 {
             num_threads = num_cpus::get() as i32;
         }
-        let pb_step: usize = value_t!(m, "pb_step", usize).unwrap();
+        let pb_step: usize = m.value_of_t("pb_step").unwrap();
         println!(
             "Starting {} thread benchmark with {} iterations and {} step.",
             num_threads, iterations, pb_step
@@ -262,8 +261,8 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
         println!("Counter running with {:?} MHz.", design_mhz);
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInitSnafu {})?;
-        let mut iterations = value_t!(m, "iterations", usize).unwrap();
-        let max_step = value_t!(m, "steps", u32).unwrap();
+        let mut iterations = m.value_of_t("iterations").unwrap();
+        let max_step = m.value_of_t("steps").unwrap();
         println!("Starting benchmark.");
 
         let counter_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:counter:0.9") {
@@ -560,17 +559,17 @@ fn benchmark_copy(m: &ArgMatches) -> Result<()> {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInitSnafu)?;
         let x_l = Arc::new(x);
-        let max_size_power = value_t!(m, "max_bytes", usize).unwrap();
-        let max_size = usize::pow(2, max_size_power as u32);
+        let max_size_power: u32 = m.value_of_t("max_bytes").unwrap();
+        let max_size = usize::pow(2, max_size_power);
 
-        let total_bytes_power = value_t!(m, "total_bytes", usize).unwrap();
-        let total_bytes = usize::pow(2, total_bytes_power as u32);
+        let total_bytes_power: u32 = m.value_of_t("total_bytes").unwrap();
+        let total_bytes = usize::pow(2, total_bytes_power);
 
-        let mut num_threads = value_t!(m, "threads", i32).unwrap();
+        let mut num_threads = m.value_of_t("threads").unwrap();
         if num_threads == -1 {
             num_threads = num_cpus::get() as i32;
         }
-        let _pb_step: usize = value_t!(m, "pb_step", usize).unwrap();
+        let _pb_step: usize = m.value_of_t("pb_step").unwrap();
         println!(
             "Starting {} thread transfer benchmark with maximum of {} per transfer and total {}.",
             num_threads,
@@ -700,36 +699,36 @@ fn test_localmem(_: &ArgMatches) -> Result<()> {
 fn main() -> Result<()> {
     env_logger::init();
 
-    let matches = App::new("libtapasco_tests")
-        .setting(AppSettings::ArgRequiredElseHelp)
+    let matches = Command::new("libtapasco_tests")
+        .arg_required_else_help(true)
         .subcommand(
-            SubCommand::with_name("version").about("Print information about the driver version."),
+            Command::new("version").about("Print information about the driver version."),
         )
         .subcommand(
-            SubCommand::with_name("enum")
+            Command::new("enum")
                 .about("Print information about the available TLKM devices."),
         )
         .subcommand(
-            SubCommand::with_name("allocate").about("Try to exclusively allocate all devices."),
+            Command::new("allocate").about("Try to exclusively allocate all devices."),
         )
         .subcommand(
-            SubCommand::with_name("status").about("Print status core information of all devices."),
+            Command::new("status").about("Print status core information of all devices."),
         )
-        .subcommand(SubCommand::with_name("run_counter").about("Runs a counter with ID 14."))
+        .subcommand(Command::new("run_counter").about("Runs a counter with ID 14."))
         .subcommand(
-            SubCommand::with_name("run_arrayinit").about("Runs an arrayinit instance with ID 11."),
+            Command::new("run_arrayinit").about("Runs an arrayinit instance with ID 11."),
         )
         .subcommand(
-            SubCommand::with_name("benchmark_copy")
+            Command::new("benchmark_copy")
                 .about("Runs a copy benchmark for r, w and rw.")
                 .arg(
-                    Arg::with_name("pb_disable")
+                    Arg::new("pb_disable")
                         .short('p')
                         .long("pb_disable")
                         .help("Disables the progress bar to avoid overhead."),
                 )
                 .arg(
-                    Arg::with_name("pb_step")
+                    Arg::new("pb_step")
                         .short('s')
                         .long("pb_step")
                         .help("Step size for the progress bar.")
@@ -737,7 +736,7 @@ fn main() -> Result<()> {
                         .default_value("1000"),
                 )
                 .arg(
-                    Arg::with_name("max_bytes")
+                    Arg::new("max_bytes")
                         .short('m')
                         .long("max_bytes")
                         .help("Maximum number of bytes in a single transfer transfer log_2.")
@@ -745,7 +744,7 @@ fn main() -> Result<()> {
                         .default_value("24"),
                 )
                 .arg(
-                    Arg::with_name("total_bytes")
+                    Arg::new("total_bytes")
                         .short('b')
                         .long("total_bytes")
                         .help("Total number of bytes to transfer transfer log_2.")
@@ -753,7 +752,7 @@ fn main() -> Result<()> {
                         .default_value("30"),
                 )
                 .arg(
-                    Arg::with_name("threads")
+                    Arg::new("threads")
                         .short('t')
                         .long("threads")
                         .help("How many threads should be used? (-1 for auto)")
@@ -762,16 +761,16 @@ fn main() -> Result<()> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("run_benchmark")
+            Command::new("run_benchmark")
                 .about("Runs a counter benchmark with ID 14.")
                 .arg(
-                    Arg::with_name("pb_disable")
+                    Arg::new("pb_disable")
                         .short('p')
                         .long("pb_disable")
                         .help("Disables the progress bar to avoid overhead."),
                 )
                 .arg(
-                    Arg::with_name("pb_step")
+                    Arg::new("pb_step")
                         .short('s')
                         .long("pb_step")
                         .help("Step size for the progress bar.")
@@ -779,7 +778,7 @@ fn main() -> Result<()> {
                         .default_value("1000"),
                 )
                 .arg(
-                    Arg::with_name("iterations")
+                    Arg::new("iterations")
                         .short('i')
                         .long("iterations")
                         .help("How many counter iterations.")
@@ -787,7 +786,7 @@ fn main() -> Result<()> {
                         .default_value("100000"),
                 )
                 .arg(
-                    Arg::with_name("threads")
+                    Arg::new("threads")
                         .short('t')
                         .long("threads")
                         .help("How many threads should be used? (-1 for auto)")
@@ -796,10 +795,10 @@ fn main() -> Result<()> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("run_latency")
+            Command::new("run_latency")
                 .about("Runs a counter based latency check with ID 14.")
                 .arg(
-                    Arg::with_name("steps")
+                    Arg::new("steps")
                         .short('s')
                         .long("steps")
                         .help("Testing from 2**0 to 2**s.")
@@ -807,7 +806,7 @@ fn main() -> Result<()> {
                         .default_value("28"),
                 )
                 .arg(
-                    Arg::with_name("iterations")
+                    Arg::new("iterations")
                         .short('i')
                         .long("iterations")
                         .help("How many counter iterations.")
@@ -816,15 +815,15 @@ fn main() -> Result<()> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("test_copy")
+            Command::new("test_copy")
                 .about("Tests the copy to and from the device on memory 0."),
         )
         .subcommand(
-            SubCommand::with_name("test_localmem")
+            Command::new("test_localmem")
                 .about("Tests running a job with local memory (uses ID 42)."),
         )
         .subcommand(
-            SubCommand::with_name("evaluate_copy")
+            Command::new("evaluate_copy")
                 .about("Find optimal buffer settings for current host/device combination."),
         )
         .get_matches();
