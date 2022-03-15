@@ -136,14 +136,14 @@ impl PE {
             copy_back: None,
             memory,
             local_memory: None,
-            interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterrupt)?,
+            interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterruptSnafu)?,
             debug,
             svm_in_use,
         })
     }
 
     pub fn start(&mut self) -> Result<()> {
-        ensure!(!self.active, PEAlreadyActive { id: self.id });
+        ensure!(!self.active, PEAlreadyActiveSnafu { id: self.id });
         trace!("Starting PE {}.", self.id);
         let offset = self.offset as isize;
         unsafe {
@@ -170,7 +170,7 @@ impl PE {
         if self.active {
             self.interrupt
                 .wait_for_interrupt()
-                .context(ErrorInterrupt)?;
+                .context(ErrorInterruptSnafu)?;
             trace!("Cleaning up PE {} after release.", self.id);
             self.active = false;
             self.reset_interrupt(true)?;
@@ -219,7 +219,7 @@ impl PE {
     }
 
     pub fn enable_interrupt(&self) -> Result<()> {
-        ensure!(!self.active, PEAlreadyActive { id: self.id });
+        ensure!(!self.active, PEAlreadyActiveSnafu { id: self.id });
         let mut offset = (self.offset as usize + 0x04) as isize;
         trace!("Enabling interrupts: 0x{:x} -> 1", offset);
         unsafe {
@@ -294,6 +294,6 @@ impl PE {
     pub fn enable_debug(&mut self) -> Result<()> {
         self.debug
             .enable_debug()
-            .context(DebugError { id: self.id })
+            .context(DebugSnafu { id: self.id })
     }
 }

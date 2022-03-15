@@ -119,7 +119,7 @@ impl DMAControl for DriverDMA {
                     user_addr: data.as_ptr(),
                 },
             )
-            .context(DMAToDevice)?;
+            .context(DMAToDeviceSnafu)?;
         };
         Ok(())
     }
@@ -140,7 +140,7 @@ impl DMAControl for DriverDMA {
                     user_addr: data.as_mut_ptr(),
                 },
             )
-            .context(DMAFromDevice)?;
+            .context(DMAFromDeviceSnafu)?;
         };
         Ok(())
     }
@@ -175,7 +175,7 @@ impl DMAControl for VfioDMA {
         let iova_start = to_page_boundary(iova);
         let map_len = self.vfio_dev
             .get_region_size(iova_start)
-            .context(VfioError)?;
+            .context(VfioSnafu)?;
 
         trace!(
             "Copy Host({:?}) -> Device(0x{:x}) ({} Bytes). Map va=0x{:x} -> iova=0x{:x} len=0x{:x}",
@@ -306,7 +306,7 @@ impl DMAControl for SVMDMA {
                     vaddr: base,
                     size,
                 },
-            ).context(DMAToDevice)?;
+            ).context(DMAToDeviceSnafu)?;
         }
         trace!("Migration to device memory complete.");
         Ok(())
@@ -323,7 +323,7 @@ impl DMAControl for SVMDMA {
                     vaddr: base,
                     size,
                 },
-            ).context(DMAFromDevice)?;
+            ).context(DMAFromDeviceSnafu)?;
         }
         trace!("Migration to host memory complete.");
         Ok(())

@@ -488,7 +488,7 @@ impl Allocator for DriverAllocator {
             sz: 0,
             dev_addr: ptr,
         };
-        unsafe { tlkm_ioctl_free(self.tlkm_file.as_raw_fd(), &mut cmd).context(IOCTLFree)? };
+        unsafe { tlkm_ioctl_free(self.tlkm_file.as_raw_fd(), &mut cmd).context(IOCTLFreeSnafu)? };
         Ok(())
     }
 }

@@ -92,16 +92,16 @@ impl Scheduler {
                 Some(x) => match debug_impls.get(&x.name) {
                     Some(y) => y
                         .new(mmap, x.name.clone(), x.offset, x.size)
-                        .context(DebugError)?,
+                        .context(DebugSnafu)?,
                     None => {
                         let d = UnsupportedDebugGenerator {};
-                        d.new(mmap, x.name.clone(), 0, 0).context(DebugError)?
+                        d.new(mmap, x.name.clone(), 0, 0).context(DebugSnafu)?
                     }
                 },
                 None => {
                     let d = NonDebugGenerator {};
                     d.new(mmap, "Unused".to_string(), 0, 0)
-                        .context(DebugError)?
+                        .context(DebugSnafu)?
                 }
             };
 
@@ -130,7 +130,7 @@ impl Scheduler {
                 debug,
                 svm_in_use,
             )
-            .context(PEError)?;
+            .context(PESnafu)?;
 
             interrupt_id += 1;
 
@@ -181,7 +181,7 @@ impl Scheduler {
     }
 
     pub fn release_pe(&self, pe: PE) -> Result<()> {
-        ensure!(!pe.active(), PEStillActive { pe });
+        ensure!(!pe.active(), PEStillActiveSnafu { pe });
 
         match self.pes.get(pe.type_id()) {
             Some(l) => l.val().push(pe),
@@ -196,9 +196,9 @@ impl Scheduler {
             let mut maybe_pe = v.val().steal();
 
             while let Steal::Success(pe) = maybe_pe {
-                pe.enable_interrupt().context(PEError)?;
-                if pe.interrupt_set().context(PEError)? {
-                    pe.reset_interrupt(true).context(PEError)?;
+                pe.enable_interrupt().context(PESnafu)?;
+                if pe.interrupt_set().context(PESnafu)? {
+                    pe.reset_interrupt(true).context(PESnafu)?;
                 }
                 remove_pes.push(pe);
                 maybe_pe = v.val().steal();

@@ -276,10 +276,10 @@ impl Device {
                     "{}{:02}",
                     settings
                         .get_str("tlkm.device_driver_file")
-                        .context(ConfigError)?,
+                        .context(ConfigSnafu)?,
                     id
                 ))
-                .context(DeviceUnavailable { id })?,
+                .context(DeviceUnavailableSnafu { id })?,
         );
 
         trace!("Mapping status core.");
@@ -289,7 +289,7 @@ impl Device {
                     .len(8192)
                     .offset(0)
                     .map(&tlkm_dma_file)
-                    .context(DeviceUnavailable { id })?
+                    .context(DeviceUnavailableSnafu { id })?
             };
             trace!("Mapped status core: {}", mmap[0]);
 
@@ -302,7 +302,7 @@ impl Device {
                 mmap_cpy[i] = mmap[i];
             }
 
-            status::Status::decode_length_delimited(&mmap_cpy[..]).context(StatusCoreDecoding)?
+            status::Status::decode_length_delimited(&mmap_cpy[..]).context(StatusCoreDecodingSnafu)?
         };
 
         trace!("Status core decoded: {:?}", s);
@@ -321,7 +321,7 @@ impl Device {
                 .len(platform_size as usize)
                 .offset(8192)
                 .map_mut(&tlkm_dma_file)
-                .context(DeviceUnavailable { id })?
+                .context(DeviceUnavailableSnafu { id })?
         });
 
         let arch_size = match &s.arch_base {
@@ -336,7 +336,7 @@ impl Device {
                 .len(arch_size as usize)
                 .offset(4096)
                 .map_mut(&tlkm_dma_file)
-                .context(DeviceUnavailable { id })?
+                .context(DeviceUnavailableSnafu { id })?
         });
 
         // Initialize the global memories.
@@ -385,7 +385,7 @@ impl Device {
 
                 allocator.push(Arc::new(OffchipMemory {
                     allocator: Mutex::new(Box::new(
-                        GenericAllocator::new(0, 4 * 1024 * 1024 * 1024, 64).context(AllocatorError)?,
+                        GenericAllocator::new(0, 4 * 1024 * 1024 * 1024, 64).context(AllocatorSnafu)?,
                     )),
                     dma: Box::new(
                         UserSpaceDMA::new(
@@ -396,18 +396,18 @@ impl Device {
                             &platform,
                             settings
                                 .get::<usize>("dma.read_buffer_size")
-                                .context(ConfigError)?,
+                                .context(ConfigSnafu)?,
                             settings
                                 .get::<usize>("dma.read_buffers")
-                                .context(ConfigError)?,
+                                .context(ConfigSnafu)?,
                             settings
                                 .get::<usize>("dma.write_buffer_size")
-                                .context(ConfigError)?,
+                                .context(ConfigSnafu)?,
                             settings
                                 .get::<usize>("dma.write_buffers")
-                                .context(ConfigError)?,
+                                .context(ConfigSnafu)?,
                         )
-                            .context(DMAError)?,
+                            .context(DMASnafu)?,
                     ),
                 }));
             } else {
@@ -419,7 +419,7 @@ impl Device {
                     tlkm_ioctl_svm_launch(
                         tlkm_dma_file.as_raw_fd(),
                         &mut init_cmd,
-                    ).context(SVMInitError)?;
+                    ).context(SVMInitSnafu)?;
                 }
                 allocator.push(Arc::new(OffchipMemory {
                     allocator: Mutex::new(Box::new(DummyAllocator::new())),
@@ -430,18 +430,18 @@ impl Device {
             info!("Using driver allocation for Zynq/ZynqMP based platform.");
             allocator.push(Arc::new(OffchipMemory {
                 allocator: Mutex::new(Box::new(
-                    DriverAllocator::new(&tlkm_dma_file).context(AllocatorError)?,
+                    DriverAllocator::new(&tlkm_dma_file).context(AllocatorSnafu)?,
                 )),
                 dma: Box::new(DriverDMA::new(&tlkm_dma_file)),
             }));
         } else if name == "zynqmp" {
             info!("Using VFIO mode for ZynqMP based platform.");
             let vfio_dev = Arc::new(init_vfio(settings)
-                .context(VfioInitError)?
+                .context(VfioInitSnafu)?
             );
             allocator.push(Arc::new(OffchipMemory {
                 allocator: Mutex::new(Box::new(
-                    VfioAllocator::new(&vfio_dev).context(AllocatorError)?,
+                    VfioAllocator::new(&vfio_dev).context(AllocatorSnafu)?,
                 )),
                 dma: Box::new(VfioDMA::new(&vfio_dev)),
             }));
@@ -457,7 +457,7 @@ impl Device {
                     Some(l) => {
                         pe_local_memories.push_back(Arc::new(OffchipMemory {
                             allocator: Mutex::new(Box::new(
-                                GenericAllocator::new(0, l.size, 1).context(AllocatorError)?,
+                                GenericAllocator::new(0, l.size, 1).context(AllocatorSnafu)?,
                             )),
                             dma: Box::new(DirectDMA::new(l.base, l.size, arch.clone())),
                         }));
@@ -480,7 +480,7 @@ impl Device {
                 is_pcie,
                 svm_in_use,
             )
-                .context(SchedulerError)?,
+                .context(SchedulerSnafu)?,
         );
 
         trace!("Device creation completed.");
@@ -514,7 +514,7 @@ impl Device {
     pub fn acquire_pe(&self, id: PEId) -> Result<Job> {
         self.check_exclusive_access()?;
         trace!("Trying to acquire PE of type {}.", id);
-        let pe = self.scheduler.acquire_pe(id).context(SchedulerError)?;
+        let pe = self.scheduler.acquire_pe(id).context(SchedulerSnafu)?;
         trace!("Successfully acquired PE of type {}.", id);
         Ok(Job::new(pe, &self.scheduler))
     }
@@ -569,7 +569,7 @@ impl Device {
         trace!("Device {}: Trying to change mode to {:?}", self.id, access,);
 
         unsafe {
-            tlkm_ioctl_create(self.tlkm_file.as_raw_fd(), &mut request).context(IOCTLCreate {
+            tlkm_ioctl_create(self.tlkm_file.as_raw_fd(), &mut request).context(IOCTLCreateSnafu {
                 access,
                 id: self.id,
             })?;
@@ -579,7 +579,7 @@ impl Device {
 
         if access == tlkm_access::TlkmAccessExclusive {
             trace!("Access changed to exclusive, resetting all interrupts.");
-            self.scheduler.reset_interrupts().context(SchedulerError)?;
+            self.scheduler.reset_interrupts().context(SchedulerSnafu)?;
         }
 
         trace!("Successfully acquired access.");
@@ -596,7 +596,7 @@ impl Device {
             };
             unsafe {
                 tlkm_ioctl_destroy(self.tlkm_file.as_raw_fd(), &mut request)
-                    .context(IOCTLDestroy { id: self.id })?;
+                    .context(IOCTLDestroySnafu { id: self.id })?;
             }
             self.access = tlkm_access::TlkmAccessTypes;
         }
@@ -663,7 +663,7 @@ impl Device {
 
     /// Return the PEId of the PE with the given name
     pub fn get_pe_id(&self, name: &str) -> Result<PEId> {
-        self.scheduler.get_pe_id(name).context(SchedulerError)
+        self.scheduler.get_pe_id(name).context(SchedulerSnafu)
     }
 
     /// Get a list of platform components names available on this device
