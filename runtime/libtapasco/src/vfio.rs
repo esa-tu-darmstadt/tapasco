@@ -166,7 +166,7 @@ pub const fn to_page_boundary(x: u64) -> u64 {
 // get VFIO group number of tapasco platform device from sysfs
 fn get_vfio_group(settings: &Arc<Config>) -> Result<i32, Error> {
     let dev_path = settings
-        .get_str("tlkm.vfio_device")
+        .get_string("tlkm.vfio_device")
         .context(ConfigSnafu)?;
     let iommu_group_path = read_link(&dev_path)
         .context(VfioNoGroupSnafu {file: &dev_path} )?;

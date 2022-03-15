@@ -275,7 +275,7 @@ impl Device {
                 .open(format!(
                     "{}{:02}",
                     settings
-                        .get_str("tlkm.device_driver_file")
+                        .get_string("tlkm.device_driver_file")
                         .context(ConfigSnafu)?,
                     id
                 ))
