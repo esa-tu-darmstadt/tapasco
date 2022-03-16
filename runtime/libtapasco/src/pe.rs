@@ -21,7 +21,6 @@
 use crate::debug::DebugControl;
 use crate::device::DataTransferPrealloc;
 use crate::device::DeviceAddress;
-use crate::device::DeviceSize;
 use crate::device::OffchipMemory;
 use crate::device::PEParameter;
 use crate::interrupt::Interrupt;
@@ -97,8 +96,6 @@ pub struct PE {
     #[get = "pub"]
     type_id: PEId,
     offset: DeviceAddress,
-    size: DeviceSize,
-    name: String,
     #[get = "pub"]
     active: bool,
     copy_back: Option<Vec<CopyBack>>,
@@ -121,27 +118,23 @@ impl PE {
         id: usize,
         type_id: PEId,
         offset: DeviceAddress,
-        size: DeviceSize,
-        name: String,
         memory: Arc<MmapMut>,
         completion: &File,
         interrupt_id: usize,
         debug: Box<dyn DebugControl + Sync + Send>,
         svm_in_use: bool,
-    ) -> Result<PE> {
-        Ok(PE {
-            id: id,
-            type_id: type_id,
-            offset: offset,
-            size: size,
-            name: name,
+    ) -> Result<Self> {
+        Ok(Self {
+            id,
+            type_id,
+            offset,
             active: false,
             copy_back: None,
-            memory: memory,
+            memory,
             local_memory: None,
             interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterrupt)?,
-            debug: debug,
-            svm_in_use: svm_in_use,
+            debug,
+            svm_in_use,
         })
     }
 

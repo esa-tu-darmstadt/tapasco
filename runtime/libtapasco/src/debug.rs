@@ -69,7 +69,7 @@ impl DebugGenerator for UnsupportedDebugGenerator {
         _offset: DeviceAddress,
         _size: DeviceSize,
     ) -> Result<Box<dyn DebugControl + Send + Sync>> {
-        Ok(Box::new(UnsupportedDebug { name: name }))
+        Ok(Box::new(UnsupportedDebug { name }))
     }
 }
 

@@ -28,7 +28,8 @@ use vfio_bindings::bindings::vfio::*;
 use config::Config;
 
 pub const IOMMU_PAGESIZE: u64 = 4096;
-pub const HP_OFFS: u64 = 0x800000000; // AXI Offset IP block between PE and PS
+// TODO: Is this offset 0x0008_0000_0000 correct or should it be 0x8000_0000?
+pub const HP_OFFS: u64 = 0x0008_0000_0000; // AXI Offset IP block between PE and PS
 
 // VFIO ioctl import
 //
@@ -36,7 +37,7 @@ pub const HP_OFFS: u64 = 0x800000000; // AXI Offset IP block between PE and PS
 // https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/vfio.h
 ioctl_none_bad!(
     vfio_get_api_version,
-    request_code_none!(VFIO_TYPE, VFIO_BASE + 0)
+    request_code_none!(VFIO_TYPE, VFIO_BASE)
 );
 
 ioctl_write_int_bad!(
@@ -135,7 +136,6 @@ pub struct VfioMapping {
 #[derive(Debug)]
 pub struct VfioDev {
     container: File,
-    group: File,
     device: File,
     pub mappings: Mutex<Vec<VfioMapping>>
 }
@@ -150,22 +150,21 @@ impl VfioDev {
 }
 impl Default for VfioDev {
     // only used for testing
-    fn default() -> VfioDev {
-        VfioDev {
+    fn default() -> Self {
+        Self {
             container: File::open("/dev/null").unwrap(),
-            group: File::open("/dev/null").unwrap(),
             device: File::open("/dev/null").unwrap(),
             mappings: Mutex::new(Vec::new())
         }
     }
 }
 
-pub fn to_page_boundary(x: u64) -> u64 {
-    return x - (x % IOMMU_PAGESIZE);
+pub const fn to_page_boundary(x: u64) -> u64 {
+    x - (x % IOMMU_PAGESIZE)
 }
 
 // get VFIO group number of tapasco platform device from sysfs
-fn get_vfio_group(settings: Arc<Config>) -> Result<i32, Error> {
+fn get_vfio_group(settings: &Arc<Config>) -> Result<i32, Error> {
     let dev_path = settings
         .get_str("tlkm.vfio_device")
         .context(ConfigError)?;
@@ -173,7 +172,7 @@ fn get_vfio_group(settings: Arc<Config>) -> Result<i32, Error> {
         .context(VfioNoGroup {file: &dev_path} )?;
     let iommu_group = iommu_group_path.file_name().unwrap().to_str().unwrap();
 
-    return Ok(iommu_group.parse().unwrap())
+    Ok(iommu_group.parse().unwrap())
 }
 
 pub fn init_vfio(settings: Arc<Config>) -> Result<VfioDev, Error> {
@@ -189,19 +188,17 @@ pub fn init_vfio(settings: Arc<Config>) -> Result<VfioDev, Error> {
     if ret != VFIO_API_VERSION as i32 {
         error!("VFIO version is {} should be {}", ret, VFIO_API_VERSION);
         return Err(Error::IoctlError{ name: "vfio_get_api_version".to_string() });
-    } else {
-        trace!("VFIO version is {}, okay!", ret);
     }
+    trace!("VFIO version is {}, okay!", ret);
 
     ret = unsafe { vfio_check_extension(container.as_raw_fd(), VFIO_TYPE1_IOMMU as i32) }.unwrap();
-    if ret > 0 {
-        trace!("VFIO_TYPE1_IOMMU okay!");
-    } else {
+    if ret <= 0 {
         error!("VFIO_TYPE1_IOMMU not supported");
         return Err(Error::IoctlError{ name: "vfio_check_extension".to_string() });
     }
+    trace!("VFIO_TYPE1_IOMMU okay!");
 
-    let group_path = format!("/dev/vfio/{}", get_vfio_group(settings)?);
+    let group_path = format!("/dev/vfio/{}", get_vfio_group(&settings)?);
     let group = OpenOptions::new()
         .read(true)
         .write(true)
@@ -218,23 +215,20 @@ pub fn init_vfio(settings: Arc<Config>) -> Result<VfioDev, Error> {
     } else if (group_status.flags & VFIO_GROUP_FLAGS_VIABLE) != VFIO_GROUP_FLAGS_VIABLE {
         error!("VFIO group is not viable\n");
         return Err(Error::IoctlError{ name: "vfio_group_get_status".to_string() });
-    } else {
-        trace!("VFIO group is okay\n");
     }
+    trace!("VFIO group is okay\n");
 
     ret = unsafe { vfio_group_set_container(group.as_raw_fd(), &container.as_raw_fd()) }.unwrap();
     if ret < 0 {
         return Err(Error::IoctlError{ name: "vfio_group_set_container".to_string() });
-    } else {
-        trace!("VFIO set container okay\n");
     }
+    trace!("VFIO set container okay\n");
 
     ret = unsafe { vfio_set_iommu(container.as_raw_fd(), VFIO_TYPE1_IOMMU as i32) }.unwrap();
     if ret < 0 {
         return Err(Error::IoctlError{ name: "vfio_set_iommu".to_string() });
-    } else {
-        trace!("vfio_set_iommu okay\n");
     }
+    trace!("vfio_set_iommu okay\n");
 
     let dev_name = CString::new("tapasco").unwrap();
     let dev_fd = unsafe { vfio_group_get_device_fd(
@@ -243,13 +237,11 @@ pub fn init_vfio(settings: Arc<Config>) -> Result<VfioDev, Error> {
     ) }.unwrap();
     if dev_fd < 0 {
         return Err(Error::IoctlError{ name: "vfio_group_get_device_fd".to_string() });
-    } else {
-        trace!("vfio_group_get_device_fd okay: fd={}\n", dev_fd);
     }
+    trace!("vfio_group_get_device_fd okay: fd={}\n", dev_fd);
 
     Ok(VfioDev{
         container,
-        group,
         device: unsafe { File::from_raw_fd(dev_fd) },
         mappings: Mutex::new(Vec::new())
     })
@@ -263,7 +255,7 @@ pub fn vfio_get_info(dev: &VfioDev) -> Result<vfio_iommu_type1_info, Error> {
     };
     let ret = unsafe { vfio_iommu_get_info(dev.container.as_raw_fd(), &mut iommu_info) }.unwrap();
     if ret < 0 {
-        return Err(Error::IoctlError{ name: "vfio_iommu_get_info".to_string() });
+        Err(Error::IoctlError{ name: "vfio_iommu_get_info".to_string() })
     } else {
         trace!("flags={}, Pagesize bitvector=0x{:x}!\n", iommu_info.flags, iommu_info.iova_pgsizes);
         Ok(iommu_info)
@@ -280,9 +272,8 @@ pub fn vfio_get_region_info(dev: &VfioDev) -> Result<vfio_device_info, Error> {
     let ret = unsafe { vfio_device_get_info(dev.device.as_raw_fd(), &mut dev_info) }.unwrap();
     if ret < 0 {
         return Err(Error::IoctlError{ name: "vfio_device_get_info".to_string() });
-    } else {
-        trace!("VFIO device has {} regions\n", dev_info.num_regions);
     }
+    trace!("VFIO device has {} regions\n", dev_info.num_regions);
 
     // get info for all regions
     for r in 0..dev_info.num_regions {
@@ -297,9 +288,8 @@ pub fn vfio_get_region_info(dev: &VfioDev) -> Result<vfio_device_info, Error> {
         let ret = unsafe { vfio_device_get_region_info(dev.device.as_raw_fd(), &mut reg_info) }.unwrap();
         if ret < 0 {
             return Err(Error::IoctlError{ name: "vfio_device_get_region_info".to_string() });
-        } else {
-            trace!("Region {}: sz=0x{:x}, offs=0x{:x}\n", r, reg_info.size, reg_info.offset);
         }
+        trace!("Region {}: sz=0x{:x}, offs=0x{:x}\n", r, reg_info.size, reg_info.offset);
     }
     Ok(dev_info)
 }
@@ -315,7 +305,7 @@ pub fn vfio_dma_map(dev: &VfioDev, size: u64, iova: u64, vaddr: u64) -> Result<(
 
     let ret = unsafe { vfio_iommu_map_dma(dev.container.as_raw_fd(), &dma_map_src) }.unwrap();
     if ret < 0 {
-        return Err(Error::IoctlError{ name: "vfio_iommu_map_dma".to_string() });
+        Err(Error::IoctlError{ name: "vfio_iommu_map_dma".to_string() })
     } else {
         trace!("vfio_iommu_map_dma: va=0x{:x} -> iova=0x{:x}, size=0x{:x}\n", vaddr, iova, size);
         Ok(())
@@ -332,7 +322,7 @@ pub fn vfio_dma_unmap(dev: &VfioDev, iova: u64, size: u64) -> Result<(), Error> 
 
     let ret = unsafe { vfio_iommu_unmap_dma(dev.container.as_raw_fd(), &mut dma_unmap) }.unwrap();
     if ret < 0 {
-        return Err(Error::IoctlError{ name: "vfio_iommu_unmap_dma".to_string() });
+        Err(Error::IoctlError{ name: "vfio_iommu_unmap_dma".to_string() })
     } else {
         trace!("vfio_iommu_unmap_dma: iova=0x{:x}, size=0x{:x}\n", iova, size);
         Ok(())

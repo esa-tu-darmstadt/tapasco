@@ -49,7 +49,7 @@ use volatile::Volatile;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
     fn from(_error: std::sync::PoisonError<T>) -> Self {
-        Error::MutexError {}
+        Self::MutexError {}
     }
 }
 
@@ -100,7 +100,7 @@ impl UserSpaceDMA {
         read_num_buf: usize,
         write_buf_size: usize,
         write_num_buf: usize,
-    ) -> Result<UserSpaceDMA> {
+    ) -> Result<Self> {
         trace!(
             "Using setting: Read {} x {}B, Write {} x {}B",
             read_num_buf,
@@ -134,7 +134,7 @@ impl UserSpaceDMA {
                     MmapOptions::new()
                         .len(write_buf_size)
                         .offset(((4 + to_dev_buf.buffer_id) * 4096) as u64)
-                        .map_mut(&tlkm_file)
+                        .map_mut(tlkm_file)
                         .context(FailedMMapDMA)?
                 },
             });
@@ -162,13 +162,13 @@ impl UserSpaceDMA {
                     MmapOptions::new()
                         .len(read_buf_size)
                         .offset(((4 + from_dev_buf.buffer_id) * 4096) as u64)
-                        .map_mut(&tlkm_file)
+                        .map_mut(tlkm_file)
                         .context(FailedMMapDMA)?
                 },
             });
         }
 
-        Ok(UserSpaceDMA {
+        Ok(Self {
             tlkm_file: tlkm_file.clone(),
             memory: Mutex::new(memory.clone()),
             engine_offset: offset,
@@ -194,8 +194,8 @@ impl UserSpaceDMA {
         addr_device: DeviceAddress,
         size: DeviceSize,
         from_device: bool,
-    ) -> Result<()> {
-        let mut offset = (self.engine_offset as usize + 0x00) as isize;
+    ) {
+        let mut offset = (self.engine_offset as usize) as isize;
         unsafe {
             let ptr = dma_engine_memory.as_ptr().offset(offset);
             let volatile_ptr = ptr as *mut Volatile<u64>;
@@ -220,14 +220,12 @@ impl UserSpaceDMA {
         unsafe {
             let ptr = dma_engine_memory.as_ptr().offset(offset);
             let volatile_ptr = ptr as *mut Volatile<u64>;
-            (*volatile_ptr).write(if from_device { 0x10001000 } else { 0x10000001 });
+            (*volatile_ptr).write(if from_device { 0x1000_1000 } else { 0x1000_0001 });
         };
-
-        Ok(())
     }
 
     fn wait_for_write(&self, next: bool, cntr: u64) -> Result<()> {
-        if (next && self.to_dev_buffer.is_empty()) || !next {
+        if !next || self.to_dev_buffer.is_empty() {
             while (next && self.to_dev_buffer.is_empty())
                 || (!next && self.write_int_cntr.load(Ordering::Relaxed) <= cntr)
             {
@@ -239,7 +237,7 @@ impl UserSpaceDMA {
                     self.write_int_cntr.fetch_add(1, Ordering::Relaxed);
                     match self.write_out.pop() {
                         Some(buf) => self.to_dev_buffer.push(buf),
-                        None => Err(Error::TooManyInterrupts {})?,
+                        None => return Err(Error::TooManyInterrupts {}),
                     }
                 }
                 thread::yield_now();
@@ -292,12 +290,9 @@ impl UserSpaceDMA {
         for (cntr, buf, offset, len) in used_buffers.iter_mut() {
             if *cntr < read_int_cntr_used {
                 let buf_taken = buf.take();
-                match buf_taken {
-                    Some(b) => {
-                        self.copyback_buffer(data, &b, *offset, *len)?;
-                        self.from_dev_buffer.push(b);
-                    }
-                    None => (),
+                if let Some(b) = buf_taken {
+                    self.copyback_buffer(data, &b, *offset, *len)?;
+                    self.from_dev_buffer.push(b);
                 };
             } else {
                 break;
@@ -367,7 +362,7 @@ impl DMAControl for UserSpaceDMA {
                     ptr_device,
                     btt_this as u64,
                     false,
-                )?;
+                );
                 highest_used = self.write_cntr.fetch_add(1, Ordering::Relaxed);
             }
 
@@ -427,7 +422,7 @@ impl DMAControl for UserSpaceDMA {
                     ptr_device,
                     btt_this as u64,
                     true,
-                )?;
+                );
                 self.read_cntr.fetch_add(1, Ordering::Relaxed)
             };
 
@@ -438,7 +433,7 @@ impl DMAControl for UserSpaceDMA {
             ptr_device += btt_this as u64;
         }
 
-        while used_buffers.len() > 0 {
+        while !used_buffers.is_empty() {
             self.release_buffer(&mut used_buffers, data)?;
             self.update_interrupts()?;
             thread::yield_now();

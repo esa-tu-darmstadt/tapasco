@@ -345,7 +345,7 @@ impl Drop for TLKM {
 
 impl TLKM {
     /// Open the driver chardev.
-    pub fn new() -> Result<TLKM> {
+    pub fn new() -> Result<Self> {
         let default_config = include_str!("../config/default.toml");
         let mut settings = Config::default();
 
@@ -379,7 +379,7 @@ impl TLKM {
             .open(&path)
             .context(DriverOpen { filename: path })?;
 
-        Ok(TLKM {
+        Ok(Self {
             file: Arc::new(file),
             settings: Arc::new(settings),
         })
@@ -390,7 +390,7 @@ impl TLKM {
     /// The version is provided as an undocumented string.
     /// Unstable and not intended for parsing by downstream code.
     pub fn version(&self) -> Result<String> {
-        let mut version: tlkm_ioctl_version_cmd = Default::default();
+        let mut version = tlkm_ioctl_version_cmd::default();
         unsafe {
             tlkm_ioctl_version(self.file.as_raw_fd(), &mut version).context(IOCTLVersion)?;
         };
@@ -399,7 +399,7 @@ impl TLKM {
             .trim_matches(char::from(0))
             .to_string();
         trace!("Retrieved TLKM version as {}", s);
-        Ok(s.to_string())
+        Ok(s)
     }
 
     /// Retrieve length of device enumeration structure.
@@ -410,7 +410,7 @@ impl TLKM {
     /// [`device_enum_info`]: #method.device_enum_info
     pub fn device_enum_len(&self) -> Result<usize> {
         trace!("Fetching available devices from driver.");
-        let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
+        let mut devices = tlkm_ioctl_enum_devices_cmd::default();
         unsafe {
             tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnum)?;
         };
@@ -427,7 +427,7 @@ impl TLKM {
     /// [`DeviceInfo`]: struct.DeviceInfo.html
     pub fn device_enum_info(&self) -> Result<Vec<DeviceInfo>> {
         trace!("Fetching available devices from driver.");
-        let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
+        let mut devices = tlkm_ioctl_enum_devices_cmd::default();
         unsafe {
             tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnum)?;
         };
@@ -477,7 +477,7 @@ impl TLKM {
         debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
     ) -> Result<Device> {
         trace!("Fetching available devices from driver.");
-        let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
+        let mut devices = tlkm_ioctl_enum_devices_cmd::default();
         unsafe {
             tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnum)?;
         };
@@ -491,7 +491,7 @@ impl TLKM {
                 devices.devs[x].dev_id = x as u32;
             }
             if devices.devs[x].dev_id == id {
-                return Ok(Device::new(
+                return Device::new(
                     self.file.clone(),
                     devices.devs[x].dev_id,
                     devices.devs[x].vendor_id,
@@ -502,10 +502,10 @@ impl TLKM {
                     self.settings.clone(),
                     debug_impls,
                 )
-                .context(DeviceError)?);
+                .context(DeviceError);
             }
         }
-        Err(Error::DeviceNotFound { id: id })
+        Err(Error::DeviceNotFound { id })
     }
 
     /// Allocates all devices available.
@@ -520,7 +520,7 @@ impl TLKM {
         debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
     ) -> Result<Vec<Device>> {
         trace!("Fetching available devices from driver.");
-        let mut devices: tlkm_ioctl_enum_devices_cmd = Default::default();
+        let mut devices = tlkm_ioctl_enum_devices_cmd::default();
         unsafe {
             tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnum)?;
         };

@@ -93,31 +93,31 @@ impl GenericAllocator {
         address: DeviceAddress,
         size: DeviceSize,
         alignment: DeviceSize,
-    ) -> Result<GenericAllocator> {
+    ) -> Result<Self> {
         if size == 0 {
-            return Err(Error::InvalidSize { size: size });
+            return Err(Error::InvalidSize { size });
         }
         if alignment == 0 {
             return Err(Error::InvalidAlignment {
-                alignment: alignment,
+                alignment
             });
         }
-        Ok(GenericAllocator {
+        Ok(Self {
             memory_free: vec![MemoryFree {
                 base: address,
-                size: size,
+                size,
             }],
             memory_used: Vec::new(),
-            alignment: alignment,
+            alignment,
         })
     }
 
-    fn fix_alignment(&self, size: DeviceSize) -> DeviceSize {
+    const fn fix_alignment(&self, size: DeviceSize) -> DeviceSize {
         // Works for 64 bit values, prone to overflow on 32 bit
         (size + (self.alignment - 1)) & !(self.alignment - 1)
     }
 
-    fn merge_memory(&mut self) -> () {
+    fn merge_memory(&mut self) {
         let mut i = 0;
         trace!("Merging memory, currently at {:?}.", self.memory_free);
         while i < self.memory_free.len() {
@@ -143,7 +143,7 @@ impl GenericAllocator {
 impl Allocator for GenericAllocator {
     fn allocate(&mut self, size: DeviceSize, _va: Option<u64>) -> Result<DeviceAddress> {
         if size == 0 {
-            return Err(Error::InvalidSize { size: size });
+            return Err(Error::InvalidSize { size });
         }
         trace!("Looking for free memory.");
         let size_aligned = self.fix_alignment(size);
@@ -168,12 +168,9 @@ impl Allocator for GenericAllocator {
             }
         }
 
-        match element_found {
-            Some(x) => {
-                trace!("Removing empty segment.");
-                self.memory_free.remove(x);
-            }
-            None => (),
+        if let Some(x) = element_found {
+            trace!("Removing empty segment.");
+            self.memory_free.remove(x);
         };
 
         match addr_found {
@@ -184,7 +181,7 @@ impl Allocator for GenericAllocator {
 
     fn allocate_fixed(&mut self, size: DeviceSize, offset: DeviceAddress) -> Result<DeviceAddress> {
         if size == 0 {
-            return Err(Error::InvalidSize { size: size });
+            return Err(Error::InvalidSize { size });
         }
         trace!("Looking for free memory at offset 0x{:x}.", offset);
         let size_aligned = self.fix_alignment(size);
@@ -205,38 +202,35 @@ impl Allocator for GenericAllocator {
             }
         }
 
-        match element_found {
-            Some(x) => {
-                trace!("Splitting old segment.");
-                if self.memory_free[x].base == offset {
-                    self.memory_free[x].base += size_aligned;
-                    self.memory_free[x].size -= size_aligned;
-                } else {
-                    let left_size = offset - self.memory_free[x].base;
+        if let Some(x) = element_found {
+            trace!("Splitting old segment.");
+            if self.memory_free[x].base == offset {
+                self.memory_free[x].base += size_aligned;
+                self.memory_free[x].size -= size_aligned;
+            } else {
+                let left_size = offset - self.memory_free[x].base;
 
-                    let split_segment = MemoryFree {
-                        base: offset + size_aligned,
-                        size: self.memory_free[x].size - (left_size + size_aligned),
-                    };
+                let split_segment = MemoryFree {
+                    base: offset + size_aligned,
+                    size: self.memory_free[x].size - (left_size + size_aligned),
+                };
 
-                    if split_segment.size > 0 {
-                        self.memory_free.insert(x + 1, split_segment);
-                        trace!("New segment right of allocated area: {:?}.", split_segment);
-                    }
-
-                    self.memory_free[x].size = left_size;
+                if split_segment.size > 0 {
+                    self.memory_free.insert(x + 1, split_segment);
+                    trace!("New segment right of allocated area: {:?}.", split_segment);
                 }
-                if self.memory_free[x].size == 0 {
-                    trace!("Segment left of allocated area empty -> Removed.");
-                    self.memory_free.remove(x);
-                } else {
-                    trace!(
-                        "New segment left of allocated area: {:?}.",
-                        self.memory_free[x]
-                    );
-                }
+
+                self.memory_free[x].size = left_size;
             }
-            None => (),
+            if self.memory_free[x].size == 0 {
+                trace!("Segment left of allocated area empty -> Removed.");
+                self.memory_free.remove(x);
+            } else {
+                trace!(
+                    "New segment left of allocated area: {:?}.",
+                    self.memory_free[x]
+                );
+            }
         };
 
         match addr_found {
@@ -250,7 +244,7 @@ impl Allocator for GenericAllocator {
                 );
                 Err(Error::FixedNotAvailable {
                     size: size_aligned,
-                    offset: offset,
+                    offset,
                 })
             }
         }
@@ -262,7 +256,7 @@ impl Allocator for GenericAllocator {
                 let m = self.memory_used[x];
                 self.memory_used.remove(x);
                 trace!("Freeing memory segment {:?}", m);
-                if self.memory_free.len() == 0 {
+                if self.memory_free.is_empty() {
                     trace!("No free memory right now, adding directly.");
                     self.memory_free.push(m);
                 } else {
@@ -273,14 +267,14 @@ impl Allocator for GenericAllocator {
                         }
                         None => {
                             trace!("Adding memory to the end.");
-                            self.memory_free.push(m)
+                            self.memory_free.push(m);
                         }
                     };
                 }
                 self.merge_memory();
                 Ok(())
             }
-            None => Err(Error::UnknownMemory { ptr: ptr }),
+            None => Err(Error::UnknownMemory { ptr }),
         }
     }
 }
@@ -457,8 +451,8 @@ pub struct DriverAllocator {
     tlkm_file: Arc<File>,
 }
 impl DriverAllocator {
-    pub fn new(tlkm_file: &Arc<File>) -> Result<DriverAllocator> {
-        Ok(DriverAllocator {
+    pub fn new(tlkm_file: &Arc<File>) -> Result<Self> {
+        Ok(Self {
             tlkm_file: tlkm_file.clone(),
         })
     }
@@ -476,7 +470,7 @@ impl Allocator for DriverAllocator {
                 trace!("Received address 0x{:x} from driver.", cmd.dev_addr);
                 Ok(cmd.dev_addr)
             }
-            Err(_e) => Err(Error::OutOfMemory { size: size }),
+            Err(_e) => Err(Error::OutOfMemory { size }),
         }
     }
 
@@ -509,8 +503,8 @@ pub struct VfioAllocator {
     vfio_dev: Arc<VfioDev>,
 }
 impl VfioAllocator {
-    pub fn new(vfio_dev: &Arc<VfioDev>) -> Result<VfioAllocator> {
-        Ok(VfioAllocator {
+    pub fn new(vfio_dev: &Arc<VfioDev>) -> Result<Self> {
+        Ok(Self {
             vfio_dev: vfio_dev.clone(),
         })
     }
@@ -570,8 +564,14 @@ impl Allocator for VfioAllocator {
 pub struct DummyAllocator {}
 
 impl DummyAllocator {
-    pub fn new() -> DummyAllocator {
-        DummyAllocator {}
+    pub const fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Default for DummyAllocator {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

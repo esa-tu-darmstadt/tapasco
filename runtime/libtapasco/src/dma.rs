@@ -92,8 +92,8 @@ pub struct DriverDMA {
 }
 
 impl DriverDMA {
-    pub fn new(tlkm_file: &Arc<File>) -> DriverDMA {
-        DriverDMA {
+    pub fn new(tlkm_file: &Arc<File>) -> Self {
+        Self {
             tlkm_file: tlkm_file.clone(),
         }
     }
@@ -148,14 +148,12 @@ impl DMAControl for DriverDMA {
 
 #[derive(Debug, Getters)]
 pub struct VfioDMA {
-    tlkm_file: Arc<File>,
     vfio_dev: Arc<VfioDev>,
 }
 
 impl VfioDMA {
-    pub fn new(tlkm_file: &Arc<File>, vfio_dev: &Arc<VfioDev>) -> VfioDMA {
-        VfioDMA {
-            tlkm_file: tlkm_file.clone(),
+    pub fn new(vfio_dev: &Arc<VfioDev>) -> Self {
+        Self {
             vfio_dev: vfio_dev.clone(),
         }
     }
@@ -183,7 +181,7 @@ impl DMAControl for VfioDMA {
             "Copy Host({:?}) -> Device(0x{:x}) ({} Bytes). Map va=0x{:x} -> iova=0x{:x} len=0x{:x}",
             data.as_ptr(), iova, data.len(), va_start, iova_start, map_len
         );
-        return match vfio_dma_map(&self.vfio_dev, map_len, HP_OFFS + iova_start, va_start) {
+        match vfio_dma_map(&self.vfio_dev, map_len, HP_OFFS + iova_start, va_start) {
             Ok(_) => Ok(()),
             Err(e) => Err(Error::VfioError {source: e})
         }
@@ -215,11 +213,11 @@ pub struct DirectDMA {
 }
 
 impl DirectDMA {
-    pub fn new(offset: DeviceAddress, size: DeviceSize, memory: Arc<MmapMut>) -> DirectDMA {
-        DirectDMA {
-            offset: offset,
-            size: size,
-            memory: memory,
+    pub fn new(offset: DeviceAddress, size: DeviceSize, memory: Arc<MmapMut>) -> Self {
+        Self {
+            offset,
+            size,
+            memory,
         }
     }
 }
@@ -229,8 +227,8 @@ impl DMAControl for DirectDMA {
         let end = ptr + data.len() as u64;
         if end > self.size {
             return Err(Error::OutOfRange {
-                ptr: ptr,
-                end: end,
+                ptr,
+                end,
                 size: self.size,
             });
         }
@@ -248,7 +246,7 @@ impl DMAControl for DirectDMA {
         unsafe {
             let p = self.memory.as_ptr().offset((self.offset + ptr) as isize) as *mut u8;
             let s = std::ptr::slice_from_raw_parts_mut(p, data.len());
-            (*s).clone_from_slice(&data[..]);
+            (*s).clone_from_slice(data);
         }
 
         Ok(())
@@ -258,8 +256,8 @@ impl DMAControl for DirectDMA {
         let end = ptr + data.len() as u64;
         if end > self.size {
             return Err(Error::OutOfRange {
-                ptr: ptr,
-                end: end,
+                ptr,
+                end,
                 size: self.size,
             });
         }
@@ -289,8 +287,8 @@ pub struct SVMDMA {
 }
 
 impl SVMDMA {
-    pub fn new(tlkm_file: &Arc<File>) -> SVMDMA {
-        SVMDMA {
+    pub fn new(tlkm_file: &Arc<File>) -> Self {
+        Self {
             tlkm_file: tlkm_file.clone(),
         }
     }
@@ -306,7 +304,7 @@ impl DMAControl for SVMDMA {
                 self.tlkm_file.as_raw_fd(),
                 &mut tlkm_svm_migrate_cmd {
                     vaddr: base,
-                    size: size,
+                    size,
                 },
             ).context(DMAToDevice)?;
         }
@@ -323,7 +321,7 @@ impl DMAControl for SVMDMA {
                 self.tlkm_file.as_raw_fd(),
                 &mut tlkm_svm_migrate_cmd {
                     vaddr: base,
-                    size: size,
+                    size,
                 },
             ).context(DMAFromDevice)?;
         }

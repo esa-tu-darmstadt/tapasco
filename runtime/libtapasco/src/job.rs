@@ -29,7 +29,7 @@ use std::sync::Arc;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
     fn from(_error: std::sync::PoisonError<T>) -> Self {
-        Error::MutexError {}
+        Self::MutexError {}
     }
 }
 
@@ -103,8 +103,8 @@ impl Job {
     /// Not used directly. Request a Job through [`acquire_pe`].
     ///
     /// [`acquire_pe`]: ../device/struct.Device.html#method.acquire_pe
-    pub fn new(pe: PE, scheduler: &Arc<Scheduler>) -> Job {
-        Job {
+    pub fn new(pe: PE, scheduler: &Arc<Scheduler>) -> Self {
+        Self {
             pe: Some(pe),
             scheduler: scheduler.clone(),
         }
@@ -258,10 +258,10 @@ impl Job {
             trace!("Setting argument {} => {:?}.", i, arg);
             match arg {
                 PEParameter::Single32(_) => {
-                    self.pe.as_ref().unwrap().set_arg(i, arg).context(PEError)?
+                    self.pe.as_ref().unwrap().set_arg(i, arg).context(PEError)?;
                 }
                 PEParameter::Single64(_) => {
-                    self.pe.as_ref().unwrap().set_arg(i, arg).context(PEError)?
+                    self.pe.as_ref().unwrap().set_arg(i, arg).context(PEError)?;
                 }
                 PEParameter::DeviceAddress(x) => self
                     .pe
@@ -273,10 +273,10 @@ impl Job {
                     if *self.pe.as_ref().unwrap().svm_in_use() {
                         self.pe.as_ref().unwrap().set_arg(i, PEParameter::Single64(p as u64)).context(PEError)?;
                     } else {
-                        return Err(Error::UnsupportedSVMParameter {arg: arg})
+                        return Err(Error::UnsupportedSVMParameter { arg })
                     }
                 }
-                _ => return Err(Error::UnsupportedRegisterParameter { arg: arg }),
+                _ => return Err(Error::UnsupportedRegisterParameter { arg }),
             };
         }
         trace!("Arguments set.");
@@ -369,7 +369,7 @@ impl Job {
     pub fn enable_debug(&mut self) -> Result<()> {
         match &mut self.pe {
             Some(x) => x.enable_debug().context(PEError)?,
-            None => Err(Error::NoPEtoDebug {})?,
+            None => return Err(Error::NoPEtoDebug {}),
         }
         Ok(())
     }

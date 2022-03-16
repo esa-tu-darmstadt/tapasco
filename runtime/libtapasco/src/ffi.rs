@@ -112,6 +112,9 @@ pub extern "C" fn tapasco_last_error_length() -> c_int {
 /// If there are no recent errors then this returns `0` (because we wrote 0
 /// bytes). `-1` is returned if there are any errors, for example when passed a
 /// null pointer or a buffer of insufficient size.
+///
+/// # Safety
+/// TODO
 #[no_mangle]
 pub unsafe extern "C" fn tapasco_last_error_message(buffer: *mut c_char, length: c_int) -> c_int {
     if buffer.is_null() {
@@ -178,32 +181,34 @@ pub extern "C" fn tapasco_tlkm_new() -> *mut TLKM {
     }
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_tlkm_destroy(t: *mut TLKM) {
-    unsafe {
-        let _b: Box<TLKM> = Box::from_raw(t);
-    }
+pub unsafe extern "C" fn tapasco_tlkm_destroy(t: *mut TLKM) {
+    let _b: Box<TLKM> = Box::from_raw(t);
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_tlkm_version(t: *const TLKM, vers: *mut c_char, len: usize) -> i32 {
+pub unsafe extern "C" fn tapasco_tlkm_version(t: *const TLKM, vers: *mut c_char, len: usize) -> i32 {
     if t.is_null() {
         warn!("Null pointer passed into last_error_message() as the buffer");
         update_last_error(Error::NullPointerTLKM {});
         return -1;
     }
 
-    let tl = unsafe { &*t };
+    let tl = &*t;
     match tl.version().context(TLKMError) {
         Ok(x) => {
-            let is = unsafe { slice::from_raw_parts_mut(vers as *mut u8, len) };
+            let is = slice::from_raw_parts_mut(vers as *mut u8, len);
             if len < x.len() {
                 update_last_error(Error::VersionStringToShort { len: x.len() });
                 return -1;
             }
             is[..x.len()].copy_from_slice(x.as_bytes());
             is[len - 1] = 0;
-            return 0;
+            0
         }
         Err(e) => {
             update_last_error(e);
@@ -212,18 +217,20 @@ pub extern "C" fn tapasco_tlkm_version(t: *const TLKM, vers: *mut c_char, len: u
     }
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_tlkm_device_len(t: *const TLKM) -> isize {
+pub unsafe extern "C" fn tapasco_tlkm_device_len(t: *const TLKM) -> isize {
     if t.is_null() {
         warn!("Null pointer passed into tapasco_tlkm_device_len() as the buffer");
         update_last_error(Error::NullPointerTLKM {});
         return -1;
     }
 
-    let tl = unsafe { &*t };
+    let tl = &*t;
     match tl.device_enum_len().context(TLKMError) {
         Ok(x) => {
-            return x as isize;
+            x as isize
         }
         Err(e) => {
             update_last_error(e);
@@ -232,25 +239,27 @@ pub extern "C" fn tapasco_tlkm_device_len(t: *const TLKM) -> isize {
     }
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_tlkm_devices(t: *const TLKM, di: *mut DeviceInfo, len: usize) -> isize {
+pub unsafe extern "C" fn tapasco_tlkm_devices(t: *const TLKM, di: *mut DeviceInfo, len: usize) -> isize {
     if t.is_null() {
         warn!("Null pointer passed into tapasco_tlkm_devices() as the buffer");
         update_last_error(Error::NullPointerTLKM {});
         return -1;
     }
 
-    let tl = unsafe { &*t };
+    let tl = &*t;
     match tl.device_enum_info().context(TLKMError) {
         Ok(x) => {
             if len < x.len() {
-                update_last_error(Error::DeviceInfoToShort { len: len });
+                update_last_error(Error::DeviceInfoToShort { len });
                 return -1;
             }
-            let is = unsafe { slice::from_raw_parts_mut(di, len) };
+            let is = slice::from_raw_parts_mut(di, len);
             is[..x.len()].copy_from_slice(&x);
 
-            return 0;
+            0
         }
         Err(e) => {
             update_last_error(e);
@@ -259,44 +268,48 @@ pub extern "C" fn tapasco_tlkm_devices(t: *const TLKM, di: *mut DeviceInfo, len:
     }
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_tlkm_devices_destroy(di: *mut DeviceInfo, len: usize) -> isize {
+pub unsafe extern "C" fn tapasco_tlkm_devices_destroy(di: *mut DeviceInfo, len: usize) -> isize {
     if di.is_null() {
         warn!("Null pointer passed into tapasco_tlkm_devices_destroy() as the buffer");
         update_last_error(Error::NullPointerTLKM {});
         return -1;
     }
-    let is = unsafe { slice::from_raw_parts_mut(di, len) };
-    for i in is.into_iter() {
+    let is = slice::from_raw_parts_mut(di, len);
+    for i in is.iter_mut() {
         let p = i.name();
-        let _s = unsafe { std::ffi::CString::from_raw(p as *mut c_char) };
+        let _s = std::ffi::CString::from_raw(p as *mut c_char);
     }
-    return 0;
+    0
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_tlkm_device_alloc(t: *const TLKM, id: DeviceId) -> *mut Device {
+pub unsafe extern "C" fn tapasco_tlkm_device_alloc(t: *const TLKM, id: DeviceId) -> *mut Device {
     if t.is_null() {
         warn!("Null pointer passed into tapasco_tlkm_devices() as the buffer");
         update_last_error(Error::NullPointerTLKM {});
         return ptr::null_mut();
     }
 
-    let tl = unsafe { &*t };
+    let tl = &*t;
     match tl.device_alloc(id, &HashMap::new()).context(TLKMError) {
         Ok(x) => std::boxed::Box::<Device>::into_raw(Box::new(x)),
         Err(e) => {
             update_last_error(e);
-            return ptr::null_mut();
+            ptr::null_mut()
         }
     }
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_tlkm_device_destroy(t: *mut Device) {
-    unsafe {
-        let _b: Box<Device> = Box::from_raw(t);
-    }
+pub unsafe extern "C" fn tapasco_tlkm_device_destroy(t: *mut Device) {
+    let _b: Box<Device> = Box::from_raw(t);
 }
 
 //////////////
@@ -314,41 +327,47 @@ pub extern "C" fn tapasco_job_param_new() -> *mut JobList {
     Box::into_raw(Box::new(Vec::new()))
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_job_param_destroy(t: *mut JobList) {
-    unsafe {
-        let _b: Box<JobList> = Box::from_raw(t);
-    }
+pub unsafe extern "C" fn tapasco_job_param_destroy(t: *mut JobList) {
+    let _b: Box<JobList> = Box::from_raw(t);
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_job_param_single32(param: u32, list: *mut JobList) -> *mut JobList {
+pub unsafe extern "C" fn tapasco_job_param_single32(param: u32, list: *mut JobList) -> *mut JobList {
     if list.is_null() {
         warn!("Null pointer passed into tapasco_job_param_single32() as the list");
         update_last_error(Error::NullPointerTLKM {});
         return ptr::null_mut();
     }
 
-    let tl = unsafe { &mut *list };
+    let tl = &mut *list;
     tl.push(PEParameter::Single32(param));
     list
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_job_param_single64(param: u64, list: *mut JobList) -> *mut JobList {
+pub unsafe extern "C" fn tapasco_job_param_single64(param: u64, list: *mut JobList) -> *mut JobList {
     if list.is_null() {
         warn!("Null pointer passed into tapasco_job_param_single32() as the list");
         update_last_error(Error::NullPointerTLKM {});
         return ptr::null_mut();
     }
 
-    let tl = unsafe { &mut *list };
+    let tl = &mut *list;
     tl.push(PEParameter::Single64(param));
     list
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_job_param_deviceaddress(
+pub unsafe extern "C" fn tapasco_job_param_deviceaddress(
     param: DeviceAddress,
     list: *mut JobList,
 ) -> *mut JobList {
@@ -358,13 +377,15 @@ pub extern "C" fn tapasco_job_param_deviceaddress(
         return ptr::null_mut();
     }
 
-    let tl = unsafe { &mut *list };
+    let tl = &mut *list;
     tl.push(PEParameter::DeviceAddress(param));
     list
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_job_param_alloc(
+pub unsafe extern "C" fn tapasco_job_param_alloc(
     dev: *mut Device,
     ptr: *mut u8,
     bytes: usize,
@@ -387,7 +408,7 @@ pub extern "C" fn tapasco_job_param_alloc(
         return ptr::null_mut();
     }
 
-    let d = unsafe { &mut *dev };
+    let d = &mut *dev;
 
     let mem = match d.default_memory().context(RetrieveDefaultMemory) {
         Ok(x) => x,
@@ -398,24 +419,26 @@ pub extern "C" fn tapasco_job_param_alloc(
         }
     };
 
-    let v = unsafe { Box::from_raw(slice::from_raw_parts_mut(ptr, bytes)) };
+    let v = Box::from_raw(slice::from_raw_parts_mut(ptr, bytes));
 
     let f = if uses_fixed { Some(fixed) } else { None };
 
-    let tl = unsafe { &mut *list };
+    let tl = &mut *list;
     tl.push(PEParameter::DataTransferAlloc(DataTransferAlloc {
         data: v,
-        from_device: from_device,
-        to_device: to_device,
-        free: free,
+        from_device,
+        to_device,
+        free,
         memory: mem,
         fixed: f,
     }));
     list
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_job_param_local(
+pub unsafe extern "C" fn tapasco_job_param_local(
     ptr: *mut u8,
     bytes: usize,
     to_device: bool,
@@ -431,23 +454,25 @@ pub extern "C" fn tapasco_job_param_local(
         return ptr::null_mut();
     }
 
-    let v = unsafe { Box::from_raw(slice::from_raw_parts_mut(ptr, bytes)) };
+    let v = Box::from_raw(slice::from_raw_parts_mut(ptr, bytes));
 
     let f = if uses_fixed { Some(fixed) } else { None };
 
-    let tl = unsafe { &mut *list };
+    let tl = &mut *list;
     tl.push(PEParameter::DataTransferLocal(DataTransferLocal {
         data: v,
-        from_device: from_device,
-        to_device: to_device,
-        free: free,
+        from_device,
+        to_device,
+        free,
         fixed: f,
     }));
     list
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_job_param_prealloc(
+pub unsafe extern "C" fn tapasco_job_param_prealloc(
     dev: *mut Device,
     ptr: *mut u8,
     addr: DeviceAddress,
@@ -469,7 +494,7 @@ pub extern "C" fn tapasco_job_param_prealloc(
         return ptr::null_mut();
     }
 
-    let d = unsafe { &mut *dev };
+    let d = &mut *dev;
 
     let mem = match d.default_memory().context(RetrieveDefaultMemory) {
         Ok(x) => x,
@@ -480,29 +505,31 @@ pub extern "C" fn tapasco_job_param_prealloc(
         }
     };
 
-    let v = unsafe { Box::from_raw(slice::from_raw_parts_mut(ptr, bytes)) };
+    let v = Box::from_raw(slice::from_raw_parts_mut(ptr, bytes));
 
-    let tl = unsafe { &mut *list };
+    let tl = &mut *list;
     tl.push(PEParameter::DataTransferPrealloc(DataTransferPrealloc {
         data: v,
         device_address: addr,
-        from_device: from_device,
-        to_device: to_device,
-        free: free,
+        from_device,
+        to_device,
+        free,
         memory: mem,
     }));
     list
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_job_param_virtualaddress(addr: *const u8, list: *mut JobList) -> *mut JobList {
+pub unsafe extern "C" fn tapasco_job_param_virtualaddress(addr: *const u8, list: *mut JobList) -> *mut JobList {
     if list.is_null() {
         warn!("Null pointer passed into tapasco_job_param_single32() as the list");
         update_last_error(Error::NullPointerTLKM {});
         return ptr::null_mut();
     }
 
-    let tl = unsafe { &mut *list };
+    let tl = &mut *list;
     tl.push(PEParameter::VirtualAddress(addr));
     list
 }
@@ -510,38 +537,45 @@ pub extern "C" fn tapasco_job_param_virtualaddress(addr: *const u8, list: *mut J
 /////////////////
 // Handle Device Access
 /////////////////
+
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_device_access(dev: *mut Device, access: tlkm_access) -> isize {
+pub unsafe extern "C" fn tapasco_device_access(dev: *mut Device, access: tlkm_access) -> isize {
     if dev.is_null() {
         warn!("Null pointer passed into tapasco_device_access() as the device");
         update_last_error(Error::NullPointerTLKM {});
         return -1;
     }
 
-    let tl = unsafe { &mut *dev };
+    let tl = &mut *dev;
     match tl.change_access(access).context(DeviceError) {
-        Ok(_) => return 0,
+        Ok(_) => 0,
         Err(e) => {
             update_last_error(e);
-            return -1;
+            -1
         }
     }
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_device_num_pes(dev: *mut Device, id: PEId) -> isize {
+pub unsafe extern "C" fn tapasco_device_num_pes(dev: *mut Device, id: PEId) -> isize {
     if dev.is_null() {
         warn!("Null pointer passed into tapasco_device_num_pes() as the device");
         update_last_error(Error::NullPointerTLKM {});
         return -1;
     }
 
-    let tl = unsafe { &mut *dev };
+    let tl = &mut *dev;
     tl.num_pes(id) as isize
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_device_get_pe_id(dev: *mut Device, name: *const c_char) -> PEId {
+pub unsafe extern "C" fn tapasco_device_get_pe_id(dev: *mut Device, name: *const c_char) -> PEId {
     if dev.is_null() {
         warn!("Null pointer passed into tapasco_device_get_pe_id() as the device");
         update_last_error(Error::NullPointerTLKM {});
@@ -554,45 +588,48 @@ pub extern "C" fn tapasco_device_get_pe_id(dev: *mut Device, name: *const c_char
         return PEId::MAX;
     }
 
-    let name_r = unsafe {
-        let s = CStr::from_ptr(name);
-        s.to_str().unwrap()
-    };
+    let s = CStr::from_ptr(name);
+    let name_r = s.to_str().unwrap();
 
-    let tl = unsafe { &mut *dev };
+    let tl = &mut *dev;
 
     match tl.get_pe_id(name_r).context(DeviceError) {
-        Ok(x) => return x,
+        Ok(x) => x,
         Err(e) => {
             update_last_error(e);
-            return PEId::MAX;
+            PEId::MAX
         }
-    };
+    }
 }
 
 /////////////////
 // Job Starting
 /////////////////
+
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_device_acquire_pe(dev: *mut Device, id: PEId) -> *mut Job {
+pub unsafe extern "C" fn tapasco_device_acquire_pe(dev: *mut Device, id: PEId) -> *mut Job {
     if dev.is_null() {
         warn!("Null pointer passed into tapasco_device_acquire_pe() as the device");
         update_last_error(Error::NullPointerTLKM {});
         return ptr::null_mut();
     }
 
-    let tl = unsafe { &mut *dev };
+    let tl = &mut *dev;
     match tl.acquire_pe(id).context(DeviceError) {
         Ok(x) => std::boxed::Box::<Job>::into_raw(Box::new(x)),
         Err(e) => {
             update_last_error(e);
-            return ptr::null_mut();
+            ptr::null_mut()
         }
     }
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_job_start(job: *mut Job, params: *mut *mut JobList) -> isize {
+pub unsafe extern "C" fn tapasco_job_start(job: *mut Job, params: *mut *mut JobList) -> isize {
     if job.is_null() {
         warn!("Null pointer passed into tapasco_job_start() as the job");
         update_last_error(Error::NullPointerTLKM {});
@@ -605,7 +642,7 @@ pub extern "C" fn tapasco_job_start(job: *mut Job, params: *mut *mut JobList) ->
         return -1;
     }
 
-    let jl_ptr: *mut JobList = unsafe { *params };
+    let jl_ptr: *mut JobList = *params;
 
     if jl_ptr.is_null() {
         warn!("Null pointer passed into tapasco_job_start() as the parameters");
@@ -613,35 +650,37 @@ pub extern "C" fn tapasco_job_start(job: *mut Job, params: *mut *mut JobList) ->
         return -1;
     }
 
-    let jl = unsafe { Box::from_raw(jl_ptr) };
-    unsafe { *params = ptr::null_mut() };
+    let jl = Box::from_raw(jl_ptr);
+    *params = ptr::null_mut();
 
     // Move out of Box
     let jl = *jl;
 
-    let tl = unsafe { &mut *job };
+    let tl = &mut *job;
     match tl.start(jl).context(JobError) {
         Ok(x) => {
-            for d in x.into_iter() {
+            for d in x {
                 // Make sure Rust doesn't release the memory received from C
                 let _p = std::boxed::Box::<[u8]>::into_raw(d);
             }
-            return 0;
+            0
         }
         Err(e) => {
             update_last_error(e);
-            return -1;
+            -1
         }
     }
 }
 
+/// # Safety
+/// TODO
 // The rust verison of this function returns an array of vectors that contain the returned vectors
-// The C and C++ side, however, supply "unsafe" pointers and expect the data to appearch there after
+// The C and C++ side, however, supply "unsafe" pointers and expect the data to appear there after
 // the job has been released.
 // Hence, the function currently does not return the result list but makes sure that the data is at the
 // correct location.
 #[no_mangle]
-pub extern "C" fn tapasco_job_release(
+pub unsafe extern "C" fn tapasco_job_release(
     job: *mut Job,
     return_value: *mut u64,
     release: bool,
@@ -652,26 +691,24 @@ pub extern "C" fn tapasco_job_release(
         return -1;
     }
 
-    let tl = unsafe { &mut *job };
+    let tl = &mut *job;
     match tl
         .release(release, !return_value.is_null())
         .context(JobError)
     {
         Ok(x) => {
-            for d in x.1.into_iter() {
+            for d in x.1 {
                 // Make sure Rust doesn't release the memory received from C
                 let _p = std::boxed::Box::<[u8]>::into_raw(d);
             }
             if !return_value.is_null() {
-                unsafe {
-                    *return_value = x.0;
-                }
+                *return_value = x.0;
             }
-            return 0;
+            0
         }
         Err(e) => {
             update_last_error(e);
-            return -1;
+            -1
         }
     }
 }
@@ -682,15 +719,17 @@ pub extern "C" fn tapasco_job_release(
 
 type TapascoOffchipMemory = Arc<OffchipMemory>;
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_get_default_memory(dev: *mut Device) -> *mut TapascoOffchipMemory {
+pub unsafe extern "C" fn tapasco_get_default_memory(dev: *mut Device) -> *mut TapascoOffchipMemory {
     if dev.is_null() {
         warn!("Null pointer passed into tapasco_get_default_memory() as the device");
         update_last_error(Error::NullPointerTLKM {});
         return ptr::null_mut();
     }
 
-    let tl = unsafe { &mut *dev };
+    let tl = &mut *dev;
     match tl.default_memory().context(DeviceError) {
         Ok(x) => Box::into_raw(Box::new(x)),
         Err(e) => {
@@ -700,15 +739,17 @@ pub extern "C" fn tapasco_get_default_memory(dev: *mut Device) -> *mut TapascoOf
     }
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_memory_destroy(t: *mut TapascoOffchipMemory) {
-    unsafe {
-        let _b: Box<TapascoOffchipMemory> = Box::from_raw(t);
-    }
+pub unsafe extern "C" fn tapasco_memory_destroy(t: *mut TapascoOffchipMemory) {
+    let _b: Box<TapascoOffchipMemory> = Box::from_raw(t);
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_memory_copy_to(
+pub unsafe extern "C" fn tapasco_memory_copy_to(
     mem: *mut TapascoOffchipMemory,
     data: *const u8,
     addr: DeviceAddress,
@@ -720,9 +761,9 @@ pub extern "C" fn tapasco_memory_copy_to(
         return -1;
     }
 
-    let s = unsafe { slice::from_raw_parts(data, len) };
+    let s = slice::from_raw_parts(data, len);
 
-    let tl = unsafe { &mut *mem };
+    let tl = &mut *mem;
     match tl.dma().copy_to(s, addr).context(DMAError) {
         Ok(_x) => 0,
         Err(e) => {
@@ -732,8 +773,10 @@ pub extern "C" fn tapasco_memory_copy_to(
     }
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_memory_copy_from(
+pub unsafe extern "C" fn tapasco_memory_copy_from(
     mem: *mut TapascoOffchipMemory,
     addr: DeviceAddress,
     data: *mut u8,
@@ -745,9 +788,9 @@ pub extern "C" fn tapasco_memory_copy_from(
         return -1;
     }
 
-    let s = unsafe { slice::from_raw_parts_mut(data, len) };
+    let s = slice::from_raw_parts_mut(data, len);
 
-    let tl = unsafe { &mut *mem };
+    let tl = &mut *mem;
     match tl.dma().copy_from(addr, s).context(DMAError) {
         Ok(_x) => 0,
         Err(e) => {
@@ -757,8 +800,10 @@ pub extern "C" fn tapasco_memory_copy_from(
     }
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_memory_allocate(
+pub unsafe extern "C" fn tapasco_memory_allocate(
     mem: *mut TapascoOffchipMemory,
     len: usize,
 ) -> DeviceAddress {
@@ -768,7 +813,7 @@ pub extern "C" fn tapasco_memory_allocate(
         return DeviceAddress::MAX;
     }
 
-    let tl = unsafe { &mut *mem };
+    let tl = &mut *mem;
     match tl
         .allocator()
         .lock()
@@ -784,8 +829,10 @@ pub extern "C" fn tapasco_memory_allocate(
     }
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_memory_allocate_fixed(
+pub unsafe extern "C" fn tapasco_memory_allocate_fixed(
     mem: *mut TapascoOffchipMemory,
     len: usize,
     offset: usize,
@@ -796,7 +843,7 @@ pub extern "C" fn tapasco_memory_allocate_fixed(
         return DeviceAddress::MAX;
     }
 
-    let tl = unsafe { &mut *mem };
+    let tl = &mut *mem;
     match tl
         .allocator()
         .lock()
@@ -812,8 +859,10 @@ pub extern "C" fn tapasco_memory_allocate_fixed(
     }
 }
 
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_memory_free(
+pub unsafe extern "C" fn tapasco_memory_free(
     mem: *mut TapascoOffchipMemory,
     addr: DeviceAddress,
 ) -> isize {
@@ -823,7 +872,7 @@ pub extern "C" fn tapasco_memory_free(
         return -1;
     }
 
-    let tl = unsafe { &mut *mem };
+    let tl = &mut *mem;
     match tl
         .allocator()
         .lock()
@@ -842,15 +891,18 @@ pub extern "C" fn tapasco_memory_free(
 ///////////////////////////////////
 // Status Information
 ///////////////////////////////////
+
+/// # Safety
+/// TODO
 #[no_mangle]
-pub extern "C" fn tapasco_device_design_frequency(dev: *mut Device) -> f32 {
+pub unsafe extern "C" fn tapasco_device_design_frequency(dev: *mut Device) -> f32 {
     if dev.is_null() {
         warn!("Null pointer passed into tapasco_device_design_frequency() as the device");
         update_last_error(Error::NullPointerTLKM {});
         return -1.0;
     }
 
-    let tl = unsafe { &mut *dev };
+    let tl = &mut *dev;
     match tl.design_frequency_mhz().context(DeviceError) {
         Ok(x) => x,
         Err(e) => {
@@ -860,8 +912,10 @@ pub extern "C" fn tapasco_device_design_frequency(dev: *mut Device) -> f32 {
     }
 }
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// # Safety
+/// TODO
 #[no_mangle]
 pub unsafe extern "C" fn tapasco_version(buffer: *mut c_char, length: usize) -> usize {
     let buffer = slice::from_raw_parts_mut(buffer as *mut u8, length);
@@ -886,6 +940,9 @@ pub unsafe extern "C" fn tapasco_version(buffer: *mut c_char, length: usize) -> 
 }
 
 #[no_mangle]
+// TODO: either remove extern C or wait for const extern fn to be stabilized:
+//pub const fn tapasco_version_len() -> usize {
+//pub const extern "C" fn tapasco_version_len() -> usize {
 pub extern "C" fn tapasco_version_len() -> usize {
     VERSION.len() + 1
 }
