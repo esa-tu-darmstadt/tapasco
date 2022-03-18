@@ -65,11 +65,11 @@ impl<'a> App<'a> {
         trace!("Creating new App for Tapasco state");
 
         // Get Tapasco Loadable Linux Kernel Module
-        let tlkm = TLKM::new().context(TLKMInit {})?;
+        let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
         // Allocate the device with the given ID
         let tlkm_device = tlkm
             .device_alloc(device_id, &HashMap::new())
-            .context(TLKMInit {})?;
+            .context(TLKMInitSnafu {})?;
 
         // For some access modes we need to take some special care to use them
         let access_mode_str = match access_mode {
@@ -84,7 +84,7 @@ impl<'a> App<'a> {
             //    // Change device access to exclusive to be able to acquire PEs
             //    tlkm_device
             //        .change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            //        .context(DeviceInit {})?;
+            //        .context(DeviceInitSnafu {})?;
             //    "Debug"
             //}
             AccessMode::Unsafe {} => {
@@ -109,7 +109,7 @@ impl<'a> App<'a> {
         ]);
         let title = format!("TaPaSCo Debugger - {} Mode", access_mode_str);
 
-        let tlkm_version = tlkm.version().context(TLKMInit {})?;
+        let tlkm_version = tlkm.version().context(TLKMInitSnafu {})?;
         let platform_base = tlkm_device
             .status()
             .platform_base
@@ -137,7 +137,7 @@ impl<'a> App<'a> {
             // Warning: casting to usize can panic! On a <32-bit system..
             let pe = tlkm_device
                 .acquire_pe_without_job(pe.id as usize)
-                .context(DeviceInit {})?;
+                .context(DeviceInitSnafu {})?;
             // TODO: There is no way to check that you really got the PE that you wanted
             // so I have to use this workaround to set it at the ID of the PE struct which
             // confusingly is NOT the pe.id from above which is stored at type_id inside the PE.

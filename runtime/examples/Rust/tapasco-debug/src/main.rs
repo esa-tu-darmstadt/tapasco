@@ -63,7 +63,7 @@ fn init() -> Result<()> {
     } = Opt::from_args();
 
     // Specify the Access Mode as subcommand and setup the App and UI
-    ui::setup(&mut app::App::new(device_id, subcommand).context(App {})?).context(UI {})
+    ui::setup(&mut app::App::new(device_id, subcommand).context(AppSnafu {})?).context(UISnafu {})
 }
 
 fn main() {

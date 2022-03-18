@@ -47,26 +47,26 @@ enum Event<I, H> {
 
 pub fn setup(app: &mut App) -> Result<()> {
     // Raw mode disables some common terminal functions that are unnecessary in the TUI environment
-    enable_raw_mode().context(Crossterm {})?;
+    enable_raw_mode().context(CrosstermSnafu {})?;
 
     // Enter the Alternate Screen, so we don't break terminal history (it's like opening vim)
     let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen).context(Crossterm {})?;
+    execute!(stdout, EnterAlternateScreen).context(CrosstermSnafu {})?;
 
     // Initialize Crossterm backend
     let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend).context(Crossterm {})?;
+    let mut terminal = Terminal::new(backend).context(CrosstermSnafu {})?;
 
     // Clear the Alternate Screen if someone left it dirty
-    terminal.clear().context(Crossterm {})?;
+    terminal.clear().context(CrosstermSnafu {})?;
 
     // Save the result of the main loop to return it after tearing down the backend
     let result = run_event_loop(app, &mut terminal);
 
     // Leave Alternate Screen to shut down cleanly regardless of the result
-    disable_raw_mode().context(Crossterm {})?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen).context(Crossterm {})?;
-    terminal.show_cursor().context(Crossterm {})?;
+    disable_raw_mode().context(CrosstermSnafu {})?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen).context(CrosstermSnafu {})?;
+    terminal.show_cursor().context(CrosstermSnafu {})?;
 
     // Return the result of the main loop after restoring the previous terminal state in order to
     // not be stuck in the Alternate Screen / or Raw Mode which would make a `reset` of the shell
@@ -100,7 +100,7 @@ fn run_event_loop<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Resu
         draw(app, terminal)?;
 
         // Handle events
-        match rx.recv().context(ReceiveInput {})? {
+        match rx.recv().context(ReceiveInputSnafu {})? {
             // Match key pressed events
             Event::Input(event) => {
                 trace!("Input event: {:?}", event);
@@ -216,7 +216,7 @@ fn draw<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Result<()> {
             2 => draw_tab_bitstream_and_device_info(f, app, tabs_chunks[2]),
             _ => {},
         }
-    }).context(Crossterm {})?;
+    }).context(CrosstermSnafu {})?;
 
     Ok(())
 }
