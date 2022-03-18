@@ -95,10 +95,14 @@ pub struct PE {
     id: usize,
     #[get = "pub"]
     type_id: PEId,
+    // This public getter is guarded behind conditional compilation for `tapasco-debug`:
+    #[cfg_attr(feature = "tapasco-debug", get = "pub")]
     offset: DeviceAddress,
     #[get = "pub"]
     active: bool,
     copy_back: Option<Vec<CopyBack>>,
+    // This public getter is guarded behind conditional compilation for `tapasco-debug`:
+    #[cfg_attr(feature = "tapasco-debug", get = "pub")]
     memory: Arc<MmapMut>,
 
     #[set = "pub"]

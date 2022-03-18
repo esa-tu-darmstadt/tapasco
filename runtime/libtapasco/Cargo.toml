@@ -12,6 +12,12 @@ opt-level = 3
 codegen-units = 1
 lto = "fat"
 
+[features]
+# There are no default features:
+default = []
+# Necessary when building `tapasco-debug` to make some things accessible that are usually hidden away:
+tapasco-debug = []
+
 [dependencies]
 log = "0.4.8"
 chrono = "0.4.11"
