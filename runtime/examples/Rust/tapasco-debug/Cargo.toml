@@ -7,13 +7,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tui = { version = "0.16.0", default-features = false, features = ['crossterm'] }
-crossterm = "0.21.0"
+tui = { version = "0.17.0", default-features = false, features = ['crossterm'] }
+crossterm = "0.22.0"
 tapasco = { path = "../../../libtapasco", features = ["tapasco-debug"] }
-snafu = "0.6.10"
+snafu = "0.7.0"
 chrono = "0.4.19"
 log = "0.4.14"
 env_logger = "0.9.0"
-structopt = "0.3.23"
+clap = { version = "3.1.6", features = ["derive"] }
 memmap = "0.7.0"
 unicode-width = "0.1.9"

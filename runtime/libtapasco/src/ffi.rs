@@ -172,7 +172,7 @@ pub extern "C" fn tapasco_init_logging() {
 // Generates a new driver access which can be used to query verison information and devices
 #[no_mangle]
 pub extern "C" fn tapasco_tlkm_new() -> *mut TLKM {
-    match TLKM::new().context(TLKMError) {
+    match TLKM::new().context(TLKMSnafu) {
         Ok(x) => std::boxed::Box::<TLKM>::into_raw(Box::new(x)),
         Err(e) => {
             update_last_error(e);
@@ -199,7 +199,7 @@ pub unsafe extern "C" fn tapasco_tlkm_version(t: *const TLKM, vers: *mut c_char,
     }
 
     let tl = &*t;
-    match tl.version().context(TLKMError) {
+    match tl.version().context(TLKMSnafu) {
         Ok(x) => {
             let is = slice::from_raw_parts_mut(vers as *mut u8, len);
             if len < x.len() {
@@ -228,7 +228,7 @@ pub unsafe extern "C" fn tapasco_tlkm_device_len(t: *const TLKM) -> isize {
     }
 
     let tl = &*t;
-    match tl.device_enum_len().context(TLKMError) {
+    match tl.device_enum_len().context(TLKMSnafu) {
         Ok(x) => {
             x as isize
         }
@@ -250,7 +250,7 @@ pub unsafe extern "C" fn tapasco_tlkm_devices(t: *const TLKM, di: *mut DeviceInf
     }
 
     let tl = &*t;
-    match tl.device_enum_info().context(TLKMError) {
+    match tl.device_enum_info().context(TLKMSnafu) {
         Ok(x) => {
             if len < x.len() {
                 update_last_error(Error::DeviceInfoToShort { len });
@@ -296,7 +296,7 @@ pub unsafe extern "C" fn tapasco_tlkm_device_alloc(t: *const TLKM, id: DeviceId)
     }
 
     let tl = &*t;
-    match tl.device_alloc(id, &HashMap::new()).context(TLKMError) {
+    match tl.device_alloc(id, &HashMap::new()).context(TLKMSnafu) {
         Ok(x) => std::boxed::Box::<Device>::into_raw(Box::new(x)),
         Err(e) => {
             update_last_error(e);
@@ -410,7 +410,7 @@ pub unsafe extern "C" fn tapasco_job_param_alloc(
 
     let d = &mut *dev;
 
-    let mem = match d.default_memory().context(RetrieveDefaultMemory) {
+    let mem = match d.default_memory().context(RetrieveDefaultMemorySnafu) {
         Ok(x) => x,
         Err(e) => {
             warn!("Failed to retrieve default memory from device.");
@@ -496,7 +496,7 @@ pub unsafe extern "C" fn tapasco_job_param_prealloc(
 
     let d = &mut *dev;
 
-    let mem = match d.default_memory().context(RetrieveDefaultMemory) {
+    let mem = match d.default_memory().context(RetrieveDefaultMemorySnafu) {
         Ok(x) => x,
         Err(e) => {
             warn!("Failed to retrieve default memory from device.");
@@ -549,7 +549,7 @@ pub unsafe extern "C" fn tapasco_device_access(dev: *mut Device, access: tlkm_ac
     }
 
     let tl = &mut *dev;
-    match tl.change_access(access).context(DeviceError) {
+    match tl.change_access(access).context(DeviceSnafu) {
         Ok(_) => 0,
         Err(e) => {
             update_last_error(e);
@@ -593,7 +593,7 @@ pub unsafe extern "C" fn tapasco_device_get_pe_id(dev: *mut Device, name: *const
 
     let tl = &mut *dev;
 
-    match tl.get_pe_id(name_r).context(DeviceError) {
+    match tl.get_pe_id(name_r).context(DeviceSnafu) {
         Ok(x) => x,
         Err(e) => {
             update_last_error(e);
@@ -617,7 +617,7 @@ pub unsafe extern "C" fn tapasco_device_acquire_pe(dev: *mut Device, id: PEId) -
     }
 
     let tl = &mut *dev;
-    match tl.acquire_pe(id).context(DeviceError) {
+    match tl.acquire_pe(id).context(DeviceSnafu) {
         Ok(x) => std::boxed::Box::<Job>::into_raw(Box::new(x)),
         Err(e) => {
             update_last_error(e);
@@ -657,7 +657,7 @@ pub unsafe extern "C" fn tapasco_job_start(job: *mut Job, params: *mut *mut JobL
     let jl = *jl;
 
     let tl = &mut *job;
-    match tl.start(jl).context(JobError) {
+    match tl.start(jl).context(JobSnafu) {
         Ok(x) => {
             for d in x {
                 // Make sure Rust doesn't release the memory received from C
@@ -694,7 +694,7 @@ pub unsafe extern "C" fn tapasco_job_release(
     let tl = &mut *job;
     match tl
         .release(release, !return_value.is_null())
-        .context(JobError)
+        .context(JobSnafu)
     {
         Ok(x) => {
             for d in x.1 {
@@ -730,7 +730,7 @@ pub unsafe extern "C" fn tapasco_get_default_memory(dev: *mut Device) -> *mut Ta
     }
 
     let tl = &mut *dev;
-    match tl.default_memory().context(DeviceError) {
+    match tl.default_memory().context(DeviceSnafu) {
         Ok(x) => Box::into_raw(Box::new(x)),
         Err(e) => {
             update_last_error(e);
@@ -764,7 +764,7 @@ pub unsafe extern "C" fn tapasco_memory_copy_to(
     let s = slice::from_raw_parts(data, len);
 
     let tl = &mut *mem;
-    match tl.dma().copy_to(s, addr).context(DMAError) {
+    match tl.dma().copy_to(s, addr).context(DMASnafu) {
         Ok(_x) => 0,
         Err(e) => {
             update_last_error(e);
@@ -791,7 +791,7 @@ pub unsafe extern "C" fn tapasco_memory_copy_from(
     let s = slice::from_raw_parts_mut(data, len);
 
     let tl = &mut *mem;
-    match tl.dma().copy_from(addr, s).context(DMAError) {
+    match tl.dma().copy_from(addr, s).context(DMASnafu) {
         Ok(_x) => 0,
         Err(e) => {
             update_last_error(e);
@@ -819,7 +819,7 @@ pub unsafe extern "C" fn tapasco_memory_allocate(
         .lock()
         .unwrap()
         .allocate(len as u64, None)
-        .context(AllocatorError)
+        .context(AllocatorSnafu)
     {
         Ok(x) => x,
         Err(e) => {
@@ -849,7 +849,7 @@ pub unsafe extern "C" fn tapasco_memory_allocate_fixed(
         .lock()
         .unwrap()
         .allocate_fixed(len as u64, offset as u64)
-        .context(AllocatorError)
+        .context(AllocatorSnafu)
     {
         Ok(x) => x,
         Err(e) => {
@@ -878,7 +878,7 @@ pub unsafe extern "C" fn tapasco_memory_free(
         .lock()
         .unwrap()
         .free(addr)
-        .context(AllocatorError)
+        .context(AllocatorSnafu)
     {
         Ok(_x) => 0,
         Err(e) => {
@@ -903,7 +903,7 @@ pub unsafe extern "C" fn tapasco_device_design_frequency(dev: *mut Device) -> f3
     }
 
     let tl = &mut *dev;
-    match tl.design_frequency_mhz().context(DeviceError) {
+    match tl.design_frequency_mhz().context(DeviceSnafu) {
         Ok(x) => x,
         Err(e) => {
             update_last_error(e);

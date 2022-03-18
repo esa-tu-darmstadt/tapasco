@@ -166,10 +166,10 @@ pub const fn to_page_boundary(x: u64) -> u64 {
 // get VFIO group number of tapasco platform device from sysfs
 fn get_vfio_group(settings: &Arc<Config>) -> Result<i32, Error> {
     let dev_path = settings
-        .get_str("tlkm.vfio_device")
-        .context(ConfigError)?;
+        .get_string("tlkm.vfio_device")
+        .context(ConfigSnafu)?;
     let iommu_group_path = read_link(&dev_path)
-        .context(VfioNoGroup {file: &dev_path} )?;
+        .context(VfioNoGroupSnafu {file: &dev_path} )?;
     let iommu_group = iommu_group_path.file_name().unwrap().to_str().unwrap();
 
     Ok(iommu_group.parse().unwrap())
@@ -182,7 +182,7 @@ pub fn init_vfio(settings: Arc<Config>) -> Result<VfioDev, Error> {
         .read(true)
         .write(true)
         .open(container_path)
-        .context(VfioOpen { file: container_path })?;
+        .context(VfioOpenSnafu { file: container_path })?;
 
     let mut ret = unsafe { vfio_get_api_version(container.as_raw_fd()) }.unwrap();
     if ret != VFIO_API_VERSION as i32 {
@@ -203,7 +203,7 @@ pub fn init_vfio(settings: Arc<Config>) -> Result<VfioDev, Error> {
         .read(true)
         .write(true)
         .open(&group_path)
-        .context(VfioNoGroup {file: &group_path} )?;
+        .context(VfioNoGroupSnafu {file: &group_path} )?;
 
     let mut group_status = vfio_group_status {
         argsz: std::mem::size_of::<vfio_group_status>() as u32,

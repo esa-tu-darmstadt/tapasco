@@ -154,13 +154,13 @@ impl Job {
                                 .allocator()
                                 .lock()?
                                 .allocate_fixed(x.data.len() as u64, offset)
-                                .context(AllocatorError)?,
+                                .context(AllocatorSnafu)?,
                             None => x
                                 .memory
                                 .allocator()
                                 .lock()?
                                 .allocate(x.data.len() as u64, Some(x.data.as_ptr() as u64))
-                                .context(AllocatorError)?,
+                                .context(AllocatorSnafu)?,
                         }
                     };
 
@@ -197,7 +197,7 @@ impl Job {
                         x.memory
                             .dma()
                             .copy_to(&x.data[..], x.device_address)
-                            .context(DMAError)?;
+                            .context(DMASnafu)?;
                     }
 
                     xs.push(PEParameter::DeviceAddress(x.device_address));
@@ -258,20 +258,20 @@ impl Job {
             trace!("Setting argument {} => {:?}.", i, arg);
             match arg {
                 PEParameter::Single32(_) => {
-                    self.pe.as_ref().unwrap().set_arg(i, arg).context(PEError)?;
+                    self.pe.as_ref().unwrap().set_arg(i, arg).context(PESnafu)?;
                 }
                 PEParameter::Single64(_) => {
-                    self.pe.as_ref().unwrap().set_arg(i, arg).context(PEError)?;
+                    self.pe.as_ref().unwrap().set_arg(i, arg).context(PESnafu)?;
                 }
                 PEParameter::DeviceAddress(x) => self
                     .pe
                     .as_ref()
                     .unwrap()
                     .set_arg(i, PEParameter::Single64(x))
-                    .context(PEError)?,
+                    .context(PESnafu)?,
                 PEParameter::VirtualAddress(p) => {
                     if *self.pe.as_ref().unwrap().svm_in_use() {
-                        self.pe.as_ref().unwrap().set_arg(i, PEParameter::Single64(p as u64)).context(PEError)?;
+                        self.pe.as_ref().unwrap().set_arg(i, PEParameter::Single64(p as u64)).context(PESnafu)?;
                     } else {
                         return Err(Error::UnsupportedSVMParameter { arg })
                     }
@@ -281,7 +281,7 @@ impl Job {
         }
         trace!("Arguments set.");
         trace!("Starting PE {} execution.", self.pe.as_ref().unwrap().id());
-        self.pe.as_mut().unwrap().start().context(PEError)?;
+        self.pe.as_mut().unwrap().start().context(PESnafu)?;
         trace!("PE {} started.", self.pe.as_ref().unwrap().id());
         Ok(unused_mem)
     }
@@ -289,7 +289,7 @@ impl Job {
     /// Just wait for a PE's completion. Useful for measuring execution time.
     pub fn wait_for_completion(&mut self) -> Result<()> {
         if self.pe.is_some() {
-            self.pe.as_mut().unwrap().wait_for_completion().context(PEError)
+            self.pe.as_mut().unwrap().wait_for_completion().context(PESnafu)
         } else {
             Err(Error::NoPEtoRelease {})
         }
@@ -317,13 +317,13 @@ impl Job {
                 .as_mut()
                 .unwrap()
                 .release(return_value)
-                .context(PEError)?;
+                .context(PESnafu)?;
             trace!("PE is idle.");
 
             if release_pe {
                 self.scheduler
                     .release_pe(self.pe.take().unwrap())
-                    .context(SchedulerError)?;
+                    .context(SchedulerSnafu)?;
             }
             trace!("Release successful.");
             match copyback {
@@ -337,19 +337,19 @@ impl Job {
                                     .memory
                                     .dma()
                                     .copy_from(transfer.device_address, &mut transfer.data[..])
-                                    .context(DMAError)?;
+                                    .context(DMASnafu)?;
                                 if transfer.free {
                                     transfer
                                         .memory
                                         .allocator()
                                         .lock()?
                                         .free(transfer.device_address)
-                                        .context(AllocatorError)?;
+                                        .context(AllocatorSnafu)?;
                                 }
                                 res.push(transfer.data);
                             }
                             CopyBack::Free(addr, mem) => {
-                                mem.allocator().lock()?.free(addr).context(AllocatorError)?;
+                                mem.allocator().lock()?.free(addr).context(AllocatorSnafu)?;
                             }
                             CopyBack::Return(transfer) => {
                                 res.push(transfer.data);
@@ -368,7 +368,7 @@ impl Job {
 
     pub fn enable_debug(&mut self) -> Result<()> {
         match &mut self.pe {
-            Some(x) => x.enable_debug().context(PEError)?,
+            Some(x) => x.enable_debug().context(PESnafu)?,
             None => return Err(Error::NoPEtoDebug {}),
         }
         Ok(())

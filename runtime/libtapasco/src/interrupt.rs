@@ -61,9 +61,9 @@ impl Drop for Interrupt {
 impl Interrupt {
     pub fn new(tlkm_file: &File, interrupt_id: usize, blocking: bool) -> Result<Self> {
         let fd = if blocking {
-            eventfd(0, EfdFlags::empty()).context(ErrorEventFD)?
+            eventfd(0, EfdFlags::empty()).context(ErrorEventFDSnafu)?
         } else {
-            eventfd(0, EfdFlags::EFD_NONBLOCK).context(ErrorEventFD)?
+            eventfd(0, EfdFlags::EFD_NONBLOCK).context(ErrorEventFDSnafu)?
         };
         let mut ioctl_fd = tlkm_register_interrupt {
             fd,
@@ -72,7 +72,7 @@ impl Interrupt {
 
         unsafe {
             tlkm_ioctl_reg_interrupt(tlkm_file.as_raw_fd(), &mut ioctl_fd)
-                .context(ErrorEventFDRegister)?;
+                .context(ErrorEventFDRegisterSnafu)?;
         };
 
         Ok(Self { interrupt: fd })
@@ -92,18 +92,10 @@ impl Interrupt {
                     return Ok(u64::from_ne_bytes(buf));
                 }
                 Err(e) => {
-                    let e_no = e.as_errno();
-                    match e_no {
-                        Some(e_no_matched) => {
-                            if e_no_matched == nix::errno::Errno::EAGAIN {
-                                std::thread::yield_now();
-                            } else {
-                                r.context(ErrorEventFDRead)?;
-                            }
-                        }
-                        None => {
-                            r.context(ErrorEventFDRead)?;
-                        }
+                    if e == nix::errno::Errno::EAGAIN {
+                        std::thread::yield_now();
+                    } else {
+                        r.context(ErrorEventFDReadSnafu)?;
                     }
                 }
             }
@@ -125,18 +117,10 @@ impl Interrupt {
                     return Ok(u64::from_ne_bytes(buf));
                 }
                 Err(e) => {
-                    let e_no = e.as_errno();
-                    match e_no {
-                        Some(e_no_matched) => {
-                            if e_no_matched == nix::errno::Errno::EAGAIN {
-                                return Ok(0);
-                            }
-
-                            r.context(ErrorEventFDRead)?;
-                        }
-                        None => {
-                            r.context(ErrorEventFDRead)?;
-                        }
+                    if e == nix::errno::Errno::EAGAIN {
+                        return Ok(0);
+                    } else {
+                        r.context(ErrorEventFDReadSnafu)?;
                     }
                 }
             }

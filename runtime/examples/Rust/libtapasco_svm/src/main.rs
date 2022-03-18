@@ -44,10 +44,10 @@ fn run_arrayinit(device: Arc<Device>, arrayinit_id: PEId) -> Result<()> {
         // -> wrapping the pointer in the VirtualAddress argument type provides a
         //    check whether the loaded bitstream actually supports SVM
         let arg_vec = vec![PEParameter::VirtualAddress(v_boxed.as_ptr())];
-        let mut pe = device.acquire_pe(arrayinit_id).context(DeviceInit {})?;
-        pe.start(arg_vec).context(JobError {})?;
+        let mut pe = device.acquire_pe(arrayinit_id).context(DeviceInitSnafu {})?;
+        pe.start(arg_vec).context(JobSnafu {})?;
 
-        let _out_args = pe.release(true, false).context(JobError {})?;
+        let _out_args = pe.release(true, false).context(JobSnafu {})?;
 
         // check array
         let p = v_boxed.as_ptr() as *mut i32;
@@ -82,13 +82,13 @@ fn run_arrayinit(device: Arc<Device>, arrayinit_id: PEId) -> Result<()> {
             from_device: true,
             to_device: true,
             free: true,         // this parameter has no influence when SVM is active
-            memory: device.default_memory().context(DeviceInit {})?, // other memories currently not supported
+            memory: device.default_memory().context(DeviceInitSnafu {})?, // other memories currently not supported
             fixed: None,
         })];
-        let mut pe = device.acquire_pe(arrayinit_id).context(DeviceInit {})?;
-        pe.start(arg_vec).context(JobError {})?;
+        let mut pe = device.acquire_pe(arrayinit_id).context(DeviceInitSnafu {})?;
+        pe.start(arg_vec).context(JobSnafu {})?;
 
-        let (_ret, out_vecs) = pe.release(true, false).context(JobError {})?;
+        let (_ret, out_vecs) = pe.release(true, false).context(JobSnafu {})?;
 
         // check array
         let p = out_vecs[0].as_ptr() as *mut i32;
@@ -133,9 +133,9 @@ fn run_arraysum(device: Arc<Device>, arraysum_id: PEId) -> Result<()> {
         // -> wrapping the pointer in the VirtualAddress argument type provides a
         //    check whether the loaded bitstream actually supports SVM
         let arg_vec = vec![PEParameter::VirtualAddress(v_boxed.as_ptr())];
-        let mut pe = device.acquire_pe(arraysum_id).context(DeviceInit {})?;
-        pe.start(arg_vec).context(JobError {})?;
-        let (ret, _out_vecs) = pe.release(true, true).context(JobError {})?;
+        let mut pe = device.acquire_pe(arraysum_id).context(DeviceInitSnafu {})?;
+        pe.start(arg_vec).context(JobSnafu {})?;
+        let (ret, _out_vecs) = pe.release(true, true).context(JobSnafu {})?;
         // check result
         if ret != ARRAY_SUM_RESULT {
             failed_runs += 1;
@@ -165,13 +165,13 @@ fn run_arraysum(device: Arc<Device>, arraysum_id: PEId) -> Result<()> {
             from_device: false,
             to_device: true,
             free: true,         // this parameter has no influence when SVM is active
-            memory: device.default_memory().context(DeviceInit {})?, // other memories currently not supported
+            memory: device.default_memory().context(DeviceInitSnafu {})?, // other memories currently not supported
             fixed: None,
         })];
-        let mut pe = device.acquire_pe(arraysum_id).context(DeviceInit {})?;
-        pe.start(arg_vec).context(JobError {})?;
+        let mut pe = device.acquire_pe(arraysum_id).context(DeviceInitSnafu {})?;
+        pe.start(arg_vec).context(JobSnafu {})?;
 
-        let (ret, _out_vecs) = pe.release(true, true).context(JobError {})?;
+        let (ret, _out_vecs) = pe.release(true, true).context(JobSnafu {})?;
 
         // check result
         if ret != ARRAY_SUM_RESULT {
@@ -207,10 +207,10 @@ fn run_arrayupdate(device: Arc<Device>, arrayupdate_id: PEId) -> Result<()> {
         // -> wrapping the pointer in the VirtualAddress argument type provides a
         //    check whether the loaded bitstream actually supports SVM
         let arg_vec = vec![PEParameter::VirtualAddress(v_boxed.as_ptr())];
-        let mut pe = device.acquire_pe(arrayupdate_id).context(DeviceInit {})?;
-        pe.start(arg_vec).context(JobError {})?;
+        let mut pe = device.acquire_pe(arrayupdate_id).context(DeviceInitSnafu {})?;
+        pe.start(arg_vec).context(JobSnafu {})?;
 
-        let _out_args = pe.release(true, false).context(JobError {})?;
+        let _out_args = pe.release(true, false).context(JobSnafu {})?;
 
         // check array
         let p = v_boxed.as_ptr() as *mut i32;
@@ -248,13 +248,13 @@ fn run_arrayupdate(device: Arc<Device>, arrayupdate_id: PEId) -> Result<()> {
             from_device: true,
             to_device: true,
             free: true,         // this parameter has no influence when SVM is active
-            memory: device.default_memory().context(DeviceInit {})?, // other memories currently not supported
+            memory: device.default_memory().context(DeviceInitSnafu {})?, // other memories currently not supported
             fixed: None,
         })];
-        let mut pe = device.acquire_pe(arrayupdate_id).context(DeviceInit {})?;
-        pe.start(arg_vec).context(JobError {})?;
+        let mut pe = device.acquire_pe(arrayupdate_id).context(DeviceInitSnafu {})?;
+        pe.start(arg_vec).context(JobSnafu {})?;
 
-        let (_ret, out_vecs) = pe.release(true, false).context(JobError {})?;
+        let (_ret, out_vecs) = pe.release(true, false).context(JobSnafu {})?;
 
         // check array
         let p = out_vecs[0].as_ptr() as *mut i32;
@@ -296,28 +296,28 @@ fn run_pipeline(device: Arc<Device>, arrayinit_id: PEId, arraysum_id: PEId, arra
         from_device: false,
         to_device: true,
         free: true,         // this parameter has no influence when SVM is active
-        memory: device.default_memory().context(DeviceInit {})?, // other memories currently not supported
+        memory: device.default_memory().context(DeviceInitSnafu {})?, // other memories currently not supported
         fixed: None,
     })];
-    let mut arrayinit_pe = device.acquire_pe(arrayinit_id).context(DeviceInit {})?;
-    arrayinit_pe.start(arrayinit_args).context(JobError {})?;
+    let mut arrayinit_pe = device.acquire_pe(arrayinit_id).context(DeviceInitSnafu {})?;
+    arrayinit_pe.start(arrayinit_args).context(JobSnafu {})?;
 
     // do not forget to regain ownership of our array (returned in out_vecs vector although we did not set 'from_device'!)
-    let (_ret, out_init) = arrayinit_pe.release(true, false).context(JobError {})?;
+    let (_ret, out_init) = arrayinit_pe.release(true, false).context(JobSnafu {})?;
 
     // for arrayupdate and arraysum we now simply pass the array's base address since
     // the data is already present in device memory
     let arrayupdate_args = vec![PEParameter::VirtualAddress(out_init[0].as_ptr())];
-    let mut arrayupdate_pe = device.acquire_pe(arrayupdate_id).context(DeviceInit {})?;
-    arrayupdate_pe.start(arrayupdate_args).context(JobError {})?;
+    let mut arrayupdate_pe = device.acquire_pe(arrayupdate_id).context(DeviceInitSnafu {})?;
+    arrayupdate_pe.start(arrayupdate_args).context(JobSnafu {})?;
 
-    let (_ret, _out_update) = arrayupdate_pe.release(true, false).context(JobError {})?;
+    let (_ret, _out_update) = arrayupdate_pe.release(true, false).context(JobSnafu {})?;
 
     let arraysum_args = vec![PEParameter::VirtualAddress(out_init[0].as_ptr())];
-    let mut arraysum_pe = device.acquire_pe(arraysum_id).context(DeviceInit {})?;
-    arraysum_pe.start(arraysum_args).context(JobError {})?;
+    let mut arraysum_pe = device.acquire_pe(arraysum_id).context(DeviceInitSnafu {})?;
+    arraysum_pe.start(arraysum_args).context(JobSnafu {})?;
 
-    let (ret, _out_sum) = arraysum_pe.release(true, true).context(JobError {})?;
+    let (ret, _out_sum) = arraysum_pe.release(true, true).context(JobSnafu {})?;
 
     // calculate reference result
     let mut ref_sum = 0u64;
@@ -337,11 +337,11 @@ fn run_pipeline(device: Arc<Device>, arrayinit_id: PEId, arraysum_id: PEId, arra
 fn main() -> Result<()> {
     env_logger::init();
 
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit {})?;
+            .context(DeviceInitSnafu {})?;
 
         // get IDs
         let arrayinit_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:arrayinit:1.0") {

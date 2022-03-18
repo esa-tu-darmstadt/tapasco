@@ -7,12 +7,11 @@ extern crate tapasco;
 #[macro_use]
 extern crate log;
 extern crate indicatif;
-#[macro_use]
 extern crate clap;
 extern crate uom;
 
 use average::{concatenate, Estimate, Max, MeanWithError, Min};
-use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
+use clap::{Command, Arg, ArgMatches};
 use crossbeam::thread;
 use indicatif::{HumanBytes, ProgressBar, ProgressStyle};
 use itertools::Itertools;
@@ -70,15 +69,15 @@ impl<T> From<std::sync::PoisonError<T>> for Error {
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 fn print_version(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let ver = tlkm.version().context(TLKMInit {})?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let ver = tlkm.version().context(TLKMInitSnafu {})?;
     println!("TLKM version is {}", ver);
     Ok(())
 }
 
 fn enum_devices(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit {})?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu {})?;
     println!("Got {} devices.", devices.len());
     for x in devices {
         println!(
@@ -93,21 +92,21 @@ fn enum_devices(_: &ArgMatches) -> Result<()> {
 }
 
 fn allocate_devices(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let mut devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit {})?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let mut devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu {})?;
 
     for x in devices.iter_mut() {
         println!("Allocating ID {} exclusively.", x.id());
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit {})?;
+            .context(DeviceInitSnafu {})?;
     }
 
     Ok(())
 }
 
 fn print_status(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for x in devices {
         println!("Device {}", x.id());
         println!("{:?}", x.status());
@@ -116,16 +115,16 @@ fn print_status(_: &ArgMatches) -> Result<()> {
 }
 
 fn run_arrayinit(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit {})?;
+            .context(DeviceInitSnafu {})?;
         let counter_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:arrayinit:1.0") {
             Ok(x) => x,
             Err(_e) => 11,
         };
-        let mut pe = x.acquire_pe(counter_id).context(DeviceInit)?;
+        let mut pe = x.acquire_pe(counter_id).context(DeviceInitSnafu)?;
 
         pe.start(vec![tapasco::device::PEParameter::DataTransferAlloc(
             tapasco::device::DataTransferAlloc {
@@ -133,23 +132,23 @@ fn run_arrayinit(_: &ArgMatches) -> Result<()> {
                 free: true,
                 from_device: true,
                 to_device: false,
-                memory: x.default_memory().context(DeviceInit)?,
+                memory: x.default_memory().context(DeviceInitSnafu)?,
                 fixed: None,
             },
         )])
-        .context(JobError)?;
+        .context(JobSnafu)?;
 
-        println!("{:?}", pe.release(true, false).context(JobError)?);
+        println!("{:?}", pe.release(true, false).context(JobSnafu)?);
     }
     Ok(())
 }
 
 fn run_counter(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit {})?;
+            .context(DeviceInitSnafu {})?;
 
         let counter_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:counter:0.9") {
             Ok(x) => x,
@@ -157,32 +156,32 @@ fn run_counter(_: &ArgMatches) -> Result<()> {
         };
 
         let mut pes = Vec::new();
-        pes.push(x.acquire_pe(counter_id).context(DeviceInit)?);
-        pes.push(x.acquire_pe(counter_id).context(DeviceInit)?);
-        pes.push(x.acquire_pe(counter_id).context(DeviceInit)?);
-        pes.push(x.acquire_pe(counter_id).context(DeviceInit)?);
+        pes.push(x.acquire_pe(counter_id).context(DeviceInitSnafu)?);
+        pes.push(x.acquire_pe(counter_id).context(DeviceInitSnafu)?);
+        pes.push(x.acquire_pe(counter_id).context(DeviceInitSnafu)?);
+        pes.push(x.acquire_pe(counter_id).context(DeviceInitSnafu)?);
         for _ in 0..10 {
             for pe in &mut pes.iter_mut() {
                 pe.start(vec![tapasco::device::PEParameter::Single64(1000)])
-                    .context(JobError)?;
+                    .context(JobSnafu)?;
             }
             for pe in &mut pes.iter_mut() {
-                pe.release(false, false).context(JobError)?;
+                pe.release(false, false).context(JobSnafu)?;
             }
         }
         for mut pe in pes {
-            pe.release(true, false).context(JobError)?;
+            pe.release(true, false).context(JobSnafu)?;
         }
     }
     Ok(())
 }
 
 fn benchmark_counter(m: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices.into_iter() {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit)?;
+            .context(DeviceInitSnafu)?;
 
         let counter_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:counter:0.9") {
             Ok(x) => x,
@@ -190,12 +189,12 @@ fn benchmark_counter(m: &ArgMatches) -> Result<()> {
         };
 
         let x_l = Arc::new(x);
-        let iterations = value_t!(m, "iterations", usize).unwrap();
-        let mut num_threads = value_t!(m, "threads", i32).unwrap();
+        let iterations: usize = m.value_of_t("iterations").unwrap();
+        let mut num_threads = m.value_of_t("threads").unwrap();
         if num_threads == -1 {
             num_threads = num_cpus::get() as i32;
         }
-        let pb_step: usize = value_t!(m, "pb_step", usize).unwrap();
+        let pb_step: usize = m.value_of_t("pb_step").unwrap();
         println!(
             "Starting {} thread benchmark with {} iterations and {} step.",
             num_threads, iterations, pb_step
@@ -217,12 +216,12 @@ fn benchmark_counter(m: &ArgMatches) -> Result<()> {
                     s.spawn(|_| {
                         let x_local = x_l.clone();
                         let mut pe =
-                            { x_local.acquire_pe(counter_id).context(DeviceInit).unwrap() };
+                            { x_local.acquire_pe(counter_id).context(DeviceInitSnafu).unwrap() };
                         for i in 0..iterations_per_threads {
                             pe.start(vec![tapasco::device::PEParameter::Single64(1)])
-                                .context(JobError)
+                                .context(JobSnafu)
                                 .unwrap();
-                            pe.release(false, false).context(JobError).unwrap();
+                            pe.release(false, false).context(JobSnafu).unwrap();
                             if i > 0 && i % pb_step == 0 {
                                 pb.inc(pb_step as u64);
                             }
@@ -254,16 +253,16 @@ concatenate!(
 );
 
 fn latency_benchmark(m: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices {
         println!("Evaluating device {:?}", x.id());
-        let design_mhz = x.design_frequency_mhz().context(DeviceInit)?;
+        let design_mhz = x.design_frequency_mhz().context(DeviceInitSnafu)?;
         println!("Counter running with {:?} MHz.", design_mhz);
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit {})?;
-        let mut iterations = value_t!(m, "iterations", usize).unwrap();
-        let max_step = value_t!(m, "steps", u32).unwrap();
+            .context(DeviceInitSnafu {})?;
+        let mut iterations = m.value_of_t("iterations").unwrap();
+        let max_step = m.value_of_t("steps").unwrap();
         println!("Starting benchmark.");
 
         let counter_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:counter:0.9") {
@@ -284,14 +283,14 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
                 "Checking {:.0} us execution (I {}): ",
                 step_duration_ns, iterations
             );
-            io::stdout().flush().context(IOError)?;
+            io::stdout().flush().context(IOSnafu)?;
 
             for _ in 0..iterations {
-                let mut pe = x.acquire_pe(counter_id).context(DeviceInit)?;
+                let mut pe = x.acquire_pe(counter_id).context(DeviceInitSnafu)?;
                 let now = Instant::now();
                 pe.start(vec![tapasco::device::PEParameter::Single64(step)])
-                    .context(JobError)?;
-                pe.release(true, false).context(JobError)?;
+                    .context(JobSnafu)?;
+                pe.release(true, false).context(JobSnafu)?;
                 let dur = now.elapsed();
                 let diff = Time::new::<nanosecond>(dur.as_nanos() as f32)
                     - Time::new::<nanosecond>(step_duration_ns);
@@ -310,14 +309,14 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
 }
 
 fn test_copy(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices {
         println!("Evaluating device {}", x.id());
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit {})?;
+            .context(DeviceInitSnafu {})?;
 
-        let mem = x.default_memory().context(DeviceInit)?;
+        let mem = x.default_memory().context(DeviceInitSnafu)?;
 
         let mut small_rng = StdRng::from_entropy();
 
@@ -328,7 +327,7 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
                 .allocator()
                 .lock()?
                 .allocate(len as u64, None)
-                .context(AllocatorError)?;
+                .context(AllocatorSnafu)?;
 
             let mut golden_samples: Vec<u8> = Vec::new();
             let mut result: Vec<u8> = Vec::new();
@@ -337,8 +336,8 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
                 result.push(255);
             }
 
-            mem.dma().copy_to(&golden_samples, a).context(DMAError)?;
-            mem.dma().copy_from(a, &mut result).context(DMAError)?;
+            mem.dma().copy_to(&golden_samples, a).context(DMASnafu)?;
+            mem.dma().copy_from(a, &mut result).context(DMASnafu)?;
 
             let not_matching = golden_samples
                 .iter()
@@ -360,7 +359,7 @@ fn test_copy(_: &ArgMatches) -> Result<()> {
                 }
             }
 
-            mem.allocator().lock()?.free(a).context(AllocatorError)?;
+            mem.allocator().lock()?.free(a).context(AllocatorSnafu)?;
         }
     }
     Ok(())
@@ -397,9 +396,9 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
         env::set_var("tapasco_dma__write_buffers", format!("{}", num));
         env::set_var("tapasco_dma__read_buffer_size", format!("{}", size));
         env::set_var("tapasco_dma__write_buffer_size", format!("{}", size));
-        let tlkm = TLKM::new().context(TLKMInit {})?;
-        let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
-        let mem = devices[0].default_memory().context(DeviceInit)?;
+        let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+        let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
+        let mem = devices[0].default_memory().context(DeviceInitSnafu)?;
 
         println!("Testing {} x {}kB", num, size);
 
@@ -418,11 +417,11 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
                 .allocator()
                 .lock()?
                 .allocate(chunk as u64, None)
-                .context(AllocatorError)?;
+                .context(AllocatorSnafu)?;
 
             let now = Instant::now();
             for _ in 0..repetitions_used {
-                mem.dma().copy_to(&data[0..chunk], a).context(DMAError)?;
+                mem.dma().copy_to(&data[0..chunk], a).context(DMASnafu)?;
             }
             let done = now.elapsed().as_secs_f64();
 
@@ -446,7 +445,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
             for _ in 0..repetitions_used {
                 mem.dma()
                     .copy_from(a, &mut data[0..chunk])
-                    .context(DMAError)?;
+                    .context(DMASnafu)?;
             }
             let done = now.elapsed().as_secs_f64();
 
@@ -466,7 +465,7 @@ fn evaluate_copy(_m: &ArgMatches) -> Result<()> {
                 }
             }
 
-            mem.allocator().lock()?.free(a).context(AllocatorError)?;
+            mem.allocator().lock()?.free(a).context(AllocatorSnafu)?;
         }
     }
 
@@ -506,12 +505,12 @@ fn transfer_to(
         .allocator()
         .lock()?
         .allocate(chunk as u64, None)
-        .context(AllocatorError)?;
+        .context(AllocatorSnafu)?;
     let mut transferred = 0;
     let mut incr = 0;
 
     while transferred < bytes {
-        mem.dma().copy_to(&data, a).context(DMAError)?;
+        mem.dma().copy_to(&data, a).context(DMASnafu)?;
         transferred += chunk;
         if incr % 1024 == 0 {
             pb.inc((chunk * 1024) as u64);
@@ -519,7 +518,7 @@ fn transfer_to(
         incr += 1;
     }
 
-    mem.allocator().lock()?.free(a).context(AllocatorError)?;
+    mem.allocator().lock()?.free(a).context(AllocatorSnafu)?;
 
     Ok(())
 }
@@ -535,12 +534,12 @@ fn transfer_from(
         .allocator()
         .lock()?
         .allocate(chunk as u64, None)
-        .context(AllocatorError)?;
+        .context(AllocatorSnafu)?;
     let mut transferred = 0;
     let mut incr = 0;
 
     while transferred < bytes {
-        mem.dma().copy_from(a, &mut data).context(DMAError)?;
+        mem.dma().copy_from(a, &mut data).context(DMASnafu)?;
         transferred += chunk;
         if incr % 1024 == 0 {
             pb.inc((chunk * 1024) as u64);
@@ -548,29 +547,29 @@ fn transfer_from(
         incr += 1;
     }
 
-    mem.allocator().lock()?.free(a).context(AllocatorError)?;
+    mem.allocator().lock()?.free(a).context(AllocatorSnafu)?;
 
     Ok(())
 }
 
 fn benchmark_copy(m: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices.into_iter() {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit)?;
+            .context(DeviceInitSnafu)?;
         let x_l = Arc::new(x);
-        let max_size_power = value_t!(m, "max_bytes", usize).unwrap();
-        let max_size = usize::pow(2, max_size_power as u32);
+        let max_size_power: u32 = m.value_of_t("max_bytes").unwrap();
+        let max_size = usize::pow(2, max_size_power);
 
-        let total_bytes_power = value_t!(m, "total_bytes", usize).unwrap();
-        let total_bytes = usize::pow(2, total_bytes_power as u32);
+        let total_bytes_power: u32 = m.value_of_t("total_bytes").unwrap();
+        let total_bytes = usize::pow(2, total_bytes_power);
 
-        let mut num_threads = value_t!(m, "threads", i32).unwrap();
+        let mut num_threads = m.value_of_t("threads").unwrap();
         if num_threads == -1 {
             num_threads = num_cpus::get() as i32;
         }
-        let _pb_step: usize = value_t!(m, "pb_step", usize).unwrap();
+        let _pb_step: usize = m.value_of_t("pb_step").unwrap();
         println!(
             "Starting {} thread transfer benchmark with maximum of {} per transfer and total {}.",
             num_threads,
@@ -674,12 +673,12 @@ fn benchmark_copy(m: &ArgMatches) -> Result<()> {
 }
 
 fn test_localmem(_: &ArgMatches) -> Result<()> {
-    let tlkm = TLKM::new().context(TLKMInit {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInit)?;
+    let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
+    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
     for mut x in devices {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
-            .context(DeviceInit {})?;
-        let mut pe = x.acquire_pe(42).context(DeviceInit)?;
+            .context(DeviceInitSnafu {})?;
+        let mut pe = x.acquire_pe(42).context(DeviceInitSnafu)?;
         pe.start(vec![tapasco::device::PEParameter::DataTransferLocal(
             tapasco::device::DataTransferLocal {
                 data: vec![0, 1, 2, 3, 4, 5, 6].into_boxed_slice(),
@@ -689,9 +688,9 @@ fn test_localmem(_: &ArgMatches) -> Result<()> {
                 fixed: None,
             },
         )])
-        .context(JobError)?;
+        .context(JobSnafu)?;
 
-        let r = pe.release(true, false).context(JobError)?;
+        let r = pe.release(true, false).context(JobSnafu)?;
         println!("{:?}", r);
     }
     Ok(())
@@ -700,61 +699,61 @@ fn test_localmem(_: &ArgMatches) -> Result<()> {
 fn main() -> Result<()> {
     env_logger::init();
 
-    let matches = App::new("libtapasco_tests")
-        .setting(AppSettings::ArgRequiredElseHelp)
+    let matches = Command::new("libtapasco_tests")
+        .arg_required_else_help(true)
         .subcommand(
-            SubCommand::with_name("version").about("Print information about the driver version."),
+            Command::new("version").about("Print information about the driver version."),
         )
         .subcommand(
-            SubCommand::with_name("enum")
+            Command::new("enum")
                 .about("Print information about the available TLKM devices."),
         )
         .subcommand(
-            SubCommand::with_name("allocate").about("Try to exclusively allocate all devices."),
+            Command::new("allocate").about("Try to exclusively allocate all devices."),
         )
         .subcommand(
-            SubCommand::with_name("status").about("Print status core information of all devices."),
+            Command::new("status").about("Print status core information of all devices."),
         )
-        .subcommand(SubCommand::with_name("run_counter").about("Runs a counter with ID 14."))
+        .subcommand(Command::new("run_counter").about("Runs a counter with ID 14."))
         .subcommand(
-            SubCommand::with_name("run_arrayinit").about("Runs an arrayinit instance with ID 11."),
+            Command::new("run_arrayinit").about("Runs an arrayinit instance with ID 11."),
         )
         .subcommand(
-            SubCommand::with_name("benchmark_copy")
+            Command::new("benchmark_copy")
                 .about("Runs a copy benchmark for r, w and rw.")
                 .arg(
-                    Arg::with_name("pb_disable")
-                        .short("p")
+                    Arg::new("pb_disable")
+                        .short('p')
                         .long("pb_disable")
                         .help("Disables the progress bar to avoid overhead."),
                 )
                 .arg(
-                    Arg::with_name("pb_step")
-                        .short("s")
+                    Arg::new("pb_step")
+                        .short('s')
                         .long("pb_step")
                         .help("Step size for the progress bar.")
                         .takes_value(true)
                         .default_value("1000"),
                 )
                 .arg(
-                    Arg::with_name("max_bytes")
-                        .short("m")
+                    Arg::new("max_bytes")
+                        .short('m')
                         .long("max_bytes")
                         .help("Maximum number of bytes in a single transfer transfer log_2.")
                         .takes_value(true)
                         .default_value("24"),
                 )
                 .arg(
-                    Arg::with_name("total_bytes")
-                        .short("b")
+                    Arg::new("total_bytes")
+                        .short('b')
                         .long("total_bytes")
                         .help("Total number of bytes to transfer transfer log_2.")
                         .takes_value(true)
                         .default_value("30"),
                 )
                 .arg(
-                    Arg::with_name("threads")
-                        .short("t")
+                    Arg::new("threads")
+                        .short('t')
                         .long("threads")
                         .help("How many threads should be used? (-1 for auto)")
                         .takes_value(true)
@@ -762,33 +761,33 @@ fn main() -> Result<()> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("run_benchmark")
+            Command::new("run_benchmark")
                 .about("Runs a counter benchmark with ID 14.")
                 .arg(
-                    Arg::with_name("pb_disable")
-                        .short("p")
+                    Arg::new("pb_disable")
+                        .short('p')
                         .long("pb_disable")
                         .help("Disables the progress bar to avoid overhead."),
                 )
                 .arg(
-                    Arg::with_name("pb_step")
-                        .short("s")
+                    Arg::new("pb_step")
+                        .short('s')
                         .long("pb_step")
                         .help("Step size for the progress bar.")
                         .takes_value(true)
                         .default_value("1000"),
                 )
                 .arg(
-                    Arg::with_name("iterations")
-                        .short("i")
+                    Arg::new("iterations")
+                        .short('i')
                         .long("iterations")
                         .help("How many counter iterations.")
                         .takes_value(true)
                         .default_value("100000"),
                 )
                 .arg(
-                    Arg::with_name("threads")
-                        .short("t")
+                    Arg::new("threads")
+                        .short('t')
                         .long("threads")
                         .help("How many threads should be used? (-1 for auto)")
                         .takes_value(true)
@@ -796,19 +795,19 @@ fn main() -> Result<()> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("run_latency")
+            Command::new("run_latency")
                 .about("Runs a counter based latency check with ID 14.")
                 .arg(
-                    Arg::with_name("steps")
-                        .short("s")
+                    Arg::new("steps")
+                        .short('s')
                         .long("steps")
                         .help("Testing from 2**0 to 2**s.")
                         .takes_value(true)
                         .default_value("28"),
                 )
                 .arg(
-                    Arg::with_name("iterations")
-                        .short("i")
+                    Arg::new("iterations")
+                        .short('i')
                         .long("iterations")
                         .help("How many counter iterations.")
                         .takes_value(true)
@@ -816,32 +815,32 @@ fn main() -> Result<()> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("test_copy")
+            Command::new("test_copy")
                 .about("Tests the copy to and from the device on memory 0."),
         )
         .subcommand(
-            SubCommand::with_name("test_localmem")
+            Command::new("test_localmem")
                 .about("Tests running a job with local memory (uses ID 42)."),
         )
         .subcommand(
-            SubCommand::with_name("evaluate_copy")
+            Command::new("evaluate_copy")
                 .about("Find optimal buffer settings for current host/device combination."),
         )
         .get_matches();
 
     match match matches.subcommand() {
-        ("version", Some(m)) => print_version(m),
-        ("enum", Some(m)) => enum_devices(m),
-        ("allocate", Some(m)) => allocate_devices(m),
-        ("status", Some(m)) => print_status(m),
-        ("run_counter", Some(m)) => run_counter(m),
-        ("run_arrayinit", Some(m)) => run_arrayinit(m),
-        ("run_benchmark", Some(m)) => benchmark_counter(m),
-        ("run_latency", Some(m)) => latency_benchmark(m),
-        ("test_copy", Some(m)) => test_copy(m),
-        ("benchmark_copy", Some(m)) => benchmark_copy(m),
-        ("test_localmem", Some(m)) => test_localmem(m),
-        ("evaluate_copy", Some(m)) => evaluate_copy(m),
+        Some(("version", m)) => print_version(m),
+        Some(("enum", m)) => enum_devices(m),
+        Some(("allocate", m)) => allocate_devices(m),
+        Some(("status", m)) => print_status(m),
+        Some(("run_counter", m)) => run_counter(m),
+        Some(("run_arrayinit", m)) => run_arrayinit(m),
+        Some(("run_benchmark", m)) => benchmark_counter(m),
+        Some(("run_latency", m)) => latency_benchmark(m),
+        Some(("test_copy", m)) => test_copy(m),
+        Some(("benchmark_copy", m)) => benchmark_copy(m),
+        Some(("test_localmem", m)) => test_localmem(m),
+        Some(("evaluate_copy", m)) => evaluate_copy(m),
         _ => Err(Error::UnknownCommand {}),
     } {
         Ok(()) => Ok(()),

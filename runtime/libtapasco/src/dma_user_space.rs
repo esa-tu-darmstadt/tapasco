@@ -20,11 +20,11 @@
 
 use crate::device::DeviceAddress;
 use crate::device::DeviceSize;
-use crate::dma::DMABufferAllocate;
+use crate::dma::DMABufferAllocateSnafu;
 use crate::dma::DMAControl;
 use crate::dma::Error;
-use crate::dma::ErrorInterrupt;
-use crate::dma::FailedMMapDMA;
+use crate::dma::ErrorInterruptSnafu;
+use crate::dma::FailedMMapDMASnafu;
 use crate::interrupt::Interrupt;
 use crate::tlkm::tlkm_dma_buffer_allocate;
 use crate::tlkm::tlkm_dma_buffer_op;
@@ -45,7 +45,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::thread;
-use volatile::Volatile;
+use std::ptr::write_volatile;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
     fn from(_error: std::sync::PoisonError<T>) -> Self {
@@ -121,7 +121,7 @@ impl UserSpaceDMA {
             };
             unsafe {
                 tlkm_ioctl_dma_buffer_allocate(tlkm_file.as_raw_fd(), &mut to_dev_buf)
-                    .context(DMABufferAllocate)?;
+                    .context(DMABufferAllocateSnafu)?;
             };
 
             trace!("Retrieved {:?} for to_dev_buffer.", to_dev_buf);
@@ -135,7 +135,7 @@ impl UserSpaceDMA {
                         .len(write_buf_size)
                         .offset(((4 + to_dev_buf.buffer_id) * 4096) as u64)
                         .map_mut(tlkm_file)
-                        .context(FailedMMapDMA)?
+                        .context(FailedMMapDMASnafu)?
                 },
             });
         }
@@ -149,7 +149,7 @@ impl UserSpaceDMA {
             };
             unsafe {
                 tlkm_ioctl_dma_buffer_allocate(tlkm_file.as_raw_fd(), &mut from_dev_buf)
-                    .context(DMABufferAllocate)?;
+                    .context(DMABufferAllocateSnafu)?;
             };
 
             trace!("Retrieved {:?} for from_dev_buffer.", from_dev_buf);
@@ -163,7 +163,7 @@ impl UserSpaceDMA {
                         .len(read_buf_size)
                         .offset(((4 + from_dev_buf.buffer_id) * 4096) as u64)
                         .map_mut(tlkm_file)
-                        .context(FailedMMapDMA)?
+                        .context(FailedMMapDMASnafu)?
                 },
             });
         }
@@ -174,8 +174,8 @@ impl UserSpaceDMA {
             engine_offset: offset,
             to_dev_buffer: write_map,
             from_dev_buffer: read_map,
-            read_int: Interrupt::new(tlkm_file, read_interrupt, false).context(ErrorInterrupt)?,
-            write_int: Interrupt::new(tlkm_file, write_interrupt, false).context(ErrorInterrupt)?,
+            read_int: Interrupt::new(tlkm_file, read_interrupt, false).context(ErrorInterruptSnafu)?,
+            write_int: Interrupt::new(tlkm_file, write_interrupt, false).context(ErrorInterruptSnafu)?,
             write_out: Queue::new(),
             write_cntr: AtomicU64::new(0),
             write_int_cntr: AtomicU64::new(0),
@@ -198,29 +198,25 @@ impl UserSpaceDMA {
         let mut offset = (self.engine_offset as usize) as isize;
         unsafe {
             let ptr = dma_engine_memory.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u64>;
-            (*volatile_ptr).write(addr_host);
+            write_volatile(ptr as *mut u64, addr_host);
         };
 
         offset = (self.engine_offset as usize + 0x08) as isize;
         unsafe {
             let ptr = dma_engine_memory.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u64>;
-            (*volatile_ptr).write(addr_device);
+            write_volatile(ptr as *mut u64, addr_device);
         };
 
         offset = (self.engine_offset as usize + 0x10) as isize;
         unsafe {
             let ptr = dma_engine_memory.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u64>;
-            (*volatile_ptr).write(size);
+            write_volatile(ptr as *mut u64, size);
         };
 
         offset = (self.engine_offset as usize + 0x20) as isize;
         unsafe {
             let ptr = dma_engine_memory.as_ptr().offset(offset);
-            let volatile_ptr = ptr as *mut Volatile<u64>;
-            (*volatile_ptr).write(if from_device { 0x1000_1000 } else { 0x1000_0001 });
+            write_volatile(ptr as *mut u64, if from_device { 0x1000_1000 } else { 0x1000_0001 });
         };
     }
 
@@ -232,7 +228,7 @@ impl UserSpaceDMA {
                 let n = self
                     .write_int
                     .check_for_interrupt()
-                    .context(ErrorInterrupt)?;
+                    .context(ErrorInterruptSnafu)?;
                 for _ in 0..n {
                     self.write_int_cntr.fetch_add(1, Ordering::Relaxed);
                     match self.write_out.pop() {
@@ -254,7 +250,7 @@ impl UserSpaceDMA {
         let n = self
             .read_int
             .check_for_interrupt()
-            .context(ErrorInterrupt)?;
+            .context(ErrorInterruptSnafu)?;
         self.read_int_cntr.fetch_add(n, Ordering::Relaxed);
 
         Ok(())
@@ -273,7 +269,7 @@ impl UserSpaceDMA {
                 self.tlkm_file.as_raw_fd(),
                 &mut tlkm_dma_buffer_op { buffer_id: buf.id },
             )
-            .context(DMABufferAllocate)?;
+            .context(DMABufferAllocateSnafu)?;
         };
 
         data[offset..offset + btt].copy_from_slice(&buf.mapped[0..btt]);
@@ -337,7 +333,7 @@ impl DMAControl for UserSpaceDMA {
                         buffer_id: buffer.id,
                     },
                 )
-                .context(DMABufferAllocate)?;
+                .context(DMABufferAllocateSnafu)?;
             };
 
             buffer.mapped[0..btt_this].copy_from_slice(&data[ptr_buffer..ptr_buffer + btt_this]);
@@ -349,7 +345,7 @@ impl DMAControl for UserSpaceDMA {
                         buffer_id: buffer.id,
                     },
                 )
-                .context(DMABufferAllocate)?;
+                .context(DMABufferAllocateSnafu)?;
             };
 
             {
@@ -411,7 +407,7 @@ impl DMAControl for UserSpaceDMA {
                         buffer_id: buffer.id,
                     },
                 )
-                .context(DMABufferAllocate)?;
+                .context(DMABufferAllocateSnafu)?;
             };
 
             let cntr = {

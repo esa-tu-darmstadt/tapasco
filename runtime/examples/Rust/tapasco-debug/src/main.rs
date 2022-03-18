@@ -25,7 +25,7 @@ enum Error {
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-use structopt::StructOpt;
+use clap::StructOpt;
 
 // TODO: 1. When issue #296 is fixed, remove the paragraph about the `EMFILE` error.
 /// The interactive `TaPaSCo` Debugger can be used to retrieve information about the loaded
@@ -36,7 +36,7 @@ use structopt::StructOpt;
 #[structopt(rename_all = "kebab-case")]
 struct Opt {
     /// The Device ID of the FPGA you want to use if you got more than one
-    #[structopt(short = "d", long = "device", default_value = "0")]
+    #[structopt(short = 'd', long = "device", default_value = "0")]
     device_id: u32,
 
     /// Specify the Access Mode as subcommand
@@ -60,10 +60,10 @@ fn init() -> Result<()> {
     let Opt {
         device_id,
         subcommand,
-    } = Opt::from_args();
+    } = Opt::parse();
 
     // Specify the Access Mode as subcommand and setup the App and UI
-    ui::setup(&mut app::App::new(device_id, subcommand).context(App {})?).context(UI {})
+    ui::setup(&mut app::App::new(device_id, subcommand).context(AppSnafu {})?).context(UISnafu {})
 }
 
 fn main() {
