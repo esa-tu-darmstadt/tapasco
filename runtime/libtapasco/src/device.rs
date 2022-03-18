@@ -19,7 +19,7 @@
  */
 
 use crate::allocator::{Allocator, DriverAllocator, DummyAllocator, GenericAllocator, VfioAllocator};
-use crate::debug::DebugGenerator, NonDebugGenerator};
+use crate::debug::{DebugGenerator, NonDebugGenerator};
 use crate::dma::{DMAControl, DirectDMA, DriverDMA, VfioDMA, SVMDMA};
 use crate::dma_user_space::UserSpaceDMA;
 use crate::job::Job;
@@ -33,6 +33,7 @@ use crate::tlkm::tlkm_ioctl_device_cmd;
 use crate::tlkm::DeviceId;
 use crate::vfio::*;
 use config::Config;
+use memmap::MmapMut;
 use memmap::MmapOptions;
 use prost::Message;
 use snafu::ResultExt;
@@ -242,8 +243,10 @@ pub struct Device {
     name: String,
     access: tlkm_access,
     scheduler: Arc<Scheduler>,
+    platform: Arc<MmapMut>,
     offchip_memory: Vec<Arc<OffchipMemory>>,
     tlkm_file: Arc<File>,
+    tlkm_device_file: Arc<File>,
 }
 
 impl Device {
@@ -489,8 +492,10 @@ impl Device {
             name,
             status: s,
             scheduler,
+            platform,
             offchip_memory: allocator,
             tlkm_file,
+            tlkm_device_file: tlkm_dma_file,
         };
 
         device.change_access(tlkm_access::TlkmAccessMonitor)?;
@@ -674,6 +679,9 @@ impl Device {
     }
 
     /// Get memory of a platform component
+    ///
+    /// # Safety
+    ///
     /// Treated unsafe as a user can change anything about the memory without any checks
     /// and might try using the memory after the device has been released.
     pub unsafe fn get_platform_component_memory(&self, name: &str) -> Result<&mut [u8]> {
@@ -714,19 +722,20 @@ impl Device {
                     .new(&self.platform, "Unused".to_string(), 0, 0)
                     .context(DebugError)?;
 
-                if p.interrupts.len() > 0 {
-                    return Ok(PE::new(
+                if !p.interrupts.is_empty() {
+                    return PE::new(
+                        // TODO: Should the ID of this PE really be 42? If it's necessarily a magic
+                        // value, why not just 0?
                         42,
-                        42 as PEId,
+                        42,
                         p.offset,
-                        p.size,
-                        p.name.to_string(),
                         self.platform.clone(),
                         &self.tlkm_device_file,
                         p.interrupts[0].mapping as usize,
                         debug,
+                        false,  // TODO: Is this correct?
                     )
-                    .context(PEError)?);
+                    .context(PEError);
                 } else {
                     return Err(Error::MissingInterrupt {
                         name: name.to_string(),
