@@ -95,7 +95,7 @@ impl Interrupt {
                     if e == nix::errno::Errno::EAGAIN {
                         std::thread::yield_now();
                     } else {
-                        r.context(ErrorEventFDRead)?;
+                        r.context(ErrorEventFDReadSnafu)?;
                     }
                 }
             }
@@ -120,7 +120,7 @@ impl Interrupt {
                     if e == nix::errno::Errno::EAGAIN {
                         return Ok(0);
                     } else {
-                        r.context(ErrorEventFDRead)?;
+                        r.context(ErrorEventFDReadSnafu)?;
                     }
                 }
             }

@@ -530,7 +530,7 @@ impl Device {
             "Trying to acquire PE of type {} without exclusive access.",
             id
         );
-        let pe = self.scheduler.acquire_pe(id).context(SchedulerError)?;
+        let pe = self.scheduler.acquire_pe(id).context(SchedulerSnafu)?;
         trace!(
             "Successfully acquired PE of type {} without exclusive access.",
             id
@@ -720,7 +720,7 @@ impl Device {
                 let d = NonDebugGenerator {};
                 let debug = d
                     .new(&self.platform, "Unused".to_string(), 0, 0)
-                    .context(DebugError)?;
+                    .context(DebugSnafu)?;
 
                 if !p.interrupts.is_empty() {
                     return PE::new(
@@ -735,7 +735,7 @@ impl Device {
                         debug,
                         false,  // TODO: Is this correct?
                     )
-                    .context(PEError);
+                    .context(PESnafu);
                 } else {
                     return Err(Error::MissingInterrupt {
                         name: name.to_string(),
