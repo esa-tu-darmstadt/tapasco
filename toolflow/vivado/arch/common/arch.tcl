@@ -35,40 +35,65 @@ namespace eval arch {
     set pes [lsort [get_processing_elements]]
 
     foreach pe $pes {
-      puts "  processing $pe registers ..."
-      set usrs [lsort [get_bd_addr_segs -filter { USAGE == register } $pe/*]]
-      for {set i 0} {$i < [llength $usrs]} {incr i} {
-        set seg [lindex $usrs $i]
-        puts "    seg: $seg"
-        if {[get_property MODE [get_bd_intf_pins -of_objects $seg]] == "Master"} {
-          puts "    skipping master seg $seg"
-        } else {
-          set intf [get_bd_intf_pins -of_objects $seg]
-          set range [get_property RANGE $seg]
-          set offset [next_valid_address $offset $range]
-          ::platform::addressmap::add_processing_element [llength [dict keys $ret]] $offset $range
-          dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind register"
-          incr offset $range
+      set reg_segs [lsort [get_bd_addr_segs -filter { USAGE == register } $pe/*]]
+      set mem_segs [lsort [get_bd_addr_segs -filter { USAGE == memory } $pe/*]]
+      if {[llength $reg_segs] <= 1 && [llength $mem_segs] <= 1} {
+        puts "  processing $pe registers ..."
+        for {set i 0} {$i < [llength $reg_segs]} {incr i} {
+          set seg [lindex $reg_segs $i]
+          puts "    seg: $seg"
+          if {[get_property MODE [get_bd_intf_pins -of_objects $seg]] == "Master"} {
+            puts "    skipping master seg $seg"
+          } else {
+            set intf [get_bd_intf_pins -of_objects $seg]
+            set range [get_property RANGE $seg]
+            set offset [next_valid_address $offset $range]
+            ::platform::addressmap::add_processing_element [llength [dict keys $ret]] $offset $range
+            dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind register"
+            incr offset $range
+          }
         }
-      }
-      puts "  processing $pe memories ..."
-      set usrs [lsort [get_bd_addr_segs -filter { USAGE == memory } $pe/*]]
-      for {set i 0} {$i < [llength $usrs]} {incr i} {
-        set seg [lindex $usrs $i]
-        puts "    seg: $seg"
-        if {[get_property MODE [get_bd_intf_pins -of_objects $seg]] == "Master"} {
-          puts "    skipping master seg $seg"
-          continue
-        } else {
-          set intf [get_bd_intf_pins -of_objects $seg]
-          set range [get_property RANGE $seg]
-          set offset [next_valid_address $offset $range]
-          ::platform::addressmap::add_processing_element [llength [dict keys $ret]] $offset $range
-          dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind memory"
-          incr offset $range
+        puts "  processing $pe memories ..."
+        for {set i 0} {$i < [llength $mem_segs]} {incr i} {
+          set seg [lindex $mem_segs $i]
+          puts "    seg: $seg"
+          if {[get_property MODE [get_bd_intf_pins -of_objects $seg]] == "Master"} {
+            puts "    skipping master seg $seg"
+          } else {
+            set intf [get_bd_intf_pins -of_objects $seg]
+            set range [get_property RANGE $seg]
+            set offset [next_valid_address $offset $range]
+            ::platform::addressmap::add_processing_element [llength [dict keys $ret]] $offset $range
+            dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind memory"
+            incr offset $range
+          }
+        }
+      } else {
+        # if there is more than one reg/mem interface, we assume that the user knows what they are doing and add them in the same order
+        puts "  processing $pe registers and memories ..."
+        set all_segs [lsort [get_bd_addr_segs $pe/*]]
+        for {set i 0} {$i < [llength $all_segs]} {incr i} {
+          set seg [lindex $all_segs $i]
+          puts "    seg: $seg"
+          if {[get_property MODE [get_bd_intf_pins -of_objects $seg]] == "Master"} {
+            puts "    skipping master seg $seg"
+          } else {
+            set intf [get_bd_intf_pins -of_objects $seg]
+            set range [get_property RANGE $seg]
+            set usage [get_property USAGE $seg]
+            set offset [next_valid_address $offset $range]
+            ::platform::addressmap::add_processing_element [llength [dict keys $ret]] $offset $range
+            if { $usage == "register" } {
+              dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind register subintf $i"
+            } else {
+              dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind memory subintf $i"
+            }
+            incr offset $range
+          }
         }
       }
     }
     return $ret
   }
+
 }
