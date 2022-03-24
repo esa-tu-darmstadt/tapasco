@@ -540,14 +540,13 @@ namespace eval ::tapasco::ip {
             set kid [dict get [::tapasco::get_composition] $kind id]
             set vlnv [dict get [::tapasco::get_composition] $kind vlnv]
 
-            if {[tapasco::is_feature_enabled "IPEC"]} {
-              set feature [tapasco::get_feature "IPEC"]
-              if {[dict exists $feature $vlnv]} {
-                set subintf [dict get $addr $intf "subintf"]
-                set kid [lindex [dict get $feature $vlnv "kid"] $subintf]
-                set kid [expr int($kid)]
-                set vlnv [lindex [dict get $feature $vlnv "vlnv"] $subintf]
-              }
+            set ipecfeature [tapasco::get_feature "IPEC"]
+			set intfname [lindex [split $intf /] end]
+            if {[dict exists $ipecfeature $vlnv $intfname]} {
+              set kid [dict get $ipecfeature $vlnv $intfname "kid"]
+              set kid [expr int($kid)]
+              set vlnv [dict get $ipecfeature $vlnv $intfname "vlnv"]
+              puts "  replaced vlnv $vlnv kid $kid"
             }
 
             lappend slots [json::write object "Type" [json::write string "Kernel"] "SlotId" $slot_id "Kernel" $kid \

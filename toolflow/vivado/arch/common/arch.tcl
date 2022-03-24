@@ -84,9 +84,9 @@ namespace eval arch {
             set offset [next_valid_address $offset $range]
             ::platform::addressmap::add_processing_element [llength [dict keys $ret]] $offset $range
             if { $usage == "register" } {
-              dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind register subintf $i"
+              dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind register"
             } else {
-              dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind memory subintf $i"
+              dict set ret $intf "interface $intf [format "offset 0x%08x range 0x%08x" $offset $range] kind memory"
             }
             incr offset $range
           }
