@@ -541,7 +541,7 @@ namespace eval ::tapasco::ip {
             set vlnv [dict get [::tapasco::get_composition] $kind vlnv]
 
             set ipecfeature [tapasco::get_feature "IPEC"]
-			set intfname [lindex [split $intf /] end]
+            set intfname [lindex [split $intf /] end]
             if {[dict exists $ipecfeature $vlnv $intfname]} {
               set kid [dict get $ipecfeature $vlnv $intfname "kid"]
               set kid [expr int($kid)]
