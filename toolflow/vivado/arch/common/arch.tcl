@@ -69,7 +69,10 @@ namespace eval arch {
           }
         }
       } else {
-        # if there is more than one reg/mem interface, we assume that the user knows what they are doing and add them in the same order
+        # If there is more than one reg/mem interface, we add them in the same order as declared in the IP-XACT core.
+        # The current runtime uses the order to detect control-register-interface & memory-interface pairs.
+        # When a PE has multiple such interfaces, ordering them regs first, mems second leads to the runtime recognizing only one reg-memory pair.
+        # When using the same ordering as the IP-XACT core, the user can define which memory-interface belongs to a certain control-register-interface by ordering them accordingly.
         puts "  processing $pe registers and memories ..."
         set all_segs [lsort [get_bd_addr_segs $pe/*]]
         for {set i 0} {$i < [llength $all_segs]} {incr i} {
