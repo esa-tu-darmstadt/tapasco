@@ -1,0 +1,11 @@
+{
+	"Name" : "HAWK",
+	"Description" : "prodesign HAWK VC1902 Acceleration Card",
+	"TclLibrary" : "hawk.tcl",
+	"Part" : "xcvc1902-vsva2197-1MP-e-S-es1",
+	"TargetUtilization" : 90,
+	"Benchmark" : "hawk.benchmark",
+	"HostFrequency": 250.0,
+	"MemFrequency": 300.0,
+	"FileExtension": "pdi"
+}
