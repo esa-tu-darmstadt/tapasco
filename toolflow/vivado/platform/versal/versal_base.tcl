@@ -99,68 +99,117 @@
     set m_intc [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_INTC"]
     set m_tapasco [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_TAPASCO"]
     set m_dma [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DMA"]
+    set m_desc_gen [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DESC_GEN"]
+    set s_desc_gen [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DESC_GEN"]
 
     set pcie_aclk [create_bd_pin -type "clk" -dir "O" "pcie_aclk"]
     set pcie_aresetn [create_bd_pin -type "rst" -dir "O" "pcie_aresetn"]
 
     set qdma [tapasco::ip::create_qdma qdma_0]
-    apply_bd_automation -rule xilinx.com:bd_rule:qdma -config { axi_strategy {max_data} link_speed {3} link_width {16} pl_pcie_cpm {PL-PCIE}} $qdma
-    set_property -dict [list \
-      CONFIG.mode_selection {Advanced} \
-      CONFIG.dma_intf_sel_qdma {AXI_MM} \
-      CONFIG.en_axi_st_qdma {false} \
+    apply_bd_automation -rule xilinx.com:bd_rule:qdma -config { axi_strategy {max_data} link_speed {3} link_width {8} pl_pcie_cpm {PL-PCIE}} $qdma
+
+    set_property -dict [list CONFIG.mode_selection {Advanced} \
       CONFIG.pcie_blk_locn {X0Y2} \
-      CONFIG.testname {mm} \
       CONFIG.axilite_master_en {false} \
       CONFIG.axist_bypass_en {true} \
-      CONFIG.adv_int_usr {true} \
       CONFIG.dsc_byp_mode {Descriptor_bypass_and_internal} \
+      CONFIG.adv_int_usr {true} \
+      CONFIG.pf0_pciebar2axibar_0 [get_platform_base_address] \
+      CONFIG.testname {mm} CONFIG.pf0_bar0_type_qdma {AXI_Bridge_Master} \
+      CONFIG.pf0_bar0_scale_qdma {Megabytes} \
+      CONFIG.pf0_bar0_size_qdma {64} \
+      CONFIG.pf0_bar2_type_qdma {DMA} \
+      CONFIG.pf0_bar2_size_qdma {256} \
+      CONFIG.pf1_bar0_type_qdma {AXI_Bridge_Master} \
+      CONFIG.pf1_bar0_scale_qdma {Megabytes} \
+      CONFIG.pf1_bar0_size_qdma {64} \
+      CONFIG.pf1_bar2_type_qdma {DMA} \
+      CONFIG.pf1_bar2_size_qdma {256} \
+      CONFIG.pf2_bar0_type_qdma {AXI_Bridge_Master} \
+      CONFIG.pf2_bar0_scale_qdma {Megabytes} \
+      CONFIG.pf2_bar0_size_qdma {64} \
+      CONFIG.pf2_bar2_type_qdma {DMA} \
+      CONFIG.pf2_bar2_size_qdma {256} \
+      CONFIG.pf3_bar0_type_qdma {AXI_Bridge_Master} \
+      CONFIG.pf3_bar0_scale_qdma {Megabytes} \
+      CONFIG.pf3_bar0_size_qdma {64} \
+      CONFIG.pf3_bar2_type_qdma {DMA} \
+      CONFIG.pf3_bar2_size_qdma {256} \
       CONFIG.pf0_device_id {7038} \
-      CONFIG.pf0_bar2_size_qdma {128} \
-      CONFIG.pf0_bar2_type_qdma {AXI_Bridge_Master} \
-      CONFIG.pf0_pciebar2axibar_2 [get_platform_base_address] \
       CONFIG.PF0_MSIX_CAP_TABLE_SIZE_qdma {01F} \
-    ] $qdma
+      CONFIG.PF0_MSIX_CAP_TABLE_BIR_qdma {BAR_3:2} \
+      CONFIG.PF1_MSIX_CAP_TABLE_BIR_qdma {BAR_3:2} \
+      CONFIG.PF2_MSIX_CAP_TABLE_BIR_qdma {BAR_3:2} \
+      CONFIG.PF3_MSIX_CAP_TABLE_BIR_qdma {BAR_3:2} \
+      CONFIG.PF0_MSIX_CAP_PBA_BIR_qdma {BAR_3:2} \
+      CONFIG.PF1_MSIX_CAP_PBA_BIR_qdma {BAR_3:2} \
+      CONFIG.PF2_MSIX_CAP_PBA_BIR_qdma {BAR_3:2} \
+      CONFIG.PF3_MSIX_CAP_PBA_BIR_qdma {BAR_3:2} \
+      CONFIG.dma_intf_sel_qdma {AXI_MM} \
+      CONFIG.en_axi_st_qdma {false}] $qdma
+
+    set_property -dict [list CONFIG.PF0_DEVICE_ID {7038} \
+      CONFIG.PF0_MSIX_CAP_PBA_BIR {BAR_3:2} \
+      CONFIG.PF0_MSIX_CAP_TABLE_BIR {BAR_3:2} \
+      CONFIG.PF0_MSIX_CAP_TABLE_SIZE {0FF} \
+      CONFIG.PF1_DEVICE_ID {9011} \
+      CONFIG.pcie_blk_locn {X0Y2} \
+      CONFIG.pf1_bar2_size {256} \
+      CONFIG.pf2_bar2_size {256} \
+      CONFIG.pf3_bar2_size {256} \
+      CONFIG.pf4_bar2_size {256} \
+      CONFIG.pf5_bar2_size {256} \
+      CONFIG.pf6_bar2_size {256} \
+      CONFIG.pf7_bar2_size {256} \
+      CONFIG.pf0_bar0_scale {Megabytes} \
+      CONFIG.pf0_bar0_size {64} \
+      CONFIG.pf0_bar2_size {256} \
+      CONFIG.pf1_bar0_scale {Megabytes} \
+      CONFIG.pf1_bar0_size {64} \
+      CONFIG.pf2_bar0_scale {Megabytes} \
+      CONFIG.pf2_bar0_size {64} \
+      CONFIG.pf3_bar0_scale {Megabytes} \
+      CONFIG.pf3_bar0_size {64} \
+      CONFIG.pf4_bar0_scale {Megabytes} \
+      CONFIG.pf4_bar0_size {64} \
+      CONFIG.pf5_bar0_scale {Megabytes} \
+      CONFIG.pf5_bar0_size {64} \
+      CONFIG.pf6_bar0_scale {Megabytes} \
+      CONFIG.pf6_bar0_size {64} \
+      CONFIG.pf7_bar0_scale {Megabytes} \
+      CONFIG.pf7_bar0_size {64}] [get_bd_cells /host/qdma_0_support/pcie]
 
     # TODO: Make configuration device dependent
 
-    set QDMADesc [create_bd_cell -type ip -vlnv esa.informatik.tu-darmstadt.de:user:QDMADescriptorGenerator:1.0 QDMADescriptorGenera_0]
-    connect_bd_intf_net $QDMADesc/c2h_byp_in $qdma/c2h_byp_in_mm
-    connect_bd_intf_net $QDMADesc/h2c_byp_in $qdma/h2c_byp_in_mm
-    connect_bd_intf_net $QDMADesc/tm_dsc_sts $qdma/tm_dsc_sts
-    connect_bd_intf_net $QDMADesc/qsts_out $qdma/qsts_out
-    connect_bd_intf_net $QDMADesc/c2h_byp_out $qdma/c2h_byp_out
-    connect_bd_intf_net $QDMADesc/h2c_byp_out $qdma/h2c_byp_out
+    set qdma_desc [create_bd_cell -type ip -vlnv esa.informatik.tu-darmstadt.de:user:QDMADescriptorGenerator:1.0 QDMADescriptorGenera_0]
+    connect_bd_intf_net $s_desc_gen $qdma_desc/S_AXI_CTRL
+    connect_bd_intf_net $qdma_desc/c2h_byp_in $qdma/c2h_byp_in_mm
+    connect_bd_intf_net $qdma_desc/h2c_byp_in $qdma/h2c_byp_in_mm
+    connect_bd_intf_net $qdma_desc/tm_dsc_sts $qdma/tm_dsc_sts
+    connect_bd_intf_net $qdma_desc/qsts_out $qdma/qsts_out
+    connect_bd_intf_net $qdma_desc/c2h_byp_out $qdma/c2h_byp_out
+    connect_bd_intf_net $qdma_desc/h2c_byp_out $qdma/h2c_byp_out
 
-    set QDMAIntrVecCtrl [create_bd_cell -type ip -vlnv esa.informatik.tu-darmstadt.de:user:QDMAIntrVecCtrl:1.0 QDMAIntrVecCtrl_0]
-    connect_bd_net [get_bd_pin $QDMAIntrVecCtrl/numvec_done] [get_bd_pin $qdma/numvec_done]
-    connect_bd_net [get_bd_pin $QDMAIntrVecCtrl/numvec_valid] [get_bd_pin $qdma/numvec_valid]
-    connect_bd_net [get_bd_pin $QDMAIntrVecCtrl/trigger_config_irqs] [get_bd_pin $QDMADesc/config_irqs]
-    connect_bd_net [get_bd_pins $QDMAIntrVecCtrl/msix_vectors_per_pf0] [get_bd_pins $qdma/msix_vectors_per_pf0]
-    connect_bd_net [get_bd_pins $QDMAIntrVecCtrl/msix_vectors_per_pf1] [get_bd_pins $qdma/msix_vectors_per_pf1]
-    connect_bd_net [get_bd_pins $QDMAIntrVecCtrl/msix_vectors_per_pf2] [get_bd_pins $qdma/msix_vectors_per_pf2]
-    connect_bd_net [get_bd_pins $QDMAIntrVecCtrl/msix_vectors_per_pf3] [get_bd_pins $qdma/msix_vectors_per_pf3]
-    connect_bd_net [get_bd_pins $QDMAIntrVecCtrl/msix_vectors_per_vfg0] [get_bd_pins $qdma/msix_vectors_per_vfg0]
-    connect_bd_net [get_bd_pins $QDMAIntrVecCtrl/msix_vectors_per_vfg1] [get_bd_pins $qdma/msix_vectors_per_vfg1]
-    connect_bd_net [get_bd_pins $QDMAIntrVecCtrl/msix_vectors_per_vfg2] [get_bd_pins $qdma/msix_vectors_per_vfg2]
-    connect_bd_net [get_bd_pins $QDMAIntrVecCtrl/msix_vectors_per_vfg3] [get_bd_pins $qdma/msix_vectors_per_vfg3]
+    set qdma_conf [create_bd_cell -type ip -vlnv esa.informatik.tu-darmstadt.de:user:QDMAConfigurator:1.0 QDMAConfigurator_0]
+    connect_bd_intf_net [get_bd_intf_pins $qdma_conf/msix_vector_ctrl] [get_bd_intf_pins $qdma/msix_vector_ctrl]
 
     connect_bd_intf_net $qdma/M_AXI $m_dma
 
-    # provide M_ARCH, M_TAPASCO, M_INTC and connect to $QDMADesc/S_AXI_CTRL
+    # provide M_ARCH, M_TAPASCO, M_INTC and connect to $qdma_desc/S_AXI_CTRL
     # create smartconnect (1 slave, 4 master, 2 clocks [host+design])
     set host_sc [tapasco::ip::create_axi_sc "host_sc" 1 4 2]
     connect_bd_intf_net $host_sc/S00_AXI $qdma/M_AXI_BRIDGE
     connect_bd_intf_net $host_sc/M00_AXI $m_arch
     connect_bd_intf_net $host_sc/M01_AXI $m_tapasco
     connect_bd_intf_net $host_sc/M02_AXI $m_intc
-    connect_bd_intf_net $host_sc/M03_AXI $QDMADesc/S_AXI_CTRL
+    # connect_bd_intf_net $host_sc/M03_AXI $qdma_desc/S_AXI_CTRL
+    connect_bd_intf_net $host_sc/M03_AXI $m_desc_gen
     connect_bd_net $pcie_aclk [get_bd_pins $host_sc/aclk]
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins $host_sc/aclk1]
 
-    connect_bd_net [get_bd_pin $QDMADesc/dma_resetn] [get_bd_pin $qdma/soft_reset_n]
-    connect_bd_net [get_bd_pin $qdma/axi_aclk] [get_bd_pin $QDMADesc/aclk] [get_bd_pin $QDMAIntrVecCtrl/clk] $pcie_aclk
-    connect_bd_net [get_bd_pin $qdma/axi_aresetn] [get_bd_pin $QDMADesc/resetn] [get_bd_pin $QDMAIntrVecCtrl/resetn] $pcie_aresetn
+    connect_bd_net [get_bd_pin $qdma_desc/dma_resetn] [get_bd_pin $qdma/soft_reset_n]
+    connect_bd_net [get_bd_pin $qdma/axi_aclk] [get_bd_pin $qdma_desc/aclk] [get_bd_pin $qdma_conf/clk] $pcie_aclk
+    connect_bd_net [get_bd_pin $qdma/axi_aresetn] [get_bd_pin $qdma_desc/resetn] [get_bd_pin $qdma_conf/resetn] $pcie_aresetn
   }
 
   proc create_subsystem_memory {} {
@@ -331,15 +380,14 @@
     }
     puts "Computing addresses for masters ..."
     set masters [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]]
-    lappend masters [get_bd_intf_pin /host/host_sc/M03_AXI]
     foreach m $masters {
       switch -glob [get_property NAME $m] {
-        "M_INTC"    { foreach {base stride range comp} [list                  0x00020000 0x10000 0 "PLATFORM_COMPONENT_INTC0"] {} }
-        "M_TAPASCO" { foreach {base stride range comp} [list [get_platform_base_address] 0x10000 0 "PLATFORM_COMPONENT_STATUS"] {} }
-        "M03_AXI"   { foreach {base stride range comp} [list [expr [get_platform_base_address]+0x30000] 0x10000 0 "PLATFORM_COMPONENT_QDMA"] {} }
-        "M_DMA"     { foreach {base stride range comp} [list [expr [get_platform_base_address]+0x40000] 0x10000 0 "PLATFORM_COMPONENT_DMA"] {} }
-        "M_ARCH"    { set base "skip" }
-        default     { if { [dict exists $extra_masters [get_property NAME $m]] } {
+        "M_INTC"     { foreach {base stride range comp} [list [expr [get_platform_base_address]+0x20000] 0x10000 0                "PLATFORM_COMPONENT_INTC0" ] {} }
+        "M_TAPASCO"  { foreach {base stride range comp} [list [get_platform_base_address]                0x10000 0                "PLATFORM_COMPONENT_STATUS"] {} }
+        "M_DESC_GEN" { foreach {base stride range comp} [list [expr [get_platform_base_address]+0x10000] 0x10000 0                "PLATFORM_COMPONENT_DMA0"  ] {} }
+        "M_DMA"      { foreach {base stride range comp} [list [expr "1 << 40"]                           0       [expr "1 << 37"] ""                         ] {} }
+        "M_ARCH"     { set base "skip" }
+        default      { if { [dict exists $extra_masters [get_property NAME $m]] } {
                           set l [dict get $extra_masters [get_property NAME $m]]
                           set base [lindex $l 0]
                           set stride [lindex $l 1]
@@ -368,7 +416,7 @@
     lappend ignored "/memory/axi_noc_0/S07_AXI/C0_DDR_LOW3x4"
     lappend ignored "/memory/axi_noc_0/S08_AXI/C0_DDR_LOW3x4"
     lappend ignored "/memory/axi_noc_0/S00_AXI/C1_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S01_AXI/C1_DDR_LOW3x4"
+    # lappend ignored "/memory/axi_noc_0/S01_AXI/C1_DDR_LOW3x4"
     lappend ignored "/memory/axi_noc_0/S02_AXI/C1_DDR_LOW3x4"
     lappend ignored "/memory/axi_noc_0/S03_AXI/C1_DDR_LOW3x4"
     lappend ignored "/memory/axi_noc_0/S04_AXI/C1_DDR_LOW3x4"
