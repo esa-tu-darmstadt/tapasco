@@ -181,7 +181,7 @@
 
     # TODO: Make configuration device dependent
 
-    set qdma_desc [create_bd_cell -type ip -vlnv esa.informatik.tu-darmstadt.de:user:QDMADescriptorGenerator:1.0 QDMADescriptorGenera_0]
+    set qdma_desc [tapasco::ip::create_qdma_desc_gen "QDMADescriptorGenera_0"]
     connect_bd_intf_net $s_desc_gen $qdma_desc/S_AXI_CTRL
     connect_bd_intf_net $qdma_desc/c2h_byp_in $qdma/c2h_byp_in_mm
     connect_bd_intf_net $qdma_desc/h2c_byp_in $qdma/h2c_byp_in_mm
@@ -190,7 +190,7 @@
     connect_bd_intf_net $qdma_desc/c2h_byp_out $qdma/c2h_byp_out
     connect_bd_intf_net $qdma_desc/h2c_byp_out $qdma/h2c_byp_out
 
-    set qdma_conf [create_bd_cell -type ip -vlnv esa.informatik.tu-darmstadt.de:user:QDMAConfigurator:1.0 QDMAConfigurator_0]
+    set qdma_conf [tapasco::ip::create_qdma_configurator "QDMAConfigurator_0"]
     connect_bd_intf_net [get_bd_intf_pins $qdma_conf/msix_vector_ctrl] [get_bd_intf_pins $qdma/msix_vector_ctrl]
 
     connect_bd_intf_net $qdma/M_AXI $m_dma
@@ -214,7 +214,18 @@
 
   proc create_subsystem_memory {} {
     # memory subsystem implements the NoC logic and Memory Controller
+    set host_aclk [tapasco::subsystem::get_port "host" "clk"]
+    set host_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
     set design_aclk [tapasco::subsystem::get_port "design" "clk"]
+    set design_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
+
+    set s_axi_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0"]
+    set s_axi_dma [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DMA"]
+    set s_axi_mem_off [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0_OFF"]
+    set s_axi_dma_off [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DMA_OFF"]
+    set m_axi_mem_off [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_MEM_0_OFF"]
+    set m_axi_dma_off [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DMA_OFF"]
+
     set versal_cips [tapasco::ip::create_versal_cips "versal_cips_0"]
     # set versal_cips [ create_bd_cell -type ip -vlnv xilinx.com:ip:versal_cips:3.1 versal_cips_0 ]
     set_property -dict [ list \
@@ -256,6 +267,31 @@
       CONFIG.PS_PMC_CONFIG_APPLIED {1} \
     ] $versal_cips
 
+    # offset to map memory request from QDMA or PEs into address range of memory controllers
+    set dma_sc [tapasco::ip::create_axi_sc "dma_sc_0" 1 1 1]
+    set dma_offset [tapasco::ip::create_axi_generic_off "dma_offset_0"]
+    set_property -dict [list CONFIG.ADDRESS_WIDTH {41} \
+      CONFIG.BYTES_PER_WORD {64} \
+      CONFIG.HIGHEST_ADDR_BIT {1} \
+      CONFIG.ID_WIDTH {4} \
+      CONFIG.OVERWRITE_BITS {1} ] $dma_offset
+    set arch_offset [tapasco::ip::create_axi_generic_off "arch_offset_0"]
+    set_property -dict [list CONFIG.ADDRESS_WIDTH {41} \
+      CONFIG.BYTES_PER_WORD {64} \
+      CONFIG.HIGHEST_ADDR_BIT {1} \
+      CONFIG.ID_WIDTH {6} \
+      CONFIG.OVERWRITE_BITS {1} ] $arch_offset
+
+    connect_bd_net $design_aclk [get_bd_pin $arch_offset/aclk]
+    connect_bd_net $host_aclk [get_bd_pin $dma_offset/aclk] [get_bd_pin $dma_sc/aclk]
+    connect_bd_net $design_aresetn [get_bd_pin $arch_offset/aresetn]
+    connect_bd_net $host_p_aresetn [get_bd_pin $dma_offset/aresetn]
+    connect_bd_intf_net $s_axi_dma [get_bd_intf_pin $dma_sc/S00_AXI]
+    connect_bd_intf_net [get_bd_intf_pin $dma_sc/M00_AXI] [get_bd_intf_pin $dma_offset/S_AXI]
+    connect_bd_intf_net [get_bd_intf_pin $dma_offset/M_AXI] $m_axi_dma_off
+    connect_bd_intf_net $s_axi_mem [get_bd_intf_pin $arch_offset/S_AXI]
+    connect_bd_intf_net [get_bd_intf_pin $arch_offset/M_AXI] $m_axi_mem_off
+
     set axi_noc [tapasco::ip::create_axi_noc "axi_noc_0"]
     set external_sources {2}
     # Possible values: None, 1, 2, ...
@@ -277,12 +313,10 @@
     delete_bd_objs [get_bd_nets /memory/aclk1_0_1] [get_bd_pins /memory/aclk1_0]
     # S00_AXI -> S_MEM_0
     # S01_AXI -> S_DMA
-    set s_axi_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0"]
-    set s_axi_dma [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DMA"]
-    connect_bd_intf_net $s_axi_mem $axi_noc/S00_AXI
-    connect_bd_intf_net $s_axi_dma $axi_noc/S01_AXI
-    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pin $axi_noc/aclk1]
-    connect_bd_net [tapasco::subsystem::get_port "host" "clk"] [get_bd_pin $axi_noc/aclk7]
+    connect_bd_intf_net $s_axi_mem_off $axi_noc/S00_AXI
+    connect_bd_intf_net $s_axi_dma_off $axi_noc/S01_AXI
+    connect_bd_net $design_aclk [get_bd_pin $axi_noc/aclk1]
+    connect_bd_net $host_aclk [get_bd_pin $axi_noc/aclk7]
     set_property -dict [list CONFIG.ASSOCIATED_BUSIF {S02_AXI}] [get_bd_pins $axi_noc/aclk0]
     set_property -dict [list CONFIG.ASSOCIATED_BUSIF {S00_AXI}] [get_bd_pins $axi_noc/aclk1]
     set_property -dict [list CONFIG.ASSOCIATED_BUSIF {S01_AXI}] [get_bd_pins $axi_noc/aclk7]
@@ -350,18 +384,18 @@
       }
     }
 
-    set QDMAIntrCtrl [create_bd_cell -type ip -vlnv esa.informatik.tu-darmstadt.de:user:QDMAIntrCtrl:1.0 QDMAIntrCtrl_0]
+    set qdma_intr_ctrl [tapasco::ip::create_qdma_intr_ctrl "QDMAIntrCtrl_0"]
 
-    connect_bd_intf_net $QDMAIntrCtrl/S_AXI $s_axi
+    connect_bd_intf_net $qdma_intr_ctrl/S_AXI $s_axi
 
-    connect_bd_net [get_bd_pins ${design_concats_last}/dout] [get_bd_pins $QDMAIntrCtrl/interrupt_design] 
+    connect_bd_net [get_bd_pins ${design_concats_last}/dout] [get_bd_pins $qdma_intr_ctrl/interrupt_design] 
 
-    connect_bd_net $design_aclk [get_bd_pins $QDMAIntrCtrl/design_clk]
-    connect_bd_net $design_aresetn [get_bd_pins $QDMAIntrCtrl/design_rst]
-    connect_bd_net $host_aclk [get_bd_pins $QDMAIntrCtrl/S_AXI_aclk]
-    connect_bd_net $host_p_aresetn [get_bd_pins $QDMAIntrCtrl/S_AXI_aresetn]
+    connect_bd_net $design_aclk [get_bd_pins $qdma_intr_ctrl/design_clk]
+    connect_bd_net $design_aresetn [get_bd_pins $qdma_intr_ctrl/design_rst]
+    connect_bd_net $host_aclk [get_bd_pins $qdma_intr_ctrl/S_AXI_aclk]
+    connect_bd_net $host_p_aresetn [get_bd_pins $qdma_intr_ctrl/S_AXI_aresetn]
 
-    connect_bd_intf_net $QDMAIntrCtrl/usr_irq /host/qdma_0/usr_irq
+    connect_bd_intf_net $qdma_intr_ctrl/usr_irq /host/qdma_0/usr_irq
   }
 
   proc get_pe_base_address {} {
@@ -382,10 +416,13 @@
     set masters [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]]
     foreach m $masters {
       switch -glob [get_property NAME $m] {
-        "M_INTC"     { foreach {base stride range comp} [list [expr [get_platform_base_address]+0x20000] 0x10000 0                "PLATFORM_COMPONENT_INTC0" ] {} }
-        "M_TAPASCO"  { foreach {base stride range comp} [list [get_platform_base_address]                0x10000 0                "PLATFORM_COMPONENT_STATUS"] {} }
-        "M_DESC_GEN" { foreach {base stride range comp} [list [expr [get_platform_base_address]+0x10000] 0x10000 0                "PLATFORM_COMPONENT_DMA0"  ] {} }
-        "M_DMA"      { foreach {base stride range comp} [list [expr "1 << 40"]                           0       [expr "1 << 37"] ""                         ] {} }
+        "M_INTC"      { foreach {base stride range comp} [list [expr [get_platform_base_address]+0x20000] 0x10000 0                "PLATFORM_COMPONENT_INTC0" ] {} }
+        "M_TAPASCO"   { foreach {base stride range comp} [list [get_platform_base_address]                0x10000 0                "PLATFORM_COMPONENT_STATUS"] {} }
+        "M_DESC_GEN"  { foreach {base stride range comp} [list [expr [get_platform_base_address]+0x10000] 0x10000 0                "PLATFORM_COMPONENT_DMA0"  ] {} }
+        "M_DMA"       { foreach {base stride range comp} [list 0                                          0       [expr "1 << 37"] ""                         ] {} }
+        "M_DMA_OFF"   { foreach {base stride range comp} [list [expr "1 << 40"]                           0       [expr "1 << 37"] ""                         ] {} }
+        "M_MEM_0"     { foreach {base stride range comp} [list 0                                          0       [expr "1 << 37"] ""                         ] {} }
+        "M_MEM_0_OFF" { foreach {base stride range comp} [list [expr "1 << 40"]                           0       [expr "1 << 37"] ""                         ] {} }
         "M_ARCH"     { set base "skip" }
         default      { if { [dict exists $extra_masters [get_property NAME $m]] } {
                           set l [dict get $extra_masters [get_property NAME $m]]
@@ -406,7 +443,7 @@
 
   proc get_ignored_segments {} {
     set ignored [list]
-    lappend ignored "/memory/axi_noc_0/S00_AXI/C0_DDR_LOW3x4"
+    # lappend ignored "/memory/axi_noc_0/S00_AXI/C0_DDR_LOW3x4"
     lappend ignored "/memory/axi_noc_0/S01_AXI/C0_DDR_LOW3x4"
     lappend ignored "/memory/axi_noc_0/S02_AXI/C0_DDR_LOW3x4"
     lappend ignored "/memory/axi_noc_0/S03_AXI/C0_DDR_LOW3x4"
