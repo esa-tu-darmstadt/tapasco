@@ -28,6 +28,7 @@
 #include "pcie/pcie.h"
 #include "pcie/pcie_irq.h"
 #include "pcie/pcie_device.h"
+#include "pcie/pcie_qdma.h"
 
 int pcie_irqs_init(struct tlkm_device *dev, struct list_head *interrupts)
 {
@@ -39,11 +40,24 @@ int pcie_irqs_init(struct tlkm_device *dev, struct list_head *interrupts)
 				      tlkm_status_get_component_base(
 					      dev, "PLATFORM_COMPONENT_INTC0") +
 				      0x8120);
+
+	// set GIER of QDMA interrupt controller
+	if (pcie_is_qdma_in_use(dev))
+		iowrite32(1, dev->mmap.plat +
+			  tlkm_status_get_component_base(
+					     dev, "PLATFORM_COMPONENT_INTC0") +
+			  0x8104);
 	return 0;
 }
 
 void pcie_irqs_exit(struct tlkm_device *dev)
 {
+	// reset GIER of QDMA interrupt controller
+	if (pcie_is_qdma_in_use(dev))
+		iowrite32(0, dev->mmap.plat +
+				     tlkm_status_get_component_base(
+					     dev, "PLATFORM_COMPONENT_INTC0") +
+				     0x8104);
 }
 
 irqreturn_t intr_handler_platform(int irq, void *data)
@@ -65,12 +79,39 @@ int pcie_irqs_request_platform_irq(struct tlkm_device *dev,
 
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ, "requesting platform irq #%d",
 	       mapping->irq_no);
-	if ((err = request_irq(pci_irq_vector(pdev->pdev, mapping->irq_no),
-			       intr_handler_platform, IRQF_EARLY_RESUME,
-			       TLKM_PCI_NAME, (void *)mapping))) {
-		DEVERR(dev->dev_id, "could not request interrupt #%d: %d",
-		       mapping->irq_no, err);
-		return err;
+
+	if (mapping->irq_no == QDMA_IRQ_VEC_H2C && pcie_is_qdma_in_use(dev)) {
+		err = request_irq(pci_irq_vector(pdev->pdev,
+						 QDMA_IRQ_VEC_H2C),
+				  qdma_intr_handler_write, IRQF_EARLY_RESUME,
+				  TLKM_PCI_NAME, (void *)mapping);
+		if (err) {
+			DEVERR(dev->dev_id,
+			       "could not request QDMA H2C interrupt: %d",
+			       err);
+			return err;
+		}
+	} else if (mapping->irq_no == QDMA_IRQ_VEC_C2H && pcie_is_qdma_in_use(dev)) {
+		err = request_irq(pci_irq_vector(pdev->pdev,
+						 QDMA_IRQ_VEC_C2H),
+				  qdma_intr_handler_read, IRQF_EARLY_RESUME,
+				  TLKM_PCI_NAME, (void *)mapping);
+		if (err) {
+			DEVERR(dev->dev_id,
+				"could not request QDMA C2H interrupt: %d",
+				err);
+			return err;
+		}
+	} else {
+		if ((err = request_irq(pci_irq_vector(pdev->pdev,
+						      mapping->irq_no),
+				       intr_handler_platform, IRQF_EARLY_RESUME,
+				       TLKM_PCI_NAME, (void *)mapping))) {
+			DEVERR(dev->dev_id,
+			       "could not request interrupt #%d: %d",
+			       mapping->irq_no, err);
+			return err;
+		}
 	}
 
 	DEVLOG(dev->dev_id, TLKM_LF_IRQ,

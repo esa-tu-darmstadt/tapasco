@@ -26,6 +26,7 @@
 #include "pcie.h"
 #include "pcie_device.h"
 #include "pcie_irq.h"
+#include "pcie_qdma.h"
 #include "pcie_svm.h"
 #include "tlkm_logging.h"
 #include "tlkm_device.h"
@@ -401,6 +402,15 @@ int pcie_device_init_subsystems(struct tlkm_device *dev, void *data)
 		}
 	}
 
+	if (pcie_is_qdma_in_use(dev)) {
+		DEVLOG(dev->dev_id, TLKM_LF_PCIE, "initializing QDMA ...");
+		ret = pcie_qdma_init(pdev);
+		if (ret) {
+			DEVERR(dev->dev_id, "failed to initialize QDMA: %d", ret);
+			goto pcie_qdma_init_err;
+		}
+	}
+
 	DEVLOG(dev->dev_id, TLKM_LF_PCIE, "claiming MSI-X interrupts ...");
 	if ((ret = claim_msi(pdev))) {
 		DEVERR(dev->dev_id, "failed to claim MSI-X interrupts: %d",
@@ -431,6 +441,7 @@ pcie_init_svm_err:
 	release_msi(pdev);
 #endif
 pcie_subsystem_err:
+pcie_qdma_init_err:
 	return ret;
 }
 
@@ -450,6 +461,11 @@ void pcie_device_exit_subsystems(struct tlkm_device *dev)
 #endif
 
 	release_msi(pdev);
+	if (pcie_is_qdma_in_use(dev)) {
+		if (pcie_qdma_exit(pdev)) {
+			DEVERR(dev->dev_id, "could not disable QDMA properly");
+		}
+	}
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "exited subsystems");
 }
 
