@@ -225,7 +225,11 @@ namespace eval arch {
     # generate output trees
     for {set i 0} {$i < [llength $mdist]} {incr i} {
       puts "  mdist[$i] = [lindex $mdist $i]"
-      set out [tapasco::create_interconnect_tree "out_$i" [lindex $mdist $i]]
+      if {[tapasco::is_versal]} {
+        set out [tapasco::create_versal_interconnect_tree "out_$i" [lindex $mdist $i]]
+      } else {
+        set out [tapasco::create_interconnect_tree "out_$i" [lindex $mdist $i]]
+      }
       connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master && VLNV == "xilinx.com:interface:aximm_rtl:1.0"} -of_objects $out] [lindex $ic_ports $i]
     }
 
@@ -250,7 +254,11 @@ namespace eval arch {
       puts "Connecting one slave to host"
       return $out_port
     } {
-      set in1 [tapasco::create_interconnect_tree "in1" $ic_s false]
+      if {[tapasco::is_versal]} {
+        set in1 [tapasco::create_versal_interconnect_tree "in1" $ic_s false]
+      } else {
+        set in1 [tapasco::create_interconnect_tree "in1" $ic_s false]
+      }
 
       puts "Creating interconnects toward peripherals ..."
       puts "  $ic_s slaves to connect to host"

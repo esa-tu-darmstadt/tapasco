@@ -443,6 +443,133 @@ namespace eval tapasco {
     return $group
   }
 
+  # Creates a tree of AXI Smartconnects to accomodate n connections.
+  # @param name Name of the group cell
+  # @param n Number of connnections (outside)
+  # @param masters if true, will create n master connections, otherwise slaves
+  proc create_versal_interconnect_tree {name n {masters true}} {
+    puts "Creating AXI Smartconnect tree for versal with name $name for $n [expr $masters ? {"masters"} : {"slaves"}]"
+    puts "  tree depth: [expr int(ceil(log($n) / log(16)))]"
+    puts "  instance : [current_bd_instance .]"
+
+    # create group
+    set instance [current_bd_instance .]
+    set group [create_bd_cell -type hier $name]
+    current_bd_instance $group
+
+    # create hierarchical ports: clocks, resets (interconnect + peripherals)
+    set m_aclk [create_bd_pin -type "clk" -dir "I" "m_aclk"]
+    set s_aclk [create_bd_pin -type "clk" -dir "I" "s_aclk"]
+
+    set ic_n 0
+    set ics [list]
+    set ns [list]
+    set totalOut $n
+
+    puts "  totalOut = $totalOut"
+
+    # special case: bypass (not necessary; only for performance, Tcl is slow)
+    if {$totalOut == 1} {
+      puts "  building 1-on-1 bypass"
+      set bic [ip::create_axi_sc "sc_000" 1 1 2]
+      set m [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" "M000_AXI"]
+      set s [create_bd_intf_pin -mode Slave -vlnv "xilinx.com:interface:aximm_rtl:1.0" "S000_AXI"]
+      connect_bd_intf_net $s [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Slave"} -of_objects $bic]
+      connect_bd_intf_net [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Master"} -of_objects $bic] $m
+
+      connect_bd_net $m_aclk [get_bd_pins $bic/aclk]
+      connect_bd_net $s_aclk [get_bd_pins $bic/aclk1]
+      current_bd_instance $instance
+      return $group
+    }
+
+    # pre-compute ports at each stage
+    while {$n != 1} {
+      lappend ns $n
+      set n [expr "int(ceil($n / 16.0))"]
+    }
+    if {!$masters} { set ns [lreverse $ns] }
+    puts "  ports at each stage: $ns"
+
+    # keep track of the interconnects at each stage
+    set stage [list]
+
+    # loop over nest levels
+    foreach n $ns {
+      puts "  generating stage $n ($ns) ..."
+      set nports $n
+      set n [expr "int(ceil($n / 16.0))"]
+      set curr_ics [list]
+      #puts "n = $n"
+      for {set i 0} {$i < $n} {incr i} {
+        set rest_ports [expr "$nports - $i * 16"]
+        set rest_ports [expr "min($rest_ports, 16)"]
+        set nic [ip::create_axi_sc [format "sc_%03d" $ic_n] [expr "$masters ? $rest_ports : 1"] [expr "$masters ? 1 : $rest_ports"] 2]
+        incr ic_n
+        lappend curr_ics $nic
+      }
+
+      # on first level only: connect slaves to outside
+      if {[llength $ics] == 0} {
+        set pidx 0
+        set ss [lsort [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Slave"} -of_objects $curr_ics]]
+        foreach s $ss {
+          lappend ics [create_bd_intf_pin -mode Slave -vlnv "xilinx.com:interface:aximm_rtl:1.0" [format "S%03d_AXI" $pidx]]
+          incr pidx
+        }
+        set ms $ics
+      } {
+        # in between: connect masters from previous level to slaves of current level
+        set ms [lsort [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Master"} -of_objects $ics]]
+      }
+
+      # masters/slaves from previous level
+      set ss [lsort [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Slave"} -of_objects $curr_ics]]
+      set idx 0
+      foreach m $ms {
+        if {$masters} {
+          connect_bd_intf_net $m [lindex $ss $idx]
+        } {
+          connect_bd_intf_net [lindex $ss $idx] $m
+        }
+        incr idx
+      }
+
+      # on last level only: connect master port to outside
+      if {[expr "($masters && $n == 1) || (!$masters &&  $nports == $totalOut)"]} {
+        # connect outputs
+        set ms [lsort [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Master"} -of_objects $curr_ics]]
+        set pidx 0
+        foreach m $ms {
+          set port [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" [format "M%03d_AXI" $pidx]]
+          connect_bd_intf_net $m $port
+          incr pidx
+        }
+      }
+      set ics $curr_ics
+      # record current stage
+      lappend stage $curr_ics
+    }
+
+    # connect clocks, domain crossing in stage with single Smartconnect
+    if {$masters} {
+      foreach scl [lrange $stage 0 end-1] {
+        connect_bd_net $s_aclk [get_bd_pins -filter {TYPE == "clk" && DIR == "I"} -of_objects $scl]
+      }
+      set single_sc [lrange $stage end-1 end]
+    } {
+      foreach scl [lrange $stage 1 end] {
+        connect_bd_net $m_aclk [get_bd_pins -filter {TYPE == "clk" && DIR == "I"} -of_objects $scl]
+      }
+      set single_sc [lindex $stage 0]
+    }
+    connect_bd_net $s_aclk [get_bd_pin $single_sc/aclk]
+    connect_bd_net $m_aclk [get_bd_pin $single_sc/aclk1]
+
+    current_bd_instance $instance
+    return $group
+  }
+
   set plugins [dict create]
 
   proc register_plugin {call when} {
