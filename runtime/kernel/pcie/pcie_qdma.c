@@ -77,6 +77,8 @@ struct desc_gen_regs {
 	uint64_t id;
 	uint64_t cmd;
 	uint64_t status;
+	uint64_t rsvd[26];
+	uint64_t dma_reset;
 } __packed;
 
 // structure of QDMA indirect context programming registers
@@ -217,6 +219,9 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 		res = -ENODEV;
 		goto fail_id;
 	}
+
+	// reset QDMA
+	writeq(1, &desc_gen_regs->dma_reset);
 
 	DEVLOG(dev->dev_id, TLKM_LF_DMA, "Detected QDMA descriptor generator");
 
