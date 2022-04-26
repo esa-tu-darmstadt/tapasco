@@ -37,7 +37,11 @@ namespace eval arch {
     foreach pe $pes {
       set reg_segs [lsort [get_bd_addr_segs -filter { USAGE == register } $pe/*]]
       set mem_segs [lsort [get_bd_addr_segs -filter { USAGE == memory } $pe/*]]
-      if {[llength $reg_segs] <= 1 && [llength $mem_segs] <= 1} {
+      set reg_slaves 0
+      set mem_slaves 0
+      foreach seg $reg_segs { if {[get_property MODE [get_bd_intf_pins -of_objects $seg]] == "Slave"} { incr reg_slaves } }
+      foreach seg $mem_segs { if {[get_property MODE [get_bd_intf_pins -of_objects $seg]] == "Slave"} { incr mem_slaves } }
+      if {$reg_slaves <= 1 && $mem_slaves <= 1} {
         puts "  processing $pe registers ..."
         for {set i 0} {$i < [llength $reg_segs]} {incr i} {
           set seg [lindex $reg_segs $i]
