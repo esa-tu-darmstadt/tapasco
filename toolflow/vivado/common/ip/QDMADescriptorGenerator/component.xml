@@ -168,28 +168,6 @@
       </spirit:portMaps>
     </spirit:busInterface>
     <spirit:busInterface>
-      <spirit:name>dma_resetn</spirit:name>
-      <spirit:busType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="reset" spirit:version="1.0"/>
-      <spirit:abstractionType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="reset_rtl" spirit:version="1.0"/>
-      <spirit:master/>
-      <spirit:portMaps>
-        <spirit:portMap>
-          <spirit:logicalPort>
-            <spirit:name>RST</spirit:name>
-          </spirit:logicalPort>
-          <spirit:physicalPort>
-            <spirit:name>dma_resetn</spirit:name>
-          </spirit:physicalPort>
-        </spirit:portMap>
-      </spirit:portMaps>
-      <spirit:parameters>
-        <spirit:parameter>
-          <spirit:name>POLARITY</spirit:name>
-          <spirit:value spirit:id="BUSIFPARAM_VALUE.DMA_RESETN.POLARITY" spirit:choiceRef="choice_list_9d8b0d81">ACTIVE_LOW</spirit:value>
-        </spirit:parameter>
-      </spirit:parameters>
-    </spirit:busInterface>
-    <spirit:busInterface>
       <spirit:name>resetn</spirit:name>
       <spirit:busType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="reset" spirit:version="1.0"/>
       <spirit:abstractionType spirit:vendor="xilinx.com" spirit:library="signal" spirit:name="reset_rtl" spirit:version="1.0"/>
@@ -860,7 +838,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>424bb295</spirit:value>
+            <spirit:value>d7a4257f</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -876,7 +854,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>424bb295</spirit:value>
+            <spirit:value>d7a4257f</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -2271,7 +2249,7 @@
         </spirit:wire>
       </spirit:port>
       <spirit:port>
-        <spirit:name>dma_resetn</spirit:name>
+        <spirit:name>trigger_reset_cycle</spirit:name>
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
           <spirit:wireTypeDefs>
@@ -2306,7 +2284,7 @@
       <spirit:file>
         <spirit:name>src/mkQDMADescriptorGenerator.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_a3fa2d1e</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_ad3e9d79</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -2372,17 +2350,17 @@
       <xilinx:displayName>QDMADescriptorGenerator</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2021-10-01T14:12:22Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2022-04-27T11:26:22Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2020.2</xilinx:xilinxVersion>
-      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="f3851aac"/>
+      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="b35e8a02"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="33b07054"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="bd71a179"/>
-      <xilinx:checksum xilinx:scope="ports" xilinx:value="8ef3a741"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="0a896786"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="f9e18404"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="f8418652"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>

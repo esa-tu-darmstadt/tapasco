@@ -207,7 +207,8 @@
     connect_bd_net $pcie_aclk [get_bd_pins $host_sc/aclk]
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins $host_sc/aclk1]
 
-    connect_bd_net [get_bd_pin $qdma_desc/dma_resetn] [get_bd_pin $qdma/soft_reset_n]
+    connect_bd_net [get_bd_pin $qdma_desc/trigger_reset_cycle] [get_bd_pin $qdma_conf/start_reset]
+    connect_bd_net [get_bd_pin $qdma_conf/dma_resetn] [get_bd_pin $qdma/soft_reset_n]
     connect_bd_net [get_bd_pin $qdma/axi_aclk] [get_bd_pin $qdma_desc/aclk] [get_bd_pin $qdma_conf/clk] $pcie_aclk
     connect_bd_net [get_bd_pin $qdma/axi_aresetn] [get_bd_pin $qdma_desc/resetn] [get_bd_pin $qdma_conf/resetn] $pcie_aresetn
   }
