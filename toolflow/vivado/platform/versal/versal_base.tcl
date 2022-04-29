@@ -22,6 +22,13 @@
     exit 1
   }
 
+  if { ! [info exists pcie_width] } {
+    puts "No PCIe width defined. Assuming x8..."
+    set pcie_width "8"
+  } else {
+    puts "Using PCIe width $pcie_width."
+  }
+
   # scan plugin directory
   foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/platform/versal/plugins" "*.tcl"] {
     source -notrace $f
@@ -106,10 +113,14 @@
     set pcie_aresetn [create_bd_pin -type "rst" -dir "O" "pcie_aresetn"]
 
     set qdma [tapasco::ip::create_qdma qdma_0]
-    apply_bd_automation -rule xilinx.com:bd_rule:qdma -config { axi_strategy {max_data} link_speed {3} link_width {8} pl_pcie_cpm {PL-PCIE}} $qdma
+    variable pcie_width
+    # first set pcie location to a value which supports x8/x16, otherwise block automation will fail
+    set_property CONFIG.pcie_blk_locn {X0Y2} $qdma
+    apply_bd_automation -rule xilinx.com:bd_rule:qdma -config [list axi_strategy {max_data} link_speed {3} link_width $pcie_width pl_pcie_cpm {PL-PCIE}] $qdma
 
     set_property -dict [list CONFIG.mode_selection {Advanced} \
       CONFIG.pcie_blk_locn {X0Y2} \
+      CONFIG.pl_link_cap_max_link_width "X$pcie_width" \
       CONFIG.axilite_master_en {false} \
       CONFIG.axist_bypass_en {true} \
       CONFIG.dsc_byp_mode {Descriptor_bypass_and_internal} \
@@ -267,6 +278,10 @@
       } \
       CONFIG.PS_PMC_CONFIG_APPLIED {1} \
     ] $versal_cips
+    if {[llength [info procs get_cips_config]]} {
+      # allow for special cips presets
+      set_property -dict [get_cips_config] $versal_cips
+    }
 
     # offset to map memory request from QDMA or PEs into address range of memory controllers
     set dma_sc [tapasco::ip::create_axi_sc "dma_sc_0" 1 1 1]
@@ -295,16 +310,37 @@
 
     set axi_noc [tapasco::ip::create_axi_noc "axi_noc_0"]
     set external_sources {2}
+    if {[llength [info procs get_number_mc]]} {
+      # always let number of memory controllers be overwritten by platform
+      set number_mc [get_number_mc]
+    } else {
+      # otherwise detect DDR memories from BoardPart
+      set number_mc [llength [get_board_components -filter {SUB_TYPE == ddr}]]
+      puts "  Configured to $number_mc memory controllers"
+    }
+    set mc_type DDR
+    if {[llength [info procs get_mc_type]]} {
+      set mc_type [get_mc_type]
+    }
     # Possible values: None, 1, 2, ...
     # port 1: arch
     # port 2: dma
-    apply_bd_automation -rule xilinx.com:bd_rule:axi_noc -config [list mc_type {DDR} noc_clk {None} num_axi_bram {None} num_axi_tg {None} num_aximm_ext $external_sources num_mc [get_number_mc] pl2noc_apm {0} pl2noc_cips {1}] $axi_noc
+    apply_bd_automation -rule xilinx.com:bd_rule:axi_noc -config [list mc_type $mc_type noc_clk {None} num_axi_bram {None} num_axi_tg {None} num_aximm_ext $external_sources num_mc $number_mc pl2noc_apm {0} pl2noc_cips {1}] $axi_noc
     # 2 external sources still give only one clock, so increase it manually:
     set_property CONFIG.NUM_CLKS [expr [get_property CONFIG.NUM_CLKS $axi_noc]+1] $axi_noc
-    set_property -dict [get_mc_config] $axi_noc
-    for {set i 0} {$i < [get_number_mc]} {incr i} {
-      # set frequency  of top level pin
-      set_property CONFIG.FREQ_HZ 100000000 [get_bd_intf_ports /sys_clk${i}_0]
+    if {[llength [info procs get_mc_config]]} {
+      set_property -dict [get_mc_config] $axi_noc
+    }
+    set_property -dict [ list \
+      CONFIG.MC_CHAN_REGION0 {DDR_LOW3} \
+      CONFIG.MC_CHAN_REGION1 {DDR_LOW3} \
+    ] $axi_noc
+    if {[llength [get_board_components -quiet -filter {SUB_TYPE == ddr}]] == 0} {
+      # if there are no memory components configured, set frequency of clock pins manually to frequency
+      for {set i 0} {$i < $number_mc} {incr i} {
+        # set frequency  of top level pin
+        set_property CONFIG.FREQ_HZ [get_mc_clk_freq] [get_bd_intf_ports /sys_clk${i}_0]
+      }
     }
     delete_bd_objs [get_bd_intf_nets /memory/Conn2] [get_bd_intf_nets /memory/Conn1]
     delete_bd_objs [get_bd_intf_pins /memory/S01_AXI] [get_bd_intf_pins /memory/S00_AXI]
@@ -420,10 +456,10 @@
         "M_INTC"      { foreach {base stride range comp} [list [expr [get_platform_base_address]+0x20000] 0x10000 0                "PLATFORM_COMPONENT_INTC0" ] {} }
         "M_TAPASCO"   { foreach {base stride range comp} [list [get_platform_base_address]                0x10000 0                "PLATFORM_COMPONENT_STATUS"] {} }
         "M_DESC_GEN"  { foreach {base stride range comp} [list [expr [get_platform_base_address]+0x10000] 0x10000 0                "PLATFORM_COMPONENT_DMA0"  ] {} }
-        "M_DMA"       { foreach {base stride range comp} [list 0                                          0       [expr "1 << 37"] ""                         ] {} }
-        "M_DMA_OFF"   { foreach {base stride range comp} [list [expr "1 << 40"]                           0       [expr "1 << 37"] ""                         ] {} }
-        "M_MEM_0"     { foreach {base stride range comp} [list 0                                          0       [expr "1 << 37"] ""                         ] {} }
-        "M_MEM_0_OFF" { foreach {base stride range comp} [list [expr "1 << 40"]                           0       [expr "1 << 37"] ""                         ] {} }
+        "M_DMA"       { foreach {base stride range comp} [list 0                                          0       [get_total_memory_size] ""                         ] {} }
+        "M_DMA_OFF"   { foreach {base stride range comp} [list [expr "1 << 40"]                           0       [get_total_memory_size] ""                         ] {} }
+        "M_MEM_0"     { foreach {base stride range comp} [list 0                                          0       [get_total_memory_size] ""                         ] {} }
+        "M_MEM_0_OFF" { foreach {base stride range comp} [list [expr "1 << 40"]                           0       [get_total_memory_size] ""                         ] {} }
         "M_ARCH"     { set base "skip" }
         default      { if { [dict exists $extra_masters [get_property NAME $m]] } {
                           set l [dict get $extra_masters [get_property NAME $m]]
@@ -444,42 +480,15 @@
 
   proc get_ignored_segments {} {
     set ignored [list]
-    # lappend ignored "/memory/axi_noc_0/S00_AXI/C0_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S01_AXI/C0_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S02_AXI/C0_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S03_AXI/C0_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S04_AXI/C0_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S05_AXI/C0_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S06_AXI/C0_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S07_AXI/C0_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S08_AXI/C0_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S00_AXI/C1_DDR_LOW3x4"
-    # lappend ignored "/memory/axi_noc_0/S01_AXI/C1_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S02_AXI/C1_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S03_AXI/C1_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S04_AXI/C1_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S05_AXI/C1_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S06_AXI/C1_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S07_AXI/C1_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S08_AXI/C1_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S00_AXI/C2_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S01_AXI/C2_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S02_AXI/C2_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S03_AXI/C2_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S04_AXI/C2_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S05_AXI/C2_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S06_AXI/C2_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S07_AXI/C2_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S08_AXI/C2_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S00_AXI/C3_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S01_AXI/C3_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S02_AXI/C3_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S03_AXI/C3_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S04_AXI/C3_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S05_AXI/C3_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S06_AXI/C3_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S07_AXI/C3_DDR_LOW3x4"
-    lappend ignored "/memory/axi_noc_0/S08_AXI/C3_DDR_LOW3x4"
+    for {set i 2} {$i < 9} {incr i} {
+      # skip i = 0, 1 (those are managed by tapasco)
+      for {set j 0} {$j < 4} {incr j} {
+        lappend ignored "/memory/axi_noc_0/S0${i}_AXI/C${j}_DDR_LOW3"
+        for {set k 0} {$k < 4} {incr k} {
+          lappend ignored "/memory/axi_noc_0/S0${i}_AXI/C${j}_DDR_LOW3x${k}"
+        }
+      }
+    }
     return $ignored
   }
 

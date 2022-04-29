@@ -19,6 +19,7 @@
 
 namespace eval platform {
   set platform_dirname "HAWK"
+  set pcie_width "8"
 
   source $::env(TAPASCO_HOME_TCL)/platform/versal/versal_base.tcl
 
@@ -36,8 +37,6 @@ namespace eval platform {
       CONFIG.MC_CASLATENCY {15} \
       CONFIG.MC_CASWRITELATENCY {11} \
       CONFIG.MC_CA_MIRROR {true} \
-      CONFIG.MC_CHAN_REGION0 {DDR_LOW3} \
-      CONFIG.MC_CHAN_REGION1 {DDR_LOW3} \
       CONFIG.MC_COMPONENT_DENSITY {16Gb} \
       CONFIG.MC_CONFIG_NUM {config17} \
       CONFIG.MC_CS_WIDTH {2} \
@@ -81,6 +80,14 @@ namespace eval platform {
       CONFIG.MC_USER_DEFINED_ADDRESS_MAP {1CS-17RA-2BA-2BG-10CA} \
       CONFIG.MC_XPLL_CLKOUT1_PERIOD {2000} \
       CONFIG.MC_XPLL_DIV4_CLKOUT12 {FALSE}]
+  }
+
+  proc get_mc_clk_freq {} {
+    return 100000000
+  }
+
+  proc get_total_memory_size {} {
+    return [expr "1 << 37"]
   }
 
   # give PCIe configuration
