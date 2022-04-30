@@ -213,7 +213,6 @@
     connect_bd_intf_net $host_sc/M00_AXI $m_arch
     connect_bd_intf_net $host_sc/M01_AXI $m_tapasco
     connect_bd_intf_net $host_sc/M02_AXI $m_intc
-    # connect_bd_intf_net $host_sc/M03_AXI $qdma_desc/S_AXI_CTRL
     connect_bd_intf_net $host_sc/M03_AXI $m_desc_gen
     connect_bd_net $pcie_aclk [get_bd_pins $host_sc/aclk]
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins $host_sc/aclk1]
@@ -239,7 +238,6 @@
     set m_axi_dma_off [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DMA_OFF"]
 
     set versal_cips [tapasco::ip::create_versal_cips "versal_cips_0"]
-    # set versal_cips [ create_bd_cell -type ip -vlnv xilinx.com:ip:versal_cips:3.1 versal_cips_0 ]
     set_property -dict [ list \
       CONFIG.BOOT_MODE {Custom} \
       CONFIG.CLOCK_MODE {REF CLK 33.33 MHz} \
