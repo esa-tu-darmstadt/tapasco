@@ -214,14 +214,22 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 					 tlkm_status_get_component_base(
 						 dev, "PLATFORM_COMPONENT_DMA0"));
 
+#ifdef CONFIG_ARM
+	if ((ioread32(&desc_gen_regs->id) & 0xFFFFFFFF) != DESC_GEN_ID) {
+#else
 	if ((readq(&desc_gen_regs->id) & 0xFFFFFFFF) != DESC_GEN_ID) {
+#endif
 		DEVERR(dev->dev_id, "could not find QDMA descriptor generator");
 		res = -ENODEV;
 		goto fail_id;
 	}
 
 	// reset QDMA
+#ifdef CONFIG_ARM
+	iowrite32(1, &desc_gen_regs->dma_reset);
+#else
 	writeq(1, &desc_gen_regs->dma_reset);
+#endif
 
 	DEVLOG(dev->dev_id, TLKM_LF_DMA, "Detected QDMA descriptor generator");
 
@@ -365,7 +373,11 @@ int pcie_qdma_exit(struct tlkm_pcie_device *pdev)
 					 tlkm_status_get_component_base(
 						 dev, "PLATFORM_COMPONENT_DMA0"));
 
+#ifdef CONFIG_ARM
+	if ((ioread32(&desc_gen_regs->id) & 0xFFFFFFFF) != DESC_GEN_ID) {
+#else
 	if ((readq(&desc_gen_regs->id) & 0xFFFFFFFF) != DESC_GEN_ID) {
+#endif
 		DEVWRN(dev->dev_id, "descriptor generator not found");
 		return -ENODEV;
 	}
