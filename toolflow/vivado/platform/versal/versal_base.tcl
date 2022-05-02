@@ -482,7 +482,7 @@
       # skip i = 0, 1 (those are managed by tapasco)
       for {set j 0} {$j < 4} {incr j} {
         lappend ignored "/memory/axi_noc_0/S0${i}_AXI/C${j}_DDR_LOW3"
-        for {set k 0} {$k < 4} {incr k} {
+        for {set k 1} {$k < 5} {incr k} {
           lappend ignored "/memory/axi_noc_0/S0${i}_AXI/C${j}_DDR_LOW3x${k}"
         }
       }
