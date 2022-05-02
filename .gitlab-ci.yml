@@ -501,6 +501,13 @@ tapasco_compose_AU250:
     PLATFORM: "AU250"
   extends: .tapasco_compose_no_synth
 
+tapasco_compose_HAWK:
+  variables:
+    PLATFORM: "HAWK"
+    VIVADO_VERSION: "2021.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+  extends: .tapasco_compose_no_synth
+
 tapasco_compose_netfpga_sume:
   variables:
     PLATFORM: "netfpga_sume"
