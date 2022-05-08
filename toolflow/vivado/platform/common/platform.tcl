@@ -156,7 +156,7 @@ namespace eval platform {
           if {[llength [get_bd_intf_nets -quiet -of_objects $src]] == 0} {
             set netname [format "%s_net" [string trim [string map {"/" "_"} "$src"] "_"]]
             puts "  found pin: $src, connecting $p -> $src via $netname"
-            connect_bd_intf_net -intf_net $netname $src $p
+            connect_bd_intf_net -boundary_type upper -intf_net $netname $src $p
             break
           } else {
             puts "  found no matching pin for $p"
@@ -279,7 +279,11 @@ namespace eval platform {
     if {$wns >= -0.3 && $wpws >= 0.0} {
       variable disable_write_bitstream
       if {[info exists disable_write_bitstream] == 0 || [string is false $disable_write_bitstream]} {
-        write_bitstream -force "${bitstreamname}.bit"
+        if {[tapasco::is_versal]} {
+          write_device_image -force "${bitstreamname}.pdi"
+        } else {
+          write_bitstream -force "${bitstreamname}.bit"
+        }
 
         tapasco::call_plugins "post-bitstream"
       }

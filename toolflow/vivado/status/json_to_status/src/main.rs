@@ -37,8 +37,9 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
-use std::io::BufReader;
 use std::path::Path;
+use std::ffi::OsStr;
+use std::io::BufReader;
 use std::u64;
 
 pub mod status {
@@ -193,6 +194,37 @@ fn write_mem_file(filename: &Path, data: &[u8]) -> Result<()> {
             init_vec = format!("{}", joined);
         } else {
             init_vec = format!(
+                "{}
+{}",
+                init_vec, joined
+            );
+        }
+    }
+
+    trace!("Use .mem output format");
+    let coe_content = format!(
+        "@0
+{}", init_vec
+    );
+    trace!("Generated {}", coe_content);
+    info!("Writing to file {:?}", filename);
+    fs::write(filename, coe_content).io_read_context(filename)?;
+
+    Ok(())
+}
+
+fn write_coe_file(filename: &Path, data: &[u8]) -> Result<()> {
+    info!("Generating hex representation of flatbuffer");
+    let hex_data: Vec<char> = hex::encode(data).chars().collect();
+    let mut init_vec = String::new();
+    for c in hex_data.chunks(16) {
+        let b: Vec<_> = c.chunks(2).rev().into_iter().collect();
+        let joined: Vec<String> = b.iter().map(|x| x.into_iter().collect()).collect();
+        let joined = joined.join("");
+        if init_vec.is_empty() {
+            init_vec = format!("{}", joined);
+        } else {
+            init_vec = format!(
                 "{},
                 {}",
                 init_vec, joined
@@ -200,6 +232,7 @@ fn write_mem_file(filename: &Path, data: &[u8]) -> Result<()> {
         }
     }
 
+    trace!("Use .coe output format");
     let coe_content = format!(
         "memory_initialization_radix=16;
     memory_initialization_vector=
@@ -229,7 +262,7 @@ fn run() -> Result<()> {
         )
         .arg(
             Arg::with_name("OUTPUT")
-                .help("Hex encoded file for use in BRAM initialization")
+                .help("Hex encoded file {.coe or .mem} for use in BRAM initialization")
                 .takes_value(true)
                 .required(true),
         )
@@ -452,7 +485,11 @@ fn run() -> Result<()> {
     }
 
     let output_path = Path::new(output_file_name);
-    write_mem_file(output_path, &buf)
+    if output_path.extension() == Some(OsStr::new("mem")) {
+        write_mem_file(output_path, &buf)
+    } else {
+        write_coe_file(output_path, &buf)
+    }
 }
 
 quick_main!(run);

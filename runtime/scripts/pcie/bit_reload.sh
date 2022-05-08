@@ -107,7 +107,7 @@ done
 shift "$((OPTIND-1))"
 
 BITSTREAM="$1"
-if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.bit ]]
+if [ -n $BITSTREAM ] && [[ $BITSTREAM == *.@(bit|pdi)  ]]
 then
 	echo "bitstream = $BITSTREAM"
 

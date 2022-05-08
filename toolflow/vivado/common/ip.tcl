@@ -430,7 +430,11 @@ namespace eval ::tapasco::ip {
     puts "  IDs : $ids"
 
     # create the IP core
-    set base [tapasco::ip::create_bram_ctrl "${name}_base"]
+    if {[tapasco::is_versal]} {
+      set base [tapasco::ip::create_versal_emb_mem_gen "${name}_base"]
+    } else {
+      set base [tapasco::ip::create_bram_ctrl "${name}_base"]
+    }
     set axi [tapasco::ip::create_axi_bram_ctrl $name]
 
     set_property -dict [list CONFIG.DATA_WIDTH {64} \
@@ -443,7 +447,7 @@ namespace eval ::tapasco::ip {
     return $axi
   }
 
-  # Generate Infrastructure as JSON file and generate COE file as BRAM source
+  # Generate Infrastructure as JSON file and generate COE/MEM file as BRAM source
   proc update_tapasco_status_base {name} {
     puts "  sourcing JSON lib ..."
     source -notrace "$::env(TAPASCO_HOME_TCL)/common/json_write.tcl"
@@ -461,18 +465,33 @@ namespace eval ::tapasco::ip {
       close $f
     }
 
-    set outfile "[get_property DIRECTORY [current_project]]/statuscore.coe"
+    set fileending [expr [tapasco::is_versal]?"mem":"coe"]
+    set outfile "[get_property DIRECTORY [current_project]]/statuscore.${fileending}"
     if {[catch {exec -ignorestderr json_to_status $json_file $outfile | tee ${json_file}.log >@stdout 2>@1}]} {
       puts stderr "Building TaPaSCO status core failed, see ${json_file}.log:"
       puts stderr [read [open ${json_file}.log r]]
       error "Could not build status core."
     }
-    puts "Wrote COE file to ${outfile}"
+    puts "Wrote ${fileending} file to ${outfile}"
 
-    set_property -dict [list CONFIG.Memory_Type {Single_Port_ROM} \
-                         CONFIG.Load_Init_File {true}         \
-                         CONFIG.EN_SAFETY_CKT {false}         \
-                         CONFIG.Coe_File $outfile] [get_bd_cells -filter "NAME == ${name}_base"]
+    if {[tapasco::is_versal]} {
+      # use standalone mode, otherwise init file is resetted during validation
+      set_property -dict [list CONFIG.USE_MEMORY_BLOCK {Stand_Alone} \
+                           CONFIG.MEMORY_TYPE {Single_Port_ROM}  \
+                           CONFIG.MEMORY_INIT_FILE $outfile \
+                           CONFIG.READ_DATA_WIDTH_A {64} \
+                           CONFIG.READ_LATENCY_A {1} \
+                           CONFIG.ENABLE_32BIT_ADDRESS {true} \
+                           CONFIG.MEMORY_OPTIMIZATION {optimize_memory}  \
+                         ] [get_bd_cells -filter "NAME == ${name}_base"]
+      puts [get_property CONFIG.MEMORY_INIT_FILE [get_bd_cells -filter "NAME == ${name}_base"]]
+    } else {
+      set mem_type {Single_Port_ROM}
+      set_property -dict [list CONFIG.Memory_Type {Single_Port_ROM} \
+                           CONFIG.Load_Init_File {true}         \
+                           CONFIG.EN_SAFETY_CKT {false}         \
+                           CONFIG.Coe_File $outfile] [get_bd_cells -filter "NAME == ${name}_base"]
+    }
   }
 
   set debugable_pes [list]
