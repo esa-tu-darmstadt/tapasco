@@ -21,6 +21,8 @@ namespace eval svm {
   proc add_iommu {} {
     if {[tapasco::is_feature_enabled "SVM"]} {
 
+      puts "Adding IOMMU to memory subsystem..."
+
       # add slave port to host subsystem
       current_bd_instance "/host"
       set m_mmu [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_MMU"]
@@ -83,5 +85,5 @@ namespace eval svm {
   }
 }
 
-tapasco::register_plugin "platform::svm::add_iommu" "pre-wiring"
+tapasco::register_plugin "platform::svm::add_iommu" "mid-subsystems"
 tapasco::register_plugin "platform::svm::addressmap" "post-address-map"

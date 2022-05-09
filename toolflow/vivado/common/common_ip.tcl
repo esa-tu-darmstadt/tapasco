@@ -72,6 +72,7 @@ dict set stdcomps   qdma_intr_ctrl       vlnv   "esa.informatik.tu-darmstadt.de:
 dict set stdcomps   axi_generic_off      vlnv   "esa.informatik.tu-darmstadt.de:user:axi_generic_offset:0.1"
 dict set stdcomps   axioffset_hbm        vlnv   "esa.informatik.tu-darmstadt.de:user:AXIOffsetHBM:1.0"
 dict set stdcomps   sume_clock_prog		 vlnv   "esa.informatik.tu-darmstadt.de:user:SumeClockProgrammer:1.0"
+dict set stdcomps   axi_dummy_master     vlnv   "esa.informatik.tu-darmstadt.de:user:AXIDummyMaster:1.0"
 dict set stdcomps   dmi                  vlnv   "esa.informatik.tu-darmstadt.de:user:DMI_rtl:1.0"
 dict set stdcomps   axi_to_dmi           vlnv   "esa.informatik.tu-darmstadt.de:user:AXI_to_Dmi:1.0"
 dict set stdcomps   tapasco_mmu          vlnv   "esa.informatik.tu-darmstadt.de:user:TapascoMMU:1.0"
