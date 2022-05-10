@@ -142,3 +142,13 @@ If no value is given for a register slice (or for all), a default value is used.
 #### SVM
 
 The Shared Virtual Memory (SVM) extensions is documented [here](tapasco-svm.md)
+
+#### QDMA
+
+The Xilinx Queue DMA engine can be used alternatively to the TaPaSCo BlueDMA engine by adding `--features 'QDMA {enabled: true}'` to the `tapasco compose` call.
+
+### Alveo U250
+
+#### QDMA
+
+See [Alveo U280](#alveo-u280).
