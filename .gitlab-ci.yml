@@ -538,6 +538,11 @@ tapasco_compose_xupvvh:
     PLATFORM: "xupvvh"
   extends: .tapasco_compose_no_synth
 
+tapasco_compose_xupvvh-es:
+  variables:
+    PLATFORM: "xupvvh-es"
+  extends: .tapasco_compose_no_synth
+
 tapasco_compose_zc706:
   variables:
     PLATFORM: "zc706"
