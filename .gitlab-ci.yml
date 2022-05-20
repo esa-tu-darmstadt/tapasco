@@ -348,30 +348,6 @@ build_tapasco_ubuntu_22_04_debug:
   image: ubuntu:22.04
   extends: .build_tapasco_ubuntu
 
-build_tapasco_arm32v7_debug:
-  variables:
-    MODE: "debug"
-  tags:
-    - High
-  image: arm32v7/ubuntu:16.04
-  before_script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git rpm curl
-    - curl http://launchpadlibrarian.net/332033977/libprotobuf10_3.0.0-9ubuntu5_armhf.deb -o /tmp/libprotobuf.deb
-    - curl http://launchpadlibrarian.net/332033978/libprotoc10_3.0.0-9ubuntu5_armhf.deb -o /tmp/libprotoc.deb
-    - curl http://launchpadlibrarian.net/332033979/protobuf-compiler_3.0.0-9ubuntu5_armhf.deb -o /tmp/protobuf.deb
-    - dpkg -i /tmp/libprotobuf.deb
-    - dpkg -i /tmp/libprotoc.deb
-    - dpkg -i /tmp/protobuf.deb
-  extends: .build_tapasco_ubuntu
-
-build_tapasco_arm64v8_debug:
-  variables:
-    MODE: "debug"
-  tags:
-    - High
-  image: arm64v8/ubuntu:18.04
-  extends: .build_tapasco_ubuntu
-
 build_tapasco_ubuntu_16_04_cross_debug:
   variables:
     MODE: "debug"
