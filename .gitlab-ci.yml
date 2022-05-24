@@ -85,6 +85,10 @@ test_tapasco_fedora_36:
     - ./tapasco-init.sh && source tapasco-setup.sh
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
     - tapasco-build-toolflow
+    - ./gradlew buildRPM
+  artifacts:
+    paths:
+      - toolflow/scala/build/distributions/tapasco-2021-01.x86_64.rpm
 
 build_scala_tapasco_centos_7:
   image: centos:7
