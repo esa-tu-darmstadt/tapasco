@@ -400,7 +400,7 @@ tapasco_compose_ubuntu:
   dependencies:
     - build_scala_tapasco_rockylinux_8
   before_script:
-    - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++ python3
+    - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++ python3 langpacks-en
     - ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
   script:
     - source $XILINX_VIVADO/settings64.sh
