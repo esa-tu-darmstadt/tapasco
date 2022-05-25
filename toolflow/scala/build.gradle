@@ -71,7 +71,7 @@ application {
 
 ospackage {
     packageName = "tapasco"
-    version = "2021"
+    version = "2022"
     release = "01"
     license = "GNU Lesser General Public License v3.0"
     vendor = "Embedded Systems and Applications Group, TU Darmstadt"
