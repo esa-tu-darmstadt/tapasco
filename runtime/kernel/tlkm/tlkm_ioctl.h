@@ -22,10 +22,15 @@
 
 #include <linux/fs.h>
 
-typedef struct {
+struct tlkm_ioctl_dev_list_head {
+	struct list_head head;
+};
+
+struct tlkm_ioctl_dev_list_entry {
+	struct list_head list;
 	struct tlkm_device *pdev;
 	tlkm_access_t access;
-} tlkm_ioctl_data;
+};
 
 long tlkm_ioctl_ioctl(struct file *fp, unsigned int ioctl, unsigned long data);
 

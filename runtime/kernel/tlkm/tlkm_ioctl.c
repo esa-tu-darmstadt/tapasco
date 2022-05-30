@@ -76,32 +76,62 @@ tlkm_ioctl_enum_devices(struct file *fp, unsigned int ioctl,
 static long tlkm_ioctl_create_device(struct file *fp, unsigned int ioctl,
 				     struct tlkm_ioctl_device_cmd __user *cmd)
 {
-	tlkm_ioctl_data *tmp = NULL;
+	int ret = 0;
+	struct tlkm_ioctl_dev_list_head *dev_list = NULL;
+	struct tlkm_ioctl_dev_list_entry *new;
 	struct tlkm_ioctl_device_cmd kc;
 	if (copy_from_user(&kc, (void __user *)cmd, sizeof(kc))) {
 		ERR("could not copy create device command from user space");
 		return -EACCES;
 	}
 	LOG(TLKM_LF_IOCTL, "create device #%02u command received", kc.dev_id);
-	tmp = (tlkm_ioctl_data *)fp->private_data;
-	tmp->pdev = tlkm_bus_get_device(kc.dev_id);
-	tmp->access = kc.access;
-	return tlkm_device_acquire(tlkm_bus_get_device(kc.dev_id), kc.access);
+
+	dev_list = fp->private_data;
+	new = kmalloc(sizeof(*new), GFP_KERNEL);
+	if (!new) {
+		ERR("could not allocate memory for list entry");
+		return -ENOMEM;
+	}
+	new->pdev = tlkm_bus_get_device(kc.dev_id);
+	new->access = kc.access;
+	ret = tlkm_device_acquire(tlkm_bus_get_device(kc.dev_id), kc.access);
+	if (ret)
+		kfree(new);
+	else
+		list_add(&new->list, &dev_list->head);
+
+	return ret;
 }
 
 static long tlkm_ioctl_destroy_device(struct file *fp, unsigned int ioctl,
 				      struct tlkm_ioctl_device_cmd __user *cmd)
 {
-	tlkm_ioctl_data *tmp = NULL;
+	struct tlkm_device *dev;
+	struct tlkm_ioctl_dev_list_head *dev_list;
+	struct tlkm_ioctl_dev_list_entry *entry = NULL, *iter;
 	struct tlkm_ioctl_device_cmd kc;
 	if (copy_from_user(&kc, (void __user *)cmd, sizeof(kc))) {
 		ERR("could not copy destroy device command from user space");
 		return -EACCES;
 	}
 	LOG(TLKM_LF_IOCTL, "destroy device #%02u command received", kc.dev_id);
-	tlkm_device_release(tlkm_bus_get_device(kc.dev_id), kc.access);
-	tmp = (tlkm_ioctl_data *)fp->private_data;
-	tmp->pdev = NULL;
+
+	dev = tlkm_bus_get_device(kc.dev_id);
+	dev_list = fp->private_data;
+	list_for_each_entry(iter, &dev_list->head, list) {
+		if (iter->pdev == dev && iter->access == kc.access) {
+			entry = iter;
+			break;
+		}
+	}
+	if (!entry) {
+		ERR("No matching device acquired");
+		return -ENODEV;
+	}
+
+	tlkm_device_release(dev, kc.access);
+	list_del(&entry->list);
+	kfree(entry);
 	return 0;
 }
 
