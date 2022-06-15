@@ -65,32 +65,39 @@ void tlkm_exit(void)
 
 static int tlkm_miscdev_open(struct inode *inode, struct file *filp)
 {
-	tlkm_ioctl_data *tmp = NULL;
+	struct tlkm_ioctl_dev_list_head *tmp = NULL;
 	atomic_inc(&opened_counter);
 	LOG(TLKM_LF_MODULE, "Device is now opened %d times.",
 	    atomic_read(&opened_counter));
 	filp->private_data =
-		(tlkm_ioctl_data *)kmalloc(sizeof(tlkm_ioctl_data), GFP_KERNEL);
+		kmalloc(sizeof(struct tlkm_ioctl_dev_list_head), GFP_KERNEL);
 	if (!filp->private_data)
 		return -ENODEV;
-	tmp = (tlkm_ioctl_data *)filp->private_data;
-	tmp->pdev = NULL;
+	tmp = filp->private_data;
+	INIT_LIST_HEAD(&tmp->head);
 	return 0;
 }
 
 static int tlkm_miscdev_release(struct inode *inode, struct file *filp)
 {
-	tlkm_ioctl_data *tmp = NULL;
+	struct tlkm_ioctl_dev_list_head *dev_list;
+	struct tlkm_ioctl_dev_list_entry *entry, *tmp;
+
 	atomic_dec(&opened_counter);
 	LOG(TLKM_LF_MODULE, "Device is still opened %d times.",
 	    atomic_read(&opened_counter));
-	if (filp->private_data != NULL) {
-		tmp = (tlkm_ioctl_data *)filp->private_data;
-		if (tmp->pdev) {
-			tlkm_device_release(tmp->pdev, tmp->access);
-		}
-		kfree(filp->private_data);
-		filp->private_data = NULL;
+
+	dev_list = filp->private_data;
+	if (!dev_list) {
+		ERR("device list not initialized");
+		return -ENODEV;
 	}
+	list_for_each_entry_safe(entry, tmp, &dev_list->head, list) {
+		tlkm_device_release(entry->pdev, entry->access);
+		list_del(&entry->list);
+		kfree(entry);
+	}
+	kfree(filp->private_data);
+	filp->private_data = NULL;
 	return 0;
 }
