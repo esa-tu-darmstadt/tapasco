@@ -58,6 +58,9 @@ pub enum Error {
 
     #[snafu(display("Could not parse configuration {}", source))]
     ConfigError { source: config::ConfigError },
+
+    #[snafu(display("Could not transform string for device name {}", source))]
+    StringError { source: core::array::TryFromSliceError }
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -407,9 +410,32 @@ impl TLKM {
             tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnumSnafu)?;
         };
 
+        // self.device_info_add_sim_device(&mut devices);
+
         trace!("There are {} devices.", devices.num_devs);
 
         Ok(devices.num_devs)
+    }
+
+    fn device_info_add_sim_device(&self, devices: &mut tlkm_ioctl_enum_devices_cmd) {
+        let mut name: [u8; 30] = [0; 30];
+        for (i, val) in String::from("TapascoSim").as_bytes().iter().enumerate() {
+            if i >= 30 {
+                break;
+            }
+
+            name[i] = *val;
+        }
+
+        let sim_dev = tlkm_device_info {
+            dev_id: devices.num_devs as DeviceId,
+            vendor_id: 0,
+            product_id: 0,
+            name
+        };
+
+        devices.devs[devices.num_devs] = sim_dev;
+        devices.num_devs += 1;
     }
 
     /// Retrieve device info from the driver.
@@ -423,6 +449,8 @@ impl TLKM {
         unsafe {
             tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnumSnafu)?;
         };
+
+        // self.device_info_add_sim_device(&mut devices);
 
         trace!("There are {} devices.", devices.num_devs);
 
@@ -474,6 +502,8 @@ impl TLKM {
             tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnumSnafu)?;
         };
 
+        // self.device_info_add_sim_device(&mut devices);
+
         trace!("There are {} devices.", devices.num_devs);
 
         for x in 0..devices.num_devs {
@@ -507,7 +537,7 @@ impl TLKM {
     ///
     /// [`device_alloc`]: #method.device_alloc
     /// [`device_enum_info`]: #method.device_enum_info
-    pub fn device_enum(
+    pub async fn device_enum(
         &self,
         debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
     ) -> Result<Vec<Device>> {
@@ -518,6 +548,8 @@ impl TLKM {
         };
 
         let mut v = Vec::new();
+
+        // self.device_info_add_sim_device(&mut devices);
 
         trace!("There are {} devices.", devices.num_devs);
 

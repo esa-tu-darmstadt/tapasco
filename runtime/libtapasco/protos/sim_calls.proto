@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+import "status_core.proto";
+
+package tapasco.simcalls;
+
+service SimRequest {
+  rpc register_interrupt (RegisterInterrupt) returns (SimResponse);
+  rpc get_interrupt_status (InterruptStatusRequest) returns (SimResponse);
+  rpc get_status (Void) returns (SimResponse);
+}
+
+message InterruptStatusRequest {
+  int32 fd = 1;
+}
+
+message InterruptStatus {
+  uint64 interrupts = 1;
+}
+
+message RegisterInterrupt {
+  int32 fd = 1;
+  int32 interrupt_id = 2;
+}
+
+enum SimResponseType {
+  Okay = 0;
+  Error = 1;
+}
+
+message SimResponse {
+  SimResponseType type = 1;
+  oneof response_payload {
+    Void void = 2;
+    RegisterInterrupt register_interrupt = 3;
+    InterruptStatus interrupt_status = 4;
+    tapasco.status.Status status = 5;
+    string error_reason = 6;
+  }
+}
+
+message Void {}

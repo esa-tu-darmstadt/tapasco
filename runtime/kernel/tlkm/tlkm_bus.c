@@ -32,6 +32,7 @@
 #include "zynq/zynq.h"
 #include "zynq/zynqmp.h"
 #include "pcie/pcie_device.h"
+#include "sim/sim.h"
 
 static DEFINE_MUTEX(_tlkm_bus_mtx);
 
@@ -47,6 +48,7 @@ static struct tlkm_class *const _tlkm_class[] = {
 	(struct tlkm_class *)&zynqmp_cls,
 	(struct tlkm_class *)&pcie_cls,
 	(struct tlkm_class *)&pcie_aws_cls,
+	(struct tlkm_class *)&sim_cls,
 };
 
 static void tlkm_bus_add_device(struct tlkm_device *pdev)
@@ -123,9 +125,9 @@ int tlkm_bus_init(void)
 	tlkm_bus_enumerate();
 	n = tlkm_bus_num_devices();
 	if (!n) {
-		ERR("did not find any TaPaSCo devices, cannot proceed");
-		ret = -ENXIO;
-		goto err;
+		ERR("did not find any TaPaSCo devices, but thats okay for now...");
+		//ret = -ENXIO;
+		//goto err;
 	}
 	LOG(TLKM_LF_BUS, "found %zd TaPaSCo devices", n);
 	if ((ret = tlkm_init())) {

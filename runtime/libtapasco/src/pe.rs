@@ -27,8 +27,9 @@ use crate::interrupt::Interrupt;
 use memmap::MmapMut;
 use snafu::ResultExt;
 use std::fs::File;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::ptr::write_volatile;
+use std::net::TcpStream;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -90,6 +91,7 @@ pub type PEId = usize;
 /// Stores information of attached memory for copy back
 /// operations after PE execution.
 #[derive(Debug, Getters, Setters)]
+#[allow(unused, dead_code)]
 pub struct PE {
     #[get = "pub"]
     id: usize,
@@ -103,7 +105,7 @@ pub struct PE {
     copy_back: Option<Vec<CopyBack>>,
     // This public getter is guarded behind conditional compilation for `tapasco-debug`:
     #[cfg_attr(feature = "tapasco-debug", get = "pub")]
-    memory: Arc<MmapMut>,
+    // memory: Arc<MmapMut>,
 
     #[set = "pub"]
     #[get = "pub"]
@@ -111,10 +113,11 @@ pub struct PE {
 
     interrupt: Interrupt,
 
-    debug: Box<dyn DebugControl + Sync + Send>,
+    // debug: Box<dyn DebugControl + Sync + Send>,
 
     #[get = "pub"]
     svm_in_use: bool,
+
 }
 
 impl PE {
@@ -122,10 +125,10 @@ impl PE {
         id: usize,
         type_id: PEId,
         offset: DeviceAddress,
-        memory: Arc<MmapMut>,
+        // memory: Arc<MmapMut>,
         completion: &File,
         interrupt_id: usize,
-        debug: Box<dyn DebugControl + Sync + Send>,
+        // debug: Box<dyn DebugControl + Sync + Send>,
         svm_in_use: bool,
     ) -> Result<Self> {
         Ok(Self {
@@ -134,21 +137,23 @@ impl PE {
             offset,
             active: false,
             copy_back: None,
-            memory,
+            // memory,
             local_memory: None,
             interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterruptSnafu)?,
-            debug,
+            // debug,
             svm_in_use,
         })
     }
 
     pub fn start(&mut self) -> Result<()> {
         ensure!(!self.active, PEAlreadyActiveSnafu { id: self.id });
+        println!("starting pe");
         trace!("Starting PE {}.", self.id);
         let offset = self.offset as isize;
         unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            write_volatile(ptr as *mut u32, 1);
+            // todo: send start command to sim pe
+            // let ptr = self.memory.as_ptr().offset(offset);
+            // write_volatile(ptr as *mut u32, 1);
         }
         self.active = true;
         Ok(())
@@ -183,8 +188,9 @@ impl PE {
     pub fn interrupt_set(&self) -> Result<bool> {
         let offset = (self.offset as usize + 0x0c) as isize;
         let r = unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            ptr.read_volatile()
+            // let ptr = self.memory.as_ptr().offset(offset);
+            // ptr.read_volatile()
+            1
         };
         let s = (r & 1) == 1;
         trace!("Reading interrupt status from 0x{:x} -> {}", offset, s);
@@ -195,8 +201,8 @@ impl PE {
         let offset = (self.offset as usize + 0x0c) as isize;
         trace!("Resetting interrupts: 0x{:x} -> {}", offset, v);
         unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            write_volatile(ptr as *mut u32, if v { 1 } else { 0 });
+            // let ptr = self.memory.as_ptr().offset(offset);
+            // write_volatile(ptr as *mut u32, if v { 1 } else { 0 });
         }
         Ok(())
     }
@@ -204,14 +210,16 @@ impl PE {
     pub fn interrupt_status(&self) -> Result<(bool, bool)> {
         let mut offset = (self.offset as usize + 0x04) as isize;
         let g = unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            ptr.read_volatile()
+            // let ptr = self.memory.as_ptr().offset(offset);
+            // ptr.read_volatile()
+            1
         } & 1
             == 1;
         offset = (self.offset as usize + 0x08) as isize;
         let l = unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            ptr.read_volatile()
+            // let ptr = self.memory.as_ptr().offset(offset);
+            // ptr.read_volatile()
+            1
         } & 1
             == 1;
         trace!("Interrupt status is {}, {}", g, l);
@@ -223,14 +231,14 @@ impl PE {
         let mut offset = (self.offset as usize + 0x04) as isize;
         trace!("Enabling interrupts: 0x{:x} -> 1", offset);
         unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            write_volatile(ptr as *mut u32, 1);
+            // let ptr = self.memory.as_ptr().offset(offset);
+            // write_volatile(ptr as *mut u32, 1);
         }
         offset = (self.offset as usize + 0x08) as isize;
         trace!("Enabling global interrupts: 0x{:x} -> 1", offset);
         unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            write_volatile(ptr as *mut u32, 1);
+            // let ptr = self.memory.as_ptr().offset(offset);
+            // write_volatile(ptr as *mut u32, 1);
         }
         Ok(())
     }
@@ -239,29 +247,36 @@ impl PE {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
         trace!("Writing argument: 0x{:x} ({}) -> {:?}", offset, argn, arg);
         unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            match arg {
-                PEParameter::Single32(x) => write_volatile(ptr as *mut u32, x),
-                PEParameter::Single64(x) => write_volatile(ptr as *mut u64, x),
-                _ => return Err(Error::UnsupportedParameter { param: arg }),
-            };
+            // let ptr = self.memory.as_ptr().offset(offset);
+            // match arg {
+            //     PEParameter::Single32(x) => write_volatile(ptr as *mut u32, x),
+            //     PEParameter::Single64(x) => write_volatile(ptr as *mut u64, x),
+            //     _ => return Err(Error::UnsupportedParameter { param: arg }),
+            // };
         }
+        Ok(())
+    }
+
+    pub fn set_arg_sim(&self, argn: usize, arg: PEParameter) -> Result<()> {
+        let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
+        println!("setting arg {:?} at offset {}", arg, offset);
         Ok(())
     }
 
     pub fn read_arg(&self, argn: usize, bytes: usize) -> Result<PEParameter> {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
         let r = unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            match bytes {
-                4 => Ok(PEParameter::Single32(
-                        ptr.cast::<u32>().read_volatile()
-                )),
-                8 => Ok(PEParameter::Single64(
-                        ptr.cast::<u64>().read_volatile()
-                )),
-                _ => Err(Error::UnsupportedRegisterSize { param: bytes }),
-            }
+            // let ptr = self.memory.as_ptr().offset(offset);
+            // match bytes {
+            //     4 => Ok(PEParameter::Single32(
+            //             ptr.cast::<u32>().read_volatile()
+            //     )),
+            //     8 => Ok(PEParameter::Single64(
+            //             ptr.cast::<u64>().read_volatile()
+            //     )),
+            //     _ => Err(Error::UnsupportedRegisterSize { param: bytes }),
+            // }
+            Ok(PEParameter::Single64(42))
         };
         trace!(
             "Reading argument: 0x{:x} ({} x {}B) -> {:?}",
@@ -276,8 +291,9 @@ impl PE {
     pub fn return_value(&self) -> u64 {
         let offset = (self.offset as usize + 0x10) as isize;
         let r = unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            ptr.cast::<u64>().read_volatile()
+            // let ptr = self.memory.as_ptr().offset(offset);
+            // ptr.cast::<u64>().read_volatile()
+            42
         };
         trace!("Reading return value: {}", r);
         r
@@ -292,8 +308,9 @@ impl PE {
     }
 
     pub fn enable_debug(&mut self) -> Result<()> {
-        self.debug
-            .enable_debug()
-            .context(DebugSnafu { id: self.id })
+        // self.debug
+        //     .enable_debug()
+        //     .context(DebugSnafu { id: self.id })
+        Ok(())
     }
 }

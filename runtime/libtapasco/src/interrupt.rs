@@ -22,12 +22,22 @@ use crate::tlkm::tlkm_ioctl_reg_interrupt;
 use crate::tlkm::tlkm_register_interrupt;
 use nix::sys::eventfd::eventfd;
 use nix::sys::eventfd::EfdFlags;
-use nix::unistd::close;
+use nix::unistd::{close, write};
 use nix::unistd::read;
 use snafu::ResultExt;
 use std::fs::File;
 use std::os::unix::io::RawFd;
 use std::os::unix::prelude::*;
+use tokio::runtime::{Builder, Runtime};
+use crate::interrupt::Error::SimError;
+use crate::sim_client::SimClient;
+use crate::device::simcalls::{
+    sim_request_client::SimRequestClient,
+    InterruptStatusRequest,
+    RegisterInterrupt,
+    SimResponseType,
+    sim_response::ResponsePayload
+};
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -39,6 +49,9 @@ pub enum Error {
 
     #[snafu(display("Could not register eventfd with driver: {}", source))]
     ErrorEventFDRegister { source: nix::Error },
+
+    #[snafu(display("Sim Error in Interrupt: {}", message))]
+    SimError { message: String },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -46,6 +59,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug, Getters, Setters)]
 pub struct Interrupt {
     interrupt: RawFd,
+    client: SimClient,
 }
 
 impl Drop for Interrupt {
@@ -70,12 +84,19 @@ impl Interrupt {
             pe_id: interrupt_id as i32,
         };
 
+        let mut client = SimClient::new().map_err(|_| SimError {message: "Error creating client".to_string() })?;
+        let response = client.register_interrupt(RegisterInterrupt{
+            fd,
+            interrupt_id: interrupt_id as i32,
+        }).map_err(|_| SimError {message: "Error registering interrupt".to_string()})?;
+
         unsafe {
+            // todo: pass to simulation
             tlkm_ioctl_reg_interrupt(tlkm_file.as_raw_fd(), &mut ioctl_fd)
                 .context(ErrorEventFDRegisterSnafu)?;
         };
 
-        Ok(Self { interrupt: fd })
+        Ok(Self { interrupt: fd , client})
     }
 
     /// Wait for an interrupt as indicated by the eventfd
@@ -83,23 +104,32 @@ impl Interrupt {
     /// Returns the number of interrupts that have occured since the last time
     /// calling this function.
     /// Returns at least 1
-    pub fn wait_for_interrupt(&self) -> Result<u64> {
-        let mut buf = [0u8; 8];
+    pub fn wait_for_interrupt(&mut self) -> Result<u64> {
         loop {
-            let r = read(self.interrupt, &mut buf);
-            match r {
-                Ok(_) => {
-                    return Ok(u64::from_ne_bytes(buf));
-                }
-                Err(e) => {
-                    if e == nix::errno::Errno::EAGAIN {
-                        std::thread::yield_now();
-                    } else {
-                        r.context(ErrorEventFDReadSnafu)?;
-                    }
-                }
+            let interrupts = self.client.get_interrupt_status(InterruptStatusRequest { fd: self.interrupt }).map_err(|_| SimError {message: "Error getting interrupt status".to_string()})?;
+            if interrupts > 0 {
+                return Ok(interrupts);
             }
+            std::thread::yield_now();
         }
+
+        // let mut buf = [0u8; 8];
+        // loop {
+        //     let r = read(self.interrupt, &mut buf);
+        //     match r {
+        //         Ok(_) => {
+        //             task.abort();
+        //             return Ok(u64::from_ne_bytes(buf));
+        //         }
+        //         Err(e) => {
+        //             if e == nix::errno::Errno::EAGAIN {
+        //                 std::thread::yield_now();
+        //             } else {
+        //                 r.context(ErrorEventFDReadSnafu)?;
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     /// Check if any interrupts have occured
@@ -109,21 +139,36 @@ impl Interrupt {
     /// This function behaves like wait_for_interrupt if blocking mode has been selected
     /// as the `read` will block in this case until an interrupt occurs.
     pub fn check_for_interrupt(&self) -> Result<u64> {
-        let mut buf = [0u8; 8];
-        loop {
-            let r = read(self.interrupt, &mut buf);
-            match r {
-                Ok(_) => {
-                    return Ok(u64::from_ne_bytes(buf));
-                }
-                Err(e) => {
-                    if e == nix::errno::Errno::EAGAIN {
-                        return Ok(0);
-                    } else {
-                        r.context(ErrorEventFDReadSnafu)?;
-                    }
-                }
+        let rt = Builder::new_multi_thread().enable_all().build().map_err(|_| SimError { message: String::from("Error creating runtime") })?;
+        let mut client = rt.block_on(SimRequestClient::connect("http://[::1]:4040")).map_err(|_| SimError { message: String::from("Error connecting to gRPC server") })?;
+        let request = InterruptStatusRequest { fd: self.interrupt};
+        let response = rt.block_on(client.get_interrupt_status(request)).map_err(|_| SimError {message: "a;sldkfj".to_string()})?;
+        let inner = response.into_inner();
+
+        let interrupts = match SimResponseType::from_i32(inner.r#type) {
+            Some(SimResponseType::Okay) => match inner.response_payload {
+                Some(ResponsePayload::InterruptStatus(interrupt_status)) => Ok(interrupt_status.interrupts),
+                resp => Err(SimError {message: format!("Expected interrupt status payload, got {:?}", resp).to_string()})
             }
-        }
+            _ => Err(SimError {message: "Got Error response from sim".to_string()})
+        }?;
+
+        Ok(interrupts)
+        // let mut buf = [0u8; 8];
+        // loop {
+        //     let r = read(self.interrupt, &mut buf);
+        //     match r {
+        //         Ok(_) => {
+        //             return Ok(u64::from_ne_bytes(buf));
+        //         }
+        //         Err(e) => {
+        //             if e == nix::errno::Errno::EAGAIN {
+        //                 return Ok(0);
+        //             } else {
+        //                 r.context(ErrorEventFDReadSnafu)?;
+        //             }
+        //         }
+        //     }
+        // }
     }
 }

@@ -30,8 +30,11 @@ use snafu::ResultExt;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::fs::File;
-use std::sync::Arc;
+use std::net::TcpStream;
+use std::sync::{Arc, Mutex};
 use std::thread;
+use crate::device::Error::SimError;
+use crate::sim_client::SimClient;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -56,6 +59,9 @@ pub enum Error {
 
     #[snafu(display("Debug Error: {}", source))]
     DebugError { source: crate::debug::Error },
+
+    #[snafu(display("Sim Error: {}", message))]
+    SimError { message: String },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -65,19 +71,20 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 /// Uses an unblocking Injector primitive usually used for job stealing.
 /// Retrieves PEs based on a first-come-first-serve basis.
 #[derive(Debug)]
+#[allow(unused, dead_code)]
 pub struct Scheduler {
     pes: Map<PEId, Injector<PE>>,
     pes_overview: HashMap<PEId, usize>,
     pes_name: HashMap<PEId, String>,
+    client: SimClient,
 }
 
 impl Scheduler {
     pub fn new(
         pes: &[crate::device::status::Pe],
-        mmap: &Arc<MmapMut>,
         mut local_memories: VecDeque<Arc<OffchipMemory>>,
         completion: &File,
-        debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
+        // debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
         is_pcie: bool,
         svm_in_use: bool,
     ) -> Result<Self> {
@@ -88,22 +95,22 @@ impl Scheduler {
         let mut interrupt_id = if is_pcie { 4 } else { 0 };
 
         for (i, pe) in pes.iter().enumerate() {
-            let debug = match &pe.debug {
-                Some(x) => match debug_impls.get(&x.name) {
-                    Some(y) => y
-                        .new(mmap, x.name.clone(), x.offset, x.size)
-                        .context(DebugSnafu)?,
-                    None => {
-                        let d = UnsupportedDebugGenerator {};
-                        d.new(mmap, x.name.clone(), 0, 0).context(DebugSnafu)?
-                    }
-                },
-                None => {
-                    let d = NonDebugGenerator {};
-                    d.new(mmap, "Unused".to_string(), 0, 0)
-                        .context(DebugSnafu)?
-                }
-            };
+            // let debug = match &pe.debug {
+            //     Some(x) => match debug_impls.get(&x.name) {
+            //         Some(y) => y
+            //             .new(mmap, x.name.clone(), x.offset, x.size)
+            //             .context(DebugSnafu)?,
+            //         None => {
+            //             let d = UnsupportedDebugGenerator {};
+            //             d.new(mmap, x.name.clone(), 0, 0).context(DebugSnafu)?
+            //         }
+            //     },
+            //     None => {
+            //         let d = NonDebugGenerator {};
+            //         d.new(mmap, "Unused".to_string(), 0, 0)
+            //             .context(DebugSnafu)?
+            //     }
+            // };
 
             if pe.interrupts.is_empty() {
                 trace!(
@@ -124,10 +131,10 @@ impl Scheduler {
                 i,
                 pe.id as PEId,
                 pe.offset,
-                mmap.clone(),
+                // mmap.clone(),
                 completion,
                 interrupt_id,
-                debug,
+                // debug,
                 svm_in_use,
             )
             .context(PESnafu)?;
@@ -163,10 +170,12 @@ impl Scheduler {
             pes: pe_hashed,
             pes_overview,
             pes_name,
+            client: SimClient::new().map_err(|_| Error::SimError{ message: "Error creating client in scheduler".to_string() })?,
         })
     }
 
     pub fn acquire_pe(&self, id: PEId) -> Result<PE> {
+        println!("acquiring pe");
         match self.pes.get(&id) {
             Some(l) => loop {
                 match l.val().steal() {

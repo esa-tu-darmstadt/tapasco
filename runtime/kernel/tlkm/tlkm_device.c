@@ -24,6 +24,7 @@
 #include "tlkm_control.h"
 #include "tlkm_class.h"
 #include "tlkm_perfc_miscdev.h"
+#include "../sim/sim.h"
 
 #define TLKM_STATUS_SZ 0x1000
 #define TLKM_STATUS_REG_OFFSET 0x1000
@@ -55,56 +56,59 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
 	       "setup status I/O remap regions ...");
-	if ((ret = tlkm_platform_status_init(dev, &dev->mmap))) {
-		DEVERR(dev->dev_id, "could not map status I/O regions: %d",
-		       ret);
-		goto err_ioremap_status;
-	}
-
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "reading status core ...");
-	if ((ret = tlkm_status_init(&dev->status, dev, dev->mmap.status,
-				    8192))) {
-		DEVERR(dev->dev_id, "could not read status core: %d", ret);
-		goto err_status;
-	}
-
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
-	       "Arch @ 0x%llx (S: %lldB) Platform @ 0x%llx (S: %lldB)",
-	       dev->status.arch_base.base, dev->status.arch_base.size,
-	       dev->status.platform_base.base, dev->status.platform_base.size);
-
-	dev->arch = (struct platform_regspace)INIT_REGSPACE(
-		(dev->status.arch_base.base), (dev->status.arch_base.size));
-	dev->plat = (struct platform_regspace)INIT_REGSPACE(
-		(dev->status.platform_base.base),
-		(dev->status.platform_base.size));
-
-	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup I/O remap regions ...");
-	if ((ret = tlkm_platform_mmap_init(dev, &dev->mmap))) {
-		DEVERR(dev->dev_id, "could not map I/O regions: %d", ret);
-		goto err_ioremap;
-	}
-
-	if (dev->cls->init_subsystems) {
-		DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
-		       "setting up device-specific subsystems ...");
-		if ((ret = dev->cls->init_subsystems(dev, data))) {
-			DEVERR(dev->dev_id,
-			       "could not setup device-specific subsystems: %d",
+	if (strncmp(dev->cls->name, SIM_CLASS_NAME, TLKM_DEVICE_NAME_LEN) != 0) {
+		if ((ret = tlkm_platform_status_init(dev, &dev->mmap))) {
+			DEVERR(dev->dev_id, "could not map status I/O regions: %d",
 			       ret);
-			goto err_sub;
+			goto err_ioremap_status;
 		}
-	}
+		
 
-	if (dev->cls->init_interrupts) {
+		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "reading status core ...");
+		if ((ret = tlkm_status_init(&dev->status, dev, dev->mmap.status,
+					    8192))) {
+			DEVERR(dev->dev_id, "could not read status core: %d", ret);
+			goto err_status;
+		}
+
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
-		       "setting up device-specific interrupt handling ...");
-		if ((ret = dev->cls->init_interrupts(dev,
-						     &dev->ctrl->interrupts))) {
-			DEVERR(dev->dev_id,
-			       "failed to initialize private data struct: %d",
-			       ret);
-			goto err_interrupts;
+		       "Arch @ 0x%llx (S: %lldB) Platform @ 0x%llx (S: %lldB)",
+		       dev->status.arch_base.base, dev->status.arch_base.size,
+		       dev->status.platform_base.base, dev->status.platform_base.size);
+
+		dev->arch = (struct platform_regspace)INIT_REGSPACE(
+			(dev->status.arch_base.base), (dev->status.arch_base.size));
+		dev->plat = (struct platform_regspace)INIT_REGSPACE(
+			(dev->status.platform_base.base),
+			(dev->status.platform_base.size));
+
+		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "setup I/O remap regions ...");
+		if ((ret = tlkm_platform_mmap_init(dev, &dev->mmap))) {
+			DEVERR(dev->dev_id, "could not map I/O regions: %d", ret);
+			goto err_ioremap;
+		}
+
+		if (dev->cls->init_subsystems) {
+			DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
+			       "setting up device-specific subsystems ...");
+			if ((ret = dev->cls->init_subsystems(dev, data))) {
+				DEVERR(dev->dev_id,
+				       "could not setup device-specific subsystems: %d",
+				       ret);
+				goto err_sub;
+			}
+		}
+
+		if (dev->cls->init_interrupts) {
+			DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
+			       "setting up device-specific interrupt handling ...");
+			if ((ret = dev->cls->init_interrupts(dev,
+							     &dev->ctrl->interrupts))) {
+				DEVERR(dev->dev_id,
+				       "failed to initialize private data struct: %d",
+				       ret);
+				goto err_interrupts;
+			}
 		}
 	}
 

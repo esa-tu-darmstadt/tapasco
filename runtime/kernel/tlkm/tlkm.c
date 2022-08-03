@@ -52,6 +52,7 @@ int tlkm_init(void)
 	_tlkm.miscdev.minor = MISC_DYNAMIC_MINOR;
 	_tlkm.miscdev.name = TLKM_IOCTL_FN;
 	_tlkm.miscdev.fops = &_tlkm_fops;
+	_tlkm.miscdev.mode = 0666;
 	_tlkm.is_setup = 1;
 	return misc_register(&_tlkm.miscdev);
 }

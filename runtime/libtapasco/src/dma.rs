@@ -29,8 +29,9 @@ use core::fmt::Debug;
 use memmap::MmapMut;
 use snafu::ResultExt;
 use std::fs::File;
+use std::net::TcpStream;
 use std::os::unix::prelude::*;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Snafu)]
 #[snafu(visibility(pub))]
@@ -326,6 +327,33 @@ impl DMAControl for SVMDMA {
             ).context(DMAFromDeviceSnafu)?;
         }
         trace!("Migration to host memory complete.");
+        Ok(())
+    }
+}
+
+#[derive(Debug, Getters)]
+#[allow(unused)]
+pub struct SimDMA {
+}
+
+#[allow(unused)]
+impl SimDMA {
+    pub fn new(
+    ) -> Self {
+        Self {
+        }
+    }
+}
+
+
+impl DMAControl for SimDMA {
+    fn copy_to(&self, data: &[u8], ptr: DeviceAddress) -> Result<()> {
+        println!("SimDMA copy_to {:?}, {:?}", data, ptr);
+        Ok(())
+    }
+
+    fn copy_from(&self, ptr: DeviceAddress, data: &mut [u8]) -> Result<()> {
+        println!("SimDMA copy_from {:?}, {:?}", data, ptr);
         Ok(())
     }
 }

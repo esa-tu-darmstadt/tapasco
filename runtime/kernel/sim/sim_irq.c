@@ -18,32 +18,34 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#![recursion_limit = "1024"]
+#include <linux/version.h>
+#include <linux/interrupt.h>
+#include <linux/io.h>
+#include <linux/sched.h>
+#include <linux/of.h>
+#include <linux/of_irq.h>
+#include <linux/eventfd.h>
+#include "tlkm_logging.h"
+#include "tlkm_slots.h"
+#include "sim_irq.h"
 
-#[macro_use]
-extern crate log;
-#[macro_use]
-extern crate getset;
-#[macro_use]
-extern crate nix;
-extern crate chrono;
-#[macro_use]
-extern crate snafu;
-extern crate bytes;
-extern crate crossbeam;
-extern crate env_logger;
-extern crate lockfree;
+#define IRQS_PER_CONTROLLER 32
 
-pub mod allocator;
-pub mod debug;
-pub mod device;
-pub mod dma;
-pub mod dma_user_space;
-pub mod ffi;
-pub mod interrupt;
-pub mod job;
-pub mod pe;
-pub mod scheduler;
-pub mod vfio;
-pub mod tlkm;
-pub mod sim_client;
+void sim_irq_exit(struct tlkm_device *dev)
+{
+}
+
+int sim_irq_init(struct tlkm_device *dev, struct list_head *interrupts)
+{
+  int retval = 0;
+  return retval;
+}
+
+int sim_irq_request_platform_irq(struct tlkm_device *dev, struct tlkm_irq_mapping *mapping)
+{
+  return 0;
+}
+
+void sim_irq_release_platform_irq(struct tlkm_device *dev, struct tlkm_irq_mapping *mapping)
+{
+}

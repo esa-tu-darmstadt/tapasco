@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+import "status_core.proto";
+
+package tapasco.sim;
+
+enum CommandType {
+  EnumDevices = 0;
+  TestEnum = 1;
+  StartPe = 2;
+  GetStatus = 3;
+}
+
+enum ResponseType {
+  Okay = 0;
+  Error = 1;
+}
+
+message SimCommand {
+  CommandType cmdType = 1;
+}
+
+message SimResponse {
+  CommandType cmdType = 1;
+  ResponseType resp = 2;
+  tapasco.status.Status status = 3;
+}
+
