@@ -32,7 +32,6 @@ use tokio::runtime::{Builder, Runtime};
 use crate::interrupt::Error::SimError;
 use crate::sim_client::SimClient;
 use crate::device::simcalls::{
-    sim_request_client::SimRequestClient,
     InterruptStatusRequest,
     RegisterInterrupt,
     SimResponseType,
@@ -104,7 +103,7 @@ impl Interrupt {
     /// Returns the number of interrupts that have occured since the last time
     /// calling this function.
     /// Returns at least 1
-    pub fn wait_for_interrupt(&mut self) -> Result<u64> {
+    pub fn wait_for_interrupt(&self) -> Result<u64> {
         loop {
             let interrupts = self.client.get_interrupt_status(InterruptStatusRequest { fd: self.interrupt }).map_err(|_| SimError {message: "Error getting interrupt status".to_string()})?;
             if interrupts > 0 {
@@ -139,20 +138,7 @@ impl Interrupt {
     /// This function behaves like wait_for_interrupt if blocking mode has been selected
     /// as the `read` will block in this case until an interrupt occurs.
     pub fn check_for_interrupt(&self) -> Result<u64> {
-        let rt = Builder::new_multi_thread().enable_all().build().map_err(|_| SimError { message: String::from("Error creating runtime") })?;
-        let mut client = rt.block_on(SimRequestClient::connect("http://[::1]:4040")).map_err(|_| SimError { message: String::from("Error connecting to gRPC server") })?;
-        let request = InterruptStatusRequest { fd: self.interrupt};
-        let response = rt.block_on(client.get_interrupt_status(request)).map_err(|_| SimError {message: "a;sldkfj".to_string()})?;
-        let inner = response.into_inner();
-
-        let interrupts = match SimResponseType::from_i32(inner.r#type) {
-            Some(SimResponseType::Okay) => match inner.response_payload {
-                Some(ResponsePayload::InterruptStatus(interrupt_status)) => Ok(interrupt_status.interrupts),
-                resp => Err(SimError {message: format!("Expected interrupt status payload, got {:?}", resp).to_string()})
-            }
-            _ => Err(SimError {message: "Got Error response from sim".to_string()})
-        }?;
-
+        let interrupts = self.client.get_interrupt_status(InterruptStatusRequest { fd: self.interrupt }).map_err(|_| SimError {message: "Error getting interrupt Status".to_string()})?;
         Ok(interrupts)
         // let mut buf = [0u8; 8];
         // loop {

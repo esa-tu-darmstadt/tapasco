@@ -29,7 +29,15 @@ use snafu::ResultExt;
 use std::fs::File;
 use std::sync::{Arc, Mutex};
 use std::ptr::write_volatile;
-use std::net::TcpStream;
+use std::net::{TcpStream, ToSocketAddrs};
+use crate::sim_client::SimClient;
+
+use crate::device::simcalls::{
+    SimResponseType,
+    StartPe,
+    sim_response::ResponsePayload
+};
+use crate::pe::Error::SimError;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -71,6 +79,10 @@ pub enum Error {
         source: crate::debug::Error,
         id: usize,
     },
+
+    SimError {
+        message: String
+    }
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -118,6 +130,7 @@ pub struct PE {
     #[get = "pub"]
     svm_in_use: bool,
 
+    client: SimClient
 }
 
 impl PE {
@@ -142,6 +155,7 @@ impl PE {
             interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterruptSnafu)?,
             // debug,
             svm_in_use,
+            client: SimClient::new().map_err(|_| SimError {message: "Error instantiating sim client from pe".to_string()})?
         })
     }
 
@@ -155,6 +169,9 @@ impl PE {
             // let ptr = self.memory.as_ptr().offset(offset);
             // write_volatile(ptr as *mut u32, 1);
         }
+
+        self.client.start_pe(StartPe {id: self.id as u64}).map_err(|_| SimError {message: "Error starting pe".to_string()})?;
+
         self.active = true;
         Ok(())
     }
