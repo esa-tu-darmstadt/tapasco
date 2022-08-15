@@ -13,10 +13,11 @@ service SimRequest {
 }
 
 message SetArg {
-  uint64 argn = 1;
+  uint32 peid = 1;
+  uint64 argn = 2;
   oneof arg {
-    uint32 u_32 = 2;
-    uint64 u_64 = 3;
+    uint32 u_32 = 3;
+    uint64 u_64 = 4;
   }
 }
 

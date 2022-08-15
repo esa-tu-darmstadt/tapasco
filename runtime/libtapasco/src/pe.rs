@@ -275,6 +275,7 @@ impl PE {
         }
 
         self.client.set_arg(SetArg {
+            peid: self.id,
             argn: argn as u64,
             arg: match arg {
                 PEParameter::Single32(x) => Some(Arg::U32(x)),
