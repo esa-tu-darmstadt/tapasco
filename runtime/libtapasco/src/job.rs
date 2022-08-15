@@ -255,7 +255,7 @@ impl Job {
         trace!("Handled transfers => {:?}.", trans_args);
         trace!("Setting arguments.");
         for (i, arg) in trans_args.into_iter().enumerate() {
-            trace!("Setting argument {} => {:?}.", i, arg);
+            println!("Setting argument {} => {:?}.", i, arg);
             match arg {
                 PEParameter::Single32(_) => {
                     self.pe.as_ref().unwrap().set_arg(i, arg).context(PESnafu)?;

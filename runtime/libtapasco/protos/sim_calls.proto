@@ -6,6 +6,7 @@ package tapasco.simcalls;
 
 service SimRequest {
   rpc register_interrupt (RegisterInterrupt) returns (SimResponse);
+  rpc deregister_interrupt (DeregisterInterrupt) returns (SimResponse);
   rpc get_interrupt_status (InterruptStatusRequest) returns (SimResponse);
   rpc get_status (Void) returns (SimResponse);
   rpc start_pe (StartPE) returns (SimResponse);
@@ -36,6 +37,10 @@ message InterruptStatus {
 message RegisterInterrupt {
   int32 fd = 1;
   int32 interrupt_id = 2;
+}
+
+message DeregisterInterrupt {
+  int32 fd = 1;
 }
 
 enum SimResponseType {

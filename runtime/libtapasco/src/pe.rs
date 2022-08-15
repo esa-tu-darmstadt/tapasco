@@ -264,7 +264,7 @@ impl PE {
 
     pub fn set_arg(&self, argn: usize, arg: PEParameter) -> Result<()> {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
-        trace!("Writing argument: 0x{:x} ({}) -> {:?}", offset, argn, arg);
+        println!("Writing argument: 0x{:x} ({}) -> {:?}", offset, argn, arg);
         unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
             // match arg {
@@ -275,7 +275,7 @@ impl PE {
         }
 
         self.client.set_arg(SetArg {
-            peid: self.id,
+            peid: self.id as u32,
             argn: argn as u64,
             arg: match arg {
                 PEParameter::Single32(x) => Some(Arg::U32(x)),

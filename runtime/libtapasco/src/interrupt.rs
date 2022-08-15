@@ -34,6 +34,7 @@ use crate::sim_client::SimClient;
 use crate::device::simcalls::{
     InterruptStatusRequest,
     RegisterInterrupt,
+    DeregisterInterrupt,
     SimResponseType,
     sim_response::ResponsePayload
 };
@@ -64,6 +65,7 @@ pub struct Interrupt {
 impl Drop for Interrupt {
     fn drop(&mut self) {
         let _ = close(self.interrupt);
+        let _ = self.client.deregister_interrupt(DeregisterInterrupt{ fd: self.interrupt });
     }
 }
 
