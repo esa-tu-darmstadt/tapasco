@@ -11,6 +11,7 @@ use device::simcalls::{
     SimResponseType,
     RegisterInterrupt,
     StartPe,
+    SetArg,
     sim_request_client::SimRequestClient,
     sim_response::ResponsePayload
 };
@@ -98,6 +99,26 @@ impl SimClient {
         let request = tonic::Request::new(start_pe);
         let mut client = self.client.lock().map_err(|_| SimError {message: "Error getting client mutext".to_string()})?;
         let response = self.rt.block_on(client.start_pe(request)).map_err(|_| SimError {message: "Error sending start_pe rpc".to_string()})?;
+        let inner = response.into_inner();
+
+        match SimResponseType::from_i32(inner.r#type) {
+            Some(SimResponseType::Okay) => match inner.response_payload {
+                Some(ResponsePayload::Void(void)) => Ok(void),
+                Some(_) => Err(SimError {message: "Got wrong payload from request".to_string()}),
+                None => Err(SimError {message: "response payload is None".to_string()}),
+            },
+            Some(SimResponseType::Error) => match inner.response_payload {
+                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
+                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
+            },
+            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
+        }
+    }
+
+    pub fn set_arg(&self, set_arg: SetArg) -> Result<Void, device::Error> {
+        let request = tonic::Request::new(set_arg);
+        let mut client = self.client.lock().map_err(|_| SimError {message: "Error getting client mutext".to_string()})?;
+        let response = self.rt.block_on(client.set_arg(request)).map_err(|_| SimError {message: "Error sending set_arg rpc".to_string()})?;
         let inner = response.into_inner();
 
         match SimResponseType::from_i32(inner.r#type) {

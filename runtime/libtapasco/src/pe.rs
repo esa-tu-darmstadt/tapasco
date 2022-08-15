@@ -35,7 +35,9 @@ use crate::sim_client::SimClient;
 use crate::device::simcalls::{
     SimResponseType,
     StartPe,
-    sim_response::ResponsePayload
+    SetArg,
+    sim_response::ResponsePayload,
+    set_arg::Arg
 };
 use crate::pe::Error::SimError;
 
@@ -271,6 +273,15 @@ impl PE {
             //     _ => return Err(Error::UnsupportedParameter { param: arg }),
             // };
         }
+
+        self.client.set_arg(SetArg {
+            argn: argn as u64,
+            arg: match arg {
+                PEParameter::Single32(x) => Some(Arg::U32(x)),
+                PEParameter::Single64(x) => Some(Arg::U64(x)),
+                _ => return Err(Error::UnsupportedParameter { param: arg }),
+            }
+        }).map_err(|_| SimError {message: "Error setting argument".to_string()})?;
         Ok(())
     }
 

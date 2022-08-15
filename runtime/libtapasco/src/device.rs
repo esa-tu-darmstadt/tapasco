@@ -328,6 +328,7 @@ impl Device {
 
         let mut client = SimClient::new()?;
         let s = client.get_status()?;
+        println!("got status: {:?}", s);
 
         println!("Mapping the platform and architecture memory regions.");
 

@@ -9,6 +9,15 @@ service SimRequest {
   rpc get_interrupt_status (InterruptStatusRequest) returns (SimResponse);
   rpc get_status (Void) returns (SimResponse);
   rpc start_pe (StartPE) returns (SimResponse);
+  rpc set_arg (SetArg) returns (SimResponse);
+}
+
+message SetArg {
+  uint64 argn = 1;
+  oneof arg {
+    uint32 u_32 = 2;
+    uint64 u_64 = 3;
+  }
 }
 
 message StartPE {
