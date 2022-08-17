@@ -189,7 +189,7 @@ struct device_memory_block {
 /* list entry for list of interval nodes */
 struct vmem_interval_list_entry {
 	struct list_head list;
-	struct interval_tree_node *interval_node;
+	struct interval_tree_node interval_node;
 };
 
 #endif /* defined(EN_SVM) && LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0) */

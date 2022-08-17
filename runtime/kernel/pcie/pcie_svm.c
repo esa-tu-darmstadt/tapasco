@@ -349,7 +349,8 @@ static int search_vmem_intervals(struct tlkm_pcie_svm_data *svm_data,
 			       "failed to allocate memory for list entry");
 			return -ENOMEM;
 		}
-		entry->interval_node = node;
+		entry->interval_node.start = node->start;
+		entry->interval_node.last = node->last;
 		list_add_tail(&entry->list, interval_list);
 
 		start = min(node->last + 1, end);
@@ -1906,9 +1907,10 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 				continue;
 
 			entry = list_first_entry(&vmem_intervals[j],
-			struct vmem_interval_list_entry, list);
-			if (entry->interval_node->start < next_start) {
-				next_start = entry->interval_node->start;
+						 struct vmem_interval_list_entry,
+						 list);
+			if (entry->interval_node.start < next_start) {
+				next_start = entry->interval_node.start;
 				next_dev = j;
 				next_entry = entry;
 			}
@@ -1935,7 +1937,7 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 		// migrate next interval
 		if (next_start != -1) {
 			nmigrate =
-				(min(next_entry->interval_node->last + 1, end) -
+				(min(next_entry->interval_node.last + 1, end) -
 				 curr_addr) >> PAGE_SHIFT;
 			src_dev = tlkm_bus_get_device(next_dev)->private_data;
 			if (src_dev != pdev) {
@@ -2074,8 +2076,8 @@ int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 		while (!list_empty(&vmem_intervals)) {
 			entry = list_first_entry(&vmem_intervals,
 			struct vmem_interval_list_entry, list);
-			start = max(va_start, entry->interval_node->start);
-			end = min(entry->interval_node->last + 1, va_end);
+			start = max(va_start, entry->interval_node.start);
+			end = min(entry->interval_node.last + 1, va_end);
 			nmigrate = (end - start) >> PAGE_SHIFT;
 			r = svm_migrate_dev_to_ram(src_dev, start, nmigrate);
 			if (r)
@@ -2359,8 +2361,8 @@ svm_tlb_invalidate_range_start(struct mmu_notifier *subscription,
 	while (!list_empty(&intervals)) {
 		entry = list_first_entry(&intervals,
 			struct vmem_interval_list_entry, list);
-		inv_start = max(entry->interval_node->start, range->start);
-		inv_end = min(entry->interval_node->last + 1, range->end);
+		inv_start = max(entry->interval_node.start, range->start);
+		inv_end = min(entry->interval_node.last + 1, range->end);
 		inv_npages = (inv_end - inv_start) >> PAGE_SHIFT;
 		invalidate_tlb_range(env->svm_data, inv_start, inv_npages);
 		wmb();
