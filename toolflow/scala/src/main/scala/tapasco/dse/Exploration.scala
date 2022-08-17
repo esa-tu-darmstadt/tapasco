@@ -66,6 +66,7 @@ private class ConcreteExploration(
                                    val designFrequency: Option[Heuristics.Frequency],
                                    val batchSize: Int = Exploration.MAX_BATCH_SZ,
                                    val basePath: Path,
+                                   val features: Option[Seq[Feature]],
                                    val debugMode: Option[String],
                                    val deleteOnFail: Option[Boolean])(implicit cfg: Configuration, val tasks: Tasks) extends Exploration {
   private implicit val _exploration = this
@@ -130,7 +131,7 @@ private class ConcreteExploration(
       val feasibleElem = DesignSpace.Element(run.element.composition, newFrequency, newH)
       // skip feedback elements with frequency of less than 50 MHz
       if (newFrequency >= 50.0) {
-        Seq(new ConcreteRun(nextRunId, feasibleElem, run.target, debugMode, deleteOnFail))
+        Seq(new ConcreteRun(nextRunId, feasibleElem, run.target, features, debugMode, deleteOnFail))
       } else {
         Seq()
       }
@@ -226,7 +227,7 @@ private class ConcreteExploration(
     space.enumerate foreach { e =>
       val util = AreaUtilization(target, e.composition)
       require(util.nonEmpty, "area estimate must be known for all elements")
-      val run = new ConcreteRun(nextRunId, e, target, debugMode, deleteOnFail)
+      val run = new ConcreteRun(nextRunId, e, target, features, debugMode, deleteOnFail)
       if (q.find(r => (r compare run) == 0).isEmpty) {
         publish(Exploration.Events.RunDefined(e, util.get))
         q.enqueue(run)
@@ -259,9 +260,10 @@ object Exploration {
             designFrequency: Option[Heuristics.Frequency],
             batchSize: Int = MAX_BATCH_SZ,
             basePath: Path,
+            features: Option[Seq[Feature]],
             debugMode: Option[String] = None,
             deleteOnFail: Option[Boolean])(implicit cfg: Configuration, tsk: Tasks): Exploration =
-    new ConcreteExploration(initialComposition, target, dimensions, designFrequency, batchSize, basePath, debugMode, deleteOnFail)
+    new ConcreteExploration(initialComposition, target, dimensions, designFrequency, batchSize, basePath, features, debugMode, deleteOnFail)
 
   // scalastyle:on parameter.number
 
