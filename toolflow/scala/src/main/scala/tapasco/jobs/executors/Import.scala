@@ -56,7 +56,7 @@ object Import extends Executor[ImportJob] {
 
     val tasks = jobs map { case (j, t) =>
       val avgCC = FileAssetManager.reports.cosimReport(VLNV.fromZip(j.zipFile).name, t) map (_.latency.avg)
-      new ImportTask(j.zipFile, t, j.id, _ => signal.release(), avgCC, j.skipEvaluation, j.synthOptions, j.optimization)(cfg)
+      new ImportTask(j.zipFile, t, j.id, _ => signal.release(), avgCC, j.runEvaluation, j.synthOptions, j.optimization)(cfg)
     }
 
     tasks foreach {

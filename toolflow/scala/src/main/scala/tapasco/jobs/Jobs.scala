@@ -203,13 +203,14 @@ final case class DesignSpaceExplorationJob(
   * @param _architectures  Name list of [[tapasco.base.Architecture]] instances.
   * @param _platforms      Name list of [[tapasco.base.Platform]] instances.
   * @param _kernels        Name list of [[tapasco.base.Kernel]] instances to synthesize.
+  * @param runEvaluation   Evaluate the Core.
   **/
 final case class HighLevelSynthesisJob(
                                         private val _implementation: String,
                                         private val _architectures: Option[Seq[String]] = None,
                                         private val _platforms: Option[Seq[String]] = None,
                                         private val _kernels: Option[Seq[String]] = None,
-                                        skipEvaluation: Option[Boolean] = None) extends Job("hls") {
+                                        runEvaluation: Option[Boolean] = None) extends Job("hls") {
   /** Returns the selected HLS tool implementation. */
   lazy val implementation: HighLevelSynthesizer.Implementation = HighLevelSynthesizer.Implementation(_implementation)
 
@@ -244,7 +245,7 @@ final case class HighLevelSynthesisJob(
   *                           core (must be > 0).
   * @param description        Description of the core (optional).
   * @param averageClockCycles Clock cycles in an average job (optional).
-  * @param skipEvaluation     Do not perform evaluation (optional).
+  * @param runEvaluation      Run an Evaluation (optional).
   * @param synthOptions       Optional parameters for synth_design.
   * @param _architectures     Name list of [[tapasco.base.Architecture]] instances.
   * @param _platforms         Name list of [[tapasco.base.Platform]] instances.
@@ -255,7 +256,7 @@ final case class ImportJob(
                             id: Kernel.Id,
                             description: Option[String] = None,
                             averageClockCycles: Option[Long] = None,
-                            skipEvaluation: Option[Boolean] = None,
+                            runEvaluation: Option[Boolean] = None,
                             synthOptions: Option[String] = None,
                             private val _architectures: Option[Seq[String]] = None,
                             private val _platforms: Option[Seq[String]] = None,

@@ -51,14 +51,14 @@ object Import {
     * If no XML synthesis report is found (%NAME%_export.xml), will perform out-of-contex
     * synthesis and place-and-route for the Core to produce area and Fmax estimates.
     *
-    * @param zip      Path to IP-XACT. zip.
-    * @param id       Kernel ID.
-    * @param t        Target Architecture + Platform combination to import for.
-    * @param acc      Average clock cycle count for a job execution on the PE (optional).
-    * @param skipEval Do not perform out-of-context synthesis for resource estimation (optional).
-    * @param cfg      Implicit [[base.Configuration]].
+    * @param zip           Path to IP-XACT. zip.
+    * @param id            Kernel ID.
+    * @param t             Target Architecture + Platform combination to import for.
+    * @param acc           Average clock cycle count for a job execution on the PE (optional).
+    * @param runEvaluation Do not perform out-of-context synthesis for resource estimation (optional).
+    * @param cfg           Implicit [[base.Configuration]].
     **/
-  def apply(zip: Path, id: Kernel.Id, t: Target, acc: Option[Long], skipEval: Option[Boolean],
+  def apply(zip: Path, id: Kernel.Id, t: Target, acc: Option[Long], runEvaluation: Option[Boolean],
             optimization: Int, synthOptions: Option[String] = None)
            (implicit cfg: Configuration): Boolean = {
     // get VLNV from the file
@@ -77,7 +77,7 @@ object Import {
 
     // write core.json to output directory (as per config)
     val p = cfg.outputDir(c, t).resolve("ipcore").resolve("core.json")
-    importCore(c, t, p, vlnv, skipEval, optimization, synthOptions)
+    importCore(c, t, p, vlnv, runEvaluation, optimization, synthOptions)
   }
 
   /**
@@ -90,7 +90,7 @@ object Import {
     * @param skipEval Skip out-of-context synthesis step (optional).
     * @param cfg      Implicit [[Configuration]].
     **/
-  private def importCore(c: Core, t: Target, p: Path, vlnv: VLNV, skipEval: Option[Boolean], optimization: Int,
+  private def importCore(c: Core, t: Target, p: Path, vlnv: VLNV, runEvaluation: Option[Boolean], optimization: Int,
                          synthOptions: Option[String])
                         (implicit cfg: Configuration): Boolean = {
     Files.createDirectories(p.getParent)
@@ -119,13 +119,17 @@ object Import {
       logger.debug("{} is the same as {}, no copy/link required", linkp: Any, c.zipPath.toAbsolutePath)
     }
 
-    // evaluate the ip core and store the report with the link
-    val res = skipEval.getOrElse(false) || evaluateCore(c, t, optimization = optimization, synthOptions = synthOptions)
+    var result = true
+    // if runEvaluation is true, run the Evaluation and store the results with the link
+    if(runEvaluation.isDefined && runEvaluation.get) {
+      val evalSuccess = evaluateCore(c, t, optimization = optimization, synthOptions = synthOptions)
+      result &= evalSuccess
+    }
 
     // write core.json
     logger.debug("writing core description: {}", p.toString)
     Core.to(c.copy(descPath = p, _zipPath = Paths.get("%s.zip".format(vlnv.name))), p)
-    res
+    result
   }
 
   /**
