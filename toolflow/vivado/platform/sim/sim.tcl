@@ -55,6 +55,7 @@ namespace eval platform {
     puts "Computing addresses for masters ..."
         # "M_INTC"    { foreach {base stride range comp} [list 0x00B0010000 0x10000 0 "PLATFORM_COMPONENT_INTC0"] {} }
     foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
+      puts {[DEBUG] get address map foreach}
       switch -glob [get_property NAME $m] {
         "M_TAPASCO" { foreach {base stride range comp} [list 0x0010000000 0       0 "PLATFORM_COMPONENT_STATUS"] {} }
 
@@ -63,13 +64,41 @@ namespace eval platform {
       }
       if {$base != "skip"} { set peam [addressmap::assign_address $peam $m $base $stride $range $comp] }
     }
+    puts {[DEBUG] after get address map foreach}
     return $peam
   }
 
   proc modify_address_map_sim {map} {
     puts $map
+    set ignored [::platform::get_ignored_segments]
+    set space [get_bd_addr_spaces /S_AXI]
+    set intf [get_bd_intf_ports -of_objects $space]
+    set segs [get_bd_addr_seg -addressables -of_objects $intf]
+    set seg_i 0
+    foreach seg $segs {
+      if {[lsearch $ignored $seg] >= 0} {
+        puts "Skipping ignored segment $seg"
+      } else {
+        puts "  seg: $seg"
+        set sintf [get_bd_intf_pins -of_objects $seg]
+        set me [dict get $map $sintf]
+        puts "  address map info $me"
+        set range [expr "max([dict get $me range], 4096)"]
+        set offset [expr "max([dict get $me "offset"], [get_property OFFSET $sintf])"]
+        set range [expr "max($range, [get_property RANGE $sintf])"]
+        if {[expr "(1 << 64) == $range"]} {set range "16E"}
+        create_bd_addr_seg \
+          -offset $offset \
+          -range $range \
+          $space \
+          $seg \
+          [format "AM_SEG_%03d" $seg_i]
+        incr seg_i
+      }
+    }
+
     # set segs [get_bd_addrs_segs -addressables -of_objects [get_bd]]
-    assign_bd_address
+    # assign_bd_address
     # assign_bd_address -target_address_space /S_ARCH [get_bd_addr_segs /arch*] -force
     # assign_bd_address -target_address_space /S_TAPASCO [get_bd_addr_segs /tapasco*] -force
   }
@@ -441,27 +470,27 @@ namespace eval platform {
     }
 
     set host_aclk [tapasco::subsystem::get_port "host" "clk"]
-    set host_aclk_name "ext_[get_property NAME $host_aclk]"
-    set ext_host_aclk [create_bd_pin -dir O -type clk $host_aclk_name]
-    connect_bd_net $host_aclk $ext_host_aclk
-    set instance [current_bd_instance .]
-    make_bd_pins_external $ext_host_aclk
-    current_bd_instance
-    set_property NAME $host_aclk_name [get_bd_ports -filter "NAME == [format %s_0 $host_aclk_name]"]
-    current_bd_instance $instance
+    # set host_aclk_name "ext_[get_property NAME $host_aclk]"
+    # set ext_host_aclk [create_bd_pin -dir O -type clk $host_aclk_name]
+    # connect_bd_net $host_aclk $ext_host_aclk
+    # set instance [current_bd_instance .]
+    # make_bd_pins_external $ext_host_aclk
+    # current_bd_instance
+    # set_property NAME $host_aclk_name [get_bd_ports -filter "NAME == [format %s_0 $host_aclk_name]"]
+    # current_bd_instance $instance
 
     set design_aclk [tapasco::subsystem::get_port "design" "clk"]
-    set design_aclk_name "ext_[get_property NAME $design_aclk]"
-    set ext_design_aclk [create_bd_pin -dir O -type clk $design_aclk_name]
-    connect_bd_net $design_aclk $ext_design_aclk
-    set instance [current_bd_instance .]
-    make_bd_pins_external $ext_design_aclk
-    current_bd_instance
-    set_property NAME $design_aclk_name [get_bd_ports -filter "NAME == [format %s_0 $design_aclk_name]"]
-    current_bd_instance $instance
+    # set design_aclk_name "ext_[get_property NAME $design_aclk]"
+    # set ext_design_aclk [create_bd_pin -dir O -type clk $design_aclk_name]
+    # connect_bd_net $design_aclk $ext_design_aclk
+    # set instance [current_bd_instance .]
+    # make_bd_pins_external $ext_design_aclk
+    # current_bd_instance
+    # set_property NAME $design_aclk_name [get_bd_ports -filter "NAME == [format %s_0 $design_aclk_name]"]
+    # current_bd_instance $instance
 
     set smartconnect [create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 smartconnect_0]
-    set_property -dict [list CONFIG.NUM_MI {2} CONFIG.NUM_SI {1} CONFIG.NUM_CLKS {3} CONFIG.HAS_ARESETN {0}] $smartconnect
+    set_property -dict [list CONFIG.NUM_MI {2} CONFIG.NUM_SI {1} CONFIG.NUM_CLKS {4} CONFIG.HAS_ARESETN {0}] $smartconnect
     set m_arch [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv "M_ARCH"]
     set m_tapasco [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv "M_TAPASCO"]
     connect_bd_intf_net $m_arch [get_bd_intf_pins -of_objects $smartconnect -filter {NAME == M00_AXI}]
@@ -471,18 +500,20 @@ namespace eval platform {
     set aclk0 [get_bd_pins -of_objects $smartconnect -filter {NAME == aclk}]
     set aclk1 [get_bd_pins -of_objects $smartconnect -filter {NAME == aclk1}]
     set aclk2 [get_bd_pins -of_objects $smartconnect -filter {NAME == aclk2}]
+    set aclk3 [get_bd_pins -of_objects $smartconnect -filter {NAME == aclk3}]
 
     save_bd_design
 
-    connect_bd_net $host_aclk $aclk0
-    connect_bd_net $design_aclk $aclk1
-    connect_bd_net $mem_aclk $aclk2
+    connect_bd_net $external_ps_clk_in $aclk0
+    connect_bd_net $host_aclk $aclk1
+    connect_bd_net $design_aclk $aclk2
+    connect_bd_net $mem_aclk $aclk3
     set instance [current_bd_instance]
     make_bd_intf_pins_external [get_bd_intf_pins -of_object $smartconnect -filter {NAME == S00_AXI}]
     set s_axi_ext [get_bd_intf_ports -filter {NAME == S00_AXI_0}]
     set_property NAME S_AXI $s_axi_ext
-    set ext_design_clk [get_bd_ports -filter {NAME == ext_design_clk}]
-    set_property CONFIG.ASSOCIATED_BUSIF {S_AXI} $ext_design_clk
+    set ext_ps_clk_in [get_bd_ports -filter {NAME == ext_ps_clk_in}]
+    set_property CONFIG.ASSOCIATED_BUSIF {S_AXI} $ext_ps_clk_in
     current_bd_instance $instance
 
 
