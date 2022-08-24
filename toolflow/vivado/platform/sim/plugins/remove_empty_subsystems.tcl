@@ -18,22 +18,20 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-namespace eval external_connections {
+namespace eval remove_empty_subsystems {
 
-  proc make_external_connections {{args}} {
-    ## tapasco subsystem
-    puts "external connections start"
-    set arch [tapasco::subsystem::get arch]
-    set s_arch [get_bd_intf_pins -of_objects $arch -filter {NAME == S_ARCH}]
-    make_bd_intf_pins_external $s_arch
-    set s_arch_ext [get_bd_intf_ports -filter {NAME == S_ARCH_0}]
-    set_property NAME S_ARCH $s_arch_ext
-    set ext_design_clk [get_bd_ports -filter {NAME == ext_design_clk}]
-    set_property CONFIG.ASSOCIATED_BUSIF {S_ARCH} $ext_design_clk
-    puts "external connections end"
-    save_bd_design
+  # remove subsystems memory and intc
+  # empty subsystems lead to an error when generating verilog files in vivado for some reason
+  proc remove_empty_subsystems {} {
+    remove_ss memory
+    remove_ss intc
+  }
+
+  # remove subsystem with name {name}
+  proc remove_ss {name} {
+    delete_bd_objs [get_bd_cells $name]
   }
 
 }
 
-# tapasco::register_plugin "platform::external_connections::make_external_connections" "pre-wiring"
+tapasco::register_plugin "platform::remove_empty_subsystems::remove_empty_subsystems" "post-platform"
