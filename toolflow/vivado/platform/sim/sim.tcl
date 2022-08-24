@@ -24,11 +24,6 @@ namespace eval platform {
     exit 1
   }
 
-  # scan plugin directory
-  foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/platform/zynqmp/plugins" "*.tcl"] {
-    source -notrace $f
-  }
-
   foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/platform/${platform_dirname}/plugins" "*.tcl"] {
     source -notrace $f
   }
@@ -405,6 +400,7 @@ namespace eval platform {
 #    puts "Creating Host/UltraPS subsystem ..."
 #
     set aximm_vlnv [::tapasco::ip::get_vlnv "aximm_intf"]
+    set axi_sc_vlnv [::tapasco::ip::get_vlnv "axi_sc"]
     set freqs [::tapasco::get_frequencies]
     puts "freqs: $freqs"
 
@@ -489,7 +485,7 @@ namespace eval platform {
     # set_property NAME $design_aclk_name [get_bd_ports -filter "NAME == [format %s_0 $design_aclk_name]"]
     # current_bd_instance $instance
 
-    set smartconnect [create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 smartconnect_0]
+    set smartconnect [create_bd_cell -type ip -vlnv $axi_sc_vlnv smartconnect_0]
     set_property -dict [list CONFIG.NUM_MI {2} CONFIG.NUM_SI {1} CONFIG.NUM_CLKS {4} CONFIG.HAS_ARESETN {0}] $smartconnect
     set m_arch [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv "M_ARCH"]
     set m_tapasco [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv "M_TAPASCO"]
