@@ -328,18 +328,16 @@ impl Device {
 
         let mut client = SimClient::new()?;
         let s = client.get_status()?;
-        println!("got status: {:?}", s);
+        // println!("got status: {:?}", s);
 
         println!("Mapping the platform and architecture memory regions.");
 
-        // let platform_size = match &s.platform_base {
-        //     Some(base) => Ok(base.size),
-        //     None => Err(Error::AreaMissing {
-        //         area: "Platform".to_string(),
-        //     }),
-        // }?;
-        let platform_size = 2;
-        println!("GOT HERE");
+        let platform_size = match &s.platform_base {
+            Some(base) => Ok(base.size),
+            None => Err(Error::AreaMissing {
+                area: "Platform".to_string(),
+            }),
+        }?;
 
         let platform = Arc::new(unsafe {
             MmapOptions::new()
@@ -349,14 +347,14 @@ impl Device {
                 .context(DeviceUnavailableSnafu { id })?
         });
 
-        // let arch_size = match &s.arch_base {
-        //     Some(base) => Ok(base.size),
-        //     None => Err(Error::AreaMissing {
-        //         area: "Platform".to_string(),
-        //     }),
-        // }?;
-        println!("GOT HERE 2");
-        let arch_size = 2;
+        let arch_size = match &s.arch_base {
+            Some(base) => Ok(base.size),
+            None => Err(Error::AreaMissing {
+                area: "Platform".to_string(),
+            }),
+        }?;
+        // println!("GOT HERE 2");
+        // let arch_size = 2;
 
         let arch = Arc::new(unsafe {
             MmapOptions::new()
@@ -365,7 +363,7 @@ impl Device {
                 .map_mut(&tlkm_dma_file)
                 .context(DeviceUnavailableSnafu { id })?
         });
-        println!("GOT HERE 3");
+        // println!("GOT HERE 3");
 
         // Initialize the global memories.
         // Currently falls back to PCIe and Zynq allocation using the default 4GB at 0x0.

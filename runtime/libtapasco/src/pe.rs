@@ -169,7 +169,7 @@ impl PE {
         unsafe {
             // todo: send start command to sim pe
             // let ptr = self.memory.as_ptr().offset(offset);
-            // write_volatile(ptr as *mut u32, 1);
+            write_volatile(ptr as *mut u32, 1);
         }
 
         self.client.start_pe(StartPe {id: self.id as u64}).map_err(|_| SimError {message: "Error starting pe".to_string()})?;
