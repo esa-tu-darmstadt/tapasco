@@ -320,4 +320,32 @@ namespace eval platform {
     save_bd_design
 
   }
+
+  # don't run synthesis and implementation, only generate new ip core
+  proc __disabled__generate {} {
+    global bitstreamname
+    set project_dir [get_property DIRECTORY [current_project]]
+    puts "project dir: $project_dir"
+    ipx::package_project \
+    -root_dir [get_property DIRECTORY [current_project]] \
+    -vendor esa.informatik.tu-darmstadt.de \
+    -library sim -taxonomy /UserIP \
+    -force -generated_files -import_files
+    puts "packaged project"
+
+    ipx::create_xgui_files [ipx::current_core]
+    puts "created xgui_files"
+    ipx::update_checksums [ipx::current_core]
+    puts "created xgui_files"
+    ipx::check_integrity [ipx::current_core]
+    puts "created xgui_files"
+    ipx::save_core [ipx::current_core]
+    puts "created xgui_files"
+    update_ip_catalog -rebuild -repo_path $project_dir
+    puts "created xgui_files"
+    ipx::check_integrity -quiet -xrt [ipx::current_core]
+    puts "created xgui_files"
+    ipx::archive_core "$project_dir/../$bitstreamname.zip" [ipx::current_core]
+    puts "created xgui_files"
+  }
 }
