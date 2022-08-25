@@ -11,6 +11,9 @@ service SimRequest {
   rpc get_status (Void) returns (SimResponse);
   rpc start_pe (StartPE) returns (SimResponse);
   rpc set_arg (SetArg) returns (SimResponse);
+  rpc write (Write) returns (SimResponse);
+  rpc read (Read) returns (SimResponse);
+  rpc get_return (GetReturn) returns (SimResponse);
 }
 
 message SetArg {
@@ -20,6 +23,44 @@ message SetArg {
     uint32 u_32 = 3;
     uint64 u_64 = 4;
   }
+}
+
+message ReadArg {
+  uint32 peid = 1;
+  uint64 argn = 2;
+  uint64 bytes = 3;
+}
+
+message ReadArgResp {
+  oneof value {
+    uint32 u_32 = 1;
+    uint64 u_64 = 2;
+  }
+}
+
+message GetReturn {
+  uint64 peid = 1;
+}
+
+message GetReturnResponse {
+  uint64 value = 1;
+}
+
+// read and write commands correspond only to offchip memory!!
+message Write {
+  uint64 addr = 1;
+  oneof values {
+    uint32 u_32 = 2;
+    uint64 u_64 = 3;
+  }
+}
+
+message Read {
+  uint64 addr = 1;
+}
+
+message ReadResponse {
+  uint64 value = 1;
 }
 
 message StartPE {
@@ -56,6 +97,8 @@ message SimResponse {
     InterruptStatus interrupt_status = 4;
     tapasco.status.Status status = 5;
     string error_reason = 6;
+    ReadResponse read_response = 7;
+    GetReturnResponse get_return_response = 8;
   }
 }
 

@@ -169,7 +169,6 @@ impl PE {
         unsafe {
             // todo: send start command to sim pe
             // let ptr = self.memory.as_ptr().offset(offset);
-            write_volatile(ptr as *mut u32, 1);
         }
 
         self.client.start_pe(StartPe {id: self.id as u64}).map_err(|_| SimError {message: "Error starting pe".to_string()})?;
@@ -318,12 +317,13 @@ impl PE {
     }
 
     pub fn return_value(&self) -> u64 {
-        let offset = (self.offset as usize + 0x10) as isize;
-        let r = unsafe {
+        // let offset = (self.offset as usize + 0x10) as isize;
+        // let r = unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
             // ptr.cast::<u64>().read_volatile()
-            42
-        };
+            // 42
+        // };
+        let r = self.client.get_return(GetReturn {peid: self.id}).unwrap();
         trace!("Reading return value: {}", r);
         r
     }
