@@ -403,6 +403,7 @@ tapasco_compose_ubuntu:
     - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++ python3 glibc-langpack-en
     - ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
   script:
+    - export LC_ALL=en_US.UTF-8
     - source $XILINX_VIVADO/settings64.sh
     - which vivado
     - which vivado_hls || which vitis_hls
