@@ -36,6 +36,7 @@ use crate::device::simcalls::{
     SimResponseType,
     StartPe,
     SetArg,
+    GetReturn,
     sim_response::ResponsePayload,
     set_arg::Arg
 };
@@ -323,7 +324,8 @@ impl PE {
             // ptr.cast::<u64>().read_volatile()
             // 42
         // };
-        let r = self.client.get_return(GetReturn {peid: self.id}).unwrap();
+        let r = self.client.get_return(GetReturn {peid: self.id as u64}).unwrap();
+        println!("pe returned value {:?}", r);
         trace!("Reading return value: {}", r);
         r
     }

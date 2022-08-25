@@ -32,6 +32,12 @@ use std::fs::File;
 use std::net::TcpStream;
 use std::os::unix::prelude::*;
 use std::sync::{Arc, Mutex};
+use crate::dma::Error::SimError;
+use crate::sim_client::SimClient;
+use crate::device::simcalls::{
+    WriteRange,
+    ReadRange,
+};
 
 #[derive(Debug, Snafu)]
 #[snafu(visibility(pub))]
@@ -76,6 +82,8 @@ pub enum Error {
 
     #[snafu(display("VFIO failed: {}", source))]
     VfioError {source: crate::vfio::Error},
+
+    SimError {message: String}
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -334,14 +342,16 @@ impl DMAControl for SVMDMA {
 #[derive(Debug, Getters)]
 #[allow(unused)]
 pub struct SimDMA {
+    client: SimClient,
 }
 
 #[allow(unused)]
 impl SimDMA {
     pub fn new(
-    ) -> Self {
-        Self {
-        }
+    ) -> Result<Self> {
+        Ok(Self {
+            client: SimClient::new().map_err(|_| SimError {message: "Error instantiating sim client from SimDMA".to_string()})?
+        })
     }
 }
 
@@ -349,11 +359,21 @@ impl SimDMA {
 impl DMAControl for SimDMA {
     fn copy_to(&self, data: &[u8], ptr: DeviceAddress) -> Result<()> {
         println!("SimDMA copy_to {:?}, {:?}", data, ptr);
+        let request = WriteRange {
+            addr: ptr as u64,
+            data: data.iter().map(|b| *b as u32).collect(),
+        };
+        println!("write request is: {:?}", request);
         Ok(())
     }
 
     fn copy_from(&self, ptr: DeviceAddress, data: &mut [u8]) -> Result<()> {
         println!("SimDMA copy_from {:?}, {:?}", data, ptr);
+        let request = ReadRange {
+            addr: ptr as u64,
+            length: data.len() as u64,
+        };
+        println!("read request is: {:?}", request);
         Ok(())
     }
 }

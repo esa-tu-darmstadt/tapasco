@@ -477,7 +477,7 @@ impl Device {
                 allocator: Mutex::new(Box::new(
                     DummyAllocator::new(),
                 )),
-                dma: Box::new(SimDMA::new()),
+                dma: Box::new(SimDMA::new().map_err(|_| SimError{message: "error creating SimDMA, probably the server is not up".to_string()})?),
             }))
         } else {
             return Err(Error::DeviceType { name });

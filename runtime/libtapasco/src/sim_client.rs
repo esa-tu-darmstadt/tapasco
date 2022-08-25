@@ -14,6 +14,8 @@ use device::simcalls::{
     StartPe,
     SetArg,
     GetReturn,
+    WriteRange,
+    ReadRange,
     sim_request_client::SimRequestClient,
     sim_response::ResponsePayload
 };
@@ -34,6 +36,46 @@ impl SimClient {
             client: Mutex::new(client),
             rt,
         })
+    }
+
+    pub fn read_range(&self, read_range: ReadRange) -> Result<Void, device::Error> {
+        let request = tonic::Request::new(read_range);
+        let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
+        let response = self.rt.block_on(client.read_range(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
+
+        let inner = response.into_inner();
+        match SimResponseType::from_i32(inner.r#type) {
+            Some(SimResponseType::Okay) => match inner.response_payload {
+                Some(ResponsePayload::Void(void)) => Ok(void),
+                Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
+                None => Err(SimError {message: "response payload is None".to_string()}),
+            },
+            Some(SimResponseType::Error) => match inner.response_payload {
+                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
+                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
+            },
+            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
+        }
+    }
+
+    pub fn write_range(&self, write_range: WriteRange) -> Result<Void, device::Error> {
+        let request = tonic::Request::new(write_range);
+        let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
+        let response = self.rt.block_on(client.write_range(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
+
+        let inner = response.into_inner();
+        match SimResponseType::from_i32(inner.r#type) {
+            Some(SimResponseType::Okay) => match inner.response_payload {
+                Some(ResponsePayload::Void(void)) => Ok(void),
+                Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
+                None => Err(SimError {message: "response payload is None".to_string()}),
+            },
+            Some(SimResponseType::Error) => match inner.response_payload {
+                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
+                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
+            },
+            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
+        }
     }
 
     pub fn get_return(&self, get_return: GetReturn) -> Result<u64, device::Error> {
