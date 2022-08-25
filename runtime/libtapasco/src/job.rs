@@ -140,7 +140,7 @@ impl Job {
     //TODO: Check performance as this does not happen inplace but creates a new Vec
     /// Allocates memory area on the provided memories which transforms `DataTransferAlloc` into `DataTransferPrealloc`.
     fn handle_allocates(&self, args: Vec<PEParameter>) -> Result<Vec<PEParameter>> {
-        println!("Handling allocate parameters.");
+        trace!("Handling allocate parameters.");
         let new_params = args
             .into_iter()
             .map(|arg| match arg {
@@ -177,7 +177,7 @@ impl Job {
             })
             .collect();
 
-        println!("All allocate parameters handled.");
+        trace!("All allocate parameters handled.");
         new_params
     }
 
@@ -187,7 +187,7 @@ impl Job {
         &mut self,
         args: Vec<PEParameter>,
     ) -> Result<(Vec<PEParameter>, Vec<Box<[u8]>>)> {
-        println!("Handling allocate parameters.");
+        trace!("Handling allocate parameters.");
         let mut unused_mem = Vec::new();
         let new_params = args
             .into_iter()
@@ -227,7 +227,7 @@ impl Job {
                     Ok(xs)
                 }
             });
-        println!("All transfer to parameters handled.");
+        trace!("All transfer to parameters handled.");
         match new_params {
             Ok(x) => Ok((x, unused_mem)),
             Err(e) => Err(e),
@@ -242,20 +242,20 @@ impl Job {
     ///  * A list of memories contained in the parameter list that is not marked for copy back. Otherwise, those memories would be dropped.
     ///    The order of returned memories is the same as they occured in the argument list.
     pub fn start(&mut self, args: Vec<PEParameter>) -> Result<Vec<Box<[u8]>>> {
-        println!(
+        trace!(
             "Starting execution of {:?} with Arguments {:?}.",
             self.pe,
             args
         );
         let alloc_args = self.handle_local_memories(args)?;
-        println!("Handled local parameters => {:?}.", alloc_args);
+        trace!("Handled local parameters => {:?}.", alloc_args);
         let local_args = self.handle_allocates(alloc_args)?;
-        println!("Handled allocates => {:?}.", local_args);
+        trace!("Handled allocates => {:?}.", local_args);
         let (trans_args, unused_mem) = self.handle_transfers_to_device(local_args)?;
-        println!("Handled transfers => {:?}.", trans_args);
-        println!("Setting arguments.");
+        trace!("Handled transfers => {:?}.", trans_args);
+        trace!("Setting arguments.");
         for (i, arg) in trans_args.into_iter().enumerate() {
-            println!("Setting argument {} => {:?}.", i, arg);
+            trace!("Setting argument {} => {:?}.", i, arg);
             match arg {
                 PEParameter::Single32(_) => {
                     self.pe.as_ref().unwrap().set_arg(i, arg).context(PESnafu)?;
@@ -279,10 +279,10 @@ impl Job {
                 _ => return Err(Error::UnsupportedRegisterParameter { arg }),
             };
         }
-        println!("Arguments set.");
-        println!("Starting PE {} execution.", self.pe.as_ref().unwrap().id());
+        trace!("Arguments set.");
+        trace!("Starting PE {} execution.", self.pe.as_ref().unwrap().id());
         self.pe.as_mut().unwrap().start().context(PESnafu)?;
-        println!("PE {} started.", self.pe.as_ref().unwrap().id());
+        trace!("PE {} started.", self.pe.as_ref().unwrap().id());
         Ok(unused_mem)
     }
 

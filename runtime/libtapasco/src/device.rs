@@ -328,9 +328,8 @@ impl Device {
 
         let mut client = SimClient::new()?;
         let s = client.get_status()?;
-        // println!("got status: {:?}", s);
 
-        println!("Mapping the platform and architecture memory regions.");
+        trace!("Mapping the platform and architecture memory regions.");
 
         let platform_size = match &s.platform_base {
             Some(base) => Ok(base.size),
@@ -353,8 +352,6 @@ impl Device {
                 area: "Platform".to_string(),
             }),
         }?;
-        // println!("GOT HERE 2");
-        // let arch_size = 2;
 
         let arch = Arc::new(unsafe {
             MmapOptions::new()
@@ -363,7 +360,6 @@ impl Device {
                 .map_mut(&tlkm_dma_file)
                 .context(DeviceUnavailableSnafu { id })?
         });
-        // println!("GOT HERE 3");
 
         // Initialize the global memories.
         // Currently falls back to PCIe and Zynq allocation using the default 4GB at 0x0.
@@ -475,7 +471,7 @@ impl Device {
             println!("SIM DEVICE FOUND!");
             allocator.push(Arc::new(OffchipMemory{
                 allocator: Mutex::new(Box::new(
-                    DummyAllocator::new(),
+                    GenericAllocator::new(0, 2_u64.pow(10), 1).context(AllocatorSnafu)?,
                 )),
                 dma: Box::new(SimDMA::new().map_err(|_| SimError{message: "error creating SimDMA, probably the server is not up".to_string()})?),
             }))

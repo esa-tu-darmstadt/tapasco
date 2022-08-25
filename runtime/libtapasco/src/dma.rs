@@ -52,10 +52,10 @@ pub enum Error {
     DMABufferAllocate { source: nix::Error },
 
     #[snafu(display(
-        "Transfer 0x{:x} - 0x{:x} outside of memory region 0x{:x}.",
-        ptr,
-        end,
-        size
+    "Transfer 0x{:x} - 0x{:x} outside of memory region 0x{:x}.",
+    ptr,
+    end,
+    size
     ))]
     OutOfRange {
         ptr: DeviceAddress,
@@ -76,15 +76,16 @@ pub enum Error {
     ErrorInterrupt { source: crate::interrupt::Error },
 
     #[snafu(display(
-        "Got interrupt but outstanding buffers are empty. This should never happen."
+    "Got interrupt but outstanding buffers are empty. This should never happen."
     ))]
     TooManyInterrupts {},
 
     #[snafu(display("VFIO failed: {}", source))]
-    VfioError {source: crate::vfio::Error},
+    VfioError { source: crate::vfio::Error },
 
-    SimError {message: String}
+    SimError { message: String },
 }
+
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Specifies a method to interact with DMA methods
@@ -128,7 +129,7 @@ impl DMAControl for DriverDMA {
                     user_addr: data.as_ptr(),
                 },
             )
-            .context(DMAToDeviceSnafu)?;
+                .context(DMAToDeviceSnafu)?;
         };
         Ok(())
     }
@@ -149,7 +150,7 @@ impl DMAControl for DriverDMA {
                     user_addr: data.as_mut_ptr(),
                 },
             )
-            .context(DMAFromDeviceSnafu)?;
+                .context(DMAFromDeviceSnafu)?;
         };
         Ok(())
     }
@@ -192,7 +193,7 @@ impl DMAControl for VfioDMA {
         );
         match vfio_dma_map(&self.vfio_dev, map_len, HP_OFFS + iova_start, va_start) {
             Ok(_) => Ok(()),
-            Err(e) => Err(Error::VfioError {source: e})
+            Err(e) => Err(Error::VfioError { source: e })
         }
     }
 
@@ -347,10 +348,9 @@ pub struct SimDMA {
 
 #[allow(unused)]
 impl SimDMA {
-    pub fn new(
-    ) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         Ok(Self {
-            client: SimClient::new().map_err(|_| SimError {message: "Error instantiating sim client from SimDMA".to_string()})?
+            client: SimClient::new().map_err(|_| SimError { message: "Error instantiating sim client from SimDMA".to_string() })?
         })
     }
 }
@@ -358,22 +358,22 @@ impl SimDMA {
 
 impl DMAControl for SimDMA {
     fn copy_to(&self, data: &[u8], ptr: DeviceAddress) -> Result<()> {
-        println!("SimDMA copy_to {:?}, {:?}", data, ptr);
-        let request = WriteRange {
+        trace!("SimDMA copy_to {:?}, {:?}", data, ptr);
+        self.client.write_range(WriteRange {
             addr: ptr as u64,
             data: data.iter().map(|b| *b as u32).collect(),
-        };
-        println!("write request is: {:?}", request);
+        }).map_err(|_| SimError { message: "error copying data to device".to_string() })?;
         Ok(())
     }
 
     fn copy_from(&self, ptr: DeviceAddress, data: &mut [u8]) -> Result<()> {
-        println!("SimDMA copy_from {:?}, {:?}", data, ptr);
+        trace!("SimDMA copy_from {:?}, {:?}", data, ptr);
         let request = ReadRange {
             addr: ptr as u64,
             length: data.len() as u64,
         };
-        println!("read request is: {:?}", request);
+        let read_range_response = self.client.read_range(request).map_err(|_| SimError { message: "error copying data from device".to_string() })?;
+        data.copy_from_slice(read_range_response.iter().map(|val| *val as u8).collect::<Vec<u8>>().as_mut_slice());
         Ok(())
     }
 }

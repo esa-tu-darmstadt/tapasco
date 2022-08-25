@@ -16,6 +16,7 @@ use device::simcalls::{
     GetReturn,
     WriteRange,
     ReadRange,
+    ReadRangeResponse,
     sim_request_client::SimRequestClient,
     sim_response::ResponsePayload
 };
@@ -38,7 +39,7 @@ impl SimClient {
         })
     }
 
-    pub fn read_range(&self, read_range: ReadRange) -> Result<Void, device::Error> {
+    pub fn read_range(&self, read_range: ReadRange) -> Result<Vec<u32>, device::Error> {
         let request = tonic::Request::new(read_range);
         let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
         let response = self.rt.block_on(client.read_range(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
@@ -46,7 +47,7 @@ impl SimClient {
         let inner = response.into_inner();
         match SimResponseType::from_i32(inner.r#type) {
             Some(SimResponseType::Okay) => match inner.response_payload {
-                Some(ResponsePayload::Void(void)) => Ok(void),
+                Some(ResponsePayload::ReadRangeResponse(response)) => Ok(response.value),
                 Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
                 None => Err(SimError {message: "response payload is None".to_string()}),
             },
