@@ -48,6 +48,7 @@ namespace eval platform {
     puts "Computing addresses for masters ..."
     foreach m [::tapasco::get_aximm_interfaces [get_bd_cells -filter "PATH !~ [::tapasco::subsystem::get arch]/*"]] {
       puts {[DEBUG] get address map foreach}
+      puts "DEBUG master is $m"
       # no M_INTC address map, because simulation does not need special interrupt handling
       # handling is done in cocotb
       switch -glob [get_property NAME $m] {
@@ -58,6 +59,7 @@ namespace eval platform {
       if {$base != "skip"} { set peam [addressmap::assign_address $peam $m $base $stride $range $comp] }
     }
     puts {[DEBUG] after get address map foreach}
+    # set peam [addressmap::assign_address]
     return $peam
   }
 
@@ -68,9 +70,10 @@ namespace eval platform {
   proc modify_address_map_sim {map} {
     puts $map
     set ignored [::platform::get_ignored_segments]
+
     set space [get_bd_addr_spaces /S_AXI]
     set intf [get_bd_intf_ports -of_objects $space]
-    set segs [get_bd_addr_seg -addressables -of_objects $intf]
+    set segs [get_bd_addr_segs -addressables -of_objects $intf]
     set seg_i 0
     foreach seg $segs {
       if {[lsearch $ignored $seg] >= 0} {
@@ -83,7 +86,14 @@ namespace eval platform {
         set range [expr "max([dict get $me range], 4096)"]
         set offset [expr "max([dict get $me "offset"], [get_property OFFSET $sintf])"]
         set range [expr "max($range, [get_property RANGE $sintf])"]
-        if {[expr "(1 << 64) == $range"]} {set range "16E"}
+        puts "    range: $range"
+        puts "    offset: $offset"
+        puts "    space: $space"
+        puts "    seg: $seg"
+        if {[expr "(1 << 64) == $range"]} {
+          set range "16E"
+          puts "setting range to 16E"
+        }
         create_bd_addr_seg \
           -offset $offset \
           -range $range \
@@ -93,6 +103,27 @@ namespace eval platform {
         incr seg_i
       }
     }
+
+    save_bd_design
+
+    puts "bd_addr spaces [get_bd_addr_spaces]"
+
+    foreach space [get_bd_addr_spaces -of_objects [get_bd_intf_pins /host/M_MEM_0]] {
+      puts "space: $space"
+      set intfs [get_bd_intf_pins -quiet -of_objects $space -filter { MODE == Master }]
+      foreach intf $intfs {
+        set segs [get_bd_addr_segs -addressables -of_objects $intf]
+        foreach seg $segs {
+          if {[lsearch $ignored $seg] >= 0} {
+            puts "Skipping ignored segment $seg"
+          } else {
+            dict set map $intf "interface $intf offset 0 range [expr 1 << 64] kind memory"
+          }
+        }
+      }
+    }
+    
+    return $map
   }
 
   proc get_ignored_segments { } {
@@ -292,30 +323,69 @@ namespace eval platform {
     set host_aclk [tapasco::subsystem::get_port "host" "clk"]
     set design_aclk [tapasco::subsystem::get_port "design" "clk"]
 
-    set smartconnect [create_bd_cell -type ip -vlnv $axi_sc_vlnv smartconnect_0]
-    set_property -dict [list CONFIG.NUM_MI {2} CONFIG.NUM_SI {1} CONFIG.NUM_CLKS {4} CONFIG.HAS_ARESETN {0}] $smartconnect
+
+    # generate smartconnect and slave axi port
+    set smartconnect_in [create_bd_cell -type ip -vlnv $axi_sc_vlnv smartconnect_in]
+    set_property -dict [list CONFIG.NUM_MI {2} CONFIG.NUM_SI {1} CONFIG.NUM_CLKS {3} CONFIG.HAS_ARESETN {0}] $smartconnect_in
     set m_arch [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv "M_ARCH"]
     set m_tapasco [create_bd_intf_pin -mode Master -vlnv $aximm_vlnv "M_TAPASCO"]
-    connect_bd_intf_net $m_arch [get_bd_intf_pins -of_objects $smartconnect -filter {NAME == M00_AXI}]
-    connect_bd_intf_net $m_tapasco [get_bd_intf_pins -of_objects $smartconnect -filter {NAME == M01_AXI}]
+    connect_bd_intf_net $m_arch [get_bd_intf_pins -of_objects $smartconnect_in -filter {NAME == M00_AXI}]
+    connect_bd_intf_net $m_tapasco [get_bd_intf_pins -of_objects $smartconnect_in -filter {NAME == M01_AXI}]
 
-    set mem_aclk [tapasco::subsystem::get_port "mem" "clk"]
-    set aclk0 [get_bd_pins -of_objects $smartconnect -filter {NAME == aclk}]
-    set aclk1 [get_bd_pins -of_objects $smartconnect -filter {NAME == aclk1}]
-    set aclk2 [get_bd_pins -of_objects $smartconnect -filter {NAME == aclk2}]
-    set aclk3 [get_bd_pins -of_objects $smartconnect -filter {NAME == aclk3}]
+    set aclk0_sc_in [get_bd_pins -of_objects $smartconnect_in -filter {NAME == aclk}]
+    set aclk1_sc_in [get_bd_pins -of_objects $smartconnect_in -filter {NAME == aclk1}]
+    set aclk2_sc_in [get_bd_pins -of_objects $smartconnect_in -filter {NAME == aclk2}]
 
-    connect_bd_net $external_ps_clk_in $aclk0
-    connect_bd_net $host_aclk $aclk1
-    connect_bd_net $design_aclk $aclk2
-    connect_bd_net $mem_aclk $aclk3
-    set instance [current_bd_instance]
-    make_bd_intf_pins_external [get_bd_intf_pins -of_object $smartconnect -filter {NAME == S00_AXI}]
+    connect_bd_net $external_ps_clk_in $aclk0_sc_in
+    connect_bd_net $host_aclk $aclk1_sc_in
+    connect_bd_net $design_aclk $aclk2_sc_in
+
+    set instance [current_bd_instance .]
+    current_bd_instance
+    make_bd_intf_pins_external [get_bd_intf_pins -of_object $smartconnect_in -filter {NAME == S00_AXI}]
     set s_axi_ext [get_bd_intf_ports -filter {NAME == S00_AXI_0}]
     set_property NAME S_AXI $s_axi_ext
     set_property CONFIG.DATA_WIDTH 64 $s_axi_ext
     set ext_ps_clk_in [get_bd_ports -filter {NAME == ext_ps_clk_in}]
     set_property CONFIG.ASSOCIATED_BUSIF {S_AXI} $ext_ps_clk_in
+    current_bd_instance $instance
+
+
+    # generate smartconnect and slave axi port
+    set smartconnect_out [create_bd_cell -type ip -vlnv $axi_sc_vlnv smartconnect_out]
+    set mem_interfaces [::arch::get_masters]
+    set_property -dict [list \
+    CONFIG.NUM_MI {1} \
+    CONFIG.NUM_SI "[llength $mem_interfaces]" \
+    CONFIG.NUM_CLKS {2} \
+    CONFIG.HAS_ARESETN {0}] $smartconnect_out
+
+    set available_sc_intfs [get_bd_intf_pins -of_objects $smartconnect_out -filter {MODE == Slave}]
+    foreach mem_intf $mem_interfaces {
+      set host_mem_interface \
+        [create_bd_intf_pin -mode Slave -vlnv $aximm_vlnv [get_property NAME $mem_intf]]
+
+      set sc_slave_intf [lindex $available_sc_intfs 0]
+      set available_sc_intfs [lreplace $available_sc_intfs 0 0]
+      connect_bd_intf_net $sc_slave_intf $host_mem_interface
+    }
+
+    set aclk0_sc_out [get_bd_pins -of_objects $smartconnect_out -filter {NAME == aclk}]
+    set aclk1_sc_out [get_bd_pins -of_objects $smartconnect_out -filter {NAME == aclk1}]
+
+    connect_bd_net $external_ps_clk_in $aclk0_sc_out
+    connect_bd_net $design_aclk $aclk1_sc_out
+
+    set instance [current_bd_instance .]
+    current_bd_instance
+    make_bd_intf_pins_external [get_bd_intf_pins -of_object $smartconnect_out -filter {NAME == M00_AXI}]
+    set m_axi_ext [get_bd_intf_ports -filter {NAME == M00_AXI_0}]
+    set_property NAME M_AXI $m_axi_ext
+    set_property CONFIG.DATA_WIDTH 64 $m_axi_ext
+    set m_axi_host [get_bd_intf_pins -of_objects [tapasco::subsystem::get "host"] -filter {NAME == M00_AXI_0}]
+    set_property NAME M_AXI $m_axi_host
+    set ext_ps_clk_in [get_bd_ports -filter {NAME == ext_ps_clk_in}]
+    set_property CONFIG.ASSOCIATED_BUSIF {M_AXI} $ext_ps_clk_in
     current_bd_instance $instance
 
     save_bd_design
