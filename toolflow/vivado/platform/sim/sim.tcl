@@ -104,8 +104,6 @@ namespace eval platform {
       }
     }
 
-    save_bd_design
-
     puts "bd_addr spaces [get_bd_addr_spaces]"
 
     foreach space [get_bd_addr_spaces -of_objects [get_bd_intf_pins /host/M_MEM_0]] {
@@ -122,7 +120,7 @@ namespace eval platform {
         }
       }
     }
-    
+
     return $map
   }
 

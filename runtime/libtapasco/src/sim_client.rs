@@ -14,9 +14,13 @@ use device::simcalls::{
     StartPe,
     SetArg,
     GetReturn,
-    WriteRange,
-    ReadRange,
-    ReadRangeResponse,
+    WriteMemory,
+    ReadMemory,
+    WritePlatform,
+    ReadPlatform,
+    ReadMemoryResponse,
+    ReadPlatformResponse,
+    Data,
     sim_request_client::SimRequestClient,
     sim_response::ResponsePayload
 };
@@ -39,15 +43,15 @@ impl SimClient {
         })
     }
 
-    pub fn read_range(&self, read_range: ReadRange) -> Result<Vec<u32>, device::Error> {
-        let request = tonic::Request::new(read_range);
+    pub fn write_platform(&self, write_platform: WritePlatform) -> Result<Void, device::Error> {
+        let request = tonic::Request::new(write_platform);
         let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
-        let response = self.rt.block_on(client.read_range(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
+        let response = self.rt.block_on(client.write_platform(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
 
         let inner = response.into_inner();
         match SimResponseType::from_i32(inner.r#type) {
             Some(SimResponseType::Okay) => match inner.response_payload {
-                Some(ResponsePayload::ReadRangeResponse(response)) => Ok(response.value),
+                Some(ResponsePayload::Void(void)) => Ok(void),
                 Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
                 None => Err(SimError {message: "response payload is None".to_string()}),
             },
@@ -59,10 +63,51 @@ impl SimClient {
         }
     }
 
-    pub fn write_range(&self, write_range: WriteRange) -> Result<Void, device::Error> {
-        let request = tonic::Request::new(write_range);
+
+    pub fn read_platform(&self, read_platform: ReadPlatform) -> Result<u64, device::Error> {
+        let request = tonic::Request::new(read_platform);
         let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
-        let response = self.rt.block_on(client.write_range(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
+        let response = self.rt.block_on(client.read_platform(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
+
+        let inner = response.into_inner();
+        match SimResponseType::from_i32(inner.r#type) {
+            Some(SimResponseType::Okay) => match inner.response_payload {
+                Some(ResponsePayload::ReadPlatformResponse(response)) => Ok(response.value),
+                Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
+                None => Err(SimError {message: "response payload is None".to_string()}),
+            },
+            Some(SimResponseType::Error) => match inner.response_payload {
+                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
+                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
+            },
+            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
+        }
+    }
+
+    pub fn read_memory(&self, read_memory: ReadMemory) -> Result<Vec<u32>, device::Error> {
+        let request = tonic::Request::new(read_memory);
+        let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
+        let response = self.rt.block_on(client.read_memory(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
+
+        let inner = response.into_inner();
+        match SimResponseType::from_i32(inner.r#type) {
+            Some(SimResponseType::Okay) => match inner.response_payload {
+                Some(ResponsePayload::ReadMemoryResponse(response)) => Ok(response.value),
+                Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
+                None => Err(SimError {message: "response payload is None".to_string()}),
+            },
+            Some(SimResponseType::Error) => match inner.response_payload {
+                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
+                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
+            },
+            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
+        }
+    }
+
+    pub fn write_memory(&self, write_memory: WriteMemory) -> Result<Void, device::Error> {
+        let request = tonic::Request::new(write_memory);
+        let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
+        let response = self.rt.block_on(client.write_memory(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
 
         let inner = response.into_inner();
         match SimResponseType::from_i32(inner.r#type) {

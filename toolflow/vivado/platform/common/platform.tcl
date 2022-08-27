@@ -85,7 +85,7 @@ namespace eval platform {
 
     wire_subsystem_wires
     wire_subsystem_intfs
-    addressmap::construct_address_map
+  addressmap::construct_address_map
 
     save_bd_design
     validate_bd_design

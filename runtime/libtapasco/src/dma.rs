@@ -35,8 +35,8 @@ use std::sync::{Arc, Mutex};
 use crate::dma::Error::SimError;
 use crate::sim_client::SimClient;
 use crate::device::simcalls::{
-    WriteRange,
-    ReadRange,
+    WriteMemory,
+    ReadMemory,
 };
 
 #[derive(Debug, Snafu)]
@@ -359,7 +359,7 @@ impl SimDMA {
 impl DMAControl for SimDMA {
     fn copy_to(&self, data: &[u8], ptr: DeviceAddress) -> Result<()> {
         trace!("SimDMA copy_to {:?}, {:?}", data, ptr);
-        self.client.write_range(WriteRange {
+        self.client.write_memory(WriteMemory {
             addr: ptr as u64,
             data: data.iter().map(|b| *b as u32).collect(),
         }).map_err(|_| SimError { message: "error copying data to device".to_string() })?;
@@ -368,11 +368,11 @@ impl DMAControl for SimDMA {
 
     fn copy_from(&self, ptr: DeviceAddress, data: &mut [u8]) -> Result<()> {
         trace!("SimDMA copy_from {:?}, {:?}", data, ptr);
-        let request = ReadRange {
+        let request = ReadMemory {
             addr: ptr as u64,
             length: data.len() as u64,
         };
-        let read_range_response = self.client.read_range(request).map_err(|_| SimError { message: "error copying data from device".to_string() })?;
+        let read_range_response = self.client.read_memory(request).map_err(|_| SimError { message: "error copying data from device".to_string() })?;
         data.copy_from_slice(read_range_response.iter().map(|val| *val as u8).collect::<Vec<u8>>().as_mut_slice());
         Ok(())
     }

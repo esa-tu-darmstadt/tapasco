@@ -12,10 +12,10 @@ service SimRequest {
   rpc get_status (Void) returns (SimResponse);
   rpc start_pe (StartPE) returns (SimResponse);
   rpc set_arg (SetArg) returns (SimResponse);
-  rpc write (Write) returns (SimResponse);
-  rpc read (Read) returns (SimResponse);
-  rpc write_range (WriteRange) returns (SimResponse);
-  rpc read_range (ReadRange) returns (SimResponse);
+  rpc write_memory (WriteMemory) returns (SimResponse);
+  rpc read_memory (ReadMemory) returns (SimResponse);
+  rpc write_platform (WritePlatform) returns (SimResponse);
+  rpc read_platform (ReadPlatform) returns (SimResponse);
   rpc get_return (GetReturn) returns (SimResponse);
 }
 
@@ -87,8 +87,8 @@ message SimResponse {
     InterruptStatus interrupt_status = 4;
     tapasco.status.Status status = 5;
     string error_reason = 6;
-    ReadResponse read_response = 7;
-    ReadRangeResponse read_range_response = 8;
+    ReadMemoryResponse read_memory_response = 7;
+    ReadPlatformResponse read_platform_response = 8;
     GetReturnResponse get_return_response = 9;
   }
 }

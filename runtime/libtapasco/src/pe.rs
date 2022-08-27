@@ -30,6 +30,7 @@ use std::fs::File;
 use std::sync::{Arc, Mutex};
 use std::ptr::write_volatile;
 use std::net::{TcpStream, ToSocketAddrs};
+use futures::TryStreamExt;
 use crate::sim_client::SimClient;
 
 use crate::device::simcalls::{
@@ -38,7 +39,12 @@ use crate::device::simcalls::{
     SetArg,
     GetReturn,
     sim_response::ResponsePayload,
-    set_arg::Arg
+    set_arg::Arg,
+    Data,
+    data::Value,
+    ReadPlatform,
+    WritePlatform,
+    ReadPlatformResponse,
 };
 use crate::pe::Error::SimError;
 
@@ -206,11 +212,15 @@ impl PE {
 
     pub fn interrupt_set(&self) -> Result<bool> {
         let offset = (self.offset as usize + 0x0c) as isize;
-        let r = unsafe {
+        // let r = unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
             // ptr.read_volatile()
-            1
-        };
+            // 1
+        // };
+        let r = self.client.read_platform(ReadPlatform {
+            addr: offset as u64,
+            num_bytes: 4
+        }).map_err(|_| SimError {message: "Error reading interrupt 0x0c".to_string()})?;
         let s = (r & 1) == 1;
         trace!("Reading interrupt status from 0x{:x} -> {}", offset, s);
         Ok(s)
@@ -219,28 +229,40 @@ impl PE {
     pub fn reset_interrupt(&self, v: bool) -> Result<()> {
         let offset = (self.offset as usize + 0x0c) as isize;
         trace!("Resetting interrupts: 0x{:x} -> {}", offset, v);
-        unsafe {
+        // unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
             // write_volatile(ptr as *mut u32, if v { 1 } else { 0 });
-        }
+        // }
+        self.client.write_platform(WritePlatform {
+            addr: offset as u64,
+            value: Some(Data {value: Some(Value::U32(if v {1} else {0}))})
+        }).map_err(|_| SimError {message: "Error resetting interrupt status 0x0c".to_string()})?;
         Ok(())
     }
 
     pub fn interrupt_status(&self) -> Result<(bool, bool)> {
         let mut offset = (self.offset as usize + 0x04) as isize;
-        let g = unsafe {
+        // let g = unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
             // ptr.read_volatile()
-            1
-        } & 1
-            == 1;
+        //     1
+        // } & 1
+        //     == 1;
+        let g = self.client.read_platform(ReadPlatform {
+            addr: offset as u64,
+            num_bytes: 4
+        }).map_err(|_| SimError {message: "Error reading interrupt status 0x04".to_string()})? & 1 == 1;
         offset = (self.offset as usize + 0x08) as isize;
-        let l = unsafe {
+        // let l = unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
             // ptr.read_volatile()
-            1
-        } & 1
-            == 1;
+            // 1
+        // } & 1
+        //     == 1;
+        let l = self.client.read_platform(ReadPlatform {
+            addr: offset as u64,
+            num_bytes: 4
+        }).map_err(|_| SimError {message: "Error reading interrupt status 0x04".to_string()})? & 1 == 1;
         trace!("Interrupt status is {}, {}", g, l);
         Ok((g, l))
     }
@@ -248,17 +270,25 @@ impl PE {
     pub fn enable_interrupt(&self) -> Result<()> {
         ensure!(!self.active, PEAlreadyActiveSnafu { id: self.id });
         let mut offset = (self.offset as usize + 0x04) as isize;
-        trace!("Enabling interrupts: 0x{:x} -> 1", offset);
-        unsafe {
+        println!("Enabling interrupts: 0x{:x} -> 1", offset);
+        // unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
             // write_volatile(ptr as *mut u32, 1);
-        }
+        // }
+        self.client.write_platform(WritePlatform {
+            addr: offset as u64,
+            value: Some(Data {value: Some(Value::U32(1))})
+        }).map_err(|_| SimError {message: "Error enabling interrupt status 0x04".to_string()})?;
         offset = (self.offset as usize + 0x08) as isize;
-        trace!("Enabling global interrupts: 0x{:x} -> 1", offset);
-        unsafe {
+        println!("Enabling global interrupts: 0x{:x} -> 1", offset);
+        // unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
             // write_volatile(ptr as *mut u32, 1);
-        }
+        // }
+        self.client.write_platform(WritePlatform {
+            addr: offset as u64,
+            value: Some(Data {value: Some(Value::U32(1))})
+        }).map_err(|_| SimError {message: "Error enabling interrupt status 0x04".to_string()})?;
         Ok(())
     }
 

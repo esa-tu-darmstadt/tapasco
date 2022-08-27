@@ -417,27 +417,6 @@ impl TLKM {
         Ok(devices.num_devs)
     }
 
-    fn device_info_add_sim_device(&self, devices: &mut tlkm_ioctl_enum_devices_cmd) {
-        let mut name: [u8; 30] = [0; 30];
-        for (i, val) in String::from("TapascoSim").as_bytes().iter().enumerate() {
-            if i >= 30 {
-                break;
-            }
-
-            name[i] = *val;
-        }
-
-        let sim_dev = tlkm_device_info {
-            dev_id: devices.num_devs as DeviceId,
-            vendor_id: 0,
-            product_id: 0,
-            name
-        };
-
-        devices.devs[devices.num_devs] = sim_dev;
-        devices.num_devs += 1;
-    }
-
     /// Retrieve device info from the driver.
     ///
     /// Returns a vector of [`DeviceInfo`] structures for informational purposes.
