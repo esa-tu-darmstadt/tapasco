@@ -28,7 +28,7 @@ message ReadMemoryResponse {
 
 message WritePlatform {
   uint64 addr = 1;
-  Data value = 2;
+  Data data = 2;
 }
 
 message ReadPlatform {

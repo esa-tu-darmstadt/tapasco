@@ -235,7 +235,7 @@ impl PE {
         // }
         self.client.write_platform(WritePlatform {
             addr: offset as u64,
-            value: Some(Data {value: Some(Value::U32(if v {1} else {0}))})
+            data: Some(Data {value: Some(Value::U32(if v {1} else {0}))})
         }).map_err(|_| SimError {message: "Error resetting interrupt status 0x0c".to_string()})?;
         Ok(())
     }
@@ -277,7 +277,7 @@ impl PE {
         // }
         self.client.write_platform(WritePlatform {
             addr: offset as u64,
-            value: Some(Data {value: Some(Value::U32(1))})
+            data: Some(Data {value: Some(Value::U32(1))})
         }).map_err(|_| SimError {message: "Error enabling interrupt status 0x04".to_string()})?;
         offset = (self.offset as usize + 0x08) as isize;
         println!("Enabling global interrupts: 0x{:x} -> 1", offset);
@@ -287,7 +287,7 @@ impl PE {
         // }
         self.client.write_platform(WritePlatform {
             addr: offset as u64,
-            value: Some(Data {value: Some(Value::U32(1))})
+            data: Some(Data {value: Some(Value::U32(1))})
         }).map_err(|_| SimError {message: "Error enabling interrupt status 0x04".to_string()})?;
         Ok(())
     }
@@ -313,12 +313,6 @@ impl PE {
                 _ => return Err(Error::UnsupportedParameter { param: arg }),
             }
         }).map_err(|_| SimError {message: "Error setting argument".to_string()})?;
-        Ok(())
-    }
-
-    pub fn set_arg_sim(&self, argn: usize, arg: PEParameter) -> Result<()> {
-        let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
-        println!("setting arg {:?} at offset {}", arg, offset);
         Ok(())
     }
 
