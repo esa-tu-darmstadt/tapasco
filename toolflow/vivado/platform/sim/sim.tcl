@@ -343,7 +343,7 @@ namespace eval platform {
     make_bd_intf_pins_external [get_bd_intf_pins -of_object $smartconnect_in -filter {NAME == S00_AXI}]
     set s_axi_ext [get_bd_intf_ports -filter {NAME == S00_AXI_0}]
     set_property NAME S_AXI $s_axi_ext
-    set_property CONFIG.DATA_WIDTH 64 $s_axi_ext
+    set_property CONFIG.DATA_WIDTH 32 $s_axi_ext
     set ext_ps_clk_in [get_bd_ports -filter {NAME == ext_ps_clk_in}]
     set_property CONFIG.ASSOCIATED_BUSIF {S_AXI} $ext_ps_clk_in
     current_bd_instance $instance
