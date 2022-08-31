@@ -18,23 +18,21 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::debug::UnsupportedDebugGenerator;
-use crate::debug::{DebugGenerator, NonDebugGenerator};
+// use crate::debug::UnsupportedDebugGenerator;
+// use crate::debug::{DebugGenerator, NonDebugGenerator};
 use crate::device::OffchipMemory;
 use crate::pe::PEId;
 use crate::pe::PE;
 use crossbeam::deque::{Injector, Steal};
 use lockfree::map::Map;
-use memmap::MmapMut;
+// use memmap::MmapMut;
 use snafu::ResultExt;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::fs::File;
-use std::net::TcpStream;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;//, Mutex};
 use std::thread;
-use crate::device::Error::SimError;
-use crate::sim_client::SimClient;
+// use crate::device::Error::SimError;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -59,9 +57,6 @@ pub enum Error {
 
     #[snafu(display("Debug Error: {}", source))]
     DebugError { source: crate::debug::Error },
-
-    #[snafu(display("Sim Error: {}", message))]
-    SimError { message: String },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -76,7 +71,6 @@ pub struct Scheduler {
     pes: Map<PEId, Injector<PE>>,
     pes_overview: HashMap<PEId, usize>,
     pes_name: HashMap<PEId, String>,
-    client: SimClient,
 }
 
 impl Scheduler {
@@ -170,12 +164,10 @@ impl Scheduler {
             pes: pe_hashed,
             pes_overview,
             pes_name,
-            client: SimClient::new().map_err(|_| Error::SimError{ message: "Error creating client in scheduler".to_string() })?,
         })
     }
 
     pub fn acquire_pe(&self, id: PEId) -> Result<PE> {
-        println!("acquiring pe");
         match self.pes.get(&id) {
             Some(l) => loop {
                 match l.val().steal() {

@@ -18,35 +18,26 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::debug::DebugControl;
+// use crate::debug::DebugControl;
 use crate::device::DataTransferPrealloc;
 use crate::device::DeviceAddress;
 use crate::device::OffchipMemory;
 use crate::device::PEParameter;
 use crate::interrupt::Interrupt;
-use memmap::MmapMut;
+// use memmap::MmapMut;
 use snafu::ResultExt;
 use std::fs::File;
-use std::sync::{Arc, Mutex};
-use std::ptr::write_volatile;
-use std::net::{TcpStream, ToSocketAddrs};
-use futures::TryStreamExt;
+use std::sync::Arc;//, Mutex};
+// use std::ptr::write_volatile;
 use crate::sim_client::SimClient;
 
 use crate::device::simcalls::{
-    SimResponseType,
-    StartPe,
-    SetArg,
-    GetReturn,
-    sim_response::ResponsePayload,
-    set_arg::Arg,
     Data,
     data::Value,
     ReadPlatform,
     WritePlatform,
-    ReadPlatformResponse,
 };
-use crate::pe::Error::SimError;
+use crate::sim_client;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -89,9 +80,8 @@ pub enum Error {
         id: usize,
     },
 
-    SimError {
-        message: String
-    }
+    #[snafu(display("Error during gRPC communictaion {}", source))]
+    SimClientError { source: sim_client::Error },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -164,21 +154,22 @@ impl PE {
             interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterruptSnafu)?,
             // debug,
             svm_in_use,
-            client: SimClient::new().map_err(|_| SimError {message: "Error instantiating sim client from pe".to_string()})?
+            client: SimClient::new().context(SimClientSnafu)?
         })
     }
 
     pub fn start(&mut self) -> Result<()> {
         ensure!(!self.active, PEAlreadyActiveSnafu { id: self.id });
-        println!("starting pe");
         trace!("Starting PE {}.", self.id);
         let offset = self.offset as isize;
-        unsafe {
-            // todo: send start command to sim pe
+        // unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
-        }
+        // }
 
-        self.client.start_pe(StartPe {id: self.id as u64}).map_err(|_| SimError {message: "Error starting pe".to_string()})?;
+        self.client.write_platform(WritePlatform {
+            addr: offset as u64,
+            data: Some(Data {value: Some(Value::U32(1))})
+        }).context(SimClientSnafu)?;
 
         self.active = true;
         Ok(())
@@ -220,7 +211,7 @@ impl PE {
         let r = self.client.read_platform(ReadPlatform {
             addr: offset as u64,
             num_bytes: 4
-        }).map_err(|_| SimError {message: "Error reading interrupt 0x0c".to_string()})?;
+        }).context(SimClientSnafu)?;
         let s = (r & 1) == 1;
         trace!("Reading interrupt status from 0x{:x} -> {}", offset, s);
         Ok(s)
@@ -236,7 +227,7 @@ impl PE {
         self.client.write_platform(WritePlatform {
             addr: offset as u64,
             data: Some(Data {value: Some(Value::U32(if v {1} else {0}))})
-        }).map_err(|_| SimError {message: "Error resetting interrupt status 0x0c".to_string()})?;
+        }).context(SimClientSnafu)?;
         Ok(())
     }
 
@@ -251,7 +242,7 @@ impl PE {
         let g = self.client.read_platform(ReadPlatform {
             addr: offset as u64,
             num_bytes: 4
-        }).map_err(|_| SimError {message: "Error reading interrupt status 0x04".to_string()})? & 1 == 1;
+        }).context(SimClientSnafu)? & 1 == 1;
         offset = (self.offset as usize + 0x08) as isize;
         // let l = unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
@@ -262,7 +253,7 @@ impl PE {
         let l = self.client.read_platform(ReadPlatform {
             addr: offset as u64,
             num_bytes: 4
-        }).map_err(|_| SimError {message: "Error reading interrupt status 0x04".to_string()})? & 1 == 1;
+        }).context(SimClientSnafu)? & 1 == 1;
         trace!("Interrupt status is {}, {}", g, l);
         Ok((g, l))
     }
@@ -270,7 +261,7 @@ impl PE {
     pub fn enable_interrupt(&self) -> Result<()> {
         ensure!(!self.active, PEAlreadyActiveSnafu { id: self.id });
         let mut offset = (self.offset as usize + 0x04) as isize;
-        println!("Enabling interrupts: 0x{:x} -> 1", offset);
+        trace!("Enabling interrupts: 0x{:x} -> 1", offset);
         // unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
             // write_volatile(ptr as *mut u32, 1);
@@ -278,9 +269,9 @@ impl PE {
         self.client.write_platform(WritePlatform {
             addr: offset as u64,
             data: Some(Data {value: Some(Value::U32(1))})
-        }).map_err(|_| SimError {message: "Error enabling interrupt status 0x04".to_string()})?;
+        }).context(SimClientSnafu)?;
         offset = (self.offset as usize + 0x08) as isize;
-        println!("Enabling global interrupts: 0x{:x} -> 1", offset);
+        trace!("Enabling global interrupts: 0x{:x} -> 1", offset);
         // unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
             // write_volatile(ptr as *mut u32, 1);
@@ -288,21 +279,21 @@ impl PE {
         self.client.write_platform(WritePlatform {
             addr: offset as u64,
             data: Some(Data {value: Some(Value::U32(1))})
-        }).map_err(|_| SimError {message: "Error enabling interrupt status 0x04".to_string()})?;
+        }).context(SimClientSnafu)?;
         Ok(())
     }
 
     pub fn set_arg(&self, argn: usize, arg: PEParameter) -> Result<()> {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
-        println!("Writing argument: 0x{:x} ({}) -> {:?}", offset, argn, arg);
-        unsafe {
+        trace!("Writing argument: 0x{:x} ({}) -> {:?}", offset, argn, arg);
+        // unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
             // match arg {
             //     PEParameter::Single32(x) => write_volatile(ptr as *mut u32, x),
             //     PEParameter::Single64(x) => write_volatile(ptr as *mut u64, x),
             //     _ => return Err(Error::UnsupportedParameter { param: arg }),
             // };
-        }
+        // }
 
         self.client.write_platform(WritePlatform {
             addr: offset as u64,
@@ -311,17 +302,7 @@ impl PE {
                 PEParameter::Single64(x) => Some(Data{value: Some(Value::U64(x))}),
                 _ => return Err(Error::UnsupportedParameter { param: arg }),
             }
-        }).map_err(|_| SimError {message: "Error setting argument".to_string()})?;
-
-        // self.client.set_arg(SetArg {
-        //     peid: self.id as u32,
-        //     argn: argn as u64,
-        //     arg: match arg {
-        //         PEParameter::Single32(x) => Some(Arg::U32(x)),
-        //         PEParameter::Single64(x) => Some(Arg::U64(x)),
-        //         _ => return Err(Error::UnsupportedParameter { param: arg }),
-        //     }
-        // }).map_err(|_| SimError {message: "Error setting argument".to_string()})?;
+        }).context(SimClientSnafu)?;
         Ok(())
     }
 
@@ -343,7 +324,7 @@ impl PE {
         let r = Ok(PEParameter::Single64(self.client.read_platform(ReadPlatform {
             addr: offset as u64,
             num_bytes: bytes as u32
-        }).map_err(|_| SimError {message: "Error setting argument".to_string()})?));
+        }).context(SimClientSnafu)?));
         trace!(
             "Reading argument: 0x{:x} ({} x {}B) -> {:?}",
             offset,
@@ -365,8 +346,7 @@ impl PE {
         let r = self.client.read_platform(ReadPlatform {
             addr: offset as u64,
             num_bytes: 8
-        }).map_err(|_| SimError {message: "Error setting argument".to_string()}).unwrap();
-        println!("pe returned value {:?}", r);
+        }).context(SimClientSnafu).unwrap();
         trace!("Reading return value: {}", r);
         r
     }

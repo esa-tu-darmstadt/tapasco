@@ -22,22 +22,20 @@ use crate::tlkm::tlkm_ioctl_reg_interrupt;
 use crate::tlkm::tlkm_register_interrupt;
 use nix::sys::eventfd::eventfd;
 use nix::sys::eventfd::EfdFlags;
-use nix::unistd::{close, write};
-use nix::unistd::read;
+use nix::unistd::close;
+//, write};
+// use nix::unistd::read;
 use snafu::ResultExt;
 use std::fs::File;
 use std::os::unix::io::RawFd;
 use std::os::unix::prelude::*;
-use tokio::runtime::{Builder, Runtime};
-use crate::interrupt::Error::SimError;
 use crate::sim_client::SimClient;
 use crate::device::simcalls::{
     InterruptStatusRequest,
     RegisterInterrupt,
     DeregisterInterrupt,
-    SimResponseType,
-    sim_response::ResponsePayload
 };
+use crate::sim_client;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -50,8 +48,8 @@ pub enum Error {
     #[snafu(display("Could not register eventfd with driver: {}", source))]
     ErrorEventFDRegister { source: nix::Error },
 
-    #[snafu(display("Sim Error in Interrupt: {}", message))]
-    SimError { message: String },
+    #[snafu(display("{}", source))]
+    SimClientError { source: sim_client::Error },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -65,8 +63,8 @@ pub struct Interrupt {
 impl Drop for Interrupt {
     fn drop(&mut self) {
         let _ = close(self.interrupt);
-        println!("deregistering interrupt: {:?}", self.interrupt);
-        let _ = self.client.deregister_interrupt(DeregisterInterrupt{ fd: self.interrupt });
+        trace!("deregistering interrupt: {:?}", self.interrupt);
+        let _ = self.client.deregister_interrupt(DeregisterInterrupt { fd: self.interrupt }).context(SimClientSnafu);
     }
 }
 
@@ -86,19 +84,18 @@ impl Interrupt {
             pe_id: interrupt_id as i32,
         };
 
-        let mut client = SimClient::new().map_err(|_| SimError {message: "Error creating client".to_string() })?;
-        let response = client.register_interrupt(RegisterInterrupt{
+        let client = SimClient::new().context(SimClientSnafu)?;
+        client.register_interrupt(RegisterInterrupt {
             fd,
             interrupt_id: interrupt_id as i32,
-        }).map_err(|_| SimError {message: "Error registering interrupt".to_string()})?;
+        }).context(SimClientSnafu)?;
 
         unsafe {
-            // todo: pass to simulation
             tlkm_ioctl_reg_interrupt(tlkm_file.as_raw_fd(), &mut ioctl_fd)
                 .context(ErrorEventFDRegisterSnafu)?;
         };
 
-        Ok(Self { interrupt: fd , client})
+        Ok(Self { interrupt: fd, client })
     }
 
     /// Wait for an interrupt as indicated by the eventfd
@@ -108,7 +105,7 @@ impl Interrupt {
     /// Returns at least 1
     pub fn wait_for_interrupt(&self) -> Result<u64> {
         loop {
-            let interrupts = self.client.get_interrupt_status(InterruptStatusRequest { fd: self.interrupt }).map_err(|_| SimError {message: "Error getting interrupt status".to_string()})?;
+            let interrupts = self.client.get_interrupt_status(InterruptStatusRequest { fd: self.interrupt }).context(SimClientSnafu)?;
             if interrupts > 0 {
                 return Ok(interrupts);
             }
@@ -141,7 +138,7 @@ impl Interrupt {
     /// This function behaves like wait_for_interrupt if blocking mode has been selected
     /// as the `read` will block in this case until an interrupt occurs.
     pub fn check_for_interrupt(&self) -> Result<u64> {
-        let interrupts = self.client.get_interrupt_status(InterruptStatusRequest { fd: self.interrupt }).map_err(|_| SimError {message: "Error getting interrupt Status".to_string()})?;
+        let interrupts = self.client.get_interrupt_status(InterruptStatusRequest { fd: self.interrupt }).context(SimClientSnafu)?;
         Ok(interrupts)
         // let mut buf = [0u8; 8];
         // loop {

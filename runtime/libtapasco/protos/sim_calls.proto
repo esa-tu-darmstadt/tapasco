@@ -10,48 +10,10 @@ service SimRequest {
   rpc deregister_interrupt (DeregisterInterrupt) returns (SimResponse);
   rpc get_interrupt_status (InterruptStatusRequest) returns (SimResponse);
   rpc get_status (Void) returns (SimResponse);
-  rpc start_pe (StartPE) returns (SimResponse);
-  rpc set_arg (SetArg) returns (SimResponse);
   rpc write_memory (WriteMemory) returns (SimResponse);
   rpc read_memory (ReadMemory) returns (SimResponse);
   rpc write_platform (WritePlatform) returns (SimResponse);
   rpc read_platform (ReadPlatform) returns (SimResponse);
-  rpc get_return (GetReturn) returns (SimResponse);
-}
-
-message SetArg {
-  uint32 peid = 1;
-  uint64 argn = 2;
-  oneof arg {
-    uint32 u_32 = 3;
-    uint64 u_64 = 4;
-  }
-}
-
-message ReadArg {
-  uint32 peid = 1;
-  uint64 argn = 2;
-  uint64 bytes = 3;
-}
-
-message ReadArgResp {
-  oneof value {
-    uint32 u_32 = 1;
-    uint64 u_64 = 2;
-  }
-}
-
-message GetReturn {
-  uint64 peid = 1;
-}
-
-message GetReturnResponse {
-  uint64 value = 1;
-}
-
-
-message StartPE {
-  uint64 id = 1;
 }
 
 message InterruptStatusRequest {
@@ -89,7 +51,6 @@ message SimResponse {
     string error_reason = 6;
     ReadMemoryResponse read_memory_response = 7;
     ReadPlatformResponse read_platform_response = 8;
-    GetReturnResponse get_return_response = 9;
   }
 }
 

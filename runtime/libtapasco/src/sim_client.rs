@@ -1,30 +1,57 @@
-use std::borrow::BorrowMut;
+use std::io;
 use std::sync::Mutex;
-use nix::dir::Type;
+use snafu::ResultExt;
 use tokio::runtime::{Builder, Runtime};
 use crate::device;
-use crate::device::Error::SimError;
 use device::simcalls::{
     InterruptStatusRequest,
-    InterruptStatus,
     Void,
     SimResponseType,
     RegisterInterrupt,
     DeregisterInterrupt,
-    StartPe,
-    SetArg,
-    GetReturn,
     WriteMemory,
     ReadMemory,
     WritePlatform,
     ReadPlatform,
-    ReadMemoryResponse,
-    ReadPlatformResponse,
-    Data,
     sim_request_client::SimRequestClient,
     sim_response::ResponsePayload
 };
-use crate::device::status::Status;
+use crate::sim_client::Error::*;
+
+#[derive(Debug, Snafu)]
+pub enum Error {
+    #[snafu(display("Failed to build tokio runtime: {}", source))]
+    TonicRuntimeBuild { source: io::Error },
+
+    #[snafu(display("Failed to acquire lock on client mutex"))]
+    ClientLockError { },
+
+    #[snafu(display("Failed to connect to gRPC server: {}", source))]
+    Connect { source: tonic::transport::Error },
+
+    #[snafu(display("Failed to connect to gRPC server: {}", source))]
+    Request { source: tonic::Status },
+
+    #[snafu(display("Server Error: {}", message))]
+    ServerError { message: String },
+
+    #[snafu(display("Got wrong payload from request: {:?}, expected {}", payload, expected))]
+    WrongResponsePayload { payload: ResponsePayload, expected: String },
+
+    #[snafu(display("Got payload None, expected {:?}", expected))]
+    ResponseNone { expected: String},
+
+    #[snafu(display("ResponseType is None or unsupported: {:?}", t))]
+    ResponseType { t:  Option<SimResponseType>},
+
+    #[snafu(whatever, display("{}", message))]
+    Whatever {
+        message: String,
+        #[snafu(source(from(Box<dyn std::error::Error>, Some)))]
+        source: Option<Box<dyn std::error::Error>>
+    }
+}
+type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Debug)]
 pub struct SimClient {
@@ -33,9 +60,9 @@ pub struct SimClient {
 }
 
 impl SimClient {
-    pub fn new() -> Result<Self, device::Error> {
-        let rt = Builder::new_multi_thread().enable_all().build().map_err(|_| SimError { message: String::from("Error creating runtime") })?;
-        let mut client = rt.block_on(SimRequestClient::connect("http://[::1]:4040")).map_err(|_| SimError { message: String::from("Error connecting to gRPC server") })?;
+    pub fn new() -> Result<Self> {
+        let rt = Builder::new_multi_thread().enable_all().build().context(TonicRuntimeBuildSnafu)?;
+        let client = rt.block_on(SimRequestClient::connect("http://[::1]:4040")).context(ConnectSnafu)?;
 
         Ok(Self {
             client: Mutex::new(client),
@@ -43,225 +70,172 @@ impl SimClient {
         })
     }
 
-    pub fn write_platform(&self, write_platform: WritePlatform) -> Result<Void, device::Error> {
+    pub fn write_platform(&self, write_platform: WritePlatform) -> Result<Void> {
         let request = tonic::Request::new(write_platform);
-        let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
-        let response = self.rt.block_on(client.write_platform(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
+        let mut client = self.client.lock().map_err(|_| ClientLockError {})?;
+        let response = self.rt.block_on(client.write_platform(request)).context(RequestSnafu)?;
 
         let inner = response.into_inner();
         match SimResponseType::from_i32(inner.r#type) {
             Some(SimResponseType::Okay) => match inner.response_payload {
                 Some(ResponsePayload::Void(void)) => Ok(void),
-                Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
-                None => Err(SimError {message: "response payload is None".to_string()}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "Void".to_string()}),
+                None => Err(ResponseNone {expected: "Void".to_string()}),
             },
             Some(SimResponseType::Error) => match inner.response_payload {
-                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
-                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
+                Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
+                _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
+            x => Err(ResponseType {t: x})
         }
     }
 
 
-    pub fn read_platform(&self, read_platform: ReadPlatform) -> Result<u64, device::Error> {
+    pub fn read_platform(&self, read_platform: ReadPlatform) -> Result<u64> {
         let request = tonic::Request::new(read_platform);
-        let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
-        let response = self.rt.block_on(client.read_platform(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
+        let mut client = self.client.lock().map_err(|_| ClientLockError {})?;
+        let response = self.rt.block_on(client.read_platform(request)).context(RequestSnafu)?;
 
         let inner = response.into_inner();
         match SimResponseType::from_i32(inner.r#type) {
             Some(SimResponseType::Okay) => match inner.response_payload {
                 Some(ResponsePayload::ReadPlatformResponse(response)) => Ok(response.value),
-                Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
-                None => Err(SimError {message: "response payload is None".to_string()}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "ReadPlatformResponse".to_string()}),
+                None => Err(ResponseNone {expected: "ReadPlatformResponse".to_string()}),
             },
             Some(SimResponseType::Error) => match inner.response_payload {
-                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
-                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
+                Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
+                _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
+            x => Err(ResponseType {t: x})
         }
     }
 
-    pub fn read_memory(&self, read_memory: ReadMemory) -> Result<Vec<u32>, device::Error> {
+    pub fn read_memory(&self, read_memory: ReadMemory) -> Result<Vec<u32>> {
         let request = tonic::Request::new(read_memory);
-        let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
-        let response = self.rt.block_on(client.read_memory(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
+        let mut client = self.client.lock().map_err(|_| ClientLockError {})?;
+        let response = self.rt.block_on(client.read_memory(request)).context(RequestSnafu)?;
 
         let inner = response.into_inner();
         match SimResponseType::from_i32(inner.r#type) {
             Some(SimResponseType::Okay) => match inner.response_payload {
                 Some(ResponsePayload::ReadMemoryResponse(response)) => Ok(response.value),
-                Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
-                None => Err(SimError {message: "response payload is None".to_string()}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "ReadMemoryResponse".to_string()}),
+                None => Err(ResponseNone {expected: "ReadMemoryResponse".to_string()}),
             },
             Some(SimResponseType::Error) => match inner.response_payload {
-                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
-                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
+                Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
+                _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
+            x => Err(ResponseType {t: x})
         }
     }
 
-    pub fn write_memory(&self, write_memory: WriteMemory) -> Result<Void, device::Error> {
+    pub fn write_memory(&self, write_memory: WriteMemory) -> Result<Void> {
         let request = tonic::Request::new(write_memory);
-        let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
-        let response = self.rt.block_on(client.write_memory(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
+        let mut client = self.client.lock().map_err(|_| ClientLockError {})?;
+        let response = self.rt.block_on(client.write_memory(request)).context(RequestSnafu)?;
 
         let inner = response.into_inner();
         match SimResponseType::from_i32(inner.r#type) {
             Some(SimResponseType::Okay) => match inner.response_payload {
                 Some(ResponsePayload::Void(void)) => Ok(void),
-                Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
-                None => Err(SimError {message: "response payload is None".to_string()}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "Void".to_string()}),
+                None => Err(ResponseNone {expected: "Void".to_string()}),
             },
             Some(SimResponseType::Error) => match inner.response_payload {
-                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
-                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
+                Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
+                _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
+            x => Err(ResponseType {t: x})
         }
     }
 
-    pub fn get_return(&self, get_return: GetReturn) -> Result<u64, device::Error> {
-        let request = tonic::Request::new(get_return);
-        let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
-        let response = self.rt.block_on(client.get_return(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
-
-        let inner = response.into_inner();
-        match SimResponseType::from_i32(inner.r#type) {
-            Some(SimResponseType::Okay) => match inner.response_payload {
-                Some(ResponsePayload::GetReturnResponse(ret)) => Ok(ret.value),
-                Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
-                None => Err(SimError {message: "response payload is None".to_string()}),
-            },
-            Some(SimResponseType::Error) => match inner.response_payload {
-                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
-                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
-            },
-            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
-        }
-    }
-
-    pub fn register_interrupt(&self, register_interrupt: RegisterInterrupt) -> Result<Void, device::Error> {
+    pub fn register_interrupt(&self, register_interrupt: RegisterInterrupt) -> Result<Void> {
         let request = tonic::Request::new(register_interrupt);
-        let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
-        let response = self.rt.block_on(client.register_interrupt(request)).map_err(|_| SimError {message: String::from("Error requesting interrupt")})?;
+        let mut client = self.client.lock().map_err(|_| ClientLockError {})?;
+        let response = self.rt.block_on(client.register_interrupt(request)).context(RequestSnafu)?;
 
         let inner = response.into_inner();
         match SimResponseType::from_i32(inner.r#type) {
             Some(SimResponseType::Okay) => match inner.response_payload {
                 Some(ResponsePayload::Void(void)) => Ok(void),
-                Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
-                None => Err(SimError {message: "response payload is None".to_string()}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "Void".to_string()}),
+                None => Err(ResponseNone {expected: "Void".to_string()}),
             },
             Some(SimResponseType::Error) => match inner.response_payload {
-                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
-                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
+                Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
+                _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
+            x => Err(ResponseType {t: x})
         }
     }
 
-    pub fn deregister_interrupt(&self, register_interrupt: DeregisterInterrupt) -> Result<Void, device::Error> {
+    pub fn deregister_interrupt(&self, register_interrupt: DeregisterInterrupt) -> Result<Void> {
         let request = tonic::Request::new(register_interrupt);
-        let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
-        let response = self.rt.block_on(client.deregister_interrupt(request)).map_err(|_| SimError {message: String::from("Error deregistering interrupt")})?;
+        let mut client = self.client.lock().map_err(|_| ClientLockError {})?;
+        let response = self.rt.block_on(client.deregister_interrupt(request)).context(RequestSnafu)?;
 
         let inner = response.into_inner();
         match SimResponseType::from_i32(inner.r#type) {
             Some(SimResponseType::Okay) => match inner.response_payload {
                 Some(ResponsePayload::Void(void)) => Ok(void),
-                Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
-                None => Err(SimError {message: "response payload is None".to_string()}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "Void".to_string()}),
+                None => Err(ResponseNone {expected: "Void".to_string()}),
             },
             Some(SimResponseType::Error) => match inner.response_payload {
-                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
-                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
+                Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
+                _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
+            x => Err(ResponseType {t: x})
         }
     }
 
-    pub fn get_status(&self) -> Result<device::status::Status, device::Error> {
+    pub fn get_status(&self) -> Result<device::status::Status> {
         let request = tonic::Request::new(Void{});
-        let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
-        let response = self.rt.block_on(client.get_status(request)).map_err(|err| {
-            println!("{:?}", err); SimError {message: String::from("Error requesting status")}})?;
+        let mut client = self.client.lock().map_err(|_| ClientLockError {})?;
+        let response = self.rt.block_on(client.get_status(request)).context(RequestSnafu)?;
         let inner = response.into_inner();
 
         match SimResponseType::from_i32(inner.r#type) {
             Some(SimResponseType::Okay) => match inner.response_payload {
                 Some(ResponsePayload::Status(status)) => Ok(status),
-                Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
-                None => Err(SimError {message: "response payload is None".to_string()}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "Status".to_string()}),
+                None => Err(ResponseNone {expected: "Status".to_string()}),
             },
             Some(SimResponseType::Error) => match inner.response_payload {
-                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
-                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
+                Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
+                _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
+            x => Err(ResponseType {t: x})
         }
     }
 
-    pub fn get_interrupt_status(&self, interrupt_status_request: InterruptStatusRequest) -> Result<u64, device::Error> {
+    pub fn get_interrupt_status(&self, interrupt_status_request: InterruptStatusRequest) -> Result<u64> {
         let request = tonic::Request::new(interrupt_status_request);
-        let mut client = self.client.lock().map_err(|_| SimError {message: "Error locking client".to_string()})?;
-        let response = self.rt.block_on(client.get_interrupt_status(request)).map_err(|_| SimError {message: "Error getting interrupt status".to_string()})?;
+        let mut client = self.client.lock().map_err(|_| ClientLockError {})?;
+        let response = self.rt.block_on(client.get_interrupt_status(request)).context(RequestSnafu)?;
         let inner = response.into_inner();
 
         match SimResponseType::from_i32(inner.r#type) {
             Some(SimResponseType::Okay) => match inner.response_payload {
                 Some(ResponsePayload::InterruptStatus(status)) => Ok(status.interrupts),
-                Some(r) => Err(SimError {message: "Got wrong payload from request".to_string()}),
-                None => Err(SimError {message: "response payload is None".to_string()}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "InterruptStatus".to_string()}),
+                None => Err(ResponseNone {expected: "InterruptStatus".to_string()}),
             },
             Some(SimResponseType::Error) => match inner.response_payload {
-                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
-                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
+                Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
+                Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
+                _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
-        }
-    }
-
-    pub fn start_pe(&self, start_pe: StartPe) -> Result<Void, device::Error> {
-        let request = tonic::Request::new(start_pe);
-        let mut client = self.client.lock().map_err(|_| SimError {message: "Error getting client mutext".to_string()})?;
-        let response = self.rt.block_on(client.start_pe(request)).map_err(|_| SimError {message: "Error sending start_pe rpc".to_string()})?;
-        let inner = response.into_inner();
-
-        match SimResponseType::from_i32(inner.r#type) {
-            Some(SimResponseType::Okay) => match inner.response_payload {
-                Some(ResponsePayload::Void(void)) => Ok(void),
-                Some(_) => Err(SimError {message: "Got wrong payload from request".to_string()}),
-                None => Err(SimError {message: "response payload is None".to_string()}),
-            },
-            Some(SimResponseType::Error) => match inner.response_payload {
-                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
-                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
-            },
-            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
-        }
-    }
-
-    pub fn set_arg(&self, set_arg: SetArg) -> Result<Void, device::Error> {
-        let request = tonic::Request::new(set_arg);
-        let mut client = self.client.lock().map_err(|_| SimError {message: "Error getting client mutext".to_string()})?;
-        let response = self.rt.block_on(client.set_arg(request)).map_err(|_| SimError {message: "Error sending set_arg rpc".to_string()})?;
-        let inner = response.into_inner();
-
-        match SimResponseType::from_i32(inner.r#type) {
-            Some(SimResponseType::Okay) => match inner.response_payload {
-                Some(ResponsePayload::Void(void)) => Ok(void),
-                Some(_) => Err(SimError {message: "Got wrong payload from request".to_string()}),
-                None => Err(SimError {message: "response payload is None".to_string()}),
-            },
-            Some(SimResponseType::Error) => match inner.response_payload {
-                Some(ResponsePayload::ErrorReason(reason)) => Err(SimError {message: reason}),
-                _ => Err(SimError {message: "Got Error SimResponse, but payload not ErrorReason".to_string()})
-            },
-            x =>  Err(SimError {message: format!("Unknown SimResponseType: {:?}", x).to_string()})
+            x => Err(ResponseType {t: x})
         }
     }
 }
