@@ -304,21 +304,30 @@ impl PE {
             // };
         }
 
-        self.client.set_arg(SetArg {
-            peid: self.id as u32,
-            argn: argn as u64,
-            arg: match arg {
-                PEParameter::Single32(x) => Some(Arg::U32(x)),
-                PEParameter::Single64(x) => Some(Arg::U64(x)),
+        self.client.write_platform(WritePlatform {
+            addr: offset as u64,
+            data: match arg {
+                PEParameter::Single32(x) => Some(Data{value: Some(Value::U32(x))}),
+                PEParameter::Single64(x) => Some(Data{value: Some(Value::U64(x))}),
                 _ => return Err(Error::UnsupportedParameter { param: arg }),
             }
         }).map_err(|_| SimError {message: "Error setting argument".to_string()})?;
+
+        // self.client.set_arg(SetArg {
+        //     peid: self.id as u32,
+        //     argn: argn as u64,
+        //     arg: match arg {
+        //         PEParameter::Single32(x) => Some(Arg::U32(x)),
+        //         PEParameter::Single64(x) => Some(Arg::U64(x)),
+        //         _ => return Err(Error::UnsupportedParameter { param: arg }),
+        //     }
+        // }).map_err(|_| SimError {message: "Error setting argument".to_string()})?;
         Ok(())
     }
 
     pub fn read_arg(&self, argn: usize, bytes: usize) -> Result<PEParameter> {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
-        let r = unsafe {
+        // let r = unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
             // match bytes {
             //     4 => Ok(PEParameter::Single32(
@@ -329,8 +338,12 @@ impl PE {
             //     )),
             //     _ => Err(Error::UnsupportedRegisterSize { param: bytes }),
             // }
-            Ok(PEParameter::Single64(42))
-        };
+            // Ok(PEParameter::Single64(42));
+        // };
+        let r = Ok(PEParameter::Single64(self.client.read_platform(ReadPlatform {
+            addr: offset as u64,
+            num_bytes: bytes as u32
+        }).map_err(|_| SimError {message: "Error setting argument".to_string()})?));
         trace!(
             "Reading argument: 0x{:x} ({} x {}B) -> {:?}",
             offset,
@@ -342,13 +355,17 @@ impl PE {
     }
 
     pub fn return_value(&self) -> u64 {
-        // let offset = (self.offset as usize + 0x10) as isize;
+        let offset = (self.offset as usize + 0x10) as isize;
         // let r = unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
             // ptr.cast::<u64>().read_volatile()
             // 42
         // };
-        let r = self.client.get_return(GetReturn {peid: self.id as u64}).unwrap();
+        // let r = self.client.get_return(GetReturn {peid: self.id as u64}).unwrap();
+        let r = self.client.read_platform(ReadPlatform {
+            addr: offset as u64,
+            num_bytes: 8
+        }).map_err(|_| SimError {message: "Error setting argument".to_string()}).unwrap();
         println!("pe returned value {:?}", r);
         trace!("Reading return value: {}", r);
         r
