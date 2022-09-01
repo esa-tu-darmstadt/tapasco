@@ -3,11 +3,12 @@ syntax = "proto3";
 package tapasco.simcalls;
 
 // read and write commands correspond only to offchip memory!!
-message Data {
-  oneof value {
-    uint32 u_32 = 1;
-    uint64 u_64 = 2;
-  }
+message Data_32 {
+  repeated uint32 value = 1;
+}
+
+message Data_64 {
+  repeated uint64 value = 2;
 }
 
 message WriteMemory {
@@ -28,7 +29,10 @@ message ReadMemoryResponse {
 
 message WritePlatform {
   uint64 addr = 1;
-  Data data = 2;
+  oneof data {
+    Data_32 u_32 = 2;
+    Data_64 u_64 = 3;
+  }
 }
 
 message ReadPlatform {
