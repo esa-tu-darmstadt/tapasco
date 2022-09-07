@@ -352,9 +352,11 @@ namespace eval platform {
     # generate smartconnect and slave axi port
     set smartconnect_out [create_bd_cell -type ip -vlnv $axi_sc_vlnv smartconnect_out]
     set mem_interfaces [::arch::get_masters]
+    puts $mem_interfaces
+    save_bd_design
     set_property -dict [list \
     CONFIG.NUM_MI {1} \
-    CONFIG.NUM_SI "[llength $mem_interfaces]" \
+    CONFIG.NUM_SI "[max 1 [llength $mem_interfaces]]" \
     CONFIG.NUM_CLKS {2} \
     CONFIG.HAS_ARESETN {0}] $smartconnect_out
 
@@ -388,6 +390,10 @@ namespace eval platform {
 
     save_bd_design
 
+  }
+
+  proc max {a b} {
+    return [expr [expr $a < $b] ? $b : $a]
   }
 
   # don't run synthesis and implementation, only generate new ip core
