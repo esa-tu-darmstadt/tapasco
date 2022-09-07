@@ -32,8 +32,9 @@ use std::sync::Arc;//, Mutex};
 use crate::sim_client::SimClient;
 
 use crate::device::simcalls::{
-    Data,
-    data::Value,
+    Data32,
+    Data64,
+    write_platform::Data,
     ReadPlatform,
     WritePlatform,
 };
@@ -168,7 +169,7 @@ impl PE {
 
         self.client.write_platform(WritePlatform {
             addr: offset as u64,
-            data: Some(Data {value: Some(Value::U32(1))})
+            data: Some(Data::U32(Data32{value: vec![1_u32]}))
         }).context(SimClientSnafu)?;
 
         self.active = true;
@@ -226,7 +227,7 @@ impl PE {
         // }
         self.client.write_platform(WritePlatform {
             addr: offset as u64,
-            data: Some(Data {value: Some(Value::U32(if v {1} else {0}))})
+            data: Some(Data::U32(Data32 {value: vec![if v {1} else {0}]}))
         }).context(SimClientSnafu)?;
         Ok(())
     }
@@ -245,9 +246,9 @@ impl PE {
         }).context(SimClientSnafu)? & 1 == 1;
         offset = (self.offset as usize + 0x08) as isize;
         // let l = unsafe {
-            // let ptr = self.memory.as_ptr().offset(offset);
-            // ptr.read_volatile()
-            // 1
+        //     let ptr = self.memory.as_ptr().offset(offset);
+        //     ptr.read_volatile();
+        //     1
         // } & 1
         //     == 1;
         let l = self.client.read_platform(ReadPlatform {
@@ -268,7 +269,7 @@ impl PE {
         // }
         self.client.write_platform(WritePlatform {
             addr: offset as u64,
-            data: Some(Data {value: Some(Value::U32(1))})
+            data: Some(Data::U32(Data32 {value: vec![1]}))
         }).context(SimClientSnafu)?;
         offset = (self.offset as usize + 0x08) as isize;
         trace!("Enabling global interrupts: 0x{:x} -> 1", offset);
@@ -278,7 +279,7 @@ impl PE {
         // }
         self.client.write_platform(WritePlatform {
             addr: offset as u64,
-            data: Some(Data {value: Some(Value::U32(1))})
+            data: Some(Data::U32(Data32 {value: vec![1]}))
         }).context(SimClientSnafu)?;
         Ok(())
     }
@@ -298,8 +299,8 @@ impl PE {
         self.client.write_platform(WritePlatform {
             addr: offset as u64,
             data: match arg {
-                PEParameter::Single32(x) => Some(Data{value: Some(Value::U32(x))}),
-                PEParameter::Single64(x) => Some(Data{value: Some(Value::U64(x))}),
+                PEParameter::Single32(x) =>  Some(Data::U32(Data32 {value: vec![x]})),
+                PEParameter::Single64(x) =>  Some(Data::U64(Data64 {value: vec![x]})),
                 _ => return Err(Error::UnsupportedParameter { param: arg }),
             }
         }).context(SimClientSnafu)?;

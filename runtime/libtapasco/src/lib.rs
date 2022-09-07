@@ -47,3 +47,4 @@ pub mod scheduler;
 pub mod vfio;
 pub mod tlkm;
 pub mod sim_client;
+pub mod mmap_mut;

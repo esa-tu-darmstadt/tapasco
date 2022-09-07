@@ -465,9 +465,9 @@ impl Device {
             info!("SIM DEVICE FOUND!");
             allocator.push(Arc::new(OffchipMemory{
                 allocator: Mutex::new(Box::new(
-                    GenericAllocator::new(0, 2_u64.pow(10), 1).context(AllocatorSnafu)?,
+                    GenericAllocator::new(0, 2_u64.pow(30), 1).context(AllocatorSnafu)?,
                 )),
-                dma: Box::new(SimDMA::new().context(DMASnafu)?),
+                dma: Box::new(SimDMA::new(0, 2_u64.pow(30), false).context(DMASnafu)?),
             }))
         } else {
             return Err(Error::DeviceType { name });
@@ -483,7 +483,7 @@ impl Device {
                             allocator: Mutex::new(Box::new(
                                 GenericAllocator::new(0, l.size, 1).context(AllocatorSnafu)?,
                             )),
-                            dma: Box::new(DirectDMA::new(l.base, l.size, arch.clone())),
+                            dma: if name == "sim" { Box::new(SimDMA::new(l.base, l.size, true).context(DMASnafu)?) } else { Box::new(DirectDMA::new(l.base, l.size, arch.clone())) },
                         }));
                     },
                     None => (),

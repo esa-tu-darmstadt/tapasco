@@ -33,6 +33,9 @@ use std::os::unix::prelude::*;
 use std::sync::Arc;//, Mutex};
 use crate::sim_client::SimClient;
 use crate::device::simcalls::{
+    write_platform::Data,
+    Data32,
+    WritePlatform,
     WriteMemory,
     ReadMemory,
 };
@@ -344,13 +347,23 @@ impl DMAControl for SVMDMA {
 #[allow(unused)]
 pub struct SimDMA {
     client: SimClient,
+    offset: DeviceAddress,
+    size: DeviceSize,
+    is_platform: bool,
 }
 
 #[allow(unused)]
 impl SimDMA {
-    pub fn new() -> Result<Self> {
+    pub fn new(
+        offset: DeviceAddress,
+        size: DeviceSize,
+        is_platform: bool
+    ) -> Result<Self> {
         Ok(Self {
-            client: SimClient::new().context(SimClientSnafu)?
+            client: SimClient::new().context(SimClientSnafu)?,
+            offset,
+            size,
+            is_platform,
         })
     }
 }
@@ -358,11 +371,26 @@ impl SimDMA {
 
 impl DMAControl for SimDMA {
     fn copy_to(&self, data: &[u8], ptr: DeviceAddress) -> Result<()> {
-        trace!("SimDMA copy_to {:?}, {:?}", data, ptr);
-        self.client.write_memory(WriteMemory {
-            addr: ptr as u64,
-            data: data.iter().map(|b| *b as u32).collect(),
-        }).context(SimClientSnafu)?;
+        let end = ptr + data.len() as u64;
+        if end > self.size {
+            return Err(Error::OutOfRange {
+                ptr,
+                end,
+                size: self.size,
+            });
+        }
+        if self.is_platform {
+            let (_, ints, _) = unsafe {data.align_to::<u32>()};
+            self.client.write_platform(WritePlatform {
+                addr: self.offset + ptr as u64,
+                data: Some(Data::U32(Data32 {value: ints.to_vec()})),
+            }).context(SimClientSnafu)?;
+        } else {
+            self.client.write_memory(WriteMemory {
+                addr: self.offset + ptr as u64,
+                data: data.iter().map(|b| *b as u32).collect(),
+            }).context(SimClientSnafu)?;
+        }
         Ok(())
     }
 
