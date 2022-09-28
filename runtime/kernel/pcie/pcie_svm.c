@@ -2498,6 +2498,7 @@ fail_mmunotifier:
  */
 void pcie_teardown_svm(struct tlkm_device *inst)
 {
+	struct interval_tree_node *node;
 	struct tlkm_pcie_device *pdev = inst->private_data;
 	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
 
@@ -2507,6 +2508,13 @@ void pcie_teardown_svm(struct tlkm_device *inst)
 
 	flush_workqueue(svm_data->page_fault_queue);
 	mmu_notifier_put(&svm_data->notifier_env->notifier);
+
+	// clear interval tree
+	node = interval_tree_iter_first(&svm_data->vmem_intervals, 0, ULONG_MAX);
+	while (node) {
+		interval_tree_remove(node, &svm_data->vmem_intervals);
+		node = interval_tree_iter_first(&svm_data->vmem_intervals, 0, ULONG_MAX);
+	}
 
 	DEVLOG(inst->dev_id, TLKM_LF_SVM, "torn down SVM successfully");
 }
