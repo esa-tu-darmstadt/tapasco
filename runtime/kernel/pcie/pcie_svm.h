@@ -31,6 +31,7 @@
 #include <linux/swapops.h>
 #include <linux/sched/mm.h>
 #include <linux/interval_tree.h>
+#include <linux/memremap.h>
 #include <tlkm/tlkm_bus.h>
 #include "pcie/pcie_device.h"
 #include "pcie/pcie.h"

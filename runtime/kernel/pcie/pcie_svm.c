@@ -1203,7 +1203,9 @@ retry:
 	base_pfn = dev_addr_to_pfn(svm_data, dev_base_addr);
 	for (i = 0; i < npages; ++i) {
 		dst_pages[i] = pfn_to_page(base_pfn + i);
+#if defined(EN_SVM) && LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
 		get_page(dst_pages[i]);
+#endif // defined(EN_SVM) && LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
 		lock_page(dst_pages[i]);
 		migrate.dst[i] = migrate_pfn(base_pfn + i);
 		dst_pages[i]->zone_device_data = pdev;
@@ -1484,7 +1486,9 @@ retry:
 	for (i = 0; i < npages; ++i) {
 		src_pages[i] = migrate_pfn_to_page(migrate.src[i]);
 		dst_pages[i] = pfn_to_page(base_pfn + i);
+#if defined(EN_SVM) && LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
 		get_page(dst_pages[i]);
+#endif // defined(EN_SVM) && LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
 		lock_page(dst_pages[i]);
 		migrate.dst[i] = migrate_pfn(base_pfn + i);
 		dst_pages[i]->zone_device_data = dst_dev;
