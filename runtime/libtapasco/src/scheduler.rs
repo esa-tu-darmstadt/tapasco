@@ -32,7 +32,8 @@ use std::collections::VecDeque;
 use std::fs::File;
 use std::sync::Arc;//, Mutex};
 use std::thread;
-// use crate::device::Error::SimError;
+use crate::mmap_mut::MemoryType;
+use crate::protos::status;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -75,7 +76,8 @@ pub struct Scheduler {
 
 impl Scheduler {
     pub fn new(
-        pes: &[crate::device::status::Pe],
+        pes: &[status::Pe],
+        arch: Arc<MemoryType>,
         mut local_memories: VecDeque<Arc<OffchipMemory>>,
         completion: &File,
         // debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
@@ -125,7 +127,7 @@ impl Scheduler {
                 i,
                 pe.id as PEId,
                 pe.offset,
-                // mmap.clone(),
+                arch.clone(),
                 completion,
                 interrupt_id,
                 // debug,

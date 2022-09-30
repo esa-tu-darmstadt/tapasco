@@ -32,7 +32,7 @@ use std::fs::File;
 use std::os::unix::prelude::*;
 use std::sync::Arc;//, Mutex};
 use crate::sim_client::SimClient;
-use crate::device::simcalls::{
+use crate::protos::simcalls::{
     write_platform::Data,
     Data32,
     WritePlatform,

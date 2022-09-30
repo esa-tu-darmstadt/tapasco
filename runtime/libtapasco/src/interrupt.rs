@@ -30,7 +30,7 @@ use std::fs::File;
 use std::os::unix::io::RawFd;
 use std::os::unix::prelude::*;
 use crate::sim_client::SimClient;
-use crate::device::simcalls::{
+use crate::protos::simcalls::{
     InterruptStatusRequest,
     RegisterInterrupt,
     DeregisterInterrupt,

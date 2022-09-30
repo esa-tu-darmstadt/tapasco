@@ -2,8 +2,7 @@ use std::io;
 use std::sync::Mutex;
 use snafu::ResultExt;
 use tokio::runtime::{Builder, Runtime};
-use crate::device;
-use device::simcalls::{
+use crate::protos::simcalls::{
     InterruptStatusRequest,
     Void,
     SimResponseType,
@@ -16,7 +15,9 @@ use device::simcalls::{
     sim_request_client::SimRequestClient,
     sim_response::ResponsePayload
 };
+use crate::protos::status;
 use crate::sim_client::Error::*;
+
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -197,7 +198,7 @@ impl SimClient {
         }
     }
 
-    pub fn get_status(&self) -> Result<device::status::Status> {
+    pub fn get_status(&self) -> Result<status::Status> {
         let request = tonic::Request::new(Void{});
         let mut client = self.client.lock().map_err(|_| ClientLockError {})?;
         let response = self.rt.block_on(client.get_status(request)).context(RequestSnafu)?;

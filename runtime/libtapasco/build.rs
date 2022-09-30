@@ -28,8 +28,7 @@ fn main() {
     println!("cargo:rerun-if-changed=src/status_core.proto");
 
     prost_build::compile_protos(&["protos/status_core.proto"], &["protos/"]).unwrap();
-    // prost_build::compile_protos(&["protos/sim_command.proto"], &["protos/"]).unwrap();
-    prost_build::compile_protos(&["protos/read_write.proto"], &["protos/"]).unwrap();
+    prost_build::compile_protos(&["protos/read_write.proto", "protos/sim_calls.proto"], &["protos/"]).unwrap();
 
     tonic_build::compile_protos("protos/sim_calls.proto").unwrap();
 
