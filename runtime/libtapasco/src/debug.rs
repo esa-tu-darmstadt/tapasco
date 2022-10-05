@@ -21,8 +21,8 @@
 use crate::device::DeviceAddress;
 use crate::device::DeviceSize;
 use core::fmt::Debug;
-use memmap::MmapMut;
 use std::sync::Arc;
+use crate::mmap_mut::MemoryType;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -41,7 +41,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 pub trait DebugGenerator: Debug {
     fn new(
         &self,
-        arch_memory: &Arc<MmapMut>,
+        arch_memory: &Arc<MemoryType>,
         name: String,
         offset: DeviceAddress,
         size: DeviceSize,
@@ -64,7 +64,7 @@ pub struct UnsupportedDebugGenerator {}
 impl DebugGenerator for UnsupportedDebugGenerator {
     fn new(
         &self,
-        _arch_memory: &Arc<MmapMut>,
+        _arch_memory: &Arc<MemoryType>,
         name: String,
         _offset: DeviceAddress,
         _size: DeviceSize,
@@ -95,7 +95,7 @@ pub struct NonDebugGenerator {}
 impl DebugGenerator for NonDebugGenerator {
     fn new(
         &self,
-        _arch_memory: &Arc<MmapMut>,
+        _arch_memory: &Arc<MemoryType>,
         _name: String,
         _offset: DeviceAddress,
         _size: DeviceSize,

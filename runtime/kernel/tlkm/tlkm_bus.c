@@ -126,8 +126,8 @@ int tlkm_bus_init(void)
 	n = tlkm_bus_num_devices();
 	if (!n) {
 		ERR("did not find any TaPaSCo devices, but thats okay for now...");
-		//ret = -ENXIO;
-		//goto err;
+		ret = -ENXIO;
+		goto err;
 	}
 	LOG(TLKM_LF_BUS, "found %zd TaPaSCo devices", n);
 	if ((ret = tlkm_init())) {

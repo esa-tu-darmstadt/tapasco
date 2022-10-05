@@ -54,10 +54,10 @@ pub enum Error {
     DMABufferAllocate { source: nix::Error },
 
     #[snafu(display(
-    "Transfer 0x{:x} - 0x{:x} outside of memory region 0x{:x}.",
-    ptr,
-    end,
-    size
+        "Transfer 0x{:x} - 0x{:x} outside of memory region 0x{:x}.",
+        ptr,
+        end,
+        size
     ))]
     OutOfRange {
         ptr: DeviceAddress,
@@ -78,7 +78,7 @@ pub enum Error {
     ErrorInterrupt { source: crate::interrupt::Error },
 
     #[snafu(display(
-    "Got interrupt but outstanding buffers are empty. This should never happen."
+        "Got interrupt but outstanding buffers are empty. This should never happen."
     ))]
     TooManyInterrupts {},
 
@@ -132,7 +132,7 @@ impl DMAControl for DriverDMA {
                     user_addr: data.as_ptr(),
                 },
             )
-                .context(DMAToDeviceSnafu)?;
+            .context(DMAToDeviceSnafu)?;
         };
         Ok(())
     }
@@ -344,7 +344,6 @@ impl DMAControl for SVMDMA {
 }
 
 #[derive(Debug, Getters)]
-#[allow(unused)]
 pub struct SimDMA {
     client: SimClient,
     offset: DeviceAddress,
@@ -352,7 +351,6 @@ pub struct SimDMA {
     is_platform: bool,
 }
 
-#[allow(unused)]
 impl SimDMA {
     pub fn new(
         offset: DeviceAddress,

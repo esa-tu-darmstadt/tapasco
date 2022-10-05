@@ -46,6 +46,7 @@ use std::sync::Mutex;
 use crate::mmap_mut::MemoryType;
 use crate::sim_client::SimClient;
 use crate::protos::status;
+use prost::Message;
 
 
 #[derive(Debug, Snafu)]
@@ -268,7 +269,7 @@ impl Device {
         product: u32,
         name: String,
         settings: Arc<Config>,
-        _: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
+        debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
     ) -> Result<Self> {
         trace!("Open driver device file.");
 
@@ -286,12 +287,11 @@ impl Device {
                 .context(DeviceUnavailableSnafu { id })?,
         );
 
-        let client: Arc<SimClient>;
-        
+
         trace!("Mapping status core.");
         let s = {
             if name == "sim" {
-                let client = Arc::new(SimClient::new().context(SimClientSnafu)?);
+                let client = SimClient::new().context(SimClientSnafu)?;
                 client.get_status().context(SimClientSnafu)?
             } else {
                 let mmap = unsafe {
@@ -311,7 +311,7 @@ impl Device {
                 for i in 0..8192 {
                     mmap_cpy[i] = mmap[i];
                 }
-            
+
                 status::Status::decode_length_delimited(&mmap_cpy[..]).context(StatusCoreDecodingSnafu)?
             }
         };
@@ -330,7 +330,7 @@ impl Device {
         let platform_mmap = Arc::new(unsafe {
             MmapOptions::new()
                 .len(platform_size as usize)
-                .offset(0)
+                .offset(8192)
                 .map_mut(&tlkm_dma_file)
                 .context(DeviceUnavailableSnafu { id })?
         });
@@ -347,7 +347,7 @@ impl Device {
         let arch_mmap = Arc::new(unsafe {
             MmapOptions::new()
                 .len(arch_size as usize)
-                .offset(0) //todo correct offset
+                .offset(4069)
                 .map_mut(&tlkm_dma_file)
                 .context(DeviceUnavailableSnafu { id })?
         });
@@ -386,13 +386,13 @@ impl Device {
                             } else if v.name == "WRITE" {
                                 dma_interrupt_write = v.mapping as usize;
                             } else {
-                                println!("Unknown DMA interrupt: {}.", v.name);
+                                trace!("Unknown DMA interrupt: {}.", v.name);
                             }
                         }
                     }
                 }
                 if dma_offset == 0 {
-                    println!("Could not find DMA engine.");
+                    trace!("Could not find DMA engine.");
                     return Err(Error::DMAEngineMissing {});
                 }
 
@@ -468,6 +468,7 @@ impl Device {
                 )),
                 dma: Box::new(SimDMA::new(0, 2_u64.pow(30), false).context(DMASnafu)?),
             }));
+            let client = Arc::new(SimClient::new().context(SimClientSnafu)?);
             platform = MemoryType::Sim(client.clone());
             arch = MemoryType::Sim(client.clone());
         } else {
@@ -484,7 +485,11 @@ impl Device {
                             allocator: Mutex::new(Box::new(
                                 GenericAllocator::new(0, l.size, 1).context(AllocatorSnafu)?,
                             )),
-                            dma: if name == "sim" { Box::new(SimDMA::new(l.base, l.size, true).context(DMASnafu)?) } else { Box::new(DirectDMA::new(l.base, l.size, arch_mmap.clone())) },
+                            dma: if name == "sim" {
+                                Box::new(SimDMA::new(l.base, l.size, true).context(DMASnafu)?)
+                            } else {
+                                Box::new(DirectDMA::new(l.base, l.size, arch_mmap.clone()))
+                            },
                         }));
                     },
                     None => (),
@@ -501,7 +506,7 @@ impl Device {
                 Arc::new(arch),
                 pe_local_memories,
                 &tlkm_dma_file,
-                // debug_impls,
+                debug_impls,
                 is_pcie,
                 svm_in_use,
             )
@@ -747,10 +752,10 @@ impl Device {
                     p.size
                 );
 
-                // let d = NonDebugGenerator {};
-                // let debug = d
-                //     .new(&self.platform, "Unused".to_string(), 0, 0)
-                //     .context(DebugSnafu)?;
+                let d = NonDebugGenerator {};
+                let debug = d
+                    .new(&self.platform, "Unused".to_string(), 0, 0)
+                    .context(DebugSnafu)?;
 
                 if !p.interrupts.is_empty() {
                     return PE::new(
@@ -762,7 +767,7 @@ impl Device {
                         self.platform.clone(),
                         &self.tlkm_device_file,
                         p.interrupts[0].mapping as usize,
-                        // debug,
+                        debug,
                         false,  // TODO: Is this correct?
                     )
                     .context(PESnafu);

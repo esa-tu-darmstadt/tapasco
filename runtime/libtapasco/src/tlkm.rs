@@ -410,8 +410,6 @@ impl TLKM {
             tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnumSnafu)?;
         };
 
-        // self.device_info_add_sim_device(&mut devices);
-
         trace!("There are {} devices.", devices.num_devs);
 
         Ok(devices.num_devs)
@@ -428,8 +426,6 @@ impl TLKM {
         unsafe {
             tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnumSnafu)?;
         };
-
-        // self.device_info_add_sim_device(&mut devices);
 
         trace!("There are {} devices.", devices.num_devs);
 
@@ -481,8 +477,6 @@ impl TLKM {
             tlkm_ioctl_enum(self.file.as_raw_fd(), &mut devices).context(IOCTLEnumSnafu)?;
         };
 
-        // self.device_info_add_sim_device(&mut devices);
-
         trace!("There are {} devices.", devices.num_devs);
 
         for x in 0..devices.num_devs {
@@ -516,7 +510,7 @@ impl TLKM {
     ///
     /// [`device_alloc`]: #method.device_alloc
     /// [`device_enum_info`]: #method.device_enum_info
-    pub async fn device_enum(
+    pub fn device_enum(
         &self,
         debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
     ) -> Result<Vec<Device>> {
@@ -527,8 +521,6 @@ impl TLKM {
         };
 
         let mut v = Vec::new();
-
-        // self.device_info_add_sim_device(&mut devices);
 
         trace!("There are {} devices.", devices.num_devs);
 

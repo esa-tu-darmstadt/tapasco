@@ -18,20 +18,17 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// use crate::debug::DebugControl;
+use std::borrow::Borrow;
+use crate::debug::DebugControl;
 use crate::device::DataTransferPrealloc;
 use crate::device::DeviceAddress;
 use crate::device::OffchipMemory;
 use crate::device::PEParameter;
-use crate::interrupt::Interrupt;
-// use memmap::MmapMut;
+use crate::interrupt::{Interrupt, SimInterrupt, TapascoInterrupt};
 use snafu::ResultExt;
 use std::fs::File;
 use std::sync::Arc;
 use crate::mmap_mut::{MemoryType, tapasco_read_volatile, tapasco_write_volatile, ValType};
-//, Mutex};
-// use std::ptr::write_volatile;
-use crate::sim_client::SimClient;
 
 use crate::sim_client;
 
@@ -118,14 +115,12 @@ pub struct PE {
     #[get = "pub"]
     local_memory: Option<Arc<OffchipMemory>>,
 
-    interrupt: Interrupt,
+    interrupt: Box<dyn TapascoInterrupt + Sync + Send>,
 
-    // debug: Box<dyn DebugControl + Sync + Send>,
+    debug: Box<dyn DebugControl + Sync + Send>,
 
     #[get = "pub"]
     svm_in_use: bool,
-
-    client: SimClient
 }
 
 impl PE {
@@ -136,9 +131,13 @@ impl PE {
         memory: Arc<MemoryType>,
         completion: &File,
         interrupt_id: usize,
-        // debug: Box<dyn DebugControl + Sync + Send>,
+        debug: Box<dyn DebugControl + Sync + Send>,
         svm_in_use: bool,
     ) -> Result<Self> {
+        let interrupt = match memory.borrow() {
+            MemoryType::Sim(_) => SimInterrupt::new(interrupt_id, false).context(ErrorInterruptSnafu)?,
+            _ => Interrupt::new(completion, interrupt_id, false).context(ErrorInterruptSnafu)?
+        };
         Ok(Self {
             id,
             type_id,
@@ -147,10 +146,9 @@ impl PE {
             copy_back: None,
             memory,
             local_memory: None,
-            interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterruptSnafu)?,
-            // debug,
+            interrupt,
+            debug,
             svm_in_use,
-            client: SimClient::new().context(SimClientSnafu)?
         })
     }
 
@@ -363,9 +361,8 @@ impl PE {
     }
 
     pub fn enable_debug(&mut self) -> Result<()> {
-        // self.debug
-        //     .enable_debug()
-        //     .context(DebugSnafu { id: self.id })
-        Ok(())
+        self.debug
+            .enable_debug()
+            .context(DebugSnafu { id: self.id })
     }
 }
