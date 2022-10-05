@@ -20,7 +20,7 @@
 
 use std::borrow::Borrow;
 use crate::allocator::{Allocator, DriverAllocator, DummyAllocator, GenericAllocator, VfioAllocator};
-use crate::debug::DebugGenerator;//, NonDebugGenerator};
+use crate::debug::{DebugGenerator, NonDebugGenerator};
 use crate::dma::{DMAControl, DirectDMA, DriverDMA, VfioDMA, SVMDMA, SimDMA};
 use crate::dma_user_space::UserSpaceDMA;
 use crate::job::Job;
@@ -285,33 +285,36 @@ impl Device {
                 ))
                 .context(DeviceUnavailableSnafu { id })?,
         );
-        //
-        // println!("Mapping status core.");
-        // let s = {
-        //     let mmap = unsafe {
-        //         MmapOptions::new()
-        //             .len(8192)
-        //             .offset(0)
-        //             .map(&tlkm_dma_file)
-        //             .context(DeviceUnavailableSnafu { id })?
-        //     };
-        //     println!("Mapped status core: {}", mmap[0]);
-        //
-        //     // copy the status core byte by byte from the device to avoid
-        //     // alignment errors that occur on certain devices e.g. ZynqMP.
-        //     // In a perfect world this loop can be replaced by e.g.
-        //     // mmap_cpy.clone_from_slice(&mmap[..]);
-        //     let mut mmap_cpy = [0; 8192];
-        //     for i in 0..8192 {
-        //         mmap_cpy[i] = mmap[i];
-        //     }
-        //
-        //     status::Status::decode_length_delimited(&mmap_cpy[..]).context(StatusCoreDecodingSnafu)?
-        // };
 
-
-        let client = Arc::new(SimClient::new().context(SimClientSnafu)?);
-        let s = client.get_status().context(SimClientSnafu)?;
+        let client: Arc<SimClient>;
+        
+        trace!("Mapping status core.");
+        let s = {
+            if name == "sim" {
+                let client = Arc::new(SimClient::new().context(SimClientSnafu)?);
+                client.get_status().context(SimClientSnafu)?
+            } else {
+                let mmap = unsafe {
+                    MmapOptions::new()
+                        .len(8192)
+                        .offset(0)
+                        .map(&tlkm_dma_file)
+                        .context(DeviceUnavailableSnafu { id })?
+                };
+                println!("Mapped status core: {}", mmap[0]);
+            
+                // copy the status core byte by byte from the device to avoid
+                // alignment errors that occur on certain devices e.g. ZynqMP.
+                // In a perfect world this loop can be replaced by e.g.
+                // mmap_cpy.clone_from_slice(&mmap[..]);
+                let mut mmap_cpy = [0; 8192];
+                for i in 0..8192 {
+                    mmap_cpy[i] = mmap[i];
+                }
+            
+                status::Status::decode_length_delimited(&mmap_cpy[..]).context(StatusCoreDecodingSnafu)?
+            }
+        };
 
         trace!("Status core decoded: {:?}", s);
 
@@ -349,7 +352,7 @@ impl Device {
                 .context(DeviceUnavailableSnafu { id })?
         });
 
-        let mut arch =MemoryType::Mmap(arch_mmap.clone());
+        let mut arch = MemoryType::Mmap(arch_mmap.clone());
 
         // Initialize the global memories.
         // Currently falls back to PCIe and Zynq allocation using the default 4GB at 0x0.
