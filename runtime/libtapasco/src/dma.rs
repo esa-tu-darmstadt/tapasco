@@ -30,7 +30,7 @@ use memmap::MmapMut;
 use snafu::ResultExt;
 use std::fs::File;
 use std::os::unix::prelude::*;
-use std::sync::Arc;//, Mutex};
+use std::sync::Arc;
 use crate::sim_client::SimClient;
 use crate::protos::simcalls::{
     write_platform::Data,
