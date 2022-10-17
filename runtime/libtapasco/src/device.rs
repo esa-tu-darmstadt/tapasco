@@ -347,12 +347,12 @@ impl Device {
         let arch_mmap = Arc::new(unsafe {
             MmapOptions::new()
                 .len(arch_size as usize)
-                .offset(4069)
+                .offset(4096)
                 .map_mut(&tlkm_dma_file)
                 .context(DeviceUnavailableSnafu { id })?
         });
 
-        let mut arch = MemoryType::Mmap(arch_mmap.clone());
+        let mut arch = Arc::new(MemoryType::Mmap(arch_mmap.clone()));
 
         // Initialize the global memories.
         // Currently falls back to PCIe and Zynq allocation using the default 4GB at 0x0.
@@ -470,7 +470,7 @@ impl Device {
             }));
             let client = Arc::new(SimClient::new().context(SimClientSnafu)?);
             platform = MemoryType::Sim(client.clone());
-            arch = MemoryType::Sim(client.clone());
+            arch = Arc::new(MemoryType::Sim(client.clone()));
         } else {
             return Err(Error::DeviceType { name });
         }
@@ -503,7 +503,7 @@ impl Device {
         let scheduler = Arc::new(
             Scheduler::new(
                 &s.pe,
-                Arc::new(arch),
+                &arch,
                 pe_local_memories,
                 &tlkm_dma_file,
                 debug_impls,

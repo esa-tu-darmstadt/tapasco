@@ -76,7 +76,7 @@ pub struct Scheduler {
 impl Scheduler {
     pub fn new(
         pes: &[status::Pe],
-        arch: Arc<MemoryType>,
+        arch: &Arc<MemoryType>,
         mut local_memories: VecDeque<Arc<OffchipMemory>>,
         completion: &File,
         debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
