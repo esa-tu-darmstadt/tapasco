@@ -19,7 +19,7 @@
 
 namespace eval platform {
   set platform_dirname "HAWK"
-  set pcie_width "8"
+  set pcie_width "16"
 
   source $::env(TAPASCO_HOME_TCL)/platform/versal/versal_base.tcl
 

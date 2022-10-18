@@ -51,7 +51,8 @@
   }
 
   proc create_subsystem_clocks_and_resets {} {
-    # PCIe clock as input
+    # PCIe and CIPS PL clock as input
+    set pl_clk [create_bd_pin -type "clk" -dir "I" "pl_clk"]
     set pcie_clk [create_bd_pin -type "clk" -dir "I" "pcie_aclk"]
     set pcie_aresetn [create_bd_pin -type "rst" -dir "I" "pcie_aresetn"]
 
@@ -67,8 +68,9 @@
                         CONFIG.PRIM_SOURCE {No_buffer} \
                         ] $design_clk_wiz
 
+    # use CIPS PL clock as base of design clock
+    connect_bd_net [get_bd_pins $pl_clk] [get_bd_pins $design_clk_wiz/clk_in1]
     connect_bd_net [get_bd_pins $design_clk_wiz/resetn] $pcie_aresetn
-    connect_bd_net [get_bd_pins $pcie_clk] [get_bd_pins $design_clk_wiz/clk_in1]
 
     # create reset generator
     set host_rst_gen [tapasco::ip::create_rst_gen "host_rst_gen"]
@@ -165,6 +167,7 @@
       CONFIG.PF0_MSIX_CAP_TABLE_SIZE {0FF} \
       CONFIG.PF1_DEVICE_ID {9011} \
       CONFIG.pcie_blk_locn {X0Y2} \
+      CONFIG.PL_DISABLE_LANE_REVERSAL {false} \
       CONFIG.pf1_bar2_size {256} \
       CONFIG.pf2_bar2_size {256} \
       CONFIG.pf3_bar2_size {256} \
@@ -230,6 +233,7 @@
     set design_aclk [tapasco::subsystem::get_port "design" "clk"]
     set design_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
 
+    set pl_clk [create_bd_pin -type "clk" -dir "O" "pl_clk"]
     set s_axi_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0"]
     set s_axi_dma [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DMA"]
     set s_axi_mem_off [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0_OFF"]
@@ -238,6 +242,40 @@
     set m_axi_dma_off [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DMA_OFF"]
 
     set versal_cips [tapasco::ip::create_versal_cips "versal_cips_0"]
+    set axi_noc [tapasco::ip::create_axi_noc "axi_noc_0"]
+    set external_sources {2}
+    if {[llength [info procs get_number_mc]]} {
+      # always let number of memory controllers be overwritten by platform
+      set number_mc [get_number_mc]
+    } else {
+      # otherwise detect DDR memories from BoardPart
+      set number_mc [llength [get_board_components -filter {SUB_TYPE == ddr}]]
+      puts "  Configured to $number_mc memory controllers"
+    }
+    set mc_type DDR
+    if {[llength [info procs get_mc_type]]} {
+      set mc_type [get_mc_type]
+    }
+    # Possible values: None, 1, 2, ...
+    # port 1: arch
+    # port 2: dma
+    apply_bd_automation -rule xilinx.com:bd_rule:axi_noc -config [list mc_type $mc_type noc_clk {None} num_axi_bram {None} num_axi_tg {None} num_aximm_ext $external_sources num_mc $number_mc pl2noc_apm {0} pl2noc_cips {1}] $axi_noc
+    # 2 external sources still give only one clock, so increase it manually:
+    set_property CONFIG.NUM_CLKS [expr [get_property CONFIG.NUM_CLKS $axi_noc]+1] $axi_noc
+    if {[llength [info procs get_mc_config]]} {
+      set_property -dict [get_mc_config] $axi_noc
+    }
+    set_property -dict [ list \
+      CONFIG.MC_CHAN_REGION0 {DDR_LOW3} \
+      CONFIG.MC_CHAN_REGION1 {DDR_LOW3} \
+    ] $axi_noc
+    if {[llength [get_board_components -quiet -filter {SUB_TYPE == ddr}]] == 0} {
+      # if there are no memory components configured, set frequency of clock pins manually to frequency
+      for {set i 0} {$i < $number_mc} {incr i} {
+        # set frequency  of top level pin
+        set_property CONFIG.FREQ_HZ [get_mc_clk_freq] [get_bd_intf_ports /sys_clk${i}_0]
+      }
+    }
     set_property -dict [ list \
       CONFIG.BOOT_MODE {Custom} \
       CONFIG.CLOCK_MODE {REF CLK 33.33 MHz} \
@@ -296,6 +334,7 @@
       CONFIG.ID_WIDTH {6} \
       CONFIG.OVERWRITE_BITS {1} ] $arch_offset
 
+    connect_bd_net [get_bd_pin $versal_cips/pl0_ref_clk] [get_bd_pin $pl_clk]
     connect_bd_net $design_aclk [get_bd_pin $arch_offset/aclk]
     connect_bd_net $host_aclk [get_bd_pin $dma_offset/aclk] [get_bd_pin $dma_sc/aclk]
     connect_bd_net $design_aresetn [get_bd_pin $arch_offset/aresetn]
@@ -306,40 +345,6 @@
     connect_bd_intf_net $s_axi_mem [get_bd_intf_pin $arch_offset/S_AXI]
     connect_bd_intf_net [get_bd_intf_pin $arch_offset/M_AXI] $m_axi_mem_off
 
-    set axi_noc [tapasco::ip::create_axi_noc "axi_noc_0"]
-    set external_sources {2}
-    if {[llength [info procs get_number_mc]]} {
-      # always let number of memory controllers be overwritten by platform
-      set number_mc [get_number_mc]
-    } else {
-      # otherwise detect DDR memories from BoardPart
-      set number_mc [llength [get_board_components -filter {SUB_TYPE == ddr}]]
-      puts "  Configured to $number_mc memory controllers"
-    }
-    set mc_type DDR
-    if {[llength [info procs get_mc_type]]} {
-      set mc_type [get_mc_type]
-    }
-    # Possible values: None, 1, 2, ...
-    # port 1: arch
-    # port 2: dma
-    apply_bd_automation -rule xilinx.com:bd_rule:axi_noc -config [list mc_type $mc_type noc_clk {None} num_axi_bram {None} num_axi_tg {None} num_aximm_ext $external_sources num_mc $number_mc pl2noc_apm {0} pl2noc_cips {1}] $axi_noc
-    # 2 external sources still give only one clock, so increase it manually:
-    set_property CONFIG.NUM_CLKS [expr [get_property CONFIG.NUM_CLKS $axi_noc]+1] $axi_noc
-    if {[llength [info procs get_mc_config]]} {
-      set_property -dict [get_mc_config] $axi_noc
-    }
-    set_property -dict [ list \
-      CONFIG.MC_CHAN_REGION0 {DDR_LOW3} \
-      CONFIG.MC_CHAN_REGION1 {DDR_LOW3} \
-    ] $axi_noc
-    if {[llength [get_board_components -quiet -filter {SUB_TYPE == ddr}]] == 0} {
-      # if there are no memory components configured, set frequency of clock pins manually to frequency
-      for {set i 0} {$i < $number_mc} {incr i} {
-        # set frequency  of top level pin
-        set_property CONFIG.FREQ_HZ [get_mc_clk_freq] [get_bd_intf_ports /sys_clk${i}_0]
-      }
-    }
     delete_bd_objs [get_bd_intf_nets /memory/Conn2] [get_bd_intf_nets /memory/Conn1]
     delete_bd_objs [get_bd_intf_pins /memory/S01_AXI] [get_bd_intf_pins /memory/S00_AXI]
     delete_bd_objs [get_bd_intf_nets /S01_AXI_1] [get_bd_intf_nets /S00_AXI_1]
