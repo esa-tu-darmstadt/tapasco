@@ -93,6 +93,13 @@ namespace eval platform {
   # give PCIe configuration
   # TODO
 
+  proc get_cips_config {} {
+    return [list \
+      CONFIG.PS_PMC_CONFIG { \
+        PMC_MIO_EN_FOR_PL_PCIE 1 PS_PCIE_EP_RESET1_IO {PMC_MIO 38} PS_PCIE_EP_RESET2_IO {PS_MIO 19} PS_PCIE_RESET {{ENABLE 1}} \
+      } \
+    ]
+  }
   proc add_constraints {args} {
     set constraints_fn "$::env(TAPASCO_HOME_TCL)/platform/HAWK/hawk.xdc"
     read_xdc $constraints_fn
@@ -100,5 +107,13 @@ namespace eval platform {
     return $args
   }
 
+  proc provide_reset {args} {
+    # PCIE_PERST is connected to an EMIO pin and can be accessed through the CIPS
+    delete_bd_objs [get_bd_nets sys_reset_1] [get_bd_ports sys_reset]
+    connect_bd_net [get_bd_pins /memory/versal_cips_0/pl_pcie0_resetn] [get_bd_pins /host/sys_reset]
+    return $args
+  }
+
   tapasco::register_plugin "platform::add_constraints" "post-platform"
+  tapasco::register_plugin "platform::provide_reset" "post-platform"
 }
