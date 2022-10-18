@@ -1,10 +1,6 @@
 # constrain clock inputs
 create_clock -period 10.000 -name sys_clk [get_ports pcie_refclk_clk_p]
 
-set_property IOSTANDARD LVCMOS18 [get_ports sys_reset]
-set_property PACKAGE_PIN K35 [get_ports sys_reset]
-set_property PULLUP true [get_ports sys_reset]
-
 set_property PACKAGE_PIN AB46 [get_ports {pcie_mgt_grx_p[0]}]
 set_property PACKAGE_PIN AB47 [get_ports {pcie_mgt_grx_n[0]}]
 set_property PACKAGE_PIN AB41 [get_ports {pcie_mgt_gtx_p[0]}]
@@ -77,37 +73,6 @@ set_property PACKAGE_PIN L40 [get_ports {pcie_refclk_clk_n[0]}]
 
 #set_property PACKAGE_PIN E39  [get_ports sys_clk_p]
 #set_property PACKAGE_PIN E40  [get_ports sys_clk_n]
-
-########################################################################
-# Make sure that tool gets the correct DIV value for pipe_clock
-# during synthesis as these DIV pins are dynamic.
-########################################################################
-# PHY CLOCK FREQUENCY
-########################################################################
-# Set Divide By 2
-set_case_analysis 1 [get_pins -filter {REF_PIN_NAME=~DIV[0]} -of_objects [get_cells -hierarchical bufg_gt_pclk]]
-set_case_analysis 0 [get_pins -filter {REF_PIN_NAME=~DIV[1]} -of_objects [get_cells -hierarchical bufg_gt_pclk]]
-set_case_analysis 0 [get_pins -filter {REF_PIN_NAME=~DIV[2]} -of_objects [get_cells -hierarchical bufg_gt_pclk]]
-#
-########################################################################
-# PHY CORE CLOCK should be same as GT QUAD's TXOUTCLK
-########################################################################
-set_case_analysis 0 [get_pins -filter {REF_PIN_NAME=~DIV[0]} -of_objects [get_cells -hierarchical bufg_gt_coreclk]]
-set_case_analysis 0 [get_pins -filter {REF_PIN_NAME=~DIV[1]} -of_objects [get_cells -hierarchical bufg_gt_coreclk]]
-set_case_analysis 0 [get_pins -filter {REF_PIN_NAME=~DIV[2]} -of_objects [get_cells -hierarchical bufg_gt_coreclk]]
-########################################################################
-#
-########################################################################
-# PHY USER CLOCK FREQUENCY
-########################################################################
-set_case_analysis 1 [get_pins -filter {REF_PIN_NAME=~DIV[0]} -of_objects [get_cells -hierarchical bufg_gt_userclk]]
-set_case_analysis 0 [get_pins -filter {REF_PIN_NAME=~DIV[1]} -of_objects [get_cells -hierarchical bufg_gt_userclk]]
-set_case_analysis 0 [get_pins -filter {REF_PIN_NAME=~DIV[2]} -of_objects [get_cells -hierarchical bufg_gt_userclk]]
-##########################################################################################################################
-
-set_multicycle_path -setup -through [get_pins -hierarchical -filter {NAME =~ *phy_pipeline/pcie_ltssm_state_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][*]/Q}] 2
-set_multicycle_path -hold -through [get_pins -hierarchical -filter {NAME =~ *phy_pipeline/pcie_ltssm_state_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][*]/Q}] 1
-##########################################################################################################################
 
 ## DDR
 #The following constraints were created by using version 0.15 of the schematic.
