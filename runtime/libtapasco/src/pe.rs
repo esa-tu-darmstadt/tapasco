@@ -199,7 +199,7 @@ impl PE {
     pub fn interrupt_set(&self) -> Result<bool> {
         let offset = (self.offset as usize + 0x0c) as isize;
         let r = unsafe {
-            tapasco_read_volatile(&self.memory, offset, false)
+            tapasco_read_volatile(&self.memory, offset, true)
         };
         // let r = self.client.read_platform(ReadPlatform {
         //     addr: offset as u64,
