@@ -77,7 +77,7 @@ protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
         if (avgCC.isEmpty && k.testbenchFiles.length > 0) {
           logger.warn("executed HLS with co-sim for {}, but no co-simulation report was found", k.name)
         }
-        Some(new ImportTask(zip, t, k.id, _ => signal.release(), avgCC, job.skipEvaluation, None, 2)(cfg))
+        Some(new ImportTask(zip, t, k.id, _ => signal.release(), avgCC, job.runEvaluation, None, 2)(cfg))
       }
       case _ => None
     }

@@ -403,14 +403,15 @@ tapasco_compose_ubuntu:
     - dnf -y install which unzip git zip tar findutils libX11 gcc gcc-c++ python3 glibc-langpack-en
     - ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
   script:
+    - export LC_ALL=en_US.UTF-8
     - source $XILINX_VIVADO/settings64.sh
     - which vivado
     - which vivado_hls || which vitis_hls
     - dnf -y install toolflow/scala/build/distributions/tapasco-2022-01.x86_64.rpm
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
-    - tapasco hls arrayinit -p $PLATFORM --skipEvaluation
-    - tapasco import toolflow/examples/Counter.zip as 14 -p $PLATFORM --skipEvaluation
+    - tapasco hls arrayinit -p $PLATFORM
+    - tapasco import toolflow/examples/Counter.zip as 14 -p $PLATFORM
     - tapasco -v --maxThreads 3 compose [arrayinit x 2, Counter x 3] @ 100 MHz -p $PLATFORM $FLAGS
 
 tapasco_compose_17_4:

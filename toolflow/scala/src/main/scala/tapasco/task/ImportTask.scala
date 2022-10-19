@@ -43,7 +43,7 @@ import tapasco.util._
   * @param id                 Id of the kernel this core implements.
   * @param onComplete         Callback function on completion of the task.
   * @param averageClockCycles Clock cycle count in an average execution of the core (optional).
-  * @param skipEvaluation     Do not perform out-of-context synthesis for resource estimates, if true (optional).
+  * @param runEvaluation      Perform out-of-context synthesis for resource estimates, if true (optional).
   * @param cfg                TaPaSCo [[tapasco.base.Configuration]] (implicit).
   **/
 class ImportTask(val zip: Path,
@@ -51,7 +51,7 @@ class ImportTask(val zip: Path,
                  val id: Kernel.Id,
                  val onComplete: Boolean => Unit,
                  val averageClockCycles: Option[Long] = None,
-                 val skipEvaluation: Option[Boolean] = None,
+                 val runEvaluation: Option[Boolean] = None,
                  val synthOptions: Option[String] = None,
                  val optimization: Int)
                 (implicit val cfg: Configuration) extends Task with LogTracking {
@@ -70,7 +70,7 @@ class ImportTask(val zip: Path,
     val appender = LogFileTracker.setupLogFileAppender(_logFile.toString)
     logger.trace("current thread name: {}", Thread.currentThread.getName())
     logger.info(description)
-    val result = activity.Import(zip, id, t, averageClockCycles, skipEvaluation, optimization, synthOptions)
+    val result = activity.Import(zip, id, t, averageClockCycles, runEvaluation, optimization, synthOptions)
     LogFileTracker.stopLogFileAppender(appender)
     result
   }
