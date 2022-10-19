@@ -56,7 +56,7 @@ object Import {
     * @param t             Target Architecture + Platform combination to import for.
     * @param acc           Average clock cycle count for a job execution on the PE (optional).
     * @param runEvaluation Do not perform out-of-context synthesis for resource estimation (optional).
-    * @param cfg           Implicit [[base.Configuration]].
+    * @param cfg           Implicit [[Configuration]].
     **/
   def apply(zip: Path, id: Kernel.Id, t: Target, acc: Option[Long], runEvaluation: Option[Boolean],
             optimization: Int, synthOptions: Option[String] = None)
