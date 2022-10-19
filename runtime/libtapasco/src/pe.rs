@@ -199,7 +199,7 @@ impl PE {
     pub fn interrupt_set(&self) -> Result<bool> {
         let offset = (self.offset as usize + 0x0c) as isize;
         let r = unsafe {
-            tapasco_read_volatile(&self.memory, offset)
+            tapasco_read_volatile(&self.memory, offset, false)
         };
         // let r = self.client.read_platform(ReadPlatform {
         //     addr: offset as u64,
@@ -229,7 +229,7 @@ impl PE {
         let g = unsafe {
             // let ptr = self.memory.as_ptr().offset(offset);
             // ptr.read_volatile()
-            tapasco_read_volatile(&self.memory, offset)
+            tapasco_read_volatile(&self.memory, offset, true)
         //     1
         } & 1
             == 1;
@@ -242,7 +242,7 @@ impl PE {
         //     let ptr = self.memory.as_ptr().offset(offset);
         //     ptr.read_volatile();
         //     1
-            tapasco_read_volatile(&self.memory, offset)
+            tapasco_read_volatile(&self.memory, offset, true)
         } & 1
             == 1;
         // let l = self.client.read_platform(ReadPlatform {
@@ -312,11 +312,11 @@ impl PE {
             match bytes {
                 4 => Ok(PEParameter::Single32(
             //             ptr.cast::<u32>().read_volatile()
-                    tapasco_read_volatile(&self.memory, offset) as u32
+                    tapasco_read_volatile(&self.memory, offset, true) as u32
                 )),
                 8 => Ok(PEParameter::Single64(
             //             ptr.cast::<u64>().read_volatile()
-                    tapasco_read_volatile(&self.memory, offset)
+                    tapasco_read_volatile(&self.memory, offset, false)
                 )),
                 _ => Err(Error::UnsupportedRegisterSize { param: bytes }),
             }
@@ -342,7 +342,7 @@ impl PE {
             // let ptr = self.memory.as_ptr().offset(offset);
             // ptr.cast::<u64>().read_volatile()
             // 42
-            tapasco_read_volatile(&self.memory, offset)
+            tapasco_read_volatile(&self.memory, offset, false)
         };
         // let r = self.client.read_platform(ReadPlatform {
         //     addr: offset as u64,

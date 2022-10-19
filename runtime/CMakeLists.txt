@@ -43,6 +43,6 @@ install(PROGRAMS bin/tapasco-load-bitstream
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/Tapasco/bin)
 
 add_subdirectory(libtapasco)
-# if(NOT ${CMAKE_CROSSCOMPILING})
-  # add_subdirectory(examples)
-# endif()
+if(NOT ${CMAKE_CROSSCOMPILING})
+  add_subdirectory(examples)
+endif()
