@@ -84,11 +84,11 @@ object Import {
     * Imports the IP-XACT .zip to the default path structure (ipcore/) and performs
     * out-of-context synthesis (if no report from HLS was found and skipEval was not set).
     *
-    * @param c        Core description.
-    * @param t        Target platform and architecture.
-    * @param p        Output path for core description file.
-    * @param skipEval Skip out-of-context synthesis step (optional).
-    * @param cfg      Implicit [[Configuration]].
+    * @param c              Core description.
+    * @param t              Target platform and architecture.
+    * @param p              Output path for core description file.
+    * @param runEvaluation  Run out-of-context synthesis step (optional).
+    * @param cfg            Implicit [[Configuration]].
     **/
   private def importCore(c: Core, t: Target, p: Path, vlnv: VLNV, runEvaluation: Option[Boolean], optimization: Int,
                          synthOptions: Option[String])
