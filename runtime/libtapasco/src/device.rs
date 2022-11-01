@@ -301,8 +301,8 @@ impl Device {
                         .map(&tlkm_dma_file)
                         .context(DeviceUnavailableSnafu { id })?
                 };
-                println!("Mapped status core: {}", mmap[0]);
-            
+                trace!("Mapped status core: {}", mmap[0]);
+
                 // copy the status core byte by byte from the device to avoid
                 // alignment errors that occur on certain devices e.g. ZynqMP.
                 // In a perfect world this loop can be replaced by e.g.
