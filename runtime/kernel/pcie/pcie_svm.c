@@ -827,11 +827,12 @@ static int wait_for_c2h_intr(struct tlkm_pcie_svm_data *svm_data, bool poll)
 	} else {
 		writeq(PAGE_DMA_CTRL_INTR_ENABLE,
 		       &svm_data->dma_regs->c2h_status_ctrl);
-		if (wait_event_interruptible(
-			svm_data->wait_queue_c2h_intr,
-			atomic_read(&svm_data->wait_flag_c2h_intr))) {
+		if (wait_event_interruptible_timeout(
+			    svm_data->wait_queue_c2h_intr,
+			    atomic_read(&svm_data->wait_flag_c2h_intr),
+			    PAGE_DMA_TIMEOUT)) {
 			DEVWRN(svm_data->pdev->parent->dev_id,
-			       "waiting for C2H IRQ interrupted by signal");
+			       "waiting for C2H IRQ interrupted by signal or timeout");
 			res = -EINTR;
 		}
 		atomic_set(&svm_data->wait_flag_c2h_intr, 0);
@@ -863,11 +864,12 @@ static int wait_for_h2c_intr(struct tlkm_pcie_svm_data *svm_data, bool poll)
 	} else {
 		writeq(PAGE_DMA_CTRL_INTR_ENABLE,
 		       &svm_data->dma_regs->h2c_status_ctrl);
-		if (wait_event_interruptible(
-			svm_data->wait_queue_h2c_intr,
-			atomic_read(&svm_data->wait_flag_h2c_intr))) {
+		if (wait_event_interruptible_timeout(
+			    svm_data->wait_queue_h2c_intr,
+			    atomic_read(&svm_data->wait_flag_h2c_intr),
+			    PAGE_DMA_TIMEOUT)) {
 			DEVWRN(svm_data->pdev->parent->dev_id,
-			       "Waiting for H2C IRQ interrupted by signal");
+			       "Waiting for H2C IRQ interrupted by signal or timeout");
 			res = -EINTR;
 		}
 		atomic_set(&svm_data->wait_flag_h2c_intr, 0);

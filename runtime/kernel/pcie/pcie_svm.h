@@ -81,6 +81,7 @@
 #define PAGE_DMA_POLL_LIMIT 128
 #define PAGE_DMA_MAX_NPAGES 4096UL
 #define DEV_TO_DEV_DMA_MAX_NPAGES 1024
+#define PAGE_DMA_TIMEOUT (msecs_to_jiffies(1000))
 
 #define PAGE_FAULT_IRQ_NO 2
 #define C2H_IRQ_NO 0
