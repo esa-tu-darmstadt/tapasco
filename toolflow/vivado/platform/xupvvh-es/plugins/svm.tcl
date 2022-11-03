@@ -66,11 +66,7 @@ namespace eval svm {
     connect_bd_net [get_bd_pins $const_zero_core/dout] $fpga_i2c_master $qsfp_lp
     connect_bd_net [get_bd_pins $const_one_core/dout] $qsfp_ctl_en
     connect_bd_net [get_bd_pins $clk_reset_core/peripheral_aresetn] $qsfp_rst_l
-    if { [::tapasco::vivado_is_newer "2020.1"] == 1} {
-      make_bd_intf_pins_external [get_bd_intf_pins $eth_core/gt_serial_port]
-    } else {
-      make_bd_intf_pins_external [get_bd_intf_pins $eth_core/gt_rx]
-      make_bd_intf_pins_external [get_bd_intf_pins $eth_core/gt_tx]
-    }
+    make_bd_intf_pins_external [get_bd_intf_pins $eth_core/gt_rx]
+    make_bd_intf_pins_external [get_bd_intf_pins $eth_core/gt_tx]
   }
 }
