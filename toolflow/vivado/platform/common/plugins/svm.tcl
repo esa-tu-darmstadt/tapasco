@@ -30,6 +30,16 @@ if {[tapasco::is_feature_enabled "SVM"] && [tapasco::get_feature_option "SVM" "n
       puts "ERROR: parameter \"mac_addr\" required if network page migrations are enabled"
       exit 1
     }
+    set port_no [tapasco::get_feature_option "SVM" "port"]
+    if {$port_no == "false"} {
+      puts "No port number for network DMA transfers given...assuming port 0"
+      set port_no 0
+    }
+    if {![svm::is_network_port_valid $port_no]} {
+      puts [format {ERROR: Invalid port number %s for network port specified} $port_no]
+      exit 1
+    }
+
     set pcie_aclk [tapasco::subsystem::get_port "host" "clk"]
     set pcie_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
 
@@ -54,7 +64,7 @@ if {[tapasco::is_feature_enabled "SVM"] && [tapasco::get_feature_option "SVM" "n
 
     # create 100G core
     set eth_core [tapasco::ip::create_100g_ethernet ethernet_svm]
-    svm::customize_100g_core $eth_core $mac_addr
+    svm::customize_100g_core $eth_core $mac_addr $port_no
 
     set flow_ctrl [tapasco::ip::create_eth_flow_ctrl flow_ctrl_0]
 
@@ -116,7 +126,7 @@ if {[tapasco::is_feature_enabled "SVM"] && [tapasco::get_feature_option "SVM" "n
     set constraints_fn "[get_property DIRECTORY [current_project]]/svm.xdc"
     set constraints_file [open $constraints_fn "w"]
 
-    svm::set_custom_constraints $constraints_file
+    svm::set_custom_constraints $constraints_file $port_no
 
     close $constraints_file
     read_xdc $constraints_fn
@@ -213,6 +223,10 @@ if {[tapasco::is_feature_enabled "SVM"] && [tapasco::get_feature_option "SVM" "n
 namespace eval svm {
 
   proc is_svm_supported {} {
+    return false
+  }
+
+  proc is_network_port_valid {port_no} {
     return false
   }
 

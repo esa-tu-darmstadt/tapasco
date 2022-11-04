@@ -19,11 +19,25 @@
 
 namespace eval svm {
 
+  variable cmac_cores            {"CMACE4_X0Y6" "CMACE4_X0Y7"}
+  variable gt_groups             {"X0Y40~X0Y43" "X0Y44~X0Y47"}
+  variable refclk_pins           {"T42" "P42"}
+
   proc is_svm_supported {} {
     return true
   }
 
-  proc customize_100g_core {eth_core mac_addr} {
+  proc is_network_port_valid {port_no} {
+    if {$port_no < 2} {
+      return true
+    }
+    return false
+  }
+
+  proc customize_100g_core {eth_core mac_addr port_no} {
+    variable cmac_cores
+    variable gt_groups
+
     set_property -dict [list \
       CONFIG.CMAC_CAUI4_MODE {1} \
       CONFIG.NUM_LANES {4x25} \
@@ -37,8 +51,8 @@ namespace eval svm {
       CONFIG.ENABLE_AXI_INTERFACE {0} \
       CONFIG.INCLUDE_STATISTICS_COUNTERS {0} \
       CONFIG.RX_MAX_PACKET_LEN {16383} \
-      CONFIG.CMAC_CORE_SELECT {CMACE4_X0Y6} \
-      CONFIG.GT_GROUP_SELECT {X0Y40~X0Y43} \
+      CONFIG.CMAC_CORE_SELECT [lindex $cmac_cores $port_no] \
+      CONFIG.GT_GROUP_SELECT [lindex $gt_groups $port_no] \
     ] $eth_core
   }
 
@@ -57,8 +71,9 @@ namespace eval svm {
     ] $rx_rs
   }
 
-  proc set_custom_constraints {constraints_file} {
-    puts $constraints_file [format {set_property PACKAGE_PIN T42 [get_ports qsfp0_156mhz_svm_clk_p]}]
+  proc set_custom_constraints {constraints_file port_no} {
+    variable refclk_pins
+    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports qsfp0_156mhz_svm_clk_p]} [lindex $refclk_pins $port_no]]
   }
 
   proc create_custom_interfaces {eth_core const_zero_core const_one_core clk_reset_core} {

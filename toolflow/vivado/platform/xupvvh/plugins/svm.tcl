@@ -19,11 +19,26 @@
 
 namespace eval svm {
 
+  variable refclk_pins           {"P13" "V13" "AD13" "AJ15"}
+  variable cmac_cores            {"CMACE4_X0Y7" "CMACE4_X0Y6" "CMACE4_X0Y4" "CMACE4_X0Y2"}
+  variable gt_groups             {"X1Y44~X1Y47" "X1Y36~X1Y39" "X1Y24~X1Y27" "X1Y16~X1Y19"}
+  variable qsfp_rst              {"A21" "A19" "B16" "C19"}
+
   proc is_svm_supported {} {
     return true
   }
 
-  proc customize_100g_core {eth_core mac_addr} {
+  proc is_network_port_valid {port_no} {
+    if {$port_no < 4} {
+      return true
+    }
+    return false
+  }
+
+  proc customize_100g_core {eth_core mac_addr port_no} {
+    variable cmac_cores
+    variable gt_groups
+
     set_property -dict [list \
       CONFIG.CMAC_CAUI4_MODE {1} \
       CONFIG.NUM_LANES {4x25} \
@@ -37,25 +52,28 @@ namespace eval svm {
       CONFIG.ENABLE_AXI_INTERFACE {0} \
       CONFIG.INCLUDE_STATISTICS_COUNTERS {0} \
       CONFIG.RX_MAX_PACKET_LEN {16383} \
-      CONFIG.CMAC_CORE_SELECT {CMACE4_X0Y2} \
-      CONFIG.GT_GROUP_SELECT {X1Y16~X1Y19} \
+      CONFIG.CMAC_CORE_SELECT [lindex $cmac_cores $port_no] \
+      CONFIG.GT_GROUP_SELECT [lindex $gt_groups $port_no] \
     ] $eth_core
   }
 
-  proc set_custom_constraints {constraints_file} {
-    puts $constraints_file {set_property PACKAGE_PIN AJ15 [get_ports qsfp3_322mhz_svm_clk_p]}
+  proc set_custom_constraints {constraints_file port_no} {
+    variable refclk_pins
+    variable qsfp_rst
+
+    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports qsfp0_322mhz_svm_clk_p]} [lindex $refclk_pins $port_no]]
     puts $constraints_file {set_property PACKAGE_PIN E17 [get_ports fpga_i2c_master_svm]}
     puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports fpga_i2c_master_svm]}
     puts $constraints_file {set_property PACKAGE_PIN C18 [get_ports qsfp_ctl_en_svm]}
     puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports qsfp_ctl_en_svm]}
     puts $constraints_file {set_property PACKAGE_PIN B18 [get_ports qsfp_lp_svm]}
     puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports qsfp_lp_svm]}
-    puts $constraints_file {set_property PACKAGE_PIN C19 [get_ports qsfp_rst_l_svm]}
+    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports qsfp_rst_l_svm]} [lindex $qsfp_rst $port_no]]
     puts $constraints_file {set_property IOSTANDARD LVCMOS18 [get_ports qsfp_rst_l_svm]}
   }
 
   proc create_custom_interfaces {eth_core const_zero_core const_one_core clk_reset_core} {
-    set gt_refclk [create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 qsfp3_322mhz_svm]
+    set gt_refclk [create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 qsfp0_322mhz_svm]
     set_property CONFIG.FREQ_HZ 322265625 $gt_refclk
     set fpga_i2c_master [create_bd_port -dir O fpga_i2c_master_svm]
     set qsfp_ctl_en [create_bd_port -dir O qsfp_ctl_en_svm]
