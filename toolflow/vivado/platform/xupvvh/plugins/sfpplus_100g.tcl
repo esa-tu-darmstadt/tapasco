@@ -129,8 +129,12 @@ namespace eval sfpplus {
 
       connect_bd_intf_net $gt_refclk [get_bd_intf_pins $core/gt_ref_clk]
       connect_bd_net [get_bd_pins $core/sys_reset] [get_bd_pins dclk_reset/peripheral_reset]
-      make_bd_intf_pins_external [get_bd_intf_pins $core/gt_rx]
-      make_bd_intf_pins_external [get_bd_intf_pins $core/gt_tx]
+      if { [::tapasco::vivado_is_newer "2020.1"] == 1} {
+        make_bd_intf_pins_external [get_bd_intf_pins $core/gt_serial_port]
+      } else {
+        make_bd_intf_pins_external [get_bd_intf_pins $core/gt_rx]
+        make_bd_intf_pins_external [get_bd_intf_pins $core/gt_tx]
+      }
       connect_bd_net [get_bd_pins $core/drp_clk] [get_bd_pins dclk_wiz/clk_out1]
       connect_bd_net [get_bd_pins $core/init_clk] [get_bd_pins dclk_wiz/clk_out1]
 
