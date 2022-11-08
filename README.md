@@ -118,12 +118,12 @@ Prerequisites for compiling the runtime
 
 *Ubuntu*:
 ```
-apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev git rpm
+apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev git rpm protobuf-compiler
 ```
 
 *Fedora*:
 ```
-dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake python3 libatomic git rpm-build
+dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake python3 libatomic git rpm-build protobuf-compiler
 ```
 
 *Rust*:
