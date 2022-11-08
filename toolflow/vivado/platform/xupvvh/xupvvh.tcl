@@ -229,6 +229,9 @@ namespace eval platform {
     insert_regslice "dma_host" true "/memory/M_HOST" "/host/S_HOST" "/clocks_and_resets/host_clk" "/clocks_and_resets/host_interconnect_aresetn" ""
     insert_regslice "host_arch" true "/host/M_ARCH" "/arch/S_ARCH" "/clocks_and_resets/design_clk" "/clocks_and_resets/design_interconnect_aresetn" ""
 
+    insert_regslice "host_mmu" [tapasco::is_feature_enabled "SVM"] "/host/M_MMU" "/memory/S_MMU" "/clocks_and_resets/host_clk" "/clocks_and_resets/host_interconnect_aresetn" ""
+    insert_regslice "host_rdma" [expr [tapasco::is_feature_enabled "SVM"] && [tapasco::get_feature_option "SVM" "pcie_e2e"] == "true"] "/host/M_RDMA" "/memory/S_RDMA" "/clocks_and_resets/host_clk" "/clocks_and_resets/host_interconnect_aresetn" ""
+
     # AXI control interface is only enabled in 10G mode
     if {[get_bd_intf_pins "/network/S_NETWORK"] ne ""} {
       insert_regslice "host_network" true "/host/M_NETWORK" "/network/S_NETWORK" "/clocks_and_resets/design_clk" "/clocks_and_resets/design_interconnect_aresetn" ""

@@ -309,6 +309,58 @@ namespace eval svm {
     }
   }
 
+  proc add_rdma_bar {} {
+    if {[tapasco::is_feature_enabled "SVM"] && [tapasco::get_feature_option "SVM" "pcie_e2e"] == "true"} {
+      ## host subsystem modifications
+      current_bd_instance "/host"
+
+      # activate second BAR in PCIe core
+      set pcie [get_bd_cells axi_pcie3_0]
+      set_property -dict [list\
+        CONFIG.pf0_bar2_enabled {true}\
+        CONFIG.pf0_bar2_size {128}\
+        CONFIG.pf0_bar2_scale {Gigabytes}\
+        CONFIG.pf0_bar2_64bit {true}\
+        CONFIG.pf0_bar2_prefetchable {true}\
+        CONFIG.pciebar2axibar_2 {0x0000002000000000}\
+      ] $pcie
+
+      # add master port to out_ic and connect to new external port M_RDMA
+      set m_rdma [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_RDMA"]
+      set out_ic [get_bd_cells out_ic]
+      set num_mi_out_old [get_property CONFIG.NUM_MI $out_ic]
+      set num_mi_out [expr "$num_mi_out_old + 1"]
+      set_property -dict [list CONFIG.NUM_MI $num_mi_out] $out_ic
+      connect_bd_intf_net [get_bd_intf_pin $out_ic/[format "M%02d_AXI" $num_mi_out_old]] $m_rdma
+
+      ## memory subsystem modifications
+      current_bd_instance "/memory"
+      set pcie_aclk [tapasco::subsystem::get_port "host" "clk"]
+      set pcie_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
+
+      # add axi_generic_offset and connect it to new external port S_RDMA
+      set s_rdma [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_RDMA"]
+      set rdma_offset [tapasco::ip::create_axi_generic_off "rdma_offset"]
+      set_property -dict [list\
+        CONFIG.BYTES_PER_WORD {64}\
+        CONFIG.ADDRESS_WIDTH {38}\
+        CONFIG.ID_WIDTH {1}\
+      ] $rdma_offset
+      connect_bd_net $pcie_aclk [get_bd_pin $rdma_offset/aclk]
+      connect_bd_net $pcie_p_aresetn [get_bd_pin $rdma_offset/aresetn]
+      connect_bd_intf_net $s_rdma [get_bd_intf_pin $rdma_offset/S_AXI]
+
+      # add slave port to mig_ic and connect it to axi_generic_offset
+      set mig_ic [get_bd_cells mig_ic]
+      set num_si_old [get_property CONFIG.NUM_SI $mig_ic]
+      set num_si [expr "$num_si_old + 1"]
+      set_property -dict [list CONFIG.NUM_SI $num_si] $mig_ic
+      connect_bd_intf_net [get_bd_intf_pin $rdma_offset/M_AXI] [get_bd_intf_pin $mig_ic/[format "S%02d_AXI" $num_si_old]]
+
+      current_bd_instance
+    }
+  }
+
   proc customize_100g_core {eth_core mac_addr} {
     puts "ERROR: 100G Ethernet core generation not implemented for specified platform"
     exit 1
@@ -326,10 +378,14 @@ namespace eval svm {
   proc addressmap {{args {}}} {
     if {[tapasco::is_feature_enabled "SVM"]} {
       set args [lappend args "M_MMU" [list 0x50000 0x10000 0 "PLATFORM_COMPONENT_MMU"]]
+      if {[tapasco::get_feature_option "SVM" "pcie_e2e"] == "true"} {
+        set args [lappend args "M_RDMA" [list 0x2000000000 0 [expr "1 << 38"] ""]]
+      }
     }
     return $args
   }
 }
 
 tapasco::register_plugin "platform::svm::add_iommu" "pre-wiring"
+tapasco::register_plugin "platform::svm::add_rdma_bar" "pre-wiring"
 tapasco::register_plugin "platform::svm::addressmap" "post-address-map"
