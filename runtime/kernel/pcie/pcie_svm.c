@@ -830,7 +830,7 @@ static int wait_for_c2h_intr(struct tlkm_pcie_svm_data *svm_data, bool poll)
 		if (wait_event_interruptible_timeout(
 			    svm_data->wait_queue_c2h_intr,
 			    atomic_read(&svm_data->wait_flag_c2h_intr),
-			    PAGE_DMA_TIMEOUT)) {
+			    PAGE_DMA_TIMEOUT) <= 0) {
 			DEVWRN(svm_data->pdev->parent->dev_id,
 			       "waiting for C2H IRQ interrupted by signal or timeout");
 			res = -EINTR;
@@ -867,7 +867,7 @@ static int wait_for_h2c_intr(struct tlkm_pcie_svm_data *svm_data, bool poll)
 		if (wait_event_interruptible_timeout(
 			    svm_data->wait_queue_h2c_intr,
 			    atomic_read(&svm_data->wait_flag_h2c_intr),
-			    PAGE_DMA_TIMEOUT)) {
+			    PAGE_DMA_TIMEOUT) <= 0) {
 			DEVWRN(svm_data->pdev->parent->dev_id,
 			       "Waiting for H2C IRQ interrupted by signal or timeout");
 			res = -EINTR;
