@@ -81,11 +81,15 @@
 #define PAGE_DMA_POLL_LIMIT 128
 #define PAGE_DMA_MAX_NPAGES 4096UL
 #define DEV_TO_DEV_DMA_MAX_NPAGES 1024
-#define PAGE_DMA_TIMEOUT (msecs_to_jiffies(1000))
+#define PAGE_DMA_TIMEOUT_MSECS 1000
+#define PAGE_DMA_TIMEOUT_JIFFIES (msecs_to_jiffies(PAGE_DMA_TIMEOUT_MSECS))
 
 #define PAGE_FAULT_IRQ_NO 2
 #define C2H_IRQ_NO 0
 #define H2C_IRQ_NO 1
+
+#define DMA_TIMEOUT_ERROR (1)
+#define MMU_DEACTIVATED_ERROR (1 << 1)
 
 irqreturn_t iommu_page_fault_handler(int irq, void *data);
 int pcie_init_svm(struct tlkm_pcie_device *pdev);
@@ -124,6 +128,8 @@ struct tlkm_pcie_svm_data {
 	wait_queue_head_t wait_queue_c2h_intr;
 	atomic_t wait_flag_h2c_intr;
 	atomic_t wait_flag_c2h_intr;
+
+	int error_state;
 };
 
 /* envelope around MMU notifier */

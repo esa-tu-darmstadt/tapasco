@@ -814,25 +814,42 @@ static struct dev_pagemap_ops svm_pagemap_ops = {
  */
 static int wait_for_c2h_intr(struct tlkm_pcie_svm_data *svm_data, bool poll)
 {
-	int res = 0;
-	uint64_t rval;
+	int res = 0, t;
+	ktime_t start, now;
+	uint64_t rval, millis_elapsed;
 	if (poll) {
+		start = ktime_get();
 		do {
 			rval = readq(&svm_data->dma_regs->c2h_status_ctrl);
-		} while (rval & PAGE_DMA_STAT_BUSY);
+			now = ktime_get();
+			millis_elapsed = ktime_to_ms(ktime_sub(now, start));
+		} while (rval & PAGE_DMA_STAT_BUSY &&
+			 millis_elapsed < PAGE_DMA_TIMEOUT_MSECS);
 		if (rval & PAGE_DMA_STAT_ERROR_FLAGS) {
-			DEVERR(svm_data->pdev->parent->dev_id, "DMA error during C2H transfer");
+			DEVERR(svm_data->pdev->parent->dev_id,
+			       "DMA error during C2H transfer");
 			return -EFAULT;
+		} else if (millis_elapsed >= PAGE_DMA_TIMEOUT_MSECS) {
+			DEVERR(svm_data->pdev->parent->dev_id,
+			       "DMA timeout during C2H transfer");
+			svm_data->error_state |= DMA_TIMEOUT_ERROR;
+			return -ETIME;
 		}
 	} else {
 		writeq(PAGE_DMA_CTRL_INTR_ENABLE,
 		       &svm_data->dma_regs->c2h_status_ctrl);
-		if (wait_event_interruptible_timeout(
-			    svm_data->wait_queue_c2h_intr,
-			    atomic_read(&svm_data->wait_flag_c2h_intr),
-			    PAGE_DMA_TIMEOUT) <= 0) {
+		t = wait_event_interruptible_timeout(
+			svm_data->wait_queue_c2h_intr,
+			atomic_read(&svm_data->wait_flag_c2h_intr),
+			PAGE_DMA_TIMEOUT_JIFFIES);
+		if (t == 0) {
+			DEVERR(svm_data->pdev->parent->dev_id,
+			       "DMA timeout during C2H transfer");
+			svm_data->error_state |= DMA_TIMEOUT_ERROR;
+			res = -ETIME;
+		} else if (t < 0) {
 			DEVWRN(svm_data->pdev->parent->dev_id,
-			       "waiting for C2H IRQ interrupted by signal or timeout");
+			       "waiting for C2H IRQ interrupted by signal");
 			res = -EINTR;
 		}
 		atomic_set(&svm_data->wait_flag_c2h_intr, 0);
@@ -851,25 +868,42 @@ static int wait_for_c2h_intr(struct tlkm_pcie_svm_data *svm_data, bool poll)
  */
 static int wait_for_h2c_intr(struct tlkm_pcie_svm_data *svm_data, bool poll)
 {
-	int res = 0;
-	uint64_t rval;
+	int res = 0, t;
+	ktime_t start, now;
+	uint64_t rval, millis_elapsed;
 	if (poll) {
+		start = ktime_get();
 		do {
 			rval = readq(&svm_data->dma_regs->h2c_status_ctrl);
-		} while (rval & PAGE_DMA_STAT_BUSY);
+			now = ktime_get();
+			millis_elapsed = ktime_to_ms(ktime_sub(now, start));
+		} while (rval & PAGE_DMA_STAT_BUSY &&
+			 millis_elapsed < PAGE_DMA_TIMEOUT_MSECS);
 		if (rval & PAGE_DMA_STAT_ERROR_FLAGS) {
-			DEVERR(svm_data->pdev->parent->dev_id, "DMA error during H2C transfer");
+			DEVERR(svm_data->pdev->parent->dev_id,
+			       "DMA error during H2C transfer");
 			return -EFAULT;
+		} else if (millis_elapsed >= PAGE_DMA_TIMEOUT_MSECS) {
+			DEVERR(svm_data->pdev->parent->dev_id,
+			       "DMA timeout during H2C transfer");
+			svm_data->error_state |= DMA_TIMEOUT_ERROR;
+			return -ETIME;
 		}
 	} else {
 		writeq(PAGE_DMA_CTRL_INTR_ENABLE,
 		       &svm_data->dma_regs->h2c_status_ctrl);
-		if (wait_event_interruptible_timeout(
-			    svm_data->wait_queue_h2c_intr,
-			    atomic_read(&svm_data->wait_flag_h2c_intr),
-			    PAGE_DMA_TIMEOUT) <= 0) {
+		t = wait_event_interruptible_timeout(
+			svm_data->wait_queue_h2c_intr,
+			atomic_read(&svm_data->wait_flag_h2c_intr),
+			PAGE_DMA_TIMEOUT_JIFFIES);
+		if (t == 0) {
+			DEVERR(svm_data->pdev->parent->dev_id,
+			       "DMA timeout during H2C transfer");
+			svm_data->error_state |= DMA_TIMEOUT_ERROR;
+			res = -ETIME;
+		} else if (t < 0) {
 			DEVWRN(svm_data->pdev->parent->dev_id,
-			       "Waiting for H2C IRQ interrupted by signal or timeout");
+			       "Waiting for H2C IRQ interrupted by signal");
 			res = -EINTR;
 		}
 		atomic_set(&svm_data->wait_flag_h2c_intr, 0);
@@ -1162,7 +1196,9 @@ static int svm_migrate_ram_to_dev(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 	migrate.end = vaddr + npages * PAGE_SIZE;
 	vma = find_vma_intersection(svm_data->mm, migrate.start, migrate.end);
 	if (!vma) {
-		DEVERR(pdev->parent->dev_id, "could not find matching VMA");
+		DEVERR(pdev->parent->dev_id,
+		       "could not find matching VMA for address 0x%lx",
+		       migrate.start);
 		res = -EFAULT;
 		goto fail_vma;
 	}
@@ -1439,7 +1475,9 @@ static int svm_migrate_dev_to_dev(struct tlkm_pcie_device *src_dev,
 	migrate.end = vaddr + npages * PAGE_SIZE;
 	vma = find_vma_intersection(dst_svm->mm, migrate.start, migrate.end);
 	if (!vma) {
-		DEVERR(dst_dev->parent->dev_id, "could not find matching VMA");
+		DEVERR(dst_dev->parent->dev_id,
+		       "could not find matching VMA for address 0x%lx",
+		       migrate.start);
 		res = -EFAULT;
 		goto fail_vma;
 	}
@@ -1902,7 +1940,7 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 	i = 0;
 	curr_addr = vaddr;
 	end = vaddr + npages * PAGE_SIZE;
-	while (i < npages) {
+	while (i < npages && !res) {
 		// search next interval on any device
 		next_dev = -1;
 		next_start = -1;
@@ -1941,7 +1979,7 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 		}
 
 		// migrate next interval
-		if (next_start != -1) {
+		if (next_start != -1 && !res) {
 			nmigrate =
 				(min(next_entry->interval_node.last + 1, end) -
 				 curr_addr) >> PAGE_SHIFT;
@@ -1997,6 +2035,13 @@ int pcie_svm_user_managed_migration_to_device(struct tlkm_device *inst,
 	       "user managed migration to device with vaddr = %llx, size = %llx",
 	       vaddr, size);
 
+	// block migration if MMU or DMA engine is in error state
+	if (svm_data->error_state) {
+		DEVERR(pdev->parent->dev_id,
+			"IOMMU or DMA engine are in error state, please reload bitstream");
+		return -EFAULT;
+	}
+
 	// align start and end to page boundaries
 	va_start = vaddr & PAGE_MASK;
 	va_end = vaddr + size;
@@ -2049,6 +2094,13 @@ int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 	DEVLOG(inst->dev_id, TLKM_LF_SVM,
 	       "user managed migration to host with vaddr = %llx, size = %llx",
 	       vaddr, size);
+
+	// block migration if MMU or DMA engine is in error state
+	if (svm_data->error_state) {
+		DEVERR(pdev->parent->dev_id,
+			"IOMMU or DMA engine are in error state, please reload bitstream");
+		return -EFAULT;
+	}
 
 	// align start and end to page boundaries
 	va_start = vaddr & PAGE_MASK;
@@ -2234,7 +2286,7 @@ no_pgd:
  */
 static void handle_iommu_page_fault(struct work_struct *work)
 {
-	int res, i, nfaults, ncontiguous;
+	int res = 0, i, nfaults, ncontiguous;
 	uint64_t rval, vaddrs[MAX_NUM_FAULTS];
 	uint64_t dev_addr;
 	struct page *page;
@@ -2247,7 +2299,7 @@ static void handle_iommu_page_fault(struct work_struct *work)
 	       "start IOMMU page fault handling");
 
 	nfaults = 0;
-	while (1) {
+	while (!res) {
 		// stop issuing additional faults during fault handling
 		writeq(0, &svm_data->mmu_regs->intr_enable);
 
@@ -2304,6 +2356,19 @@ static void handle_iommu_page_fault(struct work_struct *work)
 			res = svm_migrate_to_device(pdev,
 						    vaddrs[0] & VADDR_MASK,
 						    ncontiguous, true);
+			// in case of failed page fault handling disable IOMMU since
+			//  accelerator might not be able to deal with error responses
+			//  properly and will access invalid locations again and again
+			if (res) {
+				DEVERR(pdev->parent->dev_id,
+				       "error during page fault, disabling IOMMU, please reload bitstream");
+				for (i = ncontiguous; i < nfaults; ++i)
+					drop_page_fault(svm_data, vaddrs[i]);
+				writeq(MMU_DEACTIVATE,
+				       &svm_data->mmu_regs->cmd);
+				svm_data->error_state |= MMU_DEACTIVATED_ERROR;
+				break;
+			}
 			for (i = 0; i < ncontiguous; ++i)
 				vaddrs[i] = 0;
 			nfaults = pack_array(vaddrs, nfaults);
@@ -2321,8 +2386,9 @@ static void handle_iommu_page_fault(struct work_struct *work)
 		wmb();
 	}
 
-	writeq(MMU_INTR_ENABLE | MMU_ISSUE_FAULT_ENABLE,
-	       &svm_data->mmu_regs->intr_enable);
+	if (!res)
+		writeq(MMU_INTR_ENABLE | MMU_ISSUE_FAULT_ENABLE,
+		       &svm_data->mmu_regs->intr_enable);
 	kfree(env);
 
 	DEVLOG(pdev->parent->dev_id, TLKM_LF_SVM,
@@ -2462,6 +2528,12 @@ int pcie_launch_svm(struct tlkm_device *inst)
 
 	if (!svm_data) {
 		DEVERR(pdev->parent->dev_id, "SVM not initialized");
+		return -EFAULT;
+	}
+
+	if (svm_data->error_state) {
+		DEVERR(pdev->parent->dev_id,
+		       "IOMMU or DMA engine are in error state, please reload bitstream");
 		return -EFAULT;
 	}
 
