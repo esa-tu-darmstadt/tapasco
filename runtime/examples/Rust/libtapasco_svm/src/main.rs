@@ -280,7 +280,8 @@ fn run_arrayupdate(device: Arc<Device>, arrayupdate_id: PEId) -> Result<()> {
     Ok(())
 }
 
-fn run_pipeline(device: Arc<Device>, arrayinit_id: PEId, arraysum_id: PEId, arrayupdate_id: PEId) -> Result<()> {
+fn run_pipeline(arrayinit_dev: Arc<Device>, arrayinit_id: PEId, arrayupdate_dev: Arc<Device>,
+                arrayupdate_id: PEId, arraysum_dev: Arc<Device>, arraysum_id: PEId) -> Result<()> {
     info!("Run pipeline example...");
 
     // we create an vector with uninitialized memory to avoid unnecessary copies to device memory
@@ -296,25 +297,28 @@ fn run_pipeline(device: Arc<Device>, arrayinit_id: PEId, arraysum_id: PEId, arra
         from_device: false,
         to_device: true,
         free: true,         // this parameter has no influence when SVM is active
-        memory: device.default_memory().context(DeviceInitSnafu {})?, // other memories currently not supported
+        memory: arrayinit_dev.default_memory().context(DeviceInitSnafu {})?, // other memories currently not supported
         fixed: None,
     })];
-    let mut arrayinit_pe = device.acquire_pe(arrayinit_id).context(DeviceInitSnafu {})?;
+    let mut arrayinit_pe = arrayinit_dev.acquire_pe(arrayinit_id).context(DeviceInitSnafu {})?;
     arrayinit_pe.start(arrayinit_args).context(JobSnafu {})?;
 
     // do not forget to regain ownership of our array (returned in out_vecs vector although we did not set 'from_device'!)
     let (_ret, out_init) = arrayinit_pe.release(true, false).context(JobSnafu {})?;
 
-    // for arrayupdate and arraysum we now simply pass the array's base address since
-    // the data is already present in device memory
+    // for arrayupdate and arraysum we now simply pass the array's base address
+    // when running on one FPGA only, the data is already present in device memory
+    //   and no further migrations are required
+    // in a distributed run direct device-to-device migrations will be initiated
+    //   by device page faults
     let arrayupdate_args = vec![PEParameter::VirtualAddress(out_init[0].as_ptr())];
-    let mut arrayupdate_pe = device.acquire_pe(arrayupdate_id).context(DeviceInitSnafu {})?;
+    let mut arrayupdate_pe = arrayupdate_dev.acquire_pe(arrayupdate_id).context(DeviceInitSnafu {})?;
     arrayupdate_pe.start(arrayupdate_args).context(JobSnafu {})?;
 
     let (_ret, _out_update) = arrayupdate_pe.release(true, false).context(JobSnafu {})?;
 
     let arraysum_args = vec![PEParameter::VirtualAddress(out_init[0].as_ptr())];
-    let mut arraysum_pe = device.acquire_pe(arraysum_id).context(DeviceInitSnafu {})?;
+    let mut arraysum_pe = arraysum_dev.acquire_pe(arraysum_id).context(DeviceInitSnafu {})?;
     arraysum_pe.start(arraysum_args).context(JobSnafu {})?;
 
     let (ret, _out_sum) = arraysum_pe.release(true, true).context(JobSnafu {})?;
@@ -338,39 +342,61 @@ fn main() -> Result<()> {
     env_logger::init();
 
     let tlkm = TLKM::new().context(TLKMInitSnafu {})?;
-    let devices = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
-    for mut x in devices {
-        x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
+    let device_list = tlkm.device_enum(&HashMap::new()).context(TLKMInitSnafu)?;
+    let mut devices: Vec<Arc<Device>> = Vec::new();
+    for mut d in device_list {
+        d.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInitSnafu {})?;
+        devices.push(Arc::new(d));
+    }
 
-        // get IDs
-        let arrayinit_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:arrayinit:1.0") {
-            Ok(x) => x,
-            Err(_e) => 11,
+    // retrieve PE IDs and count available PEs on all devices
+    let mut arrayinit_pe_count = Vec::new();
+    let mut arrayupdate_pe_count = Vec::new();
+    let mut arraysum_pe_count = Vec::new();
+    let mut arrayinit_id = None;
+    let mut arrayupdate_id = None;
+    let mut arraysum_id = None;
+    for d in devices.iter() {
+        match d.get_pe_id("esa.cs.tu-darmstadt.de:hls:arrayinit:1.0") {
+            Ok(id) => {
+                arrayinit_id = Some(id);
+                arrayinit_pe_count.push(d.num_pes(id));
+            },
+            Err(_e) => {
+                arrayinit_pe_count.push(0);
+            },
         };
-        let arraysum_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:arraysum:1.0") {
-            Ok(x) => x,
-            Err(_e) => 10,
+        match d.get_pe_id("esa.cs.tu-darmstadt.de:hls:arrayupdate:1.0") {
+            Ok(id) => {
+                arrayupdate_id = Some(id);
+                arrayupdate_pe_count.push(d.num_pes(id));
+            },
+            Err(_e) => {
+                arrayupdate_pe_count.push(0);
+            },
         };
-        let arrayupdate_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:arrayupdate:1.0") {
-            Ok(x) => x,
-            Err(_e) => 9,
+        match d.get_pe_id("esa.cs.tu-darmstadt.de:hls:arraysum:1.0") {
+            Ok(id) => {
+                arraysum_id = Some(id);
+                arraysum_pe_count.push(d.num_pes(id));
+            },
+            Err(_e) => {
+                arraysum_pe_count.push(0);
+            },
         };
+    }
 
-        // get instance counts
-        let arrayinit_count = x.num_pes(arrayinit_id);
-        let arraysum_count = x.num_pes(arraysum_id);
-        let arrayupdate_count = x.num_pes(arrayupdate_id);
+    // No PEs found to run any tests
+    if arrayinit_id.is_none() && arrayupdate_id.is_none() && arraysum_id.is_none() {
+        error!("Need at least one arrayinit, arrayupdate or arraysum instance to run.");
+        return Ok(());
+    }
 
-        let x_shared = Arc::new(x);
-
-        if arrayinit_count == 0 && arraysum_count == 0 && arrayupdate_count == 0 {
-            error!("Need at least one arrayinit, arraysum or arrayupdate instance to run!");
-            return Ok(());
-        }
-
-        if arrayinit_count != 0 {
-            match run_arrayinit(x_shared.clone(), arrayinit_id) {
+    // Run tests on all devices if required PEs are available
+    for (i, d) in devices.iter().enumerate() {
+        if arrayinit_pe_count[i] != 0 {
+            match run_arrayinit(d.clone(), arrayinit_id.unwrap()) {
                 Err(e) => {
                     error!("Arrayinit example failed: {}", e);
                     if let Some(backtrace) = ErrorCompat::backtrace(&e) {
@@ -379,46 +405,80 @@ fn main() -> Result<()> {
                     return Ok(());
                 }
                 Ok(()) => {
-                    info!("Arrayinit example completed successfully");
+                    info!("Arrayinit example completed");
                 }
             };
         }
 
-        if arraysum_count != 0 {
-            match run_arraysum(x_shared.clone(), arraysum_id) {
-                Err(e) => {
-                    error!("Arraysum example failed: {}", e);
-                    return Ok(());
-                }
-                Ok(()) => {
-                    info!("Arraysum example completed successfully");
-                }
-            };
-        }
-
-        if arrayupdate_count != 0 {
-            match run_arrayupdate(x_shared.clone(), arrayupdate_id) {
+        if arrayupdate_pe_count[i] != 0 {
+            match run_arrayupdate(d.clone(), arrayupdate_id.unwrap()) {
                 Err(e) => {
                     error!("Arrayupdate example failed: {}", e);
                     return Ok(());
                 }
                 Ok(()) => {
-                    info!("Arrayupdate example completed successfully");
+                    info!("Arrayupdate example completed");
                 }
             };
         }
 
-        if arrayinit_count != 0 && arraysum_count != 0 && arrayupdate_count != 0 {
-            match run_pipeline(x_shared.clone(), arrayinit_id, arraysum_id, arrayupdate_id) {
+        if arraysum_pe_count[i] != 0 {
+            match run_arraysum(d.clone(), arraysum_id.unwrap()) {
                 Err(e) => {
-                    error!("Pipeline example failed: {}", e);
+                    error!("Arraysum example failed: {}", e);
                     return Ok(());
                 }
                 Ok(()) => {
-                    info!("Pipeline example completed successfully");
+                    info!("Arraysum example completed");
+                }
+            };
+        }
+    }
+
+    if arrayinit_id.is_some() && arrayupdate_id.is_some() && arraysum_id.is_some() {
+        // try to find PEs distributed across FPGAs for pipeline example (nothing too sophisticated)
+        let mut arrayinit_dev_idx = None;
+        let mut arrayupdate_dev_idx = None;
+        let mut arrayinit_device = None;
+        let mut arrayupdate_device = None;
+        let mut arraysum_device = None;
+        for (i, d) in devices.iter().enumerate() {
+            if arrayinit_pe_count[i] > 0 {
+                arrayinit_dev_idx = Some(i);
+                arrayinit_device = Some(d.clone());
+                break;
+            }
+        }
+        for (i, d) in devices.iter().enumerate() {
+            if arrayupdate_pe_count[i] > 0 {
+                arrayupdate_dev_idx = Some(i);
+                arrayupdate_device = Some(d.clone());
+                if arrayinit_dev_idx.is_some() && arrayinit_dev_idx.unwrap() != i {
+                    break;
                 }
             }
         }
+        for (i, d) in devices.iter().enumerate() {
+            if arraysum_pe_count[i] > 0 {
+                arraysum_device = Some(d.clone());
+                if arrayupdate_dev_idx.is_some() && arrayupdate_dev_idx.unwrap() != i {
+                    break;
+                }
+            }
+        }
+
+        match run_pipeline(arrayinit_device.unwrap(), arrayinit_id.unwrap(),
+                           arrayupdate_device.unwrap(), arrayupdate_id.unwrap(),
+                           arraysum_device.unwrap(), arraysum_id.unwrap()) {
+            Err(e) => {
+                error!("Pipeline example failed: {}", e);
+                return Ok(());
+            }
+            Ok(()) => {
+                info!("Pipeline example completed");
+            }
+        }
     }
+
     Ok(())
 }

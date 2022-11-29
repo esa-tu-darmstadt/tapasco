@@ -19,16 +19,15 @@
  */
 
 #include <array>
+#include <vector>
 #include <iostream>
 #include <tapasco.hpp>
+#include <algorithm>
 
 #define SZ 256
 #define RUNS 25
 
 typedef int32_t element_type;
-constexpr int ARRAYINIT_ID = 11;
-constexpr int ARRAYSUM_ID = 10;
-constexpr int ARRAYUPDATE_ID = 9;
 
 static void init_array(element_type *arr) {
 	for (size_t i = 0; i < SZ; ++i)
@@ -78,7 +77,7 @@ static int check_pipeline(int res)
 	return (ref != res);
 }
 
-int run_arrayinit(tapasco::Tapasco &tapasco, tapasco::PEId arrayinit_id)
+int run_arrayinit(tapasco::Tapasco *tapasco, tapasco::PEId arrayinit_id)
 {
 	uint64_t errs = 0;
 	std::cout << "Run arrayinit using on-demand page migrations (ODPMs) ..." << std::endl;
@@ -94,7 +93,7 @@ int run_arrayinit(tapasco::Tapasco &tapasco, tapasco::PEId arrayinit_id)
 		// -> the migration will be triggered automatically by device and CPU page faults
 		// -> wrapping the pointer in the VirtualAddress argument type provides a
 		//    check whether the loaded bitstream actually supports SVM
-		auto job = tapasco.launch(arrayinit_id, tapasco::makeVirtualAddress(result));
+		auto job = tapasco->launch(arrayinit_id, tapasco::makeVirtualAddress(result));
 
 		// Wait for job completion. Will block execution until the job is done.
 		job();
@@ -118,7 +117,7 @@ int run_arrayinit(tapasco::Tapasco &tapasco, tapasco::PEId arrayinit_id)
 		// To use UMPMs we wrap the pointer as when using TaPaSCo without SVM
 		// -> Note that we do NOT use makeOutOnly<T> since the array is allocated in
 		//    host memory and needs to be migrated to device memory as well
-		auto job = tapasco.launch(arrayinit_id, tapasco::makeWrappedPointer(
+		auto job = tapasco->launch(arrayinit_id, tapasco::makeWrappedPointer(
 			result, SZ * sizeof(element_type)));
 
 		// Wait for job completion. Will block execution until the job is done.
@@ -134,7 +133,7 @@ int run_arrayinit(tapasco::Tapasco &tapasco, tapasco::PEId arrayinit_id)
 	return (errs != 0);
 }
 
-int run_arraysum(tapasco::Tapasco &tapasco, tapasco::PEId arraysum_id)
+int run_arraysum(tapasco::Tapasco *tapasco, tapasco::PEId arraysum_id)
 {
 	int errs = 0;
 	std::cout << "Run arraysum using on-demand page migrations (ODPMs) ..." << std::endl;
@@ -155,7 +154,7 @@ int run_arraysum(tapasco::Tapasco &tapasco, tapasco::PEId arraysum_id)
 		// -> the migration will be triggered automatically by device page faults
 		// -> wrapping the pointer in the VirtualAddress argument type provides a
 		//    check whether the loaded bitstream actually supports SVM
-		auto job = tapasco.launch(arraysum_id, ret_val, tapasco::makeVirtualAddress(arr));
+		auto job = tapasco->launch(arraysum_id, ret_val, tapasco::makeVirtualAddress(arr));
 
 		// Wait for job completion. Will block execution until the job is done.
 		job();
@@ -189,7 +188,7 @@ int run_arraysum(tapasco::Tapasco &tapasco, tapasco::PEId arraysum_id)
 		// To use UMPMs we wrap the pointer as when using TaPaSCo without SVM
 		// -> Note that we use makeInOnly<T> since the array can be freed
 		//    directly in device memory and does not have to be migrated back
-		auto job = tapasco.launch(arraysum_id, ret_val, tapasco::makeInOnly(
+		auto job = tapasco->launch(arraysum_id, ret_val, tapasco::makeInOnly(
 			tapasco::makeWrappedPointer(arr, SZ * sizeof(element_type))));
 
 		// Wait for job completion. Will block execution until the job is done.
@@ -208,7 +207,7 @@ int run_arraysum(tapasco::Tapasco &tapasco, tapasco::PEId arraysum_id)
 	return errs;
 }
 
-int run_arrayupdate(tapasco::Tapasco &tapasco, tapasco::PEId arrayupdate_id)
+int run_arrayupdate(tapasco::Tapasco *tapasco, tapasco::PEId arrayupdate_id)
 {
 	int errs = 0;
 	std::cout << "Run arrayupdate using on-demand page migrations (ODPMs) ..." << std::endl;
@@ -225,7 +224,7 @@ int run_arrayupdate(tapasco::Tapasco &tapasco, tapasco::PEId arrayupdate_id)
 		// -> the migration will be triggered automatically by device and CPU page faults
 		// -> wrapping the pointer in the VirtualAddress argument type provides a
 		//    check whether the loaded bitstream actually supports SVM
-		auto job = tapasco.launch(arrayupdate_id, tapasco::makeVirtualAddress(arr));
+		auto job = tapasco->launch(arrayupdate_id, tapasco::makeVirtualAddress(arr));
 
 		// Wait for job completion. Will block execution until the job is done.
 		job();
@@ -252,7 +251,7 @@ int run_arrayupdate(tapasco::Tapasco &tapasco, tapasco::PEId arrayupdate_id)
 		// To use UMPMs we wrap the pointer as when using TaPaSCo without SVM
 		// -> Note that we use only a wrapped pointer since the array must be
 		//    migrated to and also back from device memory
-		auto job = tapasco.launch(arrayupdate_id, tapasco::makeWrappedPointer(
+		auto job = tapasco->launch(arrayupdate_id, tapasco::makeWrappedPointer(
 			arr, SZ * sizeof(element_type)));
 
 		// Wait for job completion. Will block execution until the job is done.
@@ -273,9 +272,11 @@ int run_arrayupdate(tapasco::Tapasco &tapasco, tapasco::PEId arrayupdate_id)
  *   1. arrayinit initializes the array
  *   2. arrayupdate adds 42 to every entry
  *   3. arraysum sums up all values
+ *
+ *   The three PEs may be distributed across different FPGAs
  */
-int run_pipeline(tapasco::Tapasco &tapasco, tapasco::PEId arrayinit_id, tapasco::PEId arraysum_id,
-		 tapasco::PEId arrayupdate_id)
+int run_pipeline(tapasco::Tapasco *arrayinit_dev, tapasco::PEId arrayinit_id, tapasco::Tapasco *arrayupdate_dev,
+		 tapasco::PEId arrayupdate_id, tapasco::Tapasco *arraysum_dev, tapasco::PEId arraysum_id)
 {
 	// allocate array
 	auto *arr = new element_type[SZ];
@@ -286,99 +287,138 @@ int run_pipeline(tapasco::Tapasco &tapasco, tapasco::PEId arrayinit_id, tapasco:
 
 	// Launch arrayinit
 	// Here we use the wrapped pointer to use a UMPM to device memory for more efficiency
-	auto init_job = tapasco.launch(arrayinit_id, arr_wrapped);
+	auto init_job = arrayinit_dev->launch(arrayinit_id, arr_wrapped);
 	init_job();
 
 	// Launch arrayupdate and arraysum
-	// We now pass the array base address to the PEs since it is already migrated and
+	// We now pass the array base address to the PEs
+	// When running pipeline on one FPGA only, the data is already
 	// present in device memory (no further migrations required)
-	auto update_job = tapasco.launch(arrayupdate_id, arr_addr);
+	// In a distributed setting a direct device-to-device migration is initiated by a page fault
+	auto update_job = arrayupdate_dev->launch(arrayupdate_id, arr_addr);
 	update_job();
-	auto sum_job = tapasco.launch(arraysum_id, ret_val, arr_addr);
+	auto sum_job = arraysum_dev->launch(arraysum_id, ret_val, arr_addr);
 	sum_job();
-
 	return check_pipeline(fpga_sum);
+}
+
+bool vector_all_zero(std::vector<int> v) {
+	return std::all_of(v.begin(), v.end(), [](int i) {return i == 0;});
 }
 
 int main(int argc, char **argv)
 {
-	// initialize TaPaSCo
-	tapasco::Tapasco tapasco;
+	// Use C API to get number of TaPaSCo devices
+	tapasco::TLKM *tlkm = tapasco::tapasco_tlkm_new();
+	int num_devices = tapasco::tapasco_tlkm_device_len(tlkm);
+	std::cout << "Found " << num_devices << " TaPaSCo devices." << std::endl;
 
-	tapasco::PEId arrayinit_id = 0;
-	tapasco::PEId arraysum_id = 0;
-	tapasco::PEId arrayupdate_id = 0;
-
-	// find PE IDs
-	try {
-		arrayinit_id = tapasco.get_pe_id("esa.cs.tu-darmstadt.de:hls:arrayinit:1.0");
-	} catch (...) {
-		std::cout << "Assuming old bitstream without VLNV info." << std::endl;
-		arrayinit_id = ARRAYINIT_ID;
+	// initialize TaPaSCo devices
+	std::vector<tapasco::Tapasco *> devices;
+	for (int i = 0; i < num_devices; ++i) {
+		// pass access types and device ID to constructor (not required if only one device is used)
+		devices.push_back(new tapasco::Tapasco(tapasco::tlkm_access::TlkmAccessExclusive, i));
 	}
 
-	try {
-		arraysum_id = tapasco.get_pe_id("esa.cs.tu-darmstadt.de:hls:arraysum:1.0");
-	} catch (...) {
-		std::cout << "Assuming old bitstream without VLNV info." << std::endl;
-		arraysum_id = ARRAYSUM_ID;
+	// find PE IDs and count available PEs on all devices
+	tapasco::PEId arrayinit_id, arrayupdate_id, arraysum_id;
+	std::vector<int> arrayinit_pe_count, arrayupdate_pe_count, arraysum_pe_count;
+	for (auto d : devices) {
+		try {
+			auto id = d->get_pe_id("esa.cs.tu-darmstadt.de:hls:arrayinit:1.0");
+			arrayinit_pe_count.push_back(d->kernel_pe_count(id));
+			arrayinit_id = id;
+		} catch (...) {
+			arrayinit_pe_count.push_back(0);
+		}
+
+		try {
+			auto id = d->get_pe_id("esa.cs.tu-darmstadt.de:hls:arrayupdate:1.0");
+			arrayupdate_pe_count.push_back(d->kernel_pe_count(id));
+			arrayupdate_id = id;
+		} catch (...) {
+			arrayupdate_pe_count.push_back(0);
+		}
+
+		try {
+			auto id = d->get_pe_id("esa.cs.tu-darmstadt.de:hls:arraysum:1.0");
+			arraysum_pe_count.push_back(d->kernel_pe_count(id));
+			arraysum_id = id;
+		} catch (...) {
+			arraysum_pe_count.push_back(0);
+		}
 	}
 
-	try {
-		arrayupdate_id = tapasco.get_pe_id("esa.cs.tu-darmstadt.de:hls:arrayupdate:1.0");
-	} catch (...) {
-		std::cout << "Assuming old bitstream without VLNV info." << std::endl;
-		arrayupdate_id = ARRAYUPDATE_ID;
-	}
-
-	std::cout << "Using PE IDs " << arrayinit_id << " (arrayinit), " << arraysum_id << " (arraysum), and "
-		  << arrayupdate_id << " (arrayupdate)." << std::endl;
-
-	// check instance counts
-	uint64_t arrayinit_instances = tapasco.kernel_pe_count(arrayinit_id);
-	uint64_t arraysum_instances = tapasco.kernel_pe_count(arraysum_id);
-	uint64_t arrayupdate_instances = tapasco.kernel_pe_count(arrayupdate_id);
-	std::cout << "Got " << arrayinit_instances << " arrayinit, " << arraysum_instances << " arraysum, and "
-		  << arrayupdate_instances << " arrayupdate instances." << std::endl;
-
-	if (!arrayinit_instances && !arraysum_instances && !arrayupdate_instances) {
-		std::cout << "Need at least one arrayinit, arraysum or arrayupdate instance to run." << std::endl;
+	// No PE found to run any tests
+	if (vector_all_zero(arrayinit_pe_count) && vector_all_zero(arrayupdate_pe_count) &&
+	    vector_all_zero(arraysum_pe_count)) {
+		std::cout << "ERROR: Need at least one arrayinit, arraysum or arrayupdate instance to run." << std::endl;
 		exit(1);
 	}
 
-	if (arrayinit_instances) {
-		std::cout << "Run arrayinit example..." << std::endl;
-		if (run_arrayinit(tapasco, arrayinit_id)) {
-			std::cout << "An error occurred while running the arrayinit example, exiting..." << std::endl;
-			exit(1);
-		} else {
-			std::cout << "Completed arrayinit example successfully!" << std::endl;
+	// Run tests on all devices if PEs are available
+	for (int i = 0; i < num_devices; ++i) {
+		if (arrayinit_pe_count[i]) {
+			std::cout << "Run arrayinit example..." << std::endl;
+			if (run_arrayinit(devices[i], arrayinit_id)) {
+				std::cout << "An error occurred while running the arrayinit example, exiting..."
+					  << std::endl;
+				exit(1);
+			} else {
+				std::cout << "Completed arrayinit example successfully!" << std::endl;
+			}
+		}
+
+		if (arrayupdate_pe_count[i]) {
+			std::cout << "Run arrayupdate example..." << std::endl;
+			if (run_arrayupdate(devices[i], arrayupdate_id)) {
+				std::cout << "An error occurred while running the arrayupdate example, exiting..."
+					  << std::endl;
+				exit(1);
+			} else {
+				std::cout << "Completed the arrayupdate example successfully!" << std::endl;
+			}
+		}
+
+		if (arraysum_pe_count[i]) {
+			std::cout << "Run arraysum example..." << std::endl;
+			if (run_arraysum(devices[i], arraysum_id)) {
+				std::cout << "An error occurred while running the arraysum example, exiting..."
+					  << std::endl;
+				exit(1);
+			} else {
+				std::cout << "Completed the arraysum example successfully!" << std::endl;
+			}
 		}
 	}
 
-	if (arraysum_instances) {
-		std::cout << "Run arraysum example..." << std::endl;
-		if (run_arraysum(tapasco, arraysum_id)) {
-			std::cout << "An error occurred while running the arraysum example, exiting..." << std::endl;
-			exit(1);
-		} else {
-			std::cout << "Completed the arraysum example successfully!" << std::endl;
+	// try to run pipeline example distributed over multiple devices (nothing sophisticated ^^)
+	int arrayinit_device_idx = -1, arrayupdate_device_idx = -1, arraysum_device_idx = -1;
+	for (int i = 0; i < num_devices; ++i) {
+		if (arrayinit_pe_count[i]) {
+			arrayinit_device_idx = i;
+			break;
+		}
+	}
+	for (int i = 0; i < num_devices; ++i) {
+		if (arrayupdate_pe_count[i]) {
+			arrayupdate_device_idx = i;
+			if (arrayupdate_device_idx != arrayinit_device_idx)
+				break;
+		}
+	}
+	for (int i = 0; i < num_devices; ++i) {
+		if (arraysum_pe_count[i]) {
+			arraysum_device_idx = i;
+			if (arraysum_device_idx != arrayupdate_device_idx)
+				break;
 		}
 	}
 
-	if (arrayupdate_instances) {
-		std::cout << "Run arrayupdate example..." << std::endl;
-		if (run_arrayupdate(tapasco, arrayupdate_id)) {
-			std::cout << "An error occurred while running the arrayupdate example, exiting..." << std::endl;
-			exit(1);
-		} else {
-			std::cout << "Completed the arrayupdate example successfully!" << std::endl;
-		}
-	}
-
-	if (arrayinit_instances && arraysum_instances && arrayupdate_instances) {
+	if (arrayinit_device_idx != -1 && arrayupdate_device_idx != -1 && arraysum_device_idx != -1) {
 		std::cout << "Run pipeline example..." << std::endl;
-		if (run_pipeline(tapasco, arrayinit_id, arraysum_id, arrayupdate_id)) {
+		if (run_pipeline(devices[arrayinit_device_idx], arrayinit_id, devices[arrayupdate_device_idx],
+				 arrayupdate_id, devices[arraysum_device_idx], arraysum_id)) {
 			std::cout << "An error occurred while running the pipeline example, exiting..." << std::endl;
 			exit(1);
 		} else {
