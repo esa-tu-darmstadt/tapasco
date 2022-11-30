@@ -548,3 +548,34 @@ tapasco_compose_zedboard:
   variables:
     PLATFORM: "zedboard"
   extends: .tapasco_compose_no_synth
+
+# runs to test features
+tapasco_compose_svm_u280:
+  variables:
+    PLATFORM: "AU280"
+    FLAGS: "--skipSynthesis --features SVM {enabled: true}"
+  extends: .tapasco_compose_21_2
+
+tapasco_compose_svm_xupvvh:
+  variables:
+    PLATFORM: "xupvvh"
+    FLAGS: "--skipSynthesis --features SVM {enabled: true}"
+  extends: .tapasco_compose_21_2
+
+tapasco_compose_svm_xupvvh-es:
+  variables:
+    PLATFORM: "xupvvh-es"
+    FLAGS: "--skipSynthesis --features SVM {enabled: true}"
+  extends: .tapasco_compose_19_2
+
+tapasco_compose_svm_pcie_e2e:
+  variables:
+    PLATFORM: "AU280"
+    FLAGS: "--skipSynthesis --features SVM {enabled: true, pcie_e2e: true}"
+  extends: .tapasco_compose_21_2
+
+tapasco_compose_svm_network:
+  variables:
+    PLATFORM: "AU280"
+    FLAGS: "--skipSynthesis --features SVM {enabled: true, network_dma: true, port: 1, mac_addr: 0x005D03C10000}"
+  extends: .tapasco_compose_21_2
