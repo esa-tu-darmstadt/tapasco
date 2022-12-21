@@ -83,7 +83,7 @@ namespace eval sfpplus {
     # @param number the number of the physical cage
     # @param physical_ports the numbers of all physical_ports which are required in the design
     # @param first_port the first free master on the AXI-Lite Config interconnect
-    # @param constraints_file git stthe file used for constraints
+    # @param constraints_file the file used for constraints
     # @return the number of ports created with this core
     proc generate_core {number physical_ports first_port constraints_file} {
       variable refclk_pins
