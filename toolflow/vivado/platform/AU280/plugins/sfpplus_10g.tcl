@@ -119,6 +119,7 @@ namespace eval sfpplus {
       puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports %s]} [lindex $refclk_pins $number] qsfp${number}_156mhz_clk_p]
 
       set_property -dict [list \
+        CONFIG.NUM_OF_CORES $num_ports \
         CONFIG.LINE_RATE {10} \
         CONFIG.BASE_R_KR {BASE-R} \
         CONFIG.INCLUDE_AXI4_INTERFACE {1} \
