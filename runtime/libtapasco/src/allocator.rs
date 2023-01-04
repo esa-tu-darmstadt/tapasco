@@ -166,6 +166,7 @@ impl Allocator for GenericAllocator {
                     trace!("New segment is {:?}.", s);
                 }
             }
+            break;
         }
 
         if let Some(x) = element_found {
