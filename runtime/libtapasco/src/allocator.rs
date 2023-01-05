@@ -415,6 +415,36 @@ mod allocator_tests {
     }
 
     #[test]
+    fn multiple_allocates() -> Result<()> {
+        init();
+        let mut a = GenericAllocator::new(0, 4096, 64)?;
+        let m0 = a.allocate(128, None)?;
+        let m1 = a.allocate(128, None)?;
+        let m2 = a.allocate(128, None)?;
+        let m3 = a.allocate(128, None)?;
+        assert_eq!(a.free(m1), Ok(()));
+
+        let m4 = a.allocate(128, None)?;
+        assert_eq!(m4, m1);
+
+        assert_eq!(a.free(m2), Ok(()));
+        let m5 = a.allocate(256, None)?;
+        let m6 = a.allocate(64, None)?;
+        assert_eq!(m5, 512);
+        assert_eq!(m6, m2);
+
+        assert_eq!(a.free(m0), Ok(()));
+        assert_eq!(a.free(m3), Ok(()));
+        assert_eq!(a.free(m4), Ok(()));
+        assert_eq!(a.free(m5), Ok(()));
+        assert_eq!(a.free(m6), Ok(()));
+
+        let m7 = a.allocate(4096, None)?;
+        assert_eq!(a.free(m7), Ok(()));
+        Ok(())
+    }
+
+    #[test]
     fn vfio_alloc() -> Result<()> {
         init();
         let vfio_dev = Arc::new(VfioDev::default());
