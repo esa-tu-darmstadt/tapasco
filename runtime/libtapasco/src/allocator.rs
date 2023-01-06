@@ -180,25 +180,22 @@ impl Allocator for GenericAllocator {
         }
         trace!("Looking for free memory at offset 0x{:x}.", offset);
         let size_aligned = self.fix_alignment(size);
-        let mut element_found = None;
-        let mut addr_found = None;
-        for (i, s) in &mut self.memory_free.iter_mut().enumerate() {
-            let segment_end = s.base + s.size;
-            if s.base <= offset && offset <= segment_end && segment_end - offset >= size_aligned {
-                trace!("Found fixed free space in segment {:?}.", s);
-                addr_found = Some(offset);
-                self.memory_used.push(MemoryFree {
-                    base: offset,
-                    size: size_aligned,
-                });
-
-                element_found = Some(i);
-                break;
-            }
-        }
-
-        if let Some(x) = element_found {
-            trace!("Splitting old segment.");
+        if let Some((x, s)) = self
+            .memory_free
+            .iter_mut()
+            .enumerate()
+            .filter(|(_i, s)|
+                s.base <= offset
+                && offset <= s.base + s.size
+                && s.base + s.size - offset >= size_aligned
+            )
+            .next()
+        {
+            trace!("Found fixed free space in segment {:?}.", s);
+            self.memory_used.push(MemoryFree {
+                base: offset,
+                size: size_aligned,
+            });
             if self.memory_free[x].base == offset {
                 self.memory_free[x].base += size_aligned;
                 self.memory_free[x].size -= size_aligned;
@@ -226,22 +223,18 @@ impl Allocator for GenericAllocator {
                     self.memory_free[x]
                 );
             }
-        };
-
-        match addr_found {
-            Some(x) => Ok(x),
-            None => {
-                trace!(
-                    "Could not find free memory {}B @ {:x}: {:?}.",
-                    size_aligned,
-                    offset,
-                    self
-                );
-                Err(Error::FixedNotAvailable {
-                    size: size_aligned,
-                    offset,
-                })
-            }
+            Ok(offset)
+        } else {
+            trace!(
+                "Could not find free memory {}B @ {:x}: {:?}.",
+                size_aligned,
+                offset,
+                self
+            );
+            Err(Error::FixedNotAvailable {
+                size: size_aligned,
+                offset,
+            })
         }
     }
 
