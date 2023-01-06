@@ -147,36 +147,30 @@ impl Allocator for GenericAllocator {
         }
         trace!("Looking for free memory.");
         let size_aligned = self.fix_alignment(size);
-        let mut element_found = None;
-        let mut addr_found = None;
-        for (i, s) in &mut self.memory_free.iter_mut().enumerate() {
-            if s.size >= size_aligned {
-                trace!("Found free space in segment {:?}.", s);
-                let addr = s.base;
-                addr_found = Some(addr);
-                self.memory_used.push(MemoryFree {
-                    base: addr,
-                    size: size_aligned,
-                });
-                s.size -= size_aligned;
-                s.base += size_aligned;
-                if s.size == 0 {
-                    element_found = Some(i);
-                } else {
-                    trace!("New segment is {:?}.", s);
-                }
-                break;
+        if let Some((i, s)) = self
+            .memory_free
+            .iter_mut()
+            .enumerate()
+            .filter(|(_i, s)| s.size >= size_aligned).
+            next()
+        {
+            trace!("Found free space in segment {:?}.", s);
+            let addr = s.base;
+            self.memory_used.push(MemoryFree {
+                base: addr,
+                size: size_aligned,
+            });
+            s.size -= size_aligned;
+            s.base += size_aligned;
+            if s.size == 0 {
+                trace!("Removing empty segment");
+                self.memory_free.remove(i);
+            } else {
+                trace!("New segment is {:?}.", s);
             }
-        }
-
-        if let Some(x) = element_found {
-            trace!("Removing empty segment.");
-            self.memory_free.remove(x);
-        };
-
-        match addr_found {
-            Some(x) => Ok(x),
-            None => Err(Error::OutOfMemory { size: size_aligned }),
+            Ok(addr)
+        } else {
+            Err(Error::OutOfMemory {size: size_aligned })
         }
     }
 
