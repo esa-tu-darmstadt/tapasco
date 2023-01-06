@@ -334,6 +334,52 @@ mod allocator_tests {
     }
 
     #[test]
+    fn allocate_fixed_fail() -> Result<()> {
+        let mut a = GenericAllocator::new(0, 1024, 64)?;
+        let m = a.allocate_fixed(128, 128)?;
+        assert_eq!(m, 128);
+        assert_eq!(
+            a.allocate_fixed(192, 0),
+            Err(Error::FixedNotAvailable {size: 192, offset: 0})
+        );
+        assert_eq!(
+            a.allocate_fixed(128, 192),
+            Err(Error::FixedNotAvailable {size: 128, offset: 192})
+        );
+        assert_eq!(
+            a.allocate_fixed(128, 128),
+            Err(Error::FixedNotAvailable {size: 128, offset: 128})
+        );
+        assert_eq!(
+            a.allocate_fixed(64, 128),
+            Err(Error::FixedNotAvailable {size: 64, offset: 128})
+        );
+        assert_eq!(
+            a.allocate_fixed(64, 192),
+            Err(Error::FixedNotAvailable {size: 64, offset: 192})
+        );
+        assert_eq!(a.free(m), Ok(()));
+        Ok(())
+    }
+
+    #[test]
+    fn allocate_fixed_split() -> Result<()> {
+        let mut a = GenericAllocator::new(0, 1024, 64)?;
+        let m1 = a.allocate_fixed(128, 128)?;
+        assert_eq!(m1, 128);
+        let m2 = a.allocate(256, None)?;
+        let m3 = a.allocate(512, None)?;
+        let m4 = a.allocate(128, None)?;
+        assert_eq!(m2, 256);
+        assert_eq!(m3, 512);
+        assert_eq!(m4, 0);
+        for m in [m1, m2, m3, m4] {
+            assert_eq!(a.free(m), Ok(()));
+        }
+        Ok(())
+    }
+
+    #[test]
     fn alloc_free_alloc() -> Result<()> {
         init();
         let mut a = GenericAllocator::new(0, 1024, 64)?;
