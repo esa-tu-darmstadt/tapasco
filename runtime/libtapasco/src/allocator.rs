@@ -147,36 +147,30 @@ impl Allocator for GenericAllocator {
         }
         trace!("Looking for free memory.");
         let size_aligned = self.fix_alignment(size);
-        let mut element_found = None;
-        let mut addr_found = None;
-        for (i, s) in &mut self.memory_free.iter_mut().enumerate() {
-            if s.size >= size_aligned {
-                trace!("Found free space in segment {:?}.", s);
-                let addr = s.base;
-                addr_found = Some(addr);
-                self.memory_used.push(MemoryFree {
-                    base: addr,
-                    size: size_aligned,
-                });
-                s.size -= size_aligned;
-                s.base += size_aligned;
-                if s.size == 0 {
-                    element_found = Some(i);
-                } else {
-                    trace!("New segment is {:?}.", s);
-                }
+        if let Some((i, s)) = self
+            .memory_free
+            .iter_mut()
+            .enumerate()
+            .filter(|(_i, s)| s.size >= size_aligned).
+            next()
+        {
+            trace!("Found free space in segment {:?}.", s);
+            let addr = s.base;
+            self.memory_used.push(MemoryFree {
+                base: addr,
+                size: size_aligned,
+            });
+            s.size -= size_aligned;
+            s.base += size_aligned;
+            if s.size == 0 {
+                trace!("Removing empty segment");
+                self.memory_free.remove(i);
+            } else {
+                trace!("New segment is {:?}.", s);
             }
-            break;
-        }
-
-        if let Some(x) = element_found {
-            trace!("Removing empty segment.");
-            self.memory_free.remove(x);
-        };
-
-        match addr_found {
-            Some(x) => Ok(x),
-            None => Err(Error::OutOfMemory { size: size_aligned }),
+            Ok(addr)
+        } else {
+            Err(Error::OutOfMemory {size: size_aligned })
         }
     }
 
@@ -186,25 +180,22 @@ impl Allocator for GenericAllocator {
         }
         trace!("Looking for free memory at offset 0x{:x}.", offset);
         let size_aligned = self.fix_alignment(size);
-        let mut element_found = None;
-        let mut addr_found = None;
-        for (i, s) in &mut self.memory_free.iter_mut().enumerate() {
-            let segment_end = s.base + s.size;
-            if s.base <= offset && offset <= segment_end && segment_end - offset >= size_aligned {
-                trace!("Found fixed free space in segment {:?}.", s);
-                addr_found = Some(offset);
-                self.memory_used.push(MemoryFree {
-                    base: offset,
-                    size: size_aligned,
-                });
-
-                element_found = Some(i);
-                break;
-            }
-        }
-
-        if let Some(x) = element_found {
-            trace!("Splitting old segment.");
+        if let Some((x, s)) = self
+            .memory_free
+            .iter_mut()
+            .enumerate()
+            .filter(|(_i, s)|
+                s.base <= offset
+                && offset <= s.base + s.size
+                && s.base + s.size - offset >= size_aligned
+            )
+            .next()
+        {
+            trace!("Found fixed free space in segment {:?}.", s);
+            self.memory_used.push(MemoryFree {
+                base: offset,
+                size: size_aligned,
+            });
             if self.memory_free[x].base == offset {
                 self.memory_free[x].base += size_aligned;
                 self.memory_free[x].size -= size_aligned;
@@ -232,22 +223,18 @@ impl Allocator for GenericAllocator {
                     self.memory_free[x]
                 );
             }
-        };
-
-        match addr_found {
-            Some(x) => Ok(x),
-            None => {
-                trace!(
-                    "Could not find free memory {}B @ {:x}: {:?}.",
-                    size_aligned,
-                    offset,
-                    self
-                );
-                Err(Error::FixedNotAvailable {
-                    size: size_aligned,
-                    offset,
-                })
-            }
+            Ok(offset)
+        } else {
+            trace!(
+                "Could not find free memory {}B @ {:x}: {:?}.",
+                size_aligned,
+                offset,
+                self
+            );
+            Err(Error::FixedNotAvailable {
+                size: size_aligned,
+                offset,
+            })
         }
     }
 
@@ -347,6 +334,52 @@ mod allocator_tests {
     }
 
     #[test]
+    fn allocate_fixed_fail() -> Result<()> {
+        let mut a = GenericAllocator::new(0, 1024, 64)?;
+        let m = a.allocate_fixed(128, 128)?;
+        assert_eq!(m, 128);
+        assert_eq!(
+            a.allocate_fixed(192, 0),
+            Err(Error::FixedNotAvailable {size: 192, offset: 0})
+        );
+        assert_eq!(
+            a.allocate_fixed(128, 192),
+            Err(Error::FixedNotAvailable {size: 128, offset: 192})
+        );
+        assert_eq!(
+            a.allocate_fixed(128, 128),
+            Err(Error::FixedNotAvailable {size: 128, offset: 128})
+        );
+        assert_eq!(
+            a.allocate_fixed(64, 128),
+            Err(Error::FixedNotAvailable {size: 64, offset: 128})
+        );
+        assert_eq!(
+            a.allocate_fixed(64, 192),
+            Err(Error::FixedNotAvailable {size: 64, offset: 192})
+        );
+        assert_eq!(a.free(m), Ok(()));
+        Ok(())
+    }
+
+    #[test]
+    fn allocate_fixed_split() -> Result<()> {
+        let mut a = GenericAllocator::new(0, 1024, 64)?;
+        let m1 = a.allocate_fixed(128, 128)?;
+        assert_eq!(m1, 128);
+        let m2 = a.allocate(256, None)?;
+        let m3 = a.allocate(512, None)?;
+        let m4 = a.allocate(128, None)?;
+        assert_eq!(m2, 256);
+        assert_eq!(m3, 512);
+        assert_eq!(m4, 0);
+        for m in [m1, m2, m3, m4] {
+            assert_eq!(a.free(m), Ok(()));
+        }
+        Ok(())
+    }
+
+    #[test]
     fn alloc_free_alloc() -> Result<()> {
         init();
         let mut a = GenericAllocator::new(0, 1024, 64)?;
@@ -411,6 +444,36 @@ mod allocator_tests {
         let mut a = GenericAllocator::new(0, 1024, 64)?;
         let m = a.allocate(0, None);
         assert_eq!(m, Err(Error::InvalidSize { size: 0 }));
+        Ok(())
+    }
+
+    #[test]
+    fn multiple_allocates() -> Result<()> {
+        init();
+        let mut a = GenericAllocator::new(0, 4096, 64)?;
+        let m0 = a.allocate(128, None)?;
+        let m1 = a.allocate(128, None)?;
+        let m2 = a.allocate(128, None)?;
+        let m3 = a.allocate(128, None)?;
+        assert_eq!(a.free(m1), Ok(()));
+
+        let m4 = a.allocate(128, None)?;
+        assert_eq!(m4, m1);
+
+        assert_eq!(a.free(m2), Ok(()));
+        let m5 = a.allocate(256, None)?;
+        let m6 = a.allocate(64, None)?;
+        assert_eq!(m5, 512);
+        assert_eq!(m6, m2);
+
+        assert_eq!(a.free(m0), Ok(()));
+        assert_eq!(a.free(m3), Ok(()));
+        assert_eq!(a.free(m4), Ok(()));
+        assert_eq!(a.free(m5), Ok(()));
+        assert_eq!(a.free(m6), Ok(()));
+
+        let m7 = a.allocate(4096, None)?;
+        assert_eq!(a.free(m7), Ok(()));
         Ok(())
     }
 
