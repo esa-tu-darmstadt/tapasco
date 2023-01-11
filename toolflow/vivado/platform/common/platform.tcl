@@ -66,7 +66,7 @@ namespace eval platform {
       current_bd_instance $instance
     }
 
-    tapasco::call_plugins "pre-wiring"
+    tapasco::call_plugins "mid-subsystems"
 
     set sss [list $ss_intc]
 
@@ -82,6 +82,8 @@ namespace eval platform {
       current_bd_instance $instance
       puts "Subsystem $name complete."
     }
+
+    tapasco::call_plugins "pre-wiring"
 
     wire_subsystem_wires
     wire_subsystem_intfs
