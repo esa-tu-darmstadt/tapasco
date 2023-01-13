@@ -196,7 +196,11 @@ impl PE {
         trace!("Resetting interrupts: 0x{:x} -> {}", offset, v);
         unsafe {
             let ptr = self.memory.as_ptr().offset(offset);
+
+            // mode of status register changed over time from TOW to COR
+            // so we need both read and write to 0xC
             write_volatile(ptr as *mut u32, if v { 1 } else { 0 });
+            ptr.read_volatile();
         }
         Ok(())
     }
