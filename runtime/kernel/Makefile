@@ -25,6 +25,10 @@ CPPFLAGS+=-Werror -Wno-missing-attributes -I$(MODULE_DIR) \
 				  -I$(MODULE_DIR)/nanopb \
 				  -DPB_SYSTEM_HEADER=\<pb_system.h\>
 
+ifeq (aarch64,$(findstring aarch64,$(shell $(CC) -dumpmachine)))
+CPPFLAGS+=-mno-outline-atomics
+endif
+
 .PHONY:	all clean
 
 all:
