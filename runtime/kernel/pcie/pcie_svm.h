@@ -84,6 +84,8 @@
 #define PAGE_DMA_TIMEOUT_MSECS 1000
 #define PAGE_DMA_TIMEOUT_JIFFIES (msecs_to_jiffies(PAGE_DMA_TIMEOUT_MSECS))
 
+#define UMPM_MAX_PAGES 131072 // 512 MB
+
 #define PAGE_FAULT_IRQ_NO 2
 #define C2H_IRQ_NO 0
 #define H2C_IRQ_NO 1

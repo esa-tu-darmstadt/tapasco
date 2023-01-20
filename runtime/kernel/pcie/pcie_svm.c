@@ -2021,7 +2021,7 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 int pcie_svm_user_managed_migration_to_device(struct tlkm_device *inst,
 					      uint64_t vaddr, uint64_t size)
 {
-	int res, npages;
+	int res, npages, nmigrate;
 	uint64_t va_start, va_end;
 	struct tlkm_pcie_device *pdev = inst->private_data;
 	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
@@ -2052,7 +2052,16 @@ int pcie_svm_user_managed_migration_to_device(struct tlkm_device *inst,
 	mmget(svm_data->mm);
 	mmap_write_lock(svm_data->mm);
 
-	res = svm_migrate_to_device(pdev, va_start, npages, false);
+	// do migration in 512 MB blocks
+	while (npages > 0) {
+		nmigrate = min(npages, UMPM_MAX_PAGES);
+		res = svm_migrate_to_device(pdev, va_start, nmigrate, false);
+		if (res)
+			break;
+
+		va_start += nmigrate * PAGE_SIZE;
+		npages -= nmigrate;
+	}
 
 	mmap_write_unlock(svm_data->mm);
 	mmput(svm_data->mm);
@@ -2078,7 +2087,7 @@ int pcie_svm_user_managed_migration_to_device(struct tlkm_device *inst,
 int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 					   uint64_t vaddr, uint64_t size)
 {
-	int r, res = 0, i, npages, ndevs, nmigrate;
+	int r, res = 0, i, npages, ndevs, nmigrate, n;
 	unsigned long va_start, va_end, start, end;
 	struct tlkm_device *d;
 	struct tlkm_pcie_device *pdev = inst->private_data, *src_dev;
@@ -2137,9 +2146,18 @@ int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 			start = max(va_start, entry->interval_node.start);
 			end = min(entry->interval_node.last + 1, va_end);
 			nmigrate = (end - start) >> PAGE_SHIFT;
-			r = svm_migrate_dev_to_ram(src_dev, start, nmigrate);
-			if (r)
-				res = r;
+
+			// do migration in 512 MB blocks
+			while (nmigrate > 0) {
+				n = min(nmigrate, UMPM_MAX_PAGES);
+				r = svm_migrate_dev_to_ram(src_dev, start, n);
+				if (r) {
+					res = r;
+					break;
+				}
+				start += n * PAGE_SIZE;
+				nmigrate -= n;
+			}
 
 			list_del(&entry->list);
 			kfree(entry);
