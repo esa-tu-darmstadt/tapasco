@@ -683,6 +683,20 @@ free_device_page(struct tlkm_pcie_device *pdev, struct page *page)
 	}
 }
 
+static struct page *get_device_page(unsigned long pfn)
+{
+	struct page *page = pfn_to_page(pfn);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
+	get_page(page);
+#endif // LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,1,0)
+	lock_page(page);
+#else
+	zone_device_page_init(page);
+#endif // LINUX_VERSION_CODE < KERNEL_VERSION(6,1,0)
+	return page;
+}
+
 /**
  * Free a device page and the corresponding memory allocation. This function
  * is only called by the OS kernel.
@@ -707,7 +721,7 @@ static vm_fault_t svm_migrate_to_ram(struct vm_fault *vmf)
 	unsigned long src = 0, dst = 0;
 	dma_addr_t dma_addr;
 	uint64_t src_addr, rval;
-	struct migrate_vma migrate;
+	struct migrate_vma migrate = { 0 };
 	struct page *src_page, *dst_page;
 
 	struct tlkm_pcie_device *pdev = vmf->page->pgmap->owner;
@@ -730,6 +744,9 @@ static vm_fault_t svm_migrate_to_ram(struct vm_fault *vmf)
 	migrate.end = vmf->address + PAGE_SIZE;
 	migrate.pgmap_owner = pdev;
 	migrate.flags = MIGRATE_VMA_SELECT_DEVICE_PRIVATE;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,1,0)
+	migrate.fault_page = vmf->page;
+#endif // LINUX_KERNEL_VERSION < KERNEL_VERSION(6,1,0)
 	if (migrate_vma_setup(&migrate)) {
 		DEVERR(pdev->parent->dev_id,
 		       "failed to setup migration after CPU page fault");
@@ -1170,7 +1187,7 @@ static int svm_migrate_ram_to_dev(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 	unsigned long base_pfn;
 	dma_addr_t *dma_addrs;
 	struct page **src_pages, **dst_pages;
-	struct migrate_vma migrate;
+	struct migrate_vma migrate = { 0 };
 	struct vm_area_struct *vma;
 	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
 
@@ -1240,11 +1257,7 @@ retry:
 	}
 	base_pfn = dev_addr_to_pfn(svm_data, dev_base_addr);
 	for (i = 0; i < npages; ++i) {
-		dst_pages[i] = pfn_to_page(base_pfn + i);
-#if defined(EN_SVM) && LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
-		get_page(dst_pages[i]);
-#endif // defined(EN_SVM) && LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
-		lock_page(dst_pages[i]);
+		dst_pages[i] = get_device_page(base_pfn + i);
 		migrate.dst[i] = migrate_pfn(base_pfn + i);
 		dst_pages[i]->zone_device_data = pdev;
 	}
@@ -1448,7 +1461,7 @@ static int svm_migrate_dev_to_dev(struct tlkm_pcie_device *src_dev,
 	uint64_t dev_base_addr;
 	unsigned long base_pfn;
 	struct page **src_pages, **dst_pages;
-	struct migrate_vma migrate;
+	struct migrate_vma migrate = { 0 };
 	struct vm_area_struct *vma;
 	struct tlkm_pcie_svm_data *src_svm, *dst_svm;
 
@@ -1525,11 +1538,7 @@ retry:
 	base_pfn = dev_addr_to_pfn(dst_svm, dev_base_addr);
 	for (i = 0; i < npages; ++i) {
 		src_pages[i] = migrate_pfn_to_page(migrate.src[i]);
-		dst_pages[i] = pfn_to_page(base_pfn + i);
-#if defined(EN_SVM) && LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
-		get_page(dst_pages[i]);
-#endif // defined(EN_SVM) && LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
-		lock_page(dst_pages[i]);
+		dst_pages[i] = get_device_page(base_pfn + i);
 		migrate.dst[i] = migrate_pfn(base_pfn + i);
 		dst_pages[i]->zone_device_data = dst_dev;
 	}
@@ -1667,7 +1676,7 @@ static int svm_migrate_dev_to_ram(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 	int res, i, j, ncontiguous, cmd_cnt, retry_cnt;
 	dma_addr_t *dma_addrs;
 	struct page **src_pages, **dst_pages;
-	struct migrate_vma migrate;
+	struct migrate_vma migrate = { 0 };
 	struct vm_area_struct *vma;
 	struct tlkm_pcie_svm_data *svm_data = pdev->svm_data;
 
