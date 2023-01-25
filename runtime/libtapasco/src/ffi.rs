@@ -630,6 +630,40 @@ pub unsafe extern "C" fn tapasco_device_acquire_pe(dev: *mut Device, id: PEId) -
     }
 }
 
+#[no_mangle]
+/// Acquire PE if available and return job.
+///
+/// # Arguments
+///  * `dev`: Device on which the PE should be acquired.
+///  * `id`: PE ID of PE.
+///  * `job`: Double pointer to return job object.
+/// # Returns
+///  * 'false' if an error occurred, 'true' otherwise with `job` pointing to the new job object, or as null pointer if no PE is available
+pub unsafe extern "C" fn tapasco_device_try_acquire_pe(dev: *mut Device, id: PEId, job: *mut *mut Job) -> bool {
+    if dev.is_null() {
+        warn!("Null pointer passed into tapasco_device_acquire_pe() as the device");
+        update_last_error(Error::NullPointerTLKM {});
+        *job = ptr::null_mut();
+        return false;
+    }
+
+    let tl = &mut *dev;
+    match tl.try_acquire_pe(id) {
+        Ok(x) => {
+            *job = match x {
+                Some(j) => std::boxed::Box::<Job>::into_raw(Box::new(j)),
+                None => ptr::null_mut()
+            };
+            true
+        },
+        Err(e) => {
+            *job = ptr::null_mut();
+            update_last_error(Error::DeviceError { source: e });
+            false
+        }
+    }
+}
+
 /// # Safety
 /// TODO
 #[no_mangle]
@@ -710,6 +744,49 @@ pub unsafe extern "C" fn tapasco_job_release(
             }
             0
         }
+        Err(e) => {
+            update_last_error(e);
+            -1
+        }
+    }
+}
+
+#[no_mangle]
+/// Release job if it has finished.
+///
+/// # Arguments
+///  * `job`: Job to be released.
+///  * `return_value`: Set if return value should be read from PE.
+///  * `release`: Set if PE should be released if job has finished.
+/// # Returns
+///  * '-1' in case an error occurred, '0' if the job is released, and '1' if the job is still running and could not be released yet
+pub unsafe extern "C" fn tapasco_job_try_release(
+    job: *mut Job,
+    return_value: *mut u64,
+    release: bool,
+) -> isize {
+    if job.is_null() {
+        warn!("Null pointer passed onto tapasco_job_try_release() as the job");
+        update_last_error(Error::NullPointerTLKM {});
+        return -1;
+    }
+
+    let tl = &mut *job;
+    match tl.try_release(release, !return_value.is_null()).context(JobSnafu) {
+        Ok(x) => {
+            match x {
+                Some((r, v)) => {
+                    for d in v {
+                        let _p = std::boxed::Box::<[u8]>::into_raw(d);
+                    }
+                    if !return_value.is_null() {
+                        *return_value = r;
+                    }
+                    0
+                },
+                None => 1,
+            }
+        },
         Err(e) => {
             update_last_error(e);
             -1
