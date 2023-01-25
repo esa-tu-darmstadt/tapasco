@@ -175,6 +175,17 @@ impl PE {
         Ok((rv, self.get_copyback()))
     }
 
+    /// Release PE if job has finished.
+    pub fn try_release(&mut self, return_value: bool) -> Result<Option<(u64, Option<Vec<CopyBack>>)>> {
+
+        let r = self.check_for_completion()?;
+        if !r {
+            return Ok(None);
+        }
+        let rv = if return_value { self.return_value() } else { 0 };
+        Ok(Some((rv, self.get_copyback())))
+    }
+
     /// Waits for a PE interrupt and deactivates the PE afterwards
     pub fn wait_for_completion(&mut self) -> Result<()> {
         if self.active {
@@ -188,6 +199,26 @@ impl PE {
             trace!("Wait requested but {:?} is already idle.", self.id);
         }
         Ok(())
+    }
+
+    /// Check whether PE is finished and deactivate PE afterwards
+    ///
+    /// Returns true if PE interrupt has occurred and PE has been deactivated
+    /// or false if PE is still running
+    /// PE is only deactivated if it is finished and the PE interrupt has occurred
+    pub fn check_for_completion(&mut self) -> Result<bool> {
+        if self.active {
+            let r = self.interrupt.check_for_interrupt().context(ErrorInterruptSnafu)?;
+            if r == 0 {
+                return Ok(false);
+            }
+            trace!("Cleaning up PE {} after release.", self.id);
+            self.active = false;
+            self.reset_interrupt(true)?;
+        } else {
+            trace!("PE {} is already idle.", self.id);
+        }
+        Ok(true)
     }
 
     pub fn interrupt_set(&self) -> Result<bool> {
