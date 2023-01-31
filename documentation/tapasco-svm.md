@@ -161,7 +161,7 @@ be the case for prebuilt kernels for CentOS 7.
 
 ### TaPaSCo features and platforms
 
-SVM support is currently only available on the Alveo U280 platform. It is not compatible
+SVM support is currently available on the Alveo U280 and XUPVVH(-ES) platforms. It is not compatible
 with PE-local memories and HBM, but uses only DDR memory. Compatibility to other TaPaSCo
 features is not guaranteed.
 
