@@ -25,6 +25,15 @@ CPPFLAGS+=-Werror -Wno-missing-attributes -I$(MODULE_DIR) \
 				  -I$(MODULE_DIR)/nanopb \
 				  -DPB_SYSTEM_HEADER=\<pb_system.h\>
 
+# check if we are on aarch64 with at least GCC 10 and add compiler flag
+AARCH64_CC:=$(findstring aarch64,$(shell $(CC) -dumpmachine))
+ifeq ($(shell expr `$(CC) -dumpversion | cut -f1 -d.` \>= 10),1)
+GCC_10:=1
+endif
+ifneq ($(and $(AARCH64_CC),$(GCC_10)),)
+CPPFLAGS+=-mno-outline-atomics
+endif
+
 .PHONY:	all clean
 
 all:

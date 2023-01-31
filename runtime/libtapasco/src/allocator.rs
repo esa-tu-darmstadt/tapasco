@@ -575,6 +575,10 @@ impl VfioAllocator {
 }
 
 impl Allocator for VfioAllocator {
+    /// During allocation of device memory, map the smallest page-aligned interval
+    /// containing the 'data' buffer to an I/O virtual address region using the SMMU.
+    /// This way the PL can directly access userspace memory and no actual data copies
+    /// are required.
     fn allocate(&mut self, size: DeviceSize, va: Option<u64>) -> Result<DeviceAddress> {
         let mut maps = self.vfio_dev.mappings.lock().unwrap();
         let iova_start = match maps.last() {
@@ -585,15 +589,29 @@ impl Allocator for VfioAllocator {
             Some(a) => (a % IOMMU_PAGESIZE), // position of data within page
             None => return Err(Error::VfioNoVa{})
         };
+        let va_aligned = match va {
+            Some(a) => to_page_boundary(a),
+            None => return Err(Error::VfioNoVa {})
+        };
         let iova_end = to_page_boundary(iova_start + offset + size + IOMMU_PAGESIZE - 1);
 
         trace!("Allocating {} bytes starting at iova=0x{:x} offs=0x{:x} through vfio.",
                size, iova_start, offset);
-        maps.push(VfioMapping {
-            size: iova_end - iova_start,
-            iova: iova_start
-        });
-        Ok(iova_start + offset)
+        let map_len = iova_end - iova_start;
+        match vfio_dma_map(&self.vfio_dev,
+                           map_len,
+                           HP_OFFS + iova_start,
+                           va_aligned
+        ) {
+            Ok(()) => {
+                maps.push(VfioMapping {
+                    size: map_len,
+                    iova: iova_start
+                });
+                Ok(iova_start + offset)
+            },
+            Err(e) => Err(Error::VfioError {func: e.to_string()})
+        }
     }
 
     fn allocate_fixed(
