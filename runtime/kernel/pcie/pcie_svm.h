@@ -30,12 +30,12 @@
 #include <linux/swap.h>
 #include <linux/swapops.h>
 #include <linux/sched/mm.h>
+#include <linux/interval_tree.h>
+#include <linux/memremap.h>
+#include <tlkm/tlkm_bus.h>
 #include "pcie/pcie_device.h"
 #include "pcie/pcie.h"
 
-
-#define MEM_SECTION_SIZE (128UL << 20)
-#define MEM_SECTION_NPAGES (MEM_SECTION_SIZE / PAGE_SIZE)
 #define PHYS_MEM_SIZE (4UL << 30) // use standard 4 GB memory size
 
 // IOMMU
@@ -47,8 +47,9 @@
 #define MMU_ACTIVATE 0x8UL
 #define MMU_DEACTIVATE 0x9UL
 
-#define MMU_MAX_MAPPING_LENGTH 4096
+#define MMU_MAX_MAPPING_LENGTH 32768
 #define MMU_AL_LENGTH_SHIFT 48UL
+#define MMU_INVALIDATE_LENGTH_SHIFT 48UL
 
 #define MMU_STATUS_MEM_ACCESS_ACTIVE (1UL)
 #define MMU_STATUS_ANY_MEM_ACCESS (1UL << 1)
@@ -63,6 +64,7 @@
 #define MAX_NUM_FAULTS 32
 
 // DMA
+#define NETWORK_PAGE_DMA_ID 0x5A6ED4AE
 #define PAGE_DMA_STAT_BUSY (1UL)
 #define PAGE_DMA_STAT_INTR_PEND (1UL << 1)
 #define PAGE_DMA_STAT_ERROR_FLAGS (3UL << 2)
@@ -74,12 +76,22 @@
 #define PAGE_DMA_CTRL_INTR_DISABLE (1UL << 6)
 #define PAGE_DMA_CMD_START (1UL << 63)
 #define PAGE_DMA_CMD_CLEAR (1UL << 62)
+#define PAGE_DMA_CMD_NETWORK (1UL << 60)
 
+#define PAGE_DMA_POLL_LIMIT 128
 #define PAGE_DMA_MAX_NPAGES 4096UL
+#define DEV_TO_DEV_DMA_MAX_NPAGES 1024
+#define PAGE_DMA_TIMEOUT_MSECS 1000
+#define PAGE_DMA_TIMEOUT_JIFFIES (msecs_to_jiffies(PAGE_DMA_TIMEOUT_MSECS))
+
+#define UMPM_MAX_PAGES 131072 // 512 MB
 
 #define PAGE_FAULT_IRQ_NO 2
 #define C2H_IRQ_NO 0
 #define H2C_IRQ_NO 1
+
+#define DMA_TIMEOUT_ERROR (1)
+#define MMU_DEACTIVATED_ERROR (1 << 1)
 
 irqreturn_t iommu_page_fault_handler(int irq, void *data);
 int pcie_init_svm(struct tlkm_pcie_device *pdev);
@@ -99,35 +111,27 @@ struct tlkm_pcie_svm_data {
 	struct svm_mmu_notifier_env *notifier_env;
 	struct mmu_regs *mmu_regs;
 	struct page_dma_regs *dma_regs;
+	bool network_dma_enabled;
+	uint64_t mac_addr;
+	resource_size_t rdma_bar;
 
-	struct list_head mem_sections;
-	struct mutex sections_mutex;
-	struct page *free_pages;
-	spinlock_t page_lock;
-	struct mutex mem_alloc_mutex;
-	struct mutex mem_free_mutex;
-	uint64_t mem_alloc_param;
-	uint64_t mem_free_addr;
-	uint64_t mem_free_size;
+	unsigned long base_pfn;
 	struct list_head free_mem_blocks;
 	struct mutex mem_block_mutex;
+	struct rb_root_cached vmem_intervals;
 
 	// work queues
 	struct workqueue_struct *page_fault_queue;
 	struct workqueue_struct *dev_mem_free_queue;
+	struct workqueue_struct *dev_pages_free_queue;
 
 	// wait queues
 	wait_queue_head_t wait_queue_h2c_intr;
 	wait_queue_head_t wait_queue_c2h_intr;
 	atomic_t wait_flag_h2c_intr;
 	atomic_t wait_flag_c2h_intr;
-};
 
-/* struct to hold data for a device private memory section */
-struct svm_mem_section {
-	struct list_head list;
-	struct resource *resource;
-	struct dev_pagemap pagemap;
+	int error_state;
 };
 
 /* envelope around MMU notifier */
@@ -152,11 +156,15 @@ struct page_dma_regs {
 	uint64_t c2h_src_addr;
 	uint64_t c2h_dst_addr;
 	uint64_t c2h_start_len;
+	uint64_t c2h_cmd_cnt;
 	uint64_t h2c_status_ctrl;
 	uint64_t h2c_src_addr;
 	uint64_t h2c_dst_addr;
 	uint64_t h2c_start_len;
+	uint64_t h2c_cmd_cnt;
 	uint64_t id;
+	uint64_t own_mac;
+	uint64_t dst_mac;
 };
 
 /* envelope around work struct for IOMMU page fault handling */
@@ -173,11 +181,25 @@ struct dev_mem_free_work_env {
 	uint64_t size;
 };
 
+/* envelope around work struct for device pages free commands */
+struct dev_pages_free_work_env {
+	struct tlkm_pcie_device *pdev;
+	struct work_struct work;
+	struct page **pages;
+	int npages;
+};
+
 /* physical memory block for device memory allocator */
 struct device_memory_block {
 	struct list_head list;
 	uint64_t base_addr;
 	uint64_t size;
+};
+
+/* list entry for list of interval nodes */
+struct vmem_interval_list_entry {
+	struct list_head list;
+	struct interval_tree_node interval_node;
 };
 
 #endif /* defined(EN_SVM) && LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0) */

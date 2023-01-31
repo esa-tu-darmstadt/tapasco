@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2021 Embedded Systems and Applications, TU Darmstadt.
+# Copyright (c) 2014-2022 Embedded Systems and Applications, TU Darmstadt.
 #
 # This file is part of TaPaSCo
 # (see https://github.com/esa-tu-darmstadt/tapasco).
@@ -18,70 +18,68 @@
 #
 
 namespace eval svm {
-  proc add_iommu {} {
-    if {[tapasco::is_feature_enabled "SVM"]} {
 
-      # add slave port to host subsystem
-      current_bd_instance "/host"
-      set m_mmu [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_MMU"]
-      set num_mi_out_old [get_property CONFIG.NUM_MI [get_bd_cells out_ic]]
-      set num_mi_out [expr "$num_mi_out_old + 1"]
-      set_property -dict [list CONFIG.NUM_MI $num_mi_out] [get_bd_cells out_ic]
-      connect_bd_intf_net [get_bd_intf_pins out_ic/[format "M%02d_AXI" $num_mi_out_old]] $m_mmu
+  variable cmac_cores            {"CMACE4_X0Y6" "CMACE4_X0Y7"}
+  variable gt_groups             {"X0Y40~X0Y43" "X0Y44~X0Y47"}
+  variable refclk_pins           {"T42" "P42"}
 
-      # remove BlueDMA and insert PageDMA core
-      current_bd_instance "/memory"
-      delete_bd_objs [get_bd_nets dma_IRQ_write] [get_bd_nets dma_IRQ_read] [get_bd_intf_nets S_DMA_1] [get_bd_intf_nets dma_m32_axi] [get_bd_intf_nets dma_m64_axi] [get_bd_cells dma]
-
-      set pcie_aclk [tapasco::subsystem::get_port "host" "clk"]
-      set pcie_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
-      set design_aclk [tapasco::subsystem::get_port "design" "clk"]
-
-      set page_dma [tapasco::ip::create_page_dma dma_0]
-      set mig_ic [get_bd_cells mig_ic]
-      connect_bd_net $pcie_aclk [get_bd_pins $page_dma/aclk]
-      connect_bd_net $pcie_p_aresetn [get_bd_pins $page_dma/resetn]
-      connect_bd_net [get_bd_pins $page_dma/intr_c2h] [get_bd_pins intr_PLATFORM_COMPONENT_DMA0_READ]
-      connect_bd_net [get_bd_pins $page_dma/intr_h2c] [get_bd_pins intr_PLATFORM_COMPONENT_DMA0_WRITE]
-      connect_bd_intf_net [get_bd_intf_pins S_DMA] [get_bd_intf_pins $page_dma/S_AXI_CTRL]
-      connect_bd_intf_net [get_bd_intf_pins $page_dma/M_AXI_MEM] [get_bd_intf_pins $mig_ic/S00_AXI]
-      connect_bd_intf_net [get_bd_intf_pins $page_dma/M_AXI_PCI] [get_bd_intf_pins M_HOST]
-
-      # add MMU to memory subsystem
-      current_bd_instance "/memory"
-
-      set s_mmu [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MMU"]
-      set mmu [tapasco::ip::create_tapasco_mmu mmu_0]
-      set mmu_sc [tapasco::ip::create_axi_sc "mmu_sc" 1 1 2]
-
-      connect_bd_net $pcie_aclk [get_bd_pins $mmu/aclk]
-      connect_bd_net $pcie_p_aresetn [get_bd_pins $mmu/resetn]
-      connect_bd_net $pcie_aclk [get_bd_pins $mmu_sc/aclk]
-      connect_bd_net $design_aclk [get_bd_pins $mmu_sc/aclk1]
-
-      delete_bd_objs [get_bd_intf_nets "S_MEM_0_1"]
-      connect_bd_intf_net [get_bd_intf_pins S_MMU] [get_bd_intf_pins $mmu/S_AXI_CTRL]
-
-      # FIXME put Smartconnect between target IPs and MMU to perform clock convertion for now
-      # can be left out as soon as we switch from Interconnects to Smartconnects in the interconnect tree
-      connect_bd_intf_net [get_bd_intf_pins S_MEM_0] [get_bd_intf_pins $mmu_sc/S00_AXI]
-      connect_bd_intf_net [get_bd_intf_pins $mmu_sc/M00_AXI] [get_bd_intf_pins $mmu/S_AXI_ACC]
-      connect_bd_intf_net [get_bd_intf_pins $mmu/M_AXI_MEM] [get_bd_intf_pins mig_ic/S01_AXI]
-
-      connect_bd_net [get_bd_pins $mmu/pgf_intr] [tapasco::ip::add_interrupt "PLATFORM_COMPONENT_MMU_FAULT" "host"]
-
-      current_bd_instance
-      save_bd_design
-    }
+  proc is_svm_supported {} {
+    return true
   }
 
-  proc addressmap {{args {}}} {
-    if {[tapasco::is_feature_enabled "SVM"]} {
-      set args [lappend args "M_MMU" [list 0x50000 0x10000 0 "PLATFORM_COMPONENT_MMU"]]
+  proc is_network_port_valid {port_no} {
+    if {$port_no < 2} {
+      return true
     }
-    return $args
+    return false
+  }
+
+  proc customize_100g_core {eth_core mac_addr port_no} {
+    variable cmac_cores
+    variable gt_groups
+
+    set_property -dict [list \
+      CONFIG.CMAC_CAUI4_MODE {1} \
+      CONFIG.NUM_LANES {4x25} \
+      CONFIG.USER_INTERFACE {AXIS} \
+      CONFIG.GT_REF_CLK_FREQ {156.25} \
+      CONFIG.TX_FLOW_CONTROL {1} \
+      CONFIG.RX_FLOW_CONTROL {1} \
+      CONFIG.TX_SA_GPP $mac_addr \
+      CONFIG.TX_SA_PPP $mac_addr \
+      CONFIG.INCLUDE_RS_FEC {1} \
+      CONFIG.ENABLE_AXI_INTERFACE {0} \
+      CONFIG.INCLUDE_STATISTICS_COUNTERS {0} \
+      CONFIG.RX_MAX_PACKET_LEN {16383} \
+      CONFIG.CMAC_CORE_SELECT [lindex $cmac_cores $port_no] \
+      CONFIG.GT_GROUP_SELECT [lindex $gt_groups $port_no] \
+    ] $eth_core
+  }
+
+  proc customize_stream_regslices {tx_rs rx_rs} {
+    set_property -dict [list \
+      CONFIG.REG_CONFIG {15} \
+      CONFIG.NUM_SLR_CROSSINGS {1} \
+      CONFIG.PIPELINES_MASTER {4} \
+      CONFIG.PIPELINES_SLAVE {4} \
+    ] $tx_rs
+    set_property -dict [list \
+      CONFIG.REG_CONFIG {15} \
+      CONFIG.NUM_SLR_CROSSINGS {1} \
+      CONFIG.PIPELINES_MASTER {4} \
+      CONFIG.PIPELINES_SLAVE {4} \
+    ] $rx_rs
+  }
+
+  proc set_custom_constraints {constraints_file port_no} {
+    variable refclk_pins
+    puts $constraints_file [format {set_property PACKAGE_PIN %s [get_ports qsfp0_156mhz_svm_clk_p]} [lindex $refclk_pins $port_no]]
+  }
+
+  proc create_custom_interfaces {eth_core const_zero_core const_one_core clk_reset_core} {
+    set gt_refclk [create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 qsfp0_156mhz_svm]
+    set_property CONFIG.FREQ_HZ 156250000 $gt_refclk
+    connect_bd_intf_net $gt_refclk [get_bd_intf_pins $eth_core/gt_ref_clk]
+    make_bd_intf_pins_external [get_bd_intf_pins $eth_core/gt_serial_port]
   }
 }
-
-tapasco::register_plugin "platform::svm::add_iommu" "pre-wiring"
-tapasco::register_plugin "platform::svm::addressmap" "post-address-map"
