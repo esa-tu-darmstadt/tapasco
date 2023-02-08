@@ -39,10 +39,9 @@ plugins {
 }
 
 repositories {
-    // Use jcenter for resolving your dependencies.
+    // Use mavenCentral for resolving your dependencies.
     // You can declare any Maven/Ivy/file repository here.
     mavenCentral()
-    jcenter()
 }
 
 dependencies {
@@ -65,8 +64,8 @@ dependencies {
 }
 
 application {
-    mainClassName = 'tapasco.Tapasco'
-    applicationDefaultJvmArgs = ['-Xms512M', '-Xmx1536M', '-Xss1M', '-XX:+CMSClassUnloadingEnabled']
+    mainClass.set('tapasco.Tapasco')
+    applicationDefaultJvmArgs = ['-Xms512M', '-Xmx1536M', '-Xss1M']
 }
 
 ospackage {
