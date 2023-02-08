@@ -66,7 +66,7 @@ dependencies {
 
 application {
     mainClassName = 'tapasco.Tapasco'
-    applicationDefaultJvmArgs = ['-Xms512M', '-Xmx1536M', '-Xss1M', '-XX:+CMSClassUnloadingEnabled']
+    applicationDefaultJvmArgs = ['-Xms512M', '-Xmx1536M', '-Xss1M']
 }
 
 ospackage {
