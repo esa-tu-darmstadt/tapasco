@@ -20,7 +20,7 @@ tapasco-debug = []
 
 [dependencies]
 log = "0.4.14"
-chrono = "0.4.19"
+chrono = "0.4.23"
 nix = "0.23.1"
 memmap = "0.7.0"
 getset = "0.1.1"
