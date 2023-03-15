@@ -1,0 +1,12 @@
+{
+	"Name" : "AU50",
+	"Description" : "Alveo U50 Data Center Accelerator Card",
+	"TclLibrary" : "AU50.tcl",
+	"Part" : "xcu50-fsvh2104-2-e",
+	"BoardPart" : "xilinx.com:au50:part0:1.3",
+	"BoardPreset" : "AU50",
+	"TargetUtilization" : 90,
+	"Benchmark" : "AU50.benchmark",
+	"HostFrequency": 250.0,
+	"MemFrequency": 300.0
+}
