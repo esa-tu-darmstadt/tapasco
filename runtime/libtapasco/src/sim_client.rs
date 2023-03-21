@@ -1,3 +1,4 @@
+use std::cmp::min;
 use std::io;
 use std::sync::Mutex;
 use snafu::ResultExt;
@@ -45,6 +46,9 @@ pub enum Error {
     #[snafu(display("ResponseType is None or unsupported: {:?}", t))]
     ResponseType { t:  Option<SimResponseType>},
 
+    #[snafu(display("Error processing read/write memory request"))]
+    MemForEachError { },
+
     #[snafu(whatever, display("{}", message))]
     Whatever {
         message: String,
@@ -72,6 +76,7 @@ impl SimClient {
     }
 
     pub fn write_platform(&self, write_platform: WritePlatform) -> Result<Void> {
+        trace!("write platform: {write_platform:?}");
         let request = tonic::Request::new(write_platform);
         let mut client = self.client.lock().map_err(|_| ClientLockError {})?;
         let response = self.rt.block_on(client.write_platform(request)).context(RequestSnafu)?;
@@ -115,6 +120,28 @@ impl SimClient {
     }
 
     pub fn read_memory(&self, read_memory: ReadMemory) -> Result<Vec<u32>> {
+        let max_chunk_size = 2097152_u64;
+        let mut read_mem: Vec<u32> = Vec::with_capacity(read_memory.length as usize);
+
+        let mut bytes_left = read_memory.length;
+        let mut curr_offset = 0;
+
+        while bytes_left > 0 {
+            let bytes_to_read = min(bytes_left, max_chunk_size);
+            let _read_memory = ReadMemory {
+                addr: (curr_offset * max_chunk_size) as u64,
+                length: bytes_to_read,
+            };
+            read_mem.extend(self._read_memory(_read_memory)?);
+            bytes_left -= bytes_to_read;
+            curr_offset += 1;
+        }
+
+        Ok(read_mem)
+    }
+
+    fn _read_memory(&self, read_memory: ReadMemory) -> Result<Vec<u32>> {
+        trace!("read memory len: {}", read_memory.length);
         let request = tonic::Request::new(read_memory);
         let mut client = self.client.lock().map_err(|_| ClientLockError {})?;
         let response = self.rt.block_on(client.read_memory(request)).context(RequestSnafu)?;
@@ -136,6 +163,20 @@ impl SimClient {
     }
 
     pub fn write_memory(&self, write_memory: WriteMemory) -> Result<Void> {
+        let max_chunk_size = 2097152;
+        let chunks: Vec<&[u32]> = write_memory.data.chunks(max_chunk_size).collect();
+        chunks.iter().enumerate().try_for_each(|(idx, chunk)| -> Result<()> {
+            let _write_memory = WriteMemory {
+                addr: (idx * max_chunk_size) as u64,
+                data: chunk.to_vec(),
+            };
+            self._write_memory(_write_memory).unwrap();
+            Ok(())
+        }).map(|_| Void{})        
+    }
+
+    fn _write_memory(&self, write_memory: WriteMemory) -> Result<Void> {
+        trace!("write memory len: {}", write_memory.data.len());
         let request = tonic::Request::new(write_memory);
         let mut client = self.client.lock().map_err(|_| ClientLockError {})?;
         let response = self.rt.block_on(client.write_memory(request)).context(RequestSnafu)?;
