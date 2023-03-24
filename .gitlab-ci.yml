@@ -498,6 +498,13 @@ tapasco_compose_AU250:
     PLATFORM: "AU250"
   extends: .tapasco_compose_no_synth
 
+tapasco_compose_AU50:
+  variables:
+    PLATFORM: "AU50"
+    VIVADO_VERSION: "2021.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+  extends: .tapasco_compose_no_synth
+
 tapasco_compose_HAWK:
   variables:
     PLATFORM: "HAWK"
@@ -559,6 +566,14 @@ tapasco_compose_zedboard:
 tapasco_compose_svm_u280:
   variables:
     PLATFORM: "AU280"
+    VIVADO_VERSION: "2021.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+    FLAGS: "--skipSynthesis --features SVM {enabled: true}"
+  extends: .tapasco_compose
+
+tapasco_compose_svm_u50:
+  variables:
+    PLATFORM: "AU50"
     VIVADO_VERSION: "2021.2"
     XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
     FLAGS: "--skipSynthesis --features SVM {enabled: true}"
