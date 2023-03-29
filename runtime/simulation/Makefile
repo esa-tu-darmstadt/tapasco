@@ -15,6 +15,8 @@ exec cp $(PWD)/simulate_testbench.sim/sim_1/behav/questa/system_tapasco_status_b
 SIM_IP := composition.zip
 BOARD_PART := xczu3eg-sbva484-1-e
 IP_DEFS := esa.informatik.tu-darmstadt.de:sim:*
+SIM_PORT := 4040
+export SIM_PORT
 
 RUN_ARGS=-noautoldlibpath
 GUI:=0

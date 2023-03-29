@@ -12,6 +12,8 @@ from SimServer import SimServer
 from concurrent import futures
 from amba import AXI4Master, AXI4Slave
 
+import os
+
 CLK_PERIOD = 10
 
 sim_server = None
@@ -55,6 +57,7 @@ async def request_coroutine(coro, cb):
 
 @cocotb.test()
 async def sim_entry(dut):
+    print(os.environ)
     """
     main entry point into the simulation. It runs until the make process is ended by a user interrupt or an exception occurs
     """
@@ -81,7 +84,7 @@ async def sim_entry(dut):
     axim = AXI4Master(dut, 'S_AXI', dut.ext_ps_clk_in, dut.ext_reset_in)
 
     memory = bytearray(2**30)
-    
+
     # same reason as with the axi master
     axis = AXI4Slave(dut, 'M_AXI', dut.ext_ps_clk_in, dut.ext_reset_in, memory, big_endian=False)
 
