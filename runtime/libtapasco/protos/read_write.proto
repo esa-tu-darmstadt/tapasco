@@ -14,6 +14,7 @@ message Data_64 {
 message WriteMemory {
   uint64 addr = 1;
   repeated uint32 data = 2;
+  //todo make this into one command for memory access
 }
 
 message ReadMemory {
@@ -41,5 +42,5 @@ message ReadPlatform {
 }
 
 message ReadPlatformResponse {
-  uint64 value = 1;
+  repeated uint32 value = 1;
 }
