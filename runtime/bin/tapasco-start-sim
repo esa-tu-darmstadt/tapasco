@@ -18,4 +18,4 @@ then
 fi
 
 source ${TAPASCO_WORK_DIR}/simulation/.venv/bin/activate
-exec python ${TAPASCO_WORK_DIR}/simulation/tapasco-start-sim.py $1
+exec python ${TAPASCO_WORK_DIR}/simulation/tapasco-start-sim.py $@
