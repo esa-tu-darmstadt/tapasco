@@ -78,8 +78,14 @@ parser.add_argument(
     action='store_true')
 parser.add_argument(
     '--enable_sim',
-    help='enable simulation support in the driver and setup the tapasco simulation',
-    action='store_true')
+    help='Enable simulation support in the driver and setup the tapasco simulation. Selecting runtime will only compile the runtime with simulation support and skip setup of the simulation installation.',
+    default=None,
+    choices=[
+        '',
+        'runtime'
+    ],
+    action='store'
+)
 args = parser.parse_args()
 
 clean = args.mode == 'clean'
@@ -125,7 +131,7 @@ if not clean:
 
     if not args.skip_driver:
         ret = subprocess.call(
-            [tlkm_cmd.format(bdir, mdir, '' if driver_debug else 'release', 'EN_SVM=1' if args.enable_svm else '', 'ENABLE_SIM=1' if args.enable_sim else '')], shell=True)
+            [tlkm_cmd.format(bdir, mdir, '' if driver_debug else 'release', 'EN_SVM=1' if args.enable_svm else '', 'ENABLE_SIM=y' if args.enable_sim is not None else '')], shell=True)
         if ret:
             print('Driver build failed!')
             sys.exit(ret)
@@ -140,7 +146,7 @@ if not clean:
             print('Tapasco build failed!')
             sys.exit(ret)
 
-    if args.enable_sim and not path.exists(f"{sdir}/.setup_lock"):
+    if args.enable_sim == '' and not path.exists(f"{sdir}/.setup_lock"):
         compile_simlibs = None
 
         def interrupt_handler(sig, frame):
@@ -188,8 +194,9 @@ if not clean:
         subprocess.call([f"rm {sdir}/.setup_lock"], shell=True)
         print('Simulation setup done')
 
-    elif args.enable_sim and path.exists(f"{sdir}/.setup_lock"):
+    elif args.enable_sim == '' and path.exists(f"{sdir}/.setup_lock"):
         print('\033[93m' + f'Lock file {sdir}/.setup_lock exists. Another setup might be ongoing. If not, remove the file and try again.' + '\033[0m')
+
 
     if args.package:
         ret = subprocess.call(

@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
  *
- * This file is part of TaPaSCo 
+ * This file is part of TaPaSCo
  * (see https://github.com/esa-tu-darmstadt/tapasco).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -32,7 +32,10 @@
 #include "zynq/zynq.h"
 #include "zynq/zynqmp.h"
 #include "pcie/pcie_device.h"
+
+#ifdef ENABLE_SIM
 #include "sim/sim.h"
+#endif
 
 static DEFINE_MUTEX(_tlkm_bus_mtx);
 
@@ -48,7 +51,9 @@ static struct tlkm_class *const _tlkm_class[] = {
 	(struct tlkm_class *)&zynqmp_cls,
 	(struct tlkm_class *)&pcie_cls,
 	(struct tlkm_class *)&pcie_aws_cls,
+#ifdef ENABLE_SIM
 	(struct tlkm_class *)&sim_cls,
+#endif
 };
 
 static void tlkm_bus_add_device(struct tlkm_device *pdev)
@@ -125,7 +130,7 @@ int tlkm_bus_init(void)
 	tlkm_bus_enumerate();
 	n = tlkm_bus_num_devices();
 	if (!n) {
-		ERR("did not find any TaPaSCo devices, but thats okay for now...");
+		ERR("did not find any TaPaSCo devices...");
 		ret = -ENXIO;
 		goto err;
 	}
