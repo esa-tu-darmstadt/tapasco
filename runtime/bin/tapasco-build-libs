@@ -153,7 +153,8 @@ if not clean:
             print('')
             sys.exit(0)
 
-        subprocess.call([f"cp -r {os.environ['TAPASCO_HOME_RUNTIME']}/simulation {os.environ['TAPASCO_WORK_DIR']}"], shell=True)
+        #  subprocess.call([f"cp -r {os.environ['TAPASCO_HOME_RUNTIME']}/simulation {os.environ['TAPASCO_WORK_DIR']}"], shell=True)
+        subprocess.call([f"ln -s {os.environ['TAPASCO_HOME_RUNTIME']}/simulation {os.environ['TAPASCO_WORK_DIR']}"], shell=True)
         subprocess.call([f"touch {sdir}/.setup_lock"], shell=True)
 
         build_simlibs = not path.exists(f'{sdir}/compile_simlib') or args.rebuild_simlibs
