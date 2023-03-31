@@ -133,6 +133,11 @@ apt-get -y install build-essential linux-headers-generic python3 cmake libelf-de
 dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake python3 libatomic git rpm-build protobuf-compiler
 ```
 
+*Arch*:
+```
+pacman -S linux-headers make gcc libelf libatomic_ops cmake python3 git protobuf
+```
+
 *Rust*:
 
 The runtime uses Rust and requires a recent version of it. The versions provided by most distributions is too old. We recommend the official way of installing Rust through [rustup][4]:
