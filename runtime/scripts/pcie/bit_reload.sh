@@ -47,20 +47,19 @@ EOF
 hotplug() {
 	VENDOR=10EE
 	DEVICE=7038
-	PCIEDEVICE=`lspci -d $VENDOR:$DEVICE | sed -e "s/ .*//"`
-	echo "hotplugging device: $PCIEDEVICE"
+	PCIEDEVICES=`lspci -d $VENDOR:$DEVICE | cut -d " " -f1`
 	# remove device, if it exists
-	if [ -n "$PCIEDEVICE" ]; then
+	for PCIEDEVICE in $PCIEDEVICES; do
+		echo "hotplugging device: $PCIEDEVICE"
 		sudo sh -c "echo 1 >/sys/bus/pci/devices/0000:$PCIEDEVICE/remove"
-
-	fi
+	done
 
 	sleep 1
 
 	# Scan for new hotplugable device, like the one may deleted before
 	sudo sh -c "echo 1 > /sys/bus/pci/rescan"
 
-	PCIEDEVICE=`lspci -d $VENDOR:$DEVICE | sed -e "s/ .*//"`
+	PCIEDEVICE=`lspci -d $VENDOR:$DEVICE | cut -d " " -f1`
 
 	if [ -n "$PCIEDEVICE" ]; then
 		echo "hotplugging finished"
