@@ -61,7 +61,7 @@ hotplug() {
 
 	PCIEDEVICES_AFTER=`lspci -d $VENDOR:$DEVICE | cut -d " " -f1`
 
-	if [ -n "$PCIEDEVICES_AFTER" ] && [ $(echo -n "$PCIEDEVICES_AFTER" | wc -l) -eq $(echo -n "$PCIEDEVICES" | wc -l) ]; then
+	if [ -n "$PCIEDEVICES_AFTER" ] && [ $(echo -n "$PCIEDEVICES_AFTER" | wc -l) -ge $(echo -n "$PCIEDEVICES" | wc -l) ]; then
 		echo "hotplugging finished"
 	else
 		echo "ERROR: Could not find the device after hotplugging."
