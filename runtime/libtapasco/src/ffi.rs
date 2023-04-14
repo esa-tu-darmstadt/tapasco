@@ -70,6 +70,9 @@ pub enum Error {
 
     #[snafu(display("Failed to retrieve default memory: {}", source))]
     RetrieveDefaultMemory { source: crate::device::Error },
+
+    #[snafu(display("Local memory requested on PE without local memory"))]
+    NoLocalMemory {},
 }
 
 //////////////////////
@@ -732,6 +735,36 @@ pub unsafe extern "C" fn tapasco_get_default_memory(dev: *mut Device) -> *mut Ta
     let tl = &mut *dev;
     match tl.default_memory().context(DeviceSnafu) {
         Ok(x) => Box::into_raw(Box::new(x)),
+        Err(e) => {
+            update_last_error(e);
+            ptr::null_mut()
+        }
+    }
+}
+
+/// # Safety
+/// TODO
+#[no_mangle]
+pub unsafe extern "C" fn tapasco_device_get_pe_local_memory(dev: *mut Device, id: PEId) -> *mut TapascoOffchipMemory {
+    if dev.is_null() {
+        warn!("Null pointer passed into tapasco_device_get_pe_local_memory() as the device");
+        update_last_error(Error::NullPointerTLKM {});
+        return ptr::null_mut();
+    }
+
+    let tl = &mut *dev;
+    match tl.acquire_pe_without_job(id).context(DeviceSnafu) {
+        Ok(pe) => {
+            let m = match pe.local_memory() {
+                Some(m) => m,
+                None => {
+                    warn!("PE passed into tapasco_device_get_pe_local_memory() has no local memory");
+                    update_last_error(Error::NoLocalMemory {});
+                    return ptr::null_mut();
+                }
+            };
+            Box::into_raw(Box::new(m.clone()))
+        }
         Err(e) => {
             update_last_error(e);
             ptr::null_mut()

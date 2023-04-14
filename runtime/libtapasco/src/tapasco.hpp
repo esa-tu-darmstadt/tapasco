@@ -389,6 +389,14 @@ public:
     return j;
   }
 
+  TapascoMemory get_pe_local_memory(PEId pe_id) {
+    TapascoOffchipMemory *mem = tapasco_device_get_pe_local_memory(this->device, pe_id);
+    if (mem == 0) {
+      handle_error();
+    }
+    return TapascoMemory(mem);
+  }
+
   float design_frequency() {
     return tapasco_device_design_frequency(this->device);
   }
