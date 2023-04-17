@@ -76,22 +76,27 @@ def target_vivado_prj(filename):
 
     make_vivado_prj = subprocess.Popen([shutil.which('make'), '-C', sim_dir, f'SIM_IP={filename}', 'vivado_prj'],
                                        preexec_fn=os.setsid,
+                                       stderr=subprocess.PIPE,
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE)
     make_vivado_prj.wait()
 
 
-def target_make(port):
+def target_make(port, verbose):
     global make
 
     print('Starting simulation...')
 
     make = subprocess.Popen([shutil.which('make'), f'SIM_PORT={port}', '-C', sim_dir], preexec_fn=os.setsid,
+                            stderr=subprocess.PIPE,
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE)
-
-    while not b'[tapasco-message] simulation-started' in make.stdout.readline():
-        pass
+                            
+    for line in make.stdout:
+        if verbose:
+            print(line.decode('utf-8'), end='')
+        if b'[tapasco-message] simulation-started' in line:
+            break
 
     print(bcolors.g('Simulation started'))
 
@@ -106,6 +111,7 @@ def main():
             )
     p.add_argument('filename', nargs='?', help='Filename of the ZIP Archive containing the TaPaSCo Design. Specify to reload TaPaSCo Design.')
     p.add_argument('--port', default=4040, help='Port number the simulation should listen on for runtime commands.')
+    p.add_argument('--verbose', '-v', default=False, help='Display output from questa simulation', action='store_true')
     args = p.parse_args()
 
     # define global process handles
@@ -118,7 +124,7 @@ def main():
     if args.filename is not None:
         target_vivado_prj(path.abspath(args.filename))
 
-    target_make(args.port)
+    target_make(args.port, args.verbose)
 
 
 if __name__ == "__main__":
