@@ -379,7 +379,7 @@ namespace eval svm {
     if {[tapasco::is_feature_enabled "SVM"]} {
       set args [lappend args "M_MMU" [list 0x50000 0x10000 0 "PLATFORM_COMPONENT_MMU"]]
       if {[tapasco::get_feature_option "SVM" "pcie_e2e"] == "true"} {
-        set args [lappend args "M_RDMA" [list 0x2000000000 0 [expr "1 << 38"] ""]]
+        set args [lappend args "M_RDMA" [list 0x2000000000 0 [expr "1 << 37"] ""]]
       }
     }
     return $args
