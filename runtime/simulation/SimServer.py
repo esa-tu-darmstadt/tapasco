@@ -11,10 +11,15 @@ import cocotb
 import leb128
 from functools import reduce
 import queue
+from math import ceil
 
 def partition(l, size):
     it = iter(l)
     return iter(lambda: list(itertools.islice(it, size)), [])
+
+
+def log(message):
+    cocotb.log.info(message)
 
 #todo: implement class for cocotb related things, to decouple grpc and cocotb
 
@@ -37,9 +42,6 @@ class SimServer(sc_grpc.SimRequestServicer):
 
         self.status_read_event = Event()
         self.request_queue.put((cocotb.create_task(self._get_status_init()), lambda: self.status_read_event.set()))
-        print("==========================")
-        print("=== SIMULATION STARTED ===")
-        print("==========================")
 
     def _request_coroutine(self, func) -> Event:
         event = Event()
@@ -47,7 +49,6 @@ class SimServer(sc_grpc.SimRequestServicer):
         return event
 
     async def _get_status_init(self):
-        print('get status core')
         datawidth = len(self.axim.bus.WDATA)
         status_size = 2**13
 
@@ -60,29 +61,20 @@ class SimServer(sc_grpc.SimRequestServicer):
             data.extend(newdata)
             bytes_left -= length
 
-        #  print(f'read status: {data=}')
-        #  byte_str = reduce(lambda acc, next_val: acc + next_val.to_bytes(int(datawidth/8), byteorder='little'), ret, bytes(0))
         byte_str = reduce(lambda acc, next_val: acc + next_val.to_bytes(4, byteorder="little"), data, bytes(0))
-        #  print(f'{byte_str=}')
         (size, read) = leb128.u.decode_reader(BytesIO(byte_str))
-        #  print(f'{size=}, {read=}')
         self.status = status_core.Status()
         self.status.ParseFromString(byte_str[read:read + size])
-        #  print(f'{self.status=}')
 
     async def _start_pe_coro(self, pe_id):
-        #  print('start pe coro')
         if self.status is not None:
             pe = self.status.pe[pe_id]
-            #  print(f"start time of pe {pe_id}: {cocotb.utils.get_sim_time(units='ps')}")
             await self.axim.write(self.status.arch_base.base + pe.offset, [0x1])
-            #  print("started pe")
 
     async def _set_arg(self, pe_id, arg_n, arg, is_single32):
         if self.status is not None:
             pe = self.status.pe[pe_id]
             await self.axim.write(self.status.arch_base.base + pe.offset + 0x20 + arg_n * 0x10, [arg])
-            #  print(f"wrote argument {arg_n=}, {arg=} of pe {pe_id}")
 
     async def _get_return(self, pe_id, get_return_response):
         if self.status is not None:
@@ -108,22 +100,84 @@ class SimServer(sc_grpc.SimRequestServicer):
             #  word = struct.unpack("B" * word_length, value.to_bytes(word_length, byteorder="little"))
             #  self.memory[addr:addr+word_length] = word
 
-    # thougts: this method should only retrieve an array of 32bit vectors
-    # and return it. if an access is supposed to be 64 or 32 bit wide doesnt
-    # concern it. 
-    async def _read_platform(self, addr, read_platform_response, is_single32):
-        if is_single32:
-            _, read, _ = await self.axim.read(addr, 1)
-            data = read[0].to_bytes(4, byteorder="little")
-        else:
-            _, read, _ = await self.axim.read(addr, 1)
-            data = read[0].to_bytes(4, byteorder="little")
-            _, read, _ = await self.axim.read(addr+0x4, 1)
-            data += read[0].to_bytes(4, byteorder="little")
+    async def _read_platform(self, addr, read_platform_response, num_bytes):
+        _bytes_left = num_bytes
+        # contains 32bit wide values returned by axi read
+        _data = []
+        _addr = addr
+        # bytes per burst
+        _n_bytes = len(self.axim.bus.RDATA) // 8 # should be 4
+        # log(f'{_n_bytes=}')
+        while _bytes_left > 0:
+            # address offset calculation for next transfer
+            _addr = _addr + num_bytes - _bytes_left
 
-        #  print(f'read platform data: {data}')
-        read_platform_response.value = int.from_bytes(data, byteorder="little") #int.from_bytes(data, byteorder="little") #if not is_single32 else int.from_bytes(data.to_bytes(8, byteorder="little")[:4], byteorder="little")
-        #  print(f"read platform addr: {hex(addr)}, value: {data=}")
+            # burst_length depends on num_bytes and bytes_left
+            # max burst length is 256
+            # burst length is either derived by max burst length or bytes left to read. 
+            _burst_length = ceil(min(_bytes_left, 265 * _n_bytes) / _n_bytes)
+
+            # since sometimes we need to read more bytes than there are left and narrow bursts are not (yet) supported,
+            # valid bytes corresponds to the amount of the bytes we want in this transfer
+            _valid_bytes = min(_bytes_left, _burst_length * _n_bytes)
+
+            # perform actual memory access
+            _, _newdata, _ = await self.axim.read(_addr, _burst_length, n_bytes=_n_bytes)
+            # log(f'{_newdata=}, {_valid_bytes=}, {_bytes_left=}')
+
+            # test with length one. Needs to be adjusted to support variable length bursts for last burst in request
+            # _data.extend(_newdata[0].to_bytes(4, byteorder="little")[:_valid_bytes])
+            _data.extend(reduce(lambda acc, word: acc + word.to_bytes(4, byteorder="little"), _newdata, bytes(0))[:_valid_bytes])
+
+            # bytes_left is decreased by _burst_length * bus_width / 8 i.e. _burst_length * 4
+            _bytes_left -= _valid_bytes
+
+        read_platform_response.value.extend(_data)
+
+    async def _read_platform2(self, addr, read_platform_response, num_bytes):
+        bytes_left = num_bytes
+        data = []
+        while bytes_left > 0:
+            #  length = min(bytes_left, 256*4)
+            length = 4
+            bytes_to_read = min(length, bytes_left)
+            _, newdata, _ = await self.axim.read(addr+(num_bytes-bytes_left), 1, n_bytes=4)
+            data.extend(newdata)
+            #  reduce(lambda acc, next_val: acc.extend(next_val.to_bytes(4, byteorder="little")), newdata[:length], read_platform_response.value)
+            #  read_platform_response.value.extend(newdata[:length])
+            bytes_left -= length
+
+        read_platform_response.value.extend(data[:num_bytes])
+
+        #  byte_str = reduce(lambda acc, next_val: acc + next_val.to_bytes(4, byteorder="little"), data, bytes(0))
+        cocotb.log.info(f'[tapasco-message] read platform command: {num_bytes=}')
+        cocotb.log.info(f'[tapasco-message] response value: {read_platform_response.value}, len: {len(read_platform_response.value)}')
+        #  beats_to_read = num_bytes / 4
+        #  beats_per_burst = 256
+        #  bursts_to_read = ceil(beats_to_read / beats_per_burst)
+        #  beats_left = beats_to_read
+        #  words_read = []
+        #  for burst_num in range(ceil(num_bytes / beats_per_burst / 4)):
+            #  _, read, _ = await self.axim.read(addr+4*beats_per_burst*burst_num, )
+            #  words_read.extend(read)
+#
+        #  cocotb.log.info(f'[tapasco-message] read_platform returned: {words_read}, len: {len(words_read)}')
+        #  for i,word in enumerate(words_read):
+            #  read_platform_response.value.extend(word.to_bytes(4, byteorder='little'))
+#
+            #  if i < 5:
+                #  cocotb.log.info(f'[tapasco-message] response value: {read_platform_response.value}')
+
+        # if is_single32:
+        #     _, read, _ = await self.axim.read(addr, 1)
+        #     data = read[0].to_bytes(4, byteorder="little")
+        # else:
+        #     _, read, _ = await self.axim.read(addr, 1)
+        #     data = read[0].to_bytes(4, byteorder="little")
+        #     _, read, _ = await self.axim.read(addr+0x4, 1)
+        #     data += read[0].to_bytes(4, byteorder="little")
+
+        # read_platform_response.value = int.from_bytes(data, byteorder="little") #int.from_bytes(data, byteorder="little") #if not is_single32 else int.from_bytes(data.to_bytes(8, byteorder="little")[:4], byteorder="little")
 
     async def _write_platform(self, addr, value, is_single32):
         transformed_value = value
@@ -131,8 +185,6 @@ class SimServer(sc_grpc.SimRequestServicer):
             transformed_value = list()
             for val in value:
                 transformed_value.extend([int.from_bytes(val.to_bytes(8, byteorder="little")[:4], byteorder="little"), int.from_bytes(val.to_bytes(8, byteorder="little")[4:8], byteorder="little")])
-            # print(f"transformed u64 values: {transformed_value}")
-            # await self.axim.write(addr, transformed_value)
 
         beats_per_burst = 256
         for burst_num, burst in enumerate(partition(transformed_value, beats_per_burst)):
@@ -171,7 +223,8 @@ class SimServer(sc_grpc.SimRequestServicer):
     def read_platform(self, request, context):
         resp = sc.SimResponse(type=sc.SimResponseType.Okay)
         event = Event()
-        self.request_queue.put((cocotb.create_task(self._read_platform(request.addr, resp.read_platform_response, request.num_bytes == 4)), lambda: event.set()))
+        cocotb.log.info(f'[tapasco-message] request bytes: {request.num_bytes}')
+        self.request_queue.put((cocotb.create_task(self._read_platform(request.addr, resp.read_platform_response, request.num_bytes)), lambda: event.set()))
         event.wait()
         return resp
 
