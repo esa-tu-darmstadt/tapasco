@@ -24,9 +24,6 @@ message InterruptStatus {
   uint64 interrupts = 1;
 }
 
-// registering interrupts should be done via a uid unique to the simulation
-// each interrupt should have a counter of how many requests for its particular interrupt id are active, decrease
-// counter each time an interrupt id is cancelled
 message RegisterInterrupt {
   int32 fd = 1;
   int32 interrupt_id = 2;
