@@ -25,6 +25,9 @@ if {[tapasco::is_feature_enabled "SVM"]} {
       set mem_index [format %02s $i]
       lappend ignored "/memory/hbm_0/SAXI_00/HBM_MEM${mem_index}"
       lappend ignored "/memory/hbm_0/SAXI_31/HBM_MEM${mem_index}"
+      if {[tapasco::get_feature_option "SVM" "pcie_e2e"] == "true"} {
+        lappend ignored "/memory/hbm_0/SAXI_30/HBM_MEM${mem_index}"
+      }
     }
     return $ignored
   }
@@ -35,6 +38,9 @@ if {[tapasco::is_feature_enabled "SVM"]} {
       set mem_index [format %02s $i]
       assign_bd_address [get_bd_addr_segs memory/hbm_0/SAXI_00/HBM_MEM${mem_index}]
       assign_bd_address [get_bd_addr_segs memory/hbm_0/SAXI_31/HBM_MEM${mem_index}]
+      if {[tapasco::get_feature_option "SVM" "pcie_e2e"] == "true"} {
+        assign_bd_address [get_bd_addr_segs memory/hbm_0/SAXI_30/HBM_MEM${mem_index}]
+      }
     }
     for {set i 1} {$i < $num_masters} {incr i} {
       set name "M_MEM_$i"
@@ -93,8 +99,6 @@ namespace eval svm {
       connect_bd_intf_net [get_bd_intf_pins $page_dma/M_AXI_MEM] [get_bd_intf_pins $mig_ic/S00_AXI]
       connect_bd_intf_net [get_bd_intf_pins $page_dma/M_AXI_PCI] [get_bd_intf_pins M_HOST]
 
-save_bd_design
-
       # create smartconnect tree in case of multiple master ports
       set num_masters [llength [::arch::get_masters]]
       for {set i 0} {$i < $num_masters} {incr i} {
@@ -142,5 +146,27 @@ save_bd_design
       current_bd_instance $old_instance
     }
     return $args
+  }
+
+  proc connect_rdma_offset_core {rdma_offset} {
+    set pcie_aclk [tapasco::subsystem::get_port "host" "clk"]
+    set hbm_clk [get_bd_pins memory_clk_wiz/hbm_clk]
+    set hbm_aresetn [get_bd_pins hbm_rst_gen/peripheral_aresetn]
+    set hbm [get_bd_cells hbm_0]
+
+    # enable additional slave port on HBM
+    set hbm_config [list CONFIG.USER_SAXI_30 {true}]
+    set_property -dict $hbm_config $hbm
+    connect_bd_net $hbm_clk [get_bd_pins $hbm/AXI_30_ACLK]
+    connect_bd_net $hbm_aresetn [get_bd_pins $hbm/AXI_30_ARESET_N]
+
+    # create smartconnect
+    set rdma_ic [tapasco::ip::create_axi_sc "rdma_ic" 1 1 2]
+    connect_bd_net $pcie_aclk [get_bd_pins $rdma_ic/aclk]
+    connect_bd_net $hbm_clk [get_bd_pins $rdma_ic/aclk1]
+
+    # AXI connections
+    connect_bd_intf_net [get_bd_intf_pins $rdma_offset/M_AXI] [get_bd_intf_pins $rdma_ic/S00_AXI]
+    connect_bd_intf_net [get_bd_intf_pins $rdma_ic/M00_AXI] [get_bd_intf_pins $hbm/SAXI_30]
   }
 }
