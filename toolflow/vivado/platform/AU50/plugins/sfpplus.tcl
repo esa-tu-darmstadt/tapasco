@@ -24,15 +24,17 @@ namespace eval sfpplus {
   }
 
   proc get_available_modes {} {
-    return {"10G"}
+    return {"10G" "100G"}
   }
 
   proc num_available_ports {mode} {
     variable available_ports
     if {$mode == "10G"} {
       return [10g::num_available_ports]
+    } elseif {$mode == "100G"} {
+      return [100g::num_available_ports]
     } else {
-      puts "Invalid SFP+ mode: mode $mode is not supported by this platform. Available modes are: 10G"
+      puts "Invalid SFP+ mode: mode $mode is not supported by this platform. Available modes are: 10G, 100G"
       exit
     }    
   }
@@ -40,8 +42,10 @@ namespace eval sfpplus {
   proc generate_cores {mode ports} {
     if {$mode == "10G"} {
       return [10g::generate_cores $ports]
+    } elseif {$mode == "100G"} {
+      return [100g::generate_cores $ports]
     } else {
-      puts "Invalid SFP+ mode: mode $mode is not supported by this platform. Available modes are: 10G"
+      puts "Invalid SFP+ mode: mode $mode is not supported by this platform. Available modes are: 10G, 100G"
       exit
     }
   }
