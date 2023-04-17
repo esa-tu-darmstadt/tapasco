@@ -4,8 +4,6 @@ from cocotb.triggers import RisingEdge
 
 import cocotb
 
-# each interrupt should have a counter of how many requests for its particular interrupt id are active, decrease
-# counter each time an interrupt id is cancelled
 class SimInterrupt:
 
     def __init__(self, dut, interrupt_handle):
@@ -19,7 +17,6 @@ class SimInterrupt:
         self._interrupt_task = None
 
     def __del__(self):
-        #  print("del called")
         self.should_exit = True
         self._interrupt_task.kill()
 
@@ -31,14 +28,9 @@ class SimInterrupt:
         self.should_exit = True
 
     async def interrupt_coroutine(self):
-        #  print("entered interrupt coroutine")
         while not self.should_exit:
-            #  print("awaiting next interrupt")
             await RisingEdge(getattr(self.dut, self._interrupt_handle))
-            #  print(
-                #  f'got interrupt for interrupt handle: {getattr(self.dut, self._interrupt_handle).value} at sim_time: {cocotb.utils.get_sim_time(units="ps")}')
             if self.enabled:
-                #  print("asserting interrupt")
                 self.assert_interrupt()
 
     def get_cocotb_task(self):

@@ -92,9 +92,6 @@ async def sim_entry(dut):
     server_thread.start()
 
     task = await cocotb.start(request_servicer())
+    # lets the parent process know, that the simulation has been successfully started
     cocotb.log.info('[tapasco-message] simulation-started')
     await task.join()
-
-    server_thread.join()
-    assert True
-

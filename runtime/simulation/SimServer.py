@@ -18,12 +18,6 @@ def partition(l, size):
     return iter(lambda: list(itertools.islice(it, size)), [])
 
 
-def log(message):
-    cocotb.log.info(message)
-
-#todo: implement class for cocotb related things, to decouple grpc and cocotb
-
-
 class SimServer(sc_grpc.SimRequestServicer):
 
     def __init__(self, dut, server, axim, axis=None, memory=None):
@@ -52,7 +46,6 @@ class SimServer(sc_grpc.SimRequestServicer):
         datawidth = len(self.axim.bus.WDATA)
         status_size = 2**13
 
-        #  ret = [int(await self.axim.read(self.status_base + int(datawidth / 8) * i)) for i in range(int(status_size / (datawidth / 8)))]
         bytes_left = status_size
         data = []
         while bytes_left > 0:
@@ -82,23 +75,14 @@ class SimServer(sc_grpc.SimRequestServicer):
             _, data, _ = await self.axim.read(self.status.arch_base.base + pe.offset + 0x10, 1)
             get_return_response.value = data
 
-    # note: NOT READY TO BE USED!!!
-    # note update: maybe now ready to be used?
     async def _read_memory(self, addr, length, values):
         await cocotb.triggers.ReadOnly()
-        # memory_slice = self.memory[addr:addr+length]
-        # for val in self.memory[addr: addr+length]:
         values.extend(self.memory[addr:addr+length])
 
     async def _write_memory(self, addr, data):
-        #  print('write range')
         await cocotb.triggers.ReadOnly()
-        #  print(f'{data=}, len(data)={len(data)}')
         for i, value in enumerate(data):
             self.memory[addr+i] = value.to_bytes(4, byteorder="little")[0]
-            #  word_length = 4 if data.WhichOneOf("value") == "u_32" else 8
-            #  word = struct.unpack("B" * word_length, value.to_bytes(word_length, byteorder="little"))
-            #  self.memory[addr:addr+word_length] = word
 
     async def _read_platform(self, addr, read_platform_response, num_bytes):
         _bytes_left = num_bytes
@@ -107,7 +91,6 @@ class SimServer(sc_grpc.SimRequestServicer):
         _addr = addr
         # bytes per burst
         _n_bytes = len(self.axim.bus.RDATA) // 8 # should be 4
-        # log(f'{_n_bytes=}')
         while _bytes_left > 0:
             # address offset calculation for next transfer
             _addr = _addr + num_bytes - _bytes_left
@@ -115,7 +98,7 @@ class SimServer(sc_grpc.SimRequestServicer):
             # burst_length depends on num_bytes and bytes_left
             # max burst length is 256
             # burst length is either derived by max burst length or bytes left to read. 
-            _burst_length = ceil(min(_bytes_left, 265 * _n_bytes) / _n_bytes)
+            _burst_length = ceil(min(_bytes_left, 256 * _n_bytes) / _n_bytes)
 
             # since sometimes we need to read more bytes than there are left and narrow bursts are not (yet) supported,
             # valid bytes corresponds to the amount of the bytes we want in this transfer
@@ -123,7 +106,6 @@ class SimServer(sc_grpc.SimRequestServicer):
 
             # perform actual memory access
             _, _newdata, _ = await self.axim.read(_addr, _burst_length, n_bytes=_n_bytes)
-            # log(f'{_newdata=}, {_valid_bytes=}, {_bytes_left=}')
 
             # test with length one. Needs to be adjusted to support variable length bursts for last burst in request
             # _data.extend(_newdata[0].to_bytes(4, byteorder="little")[:_valid_bytes])
@@ -134,51 +116,6 @@ class SimServer(sc_grpc.SimRequestServicer):
 
         read_platform_response.value.extend(_data)
 
-    async def _read_platform2(self, addr, read_platform_response, num_bytes):
-        bytes_left = num_bytes
-        data = []
-        while bytes_left > 0:
-            #  length = min(bytes_left, 256*4)
-            length = 4
-            bytes_to_read = min(length, bytes_left)
-            _, newdata, _ = await self.axim.read(addr+(num_bytes-bytes_left), 1, n_bytes=4)
-            data.extend(newdata)
-            #  reduce(lambda acc, next_val: acc.extend(next_val.to_bytes(4, byteorder="little")), newdata[:length], read_platform_response.value)
-            #  read_platform_response.value.extend(newdata[:length])
-            bytes_left -= length
-
-        read_platform_response.value.extend(data[:num_bytes])
-
-        #  byte_str = reduce(lambda acc, next_val: acc + next_val.to_bytes(4, byteorder="little"), data, bytes(0))
-        cocotb.log.info(f'[tapasco-message] read platform command: {num_bytes=}')
-        cocotb.log.info(f'[tapasco-message] response value: {read_platform_response.value}, len: {len(read_platform_response.value)}')
-        #  beats_to_read = num_bytes / 4
-        #  beats_per_burst = 256
-        #  bursts_to_read = ceil(beats_to_read / beats_per_burst)
-        #  beats_left = beats_to_read
-        #  words_read = []
-        #  for burst_num in range(ceil(num_bytes / beats_per_burst / 4)):
-            #  _, read, _ = await self.axim.read(addr+4*beats_per_burst*burst_num, )
-            #  words_read.extend(read)
-#
-        #  cocotb.log.info(f'[tapasco-message] read_platform returned: {words_read}, len: {len(words_read)}')
-        #  for i,word in enumerate(words_read):
-            #  read_platform_response.value.extend(word.to_bytes(4, byteorder='little'))
-#
-            #  if i < 5:
-                #  cocotb.log.info(f'[tapasco-message] response value: {read_platform_response.value}')
-
-        # if is_single32:
-        #     _, read, _ = await self.axim.read(addr, 1)
-        #     data = read[0].to_bytes(4, byteorder="little")
-        # else:
-        #     _, read, _ = await self.axim.read(addr, 1)
-        #     data = read[0].to_bytes(4, byteorder="little")
-        #     _, read, _ = await self.axim.read(addr+0x4, 1)
-        #     data += read[0].to_bytes(4, byteorder="little")
-
-        # read_platform_response.value = int.from_bytes(data, byteorder="little") #int.from_bytes(data, byteorder="little") #if not is_single32 else int.from_bytes(data.to_bytes(8, byteorder="little")[:4], byteorder="little")
-
     async def _write_platform(self, addr, value, is_single32):
         transformed_value = value
         if not is_single32:
@@ -188,26 +125,15 @@ class SimServer(sc_grpc.SimRequestServicer):
 
         beats_per_burst = 256
         for burst_num, burst in enumerate(partition(transformed_value, beats_per_burst)):
-            # print(f'writing platform burst of size {len(burst)}')
             await self.axim.write(addr+4*beats_per_burst*burst_num, burst)
-        # print(f'just writing one 32 bit word of platform write: {value[0]}')
-        # await self.axim.write(addr, [int.from_bytes(value[0].to_bytes(8, byteorder="little")[:4], byteorder="little")])
-
-
-        # await self.axim.write(addr, [int.from_bytes(value.to_bytes(8, byteorder="little")[:4], byteorder="little")])
-        # await self.axim.write(addr+0x4, [int.from_bytes(value.to_bytes(8, byteorder="little")[4:8], byteorder="little")])
-        #  print(f"wrote platform addr: {hex(addr)}, value: {value}, byte_enable: {'0xF' if is_single32 else '0xFF'}")
 
     def write_memory(self, request, context):
-        #  print(f'write range request: {request}')
-        #  print(f'write range request data: {request.data}')
         resp = sc.SimResponse()
         event = Event()
         resp.void.SetInParent()
         self.request_queue.put(
                 (cocotb.create_task(self._write_memory(request.addr, request.data)), lambda: event.set()))
         event.wait()
-        #  print(f'memory: {self.memory[request.addr:len(request.data)]}')
         return resp
 
     def read_memory(self, request, context):
@@ -223,13 +149,11 @@ class SimServer(sc_grpc.SimRequestServicer):
     def read_platform(self, request, context):
         resp = sc.SimResponse(type=sc.SimResponseType.Okay)
         event = Event()
-        cocotb.log.info(f'[tapasco-message] request bytes: {request.num_bytes}')
         self.request_queue.put((cocotb.create_task(self._read_platform(request.addr, resp.read_platform_response, request.num_bytes)), lambda: event.set()))
         event.wait()
         return resp
 
     def write_platform(self, request, context):
-        #  print(f'write platform addr {hex(request.addr)}: {request.data}')
         resp = sc.SimResponse(type=sc.SimResponseType.Okay)
         resp.void.SetInParent()
         whichoneof = request.WhichOneof("data")
@@ -239,9 +163,7 @@ class SimServer(sc_grpc.SimRequestServicer):
         return resp
 
     def register_interrupt(self, request, context):
-        #  print(request)
         if request.fd in self.interrupts.keys():
-            #  print("fd already exists")
             self.interrupts[request.fd].deregister_interrupt()
 
         self.interrupts[request.fd] = SimInterrupt(self.dut, f'ext_intr_PE_{request.interrupt_id}_0')
@@ -252,7 +174,6 @@ class SimServer(sc_grpc.SimRequestServicer):
 
     def deregister_interrupt(self, request, context):
         self.interrupts.pop(request.fd)
-        # print("removed interrupt")
         return sc.SimResponse(type=sc.SimResponseType.Okay, void=sc.Void())
 
     # reading and parsing can be delegated to runtime, use write platform
@@ -272,7 +193,6 @@ class SimServer(sc_grpc.SimRequestServicer):
             self.interrupts[request.fd].clear_interrupt()
             resp.type = sc.SimResponseType.Okay
             resp.interrupt_status.interrupts = ints
-            #  print(f'sending interrupt status: {ints}')
         else:
             resp.type = sc.SimResponseType.Error
             resp.error_reason = f"Interrupt id {request.fd} is not registered"
