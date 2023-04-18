@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package tapasco.simcalls;
 
-// read and write commands correspond only to offchip memory!!
 message Data_32 {
   repeated uint32 value = 1;
 }
@@ -22,8 +21,6 @@ message ReadMemory {
 }
 
 message ReadMemoryResponse {
-  // each value will contain only one byte of valid data, for the time being
-  // todo make this more elegant
   repeated uint32 value = 1;
 }
 
@@ -41,5 +38,5 @@ message ReadPlatform {
 }
 
 message ReadPlatformResponse {
-  uint64 value = 1;
+  repeated uint32 value = 1;
 }

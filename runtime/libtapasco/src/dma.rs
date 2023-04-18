@@ -20,6 +20,7 @@
 
 use crate::device::DeviceAddress;
 use crate::device::DeviceSize;
+use crate::protos::simcalls::ReadPlatform;
 use crate::tlkm::{tlkm_copy_cmd_from, tlkm_ioctl_svm_migrate_to_dev, tlkm_ioctl_svm_migrate_to_ram, tlkm_svm_migrate_cmd};
 use crate::tlkm::tlkm_copy_cmd_to;
 use crate::tlkm::tlkm_ioctl_copy_from;
@@ -393,13 +394,31 @@ impl DMAControl for SimDMA {
     }
 
     fn copy_from(&self, ptr: DeviceAddress, data: &mut [u8]) -> Result<()> {
-        trace!("SimDMA copy_from {:?}, {:?}", data, ptr);
-        let request = ReadMemory {
-            addr: ptr as u64,
-            length: data.len() as u64,
-        };
-        let read_range_response = self.client.read_memory(request).context(SimClientSnafu)?;
-        data.copy_from_slice(read_range_response.iter().map(|val| *val as u8).collect::<Vec<u8>>().as_mut_slice());
+        let end = ptr + data.len() as u64;
+        if end > self.size {
+            return Err(Error::OutOfRange {
+                ptr,
+                end,
+                size: self.size,
+            });
+        }
+
+        if self.is_platform {
+            let request = ReadPlatform {
+                addr: ptr as u64,
+                num_bytes: data.len() as u32,
+            };
+            let read_platform_response = self.client.read_platform(request).context(SimClientSnafu)?;
+            data.copy_from_slice(read_platform_response.iter().map(|val| *val as u8).collect::<Vec<u8>>().as_mut_slice());
+        } else {
+            let request = ReadMemory {
+                addr: ptr as u64,
+                length: data.len() as u64,
+            };
+            let read_memory_response = self.client.read_memory(request).context(SimClientSnafu)?;
+            data.copy_from_slice(read_memory_response.iter().map(|val| *val as u8).collect::<Vec<u8>>().as_mut_slice());
+        }
+
         Ok(())
     }
 }

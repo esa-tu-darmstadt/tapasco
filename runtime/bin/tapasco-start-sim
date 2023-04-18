@@ -1,0 +1,21 @@
+#!/bin/bash
+if [ -z "$TAPASCO_WORK_DIR" ]
+then
+    echo "ERROR: Environment variable TAPASCO_WORK_DIR not set. Please source tapasco-setup.sh first or use -E flag to preserve pervious users environment if using sudo."
+    exit -1
+fi
+
+if [ ! -d "$TAPASCO_WORK_DIR/simulation" ]
+then
+    echo "ERROR: simulation runtime not found. Please enable simulation support by running tapasco-build-libs --enable_sim."
+    exit -1
+fi
+
+if [ -f "$TAPASCO_WORK_DIR/simulation/.setup_lock" ]
+then
+    echo "ERROR: There might be a simulation setup ongoing. If not, remove the file $TAPASCO_WORK_DIR/simulation/.setup_lock and try again."
+    exit -1
+fi
+
+source ${TAPASCO_WORK_DIR}/simulation/.venv/bin/activate
+exec python ${TAPASCO_WORK_DIR}/simulation/tapasco-start-sim.py $@

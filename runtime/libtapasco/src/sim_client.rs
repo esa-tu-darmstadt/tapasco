@@ -18,6 +18,7 @@ use crate::protos::simcalls::{
 };
 use crate::protos::status;
 use crate::sim_client::Error::*;
+use std::env;
 
 
 #[derive(Debug, Snafu)]
@@ -67,7 +68,11 @@ pub struct SimClient {
 impl SimClient {
     pub fn new() -> Result<Self> {
         let rt = Builder::new_multi_thread().enable_all().build().context(TonicRuntimeBuildSnafu)?;
-        let client = rt.block_on(SimRequestClient::connect("http://[::1]:4040")).context(ConnectSnafu)?;
+        let port = match env::var("SIM_PORT") {
+            Ok(p) => whatever!(p.parse::<u32>(), "Error parsing SIM_PORT"),
+            Err(_) => 4040,
+        };
+        let client = rt.block_on(SimRequestClient::connect(format!("http://[::1]:{}", port))).context(ConnectSnafu)?;
 
         Ok(Self {
             client: Mutex::new(client),
@@ -98,13 +103,14 @@ impl SimClient {
     }
 
 
-    pub fn read_platform(&self, read_platform: ReadPlatform) -> Result<u64> {
+    pub fn read_platform(&self, read_platform: ReadPlatform) -> Result<Vec<u32>> {
+        let num_bytes = read_platform.num_bytes;
         let request = tonic::Request::new(read_platform);
         let mut client = self.client.lock().map_err(|_| ClientLockError {})?;
         let response = self.rt.block_on(client.read_platform(request)).context(RequestSnafu)?;
 
         let inner = response.into_inner();
-        match SimResponseType::from_i32(inner.r#type) {
+        let range = match SimResponseType::from_i32(inner.r#type) {
             Some(SimResponseType::Okay) => match inner.response_payload {
                 Some(ResponsePayload::ReadPlatformResponse(response)) => Ok(response.value),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "ReadPlatformResponse".to_string()}),
@@ -116,6 +122,11 @@ impl SimClient {
                 _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
             x => Err(ResponseType {t: x})
+        }?;
+        if range.len() as u32 != num_bytes {
+            whatever!("Mismatch of requested and delivered number of bytes")
+        } else {
+            Ok(range)
         }
     }
 

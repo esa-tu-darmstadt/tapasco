@@ -87,6 +87,13 @@ When using *Fedora*, ensure that the following packages are installed:
 dnf -y install which java-openjdk findutils
 ```
 
+Prerequisites for Simulation
+----------------------------
+* Vivado Design Suite 2021 or newer
+* Questa Simulator 2021 or newer
+* python3
+* pip3
+
 
 TaPaSCo-Toolflow Setup
 ----------------------
@@ -126,6 +133,11 @@ apt-get -y install build-essential linux-headers-generic python3 cmake libelf-de
 dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake python3 libatomic git rpm-build protobuf-compiler
 ```
 
+*Arch*:
+```
+pacman -S linux-headers make gcc libelf libatomic_ops cmake python3 git protobuf
+```
+
 *Rust*:
 
 The runtime uses Rust and requires a recent version of it. The versions provided by most distributions is too old. We recommend the official way of installing Rust through [rustup][4]:
@@ -147,8 +159,9 @@ If you want to use a specific (pre-release) version or branch, you can do the fo
     It will also create the file `tapasco-setup.sh` within your workdir.
 4.  Source `tapasco-setup.sh` to setup the TaPaSCo-Environment.
 5.  Build the TaPaSCo-Toolflow using `tapasco-build-libs`.
+6.  _Optionally_ If you want to use the simulation features build the Toolflow using `tapasco-build-libs --enable_sim`
 
-All of this is not necessary when using the prebuilt packages. In that case, the corresponding libraries and files are installed as usual for your OS.
+All of this is not necessary when using the prebuilt packages. In that case, the corresponding libraries and files are installed as usual for your OS. Simulation support is currently not available with prebuilt packages.
 
 Getting Started - Build a TaPaSCo design
 ----------------------------------------
@@ -171,7 +184,19 @@ Getting Started - Build a Software-Interface
 3.  Write a C/C++ executable that interfaces with your design accordingly. To get a better understanding of this, you might want to refer to the collection of examples and the corresponding README which is located in `$TAPASCO_HOME/runtime/examples`
 4.  Build and Compile your Software.
 
-
+Using the Simulation
+--------------------
+1.  Design the Accelerator using HLS/HDL for the platform `sim`.
+2.  The TaPaSCo-Toolflow will generate a ZIP-file in place of a bitstream.
+3.  Load the design and start the simulation with `tapasco-start-sim path/to/zip`
+    - After being started, the simulation can be stopped using `CTRL-C`
+    - Consequent simulations of that design can be started simply using `tapasco-start-sim`
+    - New designs need to be loaded again by following step `3`.
+4.  By default the simulation listens on port 4040 for incoming connections of the TaPaSCo-Runtime. Before starting your software-interface, make sure that it can connect to the simulation. You can specify that port in the runtime by setting the environment variable `SIM_PORT` and by using the flag `--sim-port` with the `tapasco-start-sim` command.
+    - If simulation and your software-interface are running on the same host, there shouldn't be an issue
+    - If simulation and software-interface are running on different host, port 4040 can be forwarded via ssh using `ssh -L 4040:localhost:4040 simulation-host` on the host, where the software-interface should run.
+5.  Run your Software
+    - Make sure to select the correct TaPaSCo kernel-device in your software when instantiating the `Tapasco` Class/Structure.
 
 Acknowledgements
 ----------------

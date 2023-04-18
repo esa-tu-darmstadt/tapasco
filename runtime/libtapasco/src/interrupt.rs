@@ -90,28 +90,17 @@ pub trait TapascoInterrupt: Debug {
 /// Supports blocking of the wait_for_interrupt method.
 impl SimInterrupt {
     pub fn new(interrupt_id: usize, blocking: bool) -> Result<Box<dyn TapascoInterrupt + Sync + Send>> {
-        //todo: figure out how blocking can be implemented with the simulation
-
         let fd = if blocking {
             eventfd(0, EfdFlags::empty()).context(ErrorEventFDSnafu)?
         } else {
             eventfd(0, EfdFlags::EFD_NONBLOCK).context(ErrorEventFDSnafu)?
         };
-        // let mut ioctl_fd = tlkm_register_interrupt {
-        //     fd,
-        //     pe_id: interrupt_id as i32,
-        // };
 
         let client = SimClient::new().context(SimClientSnafu)?;
         client.register_interrupt(RegisterInterrupt {
             fd,
             interrupt_id: interrupt_id as i32,
         }).context(SimClientSnafu)?;
-
-        // unsafe {
-        //     tlkm_ioctl_reg_interrupt(tlkm_file.as_raw_fd(), &mut ioctl_fd)
-        //         .context(ErrorEventFDRegisterSnafu)?;
-        // };
 
         Ok(Box::new(Self { interrupt: fd, client }))
     }
@@ -132,24 +121,6 @@ impl TapascoInterrupt for SimInterrupt {
             }
             std::thread::yield_now();
         }
-
-        // let mut buf = [0u8; 8];
-        // loop {
-        //     let r = read(self.interrupt, &mut buf);
-        //     match r {
-        //         Ok(_) => {
-        //             task.abort();
-        //             return Ok(u64::from_ne_bytes(buf));
-        //         }
-        //         Err(e) => {
-        //             if e == nix::errno::Errno::EAGAIN {
-        //                 std::thread::yield_now();
-        //             } else {
-        //                 r.context(ErrorEventFDReadSnafu)?;
-        //             }
-        //         }
-        //     }
-        // }
     }
 
     /// Check if any interrupts have occured
@@ -161,22 +132,6 @@ impl TapascoInterrupt for SimInterrupt {
     fn check_for_interrupt(&self) -> Result<u64> {
         let interrupts = self.client.get_interrupt_status(InterruptStatusRequest { fd: self.interrupt }).context(SimClientSnafu)?;
         Ok(interrupts)
-        // let mut buf = [0u8; 8];
-        // loop {
-        //     let r = read(self.interrupt, &mut buf);
-        //     match r {
-        //         Ok(_) => {
-        //             return Ok(u64::from_ne_bytes(buf));
-        //         }
-        //         Err(e) => {
-        //             if e == nix::errno::Errno::EAGAIN {
-        //                 return Ok(0);
-        //             } else {
-        //                 r.context(ErrorEventFDReadSnafu)?;
-        //             }
-        //         }
-        //     }
-        // }
     }
 }
 
@@ -186,7 +141,6 @@ impl TapascoInterrupt for SimInterrupt {
 /// Supports blocking of the wait_for_interrupt method.
 impl Interrupt {
     pub fn new(tlkm_file: &File, interrupt_id: usize, blocking: bool) -> Result<Box<dyn TapascoInterrupt + Sync + Send>> {
-        //todo: figure out how blocking can be implemented with the simulation
         let fd = if blocking {
             eventfd(0, EfdFlags::empty()).context(ErrorEventFDSnafu)?
         } else {
@@ -214,14 +168,6 @@ impl TapascoInterrupt for Interrupt {
     /// calling this function.
     /// Returns at least 1
     fn wait_for_interrupt(&self) -> Result<u64> {
-        // loop {
-        //     let interrupts = self.client.get_interrupt_status(InterruptStatusRequest { fd: self.interrupt }).context(SimClientSnafu)?;
-        //     if interrupts > 0 {
-        //         return Ok(interrupts);
-        //     }
-        //     std::thread::yield_now();
-        // }
-
         let mut buf = [0u8; 8];
         loop {
             let r = read(self.interrupt, &mut buf);
@@ -247,8 +193,6 @@ impl TapascoInterrupt for Interrupt {
     /// This function behaves like wait_for_interrupt if blocking mode has been selected
     /// as the `read` will block in this case until an interrupt occurs.
     fn check_for_interrupt(&self) -> Result<u64> {
-        // let interrupts = self.client.get_interrupt_status(InterruptStatusRequest { fd: self.interrupt }).context(SimClientSnafu)?;
-        // Ok(interrupts)
         let mut buf = [0u8; 8];
         loop {
             let r = read(self.interrupt, &mut buf);

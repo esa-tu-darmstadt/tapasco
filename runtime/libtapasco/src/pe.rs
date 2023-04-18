@@ -157,14 +157,8 @@ impl PE {
         trace!("Starting PE {}.", self.id);
         let offset = self.offset as isize;
         unsafe {
-            // let ptr = self.memory.as_ptr().offset(offset);
             tapasco_write_volatile(&self.memory, offset, ValType::U32(1_u32))
         }
-
-        // self.client.write_platform(WritePlatform {
-        //     addr: offset as u64,
-        //     data: Some(Data::U32(Data32{value: vec![1_u32]}))
-        // }).context(SimClientSnafu)?;
 
         self.active = true;
         Ok(())
@@ -201,10 +195,6 @@ impl PE {
         let r = unsafe {
             tapasco_read_volatile(&self.memory, offset, true)
         };
-        // let r = self.client.read_platform(ReadPlatform {
-        //     addr: offset as u64,
-        //     num_bytes: 4
-        // }).context(SimClientSnafu)?;
         let s = (r & 1) == 1;
         trace!("Reading interrupt status from 0x{:x} -> {}", offset, s);
         Ok(s)
@@ -214,41 +204,22 @@ impl PE {
         let offset = (self.offset as usize + 0x0c) as isize;
         trace!("Resetting interrupts: 0x{:x} -> {}", offset, v);
         unsafe {
-            // let ptr = self.memory.as_ptr().offset(offset);
             tapasco_write_volatile(&self.memory, offset, ValType::U32(if v { 1 } else { 0 }));
         }
-        // self.client.write_platform(WritePlatform {
-        //     addr: offset as u64,
-        //     data: Some(Data::U32(Data32 {value: vec![if v {1} else {0}]}))
-        // }).context(SimClientSnafu)?;
         Ok(())
     }
 
     pub fn interrupt_status(&self) -> Result<(bool, bool)> {
         let mut offset = (self.offset as usize + 0x04) as isize;
         let g = unsafe {
-            // let ptr = self.memory.as_ptr().offset(offset);
-            // ptr.read_volatile()
             tapasco_read_volatile(&self.memory, offset, true)
-        //     1
         } & 1
             == 1;
-        // let g = self.client.read_platform(ReadPlatform {
-        //     addr: offset as u64,
-        //     num_bytes: 4
-        // }).context(SimClientSnafu)? & 1 == 1;
         offset = (self.offset as usize + 0x08) as isize;
         let l = unsafe {
-        //     let ptr = self.memory.as_ptr().offset(offset);
-        //     ptr.read_volatile();
-        //     1
             tapasco_read_volatile(&self.memory, offset, true)
         } & 1
             == 1;
-        // let l = self.client.read_platform(ReadPlatform {
-        //     addr: offset as u64,
-        //     num_bytes: 4
-        // }).context(SimClientSnafu)? & 1 == 1;
         trace!("Interrupt status is {}, {}", g, l);
         Ok((g, l))
     }
@@ -262,21 +233,11 @@ impl PE {
             // write_volatile(ptr as *mut u32, 1);
             tapasco_write_volatile(&self.memory, offset, ValType::U32(1))
         }
-        // self.client.write_platform(WritePlatform {
-        //     addr: offset as u64,
-        //     data: Some(Data::U32(Data32 {value: vec![1]}))
-        // }).context(SimClientSnafu)?;
         offset = (self.offset as usize + 0x08) as isize;
         trace!("Enabling global interrupts: 0x{:x} -> 1", offset);
         unsafe {
-            // let ptr = self.memory.as_ptr().offset(offset);
-            // write_volatile(ptr as *mut u32, 1);
             tapasco_write_volatile(&self.memory, offset, ValType::U32(1))
         }
-        // self.client.write_platform(WritePlatform {
-        //     addr: offset as u64,
-        //     data: Some(Data::U32(Data32 {value: vec![1]}))
-        // }).context(SimClientSnafu)?;
         Ok(())
     }
 
@@ -284,48 +245,28 @@ impl PE {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
         trace!("Writing argument: 0x{:x} ({}) -> {:?}", offset, argn, arg);
         unsafe {
-            // let ptr = self.memory.as_ptr().offset(offset);
             match arg {
-            //     PEParameter::Single32(x) => write_volatile(ptr as *mut u32, x),
-            //     PEParameter::Single64(x) => write_volatile(ptr as *mut u64, x),
                 PEParameter::Single32(x) => tapasco_write_volatile(&self.memory, offset, ValType::U32(x)),
                 PEParameter::Single64(x) => tapasco_write_volatile(&self.memory, offset, ValType::U64(x)),
                 _ => return Err(Error::UnsupportedParameter { param: arg }),
             };
         }
-
-        // self.client.write_platform(WritePlatform {
-        //     addr: offset as u64,
-        //     data: match arg {
-        //         PEParameter::Single32(x) =>  Some(Data::U32(Data32 {value: vec![x]})),
-        //         PEParameter::Single64(x) =>  Some(Data::U64(Data64 {value: vec![x]})),
-        //         _ => return Err(Error::UnsupportedParameter { param: arg }),
-        //     }
-        // }).context(SimClientSnafu)?;
         Ok(())
     }
 
     pub fn read_arg(&self, argn: usize, bytes: usize) -> Result<PEParameter> {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
         let r = unsafe {
-            // let ptr = self.memory.as_ptr().offset(offset);
             match bytes {
                 4 => Ok(PEParameter::Single32(
-            //             ptr.cast::<u32>().read_volatile()
                     tapasco_read_volatile(&self.memory, offset, true) as u32
                 )),
                 8 => Ok(PEParameter::Single64(
-            //             ptr.cast::<u64>().read_volatile()
                     tapasco_read_volatile(&self.memory, offset, false)
                 )),
                 _ => Err(Error::UnsupportedRegisterSize { param: bytes }),
             }
-            // Ok(PEParameter::Single64(42));
         };
-        // let r = Ok(PEParameter::Single64(self.client.read_platform(ReadPlatform {
-        //     addr: offset as u64,
-        //     num_bytes: bytes as u32
-        // }).context(SimClientSnafu)?));
         trace!(
             "Reading argument: 0x{:x} ({} x {}B) -> {:?}",
             offset,
@@ -339,15 +280,8 @@ impl PE {
     pub fn return_value(&self) -> u64 {
         let offset = (self.offset as usize + 0x10) as isize;
         let r = unsafe {
-            // let ptr = self.memory.as_ptr().offset(offset);
-            // ptr.cast::<u64>().read_volatile()
-            // 42
             tapasco_read_volatile(&self.memory, offset, false)
         };
-        // let r = self.client.read_platform(ReadPlatform {
-        //     addr: offset as u64,
-        //     num_bytes: 8
-        // }).context(SimClientSnafu).unwrap();
         trace!("Reading return value: {}", r);
         r
     }

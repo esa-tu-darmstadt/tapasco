@@ -518,7 +518,7 @@ impl Allocator for VfioAllocator {
             None => 0
         };
         let offset = match va {
-            Some(a) => (a % IOMMU_PAGESIZE), // position of data within page
+            Some(a) => a % IOMMU_PAGESIZE, // position of data within page
             None => return Err(Error::VfioNoVa{})
         };
         let iova_end = to_page_boundary(iova_start + offset + size + IOMMU_PAGESIZE - 1);

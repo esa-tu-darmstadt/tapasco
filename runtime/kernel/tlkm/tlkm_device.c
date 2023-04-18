@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
  *
- * This file is part of TaPaSCo 
+ * This file is part of TaPaSCo
  * (see https://github.com/esa-tu-darmstadt/tapasco).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -24,7 +24,10 @@
 #include "tlkm_control.h"
 #include "tlkm_class.h"
 #include "tlkm_perfc_miscdev.h"
+
+#ifdef ENABLE_SIM
 #include "../sim/sim.h"
+#endif
 
 #define TLKM_STATUS_SZ 0x1000
 #define TLKM_STATUS_REG_OFFSET 0x1000
@@ -56,13 +59,15 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE,
 	       "setup status I/O remap regions ...");
+#ifdef ENABLE_SIM
 	if (strncmp(dev->cls->name, SIM_CLASS_NAME, TLKM_DEVICE_NAME_LEN) != 0) {
+#endif
 		if ((ret = tlkm_platform_status_init(dev, &dev->mmap))) {
 			DEVERR(dev->dev_id, "could not map status I/O regions: %d",
 			       ret);
 			goto err_ioremap_status;
 		}
-		
+
 
 		DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "reading status core ...");
 		if ((ret = tlkm_status_init(&dev->status, dev, dev->mmap.status,
@@ -110,7 +115,9 @@ int tlkm_device_init(struct tlkm_device *dev, void *data)
 				goto err_interrupts;
 			}
 		}
+#ifdef ENABLE_SIM
 	}
+#endif
 
 	DEVLOG(dev->dev_id, TLKM_LF_DEVICE, "device setup complete");
 	return ret;
