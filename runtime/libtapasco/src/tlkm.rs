@@ -58,6 +58,9 @@ pub enum Error {
 
     #[snafu(display("Could not parse configuration {}", source))]
     ConfigError { source: config::ConfigError },
+
+    #[snafu(display("Could not transform string for device name {}", source))]
+    StringError { source: core::array::TryFromSliceError }
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;

@@ -27,9 +27,13 @@ fn main() {
     println!("cargo:rerun-if-changed=src/ffi.rs");
     println!("cargo:rerun-if-changed=src/status_core.proto");
 
-    prost_build::compile_protos(&["src/status_core.proto"], &["src/"]).unwrap();
+    prost_build::compile_protos(&["protos/status_core.proto"], &["protos/"]).unwrap();
+    prost_build::compile_protos(&["protos/read_write.proto", "protos/sim_calls.proto"], &["protos/"]).unwrap();
+
+    tonic_build::compile_protos("protos/sim_calls.proto").unwrap();
 
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    println!("crate_dir: {}", &crate_dir);
 
     let package_name = env::var("CARGO_PKG_NAME").unwrap();
     let output_file = target_dir()

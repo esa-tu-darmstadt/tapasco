@@ -18,17 +18,19 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use std::borrow::Borrow;
 use crate::debug::DebugControl;
 use crate::device::DataTransferPrealloc;
 use crate::device::DeviceAddress;
 use crate::device::OffchipMemory;
 use crate::device::PEParameter;
-use crate::interrupt::Interrupt;
-use memmap::MmapMut;
+use crate::interrupt::{Interrupt, SimInterrupt, TapascoInterrupt};
 use snafu::ResultExt;
 use std::fs::File;
 use std::sync::Arc;
-use std::ptr::write_volatile;
+use crate::mmap_mut::{MemoryType, tapasco_read_volatile, tapasco_write_volatile, ValType};
+
+use crate::sim_client;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -70,6 +72,9 @@ pub enum Error {
         source: crate::debug::Error,
         id: usize,
     },
+
+    #[snafu(display("Error during gRPC communictaion {}", source))]
+    SimClientError { source: sim_client::Error },
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -90,6 +95,7 @@ pub type PEId = usize;
 /// Stores information of attached memory for copy back
 /// operations after PE execution.
 #[derive(Debug, Getters, Setters)]
+#[allow(unused, dead_code)]
 pub struct PE {
     #[get = "pub"]
     id: usize,
@@ -103,13 +109,13 @@ pub struct PE {
     copy_back: Option<Vec<CopyBack>>,
     // This public getter is guarded behind conditional compilation for `tapasco-debug`:
     #[cfg_attr(feature = "tapasco-debug", get = "pub")]
-    memory: Arc<MmapMut>,
+    memory: Arc<MemoryType>,
 
     #[set = "pub"]
     #[get = "pub"]
     local_memory: Option<Arc<OffchipMemory>>,
 
-    interrupt: Interrupt,
+    interrupt: Box<dyn TapascoInterrupt + Sync + Send>,
 
     debug: Box<dyn DebugControl + Sync + Send>,
 
@@ -122,12 +128,16 @@ impl PE {
         id: usize,
         type_id: PEId,
         offset: DeviceAddress,
-        memory: Arc<MmapMut>,
+        memory: Arc<MemoryType>,
         completion: &File,
         interrupt_id: usize,
         debug: Box<dyn DebugControl + Sync + Send>,
         svm_in_use: bool,
     ) -> Result<Self> {
+        let interrupt = match memory.borrow() {
+            MemoryType::Sim(_) => SimInterrupt::new(interrupt_id, false).context(ErrorInterruptSnafu)?,
+            _ => Interrupt::new(completion, interrupt_id, false).context(ErrorInterruptSnafu)?
+        };
         Ok(Self {
             id,
             type_id,
@@ -136,7 +146,7 @@ impl PE {
             copy_back: None,
             memory,
             local_memory: None,
-            interrupt: Interrupt::new(completion, interrupt_id, false).context(ErrorInterruptSnafu)?,
+            interrupt,
             debug,
             svm_in_use,
         })
@@ -147,9 +157,9 @@ impl PE {
         trace!("Starting PE {}.", self.id);
         let offset = self.offset as isize;
         unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            write_volatile(ptr as *mut u32, 1);
+            tapasco_write_volatile(&self.memory, offset, ValType::U32(1_u32))
         }
+
         self.active = true;
         Ok(())
     }
@@ -183,8 +193,7 @@ impl PE {
     pub fn interrupt_set(&self) -> Result<bool> {
         let offset = (self.offset as usize + 0x0c) as isize;
         let r = unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            ptr.read_volatile()
+            tapasco_read_volatile(&self.memory, offset, true)
         };
         let s = (r & 1) == 1;
         trace!("Reading interrupt status from 0x{:x} -> {}", offset, s);
@@ -195,12 +204,10 @@ impl PE {
         let offset = (self.offset as usize + 0x0c) as isize;
         trace!("Resetting interrupts: 0x{:x} -> {}", offset, v);
         unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-
             // mode of status register changed over time from TOW to COR
             // so we need both read and write to 0xC
-            write_volatile(ptr as *mut u32, if v { 1 } else { 0 });
-            ptr.read_volatile();
+            tapasco_write_volatile(&self.memory, offset, ValType::U32(if v { 1 } else { 0 }));
+            tapasco_read_volatile(&self.memory, offset, true);
         }
         Ok(())
     }
@@ -208,14 +215,12 @@ impl PE {
     pub fn interrupt_status(&self) -> Result<(bool, bool)> {
         let mut offset = (self.offset as usize + 0x04) as isize;
         let g = unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            ptr.read_volatile()
+            tapasco_read_volatile(&self.memory, offset, true)
         } & 1
             == 1;
         offset = (self.offset as usize + 0x08) as isize;
         let l = unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            ptr.read_volatile()
+            tapasco_read_volatile(&self.memory, offset, true)
         } & 1
             == 1;
         trace!("Interrupt status is {}, {}", g, l);
@@ -227,14 +232,14 @@ impl PE {
         let mut offset = (self.offset as usize + 0x04) as isize;
         trace!("Enabling interrupts: 0x{:x} -> 1", offset);
         unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            write_volatile(ptr as *mut u32, 1);
+            // let ptr = self.memory.as_ptr().offset(offset);
+            // write_volatile(ptr as *mut u32, 1);
+            tapasco_write_volatile(&self.memory, offset, ValType::U32(1))
         }
         offset = (self.offset as usize + 0x08) as isize;
         trace!("Enabling global interrupts: 0x{:x} -> 1", offset);
         unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            write_volatile(ptr as *mut u32, 1);
+            tapasco_write_volatile(&self.memory, offset, ValType::U32(1))
         }
         Ok(())
     }
@@ -243,10 +248,9 @@ impl PE {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
         trace!("Writing argument: 0x{:x} ({}) -> {:?}", offset, argn, arg);
         unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
             match arg {
-                PEParameter::Single32(x) => write_volatile(ptr as *mut u32, x),
-                PEParameter::Single64(x) => write_volatile(ptr as *mut u64, x),
+                PEParameter::Single32(x) => tapasco_write_volatile(&self.memory, offset, ValType::U32(x)),
+                PEParameter::Single64(x) => tapasco_write_volatile(&self.memory, offset, ValType::U64(x)),
                 _ => return Err(Error::UnsupportedParameter { param: arg }),
             };
         }
@@ -256,13 +260,12 @@ impl PE {
     pub fn read_arg(&self, argn: usize, bytes: usize) -> Result<PEParameter> {
         let offset = (self.offset as usize + 0x20 + argn * 0x10) as isize;
         let r = unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
             match bytes {
                 4 => Ok(PEParameter::Single32(
-                        ptr.cast::<u32>().read_volatile()
+                    tapasco_read_volatile(&self.memory, offset, true) as u32
                 )),
                 8 => Ok(PEParameter::Single64(
-                        ptr.cast::<u64>().read_volatile()
+                    tapasco_read_volatile(&self.memory, offset, false)
                 )),
                 _ => Err(Error::UnsupportedRegisterSize { param: bytes }),
             }
@@ -280,8 +283,7 @@ impl PE {
     pub fn return_value(&self) -> u64 {
         let offset = (self.offset as usize + 0x10) as isize;
         let r = unsafe {
-            let ptr = self.memory.as_ptr().offset(offset);
-            ptr.cast::<u64>().read_volatile()
+            tapasco_read_volatile(&self.memory, offset, false)
         };
         trace!("Reading return value: {}", r);
         r

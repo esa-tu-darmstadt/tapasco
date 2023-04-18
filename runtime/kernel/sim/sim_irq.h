@@ -17,35 +17,24 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+//! @filezynq_irq.c
+//! @briefIRQ handlers.
+//! @authorsJ. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+//!
+#ifndef SIM_IRQ_H__
+#define SIM_IRQ_H__
 
-#![recursion_limit = "1024"]
+#include <linux/interrupt.h>
+#include "tlkm_control.h"
+#include "sim_device.h"
 
-#[macro_use]
-extern crate log;
-#[macro_use]
-extern crate getset;
-#[macro_use]
-extern crate nix;
-extern crate chrono;
-#[macro_use]
-extern crate snafu;
-extern crate bytes;
-extern crate crossbeam;
-extern crate env_logger;
-extern crate lockfree;
+void sim_irq_exit(struct tlkm_device *dev);
 
-pub mod allocator;
-pub mod debug;
-pub mod device;
-pub mod dma;
-pub mod dma_user_space;
-pub mod ffi;
-pub mod interrupt;
-pub mod job;
-pub mod pe;
-pub mod scheduler;
-pub mod vfio;
-pub mod tlkm;
-pub mod sim_client;
-pub mod protos;
-pub mod mmap_mut;
+int sim_irq_init(struct tlkm_device *dev, struct list_head *interrupts);
+
+int sim_irq_request_platform_irq(struct tlkm_device *dev,
+  struct tlkm_irq_mapping *mapping);
+void sim_irq_release_platform_irq(struct tlkm_device *dev,
+   struct tlkm_irq_mapping *mapping);
+
+#endif /* SIM_IRQ_H__ */

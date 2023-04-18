@@ -16,6 +16,10 @@ ifeq ($(EN_SVM), 1)
 CPPFLAGS+=-DEN_SVM
 endif
 
+ifeq ($(ENABLE_SIM),y)
+CPPFLAGS+=-DENABLE_SIM
+endif
+
 MODULE_DIR := $(PWD)
 
 CPPFLAGS+=-Werror -Wno-missing-attributes -I$(MODULE_DIR) \
@@ -37,7 +41,7 @@ endif
 .PHONY:	all clean
 
 all:
-	$(MAKE) KCPPFLAGS="$(CPPFLAGS)" -C $(LINUX_HOME) M=$(MODULE_DIR) modules
+	$(MAKE) KCPPFLAGS="$(CPPFLAGS)" ENABLE_SIM="$(ENABLE_SIM)" -C $(LINUX_HOME) M=$(MODULE_DIR) modules
 
 release:
 	$(MAKE) KCPPFLAGS+="$(CPPFLAGS) -DNDEBUG -O3" -C $(LINUX_HOME) M=$(MODULE_DIR) modules

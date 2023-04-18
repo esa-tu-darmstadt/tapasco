@@ -71,6 +71,7 @@ class ImportTask(val zip: Path,
     logger.trace("current thread name: {}", Thread.currentThread.getName())
     logger.info(description)
     val result = activity.Import(zip, id, t, averageClockCycles, runEvaluation, optimization, synthOptions)
+    val result = activity.Import(zip, id, t, averageClockCycles, if (t.pd.name.equals("sim")) Some(false) else runEvaluation, optimization, synthOptions)
     LogFileTracker.stopLogFileAppender(appender)
     result
   }

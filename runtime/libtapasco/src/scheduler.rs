@@ -18,20 +18,22 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::debug::UnsupportedDebugGenerator;
-use crate::debug::{DebugGenerator, NonDebugGenerator};
+// use crate::debug::UnsupportedDebugGenerator;
+// use crate::debug::{DebugGenerator, NonDebugGenerator};
 use crate::device::OffchipMemory;
 use crate::pe::PEId;
 use crate::pe::PE;
 use crossbeam::deque::{Injector, Steal};
 use lockfree::map::Map;
-use memmap::MmapMut;
 use snafu::ResultExt;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::fs::File;
 use std::sync::Arc;
 use std::thread;
+use crate::debug::{DebugGenerator, NonDebugGenerator, UnsupportedDebugGenerator};
+use crate::mmap_mut::MemoryType;
+use crate::protos::status;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -73,8 +75,8 @@ pub struct Scheduler {
 
 impl Scheduler {
     pub fn new(
-        pes: &[crate::device::status::Pe],
-        mmap: &Arc<MmapMut>,
+        pes: &[status::Pe],
+        arch: &Arc<MemoryType>,
         mut local_memories: VecDeque<Arc<OffchipMemory>>,
         completion: &File,
         debug_impls: &HashMap<String, Box<dyn DebugGenerator + Sync + Send>>,
@@ -91,16 +93,16 @@ impl Scheduler {
             let debug = match &pe.debug {
                 Some(x) => match debug_impls.get(&x.name) {
                     Some(y) => y
-                        .new(mmap, x.name.clone(), x.offset, x.size)
+                        .new(&arch, x.name.clone(), x.offset, x.size)
                         .context(DebugSnafu)?,
                     None => {
                         let d = UnsupportedDebugGenerator {};
-                        d.new(mmap, x.name.clone(), 0, 0).context(DebugSnafu)?
+                        d.new(&arch, x.name.clone(), 0, 0).context(DebugSnafu)?
                     }
                 },
                 None => {
                     let d = NonDebugGenerator {};
-                    d.new(mmap, "Unused".to_string(), 0, 0)
+                    d.new(&arch, "Unused".to_string(), 0, 0)
                         .context(DebugSnafu)?
                 }
             };
@@ -124,7 +126,7 @@ impl Scheduler {
                 i,
                 pe.id as PEId,
                 pe.offset,
-                mmap.clone(),
+                arch.clone(),
                 completion,
                 interrupt_id,
                 debug,

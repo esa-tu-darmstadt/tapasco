@@ -20,6 +20,7 @@
 
 use crate::device::DeviceAddress;
 use crate::device::DeviceSize;
+use crate::protos::simcalls::ReadPlatform;
 use crate::tlkm::{tlkm_copy_cmd_from, tlkm_ioctl_svm_migrate_to_dev, tlkm_ioctl_svm_migrate_to_ram, tlkm_svm_migrate_cmd};
 use crate::tlkm::tlkm_copy_cmd_to;
 use crate::tlkm::tlkm_ioctl_copy_from;
@@ -31,6 +32,15 @@ use snafu::ResultExt;
 use std::fs::File;
 use std::os::unix::prelude::*;
 use std::sync::Arc;
+use crate::sim_client::SimClient;
+use crate::protos::simcalls::{
+    write_platform::Data,
+    Data32,
+    WritePlatform,
+    WriteMemory,
+    ReadMemory,
+};
+use crate::sim_client;
 
 #[derive(Debug, Snafu)]
 #[snafu(visibility(pub))]
@@ -74,8 +84,12 @@ pub enum Error {
     TooManyInterrupts {},
 
     #[snafu(display("VFIO failed: {}", source))]
-    VfioError {source: crate::vfio::Error},
+    VfioError { source: crate::vfio::Error },
+
+    #[snafu(display("Error during gRPC communictaion {}", source))]
+    SimClientError { source: sim_client::Error },
 }
+
 type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Specifies a method to interact with DMA methods
@@ -140,7 +154,7 @@ impl DMAControl for DriverDMA {
                     user_addr: data.as_mut_ptr(),
                 },
             )
-            .context(DMAFromDeviceSnafu)?;
+                .context(DMAFromDeviceSnafu)?;
         };
         Ok(())
     }
@@ -314,6 +328,85 @@ impl DMAControl for SVMDMA {
             ).context(DMAFromDeviceSnafu)?;
         }
         trace!("Migration to host memory complete.");
+        Ok(())
+    }
+}
+
+#[derive(Debug, Getters)]
+pub struct SimDMA {
+    client: SimClient,
+    offset: DeviceAddress,
+    size: DeviceSize,
+    is_platform: bool,
+}
+
+impl SimDMA {
+    pub fn new(
+        offset: DeviceAddress,
+        size: DeviceSize,
+        is_platform: bool
+    ) -> Result<Self> {
+        Ok(Self {
+            client: SimClient::new().context(SimClientSnafu)?,
+            offset,
+            size,
+            is_platform,
+        })
+    }
+}
+
+
+impl DMAControl for SimDMA {
+    fn copy_to(&self, data: &[u8], ptr: DeviceAddress) -> Result<()> {
+        let end = ptr + data.len() as u64;
+        if end > self.size {
+            return Err(Error::OutOfRange {
+                ptr,
+                end,
+                size: self.size,
+            });
+        }
+        if self.is_platform {
+            let (_, ints, _) = unsafe {data.align_to::<u32>()};
+            self.client.write_platform(WritePlatform {
+                addr: self.offset + ptr as u64,
+                data: Some(Data::U32(Data32 {value: ints.to_vec()})),
+            }).context(SimClientSnafu)?;
+        } else {
+            self.client.write_memory(WriteMemory {
+                addr: self.offset + ptr as u64,
+                data: data.iter().map(|b| *b as u32).collect(),
+            }).context(SimClientSnafu)?;
+        }
+        Ok(())
+    }
+
+    fn copy_from(&self, ptr: DeviceAddress, data: &mut [u8]) -> Result<()> {
+        let end = ptr + data.len() as u64;
+        if end > self.size {
+            return Err(Error::OutOfRange {
+                ptr,
+                end,
+                size: self.size,
+            });
+        }
+
+        if self.is_platform {
+            let request = ReadPlatform {
+                addr: ptr as u64,
+                num_bytes: data.len() as u32,
+            };
+            let read_platform_response = self.client.read_platform(request).context(SimClientSnafu)?;
+            data.copy_from_slice(read_platform_response.iter().map(|val| *val as u8).collect::<Vec<u8>>().as_mut_slice());
+        } else {
+            let request = ReadMemory {
+                addr: ptr as u64,
+                length: data.len() as u64,
+            };
+            let read_memory_response = self.client.read_memory(request).context(SimClientSnafu)?;
+            data.copy_from_slice(read_memory_response.iter().map(|val| *val as u8).collect::<Vec<u8>>().as_mut_slice());
+        }
+
         Ok(())
     }
 }

@@ -1,0 +1,7 @@
+leb128
+cocotb
+cocotb-bus
+ipython
+grpcio
+grpcio-tools
+
