@@ -192,7 +192,7 @@ Using the Simulation
     - After being started, the simulation can be stopped using `CTRL-C`
     - Consequent simulations of that design can be started simply using `tapasco-start-sim`
     - New designs need to be loaded again by following step `3`.
-4.  The simulation listens on port 4040 for incoming connections of the TaPaSCo-Runtime. Before starting your software-interface, make sure that it can connect to the simulation.
+4.  By default the simulation listens on port 4040 for incoming connections of the TaPaSCo-Runtime. Before starting your software-interface, make sure that it can connect to the simulation. You can specify that port in the runtime by setting the environment variable `SIM_PORT` and by using the flag `--sim-port` with the `tapasco-start-sim` command.
     - If simulation and your software-interface are running on the same host, there shouldn't be an issue
     - If simulation and software-interface are running on different host, port 4040 can be forwarded via ssh using `ssh -L 4040:localhost:4040 simulation-host` on the host, where the software-interface should run.
 5.  Run your Software
