@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ * Copyright (c) 2014-2023 Embedded Systems and Applications, TU Darmstadt.
  *
- * This file is part of TaPaSCo
+ * This file is part of TaPaSCo 
  * (see https://github.com/esa-tu-darmstadt/tapasco).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-//! @filezynq_irq.c
-//! @briefIRQ handlers.
-//! @authorsJ. Korinth, TU Darmstadt (jk@esa.cs.tu-darmstadt.de)
+//! @file	sim_device.c
+//! @brief	Unified driver as a loadable kernel module (LKM) for Linux.
 //!
 #ifndef SIM_IRQ_H__
 #define SIM_IRQ_H__
