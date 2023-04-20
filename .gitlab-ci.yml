@@ -547,3 +547,8 @@ tapasco_compose_zedboard:
   variables:
     PLATFORM: "zedboard"
   extends: .tapasco_compose_no_synth
+
+tapasco_compose_zedboard:
+  variables:
+    PLATFORM: "sim"
+  extends: .tapasco_compose_no_synth
