@@ -44,8 +44,7 @@ endif
 configure:
 	python -m venv .venv
 	source .venv/bin/activate; \
-	pip install -r requirements.txt; \
-	$(SHELL) -c 'sed "s/cocotb_bus.bus import Bus/bus import Bus/" -i $$(cocotb-config --prefix)/cocotb_bus/drivers/__init__.py'
+	pip install -r requirements.txt
 
 test: sim
 	python3 combine_results.py

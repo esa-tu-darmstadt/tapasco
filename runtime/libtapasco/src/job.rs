@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+ * Copyright (c) 2014-2023 Embedded Systems and Applications, TU Darmstadt.
  *
  * This file is part of TaPaSCo
  * (see https://github.com/esa-tu-darmstadt/tapasco).
