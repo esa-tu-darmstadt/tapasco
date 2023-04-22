@@ -165,7 +165,9 @@ namespace eval platform {
       CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {450.000} \
       CONFIG.USE_SAFE_CLOCK_STARTUP {false} \
       CONFIG.USE_LOCKED {true} \
-      CONFIG.USE_RESET {false}] $memory_clk_wiz
+      CONFIG.USE_RESET {false} \
+      CONFIG.OPTIMIZE_CLOCKING_STRUCTURE_EN {true} \
+    ] $memory_clk_wiz
     connect_bd_net [get_bd_pins $memory_clk_wiz/clk_in1] [get_bd_pins $hbm_clk_buf/IBUF_OUT]
 
     set apb_rst_gen [tapasco::ip::create_rst_gen "apb_rst_gen"]
