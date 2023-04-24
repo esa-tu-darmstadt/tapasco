@@ -154,21 +154,26 @@ namespace eval platform {
     # 2. Design clock (design frequency)
     # 3. HBM clock (450 MHz)
     set memory_clk_wiz [tapasco::ip::create_clk_wiz memory_clk_wiz]
-    set_property -dict [list CONFIG.NUM_OUT_CLKS {3} \
-      CONFIG.CLK_OUT1_PORT {memory_clk} \
-      CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_mem_frequency] \
-      CONFIG.CLKOUT2_USED {true} \
-      CONFIG.CLK_OUT2_PORT {design_clk} \
-      CONFIG.CLKOUT2_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
-      CONFIG.CLKOUT3_USED {true} \
-      CONFIG.CLK_OUT3_PORT {hbm_clk} \
-      CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {450.000} \
+    set_property -dict [list CONFIG.NUM_OUT_CLKS {1} \
+      CONFIG.CLK_OUT1_PORT {hbm_clk} \
+      CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {450.000} \
       CONFIG.USE_SAFE_CLOCK_STARTUP {false} \
       CONFIG.USE_LOCKED {true} \
       CONFIG.USE_RESET {false} \
       CONFIG.OPTIMIZE_CLOCKING_STRUCTURE_EN {true} \
     ] $memory_clk_wiz
     connect_bd_net [get_bd_pins $memory_clk_wiz/clk_in1] [get_bd_pins $hbm_clk_buf/IBUF_OUT]
+
+    set design_clk_wiz [tapasco::ip::create_clk_wiz design_clk_wiz]
+    set_property -dict [list CONFIG.NUM_OUT_CLKS {1} \
+      CONFIG.CLK_OUT1_PORT {design_clk} \
+      CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [tapasco::get_design_frequency] \
+      CONFIG.USE_SAFE_CLOCK_STARTUP {false} \
+      CONFIG.USE_LOCKED {true} \
+      CONFIG.USE_RESET {false} \
+      CONFIG.OPTIMIZE_CLOCKING_STRUCTURE_EN {true} \
+    ] $design_clk_wiz
+    connect_bd_net [get_bd_pins $design_clk_wiz/clk_in1] [get_bd_pins $hbm_clk_buf/IBUF_OUT]
 
     set apb_rst_gen [tapasco::ip::create_rst_gen "apb_rst_gen"]
     connect_bd_net [get_bd_pins ${hbm_clk_buf}/IBUF_OUT] [get_bd_pins $hbm/APB_0_PCLK]
@@ -178,24 +183,19 @@ namespace eval platform {
     connect_bd_net [get_bd_pins ${hbm_clk_buf}/IBUF_OUT] [get_bd_pins $apb_rst_gen/slowest_sync_clk]
     connect_bd_net $pcie_p_aresetn [get_bd_pins $apb_rst_gen/ext_reset_in]
 
-    set mem_rst_gen [tapasco::ip::create_rst_gen "mem_rst_gen"]
-    connect_bd_net [get_bd_pins $memory_clk_wiz/memory_clk] [get_bd_pins $mem_rst_gen/slowest_sync_clk]
-    connect_bd_net [get_bd_pins $memory_clk_wiz/locked] [get_bd_pins $mem_rst_gen/dcm_locked]
-    connect_bd_net $pcie_p_aresetn [get_bd_pins $mem_rst_gen/ext_reset_in]
-
     set hbm_rst_gen [tapasco::ip::create_rst_gen "hbm_rst_gen"]
     connect_bd_net [get_bd_pins $memory_clk_wiz/hbm_clk] [get_bd_pins $hbm_rst_gen/slowest_sync_clk]
     connect_bd_net [get_bd_pins $memory_clk_wiz/locked] [get_bd_pins $hbm_rst_gen/dcm_locked]
     connect_bd_net $pcie_p_aresetn [get_bd_pins $hbm_rst_gen/ext_reset_in]
 
     set des_rst_gen [tapasco::ip::create_rst_gen "design_rst_gen"]
-    connect_bd_net [get_bd_pins $memory_clk_wiz/design_clk] [get_bd_pins $des_rst_gen/slowest_sync_clk]
-    connect_bd_net [get_bd_pins $memory_clk_wiz/locked] [get_bd_pins $des_rst_gen/dcm_locked]
+    connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] [get_bd_pins $des_rst_gen/slowest_sync_clk]
+    connect_bd_net [get_bd_pins $design_clk_wiz/locked] [get_bd_pins $des_rst_gen/dcm_locked]
     connect_bd_net $pcie_p_aresetn [get_bd_pins $des_rst_gen/ext_reset_in]
 
     # create Smartconnect between BlueDMA and HBM
     set mig_ic [tapasco::ip::create_axi_sc "mig_ic" 1 1 2]
-    connect_bd_net [get_bd_pins $memory_clk_wiz/memory_clk] [get_bd_pins $mig_ic/aclk]
+    connect_bd_net $pcie_aclk [get_bd_pins $mig_ic/aclk]
     connect_bd_net [get_bd_pins $memory_clk_wiz/hbm_clk] [get_bd_pins $mig_ic/aclk1]
 
     # connect HBM AXI clocks and resets
@@ -225,18 +225,16 @@ namespace eval platform {
     connect_bd_net $pcie_p_aresetn [get_bd_pins $dma/m64_axi_aresetn] [get_bd_pins $dma/s_axi_aresetn]
 
     # connect DDR clock and reset
-    set ddr_clk [get_bd_pins $memory_clk_wiz/memory_clk]
-    connect_bd_net [tapasco::subsystem::get_port "mem" "clk"] \
-      [get_bd_pins $dma/m32_axi_aclk]
-    connect_bd_net $ddr_p_aresetn \
-      [get_bd_pins $dma/m32_axi_aresetn]
+    set ddr_clk [get_bd_pins $memory_clk_wiz/hbm_clk]
+    connect_bd_net $pcie_aclk [get_bd_pins $dma/m32_axi_aclk]
+    connect_bd_net $pcie_p_aresetn [get_bd_pins $dma/m32_axi_aresetn]
 
     # connect external DDR clk/rst output ports
     connect_bd_net $ddr_clk $ddr_aclk
-    connect_bd_net $ddr_aresetn [get_bd_pins $mem_rst_gen/peripheral_aresetn]
+    connect_bd_net $ddr_aresetn [get_bd_pins $hbm_rst_gen/peripheral_aresetn]
 
     # connect external design clk
-    connect_bd_net [get_bd_pins $memory_clk_wiz/design_clk] $design_clk
+    connect_bd_net [get_bd_pins $design_clk_wiz/design_clk] $design_clk
     connect_bd_net [get_bd_pins $des_rst_gen/peripheral_aresetn] $design_aresetn
 
     # set CATTRIP pin to zero
