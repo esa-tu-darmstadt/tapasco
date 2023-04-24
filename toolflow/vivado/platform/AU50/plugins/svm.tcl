@@ -135,7 +135,6 @@ namespace eval svm {
       set hbm [get_bd_cells hbm_0]
 
       delete_bd_objs [get_bd_nets dma_IRQ_write] [get_bd_nets dma_IRQ_read] [get_bd_intf_nets S_DMA_1] [get_bd_intf_nets dma_m32_axi] [get_bd_intf_nets dma_m64_axi] [get_bd_cells dma]
-      disconnect_bd_net /memory/memory_clk_wiz_memory_clk [get_bd_pins $mig_ic/aclk]
       disconnect_bd_net /memory/design_clk_1 [get_bd_pins hbm_0/AXI_00_ACLK]
       disconnect_bd_net /memory/design_peripheral_aresetn_1 [get_bd_pins hbm_0/AXI_00_ARESET_N]
 
@@ -177,7 +176,6 @@ namespace eval svm {
       connect_bd_net $design_aclk [get_bd_pins $sc_tree/s_aclk]
       connect_bd_net $pcie_aclk [get_bd_pins $mmu_mem_sc/aclk]
       connect_bd_net $hbm_clk [get_bd_pins $mmu_mem_sc/aclk1]
-      connect_bd_net $pcie_aclk [get_bd_pins $mig_ic/aclk]
       connect_bd_net $hbm_clk [get_bd_pins $hbm/AXI_00_ACLK]
       connect_bd_net $hbm_aresetn [get_bd_pins $hbm/AXI_00_ARESET_N]
 
