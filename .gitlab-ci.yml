@@ -5,10 +5,10 @@ after_script:
   - echo "Done with the work"
 
 stages:
-  - build_runtime
   - test_scala_toolflow
   - build_scala_toolflow
   - build_kernel
+  - build_runtime
   - build_hw
 
 .test_tapasco_centos:
