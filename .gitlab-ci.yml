@@ -511,6 +511,13 @@ tapasco_compose_AU250:
     PLATFORM: "AU250"
   extends: .tapasco_compose_no_synth
 
+tapasco_compose_AU50:
+  variables:
+    PLATFORM: "AU50"
+    VIVADO_VERSION: "2021.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+  extends: .tapasco_compose_no_synth
+
 tapasco_compose_HAWK:
   variables:
     PLATFORM: "HAWK"
@@ -572,3 +579,49 @@ tapasco_compose_sim:
   variables:
     PLATFORM: "sim"
   extends: .tapasco_compose_no_synth
+
+# runs to test features
+tapasco_compose_svm_u280:
+    PLATFORM: "AU280"
+    VIVADO_VERSION: "2021.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+    FLAGS: "--skipSynthesis --features SVM {enabled: true}"
+  extends: .tapasco_compose
+
+tapasco_compose_svm_u50:
+  variables:
+    PLATFORM: "AU50"
+    VIVADO_VERSION: "2021.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+    FLAGS: "--skipSynthesis --features SVM {enabled: true}"
+  extends: .tapasco_compose
+
+tapasco_compose_svm_xupvvh:
+  variables:
+    PLATFORM: "xupvvh"
+    VIVADO_VERSION: "2021.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+    FLAGS: "--skipSynthesis --features SVM {enabled: true}"
+  extends: .tapasco_compose
+
+tapasco_compose_svm_xupvvh-es:
+  variables:
+    PLATFORM: "xupvvh-es"
+    FLAGS: "--skipSynthesis --features SVM {enabled: true}"
+  extends: .tapasco_compose
+
+tapasco_compose_svm_pcie_e2e:
+  variables:
+    PLATFORM: "AU280"
+    VIVADO_VERSION: "2021.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+    FLAGS: "--skipSynthesis --features SVM {enabled: true, pcie_e2e: true}"
+  extends: .tapasco_compose
+
+tapasco_compose_svm_network:
+  variables:
+    PLATFORM: "AU280"
+    VIVADO_VERSION: "2021.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+    FLAGS: "--skipSynthesis --features SVM {enabled: true, network_dma: true, port: 1, mac_addr: 0x005D03C10000}"
+  extends: .tapasco_compose

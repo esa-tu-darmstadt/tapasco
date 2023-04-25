@@ -309,6 +309,15 @@ namespace eval svm {
     }
   }
 
+  proc connect_rdma_offset_core {rdma_offset} {
+    # add slave port to mig_ic and connect it to axi_generic_offset
+    set mig_ic [get_bd_cells mig_ic]
+    set num_si_old [get_property CONFIG.NUM_SI $mig_ic]
+    set num_si [expr "$num_si_old + 1"]
+    set_property -dict [list CONFIG.NUM_SI $num_si] $mig_ic
+    connect_bd_intf_net [get_bd_intf_pin $rdma_offset/M_AXI] [get_bd_intf_pin $mig_ic/[format "S%02d_AXI" $num_si_old]]
+  }
+
   proc add_rdma_bar {} {
     if {[tapasco::is_feature_enabled "SVM"] && [tapasco::get_feature_option "SVM" "pcie_e2e"] == "true"} {
       ## host subsystem modifications
@@ -351,11 +360,7 @@ namespace eval svm {
       connect_bd_intf_net $s_rdma [get_bd_intf_pin $rdma_offset/S_AXI]
 
       # add slave port to mig_ic and connect it to axi_generic_offset
-      set mig_ic [get_bd_cells mig_ic]
-      set num_si_old [get_property CONFIG.NUM_SI $mig_ic]
-      set num_si [expr "$num_si_old + 1"]
-      set_property -dict [list CONFIG.NUM_SI $num_si] $mig_ic
-      connect_bd_intf_net [get_bd_intf_pin $rdma_offset/M_AXI] [get_bd_intf_pin $mig_ic/[format "S%02d_AXI" $num_si_old]]
+      connect_rdma_offset_core $rdma_offset
 
       current_bd_instance
     }
@@ -379,7 +384,7 @@ namespace eval svm {
     if {[tapasco::is_feature_enabled "SVM"]} {
       set args [lappend args "M_MMU" [list 0x50000 0x10000 0 "PLATFORM_COMPONENT_MMU"]]
       if {[tapasco::get_feature_option "SVM" "pcie_e2e"] == "true"} {
-        set args [lappend args "M_RDMA" [list 0x2000000000 0 [expr "1 << 38"] ""]]
+        set args [lappend args "M_RDMA" [list 0x2000000000 0 [expr "1 << 37"] ""]]
       }
     }
     return $args
