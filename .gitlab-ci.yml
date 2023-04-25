@@ -302,6 +302,7 @@ build_tapasco_fedora_36_debug:
     PACKAGE_TYPE: "DEB"
   before_script:
     - apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git curl protobuf-compiler
+    - which protoc
   artifacts:
     paths:
       - build/tapasco-*-Linux.deb
