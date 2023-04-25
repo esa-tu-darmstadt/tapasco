@@ -447,8 +447,8 @@ namespace eval tapasco {
   # @param name Name of the group cell
   # @param n Number of connnections (outside)
   # @param masters if true, will create n master connections, otherwise slaves
-  proc create_versal_interconnect_tree {name n {masters true}} {
-    puts "Creating AXI Smartconnect tree for versal with name $name for $n [expr $masters ? {"masters"} : {"slaves"}]"
+  proc create_smartconnect_tree {name n {masters true}} {
+    puts "Creating AXI Smartconnect tree with name $name for $n [expr $masters ? {"masters"} : {"slaves"}]"
     puts "  tree depth: [expr int(ceil(log($n) / log(16)))]"
     puts "  instance : [current_bd_instance .]"
 
