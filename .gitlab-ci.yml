@@ -325,8 +325,8 @@ build_tapasco_ubuntu_16_04_cross:
   before_script:
     - apt-get -y update && apt-get -y install wget unzip build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
     - wget https://github.com/protocolbuffers/protobuf/releases/download/v22.3/protoc-22.3-linux-x86_64.zip
-    - unzip unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local bin/protoc
-    - unzip unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local bin/protoc
+    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local bin/protoc
+    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local 'include/*'
   extends: .build_tapasco_ubuntu
 
 build_tapasco_ubuntu_16_04_clang:
@@ -336,8 +336,8 @@ build_tapasco_ubuntu_16_04_clang:
   before_script:
     - apt-get -y update && apt-get -y install wget unzip build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git clang
     - wget https://github.com/protocolbuffers/protobuf/releases/download/v22.3/protoc-22.3-linux-x86_64.zip
-    - unzip unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local bin/protoc
-    - unzip unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local bin/protoc
+    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local bin/protoc
+    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local 'include/*'
   extends: .build_tapasco_ubuntu
 
 build_tapasco_ubuntu_18_04_debug:
@@ -366,8 +366,8 @@ build_tapasco_ubuntu_16_04_cross_debug:
   before_script:
     - apt-get -y update && apt-get -y install wget unzip build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
     - wget https://github.com/protocolbuffers/protobuf/releases/download/v22.3/protoc-22.3-linux-x86_64.zip
-    - unzip unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local bin/protoc
-    - unzip unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local bin/protoc
+    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local bin/protoc
+    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local 'include/*'
   extends: .build_tapasco_ubuntu
 
 tapasco_compose_ubuntu:
