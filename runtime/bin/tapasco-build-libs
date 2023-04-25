@@ -148,12 +148,12 @@ if not clean:
             print('Tapasco build failed!')
             sys.exit(ret)
 
-    if args.enable_sim == '' and not path.exists(f"{sdir}/.setup_lock"):
+    if args.enable_sim == '' and not path.exists("%s/.setup_lock" % sdir):
         compile_simlibs = None
 
         def interrupt_handler(sig, frame):
             global compile_simlibs
-            subprocess.call([f"rm {sdir}/.setup_lock"], shell=True)
+            subprocess.call(["rm %s/.setup_lock" % sdir], shell=True)
             if compile_simlibs is not None and compile_simlibs.returncode is None:
                 grp = os.getpgid(compile_simlibs.pid)
                 os.killpg(grp, signal.SIGTERM)
@@ -161,8 +161,8 @@ if not clean:
             print('')
             sys.exit(0)
 
-        subprocess.call([f"cp -r {os.environ['TAPASCO_HOME_RUNTIME']}/simulation {os.environ['TAPASCO_WORK_DIR']}"], shell=True)
-        subprocess.call([f"touch {sdir}/.setup_lock"], shell=True)
+        subprocess.call(["cp -r {0}/simulation {1}".format(os.environ['TAPASCO_HOME_RUNTIME'], os.environ['TAPASCO_WORK_DIR'])], shell=True)
+        subprocess.call(["touch %s/.setup_lock" % sdir], shell=True)
 
         build_simlibs = not path.exists('%s/compile_simlib' % sdir) or args.rebuild_simlibs
         if build_simlibs:
@@ -192,7 +192,7 @@ if not clean:
         if ret_config or ret_protos or ret_simlibs:
             print('Simulation setup failed')
 
-        subprocess.call([f"rm {sdir}/.setup_lock"], shell=True)
+        subprocess.call(["rm %s/.setup_lock" % sdir], shell=True)
         print('Simulation setup done')
 
     elif args.enable_sim == '' and path.exists("%s/.setup_lock" % sdir):

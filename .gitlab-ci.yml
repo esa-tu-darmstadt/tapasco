@@ -5,10 +5,10 @@ after_script:
   - echo "Done with the work"
 
 stages:
+  - build_runtime
   - test_scala_toolflow
   - build_scala_toolflow
   - build_kernel
-  - build_runtime
   - build_hw
 
 .test_tapasco_centos:
@@ -270,8 +270,7 @@ build_kernel_fedora_36_debug:
     PACKAGE_TYPE: "RPM"
   before_script:
     - dnf -y update libarchive
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python3 libatomic git rpm-build curl protobuf
-    - which protoc
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python3 libatomic git rpm-build curl protobuf-compiler
   artifacts:
     paths:
       - build/tapasco-*-Linux.rpm
@@ -302,7 +301,6 @@ build_tapasco_fedora_36_debug:
     PACKAGE_TYPE: "DEB"
   before_script:
     - apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git curl protobuf-compiler
-    - which protoc
   artifacts:
     paths:
       - build/tapasco-*-Linux.deb
@@ -325,7 +323,10 @@ build_tapasco_ubuntu_16_04_cross:
     TARGET: "zynq"
   image: ubuntu:xenial
   before_script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+    - apt-get -y update && apt-get -y install wget unzip build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+    - wget https://github.com/protocolbuffers/protobuf/releases/download/v22.3/protoc-22.3-linux-x86_64.zip
+    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local bin/protoc
+    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local 'include/*'
   extends: .build_tapasco_ubuntu
 
 build_tapasco_ubuntu_16_04_clang:
@@ -333,7 +334,10 @@ build_tapasco_ubuntu_16_04_clang:
     TARGET: "clang"
   image: ubuntu:xenial
   before_script:
-    - apt-get -y update && apt-get -y install build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git clang
+    - apt-get -y update && apt-get -y install wget unzip build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git clang protobuf-compiler
+    - wget https://github.com/protocolbuffers/protobuf/releases/download/v22.3/protoc-22.3-linux-x86_64.zip
+    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local bin/protoc
+    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local 'include/*'
   extends: .build_tapasco_ubuntu
 
 build_tapasco_ubuntu_18_04_debug:
