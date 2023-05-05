@@ -258,8 +258,11 @@
                         CONFIG.RESET_TYPE {ACTIVE_LOW} \
                         CONFIG.RESET_PORT {resetn} \
                         CONFIG.PRIM_SOURCE {No_buffer} \
-                        CONFIG.OPTIMIZE_CLOCKING_STRUCTURE_EN {true} \
                         ] $design_clk_wiz
+
+    if {[tapasco::is_virtex_usp]} {
+        set_property CONFIG.OPTIMIZE_CLOCKING_STRUCTURE_EN {true} $design_clk_wiz
+    }
 
     connect_bd_net [get_bd_pins $design_clk_wiz/resetn] [get_bd_pins -regexp $mig/((mmcm_locked)|(c0_init_calib_complete))]
     connect_bd_net [get_bd_pins $design_clk_wiz/locked] $design_aresetn

@@ -667,6 +667,10 @@ namespace eval tapasco {
     return 128
   }
 
+  proc is_virtex_usp {} {
+    return [string match "virtexuplus*" [get_property FAMILY [get_parts -of_objects [current_project]]]]
+  }
+
   proc is_versal {} {
     return [string match "versal*" [get_property FAMILY [get_parts -of_objects [current_project]]]]
   }
