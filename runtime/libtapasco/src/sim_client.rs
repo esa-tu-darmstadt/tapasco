@@ -198,7 +198,7 @@ impl SimClient {
         let chunks: Vec<&[u32]> = write_memory.data.chunks(max_chunk_size).collect();
         chunks.iter().enumerate().try_for_each(|(idx, chunk)| -> Result<()> {
             let _write_memory = WriteMemory {
-                addr: (idx * max_chunk_size) as u64,
+                addr: write_memory.addr + (idx * max_chunk_size) as u64,
                 data: chunk.to_vec(),
             };
             self._write_memory(_write_memory).unwrap();
