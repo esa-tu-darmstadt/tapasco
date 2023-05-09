@@ -1,19 +1,19 @@
 #!/bin/python
 # Copyright (c) 2014-2023 Embedded Systems and Applications, TU Darmstadt.
-# 
+#
 # This file is part of TaPaSCo
 # (see https://github.com/esa-tu-darmstadt/tapasco).
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -76,7 +76,7 @@ def handler(sig, frame):
     sys.exit(0)
 
 
-def target_vivado_prj(filename):
+def target_vivado_prj(filename, verbose):
     if not path.exists(filename):
         print(bcolors.f(f'File not found: \'{filename}\''))
         sys.exit(-1)
@@ -96,19 +96,24 @@ def target_vivado_prj(filename):
                                        stderr=subprocess.PIPE,
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE)
+
+    if verbose:
+        for line in make_vivado_prj.stdout:
+            print(line.decode('utf-8'), end='')
+
     make_vivado_prj.wait()
 
 
-def target_make(port, verbose):
+def target_make(port, verbose, gui):
     global make
 
     print('Starting simulation...')
 
-    make = subprocess.Popen([shutil.which('make'), f'SIM_PORT={port}', '-C', sim_dir], preexec_fn=os.setsid,
+    make = subprocess.Popen([shutil.which('make'), f'SIM_PORT={port}', '-C', sim_dir, 'GUI=1' if gui else 'GUI=0'], preexec_fn=os.setsid,
                             stderr=subprocess.PIPE,
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE)
-                            
+
     for line in make.stdout:
         if verbose:
             print(line.decode('utf-8'), end='')
@@ -117,6 +122,9 @@ def target_make(port, verbose):
 
     print(bcolors.g('Simulation started'))
 
+    if verbose:
+        for line in make.stdout:
+            print(line.decode('utf-8'), end='')
 
     make.wait()
 
@@ -129,6 +137,7 @@ def main():
     p.add_argument('filename', nargs='?', help='Filename of the ZIP Archive containing the TaPaSCo Design. Specify to reload TaPaSCo Design.')
     p.add_argument('--port', default=4040, help='Port number the simulation should listen on for runtime commands.')
     p.add_argument('--verbose', '-v', default=False, help='Display output from questa simulation', action='store_true')
+    p.add_argument('--gui', help='Run simulation in GUI-mode', action='store_true')
     args = p.parse_args()
 
     # define global process handles
@@ -139,9 +148,9 @@ def main():
     make = None
 
     if args.filename is not None:
-        target_vivado_prj(path.abspath(args.filename))
+        target_vivado_prj(path.abspath(args.filename), args.verbose)
 
-    target_make(args.port, args.verbose)
+    target_make(args.port, args.verbose, args.gui)
 
 
 if __name__ == "__main__":
