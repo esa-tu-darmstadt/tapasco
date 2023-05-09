@@ -26,6 +26,14 @@ microblaze {
 }
 ```
 
+#### WrapAXIFull
+This determines whether potential AXI4-Full slave ports of the PEs are wrapped (i.e. converted to AXI4-Lite) before connecting them to the interconnect tree. By default this is activated, so all AXI4-Full slave ports are wrapped. This can be deactivated using:
+
+```
+WrapAXIFull {
+  enabled: false
+}
+```
 ## Zynq based platforms
 
 ### ZC706

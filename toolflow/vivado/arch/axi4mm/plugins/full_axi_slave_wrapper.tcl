@@ -19,6 +19,11 @@
 
 namespace eval full_axi_wrapper {
   proc wrap_full_axi_interfaces {inst {args {}}} {
+    if {![tapasco::get_feature_option "WrapAXIFull" "enabled" true]} {
+      puts "  Wrapping of AXI4-Full slaves on PEs disabled, skipping..."
+      return [list $inst $args]
+    }
+
     # check interfaces: AXI3/AXI4 slaves will be wrappped
     set inst [get_bd_cells $inst]
     set full_slave_ifs [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave && (CONFIG.PROTOCOL == AXI3 || CONFIG.PROTOCOL == AXI4)}]
