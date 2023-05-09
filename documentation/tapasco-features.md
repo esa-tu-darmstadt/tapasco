@@ -34,6 +34,17 @@ WrapAXIFull {
   enabled: false
 }
 ```
+
+#### AXI4mmUseSmartconnect
+This feature is specific to the AXI4MM-architecture. It controls whether AXI interconnects or AXI smartconnects are used for control AND data aggregation in the architecture. By default AXI interconnects are used (except on VERSAL FPGAs). To use AXI smartconnects instead:
+
+```
+AXI4mmUseSmartconnect {
+  enabled: true
+}
+```
+
+
 ## Zynq based platforms
 
 ### ZC706

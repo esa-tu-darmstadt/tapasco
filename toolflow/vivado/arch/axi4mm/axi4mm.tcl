@@ -225,7 +225,7 @@ namespace eval arch {
     # generate output trees
     for {set i 0} {$i < [llength $mdist]} {incr i} {
       puts "  mdist[$i] = [lindex $mdist $i]"
-      if {[tapasco::is_versal]} {
+      if {[tapasco::is_versal] || [tapasco::get_feature_option "AXI4mmUseSmartconnect" "enabled" false]} {
         set out [tapasco::create_smartconnect_tree "out_$i" [lindex $mdist $i]]
       } else {
         set out [tapasco::create_interconnect_tree "out_$i" [lindex $mdist $i]]
@@ -254,7 +254,7 @@ namespace eval arch {
       puts "Connecting one slave to host"
       return $out_port
     } {
-      if {[tapasco::is_versal]} {
+      if {[tapasco::is_versal] || [tapasco::get_feature_option "AXI4mmUseSmartconnect" "enabled" false]} {
         set in1 [tapasco::create_smartconnect_tree "in1" $ic_s false]
       } else {
         set in1 [tapasco::create_interconnect_tree "in1" $ic_s false]
