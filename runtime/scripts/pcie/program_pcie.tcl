@@ -24,18 +24,27 @@ set wait 1000
 set dev {xc7vx690t_0|xcvu9p_0|xcvu095_0|xcu250_0|xcvu37p_0|xcu280_0|xcu280_u55c_0|xcu50_u55n_0|xcvc1902_1}
 set probes_file {}
 set program_file {}
-set devid -1
 set target {}
+set list_adapter false
 
 if { $argc > 0 } {
-  set program_file [lindex $argv 0]
-	puts "using $program_file as bitstream"
-  if { $argc > 1 } {
-    set probes_file [lindex $argv 1]
-	  puts "using $probe_file for probes"
+  for {set i 0} {$i < [llength $::argv]} {incr i} {
+    set option [string trim [lindex $::argv $i]]
+    switch -regexp -- $option {
+      "--bit"          { incr i; set program_file [lindex $::argv $i]; puts "using $program_file as bitstream" }
+      "--ltx"          { incr i; set probes_file [lindex $::argv $i]; puts "using $probe_file for probes" }
+      "--adapter"      { incr i; set target [lindex $::argv $i] }
+      "--list-adapter" { incr i; set list_adapter [expr [lindex $::argv $i] == 1] }
+      default {
+        if { [regexp {^-} $option] } {
+          puts "ERROR: Unknown option '$option' specified, please type '$script_file -tclargs --help' for usage info.\n"
+          return 1
+        }
+      }
+    }
   }
 } else {
-  puts "no bitstream file given, aborting"
+  puts "no arguments given, aborting"
   exit 1
 }
 
@@ -50,27 +59,57 @@ proc deinit {{retcode 0}} {
   exit $retcode
 }
 
+proc list_adapters {} {
+  variable dev
+  puts "Found the following programming adapters:"
+  foreach t [get_hw_targets] {
+    open_hw_target -quiet $t
+    set devs [get_hw_devices -quiet -regexp "NAME ~= \{$dev\}*"]
+    if {[llength $devs] > 0} {
+      puts "Adapter $t: $devs"
+    } {
+      puts "Adapter $t: No devices supported by TaPaSCo"
+    }
+    close_hw_target -quiet $t
+  }
+  puts "Please use --adapter <ADAPTER> to select the correct device."
+}
+
 # open server
 init
 
-foreach t [get_hw_targets] {
-  puts "opening target $t ..."
-  open_hw_target $t
-  set devid [lsearch -regexp [get_hw_devices] $dev]
-  close_hw_target $t
-  if {$devid >= 0} {
-    set target $t
-    puts "found device @ $target:$devid"
-    break;
-  }
+if {$list_adapter} {
+  list_adapters
+  # do not indicate error
+  deinit
 }
 
-# check if device was found
-if { $devid >= 0 } {
-  puts "programming $target:$devid ..."
-  current_hw_target $target
-  open_hw_target [current_hw_target]
-  current_hw_device $dev
+if {[llength [get_hw_targets -quiet]] == 0} {
+  puts "Did not find any programming adapters."
+  deinit 1
+}
+
+if {[llength [get_hw_targets -quiet *$target]] != 1 && $target != "NOADAPTER"} {
+  puts "Did not find the requested adapter $target. The following adapters are available: "
+  list_adapters
+  deinit 1
+}
+
+if {[llength [get_hw_targets]] > 0 && $target == "NOADAPTER"} {
+  puts "Found multiple programming adapters. Please specify one from the following list:"
+  list_adapters
+  deinit 1
+}
+
+if {$target == "NOADAPTER"} {
+  set target "*"
+}
+
+current_hw_target [get_hw_targets *$target]
+open_hw_target [current_hw_target]
+set founddev [current_hw_device $dev]
+if {[llength $founddev] > 0} {
+  puts "programming $target:$founddev ..."
 
   # set bitstream file
   set_property PROGRAM.FILE $program_file [current_hw_device]
