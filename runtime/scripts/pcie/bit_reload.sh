@@ -132,7 +132,7 @@ then
 	# program the device
 	if [ $LISTADAPTER -gt 0 ] || [ $PROGRAM -gt 0 ]; then
 		set +e
-		if [ $LISTADAPTER -eq 0 ] || [ $VERBOSE -gt 0 ]; then
+		if [ $LISTADAPTER -gt 0 ] || [ $VERBOSE -gt 0 ]; then
 			vivado -nolog -nojournal -notrace -mode tcl -source $BITLOAD_SCRIPT -tclargs --bit $BITSTREAM --adapter $ADAPTER --list-adapter $LISTADAPTER
 			VIVADORET=$?
 		else

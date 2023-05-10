@@ -95,7 +95,7 @@ if {[llength [get_hw_targets -quiet *$target]] != 1 && $target != "NOADAPTER"} {
   deinit 1
 }
 
-if {[llength [get_hw_targets]] > 0 && $target == "NOADAPTER"} {
+if {[llength [get_hw_targets]] > 1 && $target == "NOADAPTER"} {
   puts "Found multiple programming adapters. Please specify one from the following list:"
   list_adapters
   deinit 1
