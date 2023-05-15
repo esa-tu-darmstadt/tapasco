@@ -1,6 +1,3 @@
-ifeq ($(MAKECMDGOALS),)
-  $(shell pkill -f -u $(USER) questa)
-endif
 TOPLEVEL_LANG ?= verilog
 
 SIM = questa
@@ -69,7 +66,6 @@ ifeq ($(wildcard grpc_gen),)
 	$(shell mkdir grpc_gen)
 endif
 	source .venv/bin/activate; \
-	which python; \
 	python -m grpc_tools.protoc \
 		-I$(TAPASCO_HOME_RUNTIME)/libtapasco/protos \
 		--python_out=grpc_gen \
