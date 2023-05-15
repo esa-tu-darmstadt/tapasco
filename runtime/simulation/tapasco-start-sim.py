@@ -102,6 +102,9 @@ def target_vivado_prj(filename, verbose):
             print(line.decode('utf-8'), end='')
 
     make_vivado_prj.wait()
+    if make_vivado_prj.returncode != 0:
+        print("Error creating Vivado files for simulation")
+        sys.exit(make_vivado_prj.returncode)
 
 
 def target_make(port, verbose, gui):
@@ -132,6 +135,8 @@ def target_make(port, verbose, gui):
             print(line.decode('utf-8'), end='')
 
     make.wait()
+    if make.returncode != 0:
+        print("Failed to run simulation")
 
 
 def main():
