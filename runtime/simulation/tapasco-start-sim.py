@@ -93,11 +93,11 @@ def target_vivado_prj(filename, verbose):
 
     make_vivado_prj = subprocess.Popen([shutil.which('make'), '-C', sim_dir, f'SIM_IP={filename}', 'vivado_prj'],
                                        preexec_fn=os.setsid,
-                                       stderr=subprocess.PIPE,
+                                       stderr=subprocess.STDOUT if verbose == 2 else subprocess.PIPE,
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE)
 
-    if verbose:
+    if verbose > 0:
         for line in make_vivado_prj.stdout:
             print(line.decode('utf-8'), end='')
 
@@ -110,19 +110,24 @@ def target_make(port, verbose, gui):
     print('Starting simulation...')
 
     make = subprocess.Popen([shutil.which('make'), f'SIM_PORT={port}', '-C', sim_dir, 'GUI=1' if gui else 'GUI=0'], preexec_fn=os.setsid,
-                            stderr=subprocess.PIPE,
+                            stderr=subprocess.STDOUT if verbose == 2 else subprocess.PIPE,
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE)
 
+    simulation_started = False
     for line in make.stdout:
-        if verbose:
+        if verbose > 0:
             print(line.decode('utf-8'), end='')
         if b'[tapasco-message] simulation-started' in line:
+            simulation_started = True
             break
+    
+    if simulation_started == True:
+        print(bcolors.g('Simulation started'))
+    else:
+        print(bcolors.f('Failed to start simulation'))
 
-    print(bcolors.g('Simulation started'))
-
-    if verbose:
+    if verbose > 0:
         for line in make.stdout:
             print(line.decode('utf-8'), end='')
 
@@ -136,7 +141,7 @@ def main():
             )
     p.add_argument('filename', nargs='?', help='Filename of the ZIP Archive containing the TaPaSCo Design. Specify to reload TaPaSCo Design.')
     p.add_argument('--port', default=4040, help='Port number the simulation should listen on for runtime commands.')
-    p.add_argument('--verbose', '-v', default=False, help='Display output from questa simulation', action='store_true')
+    p.add_argument('--verbose', '-v', default=0, help='Display output from questa simulation. Use -v to display STDOUT and -vv to additionally display STDERR', action='count')
     p.add_argument('--gui', help='Run simulation in GUI-mode', action='store_true')
     args = p.parse_args()
 
