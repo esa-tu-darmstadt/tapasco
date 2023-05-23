@@ -133,7 +133,7 @@ namespace eval arch {
 
     # bypass existing AXI4Lite slaves
     set slave_ports [list]
-    set lites [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave}]
+    set lites [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave && (CONFIG.PROTOCOL == AXI4 || CONFIG.PROTOCOL == AXI4LITE)}]
     foreach ls $lites {
       set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave [get_property NAME $ls]]
       connect_bd_intf_net $op $ls
