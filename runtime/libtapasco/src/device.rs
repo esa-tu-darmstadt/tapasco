@@ -464,7 +464,7 @@ impl Device {
             info!("SIM DEVICE FOUND!");
             allocator.push(Arc::new(OffchipMemory{
                 allocator: Mutex::new(Box::new(
-                    GenericAllocator::new(0, 2_u64.pow(30), 1).context(AllocatorSnafu)?,
+                    GenericAllocator::new(0, 2_u64.pow(30), 8).context(AllocatorSnafu)?,
                 )),
                 dma: Box::new(SimDMA::new(0, 2_u64.pow(30), false).context(DMASnafu)?),
             }));

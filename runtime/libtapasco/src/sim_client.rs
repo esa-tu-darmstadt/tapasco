@@ -160,7 +160,7 @@ impl SimClient {
         while bytes_left > 0 {
             let bytes_to_read = min(bytes_left, max_chunk_size);
             let _read_memory = ReadMemory {
-                addr: (curr_offset * max_chunk_size) as u64,
+                addr: read_memory.addr + (curr_offset * max_chunk_size) as u64,
                 length: bytes_to_read,
             };
             read_mem.extend(self._read_memory(_read_memory)?);
@@ -203,7 +203,7 @@ impl SimClient {
             };
             self._write_memory(_write_memory).unwrap();
             Ok(())
-        }).map(|_| Void{})        
+        }).map(|_| Void{})
     }
 
     fn _write_memory(&self, write_memory: WriteMemory) -> Result<Void> {
