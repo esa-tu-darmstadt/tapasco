@@ -480,6 +480,11 @@ tapasco_compose_22_2:
     XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
   extends: .tapasco_compose
 
+tapasco_compose_23_1:
+  variables:
+    VIVADO_VERSION: "2023.1"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+  extends: .tapasco_compose
 
 tapasco_compose_pcie:
   variables:
