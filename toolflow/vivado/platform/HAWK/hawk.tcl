@@ -21,6 +21,11 @@ namespace eval platform {
   set platform_dirname "HAWK"
   set pcie_width "8"
 
+  if {[version -short] != "2021.2"} {
+    puts "Vivado [version -short] is not supported for this Versal ES device."
+    exit 1
+  }
+
   source $::env(TAPASCO_HOME_TCL)/platform/versal/versal_base.tcl
 
   # give configuration for NoC MCs
