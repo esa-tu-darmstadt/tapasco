@@ -85,6 +85,7 @@ namespace eval platform {
 
     wire_subsystem_wires
     wire_subsystem_intfs
+    tapasco::call_plugins "post-wiring"
     addressmap::construct_address_map
 
     save_bd_design
