@@ -46,7 +46,11 @@ if {[tapasco::is_feature_enabled "XSA-Export"]} {
 
       generate_target all [get_files -norecurse *.bd]
 
-      write_hw_platform -hw -force -file [pwd]/$bitstreamname.xsa
+      # workaround for vitis parser bug, which does not allow double hyphens within comments
+      set bitstream_no_double_hyphen [string map {-- -} $bitstreamname]
+
+      write_hw_platform -hw -force -file [pwd]/$bitstream_no_double_hyphen.xsa
+
       exit
     }
   }
