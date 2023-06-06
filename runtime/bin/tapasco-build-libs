@@ -164,22 +164,26 @@ if not clean:
         subprocess.call([f"cp -r {os.environ['TAPASCO_HOME_RUNTIME']}/simulation {os.environ['TAPASCO_WORK_DIR']}"], shell=True)
         subprocess.call([f"touch {sdir}/.setup_lock"], shell=True)
 
+        # installing python dependencies
+        source_cmd =  ""
+        if path.exists(f"{sdir}/.venv"):
+            source_cmd = "source .venv/bin/activate;"
+        ret_config = subprocess.call([f'bash -c "{source_cmd} make configure"'], cwd=sdir, shell=True)
+        # generating protocol buffer definitions and patching relative imports
+        ret_protos = subprocess.call(['bash -c "source .venv/bin/activate; make protos"'], cwd=sdir, shell=True)
+
         build_simlibs = not path.exists(f'{sdir}/compile_simlib') or args.rebuild_simlibs
         if build_simlibs:
             # store previous signal handler
             original_sigint_handler = signal.getsignal(signal.SIGINT)
             signal.signal(signal.SIGINT, interrupt_handler)
-            compile_simlibs = subprocess.Popen(['make', 'simlib_questa'],
+            compile_simlibs = subprocess.Popen(['bash', '-c', 'source .venv/bin/activate; make simlib_questa'],
                                                stdin=subprocess.DEVNULL,
                                                stdout=subprocess.PIPE,
                                                cwd=sdir)
         else:
             print('\033[93m' + 'Folder with simulation libraries already exists, assuming Libraries are already built. To force a build use --rebuild_simlibs' + '\033[0m')
 
-        # installing python dependencies
-        ret_config = subprocess.call([f'make configure'], cwd=sdir, shell=True)
-        # generating protocol buffer definitions and patching relative imports
-        ret_protos = subprocess.call([f'make protos'], cwd=sdir, shell=True)
 
         ret_simlibs = False
 
@@ -189,10 +193,11 @@ if not clean:
             ret_simlibs = compile_simlibs.wait()
             signal.signal(signal.SIGINT, original_sigint_handler)
 
+        subprocess.call([f"rm {sdir}/.setup_lock"], shell=True)
         if ret_config or ret_protos or ret_simlibs:
             print('Simulation setup failed')
+            sys.exit(1)
 
-        subprocess.call([f"rm {sdir}/.setup_lock"], shell=True)
         print('Simulation setup done')
 
     elif args.enable_sim == '' and path.exists(f"{sdir}/.setup_lock"):
