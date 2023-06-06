@@ -270,11 +270,7 @@ build_kernel_fedora_36_debug:
     PACKAGE_TYPE: "RPM"
   before_script:
     - dnf -y update libarchive
-<<<<<<< HEAD
-    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python3 libatomic git rpm-build curl protobuf-compiler
-=======
-    - dnf -y install protobuf-compiler kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python3 libatomic git rpm-build curl protobuf
->>>>>>> master
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python3 libatomic git rpm-build curl protobuf-compiler protobuf
   artifacts:
     paths:
       - build/tapasco-*-Linux.rpm
@@ -304,7 +300,7 @@ build_tapasco_fedora_36_debug:
   variables:
     PACKAGE_TYPE: "DEB"
   before_script:
-    - apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install protobuf-compiler build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git curl protobuf-compiler
+    - apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install build-essential linux-headers-generic python3 cmake libelf-dev libncurses-dev git curl protobuf-compiler
   artifacts:
     paths:
       - build/tapasco-*-Linux.deb

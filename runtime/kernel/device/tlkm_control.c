@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
  *
- * This file is part of TaPaSCo 
+ * This file is part of TaPaSCo
  * (see https://github.com/esa-tu-darmstadt/tapasco).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -50,7 +50,6 @@ static int init_miscdev(struct tlkm_control *pctl)
 	pctl->miscdev.minor = MISC_DYNAMIC_MINOR;
 	pctl->miscdev.name = kstrdup(fn, GFP_KERNEL);
 	pctl->miscdev.fops = &_tlkm_control_fops;
-	pctl->miscdev.mode = 0666;
 	return misc_register(&pctl->miscdev);
 }
 

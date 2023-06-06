@@ -50,17 +50,6 @@ simlib_questa:
 	echo "compile_simlib -simulator questa -simulator_exec_path {/opt/cad/mentor/questa/questa-2021.3/questasim/bin} -gcc_exec_path {/opt/cad/mentor/questa/questa-2021.3/questasim/gcc-7.4.0-linux_x86_64/bin} -family zynquplus -language all -library all -dir {compile_simlib/questa} -no_systemc_compile" > questa.tcl
 	vivado -nojournal -nolog -mode batch -source questa.tcl
 
-simlib_ies:
-	echo "compile_simlib -simulator ies -simulator_exec_path {/opt/cad/cadence/2016-17/RHELx86/INCISIVE_15.20.010/bin} -family all -language all -library all -dir {compile_simlib/ies}" > ies.tcl
-	vivado -nojournal -nolog -mode batch -source ies.tcl
-
-simulate_ies:
-	simulate_testbench.sim/sim_1/behav/ies/setup.sh
-	simulate_testbench.sim/sim_1/behav/ies/compile.sh
-	# change -timescale 1ps/1ps
-	simulate_testbench.sim/sim_1/behav/ies/elaborate.sh
-	simulate_testbench.sim/sim_1/behav/ies/simulate.sh
-
 protos: $(if $(CONFIGURE_NEEDED),configure)
 ifeq ($(wildcard grpc_gen),)
 	$(shell mkdir grpc_gen)
