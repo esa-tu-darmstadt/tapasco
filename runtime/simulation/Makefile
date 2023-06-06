@@ -47,7 +47,7 @@ test: sim
 	python3 combine_results.py
 
 simlib_questa:
-	echo "compile_simlib -simulator questa -simulator_exec_path {/opt/cad/mentor/questa/questa-2021.3/questasim/bin} -gcc_exec_path {/opt/cad/mentor/questa/questa-2021.3/questasim/gcc-7.4.0-linux_x86_64/bin} -family zynquplus -language all -library all -dir {compile_simlib/questa}" > questa.tcl
+	echo "compile_simlib -simulator questa -simulator_exec_path {/opt/cad/mentor/questa/questa-2021.3/questasim/bin} -gcc_exec_path {/opt/cad/mentor/questa/questa-2021.3/questasim/gcc-7.4.0-linux_x86_64/bin} -family zynquplus -language all -library all -dir {compile_simlib/questa} -no_systemc_compile" > questa.tcl
 	vivado -nojournal -nolog -mode batch -source questa.tcl
 
 simlib_ies:
