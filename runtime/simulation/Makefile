@@ -37,17 +37,22 @@ ifeq ($(TAPASCO_HOME_RUNTIME),)
   $(error "Tapasco Home Runtime not found. Please source correct tapasco-setup.sh!")
 endif
 
+QUESTA_HOME := $(abspath $(dir $(shell which vsim))/../)
+QUESTA_GCC := $(lastword 1, $(sort $(wildcard $(QUESTA_HOME)/gcc-*)))
+ifeq ($(QUESTA_HOME),)
+  $(error "Questa installation not detected. Please make sure questa simulator is installed an on PATH")
+endif
+ifeq ($(QUESTA_GCC),)
+  $(error "Questa installation not detected. Please make sure questa simulator is installed an on PATH")
+endif
 
 configure:
 	python -m venv .venv
 	source .venv/bin/activate; \
 	pip install -r requirements.txt
 
-test: sim
-	python3 combine_results.py
-
 simlib_questa:
-	echo "compile_simlib -simulator questa -simulator_exec_path {/opt/cad/mentor/questa/questa-2021.3/questasim/bin} -gcc_exec_path {/opt/cad/mentor/questa/questa-2021.3/questasim/gcc-7.4.0-linux_x86_64/bin} -family zynquplus -language all -library all -dir {compile_simlib/questa} -no_systemc_compile" > questa.tcl
+	echo "compile_simlib -simulator questa -simulator_exec_path {$(QUESTA_HOME)/bin} -gcc_exec_path {$(QUESTA_GCC)/bin} -family zynquplus -language all -library all -dir {compile_simlib/questa}" > questa.tcl
 	vivado -nojournal -nolog -mode batch -source questa.tcl
 
 protos: $(if $(CONFIGURE_NEEDED),configure)

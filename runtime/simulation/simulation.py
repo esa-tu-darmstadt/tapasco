@@ -73,6 +73,7 @@ async def request_coroutine(coro, cb):
     cb()
 
 
+
 @cocotb.test()
 async def sim_entry(dut):
     """
@@ -81,7 +82,7 @@ async def sim_entry(dut):
 
     # start the clock at 100MHZ
     # the external clock to the composition is hard coded to be ext_ps_clk_in
-    await cocotb.start(Clock(dut.ext_ps_clk_in, CLK_PERIOD, units="ns").start())
+    cocotb.start_soon(Clock(dut.ext_ps_clk_in, CLK_PERIOD, units="ns").start())
 
     # on synthesized designs waiting for stable clock is not necessary, as it happens almost instantly
     # the output clocks need to be stable for the respective resets of the clocks and interrupts subsystem
@@ -89,11 +90,6 @@ async def sim_entry(dut):
     # the sim platform therefore configures the clocking wizard with the locked output, signaling when its
     # output clocks are stable
     await RisingEdge(dut.locked)
-
-    dut.ext_reset_in.value = 0
-    await Timer(CLK_PERIOD * 12, units="ns")
-    dut.ext_reset_in.value = 1
-    await Timer(CLK_PERIOD * 120, units="ns")
 
     # the axi4 master port is called S_AXI, since, when the composition is viewed as a ip-core, the external
     # port would have the mode Slave
@@ -104,6 +100,11 @@ async def sim_entry(dut):
 
     # same reason as with the axi master
     axis = AXI4Slave(dut, 'M_AXI', dut.ext_ps_clk_in, dut.ext_reset_in, memory, big_endian=False)
+
+    dut.ext_reset_in.value = 0
+    await Timer(CLK_PERIOD * 12, units="ns")
+    dut.ext_reset_in.value = 1
+    await Timer(CLK_PERIOD * 120, units="ns")
 
     server_thread = Thread(target=run_server, args=(dut, axim, axis, memory))
     server_thread.start()
