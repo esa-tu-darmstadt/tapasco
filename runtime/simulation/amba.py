@@ -24,6 +24,10 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+# Modified by Embedded Systems and Application Group at Technichal University
+# Darmstadt 2022
+# esa.informatik.tu-darmstadt.de
+
 """Drivers for Advanced Microcontroller Bus Architecture."""
 
 from math import log2
@@ -87,7 +91,7 @@ class AXI4LiteMaster(BusDriver):
 
     def __init__(self, entity, name, clock, reset, signals=None, n_inflight=0, random_delay=0, **kwargs):
         """
-        Create AXI4-Lite master which can be used as BFM for driver classes. 
+        Create AXI4-Lite master which can be used as BFM for driver classes.
 
         Args:
             entity (cocotb.handle.SimHandleBase): Object in the hierarchy to which we are connecting, e.g. `cocotb.top`.
@@ -131,7 +135,7 @@ class AXI4LiteMaster(BusDriver):
         cocotb.start_soon(self.reset_bus())
         # we store these because we need to actively kill them upon reset
         self.start_channels()
-    
+
     def start_channels(self):
         self.ar_coroutine = cocotb.start_soon(self.ar_channel())
         self.r_coroutine = cocotb.start_soon(self.r_channel())
@@ -161,7 +165,7 @@ class AXI4LiteMaster(BusDriver):
             self.open_read_request = False
             self.read_busy.release()
         return rsp, data
-    
+
     async def write(self, addr, data, prot=AXPROT.UNPRIV_SEC_DATA):
         """
         Blocking write to the provided address.
@@ -188,7 +192,7 @@ class AXI4LiteMaster(BusDriver):
             self.open_write_request = False
             self.write_busy.release()
         return rsp
-    
+
     async def reset_bus(self):
         while True:
             await FallingEdge(self.reset)
@@ -200,7 +204,7 @@ class AXI4LiteMaster(BusDriver):
             self.bus.AWVALID.setimmediatevalue(0)
             self.bus.WVALID.setimmediatevalue(0)
             self.bus.ARVALID.setimmediatevalue(0)
-            
+
             # handle requests which got aborted by bus reset
             await self.read_busy.acquire()
             self.read_requestQueue._init(self.n_inflight)
@@ -221,7 +225,7 @@ class AXI4LiteMaster(BusDriver):
             self.start_channels()
             print("Master reset finished")
 
-    
+
     #### READING DATA ####
     async def ar_channel(self):
         while True:
@@ -236,7 +240,7 @@ class AXI4LiteMaster(BusDriver):
                 await RisingEdge(self.clock)
             print(f"[{cocotb.utils.get_sim_time(units='ns')}] Accepted AR req")
             self.bus.ARVALID.value = not self.read_requestQueue.empty()
-    
+
     async def r_channel(self):
         while True:
             self.bus.RREADY.value = not self.read_responseQueue.full()
@@ -249,7 +253,7 @@ class AXI4LiteMaster(BusDriver):
             rsp = XRESP(self.bus.RRESP.value.integer)
             data = self.bus.RDATA.value.integer
             await self.read_responseQueue.put((rsp, data))
-    
+
     #### WRITING DATA ####
     async def aw_channel(self):
         while True:
@@ -270,9 +274,9 @@ class AXI4LiteMaster(BusDriver):
             print(f"[{cocotb.utils.get_sim_time(units='ns')}] Accepted AW req")
             await RisingEdge(self.clock)
             print("Deassert AWVALID")
-            
+
             self.bus.AWVALID.value = False
-    
+
     async def w_channel(self):
         while True:
             data, strb = await self.write_dataQueue.get()
@@ -286,7 +290,7 @@ class AXI4LiteMaster(BusDriver):
                 await RisingEdge(self.clock)
             print(f"[{cocotb.utils.get_sim_time(units='ns')}] Accepted W data")
             self.bus.WVALID.value = False#not self.write_dataQueue.empty()
-    
+
     async def b_channel(self):
         while True:
             self.bus.BREADY.value = not self.write_responseQueue.full()
@@ -301,7 +305,7 @@ class AXI4LiteMaster(BusDriver):
 
 class AXI4LiteSlave(BusDriver):
     """
-    Class implementing simple AXI4 Lite slave. 
+    Class implementing simple AXI4 Lite slave.
 
     An instance can either run as a standalone reactive slave if a `bytearray` serving as `memory` is provided.
     Otherwise it is supposed to be used as a BFM which needs to be handled by some reactive slave testbench components, e.g. a reactive
@@ -323,14 +327,14 @@ class AXI4LiteSlave(BusDriver):
         """
         self._signals = axi4_lite_signals if signals is None else signals
         BusDriver.__init__(self, entity, name, clock, **kwargs)
-        
+
         self.reset = reset
         # Drive some sensible defaults (setimmediatevalue to avoid x asserts)
         self.bus.AWREADY.setimmediatevalue(1)
         self.bus.WREADY.setimmediatevalue(1)
         self.bus.ARREADY.setimmediatevalue(1)
         self.bus.BVALID.setimmediatevalue(0)
-        self.bus.RVALID.setimmediatevalue(0)            
+        self.bus.RVALID.setimmediatevalue(0)
 
         # Queues for relevant transfer data
         self.n_inflight = n_inflight # used during reset
@@ -348,11 +352,11 @@ class AXI4LiteSlave(BusDriver):
         self.memory = None
         if memory is not None:
             self.memory = memory
-            
+
         self.start_channels()
         cocotb.start_soon(self.reset_bus())
-        
-    
+
+
     def start_channels(self):
         self.ar_coroutine = cocotb.start_soon(self.ar_channel())
         self.r_coroutine = cocotb.start_soon(self.r_channel())
@@ -361,7 +365,7 @@ class AXI4LiteSlave(BusDriver):
         self.b_coroutine = cocotb.start_soon(self.b_channel())
         if self.memory is not None:
             self.mem_coroutine = cocotb.start_soon(self.handle_mem_req())
-    
+
     async def reset_bus(self):
         while True:
             await FallingEdge(self.reset)
@@ -396,7 +400,7 @@ class AXI4LiteSlave(BusDriver):
             araddr = self.bus.ARADDR.value.integer
             arprot = AXPROT(self.bus.ARPROT.value.integer)
             await self.read_requestQueue.put((araddr, arprot))
-    
+
     async def r_channel(self):
         while True:
             rsp, rdata = await self.read_responseQueue.get()
@@ -409,7 +413,7 @@ class AXI4LiteSlave(BusDriver):
             while not self.bus.RREADY.value:
                 await RisingEdge(self.clock)
             self.bus.RVALID.value = not self.read_responseQueue.empty()
-    
+
     async def handle_mem_req(self):
         """
         This method essentially handles the standalone reactive slave behavior. Make this arbitrarily complex in inheriting classes.
@@ -458,7 +462,7 @@ class AXI4LiteSlave(BusDriver):
             awaddr = self.bus.AWADDR.value.integer
             awprot = AXPROT(self.bus.AWPROT.value.integer)
             await self.write_requestQueue.put((awaddr, awprot))
-    
+
     async def w_channel(self):
         while True:
             self.bus.WREADY.value = not self.write_dataQueue.full()
@@ -470,7 +474,7 @@ class AXI4LiteSlave(BusDriver):
             wdata = self.bus.WDATA.value.integer
             wstrb = self.bus.WSTRB.value.integer
             await self.write_dataQueue.put((wdata, wstrb))
-    
+
     async def b_channel(self):
         while True:
             rsp = await self.write_responseQueue.get()
@@ -503,7 +507,7 @@ def check_for_id(entity, name):
 # Utility functions for AXI4 full
 def _lower_lane0(addr, n_lanes):
     return addr - (addr // n_lanes) * n_lanes
-    
+
 def _lower_laneN(address_n, n_lanes):
     return address_n - (address_n // n_lanes) * n_lanes
 
@@ -564,14 +568,14 @@ class AXI4Master(AXI4LiteMaster):
         if self._has_id:
             self.bus.ARID.setimmediatevalue(0)
             self.bus.AWID.setimmediatevalue(0)
-        
-    
+
+
 
     async def write(self, addr: int, data: List[int], burst: AXBURST=AXBURST.INCR, prot: AXPROT=AXPROT.UNPRIV_SEC_DATA, id: int=0):
         """
         Perform burst write of all elements in `data` to the provided address.
 
-        .. note:: This implementation does not provide support for narrow bursts or unaligned transfers, yet. Add it if you need it. 
+        .. note:: This implementation does not provide support for narrow bursts or unaligned transfers, yet. Add it if you need it.
 
         Args:
             addr (int): Target base address.
@@ -624,7 +628,7 @@ class AXI4Master(AXI4LiteMaster):
             self.open_write_request = False
             self.write_busy.release()
         return rsp, id
-    
+
     async def read(self, addr, length, n_bytes=4, burst=AXBURST.INCR, prot=AXPROT.UNPRIV_SEC_DATA, id=0):
         """
         Blocking read from the provided address. This implementation should support narrow bursts, although they
@@ -653,7 +657,7 @@ class AXI4Master(AXI4LiteMaster):
             await self.read_busy.acquire()
             low0 = _lower_lane0(addr, self.n_lanes)
             upper0 = _upper_lane0(addr, aligned_addr, n_bytes, self.n_lanes)
-            
+
             lower_lanes, upper_lanes = _compute_lanes(aligned_addr, n_bytes, data, self.n_lanes)
             lower_lanes.insert(0, low0)
             upper_lanes.insert(0, upper0)
@@ -669,7 +673,7 @@ class AXI4Master(AXI4LiteMaster):
             self.open_read_request = False
             self.read_busy.release()
             return rsp, data, id
-    
+
     async def ar_channel(self):
         while True:
             arid, araddr, arlen_add1, n_bytes, burst, prot = await self.read_requestQueue.get()
@@ -682,7 +686,7 @@ class AXI4Master(AXI4LiteMaster):
             self.bus.ARSIZE.value = int(log2(n_bytes))
             self.bus.ARBURST.value = burst.value
             self.bus.ARPROT.value = prot.value
-            
+
             while True:
                 await ReadOnly()
                 if self.bus.ARREADY.value:
@@ -690,7 +694,7 @@ class AXI4Master(AXI4LiteMaster):
                 await RisingEdge(self.clock)
             await RisingEdge(self.clock)
             self.bus.ARVALID.value = False
-    
+
     async def r_channel(self):
         responses = {} # dict: channel => (list((rsp, data))), flushed upon rlast
         responses[0] = []
@@ -718,7 +722,7 @@ class AXI4Master(AXI4LiteMaster):
                 responses[rid] = [] # flush for next transfer
                 await self.read_responseQueue.put((rsps, datas, rid))
             self.bus.RREADY.value = not self.read_responseQueue.full()
-    
+
     async def aw_channel(self):
         while True:
             awid, awaddr, n_bytes, len_add1, awburst, awprot = await self.write_requestQueue.get()
@@ -737,9 +741,9 @@ class AXI4Master(AXI4LiteMaster):
                     break
                 await RisingEdge(self.clock)
             await RisingEdge(self.clock)
-            
+
             self.bus.AWVALID.value = False
-    
+
     async def w_channel(self):
         while True:
             wdata, wstrb = await self.write_dataQueue.get()
@@ -757,7 +761,7 @@ class AXI4Master(AXI4LiteMaster):
                 await RisingEdge(self.clock)
                 self.bus.WVALID.value = False
             self.bus.WLAST.value = False
-    
+
     async def b_channel(self):
         while True:
             self.bus.BREADY.value = not self.write_responseQueue.full()
@@ -771,7 +775,7 @@ class AXI4Master(AXI4LiteMaster):
             if self._has_id:
                 bid = self.bus.BID.value.integer
             await self.write_responseQueue.put((rsp, bid))
-            
+
 
 class AXI4Slave(AXI4LiteSlave):
     '''
@@ -779,7 +783,7 @@ class AXI4Slave(AXI4LiteSlave):
 
     Monitors an internal memory and handles read and write requests.
     '''
-    
+
 
     # Not currently supported by this driver
     _optional_signals = [
@@ -815,7 +819,7 @@ class AXI4Slave(AXI4LiteSlave):
         self.write_address_busy = Lock("%s_wabusy" % name)
         self.read_address_busy = Lock("%s_rabusy" % name)
         self.write_data_busy = Lock("%s_wbusy" % name)
-    
+
     def start_channels(self):
         self.ar_coroutine = cocotb.start_soon(self.ar_channel())
         self.r_coroutine = cocotb.start_soon(self.r_channel())
@@ -825,7 +829,7 @@ class AXI4Slave(AXI4LiteSlave):
         if self.memory is not None:
             self.mem_read_coroutine = cocotb.start_soon(self.handle_read_req())
             self.mem_write_coroutine = cocotb.start_soon(self.handle_write_req())
-    
+
     async def reset_bus(self):
         while True:
             await FallingEdge(self.reset)
@@ -872,7 +876,7 @@ class AXI4Slave(AXI4LiteSlave):
             if self._has_id:
                 arid = self.bus.ARID.value.integer
             await self.read_requestQueue.put((arid, araddr, arprot, arsize, arlen, arburst))
-    
+
     async def r_channel(self):
         while True:
             rresp, rdata, rid, rlast = await self.read_responseQueue.get()
@@ -887,7 +891,7 @@ class AXI4Slave(AXI4LiteSlave):
                 await RisingEdge(self.clock)
             self.bus.RVALID.value = not self.read_responseQueue.empty()
             self.bus.RLAST.value = False
-    
+
     async def handle_read_req(self):
         assert self.memory is not None, "Running handle_read_req although slave not self-sustained."
         while True:
@@ -909,7 +913,7 @@ class AXI4Slave(AXI4LiteSlave):
                 if arburst != AXBURST.FIXED:
                     addr_i = addr_i + n_bytes
                 await FallingEdge(self.clock) # This is to synchronize with writes occurring in the same cycle
-    
+
     async def aw_channel(self):
         while True:
             self.bus.AWREADY.value = not self.write_requestQueue.full()
@@ -927,7 +931,7 @@ class AXI4Slave(AXI4LiteSlave):
             if self._has_id:
                 awid = self.bus.AWID.value.integer
             await self.write_requestQueue.put((awid, awaddr, awprot, awsize, awlen, awburst))
-    
+
     async def w_channel(self):
         while True:
             self.bus.WREADY.value = not self.write_dataQueue.full()
@@ -940,7 +944,7 @@ class AXI4Slave(AXI4LiteSlave):
             wstrb = self.bus.WSTRB.value.integer
             wlast = self.bus.WLAST.value
             await self.write_dataQueue.put((wdata, wstrb, wlast))
-    
+
     async def b_channel(self):
          while True:
             rsp, bid = await self.write_responseQueue.get()
@@ -954,7 +958,7 @@ class AXI4Slave(AXI4LiteSlave):
             while not self.bus.BREADY.value:
                 await RisingEdge(self.clock)
             self.bus.BVALID.value = not self.write_responseQueue.empty()
-    
+
     async def handle_write_req(self):
         while True:
             awid, awaddr, awprot, awsize, awlen, awburst = await self.write_requestQueue.get()
@@ -976,7 +980,7 @@ class AXI4Slave(AXI4LiteSlave):
                 else:
                     rsp = XRESP.SLVERR # we still iterate through all beats to handle the entire transfer
                 if awburst != AXBURST.FIXED:
-                    addr_i += n_bytes 
+                    addr_i += n_bytes
             assert wlast, "Received {}/{} beats but did not see wlast".format(n_beats, n_beats)
             await self.write_responseQueue.put((rsp, awid))
 
