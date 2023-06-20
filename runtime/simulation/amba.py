@@ -1,4 +1,5 @@
 # Copyright (c) 2014 Potential Ventures Ltd
+# Copyright (c) 2022 Embedded Systems and Applications Group, TU Darmstadt
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -23,10 +24,6 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-# Modified by Embedded Systems and Application Group at Technichal University
-# Darmstadt 2022
-# esa.informatik.tu-darmstadt.de
 
 """Drivers for Advanced Microcontroller Bus Architecture."""
 
