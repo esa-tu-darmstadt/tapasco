@@ -20,6 +20,12 @@
 source -notrace $::env(TAPASCO_HOME_TCL)/platform/zynq/zynq.tcl
 
 namespace eval ::platform {
+
+  if { [::tapasco::vivado_is_newer "2021.1"] == 1 } {
+    puts "Vivado [version -short] is too new to support zedboard."
+    exit 1
+  }
+
   foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/platform/zedboard/plugins" "*.tcl"] {
     puts "Found plugin: $f"
     source -notrace $f

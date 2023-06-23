@@ -26,6 +26,25 @@ microblaze {
 }
 ```
 
+#### WrapAXIFull
+This determines whether potential AXI4-Full slave ports of the PEs are wrapped (i.e. converted to AXI4-Lite) before connecting them to the interconnect tree. By default this is activated, so all AXI4-Full slave ports are wrapped. This can be deactivated using:
+
+```
+WrapAXIFull {
+  enabled: false
+}
+```
+
+#### axi4mmUseSmartconnect
+This feature is specific to the axi4mm-architecture. It controls whether AXI interconnects or AXI smartconnects are used for control AND data aggregation in the architecture. By default AXI interconnects are used (except on VERSAL FPGAs). To use AXI smartconnects instead:
+
+```
+axi4mmUseSmartconnect {
+  enabled: true
+}
+```
+
+
 ## Zynq based platforms
 
 ### ZC706

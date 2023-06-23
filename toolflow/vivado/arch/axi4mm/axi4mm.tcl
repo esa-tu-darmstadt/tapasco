@@ -132,14 +132,14 @@ namespace eval arch {
     set bd_inst [current_bd_instance .]
 
     # bypass existing AXI4Lite slaves
-    set lite_ports [list]
-    set lites [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave && CONFIG.PROTOCOL == AXI4LITE}]
+    set slave_ports [list]
+    set lites [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave && (CONFIG.PROTOCOL == AXI4 || CONFIG.PROTOCOL == AXI4LITE)}]
     foreach ls $lites {
       set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave [get_property NAME $ls]]
       connect_bd_intf_net $op $ls
-      lappend lite_ports $ls
+      lappend slave_ports $ls
     }
-    puts "lite_ports = $lite_ports"
+    puts "slave_ports = $slave_ports"
 
     # create master ports
     set maxi_ports [list]
@@ -225,7 +225,7 @@ namespace eval arch {
     # generate output trees
     for {set i 0} {$i < [llength $mdist]} {incr i} {
       puts "  mdist[$i] = [lindex $mdist $i]"
-      if {[tapasco::is_versal]} {
+      if {[tapasco::is_versal] || [tapasco::get_feature_option "axi4mmUseSmartconnect" "enabled" false]} {
         set out [tapasco::create_smartconnect_tree "out_$i" [lindex $mdist $i]]
       } else {
         set out [tapasco::create_interconnect_tree "out_$i" [lindex $mdist $i]]
@@ -254,7 +254,7 @@ namespace eval arch {
       puts "Connecting one slave to host"
       return $out_port
     } {
-      if {[tapasco::is_versal]} {
+      if {[tapasco::is_versal] || [tapasco::get_feature_option "axi4mmUseSmartconnect" "enabled" false]} {
         set in1 [tapasco::create_smartconnect_tree "in1" $ic_s false]
       } else {
         set in1 [tapasco::create_interconnect_tree "in1" $ic_s false]

@@ -21,6 +21,8 @@ namespace eval platform {
   set platform_dirname "xupvvh"
   set pcie_width "x16"
 
+  source $::env(TAPASCO_HOME_TCL)/platform/${platform_dirname}/check_version.tcl
+
   source $::env(TAPASCO_HOME_TCL)/platform/pcie/pcie_base.tcl
 
   if {[tapasco::is_feature_enabled "HBM"]} {
