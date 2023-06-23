@@ -35,11 +35,11 @@ WrapAXIFull {
 }
 ```
 
-#### AXI4mmUseSmartconnect
-This feature is specific to the AXI4MM-architecture. It controls whether AXI interconnects or AXI smartconnects are used for control AND data aggregation in the architecture. By default AXI interconnects are used (except on VERSAL FPGAs). To use AXI smartconnects instead:
+#### axi4mmUseSmartconnect
+This feature is specific to the axi4mm-architecture. It controls whether AXI interconnects or AXI smartconnects are used for control AND data aggregation in the architecture. By default AXI interconnects are used (except on VERSAL FPGAs). To use AXI smartconnects instead:
 
 ```
-AXI4mmUseSmartconnect {
+axi4mmUseSmartconnect {
   enabled: true
 }
 ```
