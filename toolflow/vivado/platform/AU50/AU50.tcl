@@ -81,7 +81,6 @@ namespace eval platform {
   }
 
   proc create_subsystem_memory {} {
-    save_bd_design
     set num_masters [llength [::arch::get_masters]]
 
     # create hierarchical interface ports
