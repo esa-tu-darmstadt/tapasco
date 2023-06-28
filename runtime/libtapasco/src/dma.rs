@@ -153,8 +153,7 @@ impl DMAControl for DriverDMA {
                     length: data.len(),
                     user_addr: data.as_mut_ptr(),
                 },
-            )
-                .context(DMAFromDeviceSnafu)?;
+            ).context(DMAFromDeviceSnafu)?;
         };
         Ok(())
     }
