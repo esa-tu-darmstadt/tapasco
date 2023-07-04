@@ -100,6 +100,15 @@ namespace eval platform {
     return $peam
   }
 
+  proc get_ignored_segments { } {
+    set ignored [list]
+  # lappend ignored "/host/f1_inst/S_AXI_DDRA/Mem_DDRA"
+    lappend ignored "/host/f1_inst/S_AXI_DDRB/Mem_DDRB"
+    lappend ignored "/host/f1_inst/S_AXI_DDRC/Mem_DDRC"
+    lappend ignored "/host/f1_inst/S_AXI_DDRD/Mem_DDRD"
+    return $ignored
+  }
+
   proc create_subsystem_intc {} {
 
     set s_axi [create_bd_intf_pin -mode Slave -vlnv [tapasco::ip::get_vlnv "aximm_intf"] "S_INTC"]

@@ -85,6 +85,7 @@ namespace eval platform {
 
     wire_subsystem_wires
     wire_subsystem_intfs
+    tapasco::call_plugins "post-wiring"
     addressmap::construct_address_map
 
     save_bd_design
@@ -314,5 +315,9 @@ namespace eval platform {
     set ignored [list]
     puts "Platform does not specify any ignored segments."
     return $ignored
+  }
+
+  proc create_clocks {name num_clocks freqs} {
+    error "Platform does not implement mandatory proc create_clocking_wizard!"
   }
 }
