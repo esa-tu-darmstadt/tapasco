@@ -376,3 +376,7 @@
   proc get_pe_base_address {} {
     return 0x02000000;
   }
+
+  proc create_clocks {name num_clocks freqs} {
+    tapasco::create_clocks_ultrascale $name $num_clocks $freqs
+  }
