@@ -296,6 +296,10 @@ int tlkm_pcie_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	    pdev->device == AWS_EC2_DEVICE_ID) {
 		dev = tlkm_bus_new_device((struct tlkm_class *)&pcie_aws_cls,
 					  id->vendor, id->device, pdev);
+	} else if (pdev->vendor == XILINX_VENDOR_ID &&
+		   pdev->device == VERSAL_DEVICE_ID) {
+		dev = tlkm_bus_new_device((struct tlkm_class *)&pcie_versal_cls,
+					  id->vendor, id->device, pdev);
 	} else {
 		dev = tlkm_bus_new_device((struct tlkm_class *)&pcie_cls,
 					  id->vendor, id->device, pdev);

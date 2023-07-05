@@ -47,7 +47,10 @@ EOF
 hotplug() {
 	VENDOR=10EE
 	DEVICE=7038
+	VERSAL_DEVICE=B03F
 	PCIEDEVICES=`lspci -d $VENDOR:$DEVICE | cut -d " " -f1`
+	PCIEDEVICES+=" "
+	PCIEDEVICES+=`lspci -d $VENDOR:$VERSAL_DEVICE | cut -d " " -f1`
 	# remove device, if it exists
 	for PCIEDEVICE in $PCIEDEVICES; do
 		echo "hotplugging device: $PCIEDEVICE"
@@ -60,6 +63,8 @@ hotplug() {
 	sudo sh -c "echo 1 > /sys/bus/pci/rescan"
 
 	PCIEDEVICES_AFTER=`lspci -d $VENDOR:$DEVICE | cut -d " " -f1`
+	PCIEDEVICES_AFTER+=" "
+	PCIEDEVICES_AFTER+=`lspci -d $VENDOR:$VERSAL_DEVICE | cut -d " " -f1`
 
 	if [ -n "$PCIEDEVICES_AFTER" ] && [ $(echo -n "$PCIEDEVICES_AFTER" | wc -l) -ge $(echo -n "$PCIEDEVICES" | wc -l) ]; then
 		echo "hotplugging finished"
