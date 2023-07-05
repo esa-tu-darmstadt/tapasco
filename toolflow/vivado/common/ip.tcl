@@ -616,6 +616,20 @@ namespace eval ::tapasco::ip {
     set no_intc [::platform::number_of_interrupt_controllers]
     set ts [clock seconds]
 
+    # allow platform to overwrite base addresses for status core
+    if {[llength [info procs ::platform::get_pe_base_address_status_core]]} {
+      puts "Arch base address in status core manually overwritten"
+      set pe_base [::platform::get_pe_base_address_status_core]
+    } else {
+      set pe_base [::platform::get_pe_base_address]
+    }
+    if {[llength [info procs ::platform::get_pe_base_address_status_core]]} {
+      puts "Platform base address in status core manually overwritten"
+      set platform_base [::platform::get_platform_base_address_status_core]
+    } else {
+      set platform_base [::platform::get_platform_base_address]
+    }
+
     return [json::write object \
       "Timestamp" [expr "$ts - ($ts \% 86400)"] \
       "InterruptControllers" $no_intc \
@@ -630,9 +644,9 @@ namespace eval ::tapasco::ip {
         [json::write object "Domain" [json::write string "Memory"] "Frequency" [::tapasco::get_mem_frequency]] \
       ] \
       "Capabilities" [json::write object "Capabilities 0" [::tapasco::get_capabilities_flags]] \
-        "Architecture" [json::write object "Base" [json::write string [format "0x%016x" [::platform::get_pe_base_address]]] \
+        "Architecture" [json::write object "Base" [json::write string [format "0x%016x" $pe_base]] \
                                        "Composition" [json::write array {*}$slots]] \
-        "Platform" [json::write object "Base" [json::write string [format "0x%016x" [::platform::get_platform_base_address]]] \
+        "Platform" [json::write object "Base" [json::write string [format "0x%016x" $platform_base]] \
                                        "Components" [json::write array {*}$pc_bases]] \
       "Debug" [json::write array {*}$debug] \
       "Interrupts" [json::write array {*}$interrupt_json] \
