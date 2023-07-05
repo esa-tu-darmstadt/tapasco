@@ -143,13 +143,13 @@ namespace eval ::tapasco::ip {
   # @param no_masters Number of AXI4 Master interfaces.
   # @param no_clocks Number of different clocks used.
   # @return bd_cell of the instance.
-  proc create_axi_sc {name no_slaves no_masters {num_clocks 1}} {
+  proc create_axi_sc {name no_slaves no_masters {num_clocks 1} {has_reset false}} {
     variable stdcomps
     puts "Creating AXI Smartconnect $name with $no_slaves slaves, $no_masters masters and $num_clocks clocks..."
     puts "  VLNV: [dict get $stdcomps axi_sc vlnv]"
 
     set ic [create_bd_cell -type ip -vlnv [dict get $stdcomps axi_sc vlnv] $name]
-    set props [list CONFIG.NUM_SI $no_slaves CONFIG.NUM_MI $no_masters CONFIG.NUM_CLKS $num_clocks CONFIG.HAS_ARESETN {0}]
+    set props [list CONFIG.NUM_SI $no_slaves CONFIG.NUM_MI $no_masters CONFIG.NUM_CLKS $num_clocks CONFIG.HAS_ARESETN [expr $has_reset ? 1 : 0]]
     set_property -dict $props $ic
     return $ic
   }
