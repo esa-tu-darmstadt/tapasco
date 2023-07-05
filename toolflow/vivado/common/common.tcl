@@ -671,8 +671,13 @@ namespace eval tapasco {
   }
 
   proc get_platform_num_slots {} {
-    puts "Number of slots is hard coded as 128 right now"
-    return 128
+    if {[is_versal]} {
+      puts "Versal supports maximum 28 PEs right now"
+      return 28
+    } else {
+      puts "Number of slots is hard coded as 128 right now"
+      return 128
+    }
   }
 
   proc is_virtex_usp {} {
