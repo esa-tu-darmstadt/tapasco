@@ -106,14 +106,7 @@
   }
 
   proc create_subsystem_host {} {
-
-    # empty subsystem breaks Vivado
-    set const [tapasco::ip::create_constant constz 1 0]
-
-  }
-
-  proc create_subsystem_memory {} {
-    # memory subsystem implements the CIPS including DMA, NoC logic and Memory Controller
+    # host subsystem implements the CIPS including DMA
     set host_aclk [tapasco::subsystem::get_port "host" "clk"]
     set host_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
     set design_aclk [tapasco::subsystem::get_port "design" "clk"]
@@ -124,17 +117,10 @@
     set pcie_aresetn [create_bd_pin -type "rst" -dir "O" "pcie_aresetn"]
 
     set s_axi_desc_gen [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DESC_GEN"]
-    set s_axi_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0"]
-    set s_axi_mem_off [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0_OFF"]
-    set m_axi_mem_off [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_MEM_0_OFF"]
-    set m_axi_arch [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_ARCH"]
-    set m_axi_tapasco [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_TAPASCO"]
-    set m_axi_intc [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_INTC"]
-    set m_axi_desc_gen [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DESC_GEN"]
 
     set versal_cips [tapasco::ip::create_versal_cips "versal_cips_0"]
 
-    # run BD automation of NoC before configuring CIPS
+    # create NoC here and move it to memory subsystem later
     set axi_noc [tapasco::ip::create_axi_noc "axi_noc_0"]
     set external_sources {None}
     if {[llength [info procs get_number_mc]]} {
@@ -151,10 +137,9 @@
     }
     apply_bd_automation -rule xilinx.com:bd_rule:axi_noc -config [list mc_type $mc_type noc_clk {None} num_axi_bram {None} num_axi_tg {None} num_aximm_ext $external_sources num_mc $number_mc pl2noc_apm {0} pl2noc_cips {1}] $axi_noc
 
-    # add AXI ports and clocks for PE interconnect trees and CPM ports
-    set_property CONFIG.NUM_SI [expr [get_property CONFIG.NUM_SI $axi_noc]+3] $axi_noc
-    set_property CONFIG.NUM_MI [expr [get_property CONFIG.NUM_MI $axi_noc]+1] $axi_noc
-    set_property CONFIG.NUM_CLKS [expr [get_property CONFIG.NUM_CLKS $axi_noc]+3] $axi_noc
+    # add AXI ports and clocks for CPM ports
+    set_property CONFIG.NUM_SI [expr [get_property CONFIG.NUM_SI $axi_noc]+2] $axi_noc
+    set_property CONFIG.NUM_CLKS [expr [get_property CONFIG.NUM_CLKS $axi_noc]+2] $axi_noc
 
     # load MC config
     if {[llength [info procs get_mc_config]]} {
@@ -171,23 +156,6 @@
         set_property CONFIG.FREQ_HZ [get_mc_clk_freq] [get_bd_intf_ports /sys_clk${i}_0]
       }
     }
-
-    # NoC ports for CPM and ARCH
-    set_property -dict [list CONFIG.CATEGORY {ps_pcie} \
-      CONFIG.CONNECTIONS { \
-        MC_0 {read_bw {10000} write_bw {10000} read_avg_burst {4} write_avg_burst {4}} \
-        M00_AXI {read_bw {100} write_bw {100} read_avg_burst {4} write_avg_burst {4}}}
-    ] [get_bd_intf_pins $axi_noc/S06_AXI]
-    set_property -dict [list CONFIG.CATEGORY {ps_pcie} \
-      CONFIG.CONNECTIONS { \
-        M00_AXI {read_bw {1} write_bw {1} read_avg_burst {4} write_avg_burst {4}}} \
-    ] [get_bd_intf_pins $axi_noc/S07_AXI]
-    set_property -dict [list CONFIG.CATEGORY {pl} \
-      CONFIG.CONNECTIONS {MC_1 {read_bw {10000} write_bw {10000} read_avg_burst {4} write_avg_burst {4}}} \
-    ] [get_bd_intf_pins $axi_noc/S08_AXI]
-    set_property -dict [list CONFIG.ASSOCIATED_BUSIF {S06_AXI}] [get_bd_pins $axi_noc/aclk6]
-    set_property -dict [list CONFIG.ASSOCIATED_BUSIF {S07_AXI}] [get_bd_pins $axi_noc/aclk7]
-    set_property -dict [list CONFIG.ASSOCIATED_BUSIF {S08_AXI}] [get_bd_pins $axi_noc/aclk8]
 
     # configure CIPS after NoC so that Vivado does not remove ports during BD automation
     set_property -dict [list \
@@ -272,6 +240,53 @@
     connect_bd_intf_net [get_bd_intf_pins $desc_gen/h2c_byp_in] [get_bd_intf_pins $versal_cips/dma0_h2c_byp_in_mm]
     connect_bd_net [get_bd_pins $desc_gen/dma_resetn] [get_bd_pins $versal_cips/dma0_soft_resetn]
 
+    # FIXME do not hardcode ports?
+    connect_bd_intf_net [get_bd_intf_pins $versal_cips/CPM_PCIE_NOC_0] [get_bd_intf_pins $axi_noc/S06_AXI]
+    connect_bd_intf_net [get_bd_intf_pins $versal_cips/CPM_PCIE_NOC_1] [get_bd_intf_pins $axi_noc/S07_AXI]
+    connect_bd_net [get_bd_pins $versal_cips/cpm_pcie_noc_axi0_clk] [get_bd_pins $axi_noc/aclk6]
+    connect_bd_net [get_bd_pins $versal_cips/cpm_pcie_noc_axi1_clk] [get_bd_pins $axi_noc/aclk7]
+  }
+
+  proc create_subsystem_memory {} {
+    # memory subsystem implements NoC logic and Memory Controller
+    set host_aclk [tapasco::subsystem::get_port "host" "clk"]
+    set host_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
+    set design_aclk [tapasco::subsystem::get_port "design" "clk"]
+    set design_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
+
+    set s_axi_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0"]
+    set m_axi_arch [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_ARCH"]
+    set m_axi_tapasco [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_TAPASCO"]
+    set m_axi_intc [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_INTC"]
+    set m_axi_desc_gen [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DESC_GEN"]
+
+    # move NoC from host to memory subsystem
+    move_bd_cells [current_bd_instance .] [get_bd_cells /host/axi_noc_0]
+    set axi_noc [get_bd_cells axi_noc_0]
+
+    # add AXI ports and clocks for PE interconnect trees and CPM ports
+    set_property CONFIG.NUM_SI [expr [get_property CONFIG.NUM_SI $axi_noc]+1] $axi_noc
+    set_property CONFIG.NUM_MI [expr [get_property CONFIG.NUM_MI $axi_noc]+1] $axi_noc
+    set_property CONFIG.NUM_CLKS [expr [get_property CONFIG.NUM_CLKS $axi_noc]+2] $axi_noc
+
+    # Configure NoC ports and connections for CPM and ARCH
+    set_property -dict [list CONFIG.CATEGORY {ps_pcie} \
+      CONFIG.CONNECTIONS { \
+        MC_0 {read_bw {10000} write_bw {10000} read_avg_burst {4} write_avg_burst {4}} \
+        M00_AXI {read_bw {100} write_bw {100} read_avg_burst {4} write_avg_burst {4}}}
+    ] [get_bd_intf_pins $axi_noc/S06_AXI]
+    set_property -dict [list CONFIG.CATEGORY {ps_pcie} \
+      CONFIG.CONNECTIONS { \
+        M00_AXI {read_bw {1} write_bw {1} read_avg_burst {4} write_avg_burst {4}}} \
+    ] [get_bd_intf_pins $axi_noc/S07_AXI]
+    set_property -dict [list CONFIG.CATEGORY {pl} \
+      CONFIG.CONNECTIONS {MC_1 {read_bw {10000} write_bw {10000} read_avg_burst {4} write_avg_burst {4}}} \
+    ] [get_bd_intf_pins $axi_noc/S08_AXI]
+    set_property CONFIG.ASSOCIATED_BUSIF S06_AXI [get_bd_pins $axi_noc/aclk6]
+    set_property CONFIG.ASSOCIATED_BUSIF S07_AXI [get_bd_pins $axi_noc/aclk7]
+    set_property CONFIG.ASSOCIATED_BUSIF S08_AXI [get_bd_pins $axi_noc/aclk9]
+    set_property CONFIG.ASSOCIATED_BUSIF M00_AXI [get_bd_pins $axi_noc/aclk8]
+
     # offset to map memory request from PEs into address range of memory controllers
     set arch_offset [tapasco::ip::create_axi_generic_off "arch_offset_0"]
     set_property -dict [list CONFIG.ADDRESS_WIDTH {41} \
@@ -283,7 +298,6 @@
     connect_bd_net $design_aclk [get_bd_pin $arch_offset/aclk]
     connect_bd_net $design_aresetn [get_bd_pin $arch_offset/aresetn]
     connect_bd_intf_net $s_axi_mem [get_bd_intf_pin $arch_offset/S_AXI]
-    connect_bd_intf_net [get_bd_intf_pin $arch_offset/M_AXI] $m_axi_mem_off
 
     set host_sc [tapasco::ip::create_axi_sc "host_sc" 1 4 2]
     connect_bd_net $host_aclk [get_bd_pins $host_sc/aclk]
@@ -295,12 +309,9 @@
     connect_bd_intf_net [get_bd_intf_pins $host_sc/M03_AXI] $m_axi_desc_gen
 
     # FIXME do not hardcode ports?
-    connect_bd_intf_net [get_bd_intf_pins $versal_cips/CPM_PCIE_NOC_0] [get_bd_intf_pins $axi_noc/S06_AXI]
-    connect_bd_intf_net [get_bd_intf_pins $versal_cips/CPM_PCIE_NOC_1] [get_bd_intf_pins $axi_noc/S07_AXI]
-    connect_bd_intf_net $s_axi_mem_off [get_bd_intf_pins $axi_noc/S08_AXI]
-    connect_bd_net [get_bd_pins $versal_cips/cpm_pcie_noc_axi0_clk] [get_bd_pins $axi_noc/aclk6]
-    connect_bd_net [get_bd_pins $versal_cips/cpm_pcie_noc_axi1_clk] [get_bd_pins $axi_noc/aclk7]
-    connect_bd_net $design_aclk [get_bd_pins $axi_noc/aclk8]
+    connect_bd_intf_net $arch_offset/M_AXI [get_bd_intf_pins $axi_noc/S08_AXI]
+    connect_bd_net $host_aclk [get_bd_pins $axi_noc/aclk8]
+    connect_bd_net $design_aclk [get_bd_pins $axi_noc/aclk9]
   }
 
   proc create_subsystem_intc {} {
@@ -376,7 +387,7 @@
     connect_bd_net $host_aclk [get_bd_pins $qdma_intr_ctrl/S_AXI_aclk]
     connect_bd_net $host_p_aresetn [get_bd_pins $qdma_intr_ctrl/S_AXI_aresetn]
 
-    connect_bd_intf_net $qdma_intr_ctrl/usr_irq /memory/versal_cips_0/dma0_usr_irq
+    connect_bd_intf_net $qdma_intr_ctrl/usr_irq /host/versal_cips_0/dma0_usr_irq
   }
 
   proc get_pe_base_address {} {
@@ -417,7 +428,8 @@
                           set comp [lindex $l 3]
                           puts "Special address for [get_property NAME $m] base: $base stride: $stride range: $range comp: $comp"
                         } else {
-                            error "No address defined for [get_property NAME $m], please make sure to define one in post-address-map plugin"
+                            puts "No address defined for [get_property NAME $m], please make sure to define one in post-address-map plugin or set interface on ignore list"
+                            set base "skip"
                         }
                     }
       }
@@ -428,7 +440,7 @@
 
   proc get_ignored_segments {} {
     set ignored [list]
-    for {set i 0} {$i < 8} {incr i} {
+    for {set i 0} {$i < 9} {incr i} {
       for {set j 0} {$j < 4} {incr j} {
         lappend ignored "/memory/axi_noc_0/S0${i}_AXI/C${j}_DDR_LOW3"
         for {set k 1} {$k < 5} {incr k} {
