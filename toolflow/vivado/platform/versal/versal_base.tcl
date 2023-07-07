@@ -39,7 +39,12 @@
   }
 
   proc max_masters {} {
-    return [list [::tapasco::get_platform_num_slots]]
+    # return [list [::tapasco::get_platform_num_slots]]
+    set masters [list]
+    for {set i 0} {$i < 28} {incr i} {
+      set masters [lappend masters 5]
+    }
+    return $masters
   }
 
   proc number_of_interrupt_controllers {} {
@@ -249,23 +254,31 @@
 
   proc create_subsystem_memory {} {
     # memory subsystem implements NoC logic and Memory Controller
+    set num_masters [llength [::arch::get_masters]]
+
     set host_aclk [tapasco::subsystem::get_port "host" "clk"]
     set host_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
     set design_aclk [tapasco::subsystem::get_port "design" "clk"]
     set design_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
 
-    set s_axi_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0"]
     set m_axi_arch [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_ARCH"]
     set m_axi_tapasco [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_TAPASCO"]
     set m_axi_intc [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_INTC"]
     set m_axi_desc_gen [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DESC_GEN"]
+
+    # add ports according to actual number of arch masters
+    set axi_mem_slaves [list]
+    for {set i 0} {$i < $num_masters} {incr i} {
+      set s_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_$i"]
+      lappend axi_mem_slaves $s_mem
+    }
 
     # move NoC from host to memory subsystem
     move_bd_cells [current_bd_instance .] [get_bd_cells /host/axi_noc_0]
     set axi_noc [get_bd_cells axi_noc_0]
 
     # add AXI ports and clocks for PE interconnect trees and CPM ports
-    set_property CONFIG.NUM_SI [expr [get_property CONFIG.NUM_SI $axi_noc]+1] $axi_noc
+    set_property CONFIG.NUM_SI [expr [get_property CONFIG.NUM_SI $axi_noc]+$num_masters] $axi_noc
     set_property CONFIG.NUM_MI [expr [get_property CONFIG.NUM_MI $axi_noc]+1] $axi_noc
     set_property CONFIG.NUM_CLKS [expr [get_property CONFIG.NUM_CLKS $axi_noc]+2] $axi_noc
 
@@ -279,25 +292,41 @@
       CONFIG.CONNECTIONS { \
         M00_AXI {read_bw {1} write_bw {1} read_avg_burst {4} write_avg_burst {4}}} \
     ] [get_bd_intf_pins $axi_noc/S07_AXI]
-    set_property -dict [list CONFIG.CATEGORY {pl} \
-      CONFIG.CONNECTIONS {MC_1 {read_bw {10000} write_bw {10000} read_avg_burst {4} write_avg_burst {4}}} \
-    ] [get_bd_intf_pins $axi_noc/S08_AXI]
     set_property CONFIG.ASSOCIATED_BUSIF S06_AXI [get_bd_pins $axi_noc/aclk6]
     set_property CONFIG.ASSOCIATED_BUSIF S07_AXI [get_bd_pins $axi_noc/aclk7]
-    set_property CONFIG.ASSOCIATED_BUSIF S08_AXI [get_bd_pins $axi_noc/aclk9]
     set_property CONFIG.ASSOCIATED_BUSIF M00_AXI [get_bd_pins $axi_noc/aclk8]
 
-    # offset to map memory request from PEs into address range of memory controllers
-    set arch_offset [tapasco::ip::create_axi_generic_off "arch_offset_0"]
-    set_property -dict [list CONFIG.ADDRESS_WIDTH {41} \
-      CONFIG.BYTES_PER_WORD {64} \
-      CONFIG.HIGHEST_ADDR_BIT {1} \
-      CONFIG.ID_WIDTH {6} \
-      CONFIG.OVERWRITE_BITS {1} ] $arch_offset
+    # create NoC ports for arch slaves, use round robin to distribute evenly to MC channels
+    set mc_port 1;
+    for {set i 0} {$i < $num_masters} {incr i} {
+      set axi_port [format "S%02s_AXI" [expr "$i + 8"]]
+      set_property -dict [list CONFIG.CATEGORY {pl} \
+        CONFIG.CONNECTIONS "MC_$mc_port {read_bw {1000} write_bw {1000} read_avg_burst {4} write_avg_burst {4}}" \
+      ] [get_bd_intf_pins $axi_noc/$axi_port]
+      if {$mc_port == 3} {
+        set mc_port 0
+      } else {
+        incr mc_port
+      }
+    }
 
-    connect_bd_net $design_aclk [get_bd_pin $arch_offset/aclk]
-    connect_bd_net $design_aresetn [get_bd_pin $arch_offset/aresetn]
-    connect_bd_intf_net $s_axi_mem [get_bd_intf_pin $arch_offset/S_AXI]
+    # offset(s) to map memory request from PEs into address range of memory controllers
+    set arch_offset_cores [list]
+    for {set i 0} {$i < $num_masters} {incr i} {
+      set arch_offset [tapasco::ip::create_axi_generic_off "arch_offset_$i"]
+      set_property -dict [list CONFIG.ADDRESS_WIDTH {41} \
+        CONFIG.BYTES_PER_WORD {64} \
+        CONFIG.HIGHEST_ADDR_BIT {1} \
+        CONFIG.ID_WIDTH {6} \
+        CONFIG.OVERWRITE_BITS {1} ] $arch_offset
+      lappend arch_offset_cores $arch_offset
+    }
+
+    foreach core $arch_offset_cores intf $axi_mem_slaves {
+      connect_bd_net $design_aclk [get_bd_pins $core/aclk]
+      connect_bd_net $design_aresetn [get_bd_pins $core/aresetn]
+      connect_bd_intf_net $intf $core/S_AXI
+    }
 
     set host_sc [tapasco::ip::create_axi_sc "host_sc" 1 4 2]
     connect_bd_net $host_aclk [get_bd_pins $host_sc/aclk]
@@ -309,7 +338,10 @@
     connect_bd_intf_net [get_bd_intf_pins $host_sc/M03_AXI] $m_axi_desc_gen
 
     # FIXME do not hardcode ports?
-    connect_bd_intf_net $arch_offset/M_AXI [get_bd_intf_pins $axi_noc/S08_AXI]
+    for {set i 0} {$i < $num_masters} {incr i} {
+      set axi_port [format "S%02s_AXI" [expr "$i + 8"]]
+      connect_bd_intf_net [lindex $arch_offset_cores $i]/M_AXI [get_bd_intf_pins $axi_noc/$axi_port]
+    }
     connect_bd_net $host_aclk [get_bd_pins $axi_noc/aclk8]
     connect_bd_net $design_aclk [get_bd_pins $axi_noc/aclk9]
   }
@@ -417,8 +449,6 @@
         "M_DESC_GEN"  { foreach {base stride range comp} [list [expr [get_platform_base_address]+0x10000] 0x10000 0                "PLATFORM_COMPONENT_DMA0"  ] {} }
         "M_DMA"       { foreach {base stride range comp} [list 0                                          0       [get_total_memory_size] ""                         ] {} }
         "M_DMA_OFF"   { foreach {base stride range comp} [list [expr "1 << 40"]                           0       [get_total_memory_size] ""                         ] {} }
-        "M_MEM_0"     { foreach {base stride range comp} [list 0                                          0       [get_total_memory_size] ""                         ] {} }
-        "M_MEM_0_OFF" { foreach {base stride range comp} [list [expr "1 << 40"]                           0       [get_total_memory_size] ""                         ] {} }
         "M_ARCH"     { set base "skip" }
         default      { if { [dict exists $extra_masters [get_property NAME $m]] } {
                           set l [dict get $extra_masters [get_property NAME $m]]
@@ -439,15 +469,28 @@
   }
 
   proc get_ignored_segments {} {
+    set num_masters [llength [::arch::get_masters]]
     set ignored [list]
-    for {set i 0} {$i < 9} {incr i} {
+    for {set i 0} {$i < [expr "$num_masters + 8"]} {incr i} {
+      set axi_port [format "S%02s_AXI" $i]
       for {set j 0} {$j < 4} {incr j} {
-        lappend ignored "/memory/axi_noc_0/S0${i}_AXI/C${j}_DDR_LOW3"
+        lappend ignored "/memory/axi_noc_0/${axi_port}/C${j}_DDR_LOW3"
         for {set k 1} {$k < 5} {incr k} {
-          lappend ignored "/memory/axi_noc_0/S0${i}_AXI/C${j}_DDR_LOW3x${k}"
+          lappend ignored "/memory/axi_noc_0/${axi_port}/C${j}_DDR_LOW3x${k}"
         }
       }
     }
     return $ignored
   }
 
+  # add all arch memory interfaces to address map
+  proc versal_extra_masters {{args {}}} {
+    set num_masters [llength [::arch::get_masters]]
+    for {set i 0} {$i < $num_masters} {incr i} {
+      set axi_port [format "S%02s_AXI" [expr "$i + 8"]]
+      set name [format "M_MEM_$i"]
+      lappend args $name [list 0 0 [get_total_memory_size] ""]
+    }
+  }
+
+  tapasco::register_plugin "platform::versal_extra_masters" "post-address-map"
