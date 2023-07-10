@@ -491,6 +491,7 @@
       set name [format "M_MEM_$i"]
       lappend args $name [list 0 0 [get_total_memory_size] ""]
     }
+    return $args
   }
 
   tapasco::register_plugin "platform::versal_extra_masters" "post-address-map"
