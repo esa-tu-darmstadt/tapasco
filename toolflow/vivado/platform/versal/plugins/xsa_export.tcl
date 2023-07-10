@@ -33,7 +33,7 @@ if {[tapasco::is_feature_enabled "XSA-Export"]} {
       set_property platform.extensible true [current_project]
 
       # Vitis requires at least one master port (slave is optional)
-      set_property PFM.AXI_PORT {M04_AXI {memport "M_AXI_GP" sptag "" memory "" is_range "true"}} [get_bd_cells /host/host_sc]
+      set_property PFM.AXI_PORT {M04_AXI {memport "M_AXI_GP" sptag "" memory "" is_range "true"}} [get_bd_cells /memory/host_sc]
 
       # Vitis requires at least one clock, take the design clock with fixed frequency
       set_property PFM.CLOCK {clk_out1 {id "11" is_default "true" proc_sys_reset "/clocks_and_resets/design_rst_gen" status "fixed"}} [get_bd_cells /clocks_and_resets/design_clk_wiz]
