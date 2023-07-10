@@ -29,14 +29,15 @@ if {[tapasco::is_feature_enabled "AI-Engine"]} {
     proc connect_aie_slave {{args {}}} {
       # connect ai_engine_0/S00_AXI to NoC
       # do it after general wiring, so that all other ports of the NoC are already connected
-      apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {/memory/versal_cips_0/pmc_axi_noc_axi0_clk (400 MHz)} Clk_slave {/aie/ai_engine_0/s00_axi_aclk (1000 MHz)} Clk_xbar {Auto} Master {/memory/versal_cips_0/PMC_NOC_AXI_0} Slave {/aie/ai_engine_0/S00_AXI} ddr_seg {Auto} intc_ip {/memory/axi_noc_0} master_apm {0}}  [get_bd_intf_pins /aie/ai_engine_0/S00_AXI]
+      apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {/host/versal_cips_0/pmc_axi_noc_axi0_clk (400 MHz)} Clk_slave {/aie/ai_engine_0/s00_axi_aclk (1250 MHz)} Clk_xbar {Auto} Master {/host/versal_cips_0/PMC_NOC_AXI_0} Slave {/aie/ai_engine_0/S00_AXI} ddr_seg {Auto} intc_ip {/memory/axi_noc_0} master_apm {0}}  [get_bd_intf_pins /aie/ai_engine_0/S00_AXI]
+
 
       # revert some strange changes in simulation model selection (bd automation somehow changes it to tlm)
       set_property SELECTED_SIM_MODEL rtl [get_bd_cells /memory/axi_noc_0]
 
       # rename sub-block interface names for easier identification for address-map creation
       set_property name S_AIE [get_bd_intf_pins /aie/S00_AXI]
-      set_property name M_AIE [get_bd_intf_pins /memory/M00_AXI]
+      set_property name M_AIE [get_bd_intf_pins /memory/M*_AXI]
 
       return $args
     }
