@@ -22,9 +22,10 @@
     exit 1
   }
 
+  # set PCIe width to X16 if not specified by platform
   if { ! [info exists pcie_width] } {
-    puts "No PCIe width defined. Assuming x8..."
-    set pcie_width "8"
+    puts "No PCIe width defined. Assuming x16..."
+    set pcie_width "16"
   } else {
     puts "Using PCIe width $pcie_width."
   }
@@ -112,6 +113,8 @@
 
   proc create_subsystem_host {} {
     # host subsystem implements the CIPS including DMA
+    variable pcie_width
+
     set host_aclk [tapasco::subsystem::get_port "host" "clk"]
     set host_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
     set design_aclk [tapasco::subsystem::get_port "design" "clk"]
@@ -163,9 +166,10 @@
     }
 
     # configure CIPS after NoC so that Vivado does not remove ports during BD automation
+    set link_width "X$pcie_width"
     set_property -dict [list \
       CONFIG.CLOCK_MODE {REF CLK 33.33 MHz} \
-      CONFIG.CPM_CONFIG { \
+      CONFIG.CPM_CONFIG [list \
         CPM_PCIE0_DSC_BYPASS_RD {1} \
         CPM_PCIE0_DSC_BYPASS_WR {1} \
         CPM_PCIE0_FUNCTIONAL_MODE {QDMA} \
@@ -183,8 +187,8 @@
         CPM_PCIE0_PF0_PCIEBAR2AXIBAR_QDMA_0 {0x0000020100000000} \
         CPM_PCIE0_PF0_CFG_DEV_ID {B03F} \
         CPM_PCIE0_PF0_MSIX_CAP_TABLE_SIZE {01F} \
-        CPM_PCIE0_PL_LINK_CAP_MAX_LINK_WIDTH {X16} \
-      } \
+        CPM_PCIE0_PL_LINK_CAP_MAX_LINK_WIDTH $link_width \
+      ] \
       CONFIG.DDR_MEMORY_MODE {Enable} \
       CONFIG.DEBUG_MODE {JTAG} \
       CONFIG.PS_PMC_CONFIG { \
