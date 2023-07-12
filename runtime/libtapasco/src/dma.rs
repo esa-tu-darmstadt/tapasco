@@ -238,7 +238,6 @@ impl DMAControl for DirectDMA {
             
             //on armv8 unaligned accesses to device memory result in a bus error
             if self.dev_name == "zynqmp" {
-                let aligned_size = data.len() / 8;
                 let remaining_bytes = data.len() % 8;
                 let aligned_bytes = data.len() - remaining_bytes;
                 let unaligned = remaining_bytes != 0;
