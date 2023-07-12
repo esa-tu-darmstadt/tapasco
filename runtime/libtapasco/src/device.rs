@@ -459,7 +459,7 @@ impl Device {
                             allocator: Mutex::new(Box::new(
                                 GenericAllocator::new(0, l.size, 1).context(AllocatorSnafu)?,
                             )),
-                            dma: Box::new(DirectDMA::new(l.base, l.size, arch.clone())),
+                            dma: Box::new(DirectDMA::new(l.base, l.size, arch.clone(), name.clone())),
                         }));
                     },
                     None => (),
