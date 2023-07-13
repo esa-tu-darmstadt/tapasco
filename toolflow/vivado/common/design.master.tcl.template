@@ -114,6 +114,8 @@ if {[llength [info commands platform::generate_wrapper]] == 0} {
   platform::generate_wrapper
 }
 
+tapasco::call_plugins "post-wrapper"
+
 # skip platform generation if flag was provided
 if {$skip_synth} {
 	exit
