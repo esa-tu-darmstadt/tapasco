@@ -19,24 +19,49 @@
 
 if {[tapasco::is_feature_enabled "Debug"]} {
   # add an AXI debug hub to a versal system, which is required for ILA cores
+  proc create_custom_subsystem_debug {{args {}}} {
+    set host_aclk [tapasco::subsystem::get_port "host" "clk"]
+    set host_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
+    set axi_dbg [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DBG"]
+
+    # create and connect debug hub IP
+    set axi_dbg_hub [tapasco::ip::create_axi_dbg_hub dbg_hub_0]
+    connect_bd_net $host_aclk [get_bd_pins $axi_dbg_hub/aclk]
+    connect_bd_net $host_p_aresetn [get_bd_pins $axi_dbg_hub/aresetn]
+    connect_bd_intf_net $axi_dbg [get_bd_intf_pins $axi_dbg_hub/S_AXI]
+
+    return $args
+  }
+
   namespace eval debug {
-    proc versal_debug_hub {{args {}}} {
-      set axi_dbg_hub [tapasco::ip::create_axi_dbg_hub dbg_hub]
-      set versal_cips [get_bd_cells /*/*cips*]
-      set dbg_config [list \
-        Clk_master "$versal_cips/pmc_axi_noc_axi0_clk (400 MHz)" \
-        Clk_slave {Auto} \
-        Clk_xbar {Auto} \
-        Master "$versal_cips/PMC_NOC_AXI_0" \
-        Slave "$axi_dbg_hub/S_AXI" \
-        ddr_seg {Auto} \
-        intc_ip {/memory/axi_noc_0} \
-        master_apm {0} \
-      ]
-      apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config $dbg_config [get_bd_intf_pins $axi_dbg_hub/S_AXI]
+    proc connect_debug_hub {{args {}}} {
+      set old_bd_inst [current_bd_instance]
+      current_bd_instance "/memory"
+
+      set axi_dbg [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DBG"]
+      set noc [get_bd_cells *noc*]
+
+      # add additional AXI master to NoC and connect it to PS PMC master
+      set axi_master_num [get_property CONFIG.NUM_MI $noc]
+      set axi_master_name [format "M%02s_AXI" $axi_master_num]
+      set pmc_connections [get_property CONFIG.CONNECTIONS [get_bd_intf_pins $noc/S05_AXI]]
+      set_property CONFIG.NUM_MI [expr $axi_master_num+1] $noc
+      set_property CONFIG.CATEGORY {pl} [get_bd_intf_pins $noc/$axi_master_name]
+      lappend pmc_connections $axi_master_name {read_bw {100} write_bw {100} read_avg_burst {4} write_avg_burst {4}}
+      set_property CONFIG.CONNECTIONS $pmc_connections [get_bd_intf_pins $noc/S05_AXI]
+
+      connect_bd_intf_net [get_bd_intf_pins $noc/$axi_master_name] $axi_dbg
+
+      current_bd_instance $old_bd_inst
+      return $args
+    }
+
+    proc dbg_addressmap {{args {}}} {
+      set args [lappend args "M_DBG" [list 0x20200000000 0 0 ""]]
       return $args
     }
   }
 
-  tapasco::register_plugin "platform::debug::versal_debug_hub" "pre-wrapper"
+  tapasco::register_plugin "platform::debug::connect_debug_hub" "pre-wiring"
+  tapasco::register_plugin "platform::debug::dbg_addressmap" "post-address-map"
 }
