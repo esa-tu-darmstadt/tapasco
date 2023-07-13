@@ -19,11 +19,9 @@
 
 if {[tapasco::is_feature_enabled "XSA-Export"]} {
   # Export TaPaSCo composition to an XSA file, which in turn can be imported to Vitis
-  # When feature is enabled, synthesis is skipped
-  if {$skip_synth} {
-    puts "XSA export cannot be used in combination with the --skipSynthesis flag"
-    exit 1
-  }
+
+  # Skip synthesis if feature is enabled
+  set skip_synth 1
 
   namespace eval versal {
     proc export_xsa {{args {}}} {
@@ -50,10 +48,8 @@ if {[tapasco::is_feature_enabled "XSA-Export"]} {
       set bitstream_no_double_hyphen [string map {-- -} $bitstreamname]
 
       write_hw_platform -hw -force -file [pwd]/$bitstream_no_double_hyphen.xsa
-
-      exit
     }
   }
 
-  tapasco::register_plugin "platform::versal::export_xsa" "pre-synth"
+  tapasco::register_plugin "platform::versal::export_xsa" "post-wrapper"
 }
