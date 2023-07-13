@@ -253,6 +253,17 @@ public:
     this->offset = offset;
   }
 
+  template <typename T> void set_args(T &t) {
+    set_arg(t);
+  }
+
+  /** Variadic: recursively sets all given arguments. **/
+  template <typename T, typename... Targs>
+  void set_args(T &t, Targs... args) {
+    set_arg(t);
+    set_args(args...);
+  }
+
 private:
   Device *device{0};
   JobList *list_inner{0};
@@ -264,6 +275,62 @@ private:
   bool offset_used{false};
   uint64_t offset{0};
   DeviceAddress deviceaddress{(DeviceAddress)-1};
+
+
+  /* Collector methods: bottom half of job launch. @} */
+
+  /* @{ Setters for register values */
+  /** Sets a single value argument. **/
+  template <typename T> void set_arg(T t) {
+    // only 32/64bit values can be passed directly (i.e., via register)
+    if (sizeof(T) == 4) {
+      this->single32((uint32_t)t);
+    } else if (sizeof(T) == 8) {
+      this->single64((uint64_t)t);
+    } else {
+      throw tapasco_error("Please supply large arguments as wrapped pointers.");
+    }
+  }
+
+  /** Sets a single pointer argument (alloc + copy). **/
+  template <typename T> void set_arg(T *t) {
+    throw tapasco_error("Pointers are not directly supported as they lack size "
+                        "information. Please use WrappedPointers.");
+  }
+
+  /** Sets local memory flag for transfer. */
+  template <typename T> void set_arg(Local<T> t) {
+    this->set_local();
+    set_arg(t.value);
+  }
+
+  /** Sets a single output-only pointer argument (alloc only). **/
+  template <typename T> void set_arg(OutOnly<T> t) {
+    this->unset_to_device();
+    set_arg(t.value);
+  }
+
+  /** Sets a single output-only pointer argument (alloc only). **/
+  template <typename T> void set_arg(InOnly<T> t) {
+    this->unset_from_device();
+    set_arg(t.value);
+  }
+
+  /** Sets a single output-only pointer argument (alloc only). **/
+  template <typename T> void set_arg(Offset<T> t) {
+    this->set_offset(t.offset);
+    set_arg(t.value);
+  }
+
+  /** Sets a single pointer argument (alloc + copy). **/
+  template <typename T> void set_arg(WrappedPointer<T> t) {
+    this->memop((uint8_t *)t.value, t.sz);
+  }
+
+  /** Sets a virtual address argument used for virtual pointers in SVM feature **/
+  template <typename T> void set_arg(VirtualAddress<T> t) {
+    this->virtaddr((uint8_t *)t.addr);
+  }
 };
 
 class TapascoMemory {
@@ -336,6 +403,79 @@ private:
   TapascoOffchipMemory *mem;
 };
 
+class TapascoPE {
+public:
+  TapascoPE(Device *d, SinglePEHandler *p) : device(d), pe(p) {}
+
+  virtual ~TapascoPE() {
+    if (this->pe != 0) {
+      tapasco_pe_destroy(this->pe);
+      this->pe = 0;
+    }
+  }
+
+  TapascoMemory get_local_memory() {
+    TapascoOffchipMemory *mem = tapasco_pe_get_local_memory(this->pe);
+    if (mem == 0) {
+      handle_error();
+    }
+    return TapascoMemory(mem);
+  }
+
+  void release() {
+    tapasco_pe_release(this->pe);
+  }
+
+  template <typename R, typename... Targs>
+  job_future launch(RetVal<R> &ret, Targs... args) {
+    JobArgumentList a(this->device);
+    a.set_args(args...);
+
+    Job *j = tapasco_pe_create_job(pe);
+    if (j == 0) {
+      handle_error();
+    }
+
+    if (tapasco_job_start(j, a.list()) < 0) {
+      handle_error();
+    }
+
+    return [this, j, &ret, &args...]() {
+      uint64_t ret_val;
+      if (tapasco_job_release(j, &ret_val, true) < 0) {
+        handle_error();
+      }
+      *ret.value = (R)ret_val;
+      return 0;
+    };
+  }
+
+  template <typename... Targs> job_future launch(Targs... args) {
+    JobArgumentList a(this->device);
+    a.set_args(args...);
+
+    Job *j = tapasco_pe_create_job(pe);
+    if (j == 0) {
+      handle_error();
+    }
+
+    if (tapasco_job_start(j, a.list()) < 0) {
+      handle_error();
+    }
+
+    return [this, j, &args...]() {
+      if (tapasco_job_release(j, 0, true) < 0) {
+        handle_error();
+      }
+      return 0;
+    };
+  }
+
+private:
+  Device *device{0};
+  SinglePEHandler *pe{0};
+};
+
 class TapascoDevice {
 public:
   TapascoDevice(Device *d) : device(d) {}
@@ -389,19 +529,20 @@ public:
     return j;
   }
 
-  TapascoMemory get_pe_local_memory(PEId pe_id) {
-    TapascoOffchipMemory *mem = tapasco_device_get_pe_local_memory(this->device, pe_id);
-    if (mem == 0) {
-      handle_error();
-    }
-    return TapascoMemory(mem);
-  }
-
   float design_frequency() {
     return tapasco_device_design_frequency(this->device);
   }
 
   Device *get_device() { return this->device; }
+
+  TapascoPE *acquire_pe_without_job(PEId pe_id) {
+    SinglePEHandler *pe = tapasco_device_acquire_pe_without_job(this->device, pe_id);
+    std::cout << "PE: " << pe << std::endl;
+    if (pe == 0) {
+      handle_error();
+    }
+    return new TapascoPE(this->device, pe);
+  }
 
 private:
   Device *device{0};
@@ -492,7 +633,7 @@ struct Tapasco {
   template <typename R, typename... Targs>
   job_future launch(PEId pe_id, RetVal<R> &ret, Targs... args) {
     JobArgumentList a(this->device_internal.get_device());
-    set_args(a, args...);
+    a.set_args(args...);
 
     Job *j = this->device_internal.acquire_pe(pe_id);
     if (j == 0) {
@@ -515,7 +656,7 @@ struct Tapasco {
 
   template <typename... Targs> job_future launch(PEId pe_id, Targs... args) {
     JobArgumentList a(this->device_internal.get_device());
-    set_args(a, args...);
+    a.set_args(args...);
 
     Job *j = this->device_internal.acquire_pe(pe_id);
     if (j == 0) {
@@ -532,6 +673,10 @@ struct Tapasco {
       }
       return 0;
     };
+  }
+
+  TapascoPE *acquire_pe_without_job(PEId pe_id) {
+    return this->device_internal.acquire_pe_without_job(pe_id);
   }
 
   /**
@@ -646,73 +791,6 @@ struct Tapasco {
   }
 
 private:
-  /* Collector methods: bottom half of job launch. @} */
-
-  /* @{ Setters for register values */
-  /** Sets a single value argument. **/
-  template <typename T> void set_arg(JobArgumentList &a, T t) {
-    // only 32/64bit values can be passed directly (i.e., via register)
-    if (sizeof(T) == 4) {
-      a.single32((uint32_t)t);
-    } else if (sizeof(T) == 8) {
-      a.single64((uint64_t)t);
-    } else {
-      throw tapasco_error("Please supply large arguments as wrapped pointers.");
-    }
-  }
-
-  /** Sets a single pointer argument (alloc + copy). **/
-  template <typename T> void set_arg(JobArgumentList &a, T *t) {
-    throw tapasco_error("Pointers are not directly supported as they lack size "
-                        "information. Please use WrappedPointers.");
-  }
-
-  /** Sets local memory flag for transfer. */
-  template <typename T> void set_arg(JobArgumentList &a, Local<T> t) {
-    a.set_local();
-    set_arg(a, t.value);
-  }
-
-  /** Sets a single output-only pointer argument (alloc only). **/
-  template <typename T> void set_arg(JobArgumentList &a, OutOnly<T> t) {
-    a.unset_to_device();
-    set_arg(a, t.value);
-  }
-
-  /** Sets a single output-only pointer argument (alloc only). **/
-  template <typename T> void set_arg(JobArgumentList &a, InOnly<T> t) {
-    a.unset_from_device();
-    set_arg(a, t.value);
-  }
-
-  /** Sets a single output-only pointer argument (alloc only). **/
-  template <typename T> void set_arg(JobArgumentList &a, Offset<T> t) {
-    a.set_offset(t.offset);
-    set_arg(a, t.value);
-  }
-
-  /** Sets a single pointer argument (alloc + copy). **/
-  template <typename T> void set_arg(JobArgumentList &a, WrappedPointer<T> t) {
-    a.memop((uint8_t *)t.value, t.sz);
-  }
-
-  /** Sets a virtual address argument used for virtual pointers in SVM feature **/
-  template <typename T> void set_arg(JobArgumentList &a, VirtualAddress<T> t) {
-	  a.virtaddr((uint8_t *)t.addr);
-  }
-
-  template <typename T> void set_args(JobArgumentList &a, T &t) {
-    set_arg(a, t);
-  }
-
-  /** Variadic: recursively sets all given arguments. **/
-  template <typename T, typename... Targs>
-  void set_args(JobArgumentList &a, T &t, Targs... args) {
-    set_arg(a, t);
-    set_args(a, args...);
-  }
-  /* Setters for register values @} */
-
   TapascoDriver driver_internal;
   TapascoDevice device_internal;
   TapascoMemory default_memory_internal;
