@@ -207,7 +207,7 @@ impl DirectDMA {
             offset,
             size,
             memory,
-            dev_name: dev_name
+            dev_name,
         }
     }
 }
