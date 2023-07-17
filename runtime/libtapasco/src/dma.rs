@@ -84,6 +84,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 pub trait DMAControl: Debug {
     fn copy_to(&self, data: &[u8], ptr: DeviceAddress) -> Result<()>;
     fn copy_from(&self, ptr: DeviceAddress, data: &mut [u8]) -> Result<()>;
+    fn nvMulator(&self, read_delay: u64, write_delay: u64, mode: u64) -> Result<()>;
 }
 
 #[derive(Debug, Getters)]
@@ -144,6 +145,11 @@ impl DMAControl for DriverDMA {
         };
         Ok(())
     }
+
+    fn nvMulator(&self, read_delay: u64, write_delay: u64, mode: u64) -> Result<()> {
+        trace!("configuring NVMulator");
+        Ok(())
+    }
 }
 
 #[derive(Debug, Getters)]
@@ -184,6 +190,11 @@ impl DMAControl for VfioDMA {
         );
 
         // nothing to copy, 'data' is same buffer that PE operated on
+        Ok(())
+    }
+
+    fn nvMulator(&self, read_delay: u64, write_delay: u64, mode: u64) -> Result<()> {
+        trace!("configuring NVMulator");
         Ok(())
     }
 }
@@ -263,6 +274,11 @@ impl DMAControl for DirectDMA {
 
         Ok(())
     }
+    
+    fn nvMulator(&self, read_delay: u64, write_delay: u64, mode: u64) -> Result<()> {
+        trace!("configuring NVMulator");
+        Ok(())
+    }
 }
 
 /// DMA implementation for SVM support
@@ -314,6 +330,11 @@ impl DMAControl for SVMDMA {
             ).context(DMAFromDeviceSnafu)?;
         }
         trace!("Migration to host memory complete.");
+        Ok(())
+    }
+    
+    fn nvMulator(&self, read_delay: u64, write_delay: u64, mode: u64) -> Result<()> {
+        trace!("configuring NVMulator");
         Ok(())
     }
 }

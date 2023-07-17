@@ -87,6 +87,7 @@ pub struct UserSpaceDMA {
     write_int_cntr: AtomicU64,
     read_cntr: AtomicU64,
     read_int_cntr: AtomicU64,
+    emulator_offset:usize,
 }
 
 impl UserSpaceDMA {
@@ -100,6 +101,7 @@ impl UserSpaceDMA {
         read_num_buf: usize,
         write_buf_size: usize,
         write_num_buf: usize,
+        emulator_offset: usize,
     ) -> Result<Self> {
         trace!(
             "Using setting: Read {} x {}B, Write {} x {}B",
@@ -181,6 +183,7 @@ impl UserSpaceDMA {
             write_int_cntr: AtomicU64::new(0),
             read_int_cntr: AtomicU64::new(0),
             read_cntr: AtomicU64::new(0),
+            emulator_offset: emulator_offset,
         })
     }
 
@@ -297,6 +300,32 @@ impl UserSpaceDMA {
 
         used_buffers.retain(|(x, _y, _z, _a)| *x >= read_int_cntr_used);
         Ok(())
+    }
+
+    fn configure_nvMulator(
+        &self,
+        dma_engine_memory: &MutexGuard<Arc<MmapMut>>,
+        read_delay: u64,
+        write_delay: u64,
+        mode: u64,
+    ) {
+        let mut offset = (self.emulator_offset as usize + 0x30) as isize;
+        unsafe {
+            let ptr = dma_engine_memory.as_ptr().offset(offset);
+            write_volatile(ptr as *mut u64, read_delay);
+        };
+
+        offset = (self.emulator_offset as usize + 0x40) as isize;
+        unsafe {
+            let ptr = dma_engine_memory.as_ptr().offset(offset);
+            write_volatile(ptr as *mut u64, write_delay);
+        };
+
+        offset = (self.emulator_offset as usize + 0x20) as isize;
+        unsafe {
+            let ptr = dma_engine_memory.as_ptr().offset(offset);
+            write_volatile(ptr as *mut u64, mode);
+        };
     }
 }
 
@@ -435,6 +464,23 @@ impl DMAControl for UserSpaceDMA {
             thread::yield_now();
         }
 
+        Ok(())
+    }
+    
+    fn nvMulator(&self, read_delay: u64, write_delay: u64, mode: u64) -> Result<()> {
+        trace!("configuring NVNulator with (read: {}, write: {}) in mode {}",
+        read_delay,
+        write_delay,
+        mode);
+
+        let dma_engine_memory = self.memory.lock()?;
+        self.configure_nvMulator(
+            &dma_engine_memory,
+            read_delay,
+            write_delay,
+            mode,
+        );
+        
         Ok(())
     }
 }

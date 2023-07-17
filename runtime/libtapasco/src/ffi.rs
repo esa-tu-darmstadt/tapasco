@@ -803,6 +803,22 @@ pub unsafe extern "C" fn tapasco_memory_copy_from(
 /// # Safety
 /// TODO
 #[no_mangle]
+pub unsafe extern "C" fn tapasco_nvMulator(
+    mem: *mut TapascoOffchipMemory,
+    read_delay: usize,
+    write_delay: usize,
+    mode: usize,
+) -> isize {
+
+    let tl = &mut *mem;
+    tl.dma().nvMulator(read_delay.try_into().unwrap(), write_delay.try_into().unwrap(), mode.try_into().unwrap()).context(DMASnafu);
+
+    return 10;
+}
+
+/// # Safety
+/// TODO
+#[no_mangle]
 pub unsafe extern "C" fn tapasco_memory_allocate(
     mem: *mut TapascoOffchipMemory,
     len: usize,
