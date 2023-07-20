@@ -251,7 +251,7 @@ impl DMAControl for DirectDMA {
                     let rem_s: *mut [u8] = std::ptr::slice_from_raw_parts_mut(p.offset(aligned_bytes as isize), remaining_bytes);
                     //transfer the remaining bytes individually
                     for i in 0..remaining_bytes {
-                        (*rem_s)[i] = data[i];
+                        (*rem_s)[i] = data[aligned_bytes + i];
                     }
                 }
             } else {
@@ -279,10 +279,28 @@ impl DMAControl for DirectDMA {
             ptr,
             data.len()
         );
+        
+        if self.dev_name == "zynqmp" {
+            let remaining_bytes = data.len() % 8;
+            let aligned_bytes = data.len() - remaining_bytes;
+            let unaligned = remaining_bytes != 0;
+            let aligned_end = end - remaining_bytes as u64;
 
-        data[..].clone_from_slice(
-            &self.memory[(self.offset + ptr) as usize..(self.offset + end) as usize],
-        );
+            data[..(aligned_bytes)].clone_from_slice(
+                &self.memory[(self.offset + ptr) as usize..(self.offset + aligned_end) as usize]
+            );
+            
+            if unaligned {
+                for i in 0..remaining_bytes {
+                    let mem_idx: usize = (self.offset + aligned_end) as usize + i;
+                    data[aligned_bytes + i] = self.memory[mem_idx];
+                }
+            }
+        } else {
+            data[..].clone_from_slice(
+                &self.memory[(self.offset + ptr) as usize..(self.offset + end) as usize],
+            );
+        }
 
         Ok(())
     }
