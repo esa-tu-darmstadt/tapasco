@@ -20,7 +20,6 @@
 namespace eval nvmulator {
 	
   proc is_nvmulator_supported {} {
-	  puts "AU280"
     return true
   }
 
