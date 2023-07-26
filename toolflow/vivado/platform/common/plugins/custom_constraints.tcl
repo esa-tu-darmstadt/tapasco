@@ -25,8 +25,7 @@ namespace eval custom_constraints {
       dict with config {
         set file [file normalize $path]
         if {![file exists $file]} {
-          puts "CustomConstraints: file $file does not exist"
-          exit 1
+          error "CustomConstraints: file $file does not exist"
         }
         set constraints_file "[get_property DIRECTORY [current_project]]/[file tail $file]"
         file copy -force $file $constraints_file
