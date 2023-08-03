@@ -34,12 +34,14 @@ LOG_ID=$DRIVER"|""pci"
 show_usage() {
 	cat << EOF
 Usage: ${0##*/} [-v|--verbose] [--d|--drv-reload] BITSTREAM
-Program first supported PCIe based FPGA found in JTAG chain with BITSTREAM.
+Program PCIe based FPGAs in JTAG chain with BITSTREAM.
 
 	-v	enable verbose output
 	-d	reload device driver
 	-n	do not load device driver
 	-p	program the device
+	-a <ADAPTER>	select programming adapter
+	-l	list available programming adapters
 	-h	hotplug the device
 EOF
 }
@@ -77,9 +79,11 @@ RELOADD=0
 NOLOADD=0
 HOTPLUG=0
 PROGRAM=0
+ADAPTER="NOADAPTER"
+LISTADAPTER=0
 
 OPTIND=1
-while getopts vdnhp opt; do
+while getopts vdnhpa:l opt; do
 	case $opt in
 		v)
 			VERBOSE=1
@@ -96,6 +100,12 @@ while getopts vdnhp opt; do
 		p)
 			PROGRAM=1
 			;;
+		a)
+			ADAPTER="$OPTARG"
+			;;
+		l)
+			LISTADAPTER=1
+			;;
 		*)
 			echo "unknown option: $opt"
 			show_usage
@@ -111,7 +121,7 @@ then
 	echo "bitstream = $BITSTREAM"
 
 	# unload driver, if reload_driver was set
-	if [ $RELOADD -gt 0 ]; then
+	if [ $LISTADAPTER -eq 0 ] && [ $RELOADD -gt 0 ]; then
 		# don't try to unload a not loaded driver
 		if [ `lsmod | grep $DRIVER | wc -l` -gt 0 ]; then
 			echo "unloading tlkm"
@@ -120,20 +130,27 @@ then
 	fi
 
 	# program the device
-	if [ $PROGRAM -gt 0 ]; then
-
-		if [ $VERBOSE -gt 0 ]; then
-			vivado -nolog -nojournal -notrace -mode tcl -source $BITLOAD_SCRIPT -tclargs $BITSTREAM
+	if [ $LISTADAPTER -gt 0 ] || [ $PROGRAM -gt 0 ]; then
+		set +e
+		if [ $LISTADAPTER -gt 0 ] || [ $VERBOSE -gt 0 ]; then
+			vivado -nolog -nojournal -notrace -mode tcl -source $BITLOAD_SCRIPT -tclargs --bit $BITSTREAM --adapter $ADAPTER --list-adapter $LISTADAPTER
 			VIVADORET=$?
 		else
 			echo "programming bitstream silently, this could take a while ..."
-			vivado -nolog -nojournal -notrace -mode batch -source $BITLOAD_SCRIPT -tclargs $BITSTREAM > /dev/null
+			vivado -nolog -nojournal -notrace -mode batch -source $BITLOAD_SCRIPT -tclargs --bit $BITSTREAM --adapter $ADAPTER --list-adapter $LISTADAPTER > /dev/null
 			VIVADORET=$?
 		fi
+		if [ $LISTADAPTER -gt 0 ]; then
+			exit
+		fi
+		set -e
 
 		# check return code
 		if [ $VIVADORET -ne 0 ]; then
-			echo "programming failed, Vivado returned non-zero exit code $VIVADORET"
+			echo "programming failed, Vivado returned non-zero exit code $VIVADORET."
+			if [ $VERBOSE -eq 0 ]; then
+				echo "Use --verbose for more details."
+			fi
 			exit $VIVADORET
 		fi
 		echo "bitstream programmed successfully!"

@@ -45,6 +45,16 @@ axi4mmUseSmartconnect {
 ```
 
 
+#### CustomConstraints
+This feature allows to include a custom constraints file (xdc).
+
+```
+CustomConstraints {
+  path: "/path/to/file.xdc" # this needs to be an absolute path
+}
+```
+
+
 ## Zynq based platforms
 
 ### ZC706
