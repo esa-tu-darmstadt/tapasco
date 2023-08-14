@@ -24,45 +24,49 @@
 #    - freq: the frequency in mhz
 #    - pin_list: a list of pins (from PEs) which the clock should be connected to
 
-if {[tapasco::is_feature_enabled "ADDITIONAL_CLOCKS"]} {
-  proc create_custom_subsystem_additional_clocks {{args {}}} {
-    set config [additional_clocks::parse_configuration false]
-
-    puts "Clock configuration $config"
-
-    additional_clocks::create_clocks $config
-      
-  }
-}
-
 namespace eval additional_clocks {
 
-  proc create_clocks {config} {
-    set num_clocks [dict size $config]
-    set freqs [list]
-    set names [list]
-    foreach key [dict keys $config] {
-      set clock [dict get $config $key]
-      dict with clock {
-        lappend freqs $freq
-        lappend names $name
+  proc create_clocks {} {
+    if {[tapasco::is_feature_enabled "ADDITIONAL_CLOCKS"]} {
+      set config [parse_configuration false]
+
+      set num_clocks [dict size $config]
+      set freqs [list]
+      set names [list]
+      foreach key [dict keys $config] {
+        set clock [dict get $config $key]
+        dict with clock {
+          lappend freqs $freq
+          lappend names $name
+       }
       }
-    }
-    platform::create_clocks wizard $num_clocks $freqs
-    for {set i 0} {$i < $num_clocks} {incr i} {
-      set j [expr $i + 1]
-      set pin [create_bd_pin -type "clk" -dir "O" [lindex $names $i]]
-      connect_bd_net [get_bd_pins wizard/clk_out$j] $pin
+      # platform::create_clocks wizard $num_clocks $freqs
+      # for {set i 0} {$i < $num_clocks} {incr i} {
+      #   set j [expr $i + 1]
+      #   set pin [create_bd_pin -type "clk" -dir "O" [lindex $names $i]]
+      #   connect_bd_net [get_bd_pins wizard/clk_out$j] $pin
+      # }
+      set design_clk_wiz [get_bd_cells /memory/design_clk_wiz]
+      for {set i 0} {$i < $num_clocks} {incr i} {
+        set j [expr $i + 2]
+        set_property -dict [list \
+          CONFIG.CLKOUT${j}_USED {true} \
+          CONFIG.CLKOUT${j}_REQUESTED_OUT_FREQ [lindex $freqs $i] \
+          CONFIG.CLK_OUT${j}_PORT [lindex $names $i] \
+        ] $design_clk_wiz
+      }
+
+      connect_pes $config
     }
   }
 
   proc connect_clocks {} {
     if {[tapasco::is_feature_enabled "ADDITIONAL_CLOCKS"]} {
-      connect_bd_net [get_bd_pins /additional_clocks/design_clk] [get_bd_pins /additional_clocks/wizard/clk_in]
-      set pin [get_bd_pins /clocks_and_resets/design_rst_gen/ext_reset_in]
-      connect_bd_net $pin [get_bd_pins /additional_clocks/wizard/resetn]
-      disconnect_bd_net [get_bd_nets -of_objects $pin] $pin
-      connect_bd_net $pin [get_bd_pins /additional_clocks/wizard/locked]
+      #connect_bd_net [get_bd_pins /additional_clocks/mem_clk] [get_bd_pins /additional_clocks/wizard/clk_in]
+      #set pin [get_bd_pins /clocks_and_resets/design_rst_gen/ext_reset_in]
+      #connect_bd_net $pin [get_bd_pins /additional_clocks/wizard/resetn]
+      #disconnect_bd_net [get_bd_nets -of_objects $pin] $pin
+      #connect_bd_net $pin [get_bd_pins /additional_clocks/wizard/locked]
 
       set config [parse_configuration false]
       connect_pes $config
@@ -76,7 +80,7 @@ namespace eval additional_clocks {
         foreach pin $pin_list {
           set pin [get_bd_pins $pin]
           disconnect_bd_net [get_bd_nets -of_objects $pin] $pin
-          connect_bd_net [get_bd_pins /additional_clocks/$name] $pin
+          connect_bd_net [get_bd_pins /memory/design_clk_wiz/$name] $pin
         }
       }
     }
@@ -172,4 +176,4 @@ namespace eval additional_clocks {
 
 
 tapasco::register_plugin "platform::additional_clocks::validate_clocks" "pre-arch"
-tapasco::register_plugin "platform::additional_clocks::connect_clocks" "post-wiring"
+tapasco::register_plugin "platform::additional_clocks::create_clocks" "post-wiring"
