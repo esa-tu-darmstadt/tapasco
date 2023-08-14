@@ -23,7 +23,7 @@ use crate::device::DataTransferPrealloc;
 use crate::device::PEParameter;
 use crate::pe::CopyBack;
 use crate::pe::PE;
-use crate::scheduler::Scheduler;
+use crate::scheduler::ReleasePE;
 use snafu::ResultExt;
 use std::sync::Arc;
 
@@ -82,7 +82,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 #[derive(Debug)]
 pub struct Job {
     pe: Option<PE>,
-    scheduler: Arc<Scheduler>,
+    scheduler: Arc<dyn ReleasePE>,
 }
 
 /// Release the PE if it's no longer needed.
@@ -103,7 +103,7 @@ impl Job {
     /// Not used directly. Request a Job through [`acquire_pe`].
     ///
     /// [`acquire_pe`]: ../device/struct.Device.html#method.acquire_pe
-    pub fn new(pe: PE, scheduler: &Arc<Scheduler>) -> Self {
+    pub fn new(pe: PE, scheduler: &Arc<impl ReleasePE + 'static>) -> Self {
         Self {
             pe: Some(pe),
             scheduler: scheduler.clone(),

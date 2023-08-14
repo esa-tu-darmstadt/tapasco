@@ -25,7 +25,7 @@ use crate::dma_user_space::UserSpaceDMA;
 use crate::job::Job;
 use crate::pe::PEId;
 use crate::pe::PE;
-use crate::scheduler::Scheduler;
+use crate::scheduler::{Scheduler,SinglePEHandler};
 use crate::tlkm::{tlkm_access, tlkm_ioctl_svm_launch, tlkm_svm_init_cmd};
 use crate::tlkm::tlkm_ioctl_create;
 use crate::tlkm::tlkm_ioctl_destroy;
@@ -517,6 +517,23 @@ impl Device {
         let pe = self.scheduler.acquire_pe(id).context(SchedulerSnafu)?;
         trace!("Successfully acquired PE of type {}.", id);
         Ok(Job::new(pe, &self.scheduler))
+    }
+
+
+    /// Acquires a PE from the device for use with the [`SinglePEHandler`].
+    /// This will remove the PE from the normal scheduling process (until it is explicitly released).
+    /// The [`SinglePEHandler`] allows to repeatedly launch jobs on this PE. It also allows to manually access the PE-local memory.
+    ///
+    /// # Arguments
+    ///   * id: The ID of the desired PE.
+    ///
+    /// Returns a [`SinglePEHandler`] with the given PE.
+    pub fn acquire_single_pe_scheduler(&self, id: PEId) -> Result<SinglePEHandler> {
+        self.check_exclusive_access()?;
+        trace!("Trying to acquire PE of type {} for SinglePEScheduler.", id);
+        let pe = self.scheduler.acquire_pe(id).context(SchedulerSnafu)?;
+        trace!("Successfully acquired PE of type {}.", id);
+        Ok(SinglePEHandler::new(pe, &self.scheduler))
     }
 
     /// Request a PE from the device but don't create a Job for it. Usually [`acquire_pe`] is used
