@@ -26,6 +26,12 @@ if {[tapasco::is_feature_enabled "AI-Engine"]} {
     # name for ai engine needs to be exactly like this for xsa export
     set aie [create_bd_cell -type ip -vlnv xilinx.com:ip:ai_engine:2.0 ai_engine_0]
 
+    set aie_core_freq [tapasco::get_feature_option "AI-Engine" "freq" -1]
+    if {$aie_core_freq != -1} {
+      puts "Setting AI Engine core frequency to $aie_core_freq"
+      set_property CONFIG.AIE_CORE_REF_CTRL_FREQMHZ $aie_core_freq $aie
+    }
+
     connect_bd_net [get_bd_pins $aie/s00_axi_aclk] $aie_clk
     connect_bd_intf_net $axi_aie [get_bd_intf_pins $aie/S00_AXI]
 
