@@ -38,7 +38,8 @@ set_property IOSTANDARD LVCMOS18 [get_ports {dout_0[0]}]
 
 create_pblock pblock_axi_pcie
 add_cells_to_pblock [get_pblocks pblock_axi_pcie] [get_cells -quiet [list system_i/host/axi_pcie3_0]]
-resize_pblock [get_pblocks pblock_axi_pcie] -add {SLR0}
+add_cells_to_pblock [get_pblocks pblock_axi_pcie] [get_cells -quiet [list system_i/host/in_ic]]
+resize_pblock [get_pblocks pblock_axi_pcie] -add {CLOCKREGION_X4Y0:CLOCKREGION_X7Y3}
 set_property IS_SOFT TRUE [get_pblocks pblock_axi_pcie]
 
 
