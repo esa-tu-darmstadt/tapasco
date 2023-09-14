@@ -98,8 +98,37 @@ if {[tapasco::is_feature_enabled "AI-Engine"]} {
     set pes [get_bd_cells -filter "NAME =~ *target_ip_*_* && TYPE == ip" -of_objects [get_bd_cells /arch]]
     foreach portname [dict keys $ports] {
       dict with ports $portname {
+        set connected 0
+        set intf [tapasco::get_feature_option "AI-Engine" [string tolower $portname] -1]
+        # user can provide a name filter for a given portname
+        if {$intf != -1} {
+          set matches [get_bd_intf_pins -of_objects $pes -filter "vlnv == xilinx.com:interface:axis_rtl:1.0 && MODE == [expr {$direction=={out}} ? {{Slave}} : {{Master}}] && CONFIG.TDATA_NUM_BYTES == $width && PATH =~ *$intf"]
+          foreach match $matches {
+            if {[llength [get_bd_intf_nets -quiet -of_objects $match]] == 0} {
+              # interface is unconnected
+              connect_bd_intf_net $match [get_bd_intf_pins $aie/$port]
+              puts "AIE connection from $match to $aie/$port ($portname) \[manual mode $intf\]"
+              set connected 1
+              break
+            }
+          }
+          if {$connected == 0} {
+            error "No AIE connection found for $aie/$port ($portname) \[manual mode $intf\]"
+          }
+        }
         set matches [get_bd_intf_pins -of_objects $pes -filter "vlnv == xilinx.com:interface:axis_rtl:1.0 && MODE == [expr {$direction=={out}} ? {{Slave}} : {{Master}}] && CONFIG.TDATA_NUM_BYTES == $width"]
-        connect_bd_intf_net [lindex $matches 0] [get_bd_intf_pins $aie/$port]
+        foreach match $matches {
+          if {[llength [get_bd_intf_nets -quiet -of_objects $match]] == 0} {
+            # interface is unconnected
+            connect_bd_intf_net $match [get_bd_intf_pins $aie/$port]
+            set connected 1
+            puts "AIE connection from $match to $aie/$port ($portname) \[automatic mode\]"
+            break
+          }
+        }
+        if {$connected == 0} {
+          error "No AIE connection found for $aie/$port ($portname) \[automatic mode\]"
+        }
       }
     }
 
