@@ -114,6 +114,8 @@ if {[tapasco::is_feature_enabled "AI-Engine"]} {
           }
           if {$connected == 0} {
             error "No AIE connection found for $aie/$port ($portname) \[manual mode $intf\]"
+          } else {
+            continue
           }
         }
         set matches [get_bd_intf_pins -of_objects $pes -filter "vlnv == xilinx.com:interface:axis_rtl:1.0 && MODE == [expr {$direction=={out}} ? {{Slave}} : {{Master}}] && CONFIG.TDATA_NUM_BYTES == $width"]
