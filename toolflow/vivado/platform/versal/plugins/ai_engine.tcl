@@ -106,8 +106,8 @@ if {[tapasco::is_feature_enabled "AI-Engine"]} {
           foreach match $matches {
             if {[llength [get_bd_intf_nets -quiet -of_objects $match]] == 0} {
               # interface is unconnected
-              connect_bd_intf_net $match [get_bd_intf_pins $aie/$port]
               puts "AIE connection from $match to $aie/$port ($portname) \[manual mode $intf\]"
+              connect_bd_intf_net $match [get_bd_intf_pins $aie/$port]
               set connected 1
               break
             }
@@ -120,9 +120,9 @@ if {[tapasco::is_feature_enabled "AI-Engine"]} {
         foreach match $matches {
           if {[llength [get_bd_intf_nets -quiet -of_objects $match]] == 0} {
             # interface is unconnected
+            puts "AIE connection from $match to $aie/$port ($portname) \[automatic mode\]"
             connect_bd_intf_net $match [get_bd_intf_pins $aie/$port]
             set connected 1
-            puts "AIE connection from $match to $aie/$port ($portname) \[automatic mode\]"
             break
           }
         }
