@@ -170,6 +170,7 @@
     set_property -dict [list \
       CONFIG.CLOCK_MODE {REF CLK 33.33 MHz} \
       CONFIG.CPM_CONFIG [list \
+        CPM_PCIE0_DMA_INTF {AXI_MM_and_AXI_Stream} \
         CPM_PCIE0_DSC_BYPASS_RD {1} \
         CPM_PCIE0_DSC_BYPASS_WR {1} \
         CPM_PCIE0_FUNCTIONAL_MODE {QDMA} \
@@ -246,8 +247,33 @@
     connect_bd_intf_net [get_bd_intf_pins $versal_cips/dma0_c2h_byp_out] [get_bd_intf_pins $desc_gen/c2h_byp_out]
     connect_bd_intf_net [get_bd_intf_pins $versal_cips/dma0_h2c_byp_out] [get_bd_intf_pins $desc_gen/h2c_byp_out]
     connect_bd_intf_net [get_bd_intf_pins $versal_cips/dma0_tm_dsc_sts] [get_bd_intf_pins $desc_gen/tm_dsc_sts]
+    connect_bd_intf_net [get_bd_intf_pins $versal_cips/dma0_st_rx_msg] [get_bd_intf_pins $desc_gen/st_rx_msg]
     connect_bd_intf_net [get_bd_intf_pins $desc_gen/c2h_byp_in] [get_bd_intf_pins $versal_cips/dma0_c2h_byp_in_mm]
     connect_bd_intf_net [get_bd_intf_pins $desc_gen/h2c_byp_in] [get_bd_intf_pins $versal_cips/dma0_h2c_byp_in_mm]
+
+    connect_bd_net [get_bd_pins $desc_gen/c2h_byp_st_vld] [get_bd_pins $versal_cips/dma0_c2h_byp_in_st_sim_valid]
+    connect_bd_net [get_bd_pins $desc_gen/c2h_byp_st_rdy] [get_bd_pins $versal_cips/dma0_c2h_byp_in_st_sim_ready]
+    connect_bd_net [get_bd_pins $desc_gen/c2h_byp_st_addr] [get_bd_pins $versal_cips/dma0_c2h_byp_in_st_sim_addr]
+    connect_bd_net [get_bd_pins $desc_gen/c2h_byp_st_error] [get_bd_pins $versal_cips/dma0_c2h_byp_in_st_sim_error]
+    connect_bd_net [get_bd_pins $desc_gen/c2h_byp_st_qid] [get_bd_pins $versal_cips/dma0_c2h_byp_in_st_sim_qid]
+    connect_bd_net [get_bd_pins $desc_gen/c2h_byp_st_func] [get_bd_pins $versal_cips/dma0_c2h_byp_in_st_sim_func]
+    connect_bd_net [get_bd_pins $desc_gen/c2h_byp_st_port_id] [get_bd_pins $versal_cips/dma0_c2h_byp_in_st_sim_port_id]
+
+    connect_bd_net [get_bd_pins $desc_gen/h2c_byp_st_vld] [get_bd_pins $versal_cips/dma0_h2c_byp_in_st_valid]
+    connect_bd_net [get_bd_pins $desc_gen/h2c_byp_st_rdy] [get_bd_pins $versal_cips/dma0_h2c_byp_in_st_ready]
+    connect_bd_net [get_bd_pins $desc_gen/h2c_byp_st_addr] [get_bd_pins $versal_cips/dma0_h2c_byp_in_st_addr]
+    connect_bd_net [get_bd_pins $desc_gen/h2c_byp_st_len] [get_bd_pins $versal_cips/dma0_h2c_byp_in_st_len]
+    connect_bd_net [get_bd_pins $desc_gen/h2c_byp_st_no_dma] [get_bd_pins $versal_cips/dma0_h2c_byp_in_st_no_dma]
+    connect_bd_net [get_bd_pins $desc_gen/h2c_byp_st_error] [get_bd_pins $versal_cips/dma0_h2c_byp_in_st_error]
+    connect_bd_net [get_bd_pins $desc_gen/h2c_byp_st_sdi] [get_bd_pins $versal_cips/dma0_h2c_byp_in_st_sdi]
+    connect_bd_net [get_bd_pins $desc_gen/h2c_byp_st_mrkr_req] [get_bd_pins $versal_cips/dma0_h2c_byp_in_st_mrkr_req]
+    connect_bd_net [get_bd_pins $desc_gen/h2c_byp_st_sop] [get_bd_pins $versal_cips/dma0_h2c_byp_in_st_sop]
+    connect_bd_net [get_bd_pins $desc_gen/h2c_byp_st_eop] [get_bd_pins $versal_cips/dma0_h2c_byp_in_st_eop]
+    connect_bd_net [get_bd_pins $desc_gen/h2c_byp_st_qid] [get_bd_pins $versal_cips/dma0_h2c_byp_in_st_qid]
+    connect_bd_net [get_bd_pins $desc_gen/h2c_byp_st_func] [get_bd_pins $versal_cips/dma0_h2c_byp_in_st_func]
+    connect_bd_net [get_bd_pins $desc_gen/h2c_byp_st_cidx] [get_bd_pins $versal_cips/dma0_h2c_byp_in_st_cidx]
+    connect_bd_net [get_bd_pins $desc_gen/h2c_byp_st_port_id] [get_bd_pins $versal_cips/dma0_h2c_byp_in_st_port_id]
+
     connect_bd_net [get_bd_pins $desc_gen/dma_resetn] [get_bd_pins $versal_cips/dma0_soft_resetn]
 
     # FIXME do not hardcode ports?
