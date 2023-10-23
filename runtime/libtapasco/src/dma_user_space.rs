@@ -533,7 +533,7 @@ impl DMAControl for UserSpaceDMA {
             let mut buffer = loop {
                 match self.to_dev_buffer.steal() {
                     Steal::Success(buffer) => break buffer,
-                    Steal::Empty => self.wait_for_write(true, 0)?,
+                    Steal::Empty => self.wait_for_h2c_transfer(true, 0)?,
                     Steal::Retry => (),
                 }
             };
