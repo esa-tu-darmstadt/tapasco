@@ -40,7 +40,7 @@
   foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/platform/${platform_dirname}/plugins" "*.tcl"] {
     source -notrace $f
   }
-
+  
   proc max_masters {} {
     return [list [::tapasco::get_platform_num_slots]]
   }
