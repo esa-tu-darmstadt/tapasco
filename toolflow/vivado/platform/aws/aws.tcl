@@ -325,7 +325,7 @@ namespace eval platform {
     set clkwiz_design_aclk [create_bd_pin -type "clk" -dir "O" "design_aclk"]
     set clkwiz_design_aresetn [create_bd_pin -type "rst" -dir "O" "design_aresetn"]
 
-    if {[info exist clk_group] eq 0} {
+    #if {[info exist clk_group] eq 0} {
       set design_clk_wiz [tapasco::ip::create_clk_wiz design_clk_wiz]
       set_property -dict [list \
         {CONFIG.CLK_OUT1_PORT} {design_clk} \
@@ -347,22 +347,22 @@ namespace eval platform {
       # connect external design clk
       connect_bd_net [get_bd_pins -of_objects $design_clk_wiz -filter {NAME == "design_clk"}] $clkwiz_design_aclk
       connect_bd_net [get_bd_pins -of_objects $design_clk_wiz -filter {NAME == "locked"}] $clkwiz_design_aresetn
-    } else {
-      set_property -dict [list \
-        "CONFIG.NUM_[string toupper $clk_group]_CLOCKS" [expr "$clk_port + 1"] \
-        {CONFIG.CLOCK_B_RECIPE} {2} \
-        {CONFIG.CLOCK_C_RECIPE} {1} \
-      ] $f1_inst
+    # } else {
+    #   set_property -dict [list \
+    #     "CONFIG.NUM_[string toupper $clk_group]_CLOCKS" [expr "$clk_port + 1"] \
+    #     {CONFIG.CLOCK_B_RECIPE} {2} \
+    #     {CONFIG.CLOCK_C_RECIPE} {1} \
+    #   ] $f1_inst
 
-      if {$clk_group == "a" && $clk_port == "0"} {
-        connect_bd_net [get_bd_pins -of_objects $f1_inst -filter {NAME == "clk_main_a0_out"}] $clkwiz_design_aclk
-      } else {
-        connect_bd_net \
-          [get_bd_pins -of_objects $f1_inst -filter "NAME == clk_extra_${clk_group}${clk_port}_out"] \
-          $clkwiz_design_aclk
-      }
-      connect_bd_net [get_bd_pins -of_objects $f1_inst -filter {NAME == "rst_main_n_out"}] $clkwiz_design_aresetn
-    }
+    #   if {$clk_group == "a" && $clk_port == "0"} {
+    #     connect_bd_net [get_bd_pins -of_objects $f1_inst -filter {NAME == "clk_main_a0_out"}] $clkwiz_design_aclk
+    #   } else {
+    #     connect_bd_net \
+    #       [get_bd_pins -of_objects $f1_inst -filter "NAME == clk_extra_${clk_group}${clk_port}_out"] \
+    #       $clkwiz_design_aclk
+    #   }
+    #   connect_bd_net [get_bd_pins -of_objects $f1_inst -filter {NAME == "rst_main_n_out"}] $clkwiz_design_aresetn
+    # }
 
     # DDR training status
     set ddr_ready [create_bd_pin -type "undef" -dir O "ddr_ready"]
