@@ -320,4 +320,8 @@ namespace eval platform {
   proc create_clocks {name num_clocks freqs} {
     error "Platform does not implement mandatory proc create_clocking_wizard!"
   }
+
+  proc get_platform_name {} {
+    error "Platform does not implement mandatory proc get_platform_name!"
+  }
 }
