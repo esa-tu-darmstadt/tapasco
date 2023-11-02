@@ -26,6 +26,15 @@
 
 namespace eval additional_clocks {
 
+  proc get_design_clk_wiz {} {
+    set name [::platform::get_platform_name]
+    if {$name == "aws"} {
+      return [get_bd_cells /host/design_clk_wiz]
+    } else {
+      return [get_bd_cells /memory/design_clk_wiz]
+    }
+  }
+
   proc create_clocks {} {
     if {[tapasco::is_feature_enabled "ADDITIONAL_CLOCKS"]} {
       set config [parse_configuration false]
@@ -46,14 +55,13 @@ namespace eval additional_clocks {
       #   set pin [create_bd_pin -type "clk" -dir "O" [lindex $names $i]]
       #   connect_bd_net [get_bd_pins wizard/clk_out$j] $pin
       # }
-      set design_clk_wiz [get_bd_cells /memory/design_clk_wiz]
       for {set i 0} {$i < $num_clocks} {incr i} {
         set j [expr $i + 2]
         set_property -dict [list \
           CONFIG.CLKOUT${j}_USED {true} \
           CONFIG.CLKOUT${j}_REQUESTED_OUT_FREQ [lindex $freqs $i] \
           CONFIG.CLK_OUT${j}_PORT [lindex $names $i] \
-        ] $design_clk_wiz
+        ] [get_design_clk_wiz]
       }
 
       connect_pes $config
@@ -80,7 +88,7 @@ namespace eval additional_clocks {
         foreach pin $pin_list {
           set pin [get_bd_pins $pin]
           disconnect_bd_net [get_bd_nets -of_objects $pin] $pin
-          connect_bd_net [get_bd_pins /memory/design_clk_wiz/$name] $pin
+          connect_bd_net [get_bd_pins [get_design_clk_wiz]/$name] $pin
         }
       }
     }

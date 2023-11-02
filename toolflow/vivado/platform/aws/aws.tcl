@@ -391,22 +391,22 @@ namespace eval platform {
     # connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins $ddr_ic/aclk1]
     # connect_bd_net [tapasco::subsystem::get_port "host" "clk"] [get_bd_pins $ddr_ic/aclk]
 
-    set ddr_ic [tapasco::ip::create_axi_ic "ddr_ic" 2 [llength $ddr_available]]
+    set ddr_ic [tapasco::ip::create_axi_sc "ddr_ic" 2 [llength $ddr_available] 2]
+    set_property -dict [list \
+      CONFIG.HAS_ARESETN {1}
+    ] $ddr_ic
+    
 
     connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME == "ACLK"}] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00_* && TYPE == clk}] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M* && TYPE == clk}]
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME == "aclk"}]
 
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == clk}]
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME == "aclk1"}]
 
     connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME == "ARESETN"}] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S00* && TYPE == rst}] \
-      [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ M* && TYPE == rst}]
+      [get_bd_pins -of_objects $ddr_ic -filter {NAME == "aresetn"}]
 
-    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
+    #connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects $ddr_ic -filter {NAME =~ S01_* && TYPE == rst}]
 
     set num_ddr 0
@@ -440,10 +440,13 @@ namespace eval platform {
 
     # connect_bd_intf_net [get_bd_intf_pins "$out_ic/S00_AXI"] [get_bd_intf_pins "$f1_inst/M_AXI_OCL"]
 
-    set out_ic [tapasco::ip::create_axi_ic "out_ic" 1 5]
+    set out_ic [tapasco::ip::create_axi_sc "out_ic" 1 5 2]
+    set_property -dict [list \
+      CONFIG.HAS_ARESETN {1}
+    ] $out_ic
 
     # Without this, Vivado chooses wrong parameters (at least in 2018.3)
-    set_property -dict [list \
+    #set_property -dict [list \
       {CONFIG.ENABLE_ADVANCED_OPTIONS} {1} \
       {CONFIG.XBAR_DATA_WIDTH} {32} \
     ] $out_ic
@@ -455,6 +458,8 @@ namespace eval platform {
     connect_bd_intf_net [get_bd_intf_pins -of_objects $out_ic -filter {NAME == M04_AXI}] $m_mem_gpio
 
     connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME == "aclk"}]
+    #connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME == ACLK}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == clk}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == clk}] \
@@ -463,24 +468,29 @@ namespace eval platform {
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M04_* && TYPE == clk}]
 
     connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME == "aclk1"}]
+    #connect_bd_net [tapasco::subsystem::get_port "design" "clk"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == clk}]
 
     connect_bd_net [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"] \
-      [get_bd_pins -of_objects $out_ic -filter {NAME == ARESETN}] \
-      [get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == rst}] \
+      [get_bd_pins -of_objects $out_ic -filter {NAME == "aresetn"}]
+      #[get_bd_pins -of_objects $out_ic -filter {NAME =~ S0* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M01_* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M02_* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M03_* && TYPE == rst}] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M04_* && TYPE == rst}]
 
-    connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
+    #connect_bd_net [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"] \
       [get_bd_pins -of_objects $out_ic -filter {NAME =~ M00_* && TYPE == rst}]
 
     connect_bd_intf_net [get_bd_intf_pins -of_objects $f1_inst -filter {NAME == "M_AXI_OCL"}] \
       [get_bd_intf_pins -of_objects $out_ic -filter {NAME == "S00_AXI"}]
 
     # Connect "in" AXI ports
-    set in_ic [tapasco::ip::create_axi_ic "in_ic" 1 1]
+    set in_ic [tapasco::ip::create_axi_sc "in_ic" 1 1]
+    set_property -dict [list \
+      CONFIG.HAS_ARESETN {1}
+    ] $in_ic
 
     connect_bd_net [tapasco::subsystem::get_port "host" "clk"] \
       [get_bd_pins -of_objects $in_ic -filter {TYPE == clk}]
