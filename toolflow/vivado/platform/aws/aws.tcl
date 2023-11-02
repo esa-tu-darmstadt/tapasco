@@ -58,6 +58,13 @@ namespace eval platform {
   proc get_pe_base_address {} {
     return 0x20000
   }
+
+
+
+  proc get_platform_name {} {
+    return "aws"
+  }
+
   # end mandatory functions
 
   proc get_address_map {{pe_base ""}} {
