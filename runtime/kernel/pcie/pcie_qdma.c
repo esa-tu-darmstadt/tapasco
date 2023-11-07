@@ -68,6 +68,7 @@
 #define QDMA_CMPT_CTXT_VALID		(1UL << 24)
 #define QDMA_CMPT_FULL_UPD		(1UL << 29)
 #define QDMA_CMPT_RING_SZ		64
+#define QDMA_CMPT_BUF_SZ		0x8000
 
 #define QDMA_IRQ_ARM			(1UL << 16)
 #define QDMA_DMAP_SEL_CMPT_TRIG_USER	(3UL << 24)
@@ -487,7 +488,7 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 		goto fail_ctxtclear;
 	}
 
-	// setup SW context
+	// setup SW context for MM queues
 	data[0] = QDMA_IRQ_ARM;
 	data[1] = QDMA_SW_DESC_CTXT_QEN | QDMA_SW_DESC_CTXT_BYPASS
 		  | QDMA_SW_DESC_CTXT_IRQ_EN | QDMA_SW_DESC_CTXT_IS_MM;
@@ -504,15 +505,19 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 		goto fail_swh2c_mm;
 	}
 
-	iowrite32(0x8000, buf_size_reg);
+	// set size per descriptor for C2H streaming
+	iowrite32(QDMA_CMPT_BUF_SZ, buf_size_reg);
+
+	// set size of completion ring
 	iowrite32(QDMA_CMPT_RING_SZ, ring_size_reg);
 
+	// setup SW context for stream queues
 	memset(&sw_desc_ctxt, 0, sizeof(sw_desc_ctxt));
 	sw_desc_ctxt.qen = 1;
 	sw_desc_ctxt.fcrd_en = 1;
 	sw_desc_ctxt.bypass = 1;
 	if (qdma_program_ind_context(ctxt_regs, mask, (uint32_t *)&sw_desc_ctxt, QDMA_CTXT_SELC_DEC_SW_C2H, QDMA_ST_QID)) {
-		DEVERR(dev->dev_id, "Failed to program QDMA C2H Strean software context");
+		DEVERR(dev->dev_id, "Failed to program QDMA C2H Stream software context");
 		res = -EACCES;
 		goto fail_swc2h_st;
 	}
