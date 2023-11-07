@@ -57,8 +57,12 @@ namespace eval sfpplus {
     if {$mode != "100G"} {
       error "$mode is not supported"
     }
-    set design_aclk [tapasco::subsystem::get_port "design" "clk"]
-    set design_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
+
+    set design_aclk [get_bd_pins /host/versal_cips_0/pl0_ref_clk]
+    set net_rst_gen [tapasco::ip::create_rst_gen "net_rst_gen"]
+    connect_bd_net [get_bd_pins $net_rst_gen/slowest_sync_clk] $design_aclk
+    connect_bd_net [get_bd_pins $net_rst_gen/ext_reset_in] [get_bd_pins /host/versal_cips_0/dma0_axi_aresetn]
+    set design_aresetn [get_bd_pins $net_rst_gen/peripheral_aresetn]
 
     set constraints_fn "$::env(TAPASCO_HOME_TCL)/platform/versal/plugins/mrmac.xdc"
     read_xdc $constraints_fn
@@ -145,7 +149,8 @@ namespace eval sfpplus {
     if {$datawidth == "256"} {
         set user_clk [get_bd_pins -quiet bufg_gt_0/usrclk]
         if {[llength $user_clk] == 0} {
-          set user_clk [get_bd_pins mbufg_gt_0/MBUFG_GT_O1]
+          set user_clk_tx [get_bd_pins mbufg_gt_0/MBUFG_GT_O1]
+          set user_clk_rx [get_bd_pins mbufg_gt_1/MBUFG_GT_O1]
         }
     } elseif {$datawidth == "384"} {
       if {$datawidth == "384"} {
@@ -160,10 +165,13 @@ namespace eval sfpplus {
         CONFIG.CLKOUT_REQUESTED_OUT_FREQUENCY $freq \
         CONFIG.CLKOUT_USED {true} \
       ] $user_clk_wiz
-      set user_clk [get_bd_pins $user_clk_wiz/clk_out1]
+      set user_clk_tx [get_bd_pins $user_clk_wiz/clk_out1]
+      set user_clk_rx [get_bd_pins $user_clk_wiz/clk_out1]
     }
-    set user_clk_concat [tapasco::ip::create_xlconcat user_clk_concat 4]
-    connect_bd_net $user_clk [get_bd_pins $user_clk_concat/In0] [get_bd_pins $user_clk_concat/In1] [get_bd_pins $user_clk_concat/In2] [get_bd_pins $user_clk_concat/In3]
+    set user_clk_tx_concat [tapasco::ip::create_xlconcat user_clk_tx_concat_0 4]
+    connect_bd_net $user_clk_tx [get_bd_pins $user_clk_tx_concat/In0] [get_bd_pins $user_clk_tx_concat/In1] [get_bd_pins $user_clk_tx_concat/In2] [get_bd_pins $user_clk_tx_concat/In3]
+    set user_clk_rx_concat [tapasco::ip::create_xlconcat user_clk_rx_concat_0 4]
+    connect_bd_net $user_clk_rx [get_bd_pins $user_clk_rx_concat/In0] [get_bd_pins $user_clk_rx_concat/In1] [get_bd_pins $user_clk_rx_concat/In2] [get_bd_pins $user_clk_rx_concat/In3]
 
     set gt_quad_base [get_bd_cell gt_quad_base]
     # transceiver ports
@@ -211,8 +219,8 @@ namespace eval sfpplus {
       set user_clk4_rx [get_bd_pins $rx_alt_serdes_clk_concat/dout]
       set user_clk4_tx [get_bd_pins $tx_alt_serdes_clk_concat/dout]
     } else {
-      set user_clk4_rx [get_bd_pin $user_clk_concat/dout]
-      set user_clk4_tx [get_bd_pin $user_clk_concat/dout]
+      set user_clk4_rx [get_bd_pin $user_clk_rx_concat/dout]
+      set user_clk4_tx [get_bd_pin $user_clk_tx_concat/dout]
     }
     connect_bd_net $user_clk4_rx [get_bd_pins $mrmac/rx_axi_clk]
     connect_bd_net $user_clk4_tx [get_bd_pins $mrmac/tx_axi_clk]
@@ -233,9 +241,9 @@ namespace eval sfpplus {
     # combine the MRMAC stream ports
     set axis_tx [get_bd_intf_pins /network/AXIS_TX_${name}]
     set axis_tx_reg [tapasco::ip::create_axis_reg_slice axis_tx_reg]
-    set_property -dict [list CONFIG.TDATA_NUM_BYTES.VALUE_SRC USER CONFIG.HAS_TKEEP.VALUE_SRC USER CONFIG.HAS_TLAST.VALUE_SRC USER] $axis_tx_reg
+    set_property -dict [list CONFIG.TDATA_NUM_BYTES.VALUE_SRC USER CONFIG.HAS_TKEEP.VALUE_SRC USER CONFIG.HAS_TLAST.VALUE_SRC USER CONFIG.HAS_TREADY.VALUE_SRC USER] $axis_tx_reg
     # REG_CONFIG = bypass -> no logic involved; 32 bytes = 256 bit
-    set_property -dict [list CONFIG.TDATA_NUM_BYTES $bytewidth CONFIG.REG_CONFIG {0} CONFIG.HAS_TKEEP {1} CONFIG.HAS_TLAST {1}] $axis_tx_reg
+    set_property -dict [list CONFIG.TDATA_NUM_BYTES $bytewidth CONFIG.REG_CONFIG {0} CONFIG.HAS_TKEEP {1} CONFIG.HAS_TLAST {1} CONFIG.HAS_TREADY {1}] $axis_tx_reg
     connect_bd_intf_net $axis_tx [get_bd_intf_pins $axis_tx_reg/S_AXIS]
     connect_bd_net [get_bd_pins $mrmac/tx_axis_tlast_0] [get_bd_pins $axis_tx_reg/m_axis_tlast]
     connect_bd_net [get_bd_pins $mrmac/tx_axis_tready_0] [get_bd_pins $axis_tx_reg/m_axis_tready]
@@ -287,9 +295,11 @@ namespace eval sfpplus {
     }
     # set keep[8:10] to 0
     set tx_keep_concat0 [tapasco::ip::create_xlconcat tx_keep_concat0 2]
+    set tx_keep_zero [tapasco::ip::create_constant tx_keep_zero0 3 0]
     set_property -dict [list CONFIG.IN1_WIDTH.VALUE_SRC USER CONFIG.IN0_WIDTH.VALUE_SRC USER] $tx_keep_concat0
     set_property -dict [list CONFIG.NUM_PORTS {2} CONFIG.IN0_WIDTH {8} CONFIG.IN1_WIDTH {3}] $tx_keep_concat0
     connect_bd_net [get_bd_pins $tx_keep_slice0/Dout] [get_bd_pins $tx_keep_concat0/In0]
+    connect_bd_net [get_bd_pins $tx_keep_zero/dout] [get_bd_pins $tx_keep_concat0/In1]
     connect_bd_net [get_bd_pins $tx_keep_concat0/dout] [get_bd_pins $mrmac/tx_axis_tkeep_user0]
     # RX
     # combine the MRMAC stream ports
@@ -333,14 +343,15 @@ namespace eval sfpplus {
         connect_bd_net [get_bd_pins $rx_keep_concat/In5] [get_bd_pins $mrmac/rx_axis_tkeep_user5]
     }
 
-    connect_bd_net $user_clk [get_bd_pins $axis_rx_reg/aclk] [get_bd_pins $axis_tx_reg/aclk] \
+    connect_bd_net $user_clk_rx [get_bd_pins $axis_rx_reg/aclk] \
+        [get_bd_pins /network/sfp_rx_clock_${name}]
+    connect_bd_net $user_clk_tx [get_bd_pins $axis_tx_reg/aclk] \
         [get_bd_pins /network/sfp_tx_clock_${name}]
-    connect_bd_net [get_bd_pins $mrmac/gt_rx_reset_done_out] [get_bd_pins $axis_tx_reg/aresetn] [get_bd_pins $axis_rx_reg/aresetn] \
+    connect_bd_net [get_bd_pins $mrmac/gt_rx_reset_done_out] [get_bd_pins $axis_rx_reg/aresetn] \
         [get_bd_pins /network/sfp_rx_resetn_${name}]
+    connect_bd_net [get_bd_pins $mrmac/gt_tx_reset_done_out] [get_bd_pins $axis_tx_reg/aresetn] \
+        [get_bd_pins /network/sfp_tx_resetn_${name}]
     current_bd_instance $old_bd
-    # workaround: connecting two pins out of the hierarchical block cell does not work, so connect the second clock and reset directly on lower hierarchy level
-    connect_bd_net [get_bd_pins /network/sfp_tx_clock_${name}] [get_bd_pins /network/sfp_rx_clock_${name}]
-    connect_bd_net [get_bd_pins /network/sfp_rx_resetn_${name}] [get_bd_pins /network/sfp_tx_resetn_${name}]
   }
   }
 }
