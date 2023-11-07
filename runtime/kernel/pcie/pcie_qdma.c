@@ -438,9 +438,14 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 	if (!buf_size_reg) {
 		DEVERR(dev->dev_id, "Failed to map QDMA C2H BUF_SZ register");
 		res = -EFAULT;
-		goto fail_fmap_remap;
+		goto fail_bufsize_remap;
 	}
 	ring_size_reg = ioremap(qdma_bar_start + 0x204, sizeof(uint32_t));
+	if (!ring_size_reg) {
+		DEVERR(dev->dev_id, "Failed to map QDMA RING_SZ register");
+		res = -EFAULT;
+		goto fail_rngsize_remap;
+	}
 
 	// map PIDX update register to re-arm DMA interrupts
 	// (use the in the QDMA case unused ack_register_aws)
@@ -449,6 +454,14 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 		DEVERR(dev->dev_id, "Failed to map QDMA PIDX update registers");
 		res = -EFAULT;
 		goto fail_ackregs;
+	}
+
+	// allocate coherent memory for completion ring
+	pdev->cmpt_ring = dma_alloc_coherent(&pdev->pdev->dev, QDMA_CMPT_RING_SZ * sizeof(uint64_t), &pdev->cmpt_ring_addr, GFP_KERNEL);
+	if (!pdev->cmpt_ring) {
+		DEVERR(dev->dev_id, "Failed to allocate completion ring");
+		res = -ENOMEM;
+		goto fail_cmptring_alloc;
 	}
 
 	DEVLOG(dev->dev_id, TLKM_LF_DMA, "Clear and program QDMA contexts");
@@ -483,12 +496,12 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 	if (qdma_program_ind_context(ctxt_regs, mask, data, QDMA_CTXT_SELC_DEC_SW_C2H, QDMA_MM_QID)) {
 		DEVERR(dev->dev_id, "Failed to program QDMA C2H software context");
 		res = -EACCES;
-		goto fail_swc2h;
+		goto fail_swc2h_mm;
 	}
 	if (qdma_program_ind_context(ctxt_regs, mask, data, QDMA_CTXT_SELC_DEC_SW_H2C, QDMA_MM_QID)) {
 		DEVERR(dev->dev_id, "Failed to program QDMA H2C software context");
 		res = -EACCES;
-		goto fail_swh2c;
+		goto fail_swh2c_mm;
 	}
 
 	iowrite32(0x8000, buf_size_reg);
@@ -501,7 +514,7 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 	if (qdma_program_ind_context(ctxt_regs, mask, (uint32_t *)&sw_desc_ctxt, QDMA_CTXT_SELC_DEC_SW_C2H, QDMA_ST_QID)) {
 		DEVERR(dev->dev_id, "Failed to program QDMA C2H Strean software context");
 		res = -EACCES;
-		goto fail_swc2h;
+		goto fail_swc2h_st;
 	}
 	memset(&sw_desc_ctxt, 0, sizeof(sw_desc_ctxt));
 	sw_desc_ctxt.irq_arm = 1;
@@ -511,7 +524,7 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 	if (qdma_program_ind_context(ctxt_regs, mask, (uint32_t *)&sw_desc_ctxt, QDMA_CTXT_SELC_DEC_SW_H2C, QDMA_ST_QID)) {
 		DEVERR(dev->dev_id, "Failed to program QDMA H2C Stream software context");
 		res = -EACCES;
-		goto fail_swh2c;
+		goto fail_swh2c_st;
 	}
 
 	// setup C2H prefetch context
@@ -522,13 +535,12 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 	mask[2] = mask[3] = 0;
 	if (qdma_program_ind_context(ctxt_regs, mask, data, QDMA_CTXT_SELC_PFTCH, QDMA_ST_QID)) {
 		DEVERR(dev->dev_id, "Failed to program QDMA C2H Prefetch context");
-		goto fail_swc2h;
+		res = -EACCES;
+		goto fail_prftch_st;
 	}
 
 	// setup C2H completion context
 	mask[0] = mask[1] = mask[2] = mask[3] = 0xFFFFFFFF;
-	// FIXME error check
-	pdev->cmpt_ring = dma_alloc_coherent(&pdev->pdev->dev, QDMA_CMPT_RING_SZ * sizeof(uint64_t), &pdev->cmpt_ring_addr, GFP_KERNEL);
 	cmpl_ctxt.en_stat_desc = 1;
 	cmpl_ctxt.en_int = 1;
 	cmpl_ctxt.trig_mode = 0x3;
@@ -538,7 +550,8 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 	cmpl_ctxt.full_upd = 1;
 	if (qdma_program_ind_context(ctxt_regs, mask, (uint32_t *)&cmpl_ctxt, QDMA_CTXT_SELC_WRB, QDMA_ST_QID)) {
 		DEVERR(dev->dev_id, "Failed to program QDMA C2H Writeback context");
-		goto fail_swc2h;
+		res = -EACCES;
+		goto fail_cmpt_st;
 	}
 
 	// program QID to vector table
@@ -569,13 +582,26 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 
 	return 0;
 
-	// FIXME adjust error handling
-fail_swh2c:
+fail_cmpt_st:
+	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_PFTCH, QDMA_ST_QID);
+fail_pftch_st:
+	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_H2C, QDMA_ST_QID);
+fail_swh2c_st:
+	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_C2H, QDMA_ST_QID);
+fail_swc2h_st:
+	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_H2C, QDMA_MM_QID);
+fail_swh2c_mm:
 	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_C2H, QDMA_MM_QID);
-fail_swc2h:
+fail_swc2h_mm:
 fail_ctxtclear:
+	dma_free_coherent(&pdev->pdev->dev, QDMA_CMPT_RING_SZ * sizeof(uint64_t), pdev->cmpt_ring, pdev->cmpt_ring_addr);
+fail_cmptring_alloc:
 	iounmap(pdev->ack_register_aws);
 fail_ackregs:
+	iounmap(ring_size_reg);
+fail_rngsize_remap:
+	iounmap(buf_size_reg);
+fail_bufsize_remap:
 	iounmap(fmap_reg);
 fail_fmap_remap:
 	iounmap(h2c_mm_ctrl);
