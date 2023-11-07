@@ -67,9 +67,11 @@
 #define QDMA_CMPT_CTXT_TRIG_MODE_USER	(3UL << 2)
 #define QDMA_CMPT_CTXT_VALID		(1UL << 24)
 #define QDMA_CMPT_FULL_UPD		(1UL << 29)
+#define QDMA_CMPT_RING_SZ		64
 
 #define QDMA_IRQ_ARM			(1UL << 16)
 #define QDMA_DMAP_SEL_CMPT_TRIG_USER	(3UL << 24)
+#define QDMA_DMAP_SEL_CMPT_WRB_EN	(1UL << 27)
 #define QDMA_DMAP_SEL_CMPT_IRQ_EN	(1UL << 28)
 
 #define QDMA_MM_QID			0
@@ -155,6 +157,14 @@ struct qdma_cmpl_ctxt {
 	unsigned __int128 rsv:2;
 };
 
+struct qdma_cmpl_status {
+	uint32_t pidx:16;
+	uint32_t cidx:16;
+	uint32_t color:1;
+	uint32_t int_state:1;
+	uint32_t rsvd:29;
+};
+
 
 /**
  * check whether QDMA is used by checking for the QDMA interrupt controller
@@ -210,15 +220,27 @@ irqreturn_t qdma_intr_handler_c2h_stream(int irq, void *data)
 {
 	struct tlkm_irq_mapping *mapping = (struct tlkm_irq_mapping *)data;
 	struct tlkm_pcie_device *pdev = mapping->dev->private_data;
+	struct qdma_cmpl_status cmpl_stat;
+	uint32_t pidx, cidx, idx_diff;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
+	uint32_t i;
+#endif
 
-	if (mapping->eventfd != 0)
+	cmpl_stat = *((struct qdma_cmpl_status *)&pdev->cmpt_ring[QDMA_CMPT_RING_SZ - 1]);
+	pidx = cmpl_stat.pidx;
+	cidx = cmpl_stat.cidx;
+	idx_diff = (pidx < cidx) ? ((pidx + QDMA_CMPT_RING_SZ - 1) - cidx) : (pidx - cidx);
+
+	if (mapping->eventfd != 0) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
-		eventfd_signal(mapping->eventfd, 1);
+		eventfd_signal(mapping->eventfd, idx_diff);
 #else
 		// Linux commit 3652117 removes argument from eventfd_signal
-		eventfd_signal(mapping->eventfd);
+		for (i = 0; i < idx_diff; ++i)
+			eventfd_signal(mapping->eventfd);
 #endif
-	pdev->ack_register_aws[6] = QDMA_DMAP_SEL_CMPT_TRIG_USER | QDMA_DMAP_SEL_CMPT_IRQ_EN;
+	}
+	pdev->ack_register_aws[6] = QDMA_DMAP_SEL_CMPT_TRIG_USER | QDMA_DMAP_SEL_CMPT_IRQ_EN | QDMA_DMAP_SEL_CMPT_WRB_EN | pidx;
 	return IRQ_HANDLED;
 }
 
@@ -449,7 +471,7 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 	}
 
 	iowrite32(0x8000, buf_size_reg);
-	iowrite32(32, ring_size_reg);
+	iowrite32(QDMA_CMPT_RING_SZ, ring_size_reg);
 
 	memset(&sw_desc_ctxt, 0, sizeof(sw_desc_ctxt));
 	sw_desc_ctxt.qen = 1;
@@ -485,10 +507,11 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 	// setup C2H completion context
 	mask[0] = mask[1] = mask[2] = mask[3] = 0xFFFFFFFF;
 	// FIXME error check
-	pdev->cmpt_ring = dma_alloc_coherent(&pdev->pdev->dev, 32 * 8, &pdev->cmpt_ring_addr, GFP_KERNEL);
+	pdev->cmpt_ring = dma_alloc_coherent(&pdev->pdev->dev, QDMA_CMPT_RING_SZ * sizeof(uint64_t), &pdev->cmpt_ring_addr, GFP_KERNEL);
+	cmpl_ctxt.en_stat_desc = 1;
 	cmpl_ctxt.en_int = 1;
 	cmpl_ctxt.trig_mode = 0x3;
-	cmpl_ctxt.qsize_idx = 1;
+	cmpl_ctxt.qsize_idx = 0;
 	cmpl_ctxt.baddr_high = pdev->cmpt_ring_addr >> 6;
 	cmpl_ctxt.valid = 1;
 	cmpl_ctxt.full_upd = 1;
@@ -512,7 +535,7 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 	iowrite32(1, h2c_mm_ctrl);
 
 	// initial CIDX update for C2H stream
-	pdev->ack_register_aws[6] = QDMA_DMAP_SEL_CMPT_TRIG_USER | QDMA_DMAP_SEL_CMPT_IRQ_EN;
+	pdev->ack_register_aws[6] = QDMA_DMAP_SEL_CMPT_TRIG_USER | QDMA_DMAP_SEL_CMPT_IRQ_EN | 	QDMA_DMAP_SEL_CMPT_WRB_EN;
 
 	iounmap(ring_size_reg);
 	iounmap(buf_size_reg);
@@ -564,7 +587,7 @@ int pcie_qdma_exit(struct tlkm_pcie_device *pdev)
 						 dev, "PLATFORM_COMPONENT_DMA0"));
 
 	if (pdev->cmpt_ring_addr) {
-		dma_free_coherent(&pdev->pdev->dev, 32 * 8, pdev->cmpt_ring, pdev->cmpt_ring_addr);
+		dma_free_coherent(&pdev->pdev->dev, QDMA_CMPT_RING_SZ * sizeof(uint64_t), pdev->cmpt_ring, pdev->cmpt_ring_addr);
 		pdev->cmpt_ring_addr = 0;
 		pdev->cmpt_ring = NULL;
 	}

@@ -88,7 +88,7 @@ struct tlkm_pcie_device {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
 	struct msix_entry *msix_entries;
 #endif
-	uint32_t *cmpt_ring;
+	uint64_t *cmpt_ring;
 	dma_addr_t cmpt_ring_addr;
 };
 
