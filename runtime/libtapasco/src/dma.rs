@@ -392,14 +392,14 @@ impl DMAControl for SimDMA {
 
         if self.is_platform {
             let request = ReadPlatform {
-                addr: ptr as u64,
+                addr: self.offset + ptr as u64,
                 num_bytes: data.len() as u32,
             };
             let read_platform_response = self.client.read_platform(request).context(SimClientSnafu)?;
             data.copy_from_slice(read_platform_response.iter().map(|val| *val as u8).collect::<Vec<u8>>().as_mut_slice());
         } else {
             let request = ReadMemory {
-                addr: ptr as u64,
+                addr: self.offset + ptr as u64,
                 length: data.len() as u64,
             };
             let read_memory_response = self.client.read_memory(request).context(SimClientSnafu)?;
