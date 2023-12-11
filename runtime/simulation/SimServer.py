@@ -111,7 +111,7 @@ class SimServer(sc_grpc.SimRequestServicer):
         _n_bytes = len(self.axim.bus.RDATA) // 8 # should be 4
         while _bytes_left > 0:
             # address offset calculation for next transfer
-            _addr = _addr + num_bytes - _bytes_left
+            _addr = addr + num_bytes - _bytes_left
 
             # burst_length depends on num_bytes and bytes_left
             # max burst length is 256
