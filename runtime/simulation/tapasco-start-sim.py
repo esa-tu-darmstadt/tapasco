@@ -93,7 +93,7 @@ def target_vivado_prj(filename, verbose):
 
     make_vivado_prj = subprocess.Popen([shutil.which('make'), '-C', sim_dir, f'SIM_IP={filename}', 'vivado_prj'],
                                        preexec_fn=os.setsid,
-                                       stderr=subprocess.STDOUT if verbose == 2 else subprocess.PIPE,
+                                       stderr=subprocess.STDOUT if verbose >= 2 else subprocess.PIPE,
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE)
 
@@ -113,7 +113,7 @@ def target_make(port, verbose, gui):
     print('Starting simulation...')
 
     make = subprocess.Popen([shutil.which('make'), f'SIM_PORT={port}', '-C', sim_dir, 'GUI=1' if gui else 'GUI=0'], preexec_fn=os.setsid,
-                            stderr=subprocess.STDOUT if verbose == 2 else subprocess.PIPE,
+                            stderr=subprocess.STDOUT if verbose >= 2 else subprocess.PIPE,
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE)
 
