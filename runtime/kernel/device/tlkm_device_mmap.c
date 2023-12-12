@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
  *
- * This file is part of TaPaSCo 
+ * This file is part of TaPaSCo
  * (see https://github.com/esa-tu-darmstadt/tapasco).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -36,10 +36,9 @@ int tlkm_device_mmap(struct file *fp, struct vm_area_struct *vm)
 	ssize_t const sz = vm->vm_end - vm->vm_start;
 	ulong const off = vm->vm_pgoff << PAGE_SHIFT;
 	void *kptr = addr2map_off(dp, off);
-	LOG(TLKM_LF_DEVICE, "calling mmap on device.");
 	DEVLOG(dp->dev_id, TLKM_LF_CONTROL, "received mmap: offset = 0x%08lx",
 	       off);
-	
+
 	if (strncmp(dp->name, "sim", 3) != 0) {
 		if (kptr == 0) {
 			DEVERR(dp->dev_id, "invalid address: 0x%08lx", off);

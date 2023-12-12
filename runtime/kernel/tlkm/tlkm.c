@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
  *
- * This file is part of TaPaSCo 
+ * This file is part of TaPaSCo
  * (see https://github.com/esa-tu-darmstadt/tapasco).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -52,7 +52,6 @@ int tlkm_init(void)
 	_tlkm.miscdev.minor = MISC_DYNAMIC_MINOR;
 	_tlkm.miscdev.name = TLKM_IOCTL_FN;
 	_tlkm.miscdev.fops = &_tlkm_fops;
-	_tlkm.miscdev.mode = 0666;
 	_tlkm.is_setup = 1;
 	return misc_register(&_tlkm.miscdev);
 }

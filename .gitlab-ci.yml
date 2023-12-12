@@ -578,6 +578,7 @@ tapasco_compose_sim:
 
 # runs to test features
 tapasco_compose_svm_u280:
+  variables:
     PLATFORM: "AU280"
     VIVADO_VERSION: "2021.2"
     XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"

@@ -130,7 +130,7 @@ int tlkm_bus_init(void)
 	tlkm_bus_enumerate();
 	n = tlkm_bus_num_devices();
 	if (!n) {
-		ERR("did not find any TaPaSCo devices...");
+		ERR("did not find any TaPaSCo devices, cannot proceed");
 		ret = -ENXIO;
 		goto err;
 	}
