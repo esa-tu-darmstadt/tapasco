@@ -51,7 +51,7 @@ def run_server(dut, axim, axis=None, memory=None):
     server = grpc_server(futures.ThreadPoolExecutor(max_workers=10))
     sim_server = SimServer(dut, server, axim, axis, memory)
     sc_grpc.add_SimRequestServicer_to_server(sim_server, server)
-    server.add_insecure_port("[::]:4040")
+    server.add_insecure_port(f"[::]:{os.environ['SIM_PORT']}")
     server.start()
     print('started server')
     server.wait_for_termination()

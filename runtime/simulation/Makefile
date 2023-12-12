@@ -14,6 +14,8 @@ BOARD_PART := xczu3eg-sbva484-1-e
 IP_DEFS := esa.informatik.tu-darmstadt.de:sim:*
 SIM_PORT := 4040
 export SIM_PORT
+UNSAFE_SIM := 0
+export UNSAFE_SIM
 
 RUN_ARGS=-noautoldlibpath
 GUI:=0

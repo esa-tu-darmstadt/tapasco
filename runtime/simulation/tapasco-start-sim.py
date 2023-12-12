@@ -107,12 +107,12 @@ def target_vivado_prj(filename, verbose):
         sys.exit(make_vivado_prj.returncode)
 
 
-def target_make(port, verbose, gui):
+def target_make(port, verbose, gui, unsafe_sim):
     global make
 
     print('Starting simulation...')
 
-    make = subprocess.Popen([shutil.which('make'), f'SIM_PORT={port}', '-C', sim_dir, 'GUI=1' if gui else 'GUI=0'], preexec_fn=os.setsid,
+    make = subprocess.Popen([shutil.which('make'), f'SIM_PORT={port}', '-C', sim_dir, 'GUI=1' if gui else 'GUI=0', f'UNSAFE_SIM={1 if unsafe_sim else 0}'], preexec_fn=os.setsid,
                             stderr=subprocess.STDOUT if verbose >= 2 else subprocess.PIPE,
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE)
@@ -148,6 +148,7 @@ def main():
     p.add_argument('--port', default=4040, help='Port number the simulation should listen on for runtime commands.')
     p.add_argument('--verbose', '-v', default=0, help='Display output from questa simulation. Use -v to display STDOUT and -vv to additionally display STDERR', action='count')
     p.add_argument('--gui', help='Run simulation in GUI-mode', action='store_true')
+    p.add_argument('--unsafe-sim', help='Run simulation in unsafe mode. Write requests to the simulation will return immediately, allowing the runtime to issue the next request before the previous one completed.', action='store_true')
     args = p.parse_args()
 
     # define global process handles
@@ -160,7 +161,7 @@ def main():
     if args.filename is not None:
         target_vivado_prj(path.abspath(args.filename), args.verbose)
 
-    target_make(args.port, args.verbose, args.gui)
+    target_make(args.port, args.verbose, args.gui, args.unsafe_sim)
 
 
 if __name__ == "__main__":

@@ -30,6 +30,7 @@ import leb128
 from functools import reduce
 import queue
 from math import ceil
+import os
 
 def partition(l, size):
     it = iter(l)
@@ -51,6 +52,8 @@ class SimServer(sc_grpc.SimRequestServicer):
 
         self.status = None
         self.memory = memory
+
+        self.unsafe = True if os.environ['UNSAFE_SIM'] == '1' else False
 
         self.status_read_event = Event()
         self.request_queue.put((cocotb.create_task(self._get_status_init()), lambda: self.status_read_event.set()))
@@ -151,7 +154,8 @@ class SimServer(sc_grpc.SimRequestServicer):
         resp.void.SetInParent()
         self.request_queue.put(
                 (cocotb.create_task(self._write_memory(request.addr, request.data)), lambda: event.set()))
-        event.wait()
+        if (not self.unsafe):
+            event.wait()
         return resp
 
     def read_memory(self, request, context):
@@ -177,7 +181,8 @@ class SimServer(sc_grpc.SimRequestServicer):
         whichoneof = request.WhichOneof("data")
         event = Event()
         self.request_queue.put((cocotb.create_task(self._write_platform(request.addr, getattr(request, whichoneof).value, whichoneof == "u_32")), lambda: event.set()))
-        event.wait()
+        if (not self.unsafe):
+            event.wait()
         return resp
 
     def register_interrupt(self, request, context):
