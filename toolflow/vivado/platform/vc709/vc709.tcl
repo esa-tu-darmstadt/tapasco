@@ -113,22 +113,6 @@ namespace eval platform {
   ##################################################################
 
   proc write_mig_file_design_1_mig_7series_0_0 { str_mig_prj_filepath } {
-    set freq [tapasco::get_design_frequency]
-    set div [format "%1.3f" [expr "800.0 / $freq"]]
-    set rf  [format "%3.2f" [expr "800.0 / $div"]]
-    puts "  target frequency: $freq, divisor: $div, approx. frequency: $rf"
-    if {$freq > 800} {
-      puts "ERROR - invalid design frequency $freq!"
-      exit 1
-    }
-    set clock_line "        <MMCMClkOut0>$div</MMCMClkOut0>"
-
-    if {$freq == 200} {
-      set clock_en_line {        <UIExtraClocks>0</UIExtraClocks>}
-    } {
-      set clock_en_line {        <UIExtraClocks>1</UIExtraClocks>}
-    }
-
     set mig_prj_file [open $str_mig_prj_filepath  w+]
 
     puts $mig_prj_file {<?xml version='1.0' encoding='UTF-8'?>}
@@ -155,9 +139,9 @@ namespace eval platform {
     puts $mig_prj_file {        <VccAuxIO>2.0V</VccAuxIO>}
     puts $mig_prj_file {        <PHYRatio>4:1</PHYRatio>}
     puts $mig_prj_file {        <InputClkFreq>200</InputClkFreq>}
-    puts $mig_prj_file $clock_en_line
+    puts $mig_prj_file {        <UIExtraClocks>0</UIExtraClocks>}
     puts $mig_prj_file {        <MMCM_VCO>800</MMCM_VCO>}
-    puts $mig_prj_file $clock_line
+    puts $mig_prj_file {        <MMCMClkOut0>1.000</MMCMClkOut0>}
     puts $mig_prj_file {        <MMCMClkOut1>1</MMCMClkOut1>}
     puts $mig_prj_file {        <MMCMClkOut2>1</MMCMClkOut2>}
     puts $mig_prj_file {        <MMCMClkOut3>1</MMCMClkOut3>}

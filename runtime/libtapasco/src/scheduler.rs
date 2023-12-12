@@ -23,6 +23,7 @@
 use crate::device::OffchipMemory;
 use crate::pe::PEId;
 use crate::pe::PE;
+use crate::job::Job;
 use crossbeam::deque::{Injector, Steal};
 use lockfree::map::Map;
 use snafu::ResultExt;
@@ -34,6 +35,7 @@ use std::thread;
 use crate::debug::{DebugGenerator, NonDebugGenerator, UnsupportedDebugGenerator};
 use crate::mmap_mut::MemoryType;
 use crate::protos::status;
+use core::fmt::Debug;
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -58,9 +60,16 @@ pub enum Error {
 
     #[snafu(display("Debug Error: {}", source))]
     DebugError { source: crate::debug::Error },
+
+    #[snafu(display("Local memory requested on PE without local memory"))]
+    NoLocalMemory {},
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
+
+pub trait ReleasePE: Debug {
+    fn release_pe(&self, pe: PE) -> Result<()>;
+}
 
 /// Main method to retrieve a PE for execution
 ///
@@ -182,15 +191,6 @@ impl Scheduler {
         }
     }
 
-    pub fn release_pe(&self, pe: PE) -> Result<()> {
-        ensure!(!pe.active(), PEStillActiveSnafu { pe });
-
-        match self.pes.get(pe.type_id()) {
-            Some(l) => l.val().push(pe),
-            None => return Err(Error::NoSuchPE { id: *pe.type_id() }),
-        }
-        Ok(())
-    }
 
     pub fn reset_interrupts(&self) -> Result<()> {
         for v in self.pes.iter() {
@@ -232,4 +232,105 @@ impl Scheduler {
             possible: self.pes_name.values().cloned().collect(),
         })
     }
+}
+
+impl ReleasePE for Scheduler {
+    fn release_pe(&self, pe: PE) -> Result<()> {
+        ensure!(!pe.active(), PEStillActiveSnafu { pe });
+
+        match self.pes.get(pe.type_id()) {
+            Some(l) => l.val().push(pe),
+            None => return Err(Error::NoSuchPE { id: *pe.type_id() }),
+        }
+        Ok(())
+    }
+}
+
+
+#[derive(Debug)]
+pub struct SinglePEHandler {
+    scheduler: Arc<SinglePEScheduler>,
+    release: Arc<dyn ReleasePE>,
+    released: bool,
+}
+
+#[derive(Debug)]
+pub struct SinglePEScheduler {
+    pe: Injector<PE>,
+    local_memory: Option<Arc<OffchipMemory>>,
+}
+
+impl SinglePEHandler {
+    pub fn new(
+        pe: PE,
+        release: &Arc<impl ReleasePE + 'static>,
+    ) -> Self {
+        SinglePEHandler {
+            scheduler: Arc::new(SinglePEScheduler::new(pe)),
+            release: release.clone(),
+            released: false
+        }
+    }
+
+    pub fn acquire_pe(&self) -> Result<Job> {
+        if self.released {
+            Err(Error::PEUnavailable {id: 0 })
+        } else {
+            Ok(Job::new(self.scheduler.acquire_pe(), &self.scheduler))
+        }
+    }
+
+    pub fn get_local_memory(&self) -> Result<&Arc<OffchipMemory>, Error> {
+        self.scheduler.get_local_memory()
+    }
+
+    pub fn release_pe(&mut self) -> Result<()> {
+        if !self.released {
+            self.released = true;
+            self.release.release_pe(self.scheduler.acquire_pe())
+        } else {
+            Ok(())
+        }
+    }
+}
+
+impl SinglePEScheduler {
+    pub fn new(
+        pe: PE,
+    ) -> Self {
+        let v = Injector::new();
+        let memory = pe.local_memory().clone();
+        v.push(pe);
+        SinglePEScheduler {
+            pe: v,
+            local_memory: memory,
+        }
+    }
+
+    pub fn acquire_pe(&self) -> PE {
+        loop {
+            match self.pe.steal() {
+                Steal::Success(pe) => return pe,
+                Steal::Empty => (),
+                Steal::Retry => (),
+            }
+            thread::yield_now();
+        }
+    }
+
+    pub fn get_local_memory(&self) -> Result<&Arc<OffchipMemory>, Error> {
+        match &self.local_memory {
+            Some(m) => Ok(m),
+            None => Err(Error::NoLocalMemory {}),
+        }
+    }
+}
+
+impl ReleasePE for SinglePEScheduler {
+
+    fn release_pe(&self, pe: PE) -> Result<()> {
+        self.pe.push(pe);
+        Ok(())
+    }
+
 }

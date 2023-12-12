@@ -19,6 +19,7 @@
 
 namespace eval full_axi_wrapper {
   proc wrap_full_axi_interfaces {inst {args {}}} {
+
     # check interfaces: AXI3/AXI4 slaves will be wrappped
     set inst [get_bd_cells $inst]
     set full_slave_ifs [get_bd_intf_pins -of_objects $inst -filter {MODE == Slave && (CONFIG.PROTOCOL == AXI3 || CONFIG.PROTOCOL == AXI4)}]
@@ -30,16 +31,26 @@ namespace eval full_axi_wrapper {
 
     set bd_inst [current_bd_instance .]
 
-    # rewire full slaves
-    set si 0
-    foreach fs $full_slave_ifs {
-      # create slave port
-      set saxi_port [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave "S_AXI_LITE_$si"]
-      set conv [tapasco::ip::create_proto_conv "conv_$si" "AXI4LITE" [get_property CONFIG.PROTOCOL $fs]]
-      connect_bd_intf_net $saxi_port [get_bd_intf_pins -of_objects $conv -filter {MODE == Slave}]
-      connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master} -of_objects $conv] $fs
 
-      incr si
+    if {![tapasco::get_feature_option "WrapAXIFull" "enabled" true]} {
+      foreach fs $full_slave_ifs {
+        set op [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave [get_property NAME $fs]]
+        connect_bd_intf_net $op $fs
+      }
+    } else {
+
+      # rewire full slaves
+      set si 0
+      foreach fs $full_slave_ifs {
+        # create slave port
+        set saxi_port [create_bd_intf_pin -vlnv "xilinx.com:interface:aximm_rtl:1.0" -mode Slave "S_AXI_LITE_$si"]
+        set conv [tapasco::ip::create_proto_conv "conv_$si" "AXI4LITE" [get_property CONFIG.PROTOCOL $fs]]
+        connect_bd_intf_net $saxi_port [get_bd_intf_pins -of_objects $conv -filter {MODE == Slave}]
+        connect_bd_intf_net [get_bd_intf_pins -filter {MODE == Master} -of_objects $conv] $fs
+
+        incr si
+      }
+
     }
 
     

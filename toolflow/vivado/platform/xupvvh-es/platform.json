@@ -1,10 +1,10 @@
 {
 	"Name" : "xupvvh-es",
 	"Description" : "Xilinx UltraScale+ 3/4-Length PCIe Board by Bittware",
-	"TclLibrary" : "xupvvh.tcl",
+	"TclLibrary" : "xupvvh-es.tcl",
 	"Part" : "xcvu37p-fsvh2892-2-e-es1",
 	"TargetUtilization" : 90,
-	"Benchmark" : "xupvvh.benchmark",
+	"Benchmark" : "xupvvh-es.benchmark",
 	"HostFrequency": 250.0,
 	"MemFrequency": 300.0
 }
