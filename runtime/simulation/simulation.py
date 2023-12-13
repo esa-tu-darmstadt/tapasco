@@ -24,7 +24,6 @@ from cocotb.triggers import Timer, RisingEdge
 
 from grpc import server as grpc_server
 from threading import Thread
-import threading
 from grpc_gen import sim_calls_pb2_grpc as sc_grpc
 from SimServer import SimServer
 from concurrent import futures
@@ -37,19 +36,20 @@ CLK_PERIOD = 10
 sim_server = None
 run_servicer = True
 
-def _sim_event(level: int) -> None:
-    pass
-
-def _log_from_c(logger_name, level, filename, lineno, msg, function_name) -> None:
-    pass
-
-def _filter_from_c(logger_name, level) -> bool:
-    return True
-
-def run_server(dut, axim, axis=None, memory=None):
+def run_server(dut, axim, memory):
+    """Main method for the gRPC server thread.
+    Parameters
+    ----------
+    dut: cocotb.handle.HierarchyObject
+        Handle to the TaPaSCo design provided by cocotb. Needed for the initialization of the SimServer.
+    axim: amba.AXI4Master
+        AXI4 master interface used to transfer data to and from the design
+    memory: bytearray
+        Memory of size 1 GiB connected to the AXI4 slaveof the TaPaSCo design.
+    """
     global sim_server
     server = grpc_server(futures.ThreadPoolExecutor(max_workers=10))
-    sim_server = SimServer(dut, server, axim, axis, memory)
+    sim_server = SimServer(dut, axim, memory)
     sc_grpc.add_SimRequestServicer_to_server(sim_server, server)
     server.add_insecure_port(f"[::]:{os.environ['SIM_PORT']}")
     server.start()
@@ -59,6 +59,8 @@ def run_server(dut, axim, axis=None, memory=None):
 
 
 async def request_servicer():
+    """Helper coroutine for scheduling coroutines with cocotb from the gRPC server thread.
+    """
     global sim_server
     while run_servicer:
         await Timer(400, units="ns")
@@ -68,10 +70,11 @@ async def request_servicer():
 
 
 async def request_coroutine(coro, cb):
+    """Helper wrapper for coroutines
+    """
     task = await cocotb.start(coro)
     await task
     cb()
-
 
 
 @cocotb.test()
@@ -106,7 +109,7 @@ async def sim_entry(dut):
     dut.ext_reset_in.value = 1
     await Timer(CLK_PERIOD * 120, units="ns")
 
-    server_thread = Thread(target=run_server, args=(dut, axim, axis, memory))
+    server_thread = Thread(target=run_server, args=(dut, axim, memory))
     server_thread.start()
 
     task = await cocotb.start(request_servicer())

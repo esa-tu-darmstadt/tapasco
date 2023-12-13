@@ -23,8 +23,19 @@ from cocotb.triggers import RisingEdge
 import cocotb
 
 class SimInterrupt:
+    """Represents the Interrupt coming from a specific PE
+    """
 
     def __init__(self, dut, interrupt_handle):
+        """
+        Parameters
+        ----------
+        dut: cocotb.handle.HierarchyObject
+            The handle of the TaPaSCo design provided by cocotb
+        interrup_handle: str
+            Name of the interrupt port of the TaPaSCo design this
+            instance represents
+        """
         self._counter_lock = Lock()
         self._counter = 0
         self._interrupt_handle = interrupt_handle
