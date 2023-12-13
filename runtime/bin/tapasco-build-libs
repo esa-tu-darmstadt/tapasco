@@ -76,16 +76,21 @@ parser.add_argument(
     '--enable_svm',
     help='enable driver support for Shared Virtual Memory (SVM)',
     action='store_true')
-parser.add_argument(
+sim_group = parser.add_mutually_exclusive_group()
+sim_group.add_argument(
+    '-s',
+    dest='enable_sim',
+    help='Enable simulation support in the driver and setup the tapasco simulation. Equivalent to --enable_sim=full',
+    action='store_const',
+    const='full',
+)
+sim_group.add_argument(
     '--enable_sim',
-    nargs='?',
-    help='Enable simulation support in the driver and setup the tapasco simulation. Selecting runtime will only compile the runtime with simulation support and skip setup of the simulation installation.',
-    default=None,
+    help='Enable simulation support in the driver and setup the tapasco simulation. Selecting full will both setup simulator and runtime. Selecting runtime will only compile the runtime with simulation support and skip setup of the simulation installation.',
     choices=[
-        '',
-        'runtime'
+        'full',
+        'runtime',
     ],
-    const='',
     action='store'
 )
 args = parser.parse_args()
@@ -133,7 +138,7 @@ if not clean:
 
     if not args.skip_driver:
         ret = subprocess.call(
-            [tlkm_cmd.format(bdir, mdir, '' if driver_debug else 'release', 'EN_SVM=1' if args.enable_svm else '', 'ENABLE_SIM=y' if args.enable_sim is not None else '')], shell=True)
+            [tlkm_cmd.format(bdir, mdir, '' if driver_debug else 'release', 'EN_SVM=1' if args.enable_svm else '', 'ENABLE_SIM=y' if args.enable_sim == 'full' else '')], shell=True)
         if ret:
             print('Driver build failed!')
             sys.exit(ret)
@@ -148,62 +153,70 @@ if not clean:
             print('Tapasco build failed!')
             sys.exit(ret)
 
-    if args.enable_sim == '' and not path.exists("%s/.setup_lock" % sdir):
-        compile_simlibs = None
+    if args.enable_sim == 'full':
+        # enable_sim == 'full' means that the simlibs should be compiled
+        if not path.exists("%s/.setup_lock" % sdir):
+            # use lock file to prevent the execution of the script twice on the same directory. The file is removed after the setup finished successfully
 
-        def interrupt_handler(sig, frame):
-            global compile_simlibs
-            subprocess.call(["rm %s/.setup_lock" % sdir], shell=True)
-            if compile_simlibs is not None and compile_simlibs.returncode is None:
-                grp = os.getpgid(compile_simlibs.pid)
-                os.killpg(grp, signal.SIGTERM)
+            compile_simlibs = None
 
-            print('')
-            sys.exit(0)
+            # to run the makefile target for the simlib compilation, a child process needs to be created
+            # if the main process receives an interrupt, the child process needs to be terminated as well, hence the signal handler
+            def interrupt_handler(sig, frame):
+                global compile_simlibs
+                subprocess.call(["rm %s/.setup_lock" % sdir], shell=True)
+                if compile_simlibs is not None and compile_simlibs.returncode is None:
+                    grp = os.getpgid(compile_simlibs.pid)
+                    os.killpg(grp, signal.SIGTERM)
 
-        subprocess.call(["cp -r {0}/simulation {1}".format(os.environ['TAPASCO_HOME_RUNTIME'], os.environ['TAPASCO_WORK_DIR'])], shell=True)
-        subprocess.call(["touch %s/.setup_lock" % sdir], shell=True)
+                print('')
+                sys.exit(0)
 
-        build_simlibs = not path.exists('%s/compile_simlib' % sdir) or args.rebuild_simlibs
+            # creates a simulation directory inside the workspace
+            subprocess.call(["cp -r {0}/simulation {1}".format(os.environ['TAPASCO_HOME_RUNTIME'], os.environ['TAPASCO_WORK_DIR'])], shell=True)
+            # creates the lock file
+            subprocess.call(["touch %s/.setup_lock" % sdir], shell=True)
 
-        # installing python dependencies
-        source_cmd =  ""
-        if path.exists(f"{sdir}/.venv"):
-            source_cmd = "source .venv/bin/activate;"
-        ret_config = subprocess.call([f'bash -c "{source_cmd} make configure"'], cwd=sdir, shell=True)
-        # generating protocol buffer definitions and patching relative imports
-        ret_protos = subprocess.call(['bash -c "source .venv/bin/activate; make protos"'], cwd=sdir, shell=True)
+            build_simlibs = not path.exists('%s/compile_simlib' % sdir) or args.rebuild_simlibs
 
-        build_simlibs = not path.exists(f'{sdir}/compile_simlib') or args.rebuild_simlibs
-        if build_simlibs:
-            # store previous signal handler
-            original_sigint_handler = signal.getsignal(signal.SIGINT)
-            signal.signal(signal.SIGINT, interrupt_handler)
-            compile_simlibs = subprocess.Popen(['bash', '-c', 'source .venv/bin/activate; make simlib_questa'],
-                                               stdin=subprocess.DEVNULL,
-                                               stdout=subprocess.PIPE,
-                                               cwd=sdir)
-        else:
-            print('\033[93m' + 'Folder with simulation libraries already exists, assuming Libraries are already built. To force a build use --rebuild_simlibs' + '\033[0m')
+            # installing python dependencies
+            source_cmd =  ""
+            if path.exists(f"{sdir}/.venv"):
+                source_cmd = "source .venv/bin/activate;"
+            ret_config = subprocess.call([f'bash -c "{source_cmd} make configure"'], cwd=sdir, shell=True)
+            # generating protocol buffer definitions and patching relative imports
+            ret_protos = subprocess.call(['bash -c "source .venv/bin/activate; make protos"'], cwd=sdir, shell=True)
 
-        ret_simlibs = False
+            build_simlibs = not path.exists(f'{sdir}/compile_simlib') or args.rebuild_simlibs
+            if build_simlibs:
+                # store previous signal handler
+                original_sigint_handler = signal.getsignal(signal.SIGINT)
+                signal.signal(signal.SIGINT, interrupt_handler)
+                compile_simlibs = subprocess.Popen(['bash', '-c', 'source .venv/bin/activate; make simlib_questa'],
+                                                stdin=subprocess.DEVNULL,
+                                                stdout=subprocess.PIPE,
+                                                cwd=sdir)
+            else:
+                print('\033[93m' + 'Folder with simulation libraries already exists, assuming Libraries are already built. To force a build use --rebuild_simlibs' + '\033[0m')
 
-        if build_simlibs:
-            for line in compile_simlibs.stdout:
-                print(line.decode('utf-8'), end='')
-            ret_simlibs = compile_simlibs.wait()
-            signal.signal(signal.SIGINT, original_sigint_handler)
+            ret_simlibs = False
 
-        subprocess.call([f"rm {sdir}/.setup_lock"], shell=True)
-        if ret_config or ret_protos or ret_simlibs:
-            print('Simulation setup failed')
-            sys.exit(1)
+            if build_simlibs:
+                for line in compile_simlibs.stdout:
+                    print(line.decode('utf-8'), end='')
+                ret_simlibs = compile_simlibs.wait()
+                signal.signal(signal.SIGINT, original_sigint_handler)
 
-        print('Simulation setup done')
+            subprocess.call([f"rm {sdir}/.setup_lock"], shell=True)
+            if ret_config or ret_protos or ret_simlibs:
+                # checking exit codes of subprocesses
+                print('Simulation setup failed')
+                sys.exit(1)
 
-    elif args.enable_sim == '' and path.exists("%s/.setup_lock" % sdir):
-        print('\033[93m' + 'Lock file %s/.setup_lock exists. Another setup might be ongoing. If not, remove the file and try again.' % sdir + '\033[0m')
+            print('Simulation setup done')
 
+        elif path.exists("%s/.setup_lock" % sdir):
+            print('\033[93m' + 'Lock file %s/.setup_lock exists. Another setup might be ongoing. If not, remove the file and try again.' % sdir + '\033[0m')
 
     if args.package:
         ret = subprocess.call(
