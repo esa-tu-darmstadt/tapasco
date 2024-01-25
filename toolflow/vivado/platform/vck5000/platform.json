@@ -1,0 +1,11 @@
+{
+	"Name" : "vck5000",
+	"Description" : "Xilinx Versal Development Card for AI Inference",
+	"TclLibrary" : "vck5000.tcl",
+	"Part" : "xcvc1902-vsvd1760-2MP-e-S",
+	"TargetUtilization" : 90,
+	"Benchmark" : "vck5000.benchmark",
+	"HostFrequency": 250.0,
+	"MemFrequency": 300.0,
+	"FileExtension": "pdi"
+}
