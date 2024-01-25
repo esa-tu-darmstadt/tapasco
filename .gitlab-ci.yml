@@ -525,6 +525,13 @@ tapasco_compose_HAWK:
     XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
   extends: .tapasco_compose_no_synth
 
+tapasco_compose_vck5000:
+  variables:
+    PLATFORM: "vck5000"
+    VIVADO_VERSION: "2021.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+  extends: .tapasco_compose_no_synth
+
 tapasco_compose_netfpga_sume:
   variables:
     PLATFORM: "netfpga_sume"
