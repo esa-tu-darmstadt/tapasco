@@ -72,6 +72,6 @@ void sim_device_exit_subsystems(struct tlkm_device *dev)
 int sim_device_probe(struct tlkm_class *cls)
 {
 	struct tlkm_device *inst;
-  inst = tlkm_bus_new_device(cls, 0, 0, NULL);
+	inst = tlkm_bus_new_device(cls, 0, 0, NULL);
 	return 0;
 }

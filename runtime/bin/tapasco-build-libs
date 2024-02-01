@@ -123,7 +123,8 @@ sdir = '{}/simulation'.format(os.environ['TAPASCO_WORK_DIR'])
 if clean or args.rebuild:
     subprocess.call(['rm -rf %s' % bdir], shell=True)
     subprocess.call(['cd %s && make clean' % mdir], shell=True)
-    subprocess.call(['make -C %s clean' % sdir], shell=True)
+    if os.path.isdir(sdir):
+        subprocess.call(['make -C %s clean' % sdir], shell=True)
 
 if not clean:
     if debug:

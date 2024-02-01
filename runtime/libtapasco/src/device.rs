@@ -426,7 +426,7 @@ impl Device {
                     ),
                 }));
             } else {
-                println!("Using SVM...");
+                trace!("Using SVM...");
                 let mut init_cmd = tlkm_svm_init_cmd {
                     result: 0,
                 };

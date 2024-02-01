@@ -41,7 +41,7 @@ endif
 .PHONY:	all clean
 
 all:
-	$(MAKE) KCPPFLAGS="$(CPPFLAGS)" ENABLE_SIM="$(ENABLE_SIM)" -C $(LINUX_HOME) M=$(MODULE_DIR) modules
+	$(MAKE) KCPPFLAGS="$(CPPFLAGS)" -C $(LINUX_HOME) M=$(MODULE_DIR) modules
 
 release:
 	$(MAKE) KCPPFLAGS+="$(CPPFLAGS) -DNDEBUG -O3" -C $(LINUX_HOME) M=$(MODULE_DIR) modules
