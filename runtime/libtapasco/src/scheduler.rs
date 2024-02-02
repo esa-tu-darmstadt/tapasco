@@ -18,8 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// use crate::debug::UnsupportedDebugGenerator;
-// use crate::debug::{DebugGenerator, NonDebugGenerator};
 use crate::device::OffchipMemory;
 use crate::pe::PEId;
 use crate::pe::PE;
