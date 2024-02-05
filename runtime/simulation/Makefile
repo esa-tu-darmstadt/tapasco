@@ -40,7 +40,11 @@ ifeq ($(TAPASCO_HOME_RUNTIME),)
 endif
 
 QUESTA_HOME := $(abspath $(dir $(shell which vsim))/../)
-QUESTA_GCC := $(lastword 1, $(sort $(wildcard $(QUESTA_HOME)/gcc-*)))
+QUESTA_GCC_LIST := $(wildcard $(QUESTA_HOME)/gcc-1*)
+ifeq ($(QUESTA_GCC_LIST),)
+QUESTA_GCC_LIST := $(wildcard $(QUESTA_HOME)/gcc-*)
+endif
+QUESTA_GCC := $(lastword 1, $(sort ${QUESTA_GCC_LIST}))
 ifeq ($(QUESTA_HOME),)
   $(error "Questa installation not detected. Please make sure questa simulator is installed an on PATH")
 endif
