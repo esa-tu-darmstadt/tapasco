@@ -30,3 +30,7 @@ tlkm-objs := \
     nanopb/pb_encode.o \
     nanopb/pb_decode.o \
     nanopb/status_core.pb.o
+
+tlkm-$(ENABLE_SIM) := sim/sim_device.o \
+    sim/sim_ioctl.o \
+    sim/sim_irq.o

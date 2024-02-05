@@ -16,6 +16,10 @@ ifeq ($(EN_SVM), 1)
 CPPFLAGS+=-DEN_SVM
 endif
 
+ifeq ($(ENABLE_SIM),y)
+CPPFLAGS+=-DENABLE_SIM
+endif
+
 MODULE_DIR := $(PWD)
 
 CPPFLAGS+=-Werror -Wno-missing-attributes -I$(MODULE_DIR) \

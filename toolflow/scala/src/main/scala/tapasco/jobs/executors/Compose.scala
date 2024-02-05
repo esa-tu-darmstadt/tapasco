@@ -85,7 +85,7 @@ private object Compose extends Executor[ComposeJob] {
         target = t,
         features = job.features,
         debugMode = job.debugMode,
-        skipSynth = job.skipSynthesis,
+        skipSynth = if (p.name == "sim") Some(true) else job.skipSynthesis,
         effortLevel = job.effortLevel.getOrElse("normal"),
         onComplete = _ => signal.release(),
         deleteOnFail = job.deleteProjects

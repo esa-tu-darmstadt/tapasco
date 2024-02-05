@@ -586,7 +586,7 @@ impl Allocator for VfioAllocator {
             None => 0
         };
         let offset = match va {
-            Some(a) => (a % IOMMU_PAGESIZE), // position of data within page
+            Some(a) => a % IOMMU_PAGESIZE, // position of data within page
             None => return Err(Error::VfioNoVa{})
         };
         let va_aligned = match va {

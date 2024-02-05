@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2014-2023 Embedded Systems and Applications, TU Darmstadt.
  *
- * This file is part of TaPaSCo
+ * This file is part of TaPaSCo 
  * (see https://github.com/esa-tu-darmstadt/tapasco).
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,35 +17,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+//! @file	sim_device.c
+//! @brief	Unified driver as a loadable kernel module (LKM) for Linux.
+//!
+#ifndef SIM_IOCTL_H__
+#define SIM_IOCTL_H__
 
-#![recursion_limit = "1024"]
+#include "tlkm_device.h"
 
-#[macro_use]
-extern crate log;
-#[macro_use]
-extern crate getset;
-#[macro_use]
-extern crate nix;
-extern crate chrono;
-#[macro_use]
-extern crate snafu;
-extern crate bytes;
-extern crate crossbeam;
-extern crate env_logger;
-extern crate lockfree;
+long sim_ioctl(struct tlkm_device *inst, unsigned ioctl, unsigned long data);
 
-pub mod allocator;
-pub mod debug;
-pub mod device;
-pub mod dma;
-pub mod dma_user_space;
-pub mod ffi;
-pub mod interrupt;
-pub mod job;
-pub mod pe;
-pub mod scheduler;
-pub mod vfio;
-pub mod tlkm;
-pub mod sim_client;
-pub mod protos;
-pub mod mmap_mut;
+#endif /* SIM_IOCTL_H__ */

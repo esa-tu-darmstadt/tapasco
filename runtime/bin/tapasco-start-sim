@@ -1,0 +1,39 @@
+#!/bin/bash
+# Copyright (c) 2014-2023 Embedded Systems and Applications, TU Darmstadt.
+#
+# This file is part of TaPaSCo
+# (see https://github.com/esa-tu-darmstadt/tapasco).
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+if [ -z "$TAPASCO_WORK_DIR" ]
+then
+    echo "ERROR: Environment variable TAPASCO_WORK_DIR not set. Please source tapasco-setup.sh first or use -E flag to preserve pervious users environment if using sudo."
+    exit -1
+fi
+
+if [ ! -d "$TAPASCO_WORK_DIR/simulation" ]
+then
+    echo "ERROR: simulation runtime not found. Please enable simulation support by running tapasco-build-libs --enable_sim."
+    exit -1
+fi
+
+if [ -f "$TAPASCO_WORK_DIR/simulation/.setup_lock" ]
+then
+    echo "ERROR: There might be a simulation setup ongoing. If not, remove the file $TAPASCO_WORK_DIR/simulation/.setup_lock and try again."
+    exit -1
+fi
+
+source ${TAPASCO_WORK_DIR}/simulation/.venv/bin/activate
+exec python ${TAPASCO_WORK_DIR}/simulation/tapasco-start-sim.py $@

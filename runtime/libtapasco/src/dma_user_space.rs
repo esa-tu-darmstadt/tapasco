@@ -25,7 +25,7 @@ use crate::dma::DMAControl;
 use crate::dma::Error;
 use crate::dma::ErrorInterruptSnafu;
 use crate::dma::FailedMMapDMASnafu;
-use crate::interrupt::Interrupt;
+use crate::interrupt::{Interrupt, TapascoInterrupt};
 use crate::tlkm::tlkm_dma_buffer_allocate;
 use crate::tlkm::tlkm_dma_buffer_op;
 use crate::tlkm::tlkm_ioctl_dma_buffer_allocate;
@@ -80,8 +80,8 @@ pub struct UserSpaceDMA {
     engine_offset: usize,
     to_dev_buffer: Injector<DMABuffer>,
     from_dev_buffer: Injector<DMABuffer>,
-    read_int: Interrupt,
-    write_int: Interrupt,
+    read_int: Box<dyn TapascoInterrupt + Sync + Send>,
+    write_int: Box<dyn TapascoInterrupt + Sync + Send>,
     write_out: Queue<DMABuffer>,
     write_cntr: AtomicU64,
     write_int_cntr: AtomicU64,
@@ -174,7 +174,7 @@ impl UserSpaceDMA {
             engine_offset: offset,
             to_dev_buffer: write_map,
             from_dev_buffer: read_map,
-            read_int: Interrupt::new(tlkm_file, read_interrupt, false).context(ErrorInterruptSnafu)?,
+            read_int:Interrupt::new(tlkm_file, read_interrupt, false).context(ErrorInterruptSnafu)?,
             write_int: Interrupt::new(tlkm_file, write_interrupt, false).context(ErrorInterruptSnafu)?,
             write_out: Queue::new(),
             write_cntr: AtomicU64::new(0),
