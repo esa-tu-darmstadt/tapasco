@@ -26,10 +26,7 @@ import java.nio.file._
 import tapasco.Logging._
 import tapasco.activity.composers._
 import tapasco.base._
-import tapasco.base.json._
 import tapasco.dse.Heuristics
-import tapasco.jobs._
-import tapasco.slurm._
 import tapasco.util._
 
 import scala.util.Properties.{lineSeparator => NL}
@@ -52,20 +49,16 @@ class ComposeTask(composition: Composition,
                   val onComplete: Boolean => Unit)
                  (implicit cfg: Configuration) extends Task with LogTracking {
   private[this] implicit val _logger = tapasco.Logging.logger(getClass)
-  private[this] val _slurm = Slurm.enabled
   private[this] var _composerResult: Option[Composer.Result] = None
   private[this] val _outDir = cfg.outputDir(composition, target, designFrequency, features getOrElse Seq())
   private[this] val _logFile = logFile getOrElse _outDir.resolve("tapasco.log").toString
-  private[this] val _errorLogFile = Paths.get(_logFile).resolveSibling("slurm-compose.errors.log")
 
   import LogFormatter._
 
   def composerResult: Option[Composer.Result] = _composerResult
 
   /** @inheritdoc**/
-  def job: Boolean = if (!_slurm) nodeExecution else slurmExecution
-
-  private def nodeExecution: Boolean = {
+  def job: Boolean = {
     val appender = LogFileTracker.setupLogFileAppender(_logFile.toString)
     val composer = Composer(implementation)(cfg)
     _logger.debug("launching compose run for {}@{} [current thread: {}], logfile {}",
@@ -107,47 +100,6 @@ class ComposeTask(composition: Composition,
     result
   }
 
-  private def slurmExecution: Boolean = {
-    val l = Paths.get(_logFile).toAbsolutePath().normalize()
-    val cfgFile = l.resolveSibling("slurm-compose.cfg") // Configuration Json
-    val jobFile = l.resolveSibling("slurm-compose.slurm") // SLURM job script
-    val slgFile = l.resolveSibling("slurm-compose.log") // SLURM job stdout log
-    val cmpsJob = ComposeJob(
-      composition, designFrequency, implementation.toString, Some(Seq(target.ad.name)), Some(Seq(target.pd.name)),
-      features, debugMode
-    )
-    // define SLURM job
-    val job = Slurm.Job(
-      name = l.getParent.getParent.getFileName.resolve(l.getParent.getFileName).toString,
-      slurmLog = slgFile.toString,
-      errorLog = _errorLogFile.toString,
-      consumer = this,
-      maxHours = ComposeTask.MAX_COMPOSE_HOURS,
-      commands = Seq("tapasco --configFile %s".format(cfgFile.toString)),
-      comment = Some(_outDir.toString)
-    )
-    // generate non-SLURM config with single job
-    val newCfg = cfg
-      .logFile(Some(l))
-      .slurm(false)
-      .jobs(Seq(cmpsJob))
-
-    _logger.info("launching Compose job on SLURM ({})", cfgFile)
-
-    catchAllDefault(false, "error during SLURM job execution (%s): ".format(jobFile)) {
-      Files.createDirectories(jobFile.getParent()) // create base directory
-      Slurm.writeJobScript(job, jobFile) // write job script
-      Configuration.to(newCfg, cfgFile) // write Configuration to file
-      Slurm(jobFile) foreach (Slurm.waitFor(_)) // execute and wait
-      _composerResult = if (debugMode.isEmpty) {
-        ComposeTask.parseResultInLog(l.toString)
-      } else {
-        ComposeTask.makeDebugResult(debugMode.get)
-      }
-      (_composerResult map (_.result) getOrElse false) == ComposeResult.Success
-    }
-  }
-
   private def elementdesc = "%s [F=%2.2f]".format(logformat(composition), designFrequency.toDouble)
 
   /** @inheritdoc*/
@@ -180,7 +132,7 @@ object ComposeTask {
 
   import scala.io._
 
-  private final val MAX_COMPOSE_HOURS = 23
+  final val MAX_COMPOSE_HOURS = 23
   private final val RE_RESULT = """compose run .*result: ([^,]+)""".r.unanchored
   private final val RE_LOG = """compose run .*result: \S+.*logfile: '([^']+)'""".r.unanchored
   private final val RE_TIMING = """compose run .*result: \S+.*timing report: '([^']+)'""".r.unanchored
