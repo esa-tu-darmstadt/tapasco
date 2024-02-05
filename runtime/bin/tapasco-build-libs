@@ -182,13 +182,13 @@ if not clean:
 
             # installing python dependencies
             source_cmd =  ""
-            if path.exists(f"{sdir}/.venv"):
+            if path.exists("%s/.venv" % sdir):
                 source_cmd = "source .venv/bin/activate;"
-            ret_config = subprocess.call([f'bash -c "{source_cmd} make configure"'], cwd=sdir, shell=True)
+            ret_config = subprocess.call(['bash -c "%s make configure"' % source_cmd], cwd=sdir, shell=True)
             # generating protocol buffer definitions and patching relative imports
             ret_protos = subprocess.call(['bash -c "source .venv/bin/activate; make protos"'], cwd=sdir, shell=True)
 
-            build_simlibs = not path.exists(f'{sdir}/compile_simlib') or args.rebuild_simlibs
+            build_simlibs = not path.exists('%s/compile_simlib' % sdir) or args.rebuild_simlibs
             if build_simlibs:
                 # store previous signal handler
                 original_sigint_handler = signal.getsignal(signal.SIGINT)
@@ -208,7 +208,7 @@ if not clean:
                 ret_simlibs = compile_simlibs.wait()
                 signal.signal(signal.SIGINT, original_sigint_handler)
 
-            subprocess.call([f"rm {sdir}/.setup_lock"], shell=True)
+            subprocess.call(["rm %s/.setup_lock" % sdir], shell=True)
             if ret_config or ret_protos or ret_simlibs:
                 # checking exit codes of subprocesses
                 print('Simulation setup failed')
