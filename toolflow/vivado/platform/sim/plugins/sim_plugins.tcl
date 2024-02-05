@@ -53,7 +53,7 @@ namespace eval sim_plugins {
     # puts "saved core"
     # update_ip_catalog -rebuild -repo_path $project_dir
     # puts "created xgui_files"
-    ipx::check_integrity -quiet -xrt [ipx::current_core]
+    ipx::check_integrity -quiet [ipx::current_core]
     # puts "checked integrity quietly"
     ipx::archive_core "$project_dir/../$bitstreamname.zip" [ipx::current_core]
     # puts "archived core"
