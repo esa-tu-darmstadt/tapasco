@@ -1,3 +1,8 @@
+/*
+    SPDX-License-Identifier: BSD-3-Clause
+
+    SPDX-FileCopyrightText: Copyright (c) 2020 Bluespec, Inc. All rights reserved.
+*/
 
 `ifdef BSV_ASSIGNMENT_DELAY
 `else

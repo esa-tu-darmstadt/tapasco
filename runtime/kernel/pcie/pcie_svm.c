@@ -211,6 +211,14 @@ static inline void drop_page_fault(struct tlkm_pcie_svm_data *svm_data,
 }
 
 /**
+ * Start fault replay in on-FPGA IOMMU
+ */
+static inline void start_fault_replay(struct tlkm_pcie_svm_data *svm_data)
+{
+	writeq(MMU_FAULT_REPLAY, &svm_data->mmu_regs->cmd);
+}
+
+/**
  * Insert a virtual memory region into the device's interval tree. It is merged
  * if preceeding/succeeding intervals exist.
  *
@@ -2368,6 +2376,7 @@ static void handle_iommu_page_fault(struct work_struct *work)
 
 		nfaults = pack_array(vaddrs, nfaults);
 		if (!nfaults) {
+			start_fault_replay(svm_data);
 			mmap_write_unlock(svm_data->mm);
 			mmput(svm_data->mm);
 			break;
@@ -2400,6 +2409,8 @@ static void handle_iommu_page_fault(struct work_struct *work)
 				vaddrs[i] = 0;
 			nfaults = pack_array(vaddrs, nfaults);
 		} while (nfaults > 0);
+
+		start_fault_replay(svm_data);
 
 		// make sure all writes to add entries are finished before retrieving more faults!
 		wmb();
