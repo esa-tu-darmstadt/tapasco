@@ -179,9 +179,22 @@ static void handle_error() {
   throw tapasco_error(err_msg);
 }
 
+/**
+ * Wrapping class for release-callback of jobs.
+ */
 class JobFuture {
 public:
+  /**
+   * Constructor for uninitialized future. May be used if job is not started
+   * immediately and correct callback is set later.
+   */
   JobFuture() : func([](bool b) -> int { throw tapasco_error("PE job not launched."); }) {};
+
+  /**
+   * Constructor for JobFuture with custom callback function. Callback is
+   * normally retrieved with getCallback() function of TapascoPE.
+   * @param f Callback function
+   */
   JobFuture(std::function<int(bool)> f) : func(f) {}
 
   int operator()() {
@@ -691,6 +704,17 @@ struct Tapasco {
     return JobFuture(getCallback(j));
   }
 
+  /**
+   * Launch a task on a PE if a matching PE is available at the moment.
+   * An uninitialized JobFuture must be passed by reference and the
+   * release-callback is set if the task could be launched on a PE.
+   *
+   * @param future JobFuture for this task
+   * @param pe_id PE-ID of this task
+   * @param ret PE return value
+   * @param args PE arguments
+   * @return zero - SUCCESS, -1 - no matching PE available
+   */
   template <typename R, typename... Targs>
   int try_launch(JobFuture &future, PEId pe_id, RetVal<R> &ret, Targs... args) {
     Job *j = this->device_internal.try_acquire_pe(pe_id);
@@ -709,6 +733,16 @@ struct Tapasco {
     return 0;
   }
 
+  /**
+   * Launch a task on a PE if a matching PE is available at the moment.
+   * An uninitialized JobFuture must be passed by reference and the
+   * release-callback is set if the task could be launched on a PE.
+   *
+   * @param future JobFuture for this task
+   * @param pe_id PE-ID of this task
+   * @param args PE arguments
+   * @return zero - SUCCESS, -1 - no matching PE available
+   */
   template <typename... Targs>
   int try_launch(JobFuture &future, PEId pe_id, Targs... args) {
     Job *j =  this->device_internal.try_acquire_pe(pe_id);
@@ -845,6 +879,18 @@ struct Tapasco {
 private:
 
   /* {@ Callback generation methods. */
+  /**
+   * Generate JobFuture callback function for PE job.
+   *
+   * If block argument of callback is set to true, the callback function will
+   * not return until the PE is finished and could be released. Otherwise, it
+   * returns "0" if the PE is finished and could be released, or "1" if it is
+   * still running.
+   *
+   * @param ret PE return value
+   * @param j Job obcect
+   * @return Callback function for JobFuture
+   */
   template<typename R>
   std::function<int(bool)> getCallback(RetVal<R> &ret, Job *j) const
   {
@@ -868,6 +914,17 @@ private:
     };
   }
 
+  /**
+   * Generate JobFuture callback function for PE job.
+   *
+   * If block argument of callback is set to true, the callback function will
+   * not return until the PE is finished and could be released. Otherwise, it
+   * returns "0" if the PE is finished and could be released, or "1" if it is
+   * still running.
+   *
+   * @param j Job object
+   * @return Callback function for JobFuture
+   */
   std::function<int(bool)> getCallback(Job *j) const
   {
     return [this, j](bool block) {
