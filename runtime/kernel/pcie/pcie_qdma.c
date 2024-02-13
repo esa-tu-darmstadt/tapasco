@@ -110,8 +110,14 @@ irqreturn_t qdma_intr_handler_read(int irq, void *data)
 	struct tlkm_irq_mapping *mapping = (struct tlkm_irq_mapping *)data;
 	struct tlkm_pcie_device *pdev = mapping->dev->private_data;
 
-	if (mapping->eventfd != 0)
+	if (mapping->eventfd != 0) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
 		eventfd_signal(mapping->eventfd, 1);
+#else
+		// Linux commit 3652117 removes argument from eventfd_signal
+		eventfd_signal(mapping->eventfd);
+#endif
+	}
 	pdev->ack_register_aws[1] = QDMA_IRQ_ARM;
 	return IRQ_HANDLED;
 }
@@ -121,8 +127,14 @@ irqreturn_t qdma_intr_handler_write(int irq, void *data)
 	struct tlkm_irq_mapping *mapping = (struct tlkm_irq_mapping *)data;
 	struct tlkm_pcie_device *pdev = mapping->dev->private_data;
 
-	if (mapping->eventfd != 0)
+	if (mapping->eventfd != 0) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
 		eventfd_signal(mapping->eventfd, 1);
+#else
+		// Linux commit 3652117 removes argument from eventfd_signal
+		eventfd_signal(mapping->eventfd);
+#endif
+	}
 	pdev->ack_register_aws[0] = QDMA_IRQ_ARM;
 	return IRQ_HANDLED;
 }
