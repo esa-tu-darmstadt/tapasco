@@ -21,6 +21,7 @@
 #include "tlkm_logging.h"
 #include "tlkm_bus.h"
 #include "tlkm_control.h"
+#include "tlkm_device_mmap.h"
 
 static inline struct tlkm_device *device_from_file(struct file *fp)
 {

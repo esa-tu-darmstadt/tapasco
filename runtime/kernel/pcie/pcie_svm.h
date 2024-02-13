@@ -103,6 +103,9 @@ int pcie_svm_user_managed_migration_to_ram(struct tlkm_device *inst,
 int pcie_svm_user_managed_migration_to_device(struct tlkm_device *inst,
 					      uint64_t vaddr, uint64_t size);
 
+irqreturn_t svm_c2h_intr_handler(int irq, void *data);
+irqreturn_t svm_h2c_intr_handler(int irq, void *data);
+
 /* struct to hold data related to SVM */
 struct tlkm_pcie_svm_data {
 	struct tlkm_pcie_device *pdev;

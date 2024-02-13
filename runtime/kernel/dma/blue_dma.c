@@ -22,6 +22,7 @@
 #include "tlkm_dma.h"
 #include "tlkm_logging.h"
 #include "tlkm_perfc.h"
+#include "blue_dma.h"
 
 /* Register Map and commands */
 #define REG_HOST_ADDR 0x00 /* slv_reg0 = PCIe addr */

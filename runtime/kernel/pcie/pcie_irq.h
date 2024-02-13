@@ -31,4 +31,6 @@ int pcie_irqs_request_platform_irq(struct tlkm_device *dev,
 void pcie_irqs_release_platform_irq(struct tlkm_device *dev,
 				    struct tlkm_irq_mapping *mapping);
 
+irqreturn_t intr_handler_platform(int irq, void *data);
+
 #endif /* PCIE_IRQ_H__ */
