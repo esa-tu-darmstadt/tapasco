@@ -287,8 +287,10 @@ private:
       this->single32((uint32_t)t);
     } else if (sizeof(T) == 8) {
       this->single64((uint64_t)t);
-    } else {
+    } else if (sizeof(T) > 8) {
       throw tapasco_error("Please supply large arguments as wrapped pointers.");
+    } else {
+      throw tapasco_error("TaPaSCo supports 32 or 64 bit argument types or buffers. You provided an argument smaller than 32 bits.");
     }
   }
 
