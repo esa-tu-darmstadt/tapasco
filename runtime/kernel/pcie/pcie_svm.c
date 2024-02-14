@@ -196,21 +196,6 @@ invalidate_tlb_range(struct tlkm_pcie_svm_data *svm_data, uint64_t base,
 }
 
 /**
- * Drop a page fault to signal the on-FPGA IOMMU that it could not be resolved
- *
- * @param svm_data SVM data struct
- * @param vaddr virtual address of not resolved page fault
- */
-static inline void drop_page_fault(struct tlkm_pcie_svm_data *svm_data,
-				   uint64_t vaddr)
-{
-	DEVLOG(svm_data->pdev->parent->dev_id, TLKM_LF_SVM,
-	       "drop page fault: vaddr = %llx", vaddr);
-	writeq(vaddr, &svm_data->mmu_regs->vaddr);
-	writeq(MMU_DROP_FAULT, &svm_data->mmu_regs->cmd);
-}
-
-/**
  * Start fault replay in on-FPGA IOMMU
  */
 static inline void start_fault_replay(struct tlkm_pcie_svm_data *svm_data)
@@ -1909,11 +1894,10 @@ fail_alloc:
  * @param pdev TLKM PCIe device struct of destination device
  * @param vaddr virtual address of the first page
  * @param npages number of contiguous pages
- * @param drop_failed if true: send drop commands to IOMMU for failed migrations
  * @return SUCCESS - 0, FAILURE - error code
  */
 static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
-				 int npages, bool drop_failed)
+				 int npages)
 {
 	int r, res = 0, i, j, ndevs, next_dev, nmigrate;
 	uint64_t curr_addr;
@@ -1984,12 +1968,6 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 			r = svm_migrate_ram_to_dev(pdev, curr_addr, nmigrate);
 			if (r) {
 				res = r;
-				if (drop_failed) {
-					for (j = 0; j < nmigrate; ++j)
-						drop_page_fault(svm_data,
-								curr_addr +
-								j * PAGE_SIZE);
-				}
 			}
 			i += nmigrate;
 			curr_addr = vaddr + i * PAGE_SIZE;
@@ -2006,13 +1984,6 @@ static int svm_migrate_to_device(struct tlkm_pcie_device *pdev, uint64_t vaddr,
 							   curr_addr, nmigrate);
 				if (r) {
 					res = r;
-					if (drop_failed) {
-						for (j = 0; j < nmigrate; ++j)
-							drop_page_fault(
-								svm_data,
-								curr_addr +
-								j * PAGE_SIZE);
-					}
 				}
 			}
 			list_del(&next_entry->list);
@@ -2072,7 +2043,7 @@ int pcie_svm_user_managed_migration_to_device(struct tlkm_device *inst,
 	// do migration in 512 MB blocks
 	while (npages > 0) {
 		nmigrate = min(npages, UMPM_MAX_PAGES);
-		res = svm_migrate_to_device(pdev, va_start, nmigrate, false);
+		res = svm_migrate_to_device(pdev, va_start, nmigrate);
 		if (res)
 			break;
 
@@ -2361,7 +2332,6 @@ static void handle_iommu_page_fault(struct work_struct *work)
 				if (!page) {
 					DEVERR(pdev->parent->dev_id,
 					       "PTW for address translation failed");
-					drop_page_fault(svm_data, vaddrs[i]);
 				} else {
 					dev_addr = pfn_to_dev_addr(svm_data,
 								   page_to_pfn(
@@ -2391,15 +2361,13 @@ static void handle_iommu_page_fault(struct work_struct *work)
 
 			res = svm_migrate_to_device(pdev,
 						    vaddrs[0] & VADDR_MASK,
-						    ncontiguous, true);
+						    ncontiguous);
 			// in case of failed page fault handling disable IOMMU since
 			//  accelerator might not be able to deal with error responses
 			//  properly and will access invalid locations again and again
 			if (res) {
 				DEVERR(pdev->parent->dev_id,
 				       "error during page fault, disabling IOMMU, please reload bitstream");
-				for (i = ncontiguous; i < nfaults; ++i)
-					drop_page_fault(svm_data, vaddrs[i]);
 				writeq(MMU_DEACTIVATE,
 				       &svm_data->mmu_regs->cmd);
 				svm_data->error_state |= MMU_DEACTIVATED_ERROR;
