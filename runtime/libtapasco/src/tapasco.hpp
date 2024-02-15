@@ -723,7 +723,7 @@ struct Tapasco {
     }
 
     JobArgumentList a(this->device_internal.get_device());
-    set_args(a, args...);
+    a.set_args(args...);
 
     if (tapasco_job_start(j, a.list()) < 0) {
       handle_error();
@@ -751,7 +751,7 @@ struct Tapasco {
     }
 
     JobArgumentList a(this->device_internal.get_device());
-    set_args(a, args...);
+    a.set_args(args...);
 
     if (tapasco_job_start(j, a.list()) < 0) {
       handle_error();
