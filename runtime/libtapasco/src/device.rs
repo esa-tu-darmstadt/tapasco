@@ -549,7 +549,6 @@ impl Device {
         Ok(Job::new(pe, &self.scheduler))
     }
 
-
     /// Acquires a PE from the device for use with the [`SinglePEHandler`].
     /// This will remove the PE from the normal scheduling process (until it is explicitly released).
     /// The [`SinglePEHandler`] allows to repeatedly launch jobs on this PE. It also allows to manually access the PE-local memory.
@@ -564,6 +563,28 @@ impl Device {
         let pe = self.scheduler.acquire_pe(id).context(SchedulerSnafu)?;
         trace!("Successfully acquired PE of type {}.", id);
         Ok(SinglePEHandler::new(pe, &self.scheduler))
+    }
+
+    /// Request a PE from the device.
+    ///
+    /// # Arguments
+    ///   * id: The ID of the desired PE.
+    ///
+    /// Returns a [`Job`] with the given PE that can be used to start execution on the scheduled PE,
+    /// or an empty option if no PE is currently available.
+    ///
+    /// [`Job`]: ../job/struct.Job.html
+    pub fn try_acquire_pe(&self, id: PEId) -> Result<Option<Job>> {
+        self.check_exclusive_access()?;
+        trace!("Trying to acquire PE of type {}.", id);
+        let pe = self.scheduler.try_acpuire_pe(id).context(SchedulerSnafu)?;
+        match pe {
+            Some(p) => {
+                trace!("Successfully acquired PE of type {}.", id);
+                Ok(Some(Job::new(p, &self.scheduler)))
+            },
+            None => Ok(None)
+        }
     }
 
     /// Request a PE from the device but don't create a Job for it. Usually [`acquire_pe`] is used

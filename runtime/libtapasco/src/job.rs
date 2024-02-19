@@ -326,40 +326,77 @@ impl Job {
                     .context(SchedulerSnafu)?;
             }
             trace!("Release successful.");
-            match copyback {
-                Some(copybacks) => {
-                    let mut res = Vec::new();
+            Self::handle_copyback(return_value, copyback)
+        } else {
+            Err(Error::NoPEtoRelease {})
+        }
+    }
 
-                    for param in copybacks {
-                        match param {
-                            CopyBack::Transfer(mut transfer) => {
+    fn handle_copyback(return_value: u64, copyback: Option<Vec<CopyBack>>) -> Result<(u64, Vec<Box<[u8]>>)> {
+        match copyback {
+            Some(copybacks) => {
+                let mut res = Vec::new();
+
+                for param in copybacks {
+                    match param {
+                        CopyBack::Transfer(mut transfer) => {
+                            transfer
+                                .memory
+                                .dma()
+                                .copy_from(transfer.device_address, &mut transfer.data[..])
+                                .context(DMASnafu)?;
+                            if transfer.free {
                                 transfer
                                     .memory
-                                    .dma()
-                                    .copy_from(transfer.device_address, &mut transfer.data[..])
-                                    .context(DMASnafu)?;
-                                if transfer.free {
-                                    transfer
-                                        .memory
-                                        .allocator()
-                                        .lock()?
-                                        .free(transfer.device_address)
-                                        .context(AllocatorSnafu)?;
-                                }
-                                res.push(transfer.data);
+                                    .allocator()
+                                    .lock()?
+                                    .free(transfer.device_address)
+                                    .context(AllocatorSnafu)?;
                             }
-                            CopyBack::Free(addr, mem) => {
-                                mem.allocator().lock()?.free(addr).context(AllocatorSnafu)?;
-                            }
-                            CopyBack::Return(transfer) => {
-                                res.push(transfer.data);
-                            }
+                            res.push(transfer.data);
+                        }
+                        CopyBack::Free(addr, mem) => {
+                            mem.allocator().lock()?.free(addr).context(AllocatorSnafu)?;
+                        }
+                        CopyBack::Return(transfer) => {
+                            res.push(transfer.data);
                         }
                     }
-
-                    Ok((return_value, res))
                 }
-                None => Ok((return_value, Vec::new())),
+
+                Ok((return_value, res))
+            }
+            None => Ok((return_value, Vec::new())),
+        }
+    }
+
+    /// Release job if it has finished and handle copy back if necessary.
+    ///
+    /// # Arguments
+    ///  * `release_pe`: Set if PE should be released so it can be used by another Job.
+    ///  * `return_value`: Set if the return value should be read from the PE.
+    /// # Returns
+    ///  * An empty Option if the job is still running, or a Option with a Tuple of
+    ///    a: The return value if requested through `return_value`,
+    ///    b: The memories that have been used for copy backs after the job execution. Order is maintained according to the original argument list.
+    ///       If the SVM feature is in use return ALL memories so that the user can regain ownership of "in-only" buffers as well.
+    pub fn try_release(&mut self, release_pe: bool, return_value: bool) -> Result<Option<(u64, Vec<Box<[u8]>>)>> {
+        if self.pe.is_some() {
+            trace!("Trying to release PE {:?}.", self.pe.as_ref().unwrap().id());
+            let res = self.pe.as_mut().unwrap().try_release(return_value).context(PESnafu)?;
+
+            match res {
+                Some((ret_val, copyback)) => {
+                    if release_pe {
+                        self.scheduler
+                            .release_pe(self.pe.take().unwrap())
+                            .context(SchedulerSnafu)?;
+                    }
+                    trace!("Release successful.");
+                    let r = Self::handle_copyback(ret_val, copyback)?;
+                    Ok(Some(r))
+                },
+                None => Ok(None)
             }
         } else {
             Err(Error::NoPEtoRelease {})

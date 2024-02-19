@@ -175,13 +175,17 @@ impl Scheduler {
         })
     }
 
-    pub fn acquire_pe(&self, id: PEId) -> Result<PE> {
+    fn do_acquire_pe(&self, id: PEId, block: bool) -> Result<Option<PE>> {
         match self.pes.get(&id) {
             Some(l) => loop {
                 match l.val().steal() {
-                    Steal::Success(pe) => return Ok(pe),
+                    Steal::Success(pe) => return Ok(Some(pe)),
                     Steal::Empty => (),
                     Steal::Retry => (),
+                }
+                trace!("Failed to steal PE");
+                if !block {
+                    return Ok(None);
                 }
                 thread::yield_now();
             },
@@ -189,6 +193,24 @@ impl Scheduler {
         }
     }
 
+    pub fn acquire_pe(&self, id: PEId) -> Result<PE> {
+        let pe = self.do_acquire_pe(id, true)?;
+        Ok(pe.unwrap())
+    }
+
+    pub fn try_acpuire_pe(&self, id: PEId) -> Result<Option<PE>> {
+        self.do_acquire_pe(id, false)
+    }
+
+    pub fn release_pe(&self, pe: PE) -> Result<()> {
+        ensure!(!pe.active(), PEStillActiveSnafu { pe });
+
+        match self.pes.get(pe.type_id()) {
+            Some(l) => l.val().push(pe),
+            None => return Err(Error::NoSuchPE { id: *pe.type_id() }),
+        }
+        Ok(())
+    }
 
     pub fn reset_interrupts(&self) -> Result<()> {
         for v in self.pes.iter() {

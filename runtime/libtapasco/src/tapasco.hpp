@@ -47,7 +47,6 @@
 #include <tapasco_inner.hpp>
 
 namespace tapasco {
-using job_future = std::function<int(void)>;
 
 // Types which might still be used by legacy applications
 typedef DeviceAddress tapasco_handle_t;
@@ -179,6 +178,40 @@ static void handle_error() {
   free(buf);
   throw tapasco_error(err_msg);
 }
+
+/**
+ * Wrapping class for release-callback of jobs.
+ */
+class JobFuture {
+public:
+  /**
+   * Constructor for uninitialized future. May be used if job is not started
+   * immediately and correct callback is set later.
+   */
+  JobFuture() : func([](bool b) -> int { throw tapasco_error("PE job not launched."); }) {};
+
+  /**
+   * Constructor for JobFuture with custom callback function. Callback is
+   * normally retrieved with getCallback() function of TapascoPE.
+   * @param f Callback function
+   */
+  JobFuture(std::function<int(bool)> f) : func(f) {}
+
+  int operator()() {
+    return func(true);
+  }
+
+  int operator()(bool block) {
+    return func(block);
+  }
+
+  void setCallback(std::function<int(bool)> f) {
+    func = f;
+  }
+private:
+  std::function<int(bool)> func;
+};
+using job_future = JobFuture;
 
 class JobArgumentList {
 public:
@@ -531,6 +564,14 @@ public:
     return j;
   }
 
+  Job *try_acquire_pe(PEId pe_id) {
+    Job *j = nullptr;
+    if (!tapasco_device_try_acquire_pe(this->device, pe_id, &j)) {
+      handle_error();
+    }
+    return j;
+  }
+
   float design_frequency() {
     return tapasco_device_design_frequency(this->device);
   }
@@ -633,7 +674,7 @@ struct Tapasco {
   }
 
   template <typename R, typename... Targs>
-  job_future launch(PEId pe_id, RetVal<R> &ret, Targs... args) {
+  JobFuture launch(PEId pe_id, RetVal<R> &ret, Targs... args) {
     JobArgumentList a(this->device_internal.get_device());
     a.set_args(args...);
 
@@ -646,17 +687,10 @@ struct Tapasco {
       handle_error();
     }
 
-    return [this, j, &ret, &args...]() {
-      uint64_t ret_val;
-      if (tapasco_job_release(j, &ret_val, true) < 0) {
-        handle_error();
-      }
-      *ret.value = (R)ret_val;
-      return 0;
-    };
+    return JobFuture(getCallback(ret, j));
   }
 
-  template <typename... Targs> job_future launch(PEId pe_id, Targs... args) {
+  template <typename... Targs> JobFuture launch(PEId pe_id, Targs... args) {
     JobArgumentList a(this->device_internal.get_device());
     a.set_args(args...);
 
@@ -669,12 +703,64 @@ struct Tapasco {
       handle_error();
     }
 
-    return [this, j, &args...]() {
-      if (tapasco_job_release(j, 0, true) < 0) {
-        handle_error();
-      }
-      return 0;
-    };
+    return JobFuture(getCallback(j));
+  }
+
+  /**
+   * Launch a task on a PE if a matching PE is available at the moment.
+   * An uninitialized JobFuture must be passed by reference and the
+   * release-callback is set if the task could be launched on a PE.
+   *
+   * @param future JobFuture for this task
+   * @param pe_id PE-ID of this task
+   * @param ret PE return value
+   * @param args PE arguments
+   * @return zero - SUCCESS, -1 - no matching PE available
+   */
+  template <typename R, typename... Targs>
+  int try_launch(JobFuture &future, PEId pe_id, RetVal<R> &ret, Targs... args) {
+    Job *j = this->device_internal.try_acquire_pe(pe_id);
+    if (j == nullptr) {
+      return -1;
+    }
+
+    JobArgumentList a(this->device_internal.get_device());
+    a.set_args(args...);
+
+    if (tapasco_job_start(j, a.list()) < 0) {
+      handle_error();
+    }
+
+    future.setCallback(getCallback(ret, j));
+    return 0;
+  }
+
+  /**
+   * Launch a task on a PE if a matching PE is available at the moment.
+   * An uninitialized JobFuture must be passed by reference and the
+   * release-callback is set if the task could be launched on a PE.
+   *
+   * @param future JobFuture for this task
+   * @param pe_id PE-ID of this task
+   * @param args PE arguments
+   * @return zero - SUCCESS, -1 - no matching PE available
+   */
+  template <typename... Targs>
+  int try_launch(JobFuture &future, PEId pe_id, Targs... args) {
+    Job *j =  this->device_internal.try_acquire_pe(pe_id);
+    if (j == nullptr) {
+      return -1;
+    }
+
+    JobArgumentList a(this->device_internal.get_device());
+    a.set_args(args...);
+
+    if (tapasco_job_start(j, a.list()) < 0) {
+      handle_error();
+    }
+
+    future.setCallback(getCallback(j));
+    return 0;
   }
 
   TapascoPE *acquire_pe_without_job(PEId pe_id) {
@@ -793,6 +879,75 @@ struct Tapasco {
   }
 
 private:
+
+  /* {@ Callback generation methods. */
+  /**
+   * Generate JobFuture callback function for PE job.
+   *
+   * If block argument of callback is set to true, the callback function will
+   * not return until the PE is finished and could be released. Otherwise, it
+   * returns "0" if the PE is finished and could be released, or "1" if it is
+   * still running.
+   *
+   * @param ret PE return value
+   * @param j Job obcect
+   * @return Callback function for JobFuture
+   */
+  template<typename R>
+  std::function<int(bool)> getCallback(RetVal<R> &ret, Job *j) const
+  {
+    return [this, j, &ret](bool block) {
+            uint64_t ret_val;
+            if (block) {
+              if (tapasco_job_release(j, &ret_val, true) < 0) {
+                handle_error();
+              }
+            } else {
+              int r = tapasco_job_try_release(j, &ret_val, true);
+              if (r < 0) {
+                std::cout << "Call handle_error()" << std::endl;
+                handle_error();
+              }
+              else if (r == 1)
+                return 1;
+            }
+            *ret.value = (R)ret_val;
+            return 0;
+    };
+  }
+
+  /**
+   * Generate JobFuture callback function for PE job.
+   *
+   * If block argument of callback is set to true, the callback function will
+   * not return until the PE is finished and could be released. Otherwise, it
+   * returns "0" if the PE is finished and could be released, or "1" if it is
+   * still running.
+   *
+   * @param j Job object
+   * @return Callback function for JobFuture
+   */
+  std::function<int(bool)> getCallback(Job *j) const
+  {
+    return [this, j](bool block) {
+            if (block) {
+              if (tapasco_job_release(j, nullptr, true) < 0) {
+                handle_error();
+              }
+            } else {
+              int r = tapasco_job_try_release(j, nullptr, true);
+              if (r < 0) {
+                std::cout << "Call handle_error()" << std::endl;
+                handle_error();
+              }
+              else if (r == 1)
+                return 1;
+            }
+            return 0;
+    };
+  }
+  /* Callback generation methods. @} */
+
   TapascoDriver driver_internal;
   TapascoDevice device_internal;
   TapascoMemory default_memory_internal;
