@@ -85,7 +85,7 @@ namespace eval sfpplus {
   #  - sfp_tx_resetn_port_name: the reset for the sending stream
   # @param physical_ports a dictionary mapping physical ports to the port_name. See Physical Port configuration at the top of this file
   proc generate_cores {mode physical_ports} {
-
+    error "Platform does not overwrite generate_cores"
   }
 
   ###### END PLATFORM SPECIFIC ######
