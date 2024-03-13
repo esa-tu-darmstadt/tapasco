@@ -27,6 +27,12 @@
 #include "tlkm_device_ioctl_cmds.h"
 #include "zynq_device.h"
 #include "zynq_dmamgmt.h"
+#include "zynq_ioctl.h"
+
+long zynq_ioctl_dma_buffer_allocate(struct tlkm_device *inst, struct tlkm_dma_buffer_allocate __user *param);
+long zynq_ioctl_dma_buffer_free(struct tlkm_device *inst, struct tlkm_dma_buffer_op __user *param);
+long zynq_ioctl_dma_buffer_to_dev(struct tlkm_device *inst, struct tlkm_dma_buffer_op __user *param);
+long zynq_ioctl_dma_buffer_from_dev(struct tlkm_device *inst, struct tlkm_dma_buffer_op __user *param);
 
 static inline long zynq_ioctl_info(struct tlkm_device *inst,
 				   struct tlkm_device_info *info)

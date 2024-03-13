@@ -22,6 +22,9 @@
 #include "tlkm_device.h"
 #include <pb_decode.h>
 
+bool parse_string(pb_istream_t *stream, const pb_field_t *field, void **arg);
+bool add_component(pb_istream_t *stream, const pb_field_t *field, void **arg);
+
 bool parse_string(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
 	size_t bytes_to_read =

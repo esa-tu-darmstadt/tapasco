@@ -110,7 +110,12 @@ irqreturn_t aws_irq_handler(int irq, void *data)
 				}
 			}
 			if (m_start->irq_no == slot_shifted) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
 				eventfd_signal(m_start->eventfd, 1);
+#else
+				// Linux commit 3652117 removes argument from eventfd_signal
+				eventfd_signal(m_start->eventfd);
+#endif
 			} else {
 				// Got interrupt for unregistered interrupt
 				LOG(TLKM_LF_IRQ,

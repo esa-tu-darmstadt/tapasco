@@ -29,4 +29,6 @@ int pcie_aws_irqs_request_platform_irq(struct tlkm_device *dev,
 void pcie_aws_irqs_release_platform_irq(struct tlkm_device *dev,
 					struct tlkm_irq_mapping *mapping);
 
+irqreturn_t aws_irq_handler(int irq, void *data);
+
 #endif /* PCIE_IRQ_H__ */
