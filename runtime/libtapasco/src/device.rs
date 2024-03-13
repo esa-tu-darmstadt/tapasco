@@ -363,8 +363,21 @@ impl Device {
         let zynqmp_vfio_mode = true;
         let mut is_pcie = false;
         let mut svm_in_use = false;
+        let mut nv_in_use = false;
+        let mut nv_offset = 0;
         if name == "pcie" {
-
+            
+            // check whether NVMulator is in use
+            for comp in &s.platform {
+                if comp.name == "PLATFORM_COMPONENT_NVMULATOR" {
+                    nv_in_use = true;
+                    nv_offset = comp.offset;          
+                    if nv_offset == 0 {
+                        trace!("ERROR: NVMulator offset is zero!");
+                    }
+                    trace!("Found the NVMulator module in {}", nv_offset);
+                }
+            }
             // check whether SVM is in use
             for comp in &s.platform {
                 if comp.name == "PLATFORM_COMPONENT_MMU" {
@@ -421,6 +434,7 @@ impl Device {
                             settings
                                 .get::<usize>("dma.write_buffers")
                                 .context(ConfigSnafu)?,
+                                nv_offset as usize,
                         )
                             .context(DMASnafu)?,
                     ),

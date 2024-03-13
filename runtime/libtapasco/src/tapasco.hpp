@@ -434,6 +434,15 @@ public:
     return this->copy_from(src, dst, len);
   }
 
+  int nvMulator(uint64_t read_delay, uint64_t write_delay, uint64_t mode) {
+    std::ostringstream stringStream;
+    if (tapasco_nvMulator(mem, read_delay, write_delay, mode) == -1) {
+      handle_error();
+      return -1;
+    }
+    return 0;
+  }
+
 private:
   TapascoOffchipMemory *mem;
 };
@@ -832,6 +841,17 @@ struct Tapasco {
    **/
   int copy_from(DeviceAddress src, uint8_t *dst, size_t len) {
     return this->default_memory_internal.copy_from(src, dst, len);
+  }
+
+/**
+   * Configuring NVMulator. 
+   * @param read_delay delay for read channel (in clock cycles)
+   * @param write_delay delay for write channel (in clock cycles)
+   * @param mode enable NVM emulation mode
+   * @return TAPASCO_SUCCESS if copy was successful, an error code otherwise
+   **/
+  int nvMulator(size_t read_delay, size_t write_delay, size_t mode) {
+    return this->default_memory_internal.nvMulator(read_delay, write_delay, mode);
   }
 
   /**
