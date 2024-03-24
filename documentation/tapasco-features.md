@@ -175,3 +175,17 @@ The Shared Virtual Memory (SVM) extensions is documented [here](tapasco-svm.md).
 #### SVM
 
 The Shared Virtual Memory (SVM) extensions is documented [here](tapasco-svm.md).
+
+### Versal
+
+#### AI Engine
+
+```
+AI-Engine {
+  "freq": -1 | <MHz> # Frequency of the AI engine
+  "adf": /path/to/libadf.a
+  <AIE stream name>: <PE interface name> # supports wildcard matching for PE interface
+}
+```
+
+If no explicit stream connections are given in the plugin options, the plugin tries to match streams according to direction and datawidth. Please check the log file for the actual result.
