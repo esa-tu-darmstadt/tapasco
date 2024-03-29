@@ -21,6 +21,10 @@
     puts "Only Vivado 2021.2 is currently supported for Versal devices."
     exit 1
   }
+  if {[::tapasco::vivado_is_newer "2021.2"] != 1} {
+    puts "Only Vivado 2021.2 and newer is supported for Versal devices."
+    exit 1
+  }
 
   if { ! [info exists pcie_width] } {
     puts "No PCIe width defined. Assuming x8..."
