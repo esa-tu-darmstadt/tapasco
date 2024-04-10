@@ -137,25 +137,26 @@ struct qdma_sw_desc_ctxt {
 };
 
 struct qdma_cmpl_ctxt {
-	unsigned __int128 en_stat_desc:1;
-	unsigned __int128 en_int:1;
-	unsigned __int128 trig_mode:3;
-	unsigned __int128 fnc_id:8;
-	unsigned __int128 counter_idx:4;
-	unsigned __int128 timer_idx:4;
-	unsigned __int128 int_st:2;
-	unsigned __int128 color:1;
-	unsigned __int128 qsize_idx:4;
-	unsigned __int128 baddr_high:58;
-	unsigned __int128 desc_size:2;
-	unsigned __int128 pidx:16;
-	unsigned __int128 cidx:16;
-	unsigned __int128 valid:1;
-	unsigned __int128 err:2;
-	unsigned __int128 user_trig_pend:1;
-	unsigned __int128 timer_running:1;
-	unsigned __int128 full_upd:1;
-	unsigned __int128 rsv:2;
+	uint64_t en_stat_desc:1;
+	uint64_t en_int:1;
+	uint64_t trig_mode:3;
+	uint64_t fnc_id:8;
+	uint64_t counter_idx:4;
+	uint64_t timer_idx:4;
+	uint64_t int_st:2;
+	uint64_t color:1;
+	uint64_t qsize_idx:4;
+	uint64_t baddr_high_l:36;
+	uint64_t baddr_high_h:22;
+	uint64_t desc_size:2;
+	uint64_t pidx:16;
+	uint64_t cidx:16;
+	uint64_t valid:1;
+	uint64_t err:2;
+	uint64_t user_trig_pend:1;
+	uint64_t timer_running:1;
+	uint64_t full_upd:1;
+	uint64_t rsv:2;
 };
 
 struct qdma_cmpl_status {
@@ -550,7 +551,10 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 	cmpl_ctxt.en_int = 1;
 	cmpl_ctxt.trig_mode = 0x3;
 	cmpl_ctxt.qsize_idx = 0;
-	cmpl_ctxt.baddr_high = pdev->cmpt_ring_addr >> 6;
+	cmpl_ctxt.baddr_high_l = (pdev->cmpt_ring_addr >> 6) & 0xFFFFFFFFF;      // lower 36 bits
+#ifndef CONFIG_ARM // in ARM32 size of dma_addr_t is only 32 bits
+	cmpl_ctxt.baddr_high_h = ((pdev->cmpt_ring_addr >> 6) >> 36) & 0x3FFFFF; // upper 22 bits
+#endif
 	cmpl_ctxt.valid = 1;
 	cmpl_ctxt.full_upd = 1;
 	if (qdma_program_ind_context(ctxt_regs, mask, (uint32_t *)&cmpl_ctxt, QDMA_CTXT_SELC_WRB, QDMA_ST_QID)) {
