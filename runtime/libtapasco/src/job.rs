@@ -238,6 +238,8 @@ impl Job {
         }
     }
 
+    /// Launch threads to move data from/to device constantly during PE execution using the
+    /// streaming feature of QDMA on Versal boards
     fn handle_stream_transfers(&mut self, args: Vec<PEParameter>) -> Result<Vec<PEParameter>> {
         trace!("Handling streaming parameters");
         let mut first_c2h_stream = true;
