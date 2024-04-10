@@ -589,7 +589,7 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 
 fail_cmpt_st:
 	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_PFTCH, QDMA_ST_QID);
-fail_pftch_st:
+fail_prftch_st:
 	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_H2C, QDMA_ST_QID);
 fail_swh2c_st:
 	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_C2H, QDMA_ST_QID);
