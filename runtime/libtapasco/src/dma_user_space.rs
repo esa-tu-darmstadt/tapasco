@@ -46,6 +46,7 @@ use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::thread;
 use std::ptr::write_volatile;
+use crate::dma::Error::StreamsNotSupported;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
     fn from(_error: std::sync::PoisonError<T>) -> Self {
@@ -82,8 +83,8 @@ pub struct UserSpaceDMA {
     from_dev_buffer: Injector<DMABuffer>,
     read_int: Box<dyn TapascoInterrupt + Sync + Send>,
     write_int: Box<dyn TapascoInterrupt + Sync + Send>,
-    c2h_st_int: Box<dyn TapascoInterrupt + Sync + Send>,
-    h2c_st_int: Box<dyn TapascoInterrupt + Sync + Send>,
+    c2h_st_int: Option<Box<dyn TapascoInterrupt + Sync + Send>>,
+    h2c_st_int: Option<Box<dyn TapascoInterrupt + Sync + Send>>,
     write_out: Queue<DMABuffer>,
     write_cntr: AtomicU64,
     write_int_cntr: AtomicU64,
@@ -177,27 +178,57 @@ impl UserSpaceDMA {
             });
         }
 
-        Ok(Self {
-            tlkm_file: tlkm_file.clone(),
-            memory: Mutex::new(memory.clone()),
-            engine_offset: offset,
-            to_dev_buffer: write_map,
-            from_dev_buffer: read_map,
-            read_int:Interrupt::new(tlkm_file, read_interrupt, false).context(ErrorInterruptSnafu)?,
-            write_int: Interrupt::new(tlkm_file, write_interrupt, false).context(ErrorInterruptSnafu)?,
-            c2h_st_int: Interrupt::new(tlkm_file, c2h_interrupt, false).context(ErrorInterruptSnafu)?,
-            h2c_st_int: Interrupt::new(tlkm_file, h2c_interrupt, false).context(ErrorInterruptSnafu)?,
-            write_out: Queue::new(),
-            write_cntr: AtomicU64::new(0),
-            write_int_cntr: AtomicU64::new(0),
-            read_int_cntr: AtomicU64::new(0),
-            read_cntr: AtomicU64::new(0),
-            c2h_cntr: AtomicU64::new(0),
-            c2h_int_cntr: AtomicU64::new(0),
-            h2c_out: Queue::new(),
-            h2c_cntr: AtomicU64::new(0),
-            h2c_int_cntr: AtomicU64::new(0),
-        })
+        let is_versal = unsafe {
+            let ptr = memory.as_ptr().offset(offset as isize + 0x18) as *const u64;
+            let id = ptr.read_volatile();
+            id == 0xDE5C1000
+        };
+
+        if !is_versal {
+            Ok(Self {
+                tlkm_file: tlkm_file.clone(),
+                memory: Mutex::new(memory.clone()),
+                engine_offset: offset,
+                to_dev_buffer: write_map,
+                from_dev_buffer: read_map,
+                read_int: Interrupt::new(tlkm_file, read_interrupt, false).context(ErrorInterruptSnafu)?,
+                write_int: Interrupt::new(tlkm_file, write_interrupt, false).context(ErrorInterruptSnafu)?,
+                c2h_st_int: None,
+                h2c_st_int: None,
+                write_out: Queue::new(),
+                write_cntr: AtomicU64::new(0),
+                write_int_cntr: AtomicU64::new(0),
+                read_int_cntr: AtomicU64::new(0),
+                read_cntr: AtomicU64::new(0),
+                c2h_cntr: AtomicU64::new(0),
+                c2h_int_cntr: AtomicU64::new(0),
+                h2c_out: Queue::new(),
+                h2c_cntr: AtomicU64::new(0),
+                h2c_int_cntr: AtomicU64::new(0),
+            })
+        } else {
+            Ok(Self {
+                tlkm_file: tlkm_file.clone(),
+                memory: Mutex::new(memory.clone()),
+                engine_offset: offset,
+                to_dev_buffer: write_map,
+                from_dev_buffer: read_map,
+                read_int: Interrupt::new(tlkm_file, read_interrupt, false).context(ErrorInterruptSnafu)?,
+                write_int: Interrupt::new(tlkm_file, write_interrupt, false).context(ErrorInterruptSnafu)?,
+                c2h_st_int: Some(Interrupt::new(tlkm_file, c2h_interrupt, false).context(ErrorInterruptSnafu)?),
+                h2c_st_int: Some(Interrupt::new(tlkm_file, h2c_interrupt, false).context(ErrorInterruptSnafu)?),
+                write_out: Queue::new(),
+                write_cntr: AtomicU64::new(0),
+                write_int_cntr: AtomicU64::new(0),
+                read_int_cntr: AtomicU64::new(0),
+                read_cntr: AtomicU64::new(0),
+                c2h_cntr: AtomicU64::new(0),
+                c2h_int_cntr: AtomicU64::new(0),
+                h2c_out: Queue::new(),
+                h2c_cntr: AtomicU64::new(0),
+                h2c_int_cntr: AtomicU64::new(0),
+            })
+        }
     }
 
     /// Enqueue a DMA transfer in the DMA engine
@@ -266,12 +297,15 @@ impl UserSpaceDMA {
     }
 
     fn wait_for_h2c_transfer(&self, next: bool, cntr: u64) -> Result<()> {
+        let intr = match &self.h2c_st_int {
+            Some(i) => i,
+            None => return Err(StreamsNotSupported {}),
+        };
         if !next || self.to_dev_buffer.is_empty() {
             while (next && self.to_dev_buffer.is_empty())
                 || (!next && self.h2c_int_cntr.load(Ordering::Relaxed) <= cntr)
             {
-                let n = self
-                    .h2c_st_int
+                let n = intr
                     .check_for_interrupt()
                     .context(ErrorInterruptSnafu)?;
                 for _ in 0..n {
@@ -302,8 +336,11 @@ impl UserSpaceDMA {
     }
 
     fn update_c2h_interrupts(&self) -> Result<()> {
-        let n = self
-            .c2h_st_int
+        let intr = match &self.c2h_st_int {
+            Some(i) => i,
+            None => return Err(StreamsNotSupported {}),
+        };
+        let n = intr
             .check_for_interrupt()
             .context(ErrorInterruptSnafu)?;
         self.c2h_int_cntr.fetch_add(n, Ordering::Relaxed);
