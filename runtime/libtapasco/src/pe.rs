@@ -84,7 +84,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 pub enum CopyBack {
     Transfer(DataTransferPrealloc),
     Free(DeviceAddress, Arc<OffchipMemory>),
-    Stream(JoinHandle<DataTransferStream>),
+    Stream(JoinHandle<crate::dma::Result<DataTransferStream>>),
     Return(DataTransferPrealloc),               // used to return ownership only when using SVM
 }
 

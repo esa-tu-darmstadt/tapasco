@@ -262,18 +262,13 @@ impl Job {
                             return Err(Error::TooManyStreams {});
                         }
                     }
-                    let handle = thread::spawn(move || -> DataTransferStream {
-                        let r= if s.c2h {
-                            s.memory.dma().c2h_stream(&mut s.data[..])
+                    let handle = thread::spawn(move || -> crate::dma::Result<DataTransferStream> {
+                        if s.c2h {
+                            s.memory.dma().c2h_stream(&mut s.data[..])?;
                         } else {
-                            s.memory.dma().h2c_stream(&s.data[..])
+                            s.memory.dma().h2c_stream(&s.data[..])?;
                         };
-                        // FIXME improve error handling
-                        match r {
-                            Ok(()) => {},
-                            Err(e) => error!("Error during stream transfer: {}", e),
-                        };
-                        s
+                        Ok(s)
                     });
                     self.pe.as_mut().unwrap()
                         .add_copyback(CopyBack::Stream(handle));
@@ -413,8 +408,7 @@ impl Job {
                             mem.allocator().lock()?.free(addr).context(AllocatorSnafu)?;
                         }
                         CopyBack::Stream(handle) => {
-                            // FIXME error handling
-                            let h = handle.join().unwrap();
+                            let h = handle.join().unwrap().context(DMASnafu )?;
 
                             // always return stream buffer so that the user can continue
                             // using the buffer

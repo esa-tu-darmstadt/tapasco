@@ -92,8 +92,7 @@ pub enum Error {
     #[snafu(display("Streams not supported on this platform"))]
     StreamsNotSupported {},
 }
-
-type Result<T, E = Error> = std::result::Result<T, E>;
+pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Specifies a method to interact with DMA methods
 ///
