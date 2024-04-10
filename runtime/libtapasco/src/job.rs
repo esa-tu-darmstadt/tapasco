@@ -395,10 +395,10 @@ impl Job {
                         CopyBack::Stream(handle) => {
                             // FIXME error handling
                             let h = handle.join().unwrap();
-                            if h.c2h {
-                                res.push(h.data);
-                            }
 
+                            // always return stream buffer so that the user can continue
+                            // using the buffer
+                            res.push(h.data);
                         }
                         CopyBack::Return(transfer) => {
                             res.push(transfer.data);
