@@ -63,6 +63,9 @@ pub enum Error {
     #[snafu(display("Parameter only supported for bitstreams with enabled SVM support: {:?}", arg))]
     UnsupportedSVMParameter { arg: PEParameter },
 
+    #[snafu(display("Too many streams. Only one input and output stream supported"))]
+    TooManyStreams {},
+
     #[snafu(display("Scheduler Error: {}", source))]
     SchedulerError { source: crate::scheduler::Error },
 
@@ -237,11 +240,26 @@ impl Job {
 
     fn handle_stream_transfers(&mut self, args: Vec<PEParameter>) -> Result<Vec<PEParameter>> {
         trace!("Handling streaming parameters");
+        let mut first_c2h_stream = true;
+        let mut first_h2c_stream = true;
         let new_params = args
             .into_iter()
             .try_fold(Vec::new(), |mut v, arg | match arg {
                 PEParameter::DataTransferStream(mut s) => {
-                    //let mem = s.memory.clone();
+                    // Limit to one input and output stream respectively
+                    if s.c2h {
+                        if first_c2h_stream {
+                            first_c2h_stream = false;
+                        } else {
+                            return Err(Error::TooManyStreams {});
+                        }
+                    } else {
+                        if first_h2c_stream {
+                            first_h2c_stream = false;
+                        } else {
+                            return Err(Error::TooManyStreams {});
+                        }
+                    }
                     let handle = thread::spawn(move || -> DataTransferStream {
                         let r= if s.c2h {
                             s.memory.dma().c2h_stream(&mut s.data[..])
