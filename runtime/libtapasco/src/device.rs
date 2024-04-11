@@ -207,6 +207,13 @@ pub struct DataTransferPrealloc {
     pub memory: Arc<OffchipMemory>,
 }
 
+#[derive(Debug)]
+pub struct DataTransferStream {
+    pub data: Box<[u8]>,
+    pub c2h: bool,
+    pub memory: Arc<OffchipMemory>,
+}
+
 /// All parameters supported by a TaPaSCo PE.
 #[derive(Debug)]
 pub enum PEParameter {
@@ -222,6 +229,8 @@ pub enum PEParameter {
     DataTransferAlloc(DataTransferAlloc),
     /// Transfer using any memory with preallocated space.
     DataTransferPrealloc(DataTransferPrealloc),
+    /// Transfer using QDMA Streams.
+    DataTransferStream(DataTransferStream),
     /// Virtual address parameter used for SVM.
     VirtualAddress(*const u8),
 }
@@ -377,6 +386,8 @@ impl Device {
                 let mut dma_offset = 0;
                 let mut dma_interrupt_read = 0;
                 let mut dma_interrupt_write = 1;
+                let dma_interrupt_c2h = 2;
+                let dma_interrupt_h2c = 3;
                 for comp in &s.platform {
                     if comp.name == "PLATFORM_COMPONENT_DMA0" {
                         dma_offset = comp.offset;
@@ -408,6 +419,8 @@ impl Device {
                             dma_offset as usize,
                             dma_interrupt_read,
                             dma_interrupt_write,
+                            dma_interrupt_c2h,
+                            dma_interrupt_h2c,
                             &platform_mmap,
                             settings
                                 .get::<usize>("dma.read_buffer_size")

@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::device::{DataTransferAlloc, DeviceAddress};
+use crate::device::{DataTransferAlloc, DataTransferStream, DeviceAddress};
 use crate::device::DataTransferPrealloc;
 use crate::device::PEParameter;
 use crate::pe::CopyBack;
@@ -26,6 +26,7 @@ use crate::pe::PE;
 use crate::scheduler::ReleasePE;
 use snafu::ResultExt;
 use std::sync::Arc;
+use std::thread;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
     fn from(_error: std::sync::PoisonError<T>) -> Self {
@@ -234,6 +235,38 @@ impl Job {
         }
     }
 
+    fn handle_stream_transfers(&mut self, args: Vec<PEParameter>) -> Result<Vec<PEParameter>> {
+        trace!("Handling streaming parameters");
+        let new_params = args
+            .into_iter()
+            .try_fold(Vec::new(), |mut v, arg | match arg {
+                PEParameter::DataTransferStream(mut s) => {
+                    //let mem = s.memory.clone();
+                    let handle = thread::spawn(move || -> DataTransferStream {
+                        let r= if s.c2h {
+                            s.memory.dma().c2h_stream(&mut s.data[..])
+                        } else {
+                            s.memory.dma().h2c_stream(&s.data[..])
+                        };
+                        // FIXME improve error handling
+                        match r {
+                            Ok(()) => {},
+                            Err(e) => error!("Error during stream transfer: {}", e),
+                        };
+                        s
+                    });
+                    self.pe.as_mut().unwrap()
+                        .add_copyback(CopyBack::Stream(handle));
+                    Ok(v)
+                }
+                _ => {
+                    v.push(arg);
+                    Ok(v)
+                }
+            });
+        new_params
+    }
+
     /// Start PE execution with the given parameters. This function does not block.
     ///
     /// # Arguments
@@ -253,6 +286,7 @@ impl Job {
         trace!("Handled allocates => {:?}.", local_args);
         let (trans_args, unused_mem) = self.handle_transfers_to_device(local_args)?;
         trace!("Handled transfers => {:?}.", trans_args);
+        let trans_args = self.handle_stream_transfers(trans_args)?;
         trace!("Setting arguments.");
         for (i, arg) in trans_args.into_iter().enumerate() {
             trace!("Setting argument {} => {:?}.", i, arg);
@@ -357,6 +391,14 @@ impl Job {
                         }
                         CopyBack::Free(addr, mem) => {
                             mem.allocator().lock()?.free(addr).context(AllocatorSnafu)?;
+                        }
+                        CopyBack::Stream(handle) => {
+                            // FIXME error handling
+                            let h = handle.join().unwrap();
+                            if h.c2h {
+                                res.push(h.data);
+                            }
+
                         }
                         CopyBack::Return(transfer) => {
                             res.push(transfer.data);
