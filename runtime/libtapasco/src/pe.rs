@@ -20,7 +20,7 @@
 
 use std::borrow::Borrow;
 use crate::debug::DebugControl;
-use crate::device::DataTransferPrealloc;
+use crate::device::{DataTransferPrealloc, DataTransferStream};
 use crate::device::DeviceAddress;
 use crate::device::OffchipMemory;
 use crate::device::PEParameter;
@@ -28,6 +28,7 @@ use crate::interrupt::{Interrupt, SimInterrupt, TapascoInterrupt};
 use snafu::ResultExt;
 use std::fs::File;
 use std::sync::Arc;
+use std::thread::JoinHandle;
 use crate::mmap_mut::{MemoryType, tapasco_read_volatile, tapasco_write_volatile, ValType};
 
 use crate::sim_client;
@@ -83,6 +84,7 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 pub enum CopyBack {
     Transfer(DataTransferPrealloc),
     Free(DeviceAddress, Arc<OffchipMemory>),
+    Stream(JoinHandle<crate::dma::Result<DataTransferStream>>),
     Return(DataTransferPrealloc),               // used to return ownership only when using SVM
 }
 

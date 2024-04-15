@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::device::{DataTransferAlloc, DeviceAddress};
+use crate::device::{DataTransferAlloc, DataTransferStream, DeviceAddress};
 use crate::device::DataTransferPrealloc;
 use crate::device::PEParameter;
 use crate::pe::CopyBack;
@@ -26,6 +26,7 @@ use crate::pe::PE;
 use crate::scheduler::ReleasePE;
 use snafu::ResultExt;
 use std::sync::Arc;
+use std::thread;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
     fn from(_error: std::sync::PoisonError<T>) -> Self {
@@ -61,6 +62,9 @@ pub enum Error {
 
     #[snafu(display("Parameter only supported for bitstreams with enabled SVM support: {:?}", arg))]
     UnsupportedSVMParameter { arg: PEParameter },
+
+    #[snafu(display("Too many streams. Only one input and output stream supported"))]
+    TooManyStreams {},
 
     #[snafu(display("Scheduler Error: {}", source))]
     SchedulerError { source: crate::scheduler::Error },
@@ -234,6 +238,50 @@ impl Job {
         }
     }
 
+    /// Launch threads to move data from/to device constantly during PE execution using the
+    /// streaming feature of QDMA on Versal boards
+    fn handle_stream_transfers(&mut self, args: Vec<PEParameter>) -> Result<Vec<PEParameter>> {
+        trace!("Handling streaming parameters");
+        let mut first_c2h_stream = true;
+        let mut first_h2c_stream = true;
+        let new_params = args
+            .into_iter()
+            .try_fold(Vec::new(), |mut v, arg | match arg {
+                PEParameter::DataTransferStream(mut s) => {
+                    // Limit to one input and output stream respectively
+                    if s.c2h {
+                        if first_c2h_stream {
+                            first_c2h_stream = false;
+                        } else {
+                            return Err(Error::TooManyStreams {});
+                        }
+                    } else {
+                        if first_h2c_stream {
+                            first_h2c_stream = false;
+                        } else {
+                            return Err(Error::TooManyStreams {});
+                        }
+                    }
+                    let handle = thread::spawn(move || -> crate::dma::Result<DataTransferStream> {
+                        if s.c2h {
+                            s.memory.dma().c2h_stream(&mut s.data[..])?;
+                        } else {
+                            s.memory.dma().h2c_stream(&s.data[..])?;
+                        };
+                        Ok(s)
+                    });
+                    self.pe.as_mut().unwrap()
+                        .add_copyback(CopyBack::Stream(handle));
+                    Ok(v)
+                }
+                _ => {
+                    v.push(arg);
+                    Ok(v)
+                }
+            });
+        new_params
+    }
+
     /// Start PE execution with the given parameters. This function does not block.
     ///
     /// # Arguments
@@ -253,6 +301,7 @@ impl Job {
         trace!("Handled allocates => {:?}.", local_args);
         let (trans_args, unused_mem) = self.handle_transfers_to_device(local_args)?;
         trace!("Handled transfers => {:?}.", trans_args);
+        let trans_args = self.handle_stream_transfers(trans_args)?;
         trace!("Setting arguments.");
         for (i, arg) in trans_args.into_iter().enumerate() {
             trace!("Setting argument {} => {:?}.", i, arg);
@@ -357,6 +406,13 @@ impl Job {
                         }
                         CopyBack::Free(addr, mem) => {
                             mem.allocator().lock()?.free(addr).context(AllocatorSnafu)?;
+                        }
+                        CopyBack::Stream(handle) => {
+                            let h = handle.join().unwrap().context(DMASnafu )?;
+
+                            // always return stream buffer so that the user can continue
+                            // using the buffer
+                            res.push(h.data);
                         }
                         CopyBack::Return(transfer) => {
                             res.push(transfer.data);

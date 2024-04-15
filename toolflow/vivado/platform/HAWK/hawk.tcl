@@ -19,7 +19,7 @@
 
 namespace eval platform {
   set platform_dirname "HAWK"
-  set pcie_width "8"
+  set pcie_width "16"
 
   source $::env(TAPASCO_HOME_TCL)/platform/versal/versal_base.tcl
 
@@ -44,6 +44,7 @@ namespace eval platform {
       CONFIG.MC_DDR_INIT_TIMEOUT {0x002E3BF0} \
       CONFIG.MC_ECC_SCRUB_PERIOD {0x002710} \
       CONFIG.MC_ECC_SCRUB_SIZE {32768} \
+      CONFIG.MC_INTERLEAVE_SIZE {4096} \
       CONFIG.MC_F1_CASLATENCY {22} \
       CONFIG.MC_F1_LPDDR4_MR1 {0x0000} \
       CONFIG.MC_F1_LPDDR4_MR2 {0x0000} \

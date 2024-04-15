@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use crate::device::DataTransferAlloc;
+use crate::device::{DataTransferAlloc, DataTransferStream};
 use crate::device::DataTransferLocal;
 use crate::device::DataTransferPrealloc;
 use crate::device::Device;
@@ -535,6 +535,43 @@ pub unsafe extern "C" fn tapasco_job_param_virtualaddress(addr: *const u8, list:
 
     let tl = &mut *list;
     tl.push(PEParameter::VirtualAddress(addr));
+    list
+}
+
+/// # Safety
+/// TODO
+#[no_mangle]
+pub unsafe extern "C" fn tapasco_job_param_stream(
+    dev: *mut Device,
+    ptr: *mut u8,
+    bytes: usize,
+    c2h: bool,
+    list: *mut JobList,
+) -> *mut JobList {
+    if list.is_null() {
+        warn!("Null pointer passed into tapasco_job_param_stream() as the list");
+        update_last_error(Error::NullPointerTLKM {});
+        return ptr::null_mut();
+    }
+
+    let d = &mut *dev;
+    let mem = match d.default_memory().context(RetrieveDefaultMemorySnafu) {
+        Ok(x) => x,
+        Err(e) => {
+            warn!("Failed to retrieve default memory from device.");
+            update_last_error(e);
+            return ptr::null_mut();
+        }
+    };
+
+    let v = Box::from_raw(slice::from_raw_parts_mut(ptr, bytes));
+
+    let tl = &mut *list;
+    tl.push(PEParameter::DataTransferStream(DataTransferStream {
+        data: v,
+        c2h: c2h,
+        memory: mem,
+    }));
     list
 }
 

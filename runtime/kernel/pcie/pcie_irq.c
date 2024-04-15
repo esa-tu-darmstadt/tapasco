@@ -108,6 +108,18 @@ int pcie_irqs_request_platform_irq(struct tlkm_device *dev,
 				err);
 			return err;
 		}
+	} else if (mapping->irq_no == QDMA_IRQ_VEC_C2H_ST && pcie_is_qdma_in_use(dev)) {
+		err = request_irq(pci_irq_vector(pdev->pdev, QDMA_IRQ_VEC_C2H_ST), qdma_intr_handler_c2h_stream, IRQF_EARLY_RESUME, TLKM_PCI_NAME, (void *)mapping);
+		if (err) {
+			DEVERR(dev->dev_id, "could not request QDMA C2H Stream interrupt: %d", err);
+			return err;
+		}
+	} else if (mapping->irq_no == QDMA_IRQ_VEC_H2C_ST && pcie_is_qdma_in_use(dev)) {
+		err = request_irq(pci_irq_vector(pdev->pdev, QDMA_IRQ_VEC_H2C_ST), qdma_intr_handler_h2c_stream, IRQF_EARLY_RESUME, TLKM_PCI_NAME, (void *)mapping);
+		if (err) {
+			DEVERR(dev->dev_id, "could not request QDMA H2C Stream interrupt: %d", err);
+			return err;
+		}
 	} else {
 		if ((err = request_irq(pci_irq_vector(pdev->pdev,
 						      mapping->irq_no),

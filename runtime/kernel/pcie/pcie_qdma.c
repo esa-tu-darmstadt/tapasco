@@ -21,15 +21,19 @@
 #include <linux/sched.h>
 #include <linux/eventfd.h>
 #include "pcie/pcie_qdma.h"
+#include "pcie/pcie.h"
 #include "tlkm_logging.h"
 #include "tlkm_perfc.h"
 #include "pcie/pcie_device.h"
 
 // register offsets of QDMA core
+#define QDMA_TRQ_SEL_FMAP	0x400UL
 #define QDMA_CTXT_REG_OFF	0x800UL
+#define QDMA_QID2VEC_REG_OFF	0xA80UL
+#define QDMA_C2H_BUF_SIZE_OFF	0xAB0UL
 #define QDMA_C2H_MM_CTRL_OFF	0x1004UL
 #define QDMA_H2C_MM_CTRL_OFF	0x1204UL
-#define QDMA_PIDX_UPD_OFF	0x18004UL
+#define QDMA_PIDX_UPD_OFF	0x6400UL
 
 // QDMA indirect context programming
 #define QDMA_CTXT_CMD_CLR 		0
@@ -46,10 +50,6 @@
 #define QDMA_CTXT_SELC_WRB 		0x6
 #define QDMA_CTXT_SELC_PFTCH 		0x7
 #define QDMA_CTXT_SELC_INT_COAL 	0x8
-#define QDMA_CTXT_SELC_HOST_PROFILE 	0xA
-#define QDMA_CTXT_SELC_TIMER 		0xB
-#define QDMA_CTXT_SELC_FMAP 		0xC
-#define QDMA_CTXT_SELC_FNC_STS 		0xD
 
 #define QDMA_CTXT_BUSY			0x1
 
@@ -59,7 +59,24 @@
 #define QDMA_SW_DESC_CTXT_IRQ_EN	(1UL << 21)
 #define QDMA_SW_DESC_CTXT_IS_MM		(1UL << 31)
 
+#define QDMA_PFCH_CTXT_BYP		(1UL)
+#define QDMA_PFCH_CTXT_VALID		(1UL << 13)
+
+#define QDMA_CMPT_CTXT_EN_INT		(1UL << 1)
+#define QDMA_CMPT_CTXT_TRIG_MODE_EVERY	(1UL << 2)
+#define QDMA_CMPT_CTXT_TRIG_MODE_USER	(3UL << 2)
+#define QDMA_CMPT_CTXT_VALID		(1UL << 24)
+#define QDMA_CMPT_FULL_UPD		(1UL << 29)
+#define QDMA_CMPT_RING_SZ		64
+#define QDMA_CMPT_BUF_SZ		0x8000
+
 #define QDMA_IRQ_ARM			(1UL << 16)
+#define QDMA_DMAP_SEL_CMPT_TRIG_USER	(3UL << 24)
+#define QDMA_DMAP_SEL_CMPT_WRB_EN	(1UL << 27)
+#define QDMA_DMAP_SEL_CMPT_IRQ_EN	(1UL << 28)
+
+#define QDMA_MM_QID			0
+#define QDMA_ST_QID			1
 
 // DMA commands of Descriptor Generator IP
 #define DESC_GEN_CMD_READ	0x10001000	// C2H -> from FPGA to host memory
@@ -84,10 +101,83 @@ struct desc_gen_regs {
 // structure of QDMA indirect context programming registers
 struct qdma_ctxt_reg {
 	uint32_t reserved;
-	uint32_t ctxt_data[8];
-	uint32_t ctxt_mask[8];
+	uint32_t ctxt_data[4];
+	uint32_t ctxt_mask[4];
 	uint32_t ctxt_cmd;
 } __packed;
+
+struct qdma_qid2vec_reg {
+	uint32_t qid;
+	uint32_t map;
+};
+
+struct qdma_sw_desc_ctxt {
+	uint32_t pidx:16;
+	uint32_t irq_arm:1;
+	uint32_t rsv:15;
+	uint32_t qen:1;
+	uint32_t fcrd_en:1;
+	uint32_t wbi_chk:1;
+	uint32_t wbi_intrl_en:1;
+	uint32_t fnc_id:8;
+	uint32_t rng_sz:4;
+	uint32_t dsc_size:2;
+	uint32_t bypass:1;
+	uint32_t mm_chn:1;
+	uint32_t wbk_en:1;
+	uint32_t irq_en:1;
+	uint32_t port_id:3;
+	uint32_t irq_no_last:1;
+	uint32_t err:2;
+	uint32_t err_wb_sent:1;
+	uint32_t irq_req:1;
+	uint32_t mrkr_dis:1;
+	uint32_t is_mm:1;
+	uint64_t dsc_base;
+};
+
+struct qdma_cmpl_ctxt {
+	uint64_t en_stat_desc:1;
+	uint64_t en_int:1;
+	uint64_t trig_mode:3;
+	uint64_t fnc_id:8;
+	uint64_t counter_idx:4;
+	uint64_t timer_idx:4;
+	uint64_t int_st:2;
+	uint64_t color:1;
+	uint64_t qsize_idx:4;
+	uint64_t baddr_high_l:36;
+	uint64_t baddr_high_h:22;
+	uint64_t desc_size:2;
+	uint64_t pidx:16;
+	uint64_t cidx:16;
+	uint64_t valid:1;
+	uint64_t err:2;
+	uint64_t user_trig_pend:1;
+	uint64_t timer_running:1;
+	uint64_t full_upd:1;
+	uint64_t rsv:2;
+};
+
+struct qdma_cmpl_status {
+	uint32_t pidx:16;
+	uint32_t cidx:16;
+	uint32_t color:1;
+	uint32_t int_state:1;
+	uint32_t rsvd:29;
+};
+
+struct qdma_trq_sel_queue_pf {
+	uint32_t qdma_dmap_sel_int_cidx_0;
+	uint32_t qdma_dmap_sel_h2c_dsc_pidx_0;
+	uint32_t qdma_dmap_sel_c2h_dsc_pidx_0;
+	uint32_t qdma_dmap_sel_wrb_cidx_0;
+	uint32_t qdma_dmap_sel_int_cidx_1;
+	uint32_t qdma_dmap_sel_h2c_dsc_pidx_1;
+	uint32_t qdma_dmap_sel_c2h_dsc_pidx_1;
+	uint32_t qdma_dmap_sel_wrb_cidx_1;
+};
+
 
 /**
  * check whether QDMA is used by checking for the QDMA interrupt controller
@@ -96,10 +186,10 @@ struct qdma_ctxt_reg {
  */
 int pcie_is_qdma_in_use(struct tlkm_device *dev)
 {
-	return ((ioread32(dev->mmap.plat +
-			  tlkm_status_get_component_base(
-				  dev, "PLATFORM_COMPONENT_INTC0") +
-			  0x8100) & 0xFFFFFFFF) == QDMA_INTR_CTRL_ID);
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)dev->private_data;
+	return (pdev->pdev->vendor == XILINX_VENDOR_ID &&
+		pdev->pdev->device == VERSAL_DEVICE_ID);
 }
 
 /*
@@ -109,6 +199,7 @@ irqreturn_t qdma_intr_handler_read(int irq, void *data)
 {
 	struct tlkm_irq_mapping *mapping = (struct tlkm_irq_mapping *)data;
 	struct tlkm_pcie_device *pdev = mapping->dev->private_data;
+	volatile struct qdma_trq_sel_queue_pf *intr_ack_regs;
 
 	if (mapping->eventfd != 0) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
@@ -118,7 +209,8 @@ irqreturn_t qdma_intr_handler_read(int irq, void *data)
 		eventfd_signal(mapping->eventfd);
 #endif
 	}
-	pdev->ack_register_aws[1] = QDMA_IRQ_ARM;
+	intr_ack_regs = (volatile struct qdma_trq_sel_queue_pf *)pdev->ack_register_aws;
+	intr_ack_regs->qdma_dmap_sel_c2h_dsc_pidx_0 = QDMA_IRQ_ARM;
 	return IRQ_HANDLED;
 }
 
@@ -126,6 +218,7 @@ irqreturn_t qdma_intr_handler_write(int irq, void *data)
 {
 	struct tlkm_irq_mapping *mapping = (struct tlkm_irq_mapping *)data;
 	struct tlkm_pcie_device *pdev = mapping->dev->private_data;
+	volatile struct qdma_trq_sel_queue_pf *intr_ack_regs;
 
 	if (mapping->eventfd != 0) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
@@ -135,7 +228,57 @@ irqreturn_t qdma_intr_handler_write(int irq, void *data)
 		eventfd_signal(mapping->eventfd);
 #endif
 	}
-	pdev->ack_register_aws[0] = QDMA_IRQ_ARM;
+	intr_ack_regs = (volatile struct qdma_trq_sel_queue_pf *)pdev->ack_register_aws;
+	intr_ack_regs->qdma_dmap_sel_h2c_dsc_pidx_0 = QDMA_IRQ_ARM;
+	return IRQ_HANDLED;
+}
+
+irqreturn_t qdma_intr_handler_c2h_stream(int irq, void *data)
+{
+	struct tlkm_irq_mapping *mapping = (struct tlkm_irq_mapping *)data;
+	struct tlkm_pcie_device *pdev = mapping->dev->private_data;
+	struct qdma_cmpl_status cmpl_stat;
+	volatile struct qdma_trq_sel_queue_pf *intr_ack_regs;
+	uint32_t pidx, cidx, idx_diff;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
+	uint32_t i;
+#endif
+
+	cmpl_stat = *((struct qdma_cmpl_status *)&pdev->cmpt_ring[QDMA_CMPT_RING_SZ - 1]);
+	pidx = cmpl_stat.pidx;
+	cidx = cmpl_stat.cidx;
+	idx_diff = (pidx < cidx) ? ((pidx + QDMA_CMPT_RING_SZ - 1) - cidx) : (pidx - cidx);
+
+	if (mapping->eventfd != 0) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
+		eventfd_signal(mapping->eventfd, idx_diff);
+#else
+		// Linux commit 3652117 removes argument from eventfd_signal
+		for (i = 0; i < idx_diff; ++i)
+			eventfd_signal(mapping->eventfd);
+#endif
+	}
+	intr_ack_regs = (volatile struct qdma_trq_sel_queue_pf *)pdev->ack_register_aws;
+	intr_ack_regs->qdma_dmap_sel_wrb_cidx_1 = QDMA_DMAP_SEL_CMPT_TRIG_USER | QDMA_DMAP_SEL_CMPT_IRQ_EN | QDMA_DMAP_SEL_CMPT_WRB_EN | pidx;
+	return IRQ_HANDLED;
+}
+
+irqreturn_t qdma_intr_handler_h2c_stream(int irq, void *data)
+{
+	struct tlkm_irq_mapping *mapping = (struct tlkm_irq_mapping *)data;
+	struct tlkm_pcie_device *pdev = mapping->dev->private_data;
+	volatile struct qdma_trq_sel_queue_pf *intr_ack_regs;
+
+	if (mapping->eventfd != 0) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
+		eventfd_signal(mapping->eventfd, 1);
+#else
+		// Linux commit 3652117 removes argument from eventfd_signal
+		eventfd_signal(mapping->eventfd);
+#endif
+	}
+	intr_ack_regs = (volatile struct qdma_trq_sel_queue_pf *)pdev->ack_register_aws;
+	intr_ack_regs->qdma_dmap_sel_h2c_dsc_pidx_1 = QDMA_IRQ_ARM;
 	return IRQ_HANDLED;
 }
 
@@ -147,17 +290,17 @@ irqreturn_t qdma_intr_handler_write(int irq, void *data)
  * @param ctxt_sel Encoding of context which shall be programmed
  * @return Returns zero on success, otherwise one
  */
-static int qdma_program_ind_context(struct qdma_ctxt_reg *ctxt_regs, uint32_t mask[8], uint32_t data[8], uint32_t ctxt_sel)
+static int qdma_program_ind_context(struct qdma_ctxt_reg *ctxt_regs, uint32_t mask[4], uint32_t data[4], uint32_t ctxt_sel, uint32_t qid)
 {
 	int i;
 	uint32_t w_val;
-	for (i = 0; i < 8; ++i)
+	for (i = 0; i < 4; ++i)
 		iowrite32(mask[i], &ctxt_regs->ctxt_mask[i]);
 
-	for (i = 0; i < 8; ++i)
+	for (i = 0; i < 4; ++i)
 		iowrite32(data[i], &ctxt_regs->ctxt_data[i]);
 
-	w_val = (ctxt_sel & 0xF) << 1 | QDMA_CTXT_CMD_WR << 5;
+	w_val = (ctxt_sel & 0xF) << 1 | QDMA_CTXT_CMD_WR << 5 | (qid & 0x7FF) << 7;
 	iowrite32(w_val, &ctxt_regs->ctxt_cmd);
 
 	// check whether context programming was successful by polling busy bit until it is cleared
@@ -174,11 +317,11 @@ static int qdma_program_ind_context(struct qdma_ctxt_reg *ctxt_regs, uint32_t ma
  * @param ctxt_sel Encoding of context which shall be cleared
  * @return Returns zero on success, otherwise one
  */
-static int qdma_clear_ind_context(struct qdma_ctxt_reg *ctxt_regs, uint32_t ctxt_sel)
+static int qdma_clear_ind_context(struct qdma_ctxt_reg *ctxt_regs, uint32_t ctxt_sel, uint32_t qid)
 {
 	int i;
 	uint32_t w_val;
-	w_val = (ctxt_sel & 0xF) << 1 | (QDMA_CTXT_CMD_CLR << 5);
+	w_val = (ctxt_sel & 0xF) << 1 | (QDMA_CTXT_CMD_CLR << 5) | (qid & 0x7FF) << 7;
 	iowrite32(w_val, &ctxt_regs->ctxt_cmd);
 
 	// check whether context clearing was successful by polling busy bit until it is cleared
@@ -195,11 +338,11 @@ static int qdma_clear_ind_context(struct qdma_ctxt_reg *ctxt_regs, uint32_t ctxt
  * @param ctxt_sel Encoding of context which shall be invalidated
  * @return Returns zero on success, otherwise one
  */
-static int qdma_inv_ind_context(struct qdma_ctxt_reg *ctxt_regs, uint32_t ctxt_sel)
+static int qdma_inv_ind_context(struct qdma_ctxt_reg *ctxt_regs, uint32_t ctxt_sel, uint32_t qid)
 {
 	int i;
 	uint32_t w_val;
-	w_val = (ctxt_sel & 0xF) << 1 | (QDMA_CTXT_CMD_INV << 5);
+	w_val = (ctxt_sel & 0xF) << 1 | (QDMA_CTXT_CMD_INV << 5) | (qid & 0x7FF) << 7;
 
 	// check whether context clearing was successful by polling busy bit until it is cleared
 	for (i = 1; i < 100; ++i) {
@@ -216,15 +359,19 @@ static int qdma_inv_ind_context(struct qdma_ctxt_reg *ctxt_regs, uint32_t ctxt_s
  */
 int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 {
-	int res, i;
-	uint32_t data[8], mask[8], *c2h_mm_ctrl, *h2c_mm_ctrl;
+	int res;
+	uint32_t data[4], mask[4], *c2h_mm_ctrl, *h2c_mm_ctrl, *fmap_reg, *buf_size_reg, *ring_size_reg;
 	resource_size_t qdma_bar_start, qdma_bar_len;
 	struct qdma_ctxt_reg *ctxt_regs;
+	struct qdma_qid2vec_reg *qid2vec_regs;
 	struct tlkm_device *dev = pdev->parent;
 	struct desc_gen_regs *desc_gen_regs =
 		(struct desc_gen_regs *)(dev->mmap.plat +
 					 tlkm_status_get_component_base(
 						 dev, "PLATFORM_COMPONENT_DMA0"));
+	struct qdma_sw_desc_ctxt sw_desc_ctxt = {0};
+	struct qdma_cmpl_ctxt cmpl_ctxt = {0};
+	volatile struct qdma_trq_sel_queue_pf *intr_ack_regs;
 
 #ifdef CONFIG_ARM
 	if ((ioread32(&desc_gen_regs->id) & 0xFFFFFFFF) != DESC_GEN_ID) {
@@ -261,6 +408,13 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 		goto fail_ctxtregs;
 	}
 
+	qid2vec_regs = ioremap(qdma_bar_start + QDMA_QID2VEC_REG_OFF, sizeof(*qid2vec_regs));
+	if (!qid2vec_regs) {
+		DEVERR(dev->dev_id, "Failed to map QDMA QID2VEC registers");
+		res = -EFAULT;
+		goto fail_qid2vecregs;
+	}
+
 	c2h_mm_ctrl = ioremap(qdma_bar_start + QDMA_C2H_MM_CTRL_OFF, sizeof(uint32_t));
 	if (!c2h_mm_ctrl) {
 		DEVERR(dev->dev_id, "Failed to map QDMA C2H MM channel control register");
@@ -275,92 +429,196 @@ int pcie_qdma_init(struct tlkm_pcie_device *pdev)
 		goto fail_h2cmmctrl;
 	}
 
+	fmap_reg = ioremap(qdma_bar_start + QDMA_TRQ_SEL_FMAP, sizeof(uint32_t));
+	if (!fmap_reg) {
+		DEVERR(dev->dev_id, "Failed to map QDMA FMAP selection register");
+		res = -EFAULT;
+		goto fail_fmap_remap;
+	}
+
+	buf_size_reg = ioremap(qdma_bar_start + QDMA_C2H_BUF_SIZE_OFF, sizeof(uint32_t));
+	if (!buf_size_reg) {
+		DEVERR(dev->dev_id, "Failed to map QDMA C2H BUF_SZ register");
+		res = -EFAULT;
+		goto fail_bufsize_remap;
+	}
+	ring_size_reg = ioremap(qdma_bar_start + 0x204, sizeof(uint32_t));
+	if (!ring_size_reg) {
+		DEVERR(dev->dev_id, "Failed to map QDMA RING_SZ register");
+		res = -EFAULT;
+		goto fail_rngsize_remap;
+	}
+
 	// map PIDX update register to re-arm DMA interrupts
 	// (use the in the QDMA case unused ack_register_aws)
-	pdev->ack_register_aws = ioremap(qdma_bar_start + QDMA_PIDX_UPD_OFF, 2 * sizeof(uint32_t));
+	pdev->ack_register_aws = ioremap(qdma_bar_start + QDMA_PIDX_UPD_OFF, sizeof(struct qdma_trq_sel_queue_pf));
 	if (!pdev->ack_register_aws) {
 		DEVERR(dev->dev_id, "Failed to map QDMA PIDX update registers");
 		res = -EFAULT;
 		goto fail_ackregs;
 	}
 
+	// allocate coherent memory for completion ring
+	pdev->cmpt_ring = dma_alloc_coherent(&pdev->pdev->dev, QDMA_CMPT_RING_SZ * sizeof(uint64_t), &pdev->cmpt_ring_addr, GFP_KERNEL);
+	if (!pdev->cmpt_ring) {
+		DEVERR(dev->dev_id, "Failed to allocate completion ring");
+		res = -ENOMEM;
+		goto fail_cmptring_alloc;
+	}
+
 	DEVLOG(dev->dev_id, TLKM_LF_DMA, "Clear and program QDMA contexts");
-	res = qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_C2H);
-	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_HW_C2H);
-	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_CR_C2H);
-	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_H2C);
-	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_HW_H2C);
-	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_CR_H2C);
+	res = qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_C2H, QDMA_MM_QID);
+	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_HW_C2H, QDMA_MM_QID);
+	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_CR_C2H, QDMA_MM_QID);
+	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_H2C, QDMA_MM_QID);
+	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_HW_H2C, QDMA_MM_QID);
+	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_CR_H2C, QDMA_MM_QID);
+
+	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_C2H, QDMA_ST_QID);
+	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_HW_C2H, QDMA_ST_QID);
+	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_CR_C2H, QDMA_ST_QID);
+	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_H2C, QDMA_ST_QID);
+	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_HW_H2C, QDMA_ST_QID);
+	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_CR_H2C, QDMA_ST_QID);
+	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_PFTCH, QDMA_ST_QID);
+	res |= qdma_clear_ind_context(ctxt_regs, QDMA_CTXT_SELC_WRB, QDMA_ST_QID);
+
 	if (res) {
 		DEVERR(dev->dev_id, "Failed to clear QDMA indirect contexts");
 		res = -EACCES;
 		goto fail_ctxtclear;
 	}
 
-	// clear host profile
-	for (i = 0; i < 8; ++i) {
-		mask[i] = 0xFFFFFFFF;
-		data[i] = 0;
-	}
-	if (qdma_program_ind_context(ctxt_regs, mask, data, QDMA_CTXT_SELC_HOST_PROFILE)) {
-		DEVERR(dev->dev_id, "Failed to program QDMA host profile context");
-		res = -EACCES;
-		goto fail_hostprofile;
-	}
-
-	// setup SW context
+	// setup SW context for MM queues
 	data[0] = QDMA_IRQ_ARM;
 	data[1] = QDMA_SW_DESC_CTXT_QEN | QDMA_SW_DESC_CTXT_BYPASS
 		  | QDMA_SW_DESC_CTXT_IRQ_EN | QDMA_SW_DESC_CTXT_IS_MM;
 	data[2] = data[3] = 0;
-	data[4] = QDMA_IRQ_VEC_C2H;
-	data[5] = data[6] = data[7] = 0;
-	if (qdma_program_ind_context(ctxt_regs, mask, data, QDMA_CTXT_SELC_DEC_SW_C2H)) {
+	mask[0] = mask[1] = mask[2] = mask[3] = 0xFFFFFFFF;
+	if (qdma_program_ind_context(ctxt_regs, mask, data, QDMA_CTXT_SELC_DEC_SW_C2H, QDMA_MM_QID)) {
 		DEVERR(dev->dev_id, "Failed to program QDMA C2H software context");
 		res = -EACCES;
-		goto fail_swc2h;
+		goto fail_swc2h_mm;
 	}
-	data[4] = QDMA_IRQ_VEC_H2C;
-	if (qdma_program_ind_context(ctxt_regs, mask, data, QDMA_CTXT_SELC_DEC_SW_H2C)) {
+	if (qdma_program_ind_context(ctxt_regs, mask, data, QDMA_CTXT_SELC_DEC_SW_H2C, QDMA_MM_QID)) {
 		DEVERR(dev->dev_id, "Failed to program QDMA H2C software context");
 		res = -EACCES;
-		goto fail_swh2c;
+		goto fail_swh2c_mm;
 	}
 
-	// map queue to physical function PF0
-	data[0] = 0;
-	data[1] = 1;
-	for (i = 2; i < 8; ++i)
-		data[i] = 0;
-	if (qdma_program_ind_context(ctxt_regs, mask, data, QDMA_CTXT_SELC_FMAP)) {
-		DEVERR(dev->dev_id, "Failed to map QDMA queue to PF");
+	// set size per descriptor for C2H streaming
+	iowrite32(QDMA_CMPT_BUF_SZ, buf_size_reg);
+
+	// set size of completion ring
+	iowrite32(QDMA_CMPT_RING_SZ, ring_size_reg);
+
+	// setup SW context for stream queues
+	memset(&sw_desc_ctxt, 0, sizeof(sw_desc_ctxt));
+	sw_desc_ctxt.qen = 1;
+	sw_desc_ctxt.fcrd_en = 1;
+	sw_desc_ctxt.bypass = 1;
+	if (qdma_program_ind_context(ctxt_regs, mask, (uint32_t *)&sw_desc_ctxt, QDMA_CTXT_SELC_DEC_SW_C2H, QDMA_ST_QID)) {
+		DEVERR(dev->dev_id, "Failed to program QDMA C2H Stream software context");
 		res = -EACCES;
-		goto fail_fmap;
+		goto fail_swc2h_st;
 	}
+	memset(&sw_desc_ctxt, 0, sizeof(sw_desc_ctxt));
+	sw_desc_ctxt.irq_arm = 1;
+	sw_desc_ctxt.qen = 1;
+	sw_desc_ctxt.bypass = 1;
+	sw_desc_ctxt.irq_en = 1;
+	if (qdma_program_ind_context(ctxt_regs, mask, (uint32_t *)&sw_desc_ctxt, QDMA_CTXT_SELC_DEC_SW_H2C, QDMA_ST_QID)) {
+		DEVERR(dev->dev_id, "Failed to program QDMA H2C Stream software context");
+		res = -EACCES;
+		goto fail_swh2c_st;
+	}
+
+	// setup C2H prefetch context
+	data[0] = QDMA_PFCH_CTXT_BYP;
+	data[1] = QDMA_PFCH_CTXT_VALID;
+	data[2] = data[3] = 0;
+	mask[0] = mask[1] = 0xFFFFFFFF;
+	mask[2] = mask[3] = 0;
+	if (qdma_program_ind_context(ctxt_regs, mask, data, QDMA_CTXT_SELC_PFTCH, QDMA_ST_QID)) {
+		DEVERR(dev->dev_id, "Failed to program QDMA C2H Prefetch context");
+		res = -EACCES;
+		goto fail_prftch_st;
+	}
+
+	// setup C2H completion context
+	mask[0] = mask[1] = mask[2] = mask[3] = 0xFFFFFFFF;
+	cmpl_ctxt.en_stat_desc = 1;
+	cmpl_ctxt.en_int = 1;
+	cmpl_ctxt.trig_mode = 0x3;
+	cmpl_ctxt.qsize_idx = 0;
+	cmpl_ctxt.baddr_high_l = (pdev->cmpt_ring_addr >> 6) & 0xFFFFFFFFF;      // lower 36 bits
+#ifndef CONFIG_ARM // in ARM32 size of dma_addr_t is only 32 bits
+	cmpl_ctxt.baddr_high_h = ((pdev->cmpt_ring_addr >> 6) >> 36) & 0x3FFFFF; // upper 22 bits
+#endif
+	cmpl_ctxt.valid = 1;
+	cmpl_ctxt.full_upd = 1;
+	if (qdma_program_ind_context(ctxt_regs, mask, (uint32_t *)&cmpl_ctxt, QDMA_CTXT_SELC_WRB, QDMA_ST_QID)) {
+		DEVERR(dev->dev_id, "Failed to program QDMA C2H Writeback context");
+		res = -EACCES;
+		goto fail_cmpt_st;
+	}
+
+	// program QID to vector table
+	iowrite32(QDMA_MM_QID, &qid2vec_regs->qid);
+	iowrite32(QDMA_IRQ_VEC_C2H | (QDMA_IRQ_VEC_H2C << 9), &qid2vec_regs->map);
+
+	iowrite32(QDMA_ST_QID, &qid2vec_regs->qid);
+	iowrite32(QDMA_IRQ_VEC_C2H_ST | (QDMA_IRQ_VEC_H2C_ST << 9), &qid2vec_regs->map);
+
+	// map queue to physical function PF0
+	iowrite32(2 << 11, fmap_reg);
 
 	DEVLOG(dev->dev_id, TLKM_LF_DMA, "Enable QDMA engines");
 	iowrite32(1, c2h_mm_ctrl);
 	iowrite32(1, h2c_mm_ctrl);
 
+	// initial CIDX update for C2H stream
+	intr_ack_regs = (volatile struct qdma_trq_sel_queue_pf *)pdev->ack_register_aws;
+	intr_ack_regs->qdma_dmap_sel_wrb_cidx_1 = QDMA_DMAP_SEL_CMPT_TRIG_USER | QDMA_DMAP_SEL_CMPT_IRQ_EN | QDMA_DMAP_SEL_CMPT_WRB_EN;
+
+	iounmap(ring_size_reg);
+	iounmap(buf_size_reg);
+	iounmap(fmap_reg);
 	iounmap(h2c_mm_ctrl);
 	iounmap(c2h_mm_ctrl);
+	iounmap(qid2vec_regs);
 	iounmap(ctxt_regs);
 
 	return 0;
 
-fail_fmap:
-	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_H2C);
-fail_swh2c:
-	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_C2H);
-fail_swc2h:
-fail_hostprofile:
+fail_cmpt_st:
+	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_PFTCH, QDMA_ST_QID);
+fail_prftch_st:
+	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_H2C, QDMA_ST_QID);
+fail_swh2c_st:
+	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_C2H, QDMA_ST_QID);
+fail_swc2h_st:
+	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_H2C, QDMA_MM_QID);
+fail_swh2c_mm:
+	qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_C2H, QDMA_MM_QID);
+fail_swc2h_mm:
 fail_ctxtclear:
+	dma_free_coherent(&pdev->pdev->dev, QDMA_CMPT_RING_SZ * sizeof(uint64_t), pdev->cmpt_ring, pdev->cmpt_ring_addr);
+fail_cmptring_alloc:
 	iounmap(pdev->ack_register_aws);
 fail_ackregs:
+	iounmap(ring_size_reg);
+fail_rngsize_remap:
+	iounmap(buf_size_reg);
+fail_bufsize_remap:
+	iounmap(fmap_reg);
+fail_fmap_remap:
 	iounmap(h2c_mm_ctrl);
 fail_h2cmmctrl:
 	iounmap(c2h_mm_ctrl);
 fail_c2hmmctrl:
+	iounmap(qid2vec_regs);
+fail_qid2vecregs:
 	iounmap(ctxt_regs);
 fail_ctxtregs:
 fail_barlen:
@@ -384,6 +642,12 @@ int pcie_qdma_exit(struct tlkm_pcie_device *pdev)
 		(struct desc_gen_regs *)(dev->mmap.plat +
 					 tlkm_status_get_component_base(
 						 dev, "PLATFORM_COMPONENT_DMA0"));
+
+	if (pdev->cmpt_ring_addr) {
+		dma_free_coherent(&pdev->pdev->dev, QDMA_CMPT_RING_SZ * sizeof(uint64_t), pdev->cmpt_ring, pdev->cmpt_ring_addr);
+		pdev->cmpt_ring_addr = 0;
+		pdev->cmpt_ring = NULL;
+	}
 
 #ifdef CONFIG_ARM
 	if ((ioread32(&desc_gen_regs->id) & 0xFFFFFFFF) != DESC_GEN_ID) {
@@ -421,8 +685,8 @@ int pcie_qdma_exit(struct tlkm_pcie_device *pdev)
 		DEVERR(dev->dev_id, "Failed to map QDMA context registers");
 		res = -EFAULT;
 	} else {
-		r = qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_C2H);
-		r |= qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_H2C);
+		r = qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_C2H, QDMA_MM_QID);
+		r |= qdma_inv_ind_context(ctxt_regs, QDMA_CTXT_SELC_DEC_SW_H2C, QDMA_MM_QID);
 		if (r) {
 			DEVERR(dev->dev_id, "Failed to invalidate QDMA SW context");
 			res = -EACCES;

@@ -17,14 +17,15 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-  if {[version -short] != "2021.2"} {
-    puts "Only Vivado 2021.2 is currently supported for Versal devices."
+  if {[::tapasco::vivado_is_newer "2021.2"] != 1 } {
+    puts "Only Vivado 2021.2 and newer is supported for Versal devices."
     exit 1
   }
 
+  # set PCIe width to X16 if not specified by platform
   if { ! [info exists pcie_width] } {
-    puts "No PCIe width defined. Assuming x8..."
-    set pcie_width "8"
+    puts "No PCIe width defined. Assuming x16..."
+    set pcie_width "16"
   } else {
     puts "Using PCIe width $pcie_width."
   }
@@ -39,7 +40,12 @@
   }
 
   proc max_masters {} {
-    return [list [::tapasco::get_platform_num_slots]]
+    # return [list [::tapasco::get_platform_num_slots]]
+    set masters [list]
+    for {set i 0} {$i < 28} {incr i} {
+      set masters [lappend masters 5]
+    }
+    return $masters
   }
 
   proc number_of_interrupt_controllers {} {
@@ -47,11 +53,16 @@
   }
 
   proc get_platform_base_address {} {
-    return 0
+    return 0x20100000000
+  }
+
+  proc get_platform_base_address_status_core {} {
+    return 0x0
   }
 
   proc create_subsystem_clocks_and_resets {} {
-    # PCIe clock as input
+    # PCIe and PL clocks as input
+    set pl_clk [create_bd_pin -type "clk" -dir "I" "pl0_ref_clk"]
     set pcie_clk [create_bd_pin -type "clk" -dir "I" "pcie_aclk"]
     set pcie_aresetn [create_bd_pin -type "rst" -dir "I" "pcie_aresetn"]
 
@@ -68,7 +79,7 @@
                         ] $design_clk_wiz
 
     connect_bd_net [get_bd_pins $design_clk_wiz/resetn] $pcie_aresetn
-    connect_bd_net [get_bd_pins $pcie_clk] [get_bd_pins $design_clk_wiz/clk_in1]
+    connect_bd_net $pl_clk [get_bd_pins $design_clk_wiz/clk_in1]
 
     # create reset generator
     set host_rst_gen [tapasco::ip::create_rst_gen "host_rst_gen"]
@@ -101,213 +112,25 @@
   }
 
   proc create_subsystem_host {} {
-    # host subsystem is everything PCIe and QDMA related
-    set m_arch [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_ARCH"]
-    set m_intc [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_INTC"]
-    set m_tapasco [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_TAPASCO"]
-    set m_dma [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DMA"]
-    set m_desc_gen [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DESC_GEN"]
-    set s_desc_gen [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DESC_GEN"]
-
-    set pcie_aclk [create_bd_pin -type "clk" -dir "O" "pcie_aclk"]
-    set pcie_aresetn [create_bd_pin -type "rst" -dir "O" "pcie_aresetn"]
-
-    set qdma [tapasco::ip::create_qdma qdma_0]
+    # host subsystem implements the CIPS including DMA
     variable pcie_width
-    # first set pcie location to a value which supports x8/x16, otherwise block automation will fail
-    set_property CONFIG.pcie_blk_locn {X0Y2} $qdma
-    apply_bd_automation -rule xilinx.com:bd_rule:qdma -config [list axi_strategy {max_data} link_speed {3} link_width $pcie_width pl_pcie_cpm {PL-PCIE}] $qdma
 
-    set_property -dict [list CONFIG.mode_selection {Advanced} \
-      CONFIG.pcie_blk_locn {X0Y2} \
-      CONFIG.pl_link_cap_max_link_width "X$pcie_width" \
-      CONFIG.axilite_master_en {false} \
-      CONFIG.axist_bypass_en {true} \
-      CONFIG.dsc_byp_mode {Descriptor_bypass_and_internal} \
-      CONFIG.adv_int_usr {true} \
-      CONFIG.pf0_pciebar2axibar_0 [get_platform_base_address] \
-      CONFIG.testname {mm} CONFIG.pf0_bar0_type_qdma {AXI_Bridge_Master} \
-      CONFIG.pf0_bar0_scale_qdma {Megabytes} \
-      CONFIG.pf0_bar0_size_qdma {64} \
-      CONFIG.pf0_bar2_type_qdma {DMA} \
-      CONFIG.pf0_bar2_size_qdma {256} \
-      CONFIG.pf1_bar0_type_qdma {AXI_Bridge_Master} \
-      CONFIG.pf1_bar0_scale_qdma {Megabytes} \
-      CONFIG.pf1_bar0_size_qdma {64} \
-      CONFIG.pf1_bar2_type_qdma {DMA} \
-      CONFIG.pf1_bar2_size_qdma {256} \
-      CONFIG.pf2_bar0_type_qdma {AXI_Bridge_Master} \
-      CONFIG.pf2_bar0_scale_qdma {Megabytes} \
-      CONFIG.pf2_bar0_size_qdma {64} \
-      CONFIG.pf2_bar2_type_qdma {DMA} \
-      CONFIG.pf2_bar2_size_qdma {256} \
-      CONFIG.pf3_bar0_type_qdma {AXI_Bridge_Master} \
-      CONFIG.pf3_bar0_scale_qdma {Megabytes} \
-      CONFIG.pf3_bar0_size_qdma {64} \
-      CONFIG.pf3_bar2_type_qdma {DMA} \
-      CONFIG.pf3_bar2_size_qdma {256} \
-      CONFIG.pf0_device_id {7038} \
-      CONFIG.PF0_MSIX_CAP_TABLE_SIZE_qdma {01F} \
-      CONFIG.PF0_MSIX_CAP_TABLE_BIR_qdma {BAR_3:2} \
-      CONFIG.PF1_MSIX_CAP_TABLE_BIR_qdma {BAR_3:2} \
-      CONFIG.PF2_MSIX_CAP_TABLE_BIR_qdma {BAR_3:2} \
-      CONFIG.PF3_MSIX_CAP_TABLE_BIR_qdma {BAR_3:2} \
-      CONFIG.PF0_MSIX_CAP_PBA_BIR_qdma {BAR_3:2} \
-      CONFIG.PF1_MSIX_CAP_PBA_BIR_qdma {BAR_3:2} \
-      CONFIG.PF2_MSIX_CAP_PBA_BIR_qdma {BAR_3:2} \
-      CONFIG.PF3_MSIX_CAP_PBA_BIR_qdma {BAR_3:2} \
-      CONFIG.dma_intf_sel_qdma {AXI_MM} \
-      CONFIG.en_axi_st_qdma {false}] $qdma
-
-    set_property -dict [list CONFIG.PF0_DEVICE_ID {7038} \
-      CONFIG.PF0_MSIX_CAP_PBA_BIR {BAR_3:2} \
-      CONFIG.PF0_MSIX_CAP_TABLE_BIR {BAR_3:2} \
-      CONFIG.PF0_MSIX_CAP_TABLE_SIZE {0FF} \
-      CONFIG.PF1_DEVICE_ID {9011} \
-      CONFIG.pcie_blk_locn {X0Y2} \
-      CONFIG.pf1_bar2_size {256} \
-      CONFIG.pf2_bar2_size {256} \
-      CONFIG.pf3_bar2_size {256} \
-      CONFIG.pf4_bar2_size {256} \
-      CONFIG.pf5_bar2_size {256} \
-      CONFIG.pf6_bar2_size {256} \
-      CONFIG.pf7_bar2_size {256} \
-      CONFIG.pf0_bar0_scale {Megabytes} \
-      CONFIG.pf0_bar0_size {64} \
-      CONFIG.pf0_bar2_size {256} \
-      CONFIG.pf1_bar0_scale {Megabytes} \
-      CONFIG.pf1_bar0_size {64} \
-      CONFIG.pf2_bar0_scale {Megabytes} \
-      CONFIG.pf2_bar0_size {64} \
-      CONFIG.pf3_bar0_scale {Megabytes} \
-      CONFIG.pf3_bar0_size {64} \
-      CONFIG.pf4_bar0_scale {Megabytes} \
-      CONFIG.pf4_bar0_size {64} \
-      CONFIG.pf5_bar0_scale {Megabytes} \
-      CONFIG.pf5_bar0_size {64} \
-      CONFIG.pf6_bar0_scale {Megabytes} \
-      CONFIG.pf6_bar0_size {64} \
-      CONFIG.pf7_bar0_scale {Megabytes} \
-      CONFIG.pf7_bar0_size {64}] [get_bd_cells /host/qdma_0_support/pcie]
-
-    # TODO: Make configuration device dependent
-
-    set qdma_desc [tapasco::ip::create_qdma_desc_gen "QDMADescriptorGenera_0"]
-    connect_bd_intf_net $s_desc_gen $qdma_desc/S_AXI_CTRL
-    connect_bd_intf_net $qdma_desc/c2h_byp_in $qdma/c2h_byp_in_mm
-    connect_bd_intf_net $qdma_desc/h2c_byp_in $qdma/h2c_byp_in_mm
-    connect_bd_intf_net $qdma_desc/tm_dsc_sts $qdma/tm_dsc_sts
-    connect_bd_intf_net $qdma_desc/qsts_out $qdma/qsts_out
-    connect_bd_intf_net $qdma_desc/c2h_byp_out $qdma/c2h_byp_out
-    connect_bd_intf_net $qdma_desc/h2c_byp_out $qdma/h2c_byp_out
-
-    set qdma_conf [tapasco::ip::create_qdma_configurator "QDMAConfigurator_0"]
-    connect_bd_intf_net [get_bd_intf_pins $qdma_conf/msix_vector_ctrl] [get_bd_intf_pins $qdma/msix_vector_ctrl]
-
-    connect_bd_intf_net $qdma/M_AXI $m_dma
-
-    # provide M_ARCH, M_TAPASCO, M_INTC and connect to $qdma_desc/S_AXI_CTRL
-    # create smartconnect (1 slave, 4 master, 2 clocks [host+design])
-    set host_sc [tapasco::ip::create_axi_sc "host_sc" 1 4 2]
-    connect_bd_intf_net $host_sc/S00_AXI $qdma/M_AXI_BRIDGE
-    connect_bd_intf_net $host_sc/M00_AXI $m_arch
-    connect_bd_intf_net $host_sc/M01_AXI $m_tapasco
-    connect_bd_intf_net $host_sc/M02_AXI $m_intc
-    connect_bd_intf_net $host_sc/M03_AXI $m_desc_gen
-    connect_bd_net $pcie_aclk [get_bd_pins $host_sc/aclk]
-    connect_bd_net [tapasco::subsystem::get_port "design" "clk"] [get_bd_pins $host_sc/aclk1]
-
-    connect_bd_net [get_bd_pin $qdma_desc/trigger_reset_cycle] [get_bd_pin $qdma_conf/start_reset]
-    connect_bd_net [get_bd_pin $qdma_conf/dma_resetn] [get_bd_pin $qdma/soft_reset_n]
-    connect_bd_net [get_bd_pin $qdma/axi_aclk] [get_bd_pin $qdma_desc/aclk] [get_bd_pin $qdma_conf/clk] $pcie_aclk
-    connect_bd_net [get_bd_pin $qdma/axi_aresetn] [get_bd_pin $qdma_desc/resetn] [get_bd_pin $qdma_conf/resetn] $pcie_aresetn
-  }
-
-  proc create_subsystem_memory {} {
-    # memory subsystem implements the NoC logic and Memory Controller
     set host_aclk [tapasco::subsystem::get_port "host" "clk"]
     set host_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
     set design_aclk [tapasco::subsystem::get_port "design" "clk"]
     set design_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
 
-    set s_axi_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0"]
-    set s_axi_dma [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DMA"]
-    set s_axi_mem_off [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_0_OFF"]
-    set s_axi_dma_off [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DMA_OFF"]
-    set m_axi_mem_off [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_MEM_0_OFF"]
-    set m_axi_dma_off [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DMA_OFF"]
+    set pl_clk [create_bd_pin -type "clk" -dir "O" "pl0_ref_clk"]
+    set pcie_aclk [create_bd_pin -type "clk" -dir "O" "pcie_aclk"]
+    set pcie_aresetn [create_bd_pin -type "rst" -dir "O" "pcie_aresetn"]
+
+    set s_axi_desc_gen [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DESC_GEN"]
 
     set versal_cips [tapasco::ip::create_versal_cips "versal_cips_0"]
-    set_property -dict [ list \
-      CONFIG.BOOT_MODE {Custom} \
-      CONFIG.CLOCK_MODE {REF CLK 33.33 MHz} \
-      CONFIG.DDR_MEMORY_MODE {Enable} \
-      CONFIG.DEBUG_MODE {JTAG} \
-      CONFIG.DESIGN_MODE {1} \
-      CONFIG.PS_PMC_CONFIG {\
-        CLOCK_MODE {REF CLK 33.33 MHz}\
-        DDR_MEMORY_MODE {Connectivity to DDR via NOC}\
-        DEBUG_MODE {JTAG}\
-        PMC_ALT_REF_CLK_FREQMHZ {33.333}\
-        PMC_CRP_EFUSE_REF_CTRL_SRCSEL {IRO_CLK/4}\
-        PMC_CRP_HSM0_REF_CTRL_FREQMHZ {33.333}\
-        PMC_CRP_HSM1_REF_CTRL_FREQMHZ {133.333}\
-        PMC_CRP_LSBUS_REF_CTRL_FREQMHZ {100}\
-        PMC_CRP_NOC_REF_CTRL_FREQMHZ {960}\
-        PMC_CRP_PL0_REF_CTRL_FREQMHZ {100}\
-        PMC_CRP_PL5_REF_CTRL_FREQMHZ {400}\
-        PMC_PL_ALT_REF_CLK_FREQMHZ {33.333}\
-        PMC_USE_PMC_NOC_AXI0 {1}\
-        PS_HSDP_EGRESS_TRAFFIC {JTAG}\
-        PS_HSDP_INGRESS_TRAFFIC {JTAG}\
-        PS_HSDP_MODE {None}\
-        PS_NUM_FABRIC_RESETS {0}\
-        PS_USE_FPD_CCI_NOC {1}\
-        PS_USE_FPD_CCI_NOC0 {1}\
-        PS_USE_NOC_LPD_AXI0 {1}\
-        PS_USE_PMCPL_CLK0 {1}\
-        PS_USE_PMCPL_CLK1 {0}\
-        PS_USE_PMCPL_CLK2 {0}\
-        PS_USE_PMCPL_CLK3 {0}\
-        PS_USE_PMCPL_IRO_CLK {1}\
-        SMON_ALARMS {Set_Alarms_On}\
-        SMON_ENABLE_TEMP_AVERAGING {0}\
-        SMON_TEMP_AVERAGING_SAMPLES {0}\
-      } \
-      CONFIG.PS_PMC_CONFIG_APPLIED {1} \
-    ] $versal_cips
-    if {[llength [info procs get_cips_config]]} {
-      # allow for special cips presets
-      set_property -dict [get_cips_config] $versal_cips
-    }
 
-    # offset to map memory request from QDMA or PEs into address range of memory controllers
-    set dma_sc [tapasco::ip::create_axi_sc "dma_sc_0" 1 1 1]
-    set dma_offset [tapasco::ip::create_axi_generic_off "dma_offset_0"]
-    set_property -dict [list CONFIG.ADDRESS_WIDTH {41} \
-      CONFIG.BYTES_PER_WORD {64} \
-      CONFIG.HIGHEST_ADDR_BIT {1} \
-      CONFIG.ID_WIDTH {4} \
-      CONFIG.OVERWRITE_BITS {1} ] $dma_offset
-    set arch_offset [tapasco::ip::create_axi_generic_off "arch_offset_0"]
-    set_property -dict [list CONFIG.ADDRESS_WIDTH {41} \
-      CONFIG.BYTES_PER_WORD {64} \
-      CONFIG.HIGHEST_ADDR_BIT {1} \
-      CONFIG.ID_WIDTH {6} \
-      CONFIG.OVERWRITE_BITS {1} ] $arch_offset
-
-    connect_bd_net $design_aclk [get_bd_pin $arch_offset/aclk]
-    connect_bd_net $host_aclk [get_bd_pin $dma_offset/aclk] [get_bd_pin $dma_sc/aclk]
-    connect_bd_net $design_aresetn [get_bd_pin $arch_offset/aresetn]
-    connect_bd_net $host_p_aresetn [get_bd_pin $dma_offset/aresetn]
-    connect_bd_intf_net $s_axi_dma [get_bd_intf_pin $dma_sc/S00_AXI]
-    connect_bd_intf_net [get_bd_intf_pin $dma_sc/M00_AXI] [get_bd_intf_pin $dma_offset/S_AXI]
-    connect_bd_intf_net [get_bd_intf_pin $dma_offset/M_AXI] $m_axi_dma_off
-    connect_bd_intf_net $s_axi_mem [get_bd_intf_pin $arch_offset/S_AXI]
-    connect_bd_intf_net [get_bd_intf_pin $arch_offset/M_AXI] $m_axi_mem_off
-
+    # create NoC here and move it to memory subsystem later
     set axi_noc [tapasco::ip::create_axi_noc "axi_noc_0"]
-    set external_sources {2}
+    set external_sources {None}
     if {[llength [info procs get_number_mc]]} {
       # always let number of memory controllers be overwritten by platform
       set number_mc [get_number_mc]
@@ -320,12 +143,13 @@
     if {[llength [info procs get_mc_type]]} {
       set mc_type [get_mc_type]
     }
-    # Possible values: None, 1, 2, ...
-    # port 1: arch
-    # port 2: dma
     apply_bd_automation -rule xilinx.com:bd_rule:axi_noc -config [list mc_type $mc_type noc_clk {None} num_axi_bram {None} num_axi_tg {None} num_aximm_ext $external_sources num_mc $number_mc pl2noc_apm {0} pl2noc_cips {1}] $axi_noc
-    # 2 external sources still give only one clock, so increase it manually:
-    set_property CONFIG.NUM_CLKS [expr [get_property CONFIG.NUM_CLKS $axi_noc]+1] $axi_noc
+
+    # add AXI ports and clocks for CPM ports
+    set_property CONFIG.NUM_SI [expr [get_property CONFIG.NUM_SI $axi_noc]+2] $axi_noc
+    set_property CONFIG.NUM_CLKS [expr [get_property CONFIG.NUM_CLKS $axi_noc]+2] $axi_noc
+
+    # load MC config
     if {[llength [info procs get_mc_config]]} {
       set_property -dict [get_mc_config] $axi_noc
     }
@@ -340,21 +164,193 @@
         set_property CONFIG.FREQ_HZ [get_mc_clk_freq] [get_bd_intf_ports /sys_clk${i}_0]
       }
     }
-    delete_bd_objs [get_bd_intf_nets /memory/Conn2] [get_bd_intf_nets /memory/Conn1]
-    delete_bd_objs [get_bd_intf_pins /memory/S01_AXI] [get_bd_intf_pins /memory/S00_AXI]
-    delete_bd_objs [get_bd_intf_nets /S01_AXI_1] [get_bd_intf_nets /S00_AXI_1]
-    delete_bd_objs [get_bd_intf_ports /S01_AXI] [get_bd_intf_ports /S00_AXI]
-    delete_bd_objs [get_bd_nets aclk1_0_1] [get_bd_ports /aclk1_0]
-    delete_bd_objs [get_bd_nets /memory/aclk1_0_1] [get_bd_pins /memory/aclk1_0]
-    # S00_AXI -> S_MEM_0
-    # S01_AXI -> S_DMA
-    connect_bd_intf_net $s_axi_mem_off $axi_noc/S00_AXI
-    connect_bd_intf_net $s_axi_dma_off $axi_noc/S01_AXI
-    connect_bd_net $design_aclk [get_bd_pin $axi_noc/aclk1]
-    connect_bd_net $host_aclk [get_bd_pin $axi_noc/aclk7]
-    set_property -dict [list CONFIG.ASSOCIATED_BUSIF {S02_AXI}] [get_bd_pins $axi_noc/aclk0]
-    set_property -dict [list CONFIG.ASSOCIATED_BUSIF {S00_AXI}] [get_bd_pins $axi_noc/aclk1]
-    set_property -dict [list CONFIG.ASSOCIATED_BUSIF {S01_AXI}] [get_bd_pins $axi_noc/aclk7]
+
+    # configure CIPS after NoC so that Vivado does not remove ports during BD automation
+    set link_width "X$pcie_width"
+    set_property -dict [list \
+      CONFIG.CLOCK_MODE {REF CLK 33.33 MHz} \
+      CONFIG.CPM_CONFIG [list \
+        CPM_PCIE0_DMA_INTF {AXI_MM_and_AXI_Stream} \
+        CPM_PCIE0_DSC_BYPASS_RD {1} \
+        CPM_PCIE0_DSC_BYPASS_WR {1} \
+        CPM_PCIE0_FUNCTIONAL_MODE {QDMA} \
+        CPM_PCIE0_LANE_REVERSAL_EN {1} \
+        CPM_PCIE0_MAX_LINK_SPEED {8.0_GT/s} \
+        CPM_PCIE0_MODES {DMA} \
+        CPM_PCIE0_MODE_SELECTION {Advanced} \
+        CPM_PCIE0_MSI_X_OPTIONS {MSI-X_Internal} \
+        CPM_PCIE0_PF0_BAR0_QDMA_64BIT {1} \
+        CPM_PCIE0_PF0_BAR0_QDMA_SCALE {Megabytes} \
+        CPM_PCIE0_PF0_BAR0_QDMA_SIZE {64} \
+        CPM_PCIE0_PF0_BAR0_QDMA_TYPE {AXI_Bridge_Master} \
+        CPM_PCIE0_PF0_BAR0_QDMA_64BIT {1} \
+        CPM_PCIE0_PF0_BAR2_QDMA_ENABLED {1} \
+        CPM_PCIE0_PF0_BAR2_QDMA_TYPE {DMA} \
+        CPM_PCIE0_PF0_PCIEBAR2AXIBAR_QDMA_0 {0x0000020100000000} \
+        CPM_PCIE0_PF0_CFG_DEV_ID {B03F} \
+        CPM_PCIE0_PF0_MSIX_CAP_TABLE_SIZE {01F} \
+        CPM_PCIE0_PL_LINK_CAP_MAX_LINK_WIDTH $link_width \
+      ] \
+      CONFIG.DDR_MEMORY_MODE {Enable} \
+      CONFIG.DEBUG_MODE {JTAG} \
+      CONFIG.PS_PMC_CONFIG { \
+        CLOCK_MODE {REF CLK 33.33 MHz} \
+        DDR_MEMORY_MODE {Connectivity to DDR via NOC} \
+        DEBUG_MODE {JTAG} \
+        DESIGN_MODE {1} \
+        PCIE_APERTURES_DUAL_ENABLE {0} \
+        PCIE_APERTURES_SINGLE_ENABLE {1} \
+        PMC_ALT_REF_CLK_FREQMHZ {33.333} \
+        PMC_CRP_EFUSE_REF_CTRL_SRCSEL {IRO_CLK/4} \
+        PMC_CRP_HSM0_REF_CTRL_FREQMHZ {33.333} \
+        PMC_CRP_HSM1_REF_CTRL_FREQMHZ {133.333} \
+        PMC_CRP_LSBUS_REF_CTRL_FREQMHZ {100} \
+        PMC_CRP_NOC_REF_CTRL_FREQMHZ {960} \
+        PMC_CRP_PL0_REF_CTRL_FREQMHZ {100} \
+        PMC_CRP_PL5_REF_CTRL_FREQMHZ {400} \
+        PMC_PL_ALT_REF_CLK_FREQMHZ {33.333} \
+        PMC_USE_PMC_NOC_AXI0 {1} \
+        PS_BOARD_INTERFACE {Custom} \
+        PS_HSDP_EGRESS_TRAFFIC {JTAG} \
+        PS_HSDP_INGRESS_TRAFFIC {JTAG} \
+        PS_HSDP_MODE {NONE} \
+        PS_PCIE1_PERIPHERAL_ENABLE {1} \
+        PS_PCIE2_PERIPHERAL_ENABLE {0} \
+        PS_PCIE_EP_RESET1_IO {PMC_MIO 38} \
+        PS_PCIE_RESET {ENABLE 1} \
+        PS_USE_FPD_CCI_NOC {1} \
+        PS_USE_FPD_CCI_NOC0 {1} \
+        PS_USE_NOC_LPD_AXI0 {1} \
+        PS_USE_PMCPL_CLK0 {1} \
+        PS_USE_PMCPL_IRO_CLK {1} \
+        SMON_ALARMS {Set_Alarms_On} \
+        SMON_ENABLE_TEMP_AVERAGING {0} \
+        SMON_TEMP_AVERAGING_SAMPLES {0} \
+      } \
+    ] $versal_cips
+
+    if {[llength [info procs get_cips_config]]} {
+      # allow for special cips presets
+      set_property -dict [get_cips_config] $versal_cips
+    }
+
+    make_bd_intf_pins_external [get_bd_intf_pins $versal_cips/gt_refclk0]
+    make_bd_intf_pins_external [get_bd_intf_pins $versal_cips/PCIE0_GT]
+    connect_bd_net [get_bd_pins $versal_cips/pl0_ref_clk] $pl_clk
+    connect_bd_net [get_bd_pins $versal_cips/pcie0_user_clk] $pcie_aclk
+    connect_bd_net [get_bd_pins $versal_cips/dma0_axi_aresetn] $pcie_aresetn
+
+    set desc_gen [tapasco::ip::create_qdma_desc_gen "desc_gen_0"]
+    connect_bd_net $host_aclk [get_bd_pins $desc_gen/aclk]
+    connect_bd_net $host_p_aresetn [get_bd_pins $desc_gen/resetn]
+    connect_bd_intf_net $s_axi_desc_gen [get_bd_intf_pins $desc_gen/S_AXI_CTRL]
+    connect_bd_intf_net [get_bd_intf_pins $versal_cips/dma0_c2h_byp_out] [get_bd_intf_pins $desc_gen/c2h_byp_out]
+    connect_bd_intf_net [get_bd_intf_pins $versal_cips/dma0_h2c_byp_out] [get_bd_intf_pins $desc_gen/h2c_byp_out]
+    connect_bd_intf_net [get_bd_intf_pins $versal_cips/dma0_tm_dsc_sts] [get_bd_intf_pins $desc_gen/tm_dsc_sts]
+    connect_bd_intf_net [get_bd_intf_pins $desc_gen/c2h_byp_in] [get_bd_intf_pins $versal_cips/dma0_c2h_byp_in_mm]
+    connect_bd_intf_net [get_bd_intf_pins $desc_gen/h2c_byp_in] [get_bd_intf_pins $versal_cips/dma0_h2c_byp_in_mm]
+
+    connect_bd_net [get_bd_pins $desc_gen/dma_resetn] [get_bd_pins $versal_cips/dma0_soft_resetn]
+
+    # FIXME do not hardcode ports?
+    connect_bd_intf_net [get_bd_intf_pins $versal_cips/CPM_PCIE_NOC_0] [get_bd_intf_pins $axi_noc/S06_AXI]
+    connect_bd_intf_net [get_bd_intf_pins $versal_cips/CPM_PCIE_NOC_1] [get_bd_intf_pins $axi_noc/S07_AXI]
+    connect_bd_net [get_bd_pins $versal_cips/cpm_pcie_noc_axi0_clk] [get_bd_pins $axi_noc/aclk6]
+    connect_bd_net [get_bd_pins $versal_cips/cpm_pcie_noc_axi1_clk] [get_bd_pins $axi_noc/aclk7]
+  }
+
+  proc create_subsystem_memory {} {
+    # memory subsystem implements NoC logic and Memory Controller
+    set num_masters [llength [::arch::get_masters]]
+
+    set host_aclk [tapasco::subsystem::get_port "host" "clk"]
+    set host_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
+    set design_aclk [tapasco::subsystem::get_port "design" "clk"]
+    set design_aresetn [tapasco::subsystem::get_port "design" "rst" "peripheral" "resetn"]
+
+    set m_axi_arch [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_ARCH"]
+    set m_axi_tapasco [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_TAPASCO"]
+    set m_axi_intc [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_INTC"]
+    set m_axi_desc_gen [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DESC_GEN"]
+
+    # add ports according to actual number of arch masters
+    set axi_mem_slaves [list]
+    for {set i 0} {$i < $num_masters} {incr i} {
+      set s_mem [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_MEM_$i"]
+      lappend axi_mem_slaves $s_mem
+    }
+
+    # move NoC from host to memory subsystem
+    move_bd_cells [current_bd_instance .] [get_bd_cells /host/axi_noc_0]
+    set axi_noc [get_bd_cells axi_noc_0]
+
+    # add AXI ports and clocks for PE interconnect trees and CPM ports
+    set_property CONFIG.NUM_SI [expr [get_property CONFIG.NUM_SI $axi_noc]+$num_masters] $axi_noc
+    set_property CONFIG.NUM_MI [expr [get_property CONFIG.NUM_MI $axi_noc]+1] $axi_noc
+    set_property CONFIG.NUM_CLKS [expr [get_property CONFIG.NUM_CLKS $axi_noc]+2] $axi_noc
+
+    # Configure NoC ports and connections for CPM and ARCH
+    set_property -dict [list CONFIG.CATEGORY {ps_pcie} \
+      CONFIG.CONNECTIONS { \
+        MC_0 {read_bw {10000} write_bw {10000} read_avg_burst {4} write_avg_burst {4}} \
+        M00_AXI {read_bw {100} write_bw {100} read_avg_burst {4} write_avg_burst {4}}}
+    ] [get_bd_intf_pins $axi_noc/S06_AXI]
+    set_property -dict [list CONFIG.CATEGORY {ps_pcie} \
+      CONFIG.CONNECTIONS { \
+        M00_AXI {read_bw {1} write_bw {1} read_avg_burst {4} write_avg_burst {4}}} \
+    ] [get_bd_intf_pins $axi_noc/S07_AXI]
+    set_property CONFIG.ASSOCIATED_BUSIF S06_AXI [get_bd_pins $axi_noc/aclk6]
+    set_property CONFIG.ASSOCIATED_BUSIF S07_AXI [get_bd_pins $axi_noc/aclk7]
+    set_property CONFIG.ASSOCIATED_BUSIF M00_AXI [get_bd_pins $axi_noc/aclk8]
+
+    # create NoC ports for arch slaves, use round robin to distribute evenly to MC channels
+    set mc_port 1;
+    for {set i 0} {$i < $num_masters} {incr i} {
+      set axi_port [format "S%02s_AXI" [expr "$i + 8"]]
+      set_property -dict [list CONFIG.CATEGORY {pl} \
+        CONFIG.CONNECTIONS "MC_$mc_port {read_bw {1000} write_bw {1000} read_avg_burst {4} write_avg_burst {4}}" \
+      ] [get_bd_intf_pins $axi_noc/$axi_port]
+      if {$mc_port == 3} {
+        set mc_port 0
+      } else {
+        incr mc_port
+      }
+    }
+
+    # offset(s) to map memory request from PEs into address range of memory controllers
+    set arch_offset_cores [list]
+    for {set i 0} {$i < $num_masters} {incr i} {
+      set arch_offset [tapasco::ip::create_axi_generic_off "arch_offset_$i"]
+      set_property -dict [list CONFIG.ADDRESS_WIDTH {41} \
+        CONFIG.BYTES_PER_WORD {64} \
+        CONFIG.HIGHEST_ADDR_BIT {1} \
+        CONFIG.ID_WIDTH {6} \
+        CONFIG.OVERWRITE_BITS {1} ] $arch_offset
+      lappend arch_offset_cores $arch_offset
+    }
+
+    foreach core $arch_offset_cores intf $axi_mem_slaves {
+      connect_bd_net $design_aclk [get_bd_pins $core/aclk]
+      connect_bd_net $design_aresetn [get_bd_pins $core/aresetn]
+      connect_bd_intf_net $intf $core/S_AXI
+    }
+
+    set host_sc [tapasco::ip::create_axi_sc "host_sc" 1 4 2]
+    connect_bd_net $host_aclk [get_bd_pins $host_sc/aclk]
+    connect_bd_net $design_aclk [get_bd_pins $host_sc/aclk1]
+    connect_bd_intf_net [get_bd_intf_pins $axi_noc/M00_AXI] [get_bd_intf_pins $host_sc/S00_AXI]
+    connect_bd_intf_net [get_bd_intf_pins $host_sc/M00_AXI] $m_axi_arch
+    connect_bd_intf_net [get_bd_intf_pins $host_sc/M01_AXI] $m_axi_tapasco
+    connect_bd_intf_net [get_bd_intf_pins $host_sc/M02_AXI] $m_axi_intc
+    connect_bd_intf_net [get_bd_intf_pins $host_sc/M03_AXI] $m_axi_desc_gen
+
+    # FIXME do not hardcode ports?
+    for {set i 0} {$i < $num_masters} {incr i} {
+      set axi_port [format "S%02s_AXI" [expr "$i + 8"]]
+      connect_bd_intf_net [lindex $arch_offset_cores $i]/M_AXI [get_bd_intf_pins $axi_noc/$axi_port]
+    }
+    connect_bd_net $host_aclk [get_bd_pins $axi_noc/aclk8]
+    connect_bd_net $design_aclk [get_bd_pins $axi_noc/aclk9]
   }
 
   proc create_subsystem_intc {} {
@@ -430,11 +426,15 @@
     connect_bd_net $host_aclk [get_bd_pins $qdma_intr_ctrl/S_AXI_aclk]
     connect_bd_net $host_p_aresetn [get_bd_pins $qdma_intr_ctrl/S_AXI_aresetn]
 
-    connect_bd_intf_net $qdma_intr_ctrl/usr_irq /host/qdma_0/usr_irq
+    connect_bd_intf_net $qdma_intr_ctrl/usr_irq /host/versal_cips_0/dma0_usr_irq
   }
 
   proc get_pe_base_address {} {
-    return 0x02000000;
+    return 0x20102000000;
+  }
+
+  proc get_pe_base_address_status_core {} {
+    return 0x02000000
   }
 
   proc get_address_map {{pe_base ""}} {
@@ -456,8 +456,6 @@
         "M_DESC_GEN"  { foreach {base stride range comp} [list [expr [get_platform_base_address]+0x10000] 0x10000 0                "PLATFORM_COMPONENT_DMA0"  ] {} }
         "M_DMA"       { foreach {base stride range comp} [list 0                                          0       [get_total_memory_size] ""                         ] {} }
         "M_DMA_OFF"   { foreach {base stride range comp} [list [expr "1 << 40"]                           0       [get_total_memory_size] ""                         ] {} }
-        "M_MEM_0"     { foreach {base stride range comp} [list 0                                          0       [get_total_memory_size] ""                         ] {} }
-        "M_MEM_0_OFF" { foreach {base stride range comp} [list [expr "1 << 40"]                           0       [get_total_memory_size] ""                         ] {} }
         "M_ARCH"     { set base "skip" }
         default      { if { [dict exists $extra_masters [get_property NAME $m]] } {
                           set l [dict get $extra_masters [get_property NAME $m]]
@@ -467,7 +465,8 @@
                           set comp [lindex $l 3]
                           puts "Special address for [get_property NAME $m] base: $base stride: $stride range: $range comp: $comp"
                         } else {
-                            error "No address defined for [get_property NAME $m], please make sure to define one in post-address-map plugin"
+                            puts "No address defined for [get_property NAME $m], please make sure to define one in post-address-map plugin or set interface on ignore list"
+                            set base "skip"
                         }
                     }
       }
@@ -477,16 +476,29 @@
   }
 
   proc get_ignored_segments {} {
+    set num_masters [llength [::arch::get_masters]]
     set ignored [list]
-    for {set i 2} {$i < 9} {incr i} {
-      # skip i = 0, 1 (those are managed by tapasco)
+    for {set i 0} {$i < [expr "$num_masters + 8"]} {incr i} {
+      set axi_port [format "S%02s_AXI" $i]
       for {set j 0} {$j < 4} {incr j} {
-        lappend ignored "/memory/axi_noc_0/S0${i}_AXI/C${j}_DDR_LOW3"
+        lappend ignored "/memory/axi_noc_0/${axi_port}/C${j}_DDR_LOW3"
         for {set k 1} {$k < 5} {incr k} {
-          lappend ignored "/memory/axi_noc_0/S0${i}_AXI/C${j}_DDR_LOW3x${k}"
+          lappend ignored "/memory/axi_noc_0/${axi_port}/C${j}_DDR_LOW3x${k}"
         }
       }
     }
     return $ignored
   }
 
+  # add all arch memory interfaces to address map
+  proc versal_extra_masters {{args {}}} {
+    set num_masters [llength [::arch::get_masters]]
+    for {set i 0} {$i < $num_masters} {incr i} {
+      set axi_port [format "S%02s_AXI" [expr "$i + 8"]]
+      set name [format "M_MEM_$i"]
+      lappend args $name [list 0 0 [get_total_memory_size] ""]
+    }
+    return $args
+  }
+
+  tapasco::register_plugin "platform::versal_extra_masters" "post-address-map"

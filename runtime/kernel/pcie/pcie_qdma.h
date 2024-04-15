@@ -26,11 +26,15 @@
 
 #define QDMA_IRQ_VEC_C2H	0
 #define QDMA_IRQ_VEC_H2C	1
+#define QDMA_IRQ_VEC_C2H_ST	2
+#define QDMA_IRQ_VEC_H2C_ST	3
 
 int pcie_is_qdma_in_use(struct tlkm_device *dev);
 int pcie_qdma_init(struct tlkm_pcie_device *pdev);
 int pcie_qdma_exit(struct tlkm_pcie_device *pdev);
 irqreturn_t qdma_intr_handler_read(int irq, void *dev_id);
 irqreturn_t qdma_intr_handler_write(int irq, void *dev_id);
+irqreturn_t qdma_intr_handler_c2h_stream(int irq, void *data);
+irqreturn_t qdma_intr_handler_h2c_stream(int irq, void *data);
 
 #endif /* QDMA_H__ */

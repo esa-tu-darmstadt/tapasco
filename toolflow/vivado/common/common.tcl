@@ -447,7 +447,7 @@ namespace eval tapasco {
   # @param name Name of the group cell
   # @param n Number of connnections (outside)
   # @param masters if true, will create n master connections, otherwise slaves
-  proc create_smartconnect_tree {name n {masters true}} {
+  proc create_smartconnect_tree {name n {masters true} {has_reset false}} {
     puts "Creating AXI Smartconnect tree with name $name for $n [expr $masters ? {"masters"} : {"slaves"}]"
     puts "  tree depth: [expr int(ceil(log($n) / log(16)))]"
     puts "  instance : [current_bd_instance .]"
@@ -460,6 +460,9 @@ namespace eval tapasco {
     # create hierarchical ports: clocks, resets (interconnect + peripherals)
     set m_aclk [create_bd_pin -type "clk" -dir "I" "m_aclk"]
     set s_aclk [create_bd_pin -type "clk" -dir "I" "s_aclk"]
+    if {$has_reset} {
+      set reset [create_bd_pin -type "rst" -dir "I" "peripheral_aresetn"]
+    }
 
     set ic_n 0
     set ics [list]
@@ -471,7 +474,7 @@ namespace eval tapasco {
     # special case: bypass (not necessary; only for performance, Tcl is slow)
     if {$totalOut == 1} {
       puts "  building 1-on-1 bypass"
-      set bic [ip::create_axi_sc "sc_000" 1 1 2]
+      set bic [ip::create_axi_sc "sc_000" 1 1 2 $has_reset]
       set m [create_bd_intf_pin -mode Master -vlnv "xilinx.com:interface:aximm_rtl:1.0" "M000_AXI"]
       set s [create_bd_intf_pin -mode Slave -vlnv "xilinx.com:interface:aximm_rtl:1.0" "S000_AXI"]
       connect_bd_intf_net $s [get_bd_intf_pins -filter {VLNV == "xilinx.com:interface:aximm_rtl:1.0" && MODE == "Slave"} -of_objects $bic]
@@ -504,7 +507,7 @@ namespace eval tapasco {
       for {set i 0} {$i < $n} {incr i} {
         set rest_ports [expr "$nports - $i * 16"]
         set rest_ports [expr "min($rest_ports, 16)"]
-        set nic [ip::create_axi_sc [format "sc_%03d" $ic_n] [expr "$masters ? $rest_ports : 1"] [expr "$masters ? 1 : $rest_ports"] 2]
+        set nic [ip::create_axi_sc [format "sc_%03d" $ic_n] [expr "$masters ? $rest_ports : 1"] [expr "$masters ? 1 : $rest_ports"] 2 $has_reset]
         incr ic_n
         lappend curr_ics $nic
       }
@@ -565,6 +568,11 @@ namespace eval tapasco {
     }
     connect_bd_net $s_aclk [get_bd_pin $single_sc/aclk]
     connect_bd_net $m_aclk [get_bd_pin $single_sc/aclk1]
+    if {$has_reset} {
+      foreach scl [lrange $stage 0 end] {
+        connect_bd_net $reset [get_bd_pins -filter {TYPE == "rst" && DIR == "I"} -of_objects $scl]
+      }
+    }
 
     current_bd_instance $instance
     return $group
@@ -663,8 +671,13 @@ namespace eval tapasco {
   }
 
   proc get_platform_num_slots {} {
-    puts "Number of slots is hard coded as 128 right now"
-    return 128
+    if {[is_versal]} {
+      puts "Versal supports maximum 28 PEs right now"
+      return 28
+    } else {
+      puts "Number of slots is hard coded as 128 right now"
+      return 128
+    }
   }
 
   proc is_virtex_usp {} {

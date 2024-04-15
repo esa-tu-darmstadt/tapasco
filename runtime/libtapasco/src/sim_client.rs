@@ -61,6 +61,9 @@ pub enum Error {
     #[snafu(display("Got wrong payload from request: {:?}, expected {}", payload, expected))]
     WrongResponsePayload { payload: ResponsePayload, expected: String },
 
+    #[snafu(display("Mismatch of requested and delivered number of bytes"))]
+    WrongResponseLength { },
+
     #[snafu(display("Got payload None, expected {:?}", expected))]
     ResponseNone { expected: String},
 
@@ -70,12 +73,8 @@ pub enum Error {
     #[snafu(display("Error processing read/write memory request"))]
     MemForEachError { },
 
-    #[snafu(whatever, display("{}", message))]
-    Whatever {
-        message: String,
-        #[snafu(source(from(Box<dyn std::error::Error>, Some)))]
-        source: Option<Box<dyn std::error::Error>>
-    }
+    #[snafu(display("Error parsing port number: {}", source))]
+    PortParseError { source: <u32 as std::str::FromStr>::Err },
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -89,7 +88,7 @@ impl SimClient {
     pub fn new() -> Result<Self> {
         let rt = Builder::new_multi_thread().enable_all().build().context(TonicRuntimeBuildSnafu)?;
         let port = match env::var("SIM_PORT") {
-            Ok(p) => whatever!(p.parse::<u32>(), "Error parsing SIM_PORT"),
+            Ok(p) => p.parse::<u32>().context(PortParseSnafu {})?,
             Err(_) => 4040,
         };
         let client = rt.block_on(SimRequestClient::connect(format!("http://[::1]:{}", port))).context(ConnectSnafu)?;
@@ -144,7 +143,7 @@ impl SimClient {
             x => Err(ResponseType {t: x})
         }?;
         if range.len() as u32 != num_bytes {
-            whatever!("Mismatch of requested and delivered number of bytes")
+            Err(WrongResponseLength {})
         } else {
             Ok(range)
         }
