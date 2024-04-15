@@ -64,8 +64,14 @@ irqreturn_t intr_handler_platform(int irq, void *data)
 {
 	struct tlkm_irq_mapping *mapping = (struct tlkm_irq_mapping *)data;
 	struct tlkm_pcie_device *dev = mapping->dev->private_data;
-	if (mapping->eventfd != 0)
+	if (mapping->eventfd != 0) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
 		eventfd_signal(mapping->eventfd, 1);
+#else
+		// Linux commit 3652117 removes argument from eventfd_signal
+		eventfd_signal(mapping->eventfd);
+#endif
+	}
 	dev->ack_register[0] = mapping->irq_no;
 	return IRQ_HANDLED;
 }
@@ -100,6 +106,18 @@ int pcie_irqs_request_platform_irq(struct tlkm_device *dev,
 			DEVERR(dev->dev_id,
 				"could not request QDMA C2H interrupt: %d",
 				err);
+			return err;
+		}
+	} else if (mapping->irq_no == QDMA_IRQ_VEC_C2H_ST && pcie_is_qdma_in_use(dev)) {
+		err = request_irq(pci_irq_vector(pdev->pdev, QDMA_IRQ_VEC_C2H_ST), qdma_intr_handler_c2h_stream, IRQF_EARLY_RESUME, TLKM_PCI_NAME, (void *)mapping);
+		if (err) {
+			DEVERR(dev->dev_id, "could not request QDMA C2H Stream interrupt: %d", err);
+			return err;
+		}
+	} else if (mapping->irq_no == QDMA_IRQ_VEC_H2C_ST && pcie_is_qdma_in_use(dev)) {
+		err = request_irq(pci_irq_vector(pdev->pdev, QDMA_IRQ_VEC_H2C_ST), qdma_intr_handler_h2c_stream, IRQF_EARLY_RESUME, TLKM_PCI_NAME, (void *)mapping);
+		if (err) {
+			DEVERR(dev->dev_id, "could not request QDMA H2C Stream interrupt: %d", err);
 			return err;
 		}
 	} else {

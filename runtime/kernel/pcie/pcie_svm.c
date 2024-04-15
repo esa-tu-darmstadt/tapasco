@@ -2200,7 +2200,7 @@ static int svm_cmp_addr(const void *p1, const void *p2)
  * @param size: size of input array
  * @return new size of array
  */
-int remove_duplicates(uint64_t *array, int size)
+static int remove_duplicates(uint64_t *array, int size)
 {
 	int i, j;
 	i = 1;

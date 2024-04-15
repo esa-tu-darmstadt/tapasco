@@ -162,6 +162,32 @@ template <typename T> VirtualAddress<T> makeVirtualAddress(T *t) {
 	return VirtualAddress<T>(t);
 }
 
+/**
+ * Wrapped pointer type to create input stream using DMA Streaming on Versal
+ **/
+template <typename T> struct InputStream final {
+  InputStream(T *value, size_t sz) : value(value), sz(sz) {};
+  T *value;
+  size_t sz;
+};
+
+template <typename T> InputStream<T> makeInputStream(T *t, size_t sz) {
+  return InputStream<T>(t, sz);
+}
+
+/**
+ * Wrapped pointer type to create output stream using DMA Streaming on Versal
+ */
+template <typename T> struct OutputStream final {
+  OutputStream(T *value, size_t sz) : value(value), sz(sz) {};
+  T *value;
+  size_t sz;
+};
+
+template <typename T> OutputStream<T> makeOutputStream(T *t, size_t sz) {
+  return OutputStream<T>(t, sz);
+}
+
 /** A TAPASCO runtime error. **/
 class tapasco_error : public std::runtime_error {
 public:
@@ -277,6 +303,10 @@ public:
 	  tapasco_job_param_virtualaddress(ptr, this->list_inner);
   }
 
+  void streamop(uint8_t *ptr, uintptr_t bytes, bool c2h) {
+    tapasco_job_param_stream(this->device, ptr, bytes, c2h, this->list_inner);
+  }
+
   void unset_from_device() { from_device = false; }
   void unset_to_device() { to_device = false; }
   void unset_free() { free = false; }
@@ -365,6 +395,16 @@ private:
   /** Sets a virtual address argument used for virtual pointers in SVM feature **/
   template <typename T> void set_arg(VirtualAddress<T> t) {
     this->virtaddr((uint8_t *)t.addr);
+  }
+
+  /** Sets a single pointer argument for host-to-card DMA streaming **/
+  template <typename T> void set_arg(InputStream<T> t) {
+    this->streamop((uint8_t *)t.value, t.sz, false);
+  }
+
+  /** Sets a single pointer argument for card-to-host DMA streaming **/
+  template <typename T> void set_arg(OutputStream<T> t) {
+    this->streamop((uint8_t *)t.value, t.sz, true);
   }
 };
 

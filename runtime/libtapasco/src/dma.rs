@@ -88,9 +88,11 @@ pub enum Error {
 
     #[snafu(display("Error during gRPC communictaion {}", source))]
     SimClientError { source: sim_client::Error },
-}
 
-type Result<T, E = Error> = std::result::Result<T, E>;
+    #[snafu(display("Streams not supported on this platform"))]
+    StreamsNotSupported {},
+}
+pub(crate) type Result<T, E = Error> = std::result::Result<T, E>;
 
 /// Specifies a method to interact with DMA methods
 ///
@@ -98,6 +100,8 @@ type Result<T, E = Error> = std::result::Result<T, E>;
 pub trait DMAControl: Debug {
     fn copy_to(&self, data: &[u8], ptr: DeviceAddress) -> Result<()>;
     fn copy_from(&self, ptr: DeviceAddress, data: &mut [u8]) -> Result<()>;
+    fn h2c_stream(&self, data: &[u8]) -> Result<()>;
+    fn c2h_stream(&self, data: &mut [u8]) -> Result<()>;
 }
 
 #[derive(Debug, Getters)]
@@ -157,6 +161,14 @@ impl DMAControl for DriverDMA {
         };
         Ok(())
     }
+
+    fn c2h_stream(&self, _data: &mut [u8]) -> Result<()> {
+        Err(Error::StreamsNotSupported {})
+    }
+
+    fn h2c_stream(&self, _data: &[u8]) -> Result<()> {
+        Err(Error::StreamsNotSupported {})
+    }
 }
 
 #[derive(Debug, Getters)]
@@ -198,6 +210,14 @@ impl DMAControl for VfioDMA {
 
         // nothing to copy, 'data' is same buffer that PE operated on
         Ok(())
+    }
+
+    fn c2h_stream(&self, _data: &mut [u8]) -> Result<()> {
+        Err(Error::StreamsNotSupported {})
+    }
+
+    fn h2c_stream(&self, _data: &[u8]) -> Result<()> {
+        Err(Error::StreamsNotSupported {})
     }
 }
 
@@ -317,6 +337,14 @@ impl DMAControl for DirectDMA {
 
         Ok(())
     }
+
+    fn c2h_stream(&self, _data: &mut [u8]) -> Result<()> {
+        Err(Error::StreamsNotSupported {})
+    }
+
+    fn h2c_stream(&self, _data: &[u8]) -> Result<()> {
+        Err(Error::StreamsNotSupported {})
+    }
 }
 
 /// DMA implementation for SVM support
@@ -369,6 +397,14 @@ impl DMAControl for SVMDMA {
         }
         trace!("Migration to host memory complete.");
         Ok(())
+    }
+
+    fn c2h_stream(&self, _data: &mut [u8]) -> Result<()> {
+        Err(Error::StreamsNotSupported {})
+    }
+
+    fn h2c_stream(&self, _data: &[u8]) -> Result<()> {
+        Err(Error::StreamsNotSupported {})
     }
 }
 
@@ -448,5 +484,13 @@ impl DMAControl for SimDMA {
         }
 
         Ok(())
+    }
+
+    fn c2h_stream(&self, _data: &mut [u8]) -> Result<()> {
+        Err(Error::StreamsNotSupported {})
+    }
+
+    fn h2c_stream(&self, _data: &[u8]) -> Result<()> {
+        Err(Error::StreamsNotSupported {})
     }
 }

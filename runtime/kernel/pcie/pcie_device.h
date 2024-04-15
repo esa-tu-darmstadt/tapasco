@@ -88,10 +88,14 @@ struct tlkm_pcie_device {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
 	struct msix_entry *msix_entries;
 #endif
+	uint64_t *cmpt_ring;
+	dma_addr_t cmpt_ring_addr;
 };
 
 ssize_t pcie_enumerate(void);
 ssize_t pcie_device_probe(struct tlkm_class *cls);
+
+void tune_pcie_parameters(struct pci_dev *pdev);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
 static inline u32 pci_irq_vector(struct pci_dev *pdev, int c)

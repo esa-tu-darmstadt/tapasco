@@ -26,6 +26,7 @@
 #define PCIE_CLS_NAME "pcie"
 #define XILINX_VENDOR_ID 0x10EE
 #define XILINX_DEVICE_ID 0x7038
+#define VERSAL_DEVICE_ID 0xB03F
 #define AWS_EC2_VENDOR_ID 0x1D0F
 #define AWS_EC2_DEVICE_ID 0xF000
 
@@ -59,6 +60,26 @@ static const struct tlkm_class pcie_cls = {
 	.ioctl = pcie_ioctl,
 	.addr2map = pcie_device_addr2map_off,
 	.number_of_interrupts = 132,
+	.platform = PCIE_DEF,
+	.private_data = NULL,
+};
+
+static const struct tlkm_class pcie_versal_cls = {
+	.name = PCIE_CLS_NAME,
+	.create = pcie_device_create,
+	.destroy = pcie_device_destroy,
+	.init_subsystems = pcie_device_init_subsystems,
+	.exit_subsystems = pcie_device_exit_subsystems,
+	.miscdev_close = pcie_device_miscdev_close,
+	.probe = pcie_init,
+	.remove = pcie_exit,
+	.init_interrupts = pcie_irqs_init,
+	.exit_interrupts = pcie_irqs_exit,
+	.pirq = pcie_irqs_request_platform_irq,
+	.rirq = pcie_irqs_release_platform_irq,
+	.ioctl = pcie_ioctl,
+	.addr2map = pcie_device_addr2map_off,
+	.number_of_interrupts = 32,
 	.platform = PCIE_DEF,
 	.private_data = NULL,
 };

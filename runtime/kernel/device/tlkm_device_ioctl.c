@@ -22,9 +22,14 @@
 #include <linux/miscdevice.h>
 #include <linux/eventfd.h>
 #include "tlkm_logging.h"
+#include "tlkm_device_ioctl.h"
 #include "tlkm_device_ioctl_cmds.h"
 #include "tlkm_bus.h"
 #include "tlkm_control.h"
+
+long tlkm_device_ioctl_info(struct file *fp, unsigned int ioctl, struct tlkm_device_info __user *info);
+long tlkm_device_ioctl_size(struct file *fp, unsigned int ioctl, struct tlkm_size_cmd __user *size);
+long tlkm_device_reg_int(struct file *fp, unsigned int ioctl, struct tlkm_register_interrupt __user *size);
 
 static struct tlkm_control *control_from_file(struct file *fp)
 {

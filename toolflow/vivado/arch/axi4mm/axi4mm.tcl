@@ -226,7 +226,7 @@ namespace eval arch {
     for {set i 0} {$i < [llength $mdist]} {incr i} {
       puts "  mdist[$i] = [lindex $mdist $i]"
       if {[tapasco::is_versal] || [tapasco::get_feature_option "axi4mmUseSmartconnect" "enabled" false]} {
-        set out [tapasco::create_smartconnect_tree "out_$i" [lindex $mdist $i]]
+        set out [tapasco::create_smartconnect_tree "out_$i" [lindex $mdist $i] true true]
       } else {
         set out [tapasco::create_interconnect_tree "out_$i" [lindex $mdist $i]]
       }
@@ -255,7 +255,7 @@ namespace eval arch {
       return $out_port
     } {
       if {[tapasco::is_versal] || [tapasco::get_feature_option "axi4mmUseSmartconnect" "enabled" false]} {
-        set in1 [tapasco::create_smartconnect_tree "in1" $ic_s false]
+        set in1 [tapasco::create_smartconnect_tree "in1" $ic_s false true]
       } else {
         set in1 [tapasco::create_interconnect_tree "in1" $ic_s false]
       }

@@ -46,6 +46,7 @@ use std::sync::Mutex;
 use std::sync::MutexGuard;
 use std::thread;
 use std::ptr::write_volatile;
+use crate::dma::Error::StreamsNotSupported;
 
 impl<T> From<std::sync::PoisonError<T>> for Error {
     fn from(_error: std::sync::PoisonError<T>) -> Self {
@@ -82,11 +83,18 @@ pub struct UserSpaceDMA {
     from_dev_buffer: Injector<DMABuffer>,
     read_int: Box<dyn TapascoInterrupt + Sync + Send>,
     write_int: Box<dyn TapascoInterrupt + Sync + Send>,
+    c2h_st_int: Option<Box<dyn TapascoInterrupt + Sync + Send>>,
+    h2c_st_int: Option<Box<dyn TapascoInterrupt + Sync + Send>>,
     write_out: Queue<DMABuffer>,
     write_cntr: AtomicU64,
     write_int_cntr: AtomicU64,
     read_cntr: AtomicU64,
     read_int_cntr: AtomicU64,
+    h2c_out: Queue<DMABuffer>,
+    h2c_cntr: AtomicU64,
+    h2c_int_cntr: AtomicU64,
+    c2h_cntr: AtomicU64,
+    c2h_int_cntr: AtomicU64,
 }
 
 impl UserSpaceDMA {
@@ -95,6 +103,8 @@ impl UserSpaceDMA {
         offset: usize,
         read_interrupt: usize,
         write_interrupt: usize,
+        c2h_interrupt: usize,
+        h2c_interrupt: usize,
         memory: &Arc<MmapMut>,
         read_buf_size: usize,
         read_num_buf: usize,
@@ -168,20 +178,57 @@ impl UserSpaceDMA {
             });
         }
 
-        Ok(Self {
-            tlkm_file: tlkm_file.clone(),
-            memory: Mutex::new(memory.clone()),
-            engine_offset: offset,
-            to_dev_buffer: write_map,
-            from_dev_buffer: read_map,
-            read_int:Interrupt::new(tlkm_file, read_interrupt, false).context(ErrorInterruptSnafu)?,
-            write_int: Interrupt::new(tlkm_file, write_interrupt, false).context(ErrorInterruptSnafu)?,
-            write_out: Queue::new(),
-            write_cntr: AtomicU64::new(0),
-            write_int_cntr: AtomicU64::new(0),
-            read_int_cntr: AtomicU64::new(0),
-            read_cntr: AtomicU64::new(0),
-        })
+        let is_versal = unsafe {
+            let ptr = memory.as_ptr().offset(offset as isize + 0x18) as *const u64;
+            let id = ptr.read_volatile();
+            id == 0xDE5C1000
+        };
+
+        if !is_versal {
+            Ok(Self {
+                tlkm_file: tlkm_file.clone(),
+                memory: Mutex::new(memory.clone()),
+                engine_offset: offset,
+                to_dev_buffer: write_map,
+                from_dev_buffer: read_map,
+                read_int: Interrupt::new(tlkm_file, read_interrupt, false).context(ErrorInterruptSnafu)?,
+                write_int: Interrupt::new(tlkm_file, write_interrupt, false).context(ErrorInterruptSnafu)?,
+                c2h_st_int: None,
+                h2c_st_int: None,
+                write_out: Queue::new(),
+                write_cntr: AtomicU64::new(0),
+                write_int_cntr: AtomicU64::new(0),
+                read_int_cntr: AtomicU64::new(0),
+                read_cntr: AtomicU64::new(0),
+                c2h_cntr: AtomicU64::new(0),
+                c2h_int_cntr: AtomicU64::new(0),
+                h2c_out: Queue::new(),
+                h2c_cntr: AtomicU64::new(0),
+                h2c_int_cntr: AtomicU64::new(0),
+            })
+        } else {
+            Ok(Self {
+                tlkm_file: tlkm_file.clone(),
+                memory: Mutex::new(memory.clone()),
+                engine_offset: offset,
+                to_dev_buffer: write_map,
+                from_dev_buffer: read_map,
+                read_int: Interrupt::new(tlkm_file, read_interrupt, false).context(ErrorInterruptSnafu)?,
+                write_int: Interrupt::new(tlkm_file, write_interrupt, false).context(ErrorInterruptSnafu)?,
+                c2h_st_int: Some(Interrupt::new(tlkm_file, c2h_interrupt, false).context(ErrorInterruptSnafu)?),
+                h2c_st_int: Some(Interrupt::new(tlkm_file, h2c_interrupt, false).context(ErrorInterruptSnafu)?),
+                write_out: Queue::new(),
+                write_cntr: AtomicU64::new(0),
+                write_int_cntr: AtomicU64::new(0),
+                read_int_cntr: AtomicU64::new(0),
+                read_cntr: AtomicU64::new(0),
+                c2h_cntr: AtomicU64::new(0),
+                c2h_int_cntr: AtomicU64::new(0),
+                h2c_out: Queue::new(),
+                h2c_cntr: AtomicU64::new(0),
+                h2c_int_cntr: AtomicU64::new(0),
+            })
+        }
     }
 
     /// Enqueue a DMA transfer in the DMA engine
@@ -194,6 +241,7 @@ impl UserSpaceDMA {
         addr_device: DeviceAddress,
         size: DeviceSize,
         from_device: bool,
+        stream: bool,
     ) {
         let mut offset = (self.engine_offset as usize) as isize;
         unsafe {
@@ -216,22 +264,43 @@ impl UserSpaceDMA {
         offset = (self.engine_offset as usize + 0x20) as isize;
         unsafe {
             let ptr = dma_engine_memory.as_ptr().offset(offset);
-            write_volatile(ptr as *mut u64, if from_device { 0x1000_1000 } else { 0x1000_0001 });
+            let cmd = if stream {
+                if from_device { 0x0110_1000 } else { 0x0110_0001 }
+            } else {
+                if from_device { 0x1000_1000 } else { 0x1000_0001 }
+            };
+            write_volatile(ptr as *mut u64, cmd);
         };
     }
 
-    fn wait_for_write(&self, next: bool, cntr: u64) -> Result<()> {
+    fn wait_for_write(&self, next: bool, cntr: u64, stream: bool) -> Result<()> {
+        let (int_cntr, intr, queue) = if stream {
+            (
+                &self.h2c_int_cntr,
+                match &self.h2c_st_int {
+                    Some(i) => i,
+                    None => return Err(StreamsNotSupported {}),
+                },
+                &self.h2c_out
+            )
+        } else {
+            (
+                &self.write_int_cntr,
+                &self.write_int,
+                &self.write_out
+            )
+        };
+
         if !next || self.to_dev_buffer.is_empty() {
             while (next && self.to_dev_buffer.is_empty())
-                || (!next && self.write_int_cntr.load(Ordering::Relaxed) <= cntr)
+                || (!next && int_cntr.load(Ordering::Relaxed) <= cntr)
             {
-                let n = self
-                    .write_int
+                let n = intr
                     .check_for_interrupt()
                     .context(ErrorInterruptSnafu)?;
                 for _ in 0..n {
-                    self.write_int_cntr.fetch_add(1, Ordering::Relaxed);
-                    match self.write_out.pop() {
+                    int_cntr.fetch_add(1, Ordering::Relaxed);
+                    match queue.pop() {
                         Some(buf) => self.to_dev_buffer.push(buf),
                         None => return Err(Error::TooManyInterrupts {}),
                     }
@@ -246,12 +315,22 @@ impl UserSpaceDMA {
     /// Update the read completion counter
     ///
     /// Uses the eventfd interrupt mechanism
-    fn update_interrupts(&self) -> Result<()> {
-        let n = self
-            .read_int
+    fn update_interrupts(&self, stream: bool) -> Result<()> {
+        let (intr, int_cntr) = if stream {
+            (
+                match &self.c2h_st_int {
+                    Some(i) => i,
+                    None => return Err(StreamsNotSupported {}),
+                },
+                &self.c2h_int_cntr
+            )
+        } else {
+            (&self.read_int, &self.read_int_cntr)
+        };
+        let n = intr
             .check_for_interrupt()
             .context(ErrorInterruptSnafu)?;
-        self.read_int_cntr.fetch_add(n, Ordering::Relaxed);
+        int_cntr.fetch_add(n, Ordering::Relaxed);
 
         Ok(())
     }
@@ -281,10 +360,16 @@ impl UserSpaceDMA {
         &self,
         used_buffers: &mut Vec<(u64, Option<DMABuffer>, usize, usize)>,
         data: &mut [u8],
+        stream: bool,
     ) -> Result<()> {
-        let read_int_cntr_used = self.read_int_cntr.load(Ordering::Relaxed);
+        // let read_int_cntr_used = self.read_int_cntr.load(Ordering::Relaxed);
+        let int_cntr_used = if stream {
+            self.c2h_int_cntr.load(Ordering::Relaxed)
+        } else {
+            self.read_int_cntr.load(Ordering::Relaxed)
+        };
         for (cntr, buf, offset, len) in used_buffers.iter_mut() {
-            if *cntr < read_int_cntr_used {
+            if *cntr < int_cntr_used {
                 let buf_taken = buf.take();
                 if let Some(b) = buf_taken {
                     self.copyback_buffer(data, &b, *offset, *len)?;
@@ -295,20 +380,11 @@ impl UserSpaceDMA {
             }
         }
 
-        used_buffers.retain(|(x, _y, _z, _a)| *x >= read_int_cntr_used);
+        used_buffers.retain(|(x, _y, _z, _a)| *x >= int_cntr_used);
         Ok(())
     }
-}
 
-impl DMAControl for UserSpaceDMA {
-    fn copy_to(&self, data: &[u8], ptr: DeviceAddress) -> Result<()> {
-        trace!(
-            "Copy Host({:?}) -> Device(0x{:x}) ({} Bytes)",
-            data.as_ptr(),
-            ptr,
-            data.len()
-        );
-
+    fn do_copy_to(&self, data: &[u8], ptr: DeviceAddress, stream: bool) -> Result<()> {
         let mut ptr_buffer = 0;
         let mut ptr_device = ptr;
         let mut btt = data.len();
@@ -319,7 +395,7 @@ impl DMAControl for UserSpaceDMA {
             let mut buffer = loop {
                 match self.to_dev_buffer.steal() {
                     Steal::Success(buffer) => break buffer,
-                    Steal::Empty => self.wait_for_write(true, 0)?,
+                    Steal::Empty => self.wait_for_write(true, 0, stream)?,
                     Steal::Retry => (),
                 }
             };
@@ -333,7 +409,7 @@ impl DMAControl for UserSpaceDMA {
                         buffer_id: buffer.id,
                     },
                 )
-                .context(DMABufferAllocateSnafu)?;
+                    .context(DMABufferAllocateSnafu)?;
             };
 
             buffer.mapped[0..btt_this].copy_from_slice(&data[ptr_buffer..ptr_buffer + btt_this]);
@@ -345,41 +421,45 @@ impl DMAControl for UserSpaceDMA {
                         buffer_id: buffer.id,
                     },
                 )
-                .context(DMABufferAllocateSnafu)?;
+                    .context(DMABufferAllocateSnafu)?;
             };
 
             {
                 let dma_engine_memory = self.memory.lock()?;
                 let addr = buffer.addr;
-                self.write_out.push(buffer);
+                if stream {
+                    self.h2c_out.push(buffer);
+                } else {
+                    self.write_out.push(buffer);
+                }
                 self.schedule_dma_transfer(
                     &dma_engine_memory,
                     addr,
                     ptr_device,
                     btt_this as u64,
                     false,
+                    stream
                 );
-                highest_used = self.write_cntr.fetch_add(1, Ordering::Relaxed);
+                highest_used = if stream {
+                    self.h2c_cntr.fetch_add(1, Ordering::Relaxed)
+                } else {
+                    self.write_cntr.fetch_add(1, Ordering::Relaxed)
+                }
             }
 
             btt -= btt_this;
             ptr_buffer += btt_this;
-            ptr_device += btt_this as u64;
+            if !stream {
+                ptr_device += btt_this as u64;
+            }
         }
 
-        self.wait_for_write(false, highest_used)?;
+        self.wait_for_write(false, highest_used, stream)?;
 
         Ok(())
     }
 
-    fn copy_from(&self, ptr: DeviceAddress, data: &mut [u8]) -> Result<()> {
-        trace!(
-            "Copy Device(0x{:x}) -> Host({:?}) ({} Bytes)",
-            ptr,
-            data.as_mut_ptr(),
-            data.len()
-        );
-
+    fn do_copy_from(&self, ptr: DeviceAddress, data: &mut [u8], stream: bool) -> Result<()> {
         let mut ptr_buffer = 0;
         let mut ptr_device = ptr;
         let mut btt = data.len();
@@ -388,8 +468,8 @@ impl DMAControl for UserSpaceDMA {
 
         while btt > 0 {
             let buffer = loop {
-                self.update_interrupts()?;
-                self.release_buffer(&mut used_buffers, data)?;
+                self.update_interrupts(stream)?;
+                self.release_buffer(&mut used_buffers, data, stream)?;
 
                 match self.from_dev_buffer.steal() {
                     Steal::Success(buffer) => break buffer,
@@ -407,7 +487,7 @@ impl DMAControl for UserSpaceDMA {
                         buffer_id: buffer.id,
                     },
                 )
-                .context(DMABufferAllocateSnafu)?;
+                    .context(DMABufferAllocateSnafu)?;
             };
 
             let cntr = {
@@ -418,23 +498,74 @@ impl DMAControl for UserSpaceDMA {
                     ptr_device,
                     btt_this as u64,
                     true,
+                    stream
                 );
-                self.read_cntr.fetch_add(1, Ordering::Relaxed)
+                if stream {
+                    self.c2h_cntr.fetch_add(1, Ordering::Relaxed)
+                } else {
+                    self.read_cntr.fetch_add(1, Ordering::Relaxed)
+                }
             };
 
             used_buffers.push((cntr, Some(buffer), ptr_buffer, btt_this));
 
             btt -= btt_this;
             ptr_buffer += btt_this;
-            ptr_device += btt_this as u64;
+            if !stream {
+                ptr_device += btt_this as u64;
+            }
         }
 
         while !used_buffers.is_empty() {
-            self.release_buffer(&mut used_buffers, data)?;
-            self.update_interrupts()?;
+            self.release_buffer(&mut used_buffers, data, stream)?;
+            self.update_interrupts(stream)?;
             thread::yield_now();
         }
 
         Ok(())
+    }
+}
+
+impl DMAControl for UserSpaceDMA {
+    fn copy_to(&self, data: &[u8], ptr: DeviceAddress) -> Result<()> {
+        trace!(
+            "Copy Host({:?}) -> Device(0x{:x}) ({} Bytes)",
+            data.as_ptr(),
+            ptr,
+            data.len()
+        );
+
+        self.do_copy_to(data, ptr, false)
+    }
+
+    fn copy_from(&self, ptr: DeviceAddress, data: &mut [u8]) -> Result<()> {
+        trace!(
+            "Copy Device(0x{:x}) -> Host({:?}) ({} Bytes)",
+            ptr,
+            data.as_mut_ptr(),
+            data.len()
+        );
+
+        self.do_copy_from(ptr, data, false)
+    }
+
+    fn h2c_stream(&self, data: &[u8]) -> Result<()> {
+        trace!(
+            "H2C Stream from Host({:?}) ({} Bytes)",
+            data.as_ptr(),
+            data.len()
+        );
+
+        self.do_copy_to(data, 0, true)
+    }
+
+    fn c2h_stream(&self, data: &mut [u8]) -> Result<()> {
+        trace!(
+            "C2H Stream to Host({:?}) ({} Bytes)",
+            data.as_mut_ptr(),
+            data.len()
+        );
+
+        self.do_copy_from(0, data, true)
     }
 }
