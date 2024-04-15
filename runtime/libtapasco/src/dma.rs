@@ -25,7 +25,6 @@ use crate::tlkm::{tlkm_copy_cmd_from, tlkm_ioctl_svm_migrate_to_dev, tlkm_ioctl_
 use crate::tlkm::tlkm_copy_cmd_to;
 use crate::tlkm::tlkm_ioctl_copy_from;
 use crate::tlkm::tlkm_ioctl_copy_to;
-use crate::vfio::*;
 use core::fmt::Debug;
 use memmap::MmapMut;
 use snafu::ResultExt;
@@ -172,15 +171,11 @@ impl DMAControl for DriverDMA {
 }
 
 #[derive(Debug, Getters)]
-pub struct VfioDMA {
-    vfio_dev: Arc<VfioDev>,
-}
+pub struct VfioDMA {}
 
 impl VfioDMA {
-    pub fn new(vfio_dev: &Arc<VfioDev>) -> Self {
-        Self {
-            vfio_dev: vfio_dev.clone(),
-        }
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
