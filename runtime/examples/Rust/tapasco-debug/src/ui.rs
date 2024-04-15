@@ -123,12 +123,12 @@ fn run_event_loop<B: Backend>(app: &mut App, terminal: &mut Terminal<B>) -> Resu
                         // Press 'Shift+Tab' to switch backward through tabs
                         KeyEvent {
                             modifiers: KeyModifiers::SHIFT,
-                            code: KeyCode::BackTab,
+                            code: KeyCode::BackTab, ..
                         } => app.previous_tab(),
                         // without any modifiers
                         KeyEvent {
                             modifiers: KeyModifiers::NONE,
-                            code,
+                            code, ..
                         } => match code {
                             // Press 'q' to quit application
                             KeyCode::Char('q') => return Ok(()),

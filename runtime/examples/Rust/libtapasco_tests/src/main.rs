@@ -11,7 +11,7 @@ extern crate clap;
 extern crate uom;
 
 use average::{concatenate, Estimate, Max, MeanWithError, Min};
-use clap::{Command, Arg, ArgMatches};
+use clap::{Command, Arg, ArgMatches, ArgAction};
 use crossbeam::thread;
 use indicatif::{HumanBytes, ProgressBar, ProgressStyle};
 use itertools::Itertools;
@@ -189,12 +189,12 @@ fn benchmark_counter(m: &ArgMatches) -> Result<()> {
         };
 
         let x_l = Arc::new(x);
-        let iterations: usize = m.value_of_t("iterations").unwrap();
-        let mut num_threads = m.value_of_t("threads").unwrap();
+        let iterations: usize = *m.get_one("iterations").unwrap();
+        let mut num_threads = *m.get_one("threads").unwrap();
         if num_threads == -1 {
             num_threads = num_cpus::get() as i32;
         }
-        let pb_step: usize = m.value_of_t("pb_step").unwrap();
+        let pb_step: usize = *m.get_one("pb_step").unwrap();
         println!(
             "Starting {} thread benchmark with {} iterations and {} step.",
             num_threads, iterations, pb_step
@@ -205,7 +205,7 @@ fn benchmark_counter(m: &ArgMatches) -> Result<()> {
             let iterations_cur = iterations_per_threads * cur_threads as usize;
 
             let mut pb = ProgressBar::new(iterations_cur as u64);
-            if m.is_present("pb_disable") {
+            if *m.get_one("pb_disable").unwrap() {
                 pb = ProgressBar::hidden();
             }
             pb.tick();
@@ -261,8 +261,8 @@ fn latency_benchmark(m: &ArgMatches) -> Result<()> {
         println!("Counter running with {:?} MHz.", design_mhz);
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInitSnafu {})?;
-        let mut iterations = m.value_of_t("iterations").unwrap();
-        let max_step = m.value_of_t("steps").unwrap();
+        let mut iterations = *m.get_one("iterations").unwrap();
+        let max_step = *m.get_one("steps").unwrap();
         println!("Starting benchmark.");
 
         let counter_id = match x.get_pe_id("esa.cs.tu-darmstadt.de:hls:counter:0.9") {
@@ -559,17 +559,17 @@ fn benchmark_copy(m: &ArgMatches) -> Result<()> {
         x.change_access(tapasco::tlkm::tlkm_access::TlkmAccessExclusive)
             .context(DeviceInitSnafu)?;
         let x_l = Arc::new(x);
-        let max_size_power: u32 = m.value_of_t("max_bytes").unwrap();
+        let max_size_power: u32 = *m.get_one("max_bytes").unwrap();
         let max_size = usize::pow(2, max_size_power);
 
-        let total_bytes_power: u32 = m.value_of_t("total_bytes").unwrap();
+        let total_bytes_power: u32 = *m.get_one("total_bytes").unwrap();
         let total_bytes = usize::pow(2, total_bytes_power);
 
-        let mut num_threads = m.value_of_t("threads").unwrap();
+        let mut num_threads = *m.get_one("threads").unwrap();
         if num_threads == -1 {
             num_threads = num_cpus::get() as i32;
         }
-        let _pb_step: usize = m.value_of_t("pb_step").unwrap();
+        let _pb_step: usize = *m.get_one("pb_step").unwrap();
         println!(
             "Starting {} thread transfer benchmark with maximum of {} per transfer and total {}.",
             num_threads,
@@ -589,9 +589,9 @@ fn benchmark_copy(m: &ArgMatches) -> Result<()> {
                     let mut pb = ProgressBar::new(total_bytes_cur as u64);
                     pb.set_style(
                         ProgressStyle::default_bar()
-                            .template("{wide_bar} {bytes}/{total_bytes} {bytes_per_sec}"),
+                            .template("{wide_bar} {bytes}/{total_bytes} {bytes_per_sec}").unwrap(),
                     );
-                    if m.is_present("pb_disable") {
+                    if *m.get_one("pb_disable").unwrap() {
                         pb = ProgressBar::hidden();
                     }
                     pb.tick();
@@ -725,6 +725,8 @@ fn main() -> Result<()> {
                     Arg::new("pb_disable")
                         .short('p')
                         .long("pb_disable")
+                        .num_args(0)
+                        .action(ArgAction::SetTrue)
                         .help("Disables the progress bar to avoid overhead."),
                 )
                 .arg(
@@ -732,7 +734,8 @@ fn main() -> Result<()> {
                         .short('s')
                         .long("pb_step")
                         .help("Step size for the progress bar.")
-                        .takes_value(true)
+                        .num_args(1)
+                        .value_parser(clap::value_parser!(usize))
                         .default_value("1000"),
                 )
                 .arg(
@@ -740,7 +743,8 @@ fn main() -> Result<()> {
                         .short('m')
                         .long("max_bytes")
                         .help("Maximum number of bytes in a single transfer transfer log_2.")
-                        .takes_value(true)
+                        .num_args(1)
+                        .value_parser(clap::value_parser!(u32))
                         .default_value("24"),
                 )
                 .arg(
@@ -748,7 +752,8 @@ fn main() -> Result<()> {
                         .short('b')
                         .long("total_bytes")
                         .help("Total number of bytes to transfer transfer log_2.")
-                        .takes_value(true)
+                        .num_args(1)
+                        .value_parser(clap::value_parser!(u32))
                         .default_value("30"),
                 )
                 .arg(
@@ -756,7 +761,8 @@ fn main() -> Result<()> {
                         .short('t')
                         .long("threads")
                         .help("How many threads should be used? (-1 for auto)")
-                        .takes_value(true)
+                        .num_args(1)
+                        .value_parser(clap::value_parser!(i32))
                         .default_value("-1"),
                 ),
         )
@@ -767,6 +773,8 @@ fn main() -> Result<()> {
                     Arg::new("pb_disable")
                         .short('p')
                         .long("pb_disable")
+                        .num_args(0)
+                        .action(ArgAction::SetTrue)
                         .help("Disables the progress bar to avoid overhead."),
                 )
                 .arg(
@@ -774,7 +782,8 @@ fn main() -> Result<()> {
                         .short('s')
                         .long("pb_step")
                         .help("Step size for the progress bar.")
-                        .takes_value(true)
+                        .num_args(1)
+                        .value_parser(clap::value_parser!(usize))
                         .default_value("1000"),
                 )
                 .arg(
@@ -782,7 +791,8 @@ fn main() -> Result<()> {
                         .short('i')
                         .long("iterations")
                         .help("How many counter iterations.")
-                        .takes_value(true)
+                        .num_args(1)
+                        .value_parser(clap::value_parser!(usize))
                         .default_value("100000"),
                 )
                 .arg(
@@ -790,7 +800,8 @@ fn main() -> Result<()> {
                         .short('t')
                         .long("threads")
                         .help("How many threads should be used? (-1 for auto)")
-                        .takes_value(true)
+                        .num_args(1)
+                        .value_parser(clap::value_parser!(i32))
                         .default_value("-1"),
                 ),
         )
@@ -802,7 +813,8 @@ fn main() -> Result<()> {
                         .short('s')
                         .long("steps")
                         .help("Testing from 2**0 to 2**s.")
-                        .takes_value(true)
+                        .num_args(1)
+                        .value_parser(clap::value_parser!(u32))
                         .default_value("28"),
                 )
                 .arg(
@@ -810,7 +822,8 @@ fn main() -> Result<()> {
                         .short('i')
                         .long("iterations")
                         .help("How many counter iterations.")
-                        .takes_value(true)
+                        .num_args(1)
+                        .value_parser(clap::value_parser!(usize))
                         .default_value("1000"),
                 ),
         )
