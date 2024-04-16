@@ -182,10 +182,25 @@ The Shared Virtual Memory (SVM) extensions is documented [here](tapasco-svm.md).
 
 ```
 AI-Engine {
-  "freq": -1 | <MHz> # Frequency of the AI engine
-  "adf": /path/to/libadf.a
+  "freq": -1 | <MHz>, # Frequency of the AI engine
+  "adf": /path/to/libadf.a,
   <AIE stream name>: <PE interface name> # supports wildcard matching for PE interface
 }
 ```
 
 If no explicit stream connections are given in the plugin options, the plugin tries to match streams according to direction and datawidth. Please check the log file for the actual result. **Note**: Only Vivado 2023.1 and newer is supported for Versal AI Engines.
+
+#### DMA Streaming
+
+The DMA streaming feature allows to directly stream data from the DMA engine into the user PE, and the other way round. The user PE may provide standard AXI4 stream interfaces. The interface connections are specified in the feature properties as follows:
+
+```
+DMA-Streaming {
+  "master_port": <port_name>,
+  "slave_port": <port_name>
+}
+```
+
+In host software, use the ```makeInputStream()``` and ```makeOutputStream()``` wrapper of the C++ API, or the ```DataTransferStream``` parameter in Rust.
+
+**Note**: Currently the feature only supports one input and one output stream.
