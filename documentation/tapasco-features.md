@@ -182,8 +182,8 @@ The Shared Virtual Memory (SVM) extensions is documented [here](tapasco-svm.md).
 
 ```
 AI-Engine {
-  "freq": -1 | <MHz> # Frequency of the AI engine
-  "adf": /path/to/libadf.a
+  "freq": -1 | <MHz>, # Frequency of the AI engine
+  "adf": /path/to/libadf.a,
   <AIE stream name>: <PE interface name> # supports wildcard matching for PE interface
 }
 ```
