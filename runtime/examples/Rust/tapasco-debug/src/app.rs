@@ -172,7 +172,7 @@ impl<'a> App<'a> {
         bitstream_info += &format!(
             "Bitstream generated at: {} ({})\n\n",
             if let Ok(i) = tlkm_device.status().timestamp.try_into() {
-                format!("{}", Utc.timestamp(i, 0).format("%Y-%m-%d"))
+                format!("{}", Utc.timestamp_opt(i, 0).unwrap().format("%Y-%m-%d"))
             } else {
                 "the future".to_string()
             },

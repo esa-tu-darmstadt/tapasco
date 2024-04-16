@@ -471,7 +471,7 @@ impl Device {
                 allocator: Mutex::new(Box::new(
                     VfioAllocator::new(&vfio_dev).context(AllocatorSnafu)?,
                 )),
-                dma: Box::new(VfioDMA::new(&vfio_dev)),
+                dma: Box::new(VfioDMA::new()),
             }));
         } else if name == "sim" {
             info!("SIM DEVICE FOUND!");

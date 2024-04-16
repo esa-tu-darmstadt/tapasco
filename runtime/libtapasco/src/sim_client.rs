@@ -39,6 +39,7 @@ use crate::protos::simcalls::{
 use crate::protos::status;
 use crate::sim_client::Error::*;
 use std::env;
+use prost::DecodeError;
 
 
 #[derive(Debug, Snafu)]
@@ -75,6 +76,9 @@ pub enum Error {
 
     #[snafu(display("Error parsing port number: {}", source))]
     PortParseError { source: <u32 as std::str::FromStr>::Err },
+
+    #[snafu(display("Error parsing SimResponseType: {}", source))]
+    ResponseParseError { source: DecodeError },
 }
 type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -106,18 +110,17 @@ impl SimClient {
         let response = self.rt.block_on(client.write_platform(request)).context(RequestSnafu)?;
 
         let inner = response.into_inner();
-        match SimResponseType::from_i32(inner.r#type) {
-            Some(SimResponseType::Okay) => match inner.response_payload {
+        match SimResponseType::try_from(inner.r#type).context(ResponseParseSnafu)? {
+            SimResponseType::Okay => match inner.response_payload {
                 Some(ResponsePayload::Void(void)) => Ok(void),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "Void".to_string()}),
                 None => Err(ResponseNone {expected: "Void".to_string()}),
             },
-            Some(SimResponseType::Error) => match inner.response_payload {
+            SimResponseType::Error => match inner.response_payload {
                 Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
                 _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x => Err(ResponseType {t: x})
         }
     }
 
@@ -129,18 +132,17 @@ impl SimClient {
         let response = self.rt.block_on(client.read_platform(request)).context(RequestSnafu)?;
 
         let inner = response.into_inner();
-        let range = match SimResponseType::from_i32(inner.r#type) {
-            Some(SimResponseType::Okay) => match inner.response_payload {
+        let range = match SimResponseType::try_from(inner.r#type).context(ResponseParseSnafu)? {
+            SimResponseType::Okay => match inner.response_payload {
                 Some(ResponsePayload::ReadPlatformResponse(response)) => Ok(response.value),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "ReadPlatformResponse".to_string()}),
                 None => Err(ResponseNone {expected: "ReadPlatformResponse".to_string()}),
             },
-            Some(SimResponseType::Error) => match inner.response_payload {
+            SimResponseType::Error => match inner.response_payload {
                 Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
                 _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x => Err(ResponseType {t: x})
         }?;
         if range.len() as u32 != num_bytes {
             Err(WrongResponseLength {})
@@ -177,18 +179,17 @@ impl SimClient {
         let response = self.rt.block_on(client.read_memory(request)).context(RequestSnafu)?;
 
         let inner = response.into_inner();
-        match SimResponseType::from_i32(inner.r#type) {
-            Some(SimResponseType::Okay) => match inner.response_payload {
+        match SimResponseType::try_from(inner.r#type).context(ResponseParseSnafu)? {
+            SimResponseType::Okay => match inner.response_payload {
                 Some(ResponsePayload::ReadMemoryResponse(response)) => Ok(response.value),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "ReadMemoryResponse".to_string()}),
                 None => Err(ResponseNone {expected: "ReadMemoryResponse".to_string()}),
             },
-            Some(SimResponseType::Error) => match inner.response_payload {
+            SimResponseType::Error => match inner.response_payload {
                 Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
                 _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x => Err(ResponseType {t: x})
         }
     }
 
@@ -212,18 +213,17 @@ impl SimClient {
         let response = self.rt.block_on(client.write_memory(request)).context(RequestSnafu)?;
 
         let inner = response.into_inner();
-        match SimResponseType::from_i32(inner.r#type) {
-            Some(SimResponseType::Okay) => match inner.response_payload {
+        match SimResponseType::try_from(inner.r#type).context(ResponseParseSnafu)? {
+            SimResponseType::Okay => match inner.response_payload {
                 Some(ResponsePayload::Void(void)) => Ok(void),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "Void".to_string()}),
                 None => Err(ResponseNone {expected: "Void".to_string()}),
             },
-            Some(SimResponseType::Error) => match inner.response_payload {
+            SimResponseType::Error => match inner.response_payload {
                 Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
                 _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x => Err(ResponseType {t: x})
         }
     }
 
@@ -233,18 +233,17 @@ impl SimClient {
         let response = self.rt.block_on(client.register_interrupt(request)).context(RequestSnafu)?;
 
         let inner = response.into_inner();
-        match SimResponseType::from_i32(inner.r#type) {
-            Some(SimResponseType::Okay) => match inner.response_payload {
+        match SimResponseType::try_from(inner.r#type).context(ResponseParseSnafu)? {
+            SimResponseType::Okay => match inner.response_payload {
                 Some(ResponsePayload::Void(void)) => Ok(void),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "Void".to_string()}),
                 None => Err(ResponseNone {expected: "Void".to_string()}),
             },
-            Some(SimResponseType::Error) => match inner.response_payload {
+            SimResponseType::Error => match inner.response_payload {
                 Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
                 _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x => Err(ResponseType {t: x})
         }
     }
 
@@ -254,18 +253,17 @@ impl SimClient {
         let response = self.rt.block_on(client.deregister_interrupt(request)).context(RequestSnafu)?;
 
         let inner = response.into_inner();
-        match SimResponseType::from_i32(inner.r#type) {
-            Some(SimResponseType::Okay) => match inner.response_payload {
+        match SimResponseType::try_from(inner.r#type).context(ResponseParseSnafu)? {
+            SimResponseType::Okay => match inner.response_payload {
                 Some(ResponsePayload::Void(void)) => Ok(void),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "Void".to_string()}),
                 None => Err(ResponseNone {expected: "Void".to_string()}),
             },
-            Some(SimResponseType::Error) => match inner.response_payload {
+            SimResponseType::Error => match inner.response_payload {
                 Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
                 _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x => Err(ResponseType {t: x})
         }
     }
 
@@ -275,18 +273,17 @@ impl SimClient {
         let response = self.rt.block_on(client.get_status(request)).context(RequestSnafu)?;
         let inner = response.into_inner();
 
-        match SimResponseType::from_i32(inner.r#type) {
-            Some(SimResponseType::Okay) => match inner.response_payload {
+        match SimResponseType::try_from(inner.r#type).context(ResponseParseSnafu)? {
+            SimResponseType::Okay => match inner.response_payload {
                 Some(ResponsePayload::Status(status)) => Ok(status),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "Status".to_string()}),
                 None => Err(ResponseNone {expected: "Status".to_string()}),
             },
-            Some(SimResponseType::Error) => match inner.response_payload {
+            SimResponseType::Error => match inner.response_payload {
                 Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
                 _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x => Err(ResponseType {t: x})
         }
     }
 
@@ -296,18 +293,17 @@ impl SimClient {
         let response = self.rt.block_on(client.get_interrupt_status(request)).context(RequestSnafu)?;
         let inner = response.into_inner();
 
-        match SimResponseType::from_i32(inner.r#type) {
-            Some(SimResponseType::Okay) => match inner.response_payload {
+        match SimResponseType::try_from(inner.r#type).context(ResponseParseSnafu)? {
+            SimResponseType::Okay => match inner.response_payload {
                 Some(ResponsePayload::InterruptStatus(status)) => Ok(status.interrupts),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "InterruptStatus".to_string()}),
                 None => Err(ResponseNone {expected: "InterruptStatus".to_string()}),
             },
-            Some(SimResponseType::Error) => match inner.response_payload {
+            SimResponseType::Error => match inner.response_payload {
                 Some(ResponsePayload::ErrorReason(reason)) => Err(ServerError {message: reason}),
                 Some(r) => Err(WrongResponsePayload {payload: r, expected: "ErrorReason".to_string()}),
                 _ => Err(ResponseNone {expected: "ErrorReason".to_string()}),
             },
-            x => Err(ResponseType {t: x})
         }
     }
 }

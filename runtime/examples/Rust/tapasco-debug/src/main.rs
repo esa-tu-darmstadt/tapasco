@@ -25,16 +25,16 @@ enum Error {
 
 type Result<T, E = Error> = std::result::Result<T, E>;
 
-use clap::StructOpt;
+use clap::Parser;
 
 // TODO: 1. When issue #296 is fixed, remove the paragraph about the `EMFILE` error.
 /// The interactive `TaPaSCo` Debugger can be used to retrieve information about the loaded
 /// bitstream, monitor other `TaPaSCo` runtimes and write values to the registers of your PEs
 ///
 /// Currently due to a `libtapasco` bug where DMA Buffers, Interrupts, etc. are allocated even in monitor mode, you will have to start your other runtime twice, where the first time the `EMFILE` error is to be expected.
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
 #[structopt(rename_all = "kebab-case")]
-struct Opt {
+struct Args {
     /// The Device ID of the FPGA you want to use if you got more than one
     #[structopt(short = 'd', long = "device", default_value = "0")]
     device_id: u32,
@@ -44,7 +44,7 @@ struct Opt {
     pub subcommand: Command,
 }
 
-#[derive(StructOpt, Debug, PartialEq)]
+#[derive(Parser, Debug, PartialEq)]
 pub enum Command {
     /// Enter Monitor Mode where values cannot be modified, e.g. to monitor another runtime
     Monitor {},
@@ -57,10 +57,10 @@ pub enum Command {
 
 fn init() -> Result<()> {
     // Parse command line arguments:
-    let Opt {
+    let Args {
         device_id,
         subcommand,
-    } = Opt::parse();
+    } = Args::parse();
 
     // Specify the Access Mode as subcommand and setup the App and UI
     ui::setup(&mut app::App::new(device_id, subcommand).context(AppSnafu {})?).context(UISnafu {})
