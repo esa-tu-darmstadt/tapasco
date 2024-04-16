@@ -20,6 +20,12 @@
 if {[tapasco::is_feature_enabled "AI-Engine"]} {
   # add the AI engine cell to the block design
   proc create_custom_subsystem_aie {{args {}}} {
+
+    if {[::tapasco::vivado_is_newer "2023.1"] != 1} {
+      puts "Only Vivado 2023.1 and newer is supported for Versal AI Engines."
+      exit 1
+    }
+
     set aie_clk [create_bd_pin -type "clk" -dir "O" "aie_clk"]
     set axi_aie [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_AIE"]
 

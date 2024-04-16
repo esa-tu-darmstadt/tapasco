@@ -188,4 +188,4 @@ AI-Engine {
 }
 ```
 
-If no explicit stream connections are given in the plugin options, the plugin tries to match streams according to direction and datawidth. Please check the log file for the actual result.
+If no explicit stream connections are given in the plugin options, the plugin tries to match streams according to direction and datawidth. Please check the log file for the actual result. **Note**: Only Vivado 2023.1 and newer is supported for Versal AI Engines.
