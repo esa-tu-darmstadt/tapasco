@@ -83,7 +83,7 @@ object Composer {
   def mkProjectName(c: Composition, t: Target, f: Heuristics.Frequency): String = "%s--%s--%s".format(
     "%s-%s".format(t.ad.name, t.pd.name),
     c.composition map (ce => "%s_%d".format(ce.kernel.replaceAll(" ", "-"), ce.count)) mkString ("_"),
-    "%05.1f".format(f))
+    "%03.0f".format(f))
 
   sealed trait Implementation
 
