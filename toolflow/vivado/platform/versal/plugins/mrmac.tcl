@@ -147,10 +147,13 @@ namespace eval sfpplus {
 
       # create user clock for independent clocking modes
       if {$datawidth == "256"} {
-        set user_clk [get_bd_pins -quiet bufg_gt_0/usrclk]
-        if {[llength $user_clk] == 0} {
+        # older versions have bufg_gt_xx, newer version use mbufg_gt_xx; one will be present
+        if {[llength [get_bd_pins -quiet bufg_gt_0/usrclk]] == 0} {
           set user_clk_tx [get_bd_pins mbufg_gt_0/MBUFG_GT_O1]
           set user_clk_rx [get_bd_pins mbufg_gt_1/MBUFG_GT_O1]
+        } else {
+          set user_clk_tx [get_bd_pins bufg_gt_0/usrclk]
+          set user_clk_rx [get_bd_pins bufg_gt_1/usrclk]
         }
       } elseif {$datawidth == "384"} {
         if {$datawidth == "384"} {
