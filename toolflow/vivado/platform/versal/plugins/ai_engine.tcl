@@ -186,9 +186,8 @@ if {[tapasco::is_feature_enabled "AI-Engine"]} {
     proc aie_pdi {{args {}}} {
       global bitstreamname
       set prjdir [get_property DIRECTORY [current_project]]
-      # write bitstream (without any dot in the name)
-      set bitstreamname_nodot [string map {. _} $bitstreamname]
-      write_device_image -force "$prjdir/${bitstreamname_nodot}.pdi"
+      # store unmodified bitstream
+      exec mv ${bitstreamname}.pdi $prjdir/${bitstreamname}_raw.pdi
 
       # extract AIE binaries
       set bins [list "aie.cdo.reset.bin" "aie.cdo.clock.gating.bin" "aie.cdo.error.handling.bin" "aie.cdo.elfs.bin" "aie.cdo.init.bin" "aie.cdo.enable.bin"]
@@ -200,7 +199,7 @@ if {[tapasco::is_feature_enabled "AI-Engine"]} {
       # add AIE binaries to PDI
       set bif [open "$prjdir/tapasco_aie.bif" "w"]
       puts $bif "all: { image {"
-      puts $bif "{ type=bootimage, file=$prjdir/${bitstreamname_nodot}.pdi }"
+      puts $bif "{ type=bootimage, file=$prjdir/${bitstreamname}_raw.pdi }"
       puts $bif "} image { name=aie_image, id=0x1c000000 { type=cdo"
       foreach fname $bins {
         puts $bif "file = ${swpath}/${fname}"
