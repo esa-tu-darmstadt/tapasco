@@ -54,6 +54,11 @@ namespace eval sfpplus {
   }
 
   proc generate_cores {mode physical_ports} {
+    if {[::tapasco::vivado_is_newer "2023.1"] != 1} {
+      puts "Only Vivado 2023.1 and newer is fully supported for Versal MRMAC. Vivado 2021.2 and 2022.1 require additional timing constraints, 2022.2 fails due to AR73639."
+      exit 1
+    }
+
     if {$mode != "100G"} {
       error "$mode is not supported"
     }
