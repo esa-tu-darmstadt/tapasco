@@ -78,33 +78,6 @@ set_property PACKAGE_PIN L40 [get_ports {pcie_refclk_clk_n[0]}]
 #set_property PACKAGE_PIN E39  [get_ports sys_clk_p]
 #set_property PACKAGE_PIN E40  [get_ports sys_clk_n]
 
-########################################################################
-# Make sure that tool gets the correct DIV value for pipe_clock
-# during synthesis as these DIV pins are dynamic.
-########################################################################
-# PHY CLOCK FREQUENCY
-########################################################################
-# Set Divide By 2
-set_case_analysis 1 [get_pins -filter {REF_PIN_NAME=~DIV[0]} -of_objects [get_cells -hierarchical bufg_gt_pclk]]
-set_case_analysis 0 [get_pins -filter {REF_PIN_NAME=~DIV[1]} -of_objects [get_cells -hierarchical bufg_gt_pclk]]
-set_case_analysis 0 [get_pins -filter {REF_PIN_NAME=~DIV[2]} -of_objects [get_cells -hierarchical bufg_gt_pclk]]
-#
-########################################################################
-# PHY CORE CLOCK should be same as GT QUAD's TXOUTCLK
-########################################################################
-set_case_analysis 0 [get_pins -filter {REF_PIN_NAME=~DIV[0]} -of_objects [get_cells -hierarchical bufg_gt_coreclk]]
-set_case_analysis 0 [get_pins -filter {REF_PIN_NAME=~DIV[1]} -of_objects [get_cells -hierarchical bufg_gt_coreclk]]
-set_case_analysis 0 [get_pins -filter {REF_PIN_NAME=~DIV[2]} -of_objects [get_cells -hierarchical bufg_gt_coreclk]]
-########################################################################
-#
-########################################################################
-# PHY USER CLOCK FREQUENCY
-########################################################################
-set_case_analysis 1 [get_pins -filter {REF_PIN_NAME=~DIV[0]} -of_objects [get_cells -hierarchical bufg_gt_userclk]]
-set_case_analysis 0 [get_pins -filter {REF_PIN_NAME=~DIV[1]} -of_objects [get_cells -hierarchical bufg_gt_userclk]]
-set_case_analysis 0 [get_pins -filter {REF_PIN_NAME=~DIV[2]} -of_objects [get_cells -hierarchical bufg_gt_userclk]]
-##########################################################################################################################
-
 set_multicycle_path -setup -through [get_pins -hierarchical -filter {NAME =~ *phy_pipeline/pcie_ltssm_state_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][*]/Q}] 2
 set_multicycle_path -hold -through [get_pins -hierarchical -filter {NAME =~ *phy_pipeline/pcie_ltssm_state_chain/with_ff_chain.ff_chain_gen[0].sync_rst.ff_chain_reg[1][*]/Q}] 1
 ##########################################################################################################################
@@ -668,4 +641,29 @@ set_property PACKAGE_PIN AV6 [get_ports CH0_DDR4_3_0_odt[0]]
 set_property PACKAGE_PIN AT1 [get_ports CH0_DDR4_3_0_odt[1]]
 set_property PACKAGE_PIN AR5 [get_ports CH0_DDR4_3_0_par]
 set_property PACKAGE_PIN BG6 [get_ports CH0_DDR4_3_0_reset_n]
+
+# QSFP-DD
+create_clock -period 6.400 -name qsfp0_ref_clk_p waveform {0.000 3.200} [get_ports qsfp0_ref_clk_p]
+set_property PACKAGE_PIN AF11 [get_ports qsfp0_ref_clk_p]
+set_property PACKAGE_PIN AF10 [get_ports qsfp0_ref_clk_n]
+
+set_property PACKAGE_PIN AF2  [get_ports qsfp0_rxp_in[0]]
+set_property PACKAGE_PIN AF1  [get_ports qsfp0_rxn_in[0]]
+set_property PACKAGE_PIN AE4  [get_ports qsfp0_rxp_in[1]]
+set_property PACKAGE_PIN AE3  [get_ports qsfp0_rxn_in[1]]
+set_property PACKAGE_PIN AD2  [get_ports qsfp0_rxp_in[2]]
+set_property PACKAGE_PIN AD1  [get_ports qsfp0_rxn_in[2]]
+set_property PACKAGE_PIN AC4  [get_ports qsfp0_rxp_in[3]]
+set_property PACKAGE_PIN AC3  [get_ports qsfp0_rxn_in[3]]
+
+set_property PACKAGE_PIN AF7  [get_ports qsfp0_txp_out[0]]
+set_property PACKAGE_PIN AF6  [get_ports qsfp0_txn_out[0]]
+set_property PACKAGE_PIN AE9  [get_ports qsfp0_txp_out[1]]
+set_property PACKAGE_PIN AE8  [get_ports qsfp0_txn_out[1]]
+set_property PACKAGE_PIN AD7  [get_ports qsfp0_txp_out[2]]
+set_property PACKAGE_PIN AD6  [get_ports qsfp0_txn_out[2]]
+set_property PACKAGE_PIN AC9  [get_ports qsfp0_txp_out[3]]
+set_property PACKAGE_PIN AC8  [get_ports qsfp0_txn_out[3]]
+
+set_max_delay -datapath_only -from [get_clocks -of_objects [get_pins -hierarchical -filter {NAME =~ */*/inst/clock_primitive_inst/MMCME5_inst/CLKOUT0}]] -to [get_clocks -of_objects [get_pins -hierarchical -filter {NAME =~ */gt_quad_base/inst/quad_inst/CH0_TXOUTCLK}]] 2.8
 

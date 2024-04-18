@@ -122,7 +122,21 @@ SFPPLUS {
 }
 ```
 
+### Datawidth (Versal only)
 
+The 100G MRMAC on Versal supports different data width modes. 
+* `256`: lowest-latency without any clock conversion, 256bit at 644.541 MHz _(default)_
+* `384`: 384bit at 390.625 MHz
+* `384segmented`: 384bit at 322.265 MHz, segmented mode (see PG314 for details)
+
+Example:
+
+```
+SFPPLUS {
+  ...
+  "Datawidth": "384"
+}
+```
 
 ## 100G (UltraScale+)
 
