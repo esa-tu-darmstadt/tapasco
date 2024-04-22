@@ -885,28 +885,33 @@
   <spirit:addressSpaces>
     <spirit:addressSpace>
       <spirit:name>M_AXI_MEM</spirit:name>
-      <spirit:range spirit:format="long" spirit:resolve="user" spirit:minimum="4096" spirit:rangeType="long">4294967296</spirit:range>
-      <spirit:width spirit:format="long" spirit:resolve="user">512</spirit:width>
+      <spirit:displayName>M_AXI_MEM</spirit:displayName>
+      <spirit:range spirit:format="bitString" spirit:bitStringLength="33" spirit:minimum="4096" spirit:rangeType="long">0x100000000</spirit:range>
+      <spirit:width spirit:format="long">512</spirit:width>
     </spirit:addressSpace>
   </spirit:addressSpaces>
   <spirit:memoryMaps>
     <spirit:memoryMap>
       <spirit:name>S_AXI_ACC</spirit:name>
+      <spirit:displayName>S_AXI_ACC</spirit:displayName>
       <spirit:addressBlock>
         <spirit:name>reg0</spirit:name>
-        <spirit:baseAddress spirit:format="bitString" spirit:resolve="user" spirit:bitStringLength="32">0</spirit:baseAddress>
-        <spirit:range spirit:format="long" spirit:resolve="user" spirit:minimum="4096" spirit:rangeType="long">140737488355328</spirit:range>
-        <spirit:width spirit:format="long" spirit:resolve="user">512</spirit:width>
+        <spirit:displayName>reg0</spirit:displayName>
+        <spirit:baseAddress spirit:format="bitString" spirit:bitStringLength="1">0x0</spirit:baseAddress>
+        <spirit:range spirit:format="bitString" spirit:bitStringLength="58" spirit:minimum="4096" spirit:rangeType="long">0x200000000000000</spirit:range>
+        <spirit:width spirit:format="long">512</spirit:width>
         <spirit:usage>register</spirit:usage>
       </spirit:addressBlock>
     </spirit:memoryMap>
     <spirit:memoryMap>
       <spirit:name>S_AXI_CTRL</spirit:name>
+      <spirit:displayName>S_AXI_CTRL</spirit:displayName>
       <spirit:addressBlock>
         <spirit:name>reg0</spirit:name>
-        <spirit:baseAddress spirit:format="bitString" spirit:resolve="user" spirit:bitStringLength="32">0</spirit:baseAddress>
-        <spirit:range spirit:format="long" spirit:resolve="user" spirit:minimum="4096" spirit:rangeType="long">256</spirit:range>
-        <spirit:width spirit:format="long" spirit:resolve="user">64</spirit:width>
+        <spirit:displayName>reg0</spirit:displayName>
+        <spirit:baseAddress spirit:format="bitString" spirit:bitStringLength="1">0x0</spirit:baseAddress>
+        <spirit:range spirit:format="bitString" spirit:bitStringLength="13" spirit:minimum="4096" spirit:rangeType="long">0x1000</spirit:range>
+        <spirit:width spirit:format="long">64</spirit:width>
         <spirit:usage>register</spirit:usage>
       </spirit:addressBlock>
     </spirit:memoryMap>
@@ -925,7 +930,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>31c45faf</spirit:value>
+            <spirit:value>2ca92d9a</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -941,7 +946,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>31c45faf</spirit:value>
+            <spirit:value>2ca92d9a</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -1366,7 +1371,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">46</spirit:left>
+            <spirit:left spirit:format="long">56</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -1673,7 +1678,7 @@
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
           <spirit:vector>
-            <spirit:left spirit:format="long">46</spirit:left>
+            <spirit:left spirit:format="long">56</spirit:left>
             <spirit:right spirit:format="long">0</spirit:right>
           </spirit:vector>
           <spirit:wireTypeDefs>
@@ -2633,10 +2638,6 @@
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>src/FIFO1.v</spirit:name>
-        <spirit:fileType>verilogSource</spirit:fileType>
-      </spirit:file>
-      <spirit:file>
         <spirit:name>src/FIFO2.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
@@ -2645,9 +2646,13 @@
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
+        <spirit:name>src/SizedFIFO0.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
         <spirit:name>src/mkTapascoMMU.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_06caa3d8</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_b431fac0</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -2657,15 +2662,15 @@
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>src/FIFO1.v</spirit:name>
-        <spirit:fileType>verilogSource</spirit:fileType>
-      </spirit:file>
-      <spirit:file>
         <spirit:name>src/FIFO2.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/SizedFIFO.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/SizedFIFO0.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
@@ -2687,7 +2692,7 @@
   <spirit:parameters>
     <spirit:parameter>
       <spirit:name>Component_Name</spirit:name>
-      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.Component_Name" spirit:order="1">mkTapascoMMU_v1_0</spirit:value>
+      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.Component_Name" spirit:order="1">TapascoMMU_v1_0</spirit:value>
     </spirit:parameter>
   </spirit:parameters>
   <spirit:vendorExtensions>
@@ -2710,10 +2715,13 @@
         <xilinx:family xilinx:lifeCycle="Production">azynq</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Production">spartan7</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Production">aspartan7</xilinx:family>
+        <xilinx:family xilinx:lifeCycle="Production">virtexu</xilinx:family>
+        <xilinx:family xilinx:lifeCycle="Production">zynquplus</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Production">virtexuplus</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Production">virtexuplusHBM</xilinx:family>
+        <xilinx:family xilinx:lifeCycle="Production">virtexuplus58g</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Production">kintexuplus</xilinx:family>
-        <xilinx:family xilinx:lifeCycle="Production">zynquplus</xilinx:family>
+        <xilinx:family xilinx:lifeCycle="Production">artixuplus</xilinx:family>
         <xilinx:family xilinx:lifeCycle="Production">kintexu</xilinx:family>
       </xilinx:supportedFamilies>
       <xilinx:taxonomies>
@@ -2723,19 +2731,19 @@
       <xilinx:autoFamilySupportLevel>level_1</xilinx:autoFamilySupportLevel>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2022-09-09T11:44:05Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2024-04-18T16:12:55Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="nopcore"/>
       </xilinx:tags>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
-      <xilinx:xilinxVersion>2020.2</xilinx:xilinxVersion>
+      <xilinx:xilinxVersion>2023.2</xilinx:xilinxVersion>
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="8103ad4b"/>
-      <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="5af56533"/>
-      <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="38c50346"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="714a5daa"/>
-      <xilinx:checksum xilinx:scope="ports" xilinx:value="a6c85154"/>
-      <xilinx:checksum xilinx:scope="parameters" xilinx:value="e2a8c579"/>
+      <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="bd43bab3"/>
+      <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="09d485ba"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="fd5895c2"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="600d3cb1"/>
+      <xilinx:checksum xilinx:scope="parameters" xilinx:value="37688c84"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>
 </spirit:component>
