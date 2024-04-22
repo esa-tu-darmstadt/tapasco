@@ -19,7 +19,8 @@
 
 namespace eval platform {
   set platform_dirname "vck5000"
-  set pcie_width "16"
+  set pcie_width "8"
+  set pcie_speed "16.0"
 
   source $::env(TAPASCO_HOME_TCL)/platform/versal/versal_base.tcl
 
