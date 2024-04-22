@@ -30,6 +30,13 @@
     puts "Using PCIe width $pcie_width."
   }
 
+  if { ! [info exists pcie_speed] } {
+    puts "No PCIe speed defined. Assuming 8.0 GT/s"
+    set pcie_speed "8.0"
+  } else {
+    puts "Using PCIe speed $pcie_speed GT/s"
+  }
+
   # scan plugin directory
   foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/platform/versal/plugins" "*.tcl"] {
     source -notrace $f
@@ -114,6 +121,7 @@
   proc create_subsystem_host {} {
     # host subsystem implements the CIPS including DMA
     variable pcie_width
+    variable pcie_speed
 
     set host_aclk [tapasco::subsystem::get_port "host" "clk"]
     set host_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
@@ -167,6 +175,7 @@
 
     # configure CIPS after NoC so that Vivado does not remove ports during BD automation
     set link_width "X$pcie_width"
+    set link_speed "${pcie_speed}_GT/s"
     set_property -dict [list \
       CONFIG.CLOCK_MODE {REF CLK 33.33 MHz} \
       CONFIG.CPM_CONFIG [list \
@@ -175,7 +184,7 @@
         CPM_PCIE0_DSC_BYPASS_WR {1} \
         CPM_PCIE0_FUNCTIONAL_MODE {QDMA} \
         CPM_PCIE0_LANE_REVERSAL_EN {1} \
-        CPM_PCIE0_MAX_LINK_SPEED {8.0_GT/s} \
+        CPM_PCIE0_MAX_LINK_SPEED $link_speed \
         CPM_PCIE0_MODES {DMA} \
         CPM_PCIE0_MODE_SELECTION {Advanced} \
         CPM_PCIE0_MSI_X_OPTIONS {MSI-X_Internal} \
@@ -183,7 +192,7 @@
         CPM_PCIE0_PF0_BAR0_QDMA_SCALE {Megabytes} \
         CPM_PCIE0_PF0_BAR0_QDMA_SIZE {64} \
         CPM_PCIE0_PF0_BAR0_QDMA_TYPE {AXI_Bridge_Master} \
-        CPM_PCIE0_PF0_BAR0_QDMA_64BIT {1} \
+        CPM_PCIE0_PF0_BAR2_QDMA_64BIT {1} \
         CPM_PCIE0_PF0_BAR2_QDMA_ENABLED {1} \
         CPM_PCIE0_PF0_BAR2_QDMA_TYPE {DMA} \
         CPM_PCIE0_PF0_PCIEBAR2AXIBAR_QDMA_0 {0x0000020100000000} \
