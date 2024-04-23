@@ -1,9 +1,9 @@
 #!/bin/bash
 BOARD=${1:-zedboard}
 VERSION=${2:-2019.2}
-IMGSIZE=${3:-5120}
+IMGSIZE=${3:-7534}
 SDCARD=${4:-}
-JOBCOUNT=4
+JOBCOUNT=8
 SCRIPTDIR="$(dirname $(readlink -f $0))"
 DIR="$SCRIPTDIR/$BOARD/$VERSION"
 LOGDIR="$DIR/logs"
@@ -12,9 +12,9 @@ UBOOT_URL="https://github.com/xilinx/u-boot-xlnx.git"
 ATF_URL="https://github.com/Xilinx/arm-trusted-firmware.git"
 ARTYZ7_DTS_URL="https://raw.githubusercontent.com/Digilent/linux-digilent/master/arch/arm/boot/dts/zynq-artyz7.dts"
 ROOTFS_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04.2-base-armhf.tar.gz"
-ROOTFS64_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/20.04/release/ubuntu-base-20.04.2-base-arm64.tar.gz"
+ROOTFS64_URL="http://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/ubuntu-base-22.04.4-base-arm64.tar.gz"
 ROOTFS_TAR_GZ="$DIR/ubuntu_armhf_20.04.tar.gz"
-ROOTFS64_TAR_GZ="$DIR/ubuntu_arm64_20.04.tar.gz"
+ROOTFS64_TAR_GZ="$DIR/ubuntu_arm64_22.04.tar.gz"
 UDEV_RULES="$TAPASCO_HOME/platform/zynq/module/99-tapasco.rules"
 OUTPUT_IMAGE="$DIR/${BOARD}_${VERSION}.img"
 ### LOGFILES ###################################################################
@@ -33,6 +33,7 @@ BUILD_BOOTBIN_LOG="$LOGDIR/build-bootbin.log"
 BUILD_DEVICETREE_LOG="$LOGDIR/build-devicetree.log"
 BUILD_OUTPUT_IMAGE_LOG="$LOGDIR/build-output-image.log"
 PREPARE_SD_LOG="$LOGDIR/prepare-sd.log"
+OMIT_ROOT=false # if running as user, disabling tasks which require root is possible
 
 print_usage() {
 	cat << EOF
@@ -46,6 +47,11 @@ be lost).
 	DEVICE		SD card device, e.g., /dev/sdb (optional)
 EOF
 	exit 1
+}
+
+append_if_not_exists(){
+    #used for modifying kernel configs
+	grep -qxF $1 $2 || echo $1 >> $2
 }
 
 dusudo() {
@@ -106,7 +112,7 @@ check_bootgen() {
 }
 
 check_image_tools() {
-	which kpartx &> /dev/null ||
+	dusudo which kpartx &> /dev/null ||
 		error_exit "Partitioning helper 'kpartx' not found, please install package."
 }
 
@@ -179,6 +185,7 @@ fetch_rootfs() {
 build_u-boot() {
 	if [[ ! -e $DIR/u-boot-xlnx/tools/mkimage ]]; then
 		echo "Building u-boot $VERSION ..."
+		cd $DIR/u-boot-xlnx
 		case $BOARD in
 			"pynq")
 				# based on zybo z7, but requires a few changes
@@ -202,21 +209,23 @@ build_u-boot() {
 				DEVICE_TREE="avnet-ultra96-rev1"
 				;;
 			"zcu102")
-				DEVICE_TREE="zynqmp-zcu102-rev1.0"
+				DEVICE_TREE="zynqmp-zcu102-rev1.1"
+				echo "Applying SD3.0 patch to uboot dts for zcu102"
+                git apply $SCRIPTDIR/misc/zcu102_sd3_0.uboot.dts.patch || echo "Patch failed. Maybe already applied?"
+                #prevent -dirty tag in uboot version
+                touch .scmversion
 				;;
 			*)
 				return $(error_ret "unknown board: $BOARD")
 				;;
 		esac
+        echo "Building u-boot tools with DEVICE_TREE=$DEVICE_TREE"
 		# use common defconfigs introduced with Vivado 2020.1
 		if [[ $ARCH == arm ]]; then
 			DEFCONFIG=xilinx_zynq_virt_defconfig
 		else
 			DEFCONFIG=xilinx_zynqmp_virt_defconfig
 		fi
-		cd $DIR/u-boot-xlnx
-		# disable network boot for all devices
-		echo "# CONFIG_CMD_NET is not set" >> configs/$DEFCONFIG
 		if [[ $ARCH == arm ]]; then
 			echo "CONFIG_OF_EMBED=y" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
 			echo "# CONFIG_OF_SEPARATE is not set" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
@@ -228,7 +237,6 @@ build_u-boot() {
 				return $(error_ret "$LINENO: could not build u-boot tools")
 		fi
 	else
-
 		echo "$DIR/u-boot-xlnx/tools/mkimage already exists, skipping."
 	fi
 }
@@ -237,37 +245,78 @@ build_linux() {
 	if [[ $ARCH != arm64 ]]; then
 		if [[ ! -e $DIR/linux-xlnx/arch/arm/boot/Image ]]; then
 			echo "Building linux $VERSION .."
+            #create tapasco specific defconfig
 			DEFCONFIG=tapasco_zynq_defconfig
-			CONFIGFILE="$SCRIPTDIR/configs/tapasco_zynq_defconfig"
-			cp $CONFIGFILE $DIR/linux-xlnx/arch/arm/configs/ ||
-				return $(error_ret "$LINENO: could not copy config")
+            cp $DIR/linux-xlnx/arch/arm/configs/xilinx_zynq_defconfig $DIR/linux-xlnx/arch/arm/configs/$DEFCONFIG ||
+				return $(error_ret "$LINENO: could not duplicate zynq defconfig")
+
+            CONFIGFILE="$DIR/linux-xlnx/arch/arm/configs/$DEFCONFIG"
+            echo "Adding tapasco specific config options to config file"
+            append_if_not_exists 'CONFIG_LOCALVERSION="-tapasco"' $CONFIGFILE
+			append_if_not_exists "CONFIG_DEFAULT_HOSTNAME=\"$BOARD\"" $CONFIGFILE
+
 			cd $DIR/linux-xlnx
 			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm $DEFCONFIG ||
 				return $(error_ret "$LINENO: could not make defconfig")
 			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm -j $JOBCOUNT ||
 				return $(error_ret "$LINENO: could not build kernel")
+			#works better when doing on host and copying later
+			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm modules_install INSTALL_MOD_PATH=.
 		else
 			echo "$DIR/linux-xlnx/arch/arm/boot/Image already exists, skipping."
 		fi
 	else
 		if [[ ! -e $DIR/linux-xlnx/arch/arm64/boot/Image ]]; then
 			echo "Building linux $VERSION for arm64.."
+            #name for tapasco specific defconfig file
 			DEFCONFIG=tapasco_zynqmp_defconfig
-			CONFIGFILE="$SCRIPTDIR/configs/tapasco_zynqmp_defconfig"
-			cp $CONFIGFILE $DIR/linux-xlnx/arch/arm64/configs/ ||
-				return $(error_ret "$LINENO: could not copy config")
+            #base tapasco specific config on current version of zynqmp defconfig
+			cp $DIR/linux-xlnx/arch/arm64/configs/xilinx_zynqmp_defconfig $DIR/linux-xlnx/arch/arm64/configs/$DEFCONFIG ||
+				return $(error_ret "$LINENO: could not duplicate zynqmp defconfig")
+
+			CONFIGFILE="$DIR/linux-xlnx/arch/arm64/configs/$DEFCONFIG"
+			echo "Adding tapasco specific config options to config file"
+			#add tapasco specific config options to new defconfig file
+			append_if_not_exists 'CONFIG_LOCALVERSION="-tapasco"' $CONFIGFILE
+			append_if_not_exists "CONFIG_DEFAULT_HOSTNAME=\"$BOARD\"" $CONFIGFILE
+			append_if_not_exists 'CONFIG_VFIO=y' $CONFIGFILE
+			append_if_not_exists 'CONFIG_VFIO_PLATFORM=y' $CONFIGFILE
+			append_if_not_exists 'CONFIG_VFIO_IOMMU_TYPE1=y' $CONFIGFILE
+			append_if_not_exists 'CONFIG_ARM_SMMU=y' $CONFIGFILE
+			append_if_not_exists 'CONFIG_USB_RTL8152=y' $CONFIGFILE
+			append_if_not_exists 'CONFIG_USB_USBNET=y' $CONFIGFILE
+			
+			#uncomment the following for debugging
+			# append_if_not_exists 'CONFIG_FTRACE=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_FUNCTION_TRACER=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_FUNCTION_GRAPH_TRACER=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_DYNAMIC_FTRACE=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_STACK_TRACER=y' $CONFIGFILE
+			
 			cd $DIR/linux-xlnx
+            case $BOARD in
+				"zcu102")
+                    echo "Applying SD3.0 patch for zcu102 rev1.1"
+					git apply $SCRIPTDIR/misc/zcu102_sd3_0.linux.dts.patch || echo "Patch failed, maybe already applied?"
+					;;
+			esac
+			if [[ "$VERSION" == "2023.1" || "$VERSION" == "2023.2" ]]; then
+				git apply $SCRIPTDIR/misc/linux_6.1_vfio_patch.patch || error_exit "VFIO patch failed!"
+			fi
+			touch .scmversion #prevent -dirty tag in kernel version
 			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64 $DEFCONFIG ||
 				return $(error_ret "$LINENO: could not make defconfig")
 			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64 -j $JOBCOUNT ||
 				return $(error_ret "$LINENO: could not build kernel")
+            #works better when doing on host and copying later
+            make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64 modules_install INSTALL_MOD_PATH=.
 			case $BOARD in
 				"ultra96v2")
 					cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/avnet-ultra96-rev1.dtb $DIR/devicetree.dtb ||
 						return $(error_ret "$LINENO: could not copy device tree")
 					;;
 				"zcu102")
-					cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/zynqmp-zcu102-rev1.0.dtb $DIR/devicetree.dtb ||
+					cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/zynqmp-zcu102-rev1.1.dtb $DIR/devicetree.dtb ||
 						return $(error_ret "$LINENO: could not copy device tree")
 					;;
 			esac
@@ -285,7 +334,35 @@ build_ssbl() {
 			DTC=$DIR/linux-xlnx/scripts/dtc/dtc
 			make CROSS_COMPILE=$CROSS_COMPILE DTC=$DTC HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" u-boot -j $JOBCOUNT ||
 				return $(error_ret "$LINENO: could not build u-boot")
-		else
+		else	
+            if [[ -z "${DEVICE_TREE}" ]]; then
+                echo "Env variable DEVICE_TREE not set"
+                echo "Setting DEVICE_TREE based on $BOARD"
+                case $BOARD in
+                    "pynq")
+                        DEVICE_TREE="zynq-zybo-z7"
+                        ;;
+                    "zedboard")
+                        DEVICE_TREE="zynq-zed"
+                        ;;
+                    "zc706")
+                        DEVICE_TREE="zynq-zc706"
+                        ;;
+                    "ultra96v2")
+                        DEVICE_TREE="avnet-ultra96-rev1"
+                        ;;
+                    "zcu102")
+                        DEVICE_TREE="zynqmp-zcu102-rev1.1"
+                        ;;
+                    *)
+                        return $(error_ret "unknown board: $BOARD")
+				        ;;
+		        esac
+            else
+			    echo "DEVICE_TREE env variable already set to ${DEVICE_TREE}"
+            fi
+            echo "Building u-boot ssbl for DEVICE_TREE=$DEVICE_TREE"
+            export DEVICE_TREE=$DEVICE_TREE
 			make CROSS_COMPILE=$CROSS_COMPILE -j $JOBCOUNT ||
 				return $(error_ret "$LINENO: could not build u-boot")
 		fi
@@ -301,6 +378,8 @@ build_ssbl() {
 		cp $DIR/u-boot-xlnx/u-boot $DIR/u-boot-xlnx/u-boot.elf ||
 			return $(error_ret "$LINENO: could not copy to $DIR/u-boot-xlnx/u-boot.elf failed")
 	fi
+
+    unset DEVICE_TREE
 }
 
 build_uimage() {
@@ -453,7 +532,11 @@ build_arm_trusted_firmware() {
 	if [[ ! -f $DIR/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf ]]; then
 		echo "Building Arm Trusted Firmware for ZynqMP ..."
 		cd $DIR/arm-trusted-firmware
-		make CROSS_COMPILE=$CROSS_COMPILE PLAT=zynqmp RESET_TO_BL31=1
+		if [[ "$VERSION" == "2023.1" || "$VERSION" == "2023.2" ]]; then
+			make CROSS_COMPILE=aarch64-none-elf- PLAT=zynqmp DEBUG=0 bl31
+		else
+			make CROSS_COMPILE=$CROSS_COMPILE PLAT=zynqmp RESET_TO_BL31=1
+		fi
 	else
 		echo "$BOARD/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf already exists, skipping."
 	fi
@@ -465,7 +548,7 @@ build_bootbin() {
 		if [[ $ARCH == arm64 ]]; then
 			# set brdc_inner bit of the lpd_apu register in the LPD_SLCR module for VFIO/SMMU support
 			cat > $DIR/regs.init << EOF
-				.set. 0xFF41A040 = 0x3;
+.set. 0xFF41A040 = 0x3;
 EOF
 
 			cat > $DIR/bootimage.bif << EOF
@@ -526,9 +609,13 @@ build_devtree() {
 		echo "/include/ \"$SCRIPTDIR/misc/tapasco_zynqmp.dtsi\"" >> $DIR/devicetree.dts
 
 		# re-add label that was lost during compilation, so that we can reference it in dtsi
-		sed -i 's/smmu@fd800000/smmu: smmu@fd800000/' $DIR/devicetree.dts
+		sed -i 's/iommu@fd800000/smmu: iommu@fd800000/' $DIR/devicetree.dts
+		# enable referencing of interrupt controller instead of hardcoded phandle
+		sed -i 's/interrupt-controller@f9010000/gic: interrupt-controller@f9010000/' $DIR/devicetree.dts
 	else
 		echo "/include/ \"$SCRIPTDIR/misc/tapasco.dtsi\"" >> $DIR/devicetree.dts
+
+		sed -i 's/interrupt-controller@f8f01000/intc: interrupt-controller@f8f01000/' $DIR/devicetree.dts
 	fi
 	$DIR/linux-xlnx/scripts/dtc/dtc -I dts -O dtb -o $DIR/devicetree.dtb $DIR/devicetree.dts ||
 		return $(error_ret "$LINENO: could not build devicetree.dtb")
@@ -623,7 +710,7 @@ copy_files_to_boot() {
 			echo >&2 "$LINENO: WARNING: could not copy Image"
 		echo "Copying $DIR/devicetree.dtb to $TO/system.dtb ..."
 		dusudo cp $DIR/devicetree.dtb $TO/system.dtb || echo >&2 "$LINENO: WARNING: could not copy devicetree"
-		if [[ -f uenv/uEnv-$BOARD.txt ]]; then
+		if [[ -f uenv/uEnv-$BOARD.txt && ! -f $DIR/boot.scr ]]; then
 			echo "Copying uenv/uEnv-$BOARD.txt to $TO/uEnv.txt ..."
 			dusudo cp uenv/uEnv-$BOARD.txt $TO/uEnv.txt ||
 				echo >&2 "$LINENO: WARNING: could not copy uEnv.txt"
@@ -659,7 +746,7 @@ copy_files_to_root() {
 	DEV=${1:-${SDCARD}2}
 	TO="$DIR/$(basename $DEV)"
 	mkdir -p $TO || return $(error_ret "$LINENO: could not create $TO")
-	dusudo mount -onoacl $DEV $TO ||
+	dusudo mount $DEV $TO || #remove onoacl on e.g. debian
 		return $(error_ret "$LINENO: could not mount $DEV -> $TO")
 	echo "Extracting rootfs"
 	dusudo sh -c "tar -xpf $LOCAL_FILE -C $TO" ||
@@ -680,9 +767,9 @@ echo 'nameserver 1.1.1.1' >> /etc/resolv.conf
 apt-get update
 apt-get -y upgrade
 # runtime dependencies (without linux-headers)
-DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential python cmake libelf-dev libncurses-dev git rpm
+DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential python3 cmake libelf-dev libncurses-dev git rpm
 # additional tools
-apt-get install -y vim-tiny sudo iproute2 ssh kmod ifupdown net-tools jitterentropy-rngd haveged libssl-dev bc rsync
+apt-get install -y curl flex bison vim-tiny sudo iproute2 ssh kmod ifupdown net-tools jitterentropy-rngd haveged libssl-dev bc rsync protobuf-compiler fdisk
 systemctl enable ssh
 systemctl enable getty@ttyPS0.service
 useradd -G sudo -m -s /bin/bash tapasco
@@ -696,14 +783,22 @@ echo 'iface eth0 inet dhcp' >> /etc/network/interfaces
 
 # prepare header files
 cd /usr/src/linux-headers-*-tapasco/
+make clean
 make scripts
+# recompile scripts needed for custom kernel modules
 make modules_prepare
 make headers_install
-make modules_install
-make clean
-rm -rf source
+# install the previously compiled kernel modules 
+cp -r lib/modules /lib/modules
+cd /lib/modules/*-tapasco
+# remove broken links
+rm -f build
+rm -f source
+#
+ln -s /usr/src/linux-headers-*-tapasco/ build
 
-sudo -u tapasco git clone https://github.com/esa-tu-darmstadt/tapasco.git /home/tapasco/tapasco
+git clone https://github.com/esa-tu-darmstadt/tapasco.git /home/tapasco/tapasco
+chown -R tapasco /home/tapasco/tapasco
 echo '' > /etc/resolv.conf
 EOF"
 	dusudo rm $TO/usr/bin/qemu-*
@@ -737,12 +832,16 @@ check_compiler
 check_xsct
 check_vivado
 check_tapasco
-check_image_tools
 check_chroot
 check_sdcard
-read -p "Enter sudo password: " -s SUDOPW
-[[ -n $SUDOPW ]] || error_exit "sudo password may not be empty"
-dusudo true || error_exit "sudo password seems to be wrong?"
+if [ "$OMIT_ROOT" = false ] ; then
+    read -p "Enter sudo password: " -s SUDOPW
+    [[ -n $SUDOPW ]] || error_exit "sudo password may not be empty"
+    dusudo true || error_exit "sudo password seems to be wrong?"
+fi
+if [ "$OMIT_ROOT" = false ] ; then 
+	check_image_tools
+fi
 mkdir -p $LOGDIR 2> /dev/null
 printf "\nAnd so it begins ...\n"
 ################################################################################
@@ -817,18 +916,23 @@ wait $BUILD_DEVICETREE_OK || error_exit "Building devicetree failed, check log: 
 wait $BUILD_BOOTBIN_OK || error_exit "Building BOOT.BIN failed, check log: $BUILD_BOOTBIN_LOG"
 echo "Done - find BOOT.BIN here: $DIR/BOOT.BIN."
 ################################################################################
-echo "Building image in $OUTPUT_IMAGE (output in $BUILD_OUTPUT_IMAGE_LOG) ..."
-build_output_image $IMGSIZE &> $BUILD_OUTPUT_IMAGE_LOG
-if [[ $? -ne 0 ]]; then
-	rm -f $OUTPUT_IMAGE &> /dev/null
-	error_exit "Building output image failed, check log: $BUILD_OUTPUT_IMAGE_LOG"
-fi
-echo "SD card image ready: $OUTPUT_IMAGE"
-################################################################################
-if [[ -n $SDCARD ]]; then
-	echo "Preparing $SDCARD, this may take a while (output in $PREPARE_SD_LOG) ..."
-	prepare_sd &> $PREPARE_SD_LOG
-	[[ $? -eq 0 ]] || error_exit "Preparing SD card failed, check log: $PREPARE_SD_LOG"
-	sync &&
-		echo "SD card $SDCARD successfully prepared, ready to boot!"
+
+if [ "$OMIT_ROOT" = false ] ; then
+
+    echo "Building image in $OUTPUT_IMAGE (output in $BUILD_OUTPUT_IMAGE_LOG) ..."
+    build_output_image $IMGSIZE &> $BUILD_OUTPUT_IMAGE_LOG
+    if [[ $? -ne 0 ]]; then
+        rm -f $OUTPUT_IMAGE &> /dev/null
+        error_exit "Building output image failed, check log: $BUILD_OUTPUT_IMAGE_LOG"
+    fi
+    echo "SD card image ready: $OUTPUT_IMAGE"
+    ################################################################################
+    if [[ -n $SDCARD ]]; then
+        echo "Preparing $SDCARD, this may take a while (output in $PREPARE_SD_LOG) ..."
+        prepare_sd &> $PREPARE_SD_LOG
+        [[ $? -eq 0 ]] || error_exit "Preparing SD card failed, check log: $PREPARE_SD_LOG"
+        sync &&
+            echo "SD card $SDCARD successfully prepared, ready to boot!"
+    fi
+
 fi
