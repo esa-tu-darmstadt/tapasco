@@ -296,8 +296,8 @@ build_linux() {
 			cd $DIR/linux-xlnx
             case $BOARD in
 				"zcu102")
-                    echo "Applying SD3.0 patch for zcu102 rev1.1"
-					git apply $SCRIPTDIR/misc/zcu102_sd3_0.linux.dts.patch || echo "Patch failed, maybe already applied?"
+                    echo "Applying patch for zcu102 rev1.1 (SD3.0 and iommu)"
+					git apply $SCRIPTDIR/misc/zcu102.dts.patch || echo "Patch failed, maybe already applied?"
 					;;
 			esac
 			if [[ "$VERSION" == "2023.1" || "$VERSION" == "2023.2" ]]; then
