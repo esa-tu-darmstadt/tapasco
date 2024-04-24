@@ -184,6 +184,11 @@ Getting Started - Build a Software-Interface
 3.  Write a C/C++ executable that interfaces with your design accordingly. To get a better understanding of this, you might want to refer to the collection of examples and the corresponding README which is located in `$TAPASCO_HOME/runtime/examples`
 4.  Build and Compile your Software.
 
+Getting Started - Build a Boot Image
+--------------------------------------------
+This repository provides a script to generate boot images for some common AMD Xilinx rSoC boards.
+Refer to the dedicated [README](toolflow/boot) for more information.
+
 Using the Simulation
 --------------------
 1.  Design the Accelerator using HLS/HDL for the platform `sim`.
@@ -199,6 +204,7 @@ Using the Simulation
     - If simulation and software-interface are running on different host, port 4040 can be forwarded via ssh using `ssh -L 4040:localhost:4040 simulation-host` on the host, where the software-interface should run.
 5.  Run your Software
     - Make sure to select the correct TaPaSCo kernel-device in your software when instantiating the `Tapasco` Class/Structure.
+
 
 Acknowledgements
 ----------------

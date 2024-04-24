@@ -1,0 +1,16 @@
+diff --git a/arch/arm64/boot/dts/xilinx/zynqmp-zcu102-rev1.1.dts b/arch/arm64/boot/dts/xilinx/zynqmp-zcu102-rev1.1.dts
+index b6798394f..c3f7264c1 100644
+--- a/arch/arm64/boot/dts/xilinx/zynqmp-zcu102-rev1.1.dts
++++ b/arch/arm64/boot/dts/xilinx/zynqmp-zcu102-rev1.1.dts
+@@ -13,3 +13,11 @@ / {
+ 	model = "ZynqMP ZCU102 Rev1.1";
+ 	compatible = "xlnx,zynqmp-zcu102-rev1.1", "xlnx,zynqmp-zcu102", "xlnx,zynqmp";
+ };
++
++&sdhci1 {
++    /delete-property/ no-1-8-v;
++};
++
++&fpd_dma_chan8 {
++	status = "disabled";
++};

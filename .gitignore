@@ -33,9 +33,11 @@ platform/*/module/modules.order
 platform/zynq/include/platform_dpi.h
 bin/tapasco-debug
 bin/tapasco-benchmark
-boot/pynq
-boot/zc706
-boot/zedboard
+toolflow/boot/ultra96v2/
+toolflow/boot/pynq
+toolflow/boot/zc706
+toolflow/boot/zedboard
+toolflow/boot/zcu102/
 boot/rootfs.img
 boot/uenv/uEnv-pynq.txt
 project/build.properties
