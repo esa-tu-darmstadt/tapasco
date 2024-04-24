@@ -29,7 +29,7 @@ extern crate regex;
 extern crate serde;
 extern crate serde_json;
 
-use clap::{App, AppSettings, Arg};
+use clap::{arg, Command};
 use common_failures::prelude::*;
 use prost::Message;
 use regex::Regex;
@@ -250,27 +250,25 @@ fn write_coe_file(filename: &Path, data: &[u8]) -> Result<()> {
 fn run() -> Result<()> {
     env_logger::init();
 
-    let matches = App::new("json_to_status")
-        .setting(AppSettings::ArgRequiredElseHelp)
+    let matches = Command::new("json_to_status")
+        .arg_required_else_help(true)
         .version("0.1")
         .about("Converts a JSON file describing a TaPaSCo Design into a flatbuffer binary format readable by Vivado as MEM file.")
         .arg(
-            Arg::with_name("INPUT")
+            arg!(<INPUT>)
                 .help("JSON file generated from TaPaSCo design flow")
-                .takes_value(true)
                 .required(true),
         )
         .arg(
-            Arg::with_name("OUTPUT")
+            arg!(<OUTPUT>)
                 .help("Hex encoded file {.coe or .mem} for use in BRAM initialization")
-                .takes_value(true)
                 .required(true),
         )
-        .arg(Arg::with_name("binary").long("--binary").short("-b").help("Output binary representation of ProtoBuf as well."))
+        .arg(arg!(-b --binary).help("Output binary representation of ProtoBuf as well."))
         .get_matches();
 
     let input_file_name = matches
-        .value_of("INPUT")
+        .get_one::<String>("INPUT")
         .ok_or_else(|| JSONToStatusError::MissingInput)?;
     info!("Opening input JSON file {}", input_file_name);
     let json_input = File::open(input_file_name)?;
@@ -474,10 +472,10 @@ fn run() -> Result<()> {
     );
 
     let output_file_name = matches
-        .value_of("OUTPUT")
+        .get_one::<String>("OUTPUT")
         .ok_or_else(|| JSONToStatusError::MissingOutput)?;
 
-    if matches.is_present("binary") {
+    if matches.contains_id("binary") {
         let ofn = format!("{}.bin", output_file_name);
         let ofp = Path::new(&ofn);
         info!("Outputting binary as well to {}", ofn);
