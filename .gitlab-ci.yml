@@ -88,7 +88,7 @@ test_tapasco_fedora_36:
     - ./gradlew buildRPM
   artifacts:
     paths:
-      - toolflow/scala/build/distributions/tapasco-2022-01.x86_64.rpm
+      - toolflow/scala/build/distributions/tapasco-2024-01.x86_64.rpm
 
 build_scala_tapasco_centos_7:
   image: centos:7
@@ -113,7 +113,7 @@ build_scala_tapasco_rockylinux_8:
     - ./gradlew buildRPM
   artifacts:
     paths:
-      - toolflow/scala/build/distributions/tapasco-2022-01.x86_64.rpm
+      - toolflow/scala/build/distributions/tapasco-2024-01.x86_64.rpm
 
 build_scala_tapasco_fedora_36:
   image: fedora:36
@@ -136,7 +136,7 @@ build_scala_tapasco_fedora_36:
     - ./gradlew buildDEB
   artifacts:
     paths:
-      - toolflow/scala/build/distributions/tapasco_2022-01_amd64.deb
+      - toolflow/scala/build/distributions/tapasco_2024-01_amd64.deb
 
 build_scala_tapasco_ubuntu_18_04:
   image: ubuntu:18.04
@@ -386,7 +386,7 @@ tapasco_compose_ubuntu:
     - source $XILINX_VIVADO/settings64.sh
     - apt-get -y update
     - DEBIAN_FRONTEND=noninteractive apt-get -y install libtinfo5 build-essential tzdata
-    - apt -y install ./toolflow/scala/build/distributions/tapasco_2022-01_amd64.deb
+    - apt -y install ./toolflow/scala/build/distributions/tapasco_2024-01_amd64.deb
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
     - tapasco -v hls arrayinit -p pynq
@@ -416,7 +416,7 @@ tapasco_compose_ubuntu:
     - source $XILINX_VIVADO/settings64.sh
     - which vivado
     - which vivado_hls || which vitis_hls
-    - dnf -y install toolflow/scala/build/distributions/tapasco-2022-01.x86_64.rpm
+    - dnf -y install toolflow/scala/build/distributions/tapasco-2024-01.x86_64.rpm
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
     - tapasco hls arrayinit -p $PLATFORM
