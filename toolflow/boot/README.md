@@ -28,7 +28,7 @@ After writing the image to an SDCard and booting up, install Rust and follow the
 ## Notes:
 
   * you might have to add the "noacl" option when mounting the rootfs, depending on distro
-  * you can set `OMIT_ROOT=true` to only go through the steps that do not require root privileges, this can be useful for checking just the build processes
+  * you can edit the `OMIT_ROOT` variable in `generate_boot_image.sh` to `OMIT_ROOT=true` to only go through the steps that do not require root privileges, this can be useful for checking just the build processes
   * the ZCU102 seems to be very picky about the SDCard used, sometimes it refuses to load larger files and u-boot simply prints "`mmc fail to send stop cmd`" or similar when loading the `Image` file
     - if that happens, try editing `bootscr/boot-zcu102.txt` to load the compressed image `Image.gz` before re-generating the `boot.scr` script and make sure to copy `Image.gz` from `linux-xlnx/arch/arm64/boot` into the boot section
 
