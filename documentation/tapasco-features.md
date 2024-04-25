@@ -208,3 +208,7 @@ DMA-Streaming {
 In host software, use the ```makeInputStream()``` and ```makeOutputStream()``` wrapper of the C++ API, or the ```DataTransferStream``` parameter in Rust.
 
 **Note**: Currently the feature only supports one input and one output stream.
+
+#### SFPPLUS
+The configuration for this feature can be found [here](sfpplus.md)
+The VCK5000 has two SFP+ Ports (0 - 1), the PRODESIGN HAWK provides four QSFP-DD Ports (0 - 3).
