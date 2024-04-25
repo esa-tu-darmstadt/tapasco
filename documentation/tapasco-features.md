@@ -174,7 +174,7 @@ The Shared Virtual Memory (SVM) extensions is documented [here](tapasco-svm.md).
 
 #### SFPPLUS
 The configuration for this feature can be found [here](sfpplus.md)
-The Alveo U50/U280 provide(s) one/two SFP+ Ports (0 - 1).
+The Alveo U50/U280 provide(s) one/two QSFP28 Ports (0 - 1).
 
 #### SVM
 
