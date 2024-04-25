@@ -211,4 +211,4 @@ In host software, use the ```makeInputStream()``` and ```makeOutputStream()``` w
 
 #### SFPPLUS
 The configuration for this feature can be found [here](sfpplus.md)
-The VCK5000 has two SFP+ Ports (0 - 1), the PRODESIGN HAWK provides four QSFP-DD Ports (0 - 3).
+The VCK5000 has two QSFP28 Ports (0 - 1), the PRODESIGN HAWK provides four QSFP-DD Ports (0 - 3).
