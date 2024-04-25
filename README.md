@@ -26,7 +26,7 @@ Supported FPGA devices
 ----------------------
 
 * Zynq-based: PYNQ-Z1, ZC706, ZedBoard, Ultra96V2, ZCU102
-* PCIe cards: VC709, NetFPGA-SUME, VCU108, VCU118, VCU1525, Alveo U250, Alveo U280, BittWare XUP-VVH, PRO DESIGN HAWK
+* PCIe cards: VC709, NetFPGA-SUME, VCU108, VCU118, VCU1525, Alveo U250, Alveo U280, BittWare XUP-VVH, PRO DESIGN HAWK, VCK5000
 
 
 System Requirements
