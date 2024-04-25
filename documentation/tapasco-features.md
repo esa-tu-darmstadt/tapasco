@@ -170,7 +170,11 @@ If no value is given for a register slice (or for all), a default value is used.
 
 The Shared Virtual Memory (SVM) extensions is documented [here](tapasco-svm.md).
 
-### Alveo U280
+### Alveo U50/U280
+
+#### SFPPLUS
+The configuration for this feature can be found [here](sfpplus.md)
+The Alveo U50/U280 provide(s) one/two SFP+ Ports (0 - 1).
 
 #### SVM
 
