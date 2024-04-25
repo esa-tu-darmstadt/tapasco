@@ -170,7 +170,11 @@ If no value is given for a register slice (or for all), a default value is used.
 
 The Shared Virtual Memory (SVM) extensions is documented [here](tapasco-svm.md).
 
-### Alveo U280
+### Alveo U50/U280
+
+#### SFPPLUS
+The configuration for this feature can be found [here](sfpplus.md)
+The Alveo U50/U280 provide(s) one/two QSFP28 Ports (0 - 1).
 
 #### SVM
 
@@ -204,3 +208,7 @@ DMA-Streaming {
 In host software, use the ```makeInputStream()``` and ```makeOutputStream()``` wrapper of the C++ API, or the ```DataTransferStream``` parameter in Rust.
 
 **Note**: Currently the feature only supports one input and one output stream.
+
+#### SFPPLUS
+The configuration for this feature can be found [here](sfpplus.md)
+The VCK5000 has two QSFP28 Ports (0 - 1), the PRODESIGN HAWK provides four QSFP-DD Ports (0 - 3).
