@@ -687,4 +687,95 @@ namespace eval tapasco {
   proc is_versal {} {
     return [string match "versal*" [get_property FAMILY [get_parts -of_objects [current_project]]]]
   }
+
+  
+  proc create_clocks_ultrascale {name num_clocks freqs} {
+    set group [create_bd_cell -type hier $name]
+    set instance [current_bd_instance .]
+    current_bd_instance $group
+    set full_wizards [expr $num_clocks / 7]
+    set remaining [expr $num_clocks % 7]
+
+    set clk_in [create_bd_pin -type "clk" -dir "I" "clk_in"]
+    set resetn [create_bd_pin -type "rst" -dir "I" "resetn"]
+    set locked [create_bd_pin -dir "O" "locked"]
+    
+    set const1 [tapasco::ip::create_constant const1 1 1]
+    set locked_acc [get_bd_pins $const1/dout]
+
+    for {set i 0} {$i < $full_wizards} {incr i} {
+      set clk_wiz [tapasco::ip::create_clk_wiz clk_wiz_$i]
+      set base_idx [expr $i * 7]
+      set_property -dict [list \
+        CONFIG.USE_SAFE_CLOCK_STARTUP {false} \
+        CONFIG.CLKOUT1_REQUESTED_OUT_FREQ [lindex $freqs [expr $base_idx + 0]] \
+        CONFIG.CLKOUT2_USED {true} \
+        CONFIG.CLKOUT2_REQUESTED_OUT_FREQ [lindex $freqs [expr $base_idx + 1]] \
+        CONFIG.CLKOUT3_USED {true} \
+        CONFIG.CLKOUT3_REQUESTED_OUT_FREQ [lindex $freqs [expr $base_idx + 2]] \
+        CONFIG.CLKOUT4_USED {true} \
+        CONFIG.CLKOUT4_REQUESTED_OUT_FREQ [lindex $freqs [expr $base_idx + 3]] \
+        CONFIG.CLKOUT5_USED {true} \
+        CONFIG.CLKOUT5_REQUESTED_OUT_FREQ [lindex $freqs [expr $base_idx + 4]] \
+        CONFIG.CLKOUT6_USED {true} \
+        CONFIG.CLKOUT6_REQUESTED_OUT_FREQ [lindex $freqs [expr $base_idx + 5]] \
+        CONFIG.CLKOUT7_USED {true} \
+        CONFIG.CLKOUT7_REQUESTED_OUT_FREQ [lindex $freqs [expr $base_idx + 6]] \
+        CONFIG.NUM_OUT_CLKS {7} \
+        CONFIG.USE_LOCKED {true} \
+        CONFIG.USE_RESET {true} \
+        CONFIG.RESET_TYPE {ACTIVE_LOW} \
+        CONFIG.RESET_PORT {resetn} \
+        CONFIG.PRIM_SOURCE {No_buffer} \
+      ] $clk_wiz
+      connect_bd_net $clk_in [get_bd_pins $clk_wiz/clk_in1]
+      connect_bd_net $resetn [get_bd_pins $clk_wiz/resetn]
+      for {set j 1} {$j <= 7} {incr j} {
+        set k [expr $base_idx + $j]
+        set clk_out [create_bd_pin -type "clk" -dir "O" clk_out$k]
+        connect_bd_net [get_bd_pins $clk_wiz/clk_out$j] $clk_out
+      }
+      set locked_and [tapasco::ip::create_logic_vector locked_and$i]
+      set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {and} CONFIG.LOGO_FILE {data/sym_andgate.png}] $locked_and
+      connect_bd_net $locked_acc [get_bd_pins $locked_and/Op1]
+      connect_bd_net [get_bd_pins $clk_wiz/locked] [get_bd_pins $locked_and/Op2]
+      set locked_acc [get_bd_pins $locked_and/Res]
+    }
+
+    if {$remaining != 0} {
+      set clk_wiz [tapasco::ip::create_clk_wiz clk_wiz_$i]
+      set base_idx [expr $full_wizards * 7]
+      set wizard_properties [list \
+        CONFIG.USE_SAFE_CLOCK_STARTUP {false} \
+        CONFIG.NUM_OUT_CLKS $remaining \
+        CONFIG.USE_LOCKED {true} \
+        CONFIG.USE_RESET {true} \
+        CONFIG.RESET_TYPE {ACTIVE_LOW} \
+        CONFIG.RESET_PORT {resetn} \
+        CONFIG.PRIM_SOURCE {No_buffer} \
+      ]
+      for {set i 1} {$i <= $remaining} {incr i} {
+        lappend wizard_properties \
+          CONFIG.CLKOUT${i}_REQUESTED_OUT_FREQ [lindex $freqs [expr $base_idx + $i - 1]] \
+          CONFIG.CLKOUT${i}_USED {true} \
+      }
+      set_property -dict $wizard_properties $clk_wiz
+      connect_bd_net $clk_in [get_bd_pins $clk_wiz/clk_in1]
+      connect_bd_net $resetn [get_bd_pins $clk_wiz/resetn]
+      for {set i 1} {$i <= $remaining} {incr i} {
+        set j [expr $base_idx + $i]
+        set clk_out [create_bd_pin -type "clk" -dir "O" clk_out$j]
+        connect_bd_net [get_bd_pins $clk_wiz/clk_out$i] $clk_out
+      }
+      set locked_and [tapasco::ip::create_logic_vector locked_and]
+      set_property -dict [list CONFIG.C_SIZE {1} CONFIG.C_OPERATION {and} CONFIG.LOGO_FILE {data/sym_andgate.png}] $locked_and
+      connect_bd_net $locked_acc [get_bd_pins $locked_and/Op1]
+      connect_bd_net [get_bd_pins $clk_wiz/locked] [get_bd_pins $locked_and/Op2]
+      set locked_acc [get_bd_pins $locked_and/Res]
+    }
+
+    connect_bd_net $locked_acc $locked
+    
+    current_bd_instance $instance
+  }
 }
