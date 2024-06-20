@@ -503,6 +503,13 @@ tapasco_compose_23_2:
     LD_PRELOAD: "/usr/lib64/libudev.so.1"
   extends: .tapasco_compose
 
+tapasco_compose_24_1:
+  variables:
+    VIVADO_VERSION: "2024.1"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+    LD_PRELOAD: "/usr/lib64/libudev.so.1"
+  extends: .tapasco_compose
+
 tapasco_compose_pcie:
   variables:
     VIVADO_VERSION: "2018.3"

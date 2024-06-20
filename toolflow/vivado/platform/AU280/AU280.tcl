@@ -25,6 +25,10 @@ namespace eval platform {
     puts "Vivado [version -short] is too old to support AU280."
     exit 1
   }
+  if { [::tapasco::vivado_is_newer "2024.1"] } {
+    puts "Vivado [version -short] does no longer support AU280."
+    exit 1
+  }
 
   source $::env(TAPASCO_HOME_TCL)/platform/pcie/pcie_base.tcl
 
