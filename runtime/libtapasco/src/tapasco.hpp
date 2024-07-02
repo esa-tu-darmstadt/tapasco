@@ -620,7 +620,6 @@ public:
 
   TapascoPE *acquire_pe_without_job(PEId pe_id) {
     SinglePEHandler *pe = tapasco_device_acquire_pe_without_job(this->device, pe_id);
-    std::cout << "PE: " << pe << std::endl;
     if (pe == 0) {
       handle_error();
     }
