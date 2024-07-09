@@ -779,6 +779,9 @@ pub unsafe extern "C" fn tapasco_job_release(
             if !return_value.is_null() {
                 *return_value = x.0;
             }
+
+            // free job object
+            let _j = Box::<Job>::from_raw(job);
             0
         }
         Err(e) => {
