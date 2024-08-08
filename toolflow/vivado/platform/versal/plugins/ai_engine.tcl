@@ -65,11 +65,11 @@ if {[tapasco::is_feature_enabled "AI-Engine"]} {
     set maxis 0
     set saxis 0
     foreach line [split $cfgdata "\n"] {
-      if {[regexp {blockPort=\"(\w*).*compPort=\"(\w*).*paddedWidth=\"(\d*).*isRegistered=\"(\w*)} $line linematch blockport compport width registered] > 0} {
+      if {[regexp {blockPort=\"([/\w]*).*compPort=\"(\w*).*paddedWidth=\"(\d*).*isRegistered=\"(\w*)} $line linematch blockport compport width registered] > 0} {
         dict set ports $blockport port $compport
         dict set ports $blockport width [expr $width/8]
         dict set ports $blockport registered $registered
-      } elseif {[regexp {direction=\"(\w*).*name=\"(\w*).*portType=\"(\w*)} $line linematch direction name type] > 0} {
+      } elseif {[regexp {direction=\"(\w*).*name=\"([/\w]*).*portType=\"(\w*)} $line linematch direction name type] > 0} {
         dict set ports $name type $type
         dict set ports $name direction $direction
         if {$direction == "out"} {
