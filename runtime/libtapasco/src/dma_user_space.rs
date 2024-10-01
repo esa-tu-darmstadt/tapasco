@@ -95,6 +95,7 @@ pub struct UserSpaceDMA {
     h2c_int_cntr: AtomicU64,
     c2h_cntr: AtomicU64,
     c2h_int_cntr: AtomicU64,
+    dev_offset: u64,
 }
 
 impl UserSpaceDMA {
@@ -205,6 +206,7 @@ impl UserSpaceDMA {
                 h2c_out: Queue::new(),
                 h2c_cntr: AtomicU64::new(0),
                 h2c_int_cntr: AtomicU64::new(0),
+                dev_offset: 0,
             })
         } else {
             Ok(Self {
@@ -227,6 +229,7 @@ impl UserSpaceDMA {
                 h2c_out: Queue::new(),
                 h2c_cntr: AtomicU64::new(0),
                 h2c_int_cntr: AtomicU64::new(0),
+                dev_offset: 0x0100_0000_0000, // address region DDR_LOW3 (3 TB):
             })
         }
     }
@@ -252,7 +255,7 @@ impl UserSpaceDMA {
         offset = (self.engine_offset as usize + 0x08) as isize;
         unsafe {
             let ptr = dma_engine_memory.as_ptr().offset(offset);
-            write_volatile(ptr as *mut u64, addr_device);
+            write_volatile(ptr as *mut u64, addr_device + self.dev_offset);
         };
 
         offset = (self.engine_offset as usize + 0x10) as isize;
