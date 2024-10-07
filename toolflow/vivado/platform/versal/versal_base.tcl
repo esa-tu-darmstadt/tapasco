@@ -180,6 +180,10 @@
         set_property CONFIG.FREQ_HZ [get_mc_clk_freq] [get_bd_intf_ports /sys_clk${i}_0]
       }
     }
+    # make all memory interfaces external
+    foreach intfport [get_bd_intf_pins $axi_noc/CH*DDR* -filter mode==Master] {
+      make_bd_intf_pins_external $intfport
+    }
 
     # configure CIPS after NoC so that Vivado does not remove ports during BD automation
     set link_width "X$pcie_width"
