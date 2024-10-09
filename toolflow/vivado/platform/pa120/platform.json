@@ -1,0 +1,11 @@
+{
+	"Name" : "pa120",
+	"Description" : "Alpha Data ADM-PA120",
+	"TclLibrary" : "pa120.tcl",
+	"Part" : "xcvp1202-vsva2785-2MHP-e-S",
+	"TargetUtilization" : 90,
+	"Benchmark" : "pa120.benchmark",
+	"HostFrequency": 250.0,
+	"MemFrequency": 300.0,
+	"FileExtension": "pdi"
+}
