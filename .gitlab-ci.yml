@@ -545,6 +545,13 @@ tapasco_compose_netfpga_sume:
     PLATFORM: "netfpga_sume"
   extends: .tapasco_compose_no_synth
 
+tapasco_compose_pa120:
+  variables:
+    PLATFORM: "pa120"
+    VIVADO_VERSION: "2022.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+  extends: .tapasco_compose_no_synth
+
 tapasco_compose_ultra96v2:
   variables:
     PLATFORM: "ultra96v2"
