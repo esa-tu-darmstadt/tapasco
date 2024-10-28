@@ -29,6 +29,13 @@
 #include "tlkm_device.h"
 #include "tlkm_device_ioctl_cmds.h"
 #include "sim_device.h"
+#include "sim/sim_ioctl.h"
+
+long sim_ioctl_dma_buffer_allocate(struct tlkm_device *inst, struct tlkm_dma_buffer_allocate __user *param);
+long sim_ioctl_dma_buffer_free(struct tlkm_device *inst, struct tlkm_dma_buffer_op __user *param);
+long sim_ioctl_dma_buffer_to_dev(struct tlkm_device *inst, struct tlkm_dma_buffer_op __user *param);
+long sim_ioctl_dma_buffer_from_dev(struct tlkm_device *inst, struct tlkm_dma_buffer_op __user *param);
+
 
 static inline long sim_ioctl_info(struct tlkm_device *inst,
 				   struct tlkm_device_info *info)
