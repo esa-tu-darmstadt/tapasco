@@ -22,9 +22,8 @@
 //!
 #ifndef SIM_IOCTL_H__
 #define SIM_IOCTL_H__
-
 #include "tlkm_device.h"
 
-long sim_ioctl(struct tlkm_device *inst, unsigned ioctl, unsigned long data);
+long sim_ioctl(struct tlkm_device *inst, unsigned int ioctl, unsigned long data);
 
 #endif /* SIM_IOCTL_H__ */
