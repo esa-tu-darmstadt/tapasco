@@ -35,7 +35,7 @@ plugins {
     id 'scala'
     id 'application'
     // Netflix provided plug-in for OS packaging
-    id "nebula.ospackage" version "8.3.0"
+    id "com.netflix.nebula.ospackage" version "11.10.1"
 }
 
 repositories {
@@ -46,9 +46,9 @@ repositories {
 
 dependencies {
     // Use Scala 2.12 in our library project
-    implementation 'org.scala-lang:scala-library:2.12.8'
-    implementation 'org.scala-lang:scala-reflect:2.12.8'
-    implementation 'org.scala-lang:scala-compiler:2.12.8'
+    implementation 'org.scala-lang:scala-library:2.12.18'
+    implementation 'org.scala-lang:scala-reflect:2.12.18'
+    implementation 'org.scala-lang:scala-compiler:2.12.18'
     implementation 'com.typesafe.play:play-json_2.12:2.7.3'
     implementation 'org.slf4j:slf4j-api:1.7.26'
     implementation 'ch.qos.logback:logback-classic:1.2.3'
