@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2020 Embedded Systems and Applications, TU Darmstadt.
+# Copyright (c) 2014-2024 Embedded Systems and Applications, TU Darmstadt.
 # 
 # This file is part of TaPaSCo 
 # (see https://github.com/esa-tu-darmstadt/tapasco).
@@ -21,7 +21,7 @@
 
 #set default values
 set wait 1000
-set dev {xc7vx690t_0|xcvu9p_0|xcvu095_0|xcu250_0|xcvu37p_0|xcu280_0|xcu280_u55c_0|xcu50_u55n_0|xcvc1902_1}
+set dev {xc7vx690t_0|xcvu9p_0|xcvu095_0|xcu250_0|xcvu37p_0|xcu280_0|xcu280_u55c_0|xcu50_u55n_0|xcvc1902_1|xcvp1202_1}
 set probes_file {}
 set program_file {}
 set target {}

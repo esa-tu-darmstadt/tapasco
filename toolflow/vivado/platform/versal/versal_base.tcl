@@ -37,6 +37,13 @@
     puts "Using PCIe speed $pcie_speed GT/s"
   }
 
+  if { ! [info exists cpm_version] } {
+    puts "No CPM version defined. Assuming CPM4."
+    set cpm_version "CPM4"
+  } else {
+    puts "Using CPM version $cpm_version"
+  }
+
   # scan plugin directory
   foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/platform/versal/plugins" "*.tcl"] {
     source -notrace $f
@@ -122,6 +129,7 @@
     # host subsystem implements the CIPS including DMA
     variable pcie_width
     variable pcie_speed
+    variable cpm_version
 
     set host_aclk [tapasco::subsystem::get_port "host" "clk"]
     set host_p_aresetn [tapasco::subsystem::get_port "host" "rst" "peripheral" "resetn"]
@@ -172,6 +180,10 @@
         set_property CONFIG.FREQ_HZ [get_mc_clk_freq] [get_bd_intf_ports /sys_clk${i}_0]
       }
     }
+    # make all memory interfaces external
+    foreach intfport [get_bd_intf_pins $axi_noc/CH*DDR* -filter mode==Master] {
+      make_bd_intf_pins_external $intfport
+    }
 
     # configure CIPS after NoC so that Vivado does not remove ports during BD automation
     set link_width "X$pcie_width"
@@ -202,7 +214,7 @@
       ] \
       CONFIG.DDR_MEMORY_MODE {Enable} \
       CONFIG.DEBUG_MODE {JTAG} \
-      CONFIG.PS_PMC_CONFIG { \
+      CONFIG.PS_PMC_CONFIG [list \
         CLOCK_MODE {REF CLK 33.33 MHz} \
         DDR_MEMORY_MODE {Connectivity to DDR via NOC} \
         DEBUG_MODE {JTAG} \
@@ -216,6 +228,7 @@
         PMC_CRP_LSBUS_REF_CTRL_FREQMHZ {100} \
         PMC_CRP_NOC_REF_CTRL_FREQMHZ {960} \
         PMC_CRP_PL0_REF_CTRL_FREQMHZ {100} \
+        PMC_CRP_PL1_REF_CTRL_FREQMHZ {250} \
         PMC_CRP_PL5_REF_CTRL_FREQMHZ {400} \
         PMC_PL_ALT_REF_CLK_FREQMHZ {33.333} \
         PMC_USE_PMC_NOC_AXI0 {1} \
@@ -231,11 +244,12 @@
         PS_USE_FPD_CCI_NOC0 {1} \
         PS_USE_NOC_LPD_AXI0 {1} \
         PS_USE_PMCPL_CLK0 {1} \
+        PS_USE_PMCPL_CLK1 [expr {$cpm_version == "CPM5"}] \
         PS_USE_PMCPL_IRO_CLK {1} \
         SMON_ALARMS {Set_Alarms_On} \
         SMON_ENABLE_TEMP_AVERAGING {0} \
         SMON_TEMP_AVERAGING_SAMPLES {0} \
-      } \
+      ] \
     ] $versal_cips
 
     if {[llength [info procs get_cips_config]]} {
@@ -246,7 +260,12 @@
     make_bd_intf_pins_external [get_bd_intf_pins $versal_cips/gt_refclk0]
     make_bd_intf_pins_external [get_bd_intf_pins $versal_cips/PCIE0_GT]
     connect_bd_net [get_bd_pins $versal_cips/pl0_ref_clk] $pl_clk
-    connect_bd_net [get_bd_pins $versal_cips/pcie0_user_clk] $pcie_aclk
+    if {$cpm_version == "CPM5"} {
+      # CPM5 does not internally provide a dma user clock, use second PL clock
+      connect_bd_net [get_bd_pins $versal_cips/pl1_ref_clk] [get_bd_pins $versal_cips/dma0_intrfc_clk] $pcie_aclk
+    } {
+      connect_bd_net [get_bd_pins $versal_cips/pcie0_user_clk] $pcie_aclk
+    }
     connect_bd_net [get_bd_pins $versal_cips/dma0_axi_aresetn] $pcie_aresetn
 
     set desc_gen [tapasco::ip::create_qdma_desc_gen "desc_gen_0"]
@@ -256,10 +275,16 @@
     connect_bd_intf_net [get_bd_intf_pins $versal_cips/dma0_c2h_byp_out] [get_bd_intf_pins $desc_gen/c2h_byp_out]
     connect_bd_intf_net [get_bd_intf_pins $versal_cips/dma0_h2c_byp_out] [get_bd_intf_pins $desc_gen/h2c_byp_out]
     connect_bd_intf_net [get_bd_intf_pins $versal_cips/dma0_tm_dsc_sts] [get_bd_intf_pins $desc_gen/tm_dsc_sts]
-    connect_bd_intf_net [get_bd_intf_pins $desc_gen/c2h_byp_in] [get_bd_intf_pins $versal_cips/dma0_c2h_byp_in_mm]
-    connect_bd_intf_net [get_bd_intf_pins $desc_gen/h2c_byp_in] [get_bd_intf_pins $versal_cips/dma0_h2c_byp_in_mm]
-
-    connect_bd_net [get_bd_pins $desc_gen/dma_resetn] [get_bd_pins $versal_cips/dma0_soft_resetn]
+    if {$cpm_version == "CPM5"} {
+      # CPM5 has two channels for the descriptor bypass. only use the first one (for now).
+      connect_bd_intf_net [get_bd_intf_pins $desc_gen/c2h_byp_in] [get_bd_intf_pins $versal_cips/dma0_c2h_byp_in_mm_0]
+      connect_bd_intf_net [get_bd_intf_pins $desc_gen/h2c_byp_in] [get_bd_intf_pins $versal_cips/dma0_h2c_byp_in_mm_0]
+      connect_bd_net [get_bd_pins $desc_gen/dma_resetn] [get_bd_pins $versal_cips/dma0_intrfc_resetn]
+    } {
+      connect_bd_intf_net [get_bd_intf_pins $desc_gen/c2h_byp_in] [get_bd_intf_pins $versal_cips/dma0_c2h_byp_in_mm]
+      connect_bd_intf_net [get_bd_intf_pins $desc_gen/h2c_byp_in] [get_bd_intf_pins $versal_cips/dma0_h2c_byp_in_mm]
+      connect_bd_net [get_bd_pins $desc_gen/dma_resetn] [get_bd_pins $versal_cips/dma0_soft_resetn]
+    }
 
     # FIXME do not hardcode ports?
     connect_bd_intf_net [get_bd_intf_pins $versal_cips/CPM_PCIE_NOC_0] [get_bd_intf_pins $axi_noc/S06_AXI]
