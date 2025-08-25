@@ -65,9 +65,9 @@ trait Configuration {
 
   def logFile(p: Option[Path]): Configuration
 
-  def slurm: Boolean
+  def slurm: Option[String]
 
-  def slurm(enabled: Boolean): Configuration
+  def slurm(template: Option[String]): Configuration
 
   def parallel: Boolean
 

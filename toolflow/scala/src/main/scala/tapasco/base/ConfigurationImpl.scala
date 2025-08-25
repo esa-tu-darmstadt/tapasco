@@ -46,7 +46,7 @@ private case class ConfigurationImpl(
                                       private val _coreDir: Path = BasePathManager.DEFAULT_DIR_CORES,
                                       private val _compositionDir: Path = BasePathManager.DEFAULT_DIR_COMPOSITIONS,
                                       private val _logFile: Option[Path] = None,
-                                      slurm: Boolean = false,
+                                      slurm: Option[String] = None,
                                       parallel: Boolean = false,
                                       maxThreads: Option[Int] = None,
                                       maxTasks: Option[Int] = None,
@@ -81,7 +81,7 @@ private case class ConfigurationImpl(
 
   def logFile(op: Option[Path]): Configuration = this.copy(_logFile = op)
 
-  def slurm(enabled: Boolean): Configuration = this.copy(slurm = enabled)
+  def slurm(template: Option[String]): Configuration = this.copy(slurm = template)
 
   def parallel(enabled: Boolean): Configuration = this.copy(parallel = enabled)
 
@@ -97,8 +97,10 @@ private case class ConfigurationImpl(
 
   def jobs(js: Seq[Job]): Configuration = this.copy(jobs = js)
 
-  // these directories must exist
-  for ((d, n) <- Seq((archDir, "architectures"),
-    (platformDir, "platforms")))
-    require(mustExist(d), "%s directory %s does not exist".format(n, d.toString))
+  // these directories must exist, unless we execute on remote SLURM node
+  if (this.slurm.getOrElse(true).equals("local")) {
+    for ((d, n) <- Seq((archDir, "architectures"),
+      (platformDir, "platforms")))
+      require(mustExist(d), "%s directory %s does not exist".format(n, d.toString))
+  }
 }
