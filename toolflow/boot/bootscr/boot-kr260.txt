@@ -1,7 +1,7 @@
 setenv bootdev "${devtype} ${devnum}:${distro_bootpart}"
 echo "Booting from ${bootdev}"
 
-setenv bootargs $bootargs root=/dev/sda2 rw rootwait vfio_platform.reset_required=0 clk_ignore_unused uio_pdrv_genirq.of_id=generic-uio xilinx_tsn_ep.st_pcp=4 cma=800M
+setenv bootargs $bootargs root=/dev/sda2 rw rootwait vfio_platform.reset_required=0 cma=800M arm-smmu.disable_bypass=0
 
 echo "Loading kernel -> ${kernel_addr_r}"
 load ${bootdev} ${kernel_addr_r} Image
