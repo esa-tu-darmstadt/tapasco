@@ -1,0 +1,11 @@
+{
+	"Name" : "kr260",
+	"Description" : "Xilinx Zynq UltraScale+ MPSoC",
+	"TclLibrary" : "kr260.tcl",
+	"Part" : "xck26-sfvc784-2lv-c",
+	"BoardPart" : "xilinx.com:kr260_som:part0:1.1",
+	"BoardPreset" : "KR260",
+	"HostFrequency" : 250.0,
+	"MemFrequency" : 333.0,
+	"TargetUtilization" : 97
+}
