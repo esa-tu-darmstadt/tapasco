@@ -325,7 +325,7 @@ build_linux() {
 						return $(error_ret "$LINENO: could not copy device tree")
 					;;
                 "kr260")
-                    cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/zynqmp-smk-k26-revA-sck-kv-g-revB.dtb $DIR/devicetree.dtb ||
+                    cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/zynqmp-smk-k26-revA-sck-kr-g-revB.dtb $DIR/devicetree.dtb ||
                         return $(error_ret "$LINENO: could not copy device tree")
                     ;;
 			esac
