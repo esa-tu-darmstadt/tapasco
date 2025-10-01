@@ -41,7 +41,7 @@ Usage: ${0##*/} BOARD VERSION [DISK SIZE] [DEVICE]
 Build a boot image for the given BOARD and VERSION (git tag). If DEVICE is
 given, repartition the device as a bootable SD card (WARNING: all data will
 be lost).
-	BOARD		one of zc706, zedboard, pyng, zcu102 or ultra96v2
+	BOARD		one of zc706, zedboard, pyng, zcu102, ultra96v2, or kr260
 	VERSION		Vivado Design Suite version, e.g., 2019.2
 	DISK SIZE	Size of the image in MiB (optional, default: 5120)
 	DEVICE		SD card device, e.g., /dev/sdb (optional)
@@ -78,9 +78,11 @@ check_board() {
 
 		"ultra96v2") ;;
 
+		"kr260") ;;
+
 		*)
 			echo "unknown board: $BOARD"
-			echo "select one of zedboard, zc706, pynq, zcu102 or ultra96v2"
+			echo "select one of zedboard, zc706, pynq, zcu102, ultra96v2, or kr260"
 			print_usage
 			;;
 	esac
@@ -215,6 +217,9 @@ build_u-boot() {
                 #prevent -dirty tag in uboot version
                 touch .scmversion
 				;;
+            "kr260")
+                DEVICE_TREE="zynqmp-smk-k26-revA"
+                ;;
 			*)
 				return $(error_ret "unknown board: $BOARD")
 				;;
@@ -285,14 +290,14 @@ build_linux() {
 			append_if_not_exists 'CONFIG_ARM_SMMU=y' $CONFIGFILE
 			append_if_not_exists 'CONFIG_USB_RTL8152=y' $CONFIGFILE
 			append_if_not_exists 'CONFIG_USB_USBNET=y' $CONFIGFILE
-			
+
 			#uncomment the following for debugging
 			# append_if_not_exists 'CONFIG_FTRACE=y' $CONFIGFILE
 			# append_if_not_exists 'CONFIG_FUNCTION_TRACER=y' $CONFIGFILE
 			# append_if_not_exists 'CONFIG_FUNCTION_GRAPH_TRACER=y' $CONFIGFILE
 			# append_if_not_exists 'CONFIG_DYNAMIC_FTRACE=y' $CONFIGFILE
 			# append_if_not_exists 'CONFIG_STACK_TRACER=y' $CONFIGFILE
-			
+
 			cd $DIR/linux-xlnx
             case $BOARD in
 				"zcu102")
@@ -319,6 +324,10 @@ build_linux() {
 					cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/zynqmp-zcu102-rev1.1.dtb $DIR/devicetree.dtb ||
 						return $(error_ret "$LINENO: could not copy device tree")
 					;;
+                "kr260")
+                    cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/zynqmp-smk-k26-revA.dtb $DIR/devicetree.dtb ||
+                        return $(error_ret "$LINENO: could not copy device tree")
+                    ;;
 			esac
 		else
 			echo "$DIR/linux-xlnx/arch/arm64/boot/Image already exists, skipping."
@@ -334,7 +343,7 @@ build_ssbl() {
 			DTC=$DIR/linux-xlnx/scripts/dtc/dtc
 			make CROSS_COMPILE=$CROSS_COMPILE DTC=$DTC HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" u-boot -j $JOBCOUNT ||
 				return $(error_ret "$LINENO: could not build u-boot")
-		else	
+		else
             if [[ -z "${DEVICE_TREE}" ]]; then
                 echo "Env variable DEVICE_TREE not set"
                 echo "Setting DEVICE_TREE based on $BOARD"
@@ -353,6 +362,9 @@ build_ssbl() {
                         ;;
                     "zcu102")
                         DEVICE_TREE="zynqmp-zcu102-rev1.1"
+                        ;;
+                    "kr260")
+                        DEVICE_TREE="zynqmp-smk-k26-revA"
                         ;;
                     *)
                         return $(error_ret "unknown board: $BOARD")
@@ -603,6 +615,9 @@ build_devtree() {
 		"zcu102")
 			$DIR/linux-xlnx/scripts/dtc/dtc -I dtb -O dts -o $DIR/devicetree.dts $DIR/devicetree.dtb
 			;;
+        "kr260")
+			$DIR/linux-xlnx/scripts/dtc/dtc -I dtb -O dts -o $DIR/devicetree.dts $DIR/devicetree.dtb
+			;;
 	esac
 	echo >> $DIR/devicetree.dts
 	if [[ $ARCH == arm64 ]]; then
@@ -788,7 +803,7 @@ make scripts
 # recompile scripts needed for custom kernel modules
 make modules_prepare
 make headers_install
-# install the previously compiled kernel modules 
+# install the previously compiled kernel modules
 cp -r lib/modules /lib/modules
 cd /lib/modules/*-tapasco
 # remove broken links
@@ -813,7 +828,7 @@ EOF"
 ################################################################################
 
 if [ -z ${CROSS_COMPILE+x} ]; then
-	if [[ $BOARD == ultra96v2 ]] || [[ $BOARD == zcu102 ]]; then
+	if [[ $BOARD == ultra96v2 ]] || [[ $BOARD == zcu102 ]] || [[ $BOARD == kr260 ]]; then
 		CROSS_COMPILE=aarch64-linux-gnu-
 		ARCH=arm64
 	else
@@ -839,7 +854,7 @@ if [ "$OMIT_ROOT" = false ] ; then
     [[ -n $SUDOPW ]] || error_exit "sudo password may not be empty"
     dusudo true || error_exit "sudo password seems to be wrong?"
 fi
-if [ "$OMIT_ROOT" = false ] ; then 
+if [ "$OMIT_ROOT" = false ] ; then
 	check_image_tools
 fi
 mkdir -p $LOGDIR 2> /dev/null
