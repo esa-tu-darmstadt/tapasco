@@ -799,20 +799,20 @@ echo 'auto eth0' >> /etc/network/interfaces
 echo 'iface eth0 inet dhcp' >> /etc/network/interfaces
 
 # prepare header files
-cd /usr/src/linux-headers-*-tapasco/
+cd /usr/src/linux-headers-*-tapasco*/
 make clean
 make scripts
 # recompile scripts needed for custom kernel modules
 make modules_prepare
 make headers_install
 # install the previously compiled kernel modules
-cp -r lib/modules /lib/modules
-cd /lib/modules/*-tapasco
+mkdir -p /lib/modules
+cp -r lib/modules/* /lib/modules
+cd /lib/modules/*-tapasco*
 # remove broken links
-rm -f build
-rm -f source
+rm -rf build source
 #
-ln -s /usr/src/linux-headers-*-tapasco/ build
+ln -s /usr/src/linux-headers-*-tapasco*/ build
 
 git clone https://github.com/esa-tu-darmstadt/tapasco.git /home/tapasco/tapasco
 chown -R tapasco /home/tapasco/tapasco
