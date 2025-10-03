@@ -297,6 +297,13 @@ build_linux() {
 			# append_if_not_exists 'CONFIG_FUNCTION_GRAPH_TRACER=y' $CONFIGFILE
 			# append_if_not_exists 'CONFIG_DYNAMIC_FTRACE=y' $CONFIGFILE
 			# append_if_not_exists 'CONFIG_STACK_TRACER=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_BPF=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_BPF_SYSCALL=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_BPF_JIT=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_KPROBES=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_KRETPROBES=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_KALLSYMS=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_KALLSYMS_ALL=y' $CONFIGFILE
 
 			cd $DIR/linux-xlnx
             case $BOARD in
