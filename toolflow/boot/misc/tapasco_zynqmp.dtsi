@@ -36,6 +36,7 @@
 			<&smmu 0x21d>,
 			<&smmu 0x21e>,
 			<&smmu 0x21f>;
+		dma-coherent;
 	};
 };
 

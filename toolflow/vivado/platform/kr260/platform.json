@@ -5,7 +5,8 @@
 	"Part" : "xck26-sfvc784-2lv-c",
 	"BoardPart" : "xilinx.com:kr260_som:part0:1.1",
 	"BoardPreset" : "KR260",
+	"BoardConnections" : "som240_1_connector xilinx.com:kr260_carrier:som240_1_connector:1.1 som240_2_connector xilinx.com:kr260_carrier:som240_2_connector:1.1",
 	"HostFrequency" : 250.0,
-	"MemFrequency" : 333.0,
+	"MemFrequency" : 250.0,
 	"TargetUtilization" : 97
 }
