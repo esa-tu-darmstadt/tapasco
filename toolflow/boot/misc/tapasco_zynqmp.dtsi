@@ -41,5 +41,4 @@
 
 &smmu {
 	status = "okay";
-	dma-coherent;
 };
