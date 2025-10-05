@@ -347,6 +347,9 @@ build_linux() {
 			if [[ "$VERSION" == "2023.1" || "$VERSION" == "2023.2" ]]; then
 				git apply $SCRIPTDIR/misc/linux_6.1_vfio_patch.patch || error_exit "VFIO patch failed!"
 			fi
+			if [[ "$VERSION" == "2025.1" ]]; then
+                git apply $SCRIPTDIR/misc/0001-include-uapi-linux-xlnx-ai-engine.h-fix-CONFIG_XILIN.patch || error_exit "2025.1 header patch failed!"
+			fi
 			touch .scmversion #prevent -dirty tag in kernel version
 			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64 $DEFCONFIG ||
 				return $(error_ret "$LINENO: could not make defconfig")
