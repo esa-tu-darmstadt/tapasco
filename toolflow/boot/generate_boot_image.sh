@@ -1022,3 +1022,14 @@ if [ "$OMIT_ROOT" = false ] ; then
     fi
 
 fi
+
+case $BOARD in
+	"kr260")
+		echo ""
+		echo "IMPORTANT: Before using your Kria board with TaPaSCo, please flash"
+		echo "$DIR/BOOT.BIN"
+		echo "to the active QSPI boot image slot using the Boot Image Recovery Tool."
+		echo "To run the tool, hold the FWUEN button of the carrier board while"
+		echo "powering it on and follow the instructions printed to UART1."
+		;;
+esac
