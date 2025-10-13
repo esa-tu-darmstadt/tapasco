@@ -43,6 +43,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <cstring>
 
 #include <tapasco_inner.hpp>
 
@@ -347,9 +348,13 @@ private:
   template <typename T> void set_arg(T t) {
     // only 32/64bit values can be passed directly (i.e., via register)
     if (sizeof(T) == 4) {
-      this->single32((uint32_t)t);
+      uint32_t as_u32;
+      std::memcpy(&as_u32, &t, sizeof(as_u32));
+      this->single32(as_u32);
     } else if (sizeof(T) == 8) {
-      this->single64((uint64_t)t);
+      uint64_t as_u64;
+      std::memcpy(&as_u64, &t, sizeof(as_u64));
+      this->single64(as_u64);
     } else if (sizeof(T) > 8) {
       throw tapasco_error("Please supply large arguments as wrapped pointers.");
     } else {
