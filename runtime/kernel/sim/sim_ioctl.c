@@ -118,6 +118,13 @@ long sim_ioctl_kernel_buffer_unmap(struct tlkm_device *inst,
 	return -EFAULT;
 }
 
+static inline long sim_ioctl_bar_addr(struct tlkm_device *inst,
+				    struct tlkm_bar_addr_cmd *cmd)
+{
+	DEVERR(inst->dev_id, "BAR address not available in simulation");
+	return -EFAULT;
+}
+
 static inline long sim_ioctl_alloc(struct tlkm_device *inst,
 				    struct tlkm_mm_cmd *cmd)
 {

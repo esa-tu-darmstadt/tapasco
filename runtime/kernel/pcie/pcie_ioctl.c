@@ -284,6 +284,23 @@ long pcie_ioctl_kernel_buffer_unmap(struct tlkm_device *inst,
 	return -ENOENT;
 }
 
+static inline long pcie_ioctl_bar_addr(struct tlkm_device *inst,
+				       struct tlkm_bar_addr_cmd *cmd)
+{
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)inst->private_data;
+
+	if (cmd->bar_idx == 0)
+		cmd->bar_addr = pdev->phy_addr_bar0;
+	else if (cmd->bar_idx == 2 && pci_resource_len(pdev->pdev, 2) > 0)
+		cmd->bar_addr = pci_resource_start(pdev->pdev, 2);
+	else if (cmd->bar_idx == 4 && pci_resource_len(pdev->pdev, 4) > 0)
+		cmd->bar_addr = pci_resource_start(pdev->pdev, 4);
+	else
+		return -ENOENT;
+	return 0;
+}
+
 static inline long pcie_ioctl_read(struct tlkm_device *inst,
 				   struct tlkm_copy_cmd *cmd)
 {

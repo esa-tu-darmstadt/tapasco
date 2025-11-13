@@ -257,6 +257,13 @@ pub struct tlkm_gp_buffer_map_cmd {
     pub dev_addr: u64,
 }
 
+#[repr(C)]
+#[derive(Debug, PartialEq)]
+pub struct tlkm_bar_addr_cmd {
+    pub bar_idx: u64,
+    pub bar_addr: u64,
+}
+
 const TLKM_IOCTL_DMA_BUFFER_ALLOCATE: u8 = 0x40;
 const TLKM_IOCTL_DMA_BUFFER_FREE: u8 = 0x41;
 const TLKM_IOCTL_DMA_BUFFER_TO_DEV: u8 = 0x42;
@@ -265,6 +272,7 @@ const TLKM_IOCTL_KERNEL_BUFFER_ALLOCATE: u8 = 0x44;
 const TLKM_IOCTL_KERNEL_BUFFER_FREE: u8 = 0x45;
 const TLKM_IOCTL_KERNEL_BUFFER_MAP: u8 = 0x46;
 const TLKM_IOCTL_KERNEL_BUFFER_UNMAP: u8 = 0x47;
+const TLKM_IOCTL_PCIE_BAR_ADDR: u8 = 0x4F;
 
 ioctl_readwrite!(
     tlkm_ioctl_dma_buffer_allocate,
@@ -320,6 +328,13 @@ ioctl_readwrite!(
     TLKM_IOC_MAGIC,
     TLKM_IOCTL_KERNEL_BUFFER_UNMAP,
     tlkm_dma_buffer_op
+);
+
+ioctl_readwrite!(
+    tlkm_ioctl_bar_addr,
+    TLKM_DEVICE_IOC_MAGIC,
+    TLKM_IOCTL_PCIE_BAR_ADDR,
+    tlkm_bar_addr_cmd
 );
 
 // SVM

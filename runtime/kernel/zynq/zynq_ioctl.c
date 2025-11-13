@@ -115,6 +115,13 @@ long zynq_ioctl_kernel_buffer_unmap(struct tlkm_device *inst,
 	return -EFAULT;
 }
 
+static inline long zynq_ioctl_bar_addr(struct tlkm_device *inst,
+				    struct tlkm_bar_addr_cmd *cmd)
+{
+	DEVERR(inst->dev_id, "BAR address not available on ZYNQ");
+	return -EFAULT;
+}
+
 static inline long zynq_ioctl_alloc(struct tlkm_device *inst,
 				    struct tlkm_mm_cmd *cmd)
 {

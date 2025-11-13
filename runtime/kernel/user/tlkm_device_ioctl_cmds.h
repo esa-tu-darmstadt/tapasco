@@ -81,6 +81,11 @@ struct tlkm_gp_buffer_map_cmd {
 	uint64_t dev_addr;
 };
 
+struct tlkm_bar_addr_cmd {
+	uint64_t bar_idx;
+	uint64_t bar_addr;
+};
+
 struct tlkm_svm_init_cmd {
 	int32_t result;
 };
@@ -128,6 +133,8 @@ struct tlkm_svm_migrate_cmd {
 			struct tlkm_gp_buffer_map_cmd)                         \
 	_TLKM_DEV_IOCTL(KERNEL_BUFFER_UNMAP, kernel_buffer_unmap, 0x47,        \
 			struct tlkm_dma_buffer_op)                             \
+	_TLKM_DEV_IOCTL(PCIE_BAR_ADDR, bar_addr, 0x4F,                         \
+			struct tlkm_bar_addr_cmd)                              \
 	_TLKM_DEV_IOCTL(SVM_LAUNCH, svm_launch, 0x50,                          \
 			struct tlkm_svm_init_cmd)                              \
 	_TLKM_DEV_IOCTL(SVM_MIGRATE_TO_DEV, svm_migrate_to_dev, 0x52,          \
