@@ -21,3 +21,4 @@
 pub mod plugin;
 
 // list available plugins
+pub mod nvme;
