@@ -74,6 +74,9 @@ pub enum Error {
 
     #[snafu(display("Failed to retrieve default memory: {}", source))]
     RetrieveDefaultMemory { source: crate::device::Error },
+
+    #[snafu(display("Error in plugin: {}", source))]
+    FFIPluginError { source: crate::plugins::plugin::Error },
 }
 
 //////////////////////

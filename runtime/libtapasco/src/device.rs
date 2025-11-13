@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
+use std::any::type_name;
 use std::borrow::Borrow;
 use crate::allocator::{Allocator, DriverAllocator, DummyAllocator, GenericAllocator, VfioAllocator};
 use crate::debug::{DebugGenerator, NonDebugGenerator};
@@ -47,7 +47,8 @@ use crate::mmap_mut::MemoryType;
 use crate::sim_client::SimClient;
 use crate::protos::status;
 use prost::Message;
-
+use crate::device::Error::PluginNotFound;
+use crate::plugins::plugin::{Plugin, PLUGIN_REGISTRY};
 
 #[derive(Debug, Snafu)]
 pub enum Error {
@@ -128,6 +129,12 @@ pub enum Error {
 
     #[snafu(display("Violation of memory access type"))]
     MemoryAccessType {},
+
+    #[snafu(display("Plugin not found: {}", name))]
+    PluginNotFound { name : String },
+
+    #[snafu(display("Error during plugin initialization: {}", source))]
+    PluginInitError { source: crate::plugins::plugin::Error }
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -261,6 +268,7 @@ pub struct Device {
     offchip_memory: Vec<Arc<OffchipMemory>>,
     tlkm_file: Arc<File>,
     tlkm_device_file: Arc<File>,
+    plugins: Vec<Box<dyn Plugin>>,
 }
 
 impl Device {
@@ -538,8 +546,18 @@ impl Device {
             platform: Arc::new(platform),
             offchip_memory: allocator,
             tlkm_file,
-            tlkm_device_file: tlkm_dma_file,
+            tlkm_device_file: tlkm_dma_file.clone(),
+            plugins: Vec::new(),
         };
+
+        trace!("Initialize plugins");
+        let plugins = {
+            let reg = PLUGIN_REGISTRY.read()?;
+            reg.iter().map(|factory| {
+                factory(&device, &platform_mmap, &tlkm_dma_file).context(PluginInitSnafu)
+            }).collect::<Result<Vec<_>>>()?
+        };
+        device.plugins = plugins;
 
         device.change_access(tlkm_access::TlkmAccessMonitor)?;
 
@@ -832,5 +850,25 @@ impl Device {
         Err(Error::ComponentNotFound {
             name: name.to_string(),
         })
+    }
+
+    /// Returns a reference to the runtime plugin being passed as type
+    pub fn get_plugin<T: Plugin + 'static>(&self) -> Result<&T> {
+        for plugin in &self.plugins {
+            if let Some(p) = plugin.as_any().downcast_ref::<T>() {
+                return Ok(p);
+            }
+        }
+        Err(PluginNotFound { name : type_name::<T>().to_string() })
+    }
+
+    /// Returns a mutable reference to the runtime plugin being passed as type
+    pub fn get_plugin_mut<T: Plugin + 'static>(&mut self) -> Result<&mut T> {
+        for plugin in &mut self.plugins {
+            if let Some(p) = plugin.as_any_mut().downcast_mut::<T>() {
+                return Ok(p);
+            }
+        }
+        Err(PluginNotFound { name : type_name::<T>().to_string() })
     }
 }
