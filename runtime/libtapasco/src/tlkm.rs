@@ -243,10 +243,28 @@ pub struct tlkm_dma_buffer_op {
     pub buffer_id: usize,
 }
 
+#[repr(C)]
+#[derive(Debug, PartialEq)]
+pub struct tlkm_gp_buffer_allocate_cmd {
+    pub size: usize,
+    pub buffer_id: usize,
+}
+
+#[repr(C)]
+#[derive(Debug, PartialEq)]
+pub struct tlkm_gp_buffer_map_cmd {
+    pub buffer_id: usize,
+    pub dev_addr: u64,
+}
+
 const TLKM_IOCTL_DMA_BUFFER_ALLOCATE: u8 = 0x40;
 const TLKM_IOCTL_DMA_BUFFER_FREE: u8 = 0x41;
 const TLKM_IOCTL_DMA_BUFFER_TO_DEV: u8 = 0x42;
 const TLKM_IOCTL_DMA_BUFFER_FROM_DEV: u8 = 0x43;
+const TLKM_IOCTL_KERNEL_BUFFER_ALLOCATE: u8 = 0x44;
+const TLKM_IOCTL_KERNEL_BUFFER_FREE: u8 = 0x45;
+const TLKM_IOCTL_KERNEL_BUFFER_MAP: u8 = 0x46;
+const TLKM_IOCTL_KERNEL_BUFFER_UNMAP: u8 = 0x47;
 
 ioctl_readwrite!(
     tlkm_ioctl_dma_buffer_allocate,
@@ -273,6 +291,34 @@ ioctl_readwrite!(
     tlkm_ioctl_dma_buffer_from_dev,
     TLKM_DEVICE_IOC_MAGIC,
     TLKM_IOCTL_DMA_BUFFER_FROM_DEV,
+    tlkm_dma_buffer_op
+);
+
+ioctl_readwrite!(
+    tlkm_ioctl_kernel_buffer_allocate,
+    TLKM_DEVICE_IOC_MAGIC,
+    TLKM_IOCTL_KERNEL_BUFFER_ALLOCATE,
+    tlkm_gp_buffer_allocate_cmd
+);
+
+ioctl_readwrite!(
+    tlkm_ioctl_kernel_buffer_free,
+    TLKM_DEVICE_IOC_MAGIC,
+    TLKM_IOCTL_KERNEL_BUFFER_FREE,
+    tlkm_dma_buffer_op
+);
+
+ioctl_readwrite!(
+    tlkm_ioctl_kernel_buffer_map,
+    TLKM_DEVICE_IOC_MAGIC,
+    TLKM_IOCTL_KERNEL_BUFFER_MAP,
+    tlkm_gp_buffer_map_cmd
+);
+
+ioctl_readwrite!(
+    tlkm_ioctl_kernel_buffer_unmap,
+    TLKM_IOC_MAGIC,
+    TLKM_IOCTL_KERNEL_BUFFER_UNMAP,
     tlkm_dma_buffer_op
 );
 

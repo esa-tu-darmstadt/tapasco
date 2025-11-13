@@ -71,6 +71,16 @@ struct tlkm_dma_buffer_op {
 	size_t buffer_id;
 };
 
+struct tlkm_gp_buffer_allocate_cmd {
+	size_t size;
+	size_t buffer_id;
+};
+
+struct tlkm_gp_buffer_map_cmd {
+	size_t buffer_id;
+	uint64_t dev_addr;
+};
+
 struct tlkm_svm_init_cmd {
 	int32_t result;
 };
@@ -109,6 +119,14 @@ struct tlkm_svm_migrate_cmd {
 	_TLKM_DEV_IOCTL(DMA_BUFFER_TO_DEV, dma_buffer_to_dev, 0x42,            \
 			struct tlkm_dma_buffer_op)                             \
 	_TLKM_DEV_IOCTL(DMA_BUFFER_FROM_DEV, dma_buffer_from_dev, 0x43,        \
+			struct tlkm_dma_buffer_op)                             \
+	_TLKM_DEV_IOCTL(KERNEL_BUFFER_ALLOCATE, kernel_buffer_allocate, 0x44,  \
+			struct tlkm_gp_buffer_allocate_cmd)                    \
+	_TLKM_DEV_IOCTL(KERNEL_BUFFER_FREE, kernel_buffer_free, 0x45,          \
+			struct tlkm_dma_buffer_op)                             \
+	_TLKM_DEV_IOCTL(KERNEL_BUFFER_MAP, kernel_buffer_map, 0x46,            \
+			struct tlkm_gp_buffer_map_cmd)                         \
+	_TLKM_DEV_IOCTL(KERNEL_BUFFER_UNMAP, kernel_buffer_unmap, 0x47,        \
 			struct tlkm_dma_buffer_op)                             \
 	_TLKM_DEV_IOCTL(SVM_LAUNCH, svm_launch, 0x50,                          \
 			struct tlkm_svm_init_cmd)                              \

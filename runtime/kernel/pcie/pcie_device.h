@@ -67,6 +67,14 @@ struct dma_buf {
 	dma_direction_t direction;
 };
 
+struct gp_buf {
+	struct list_head list;
+	void *buf;
+	dma_addr_t dev_addr;
+	size_t size;
+	size_t buffer_id;
+};
+
 /* struct to hold data related to the pcie device */
 struct tlkm_pcie_device {
 	struct tlkm_device *parent;
@@ -77,6 +85,7 @@ struct tlkm_pcie_device {
 	int link_width;
 	int link_speed;
 	struct dma_buf dma_buffer[TLKM_PCIE_NUM_DMA_BUFFERS];
+	struct list_head gp_buffer;
 	volatile uint32_t *ack_register;
 	volatile uint32_t *ack_register_aws;
 	struct list_head *interrupts;
