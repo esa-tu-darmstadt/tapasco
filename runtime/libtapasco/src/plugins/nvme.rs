@@ -150,6 +150,18 @@ impl Plugin for NvmePlugin {
             }
         } else { 0 };
 
+        // disable Streamer IP (state recovery)
+        if available {
+            let csr_memory = nvme_memory.lock()
+                .map_err(|e| Error::from(e))?;
+            unsafe {
+                let ptr: *mut NvmeStreamerIP = csr_memory
+                    .as_ptr()
+                    .offset(nvme_offset as isize) as _;
+                write_volatile(&mut (*ptr).enabled, 0);
+            }
+        }
+
         // retrieve PCIe address of FPGA's BARs for computing the queues' addresses
         let mut bar_addr_cmd = tlkm_bar_addr_cmd {
             bar_idx: 0,
@@ -313,6 +325,13 @@ impl Plugin for NvmePlugin {
         self
     }
     fn as_any_mut(&mut self) -> &mut dyn Any { self }
+}
+
+impl Drop for NvmePlugin {
+    fn drop(&mut self) {
+        // ignore 'unavailable'  error
+        let _res = self.set_enable(false);
+    }
 }
 
 impl NvmePlugin {
