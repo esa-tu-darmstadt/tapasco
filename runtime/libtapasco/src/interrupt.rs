@@ -22,7 +22,7 @@ use std::fmt::Debug;
 use crate::tlkm::tlkm_ioctl_reg_interrupt;
 use crate::tlkm::tlkm_register_interrupt;
 use nix::sys::eventfd::{EfdFlags, EventFd};
-use nix::unistd::{close, read};
+use nix::unistd::read;
 use snafu::ResultExt;
 use std::fs::File;
 use std::os::unix::prelude::*;
