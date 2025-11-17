@@ -170,6 +170,10 @@ If no value is given for a register slice (or for all), a default value is used.
 
 The Shared Virtual Memory (SVM) extensions is documented [here](tapasco-svm.md).
 
+#### NVMe
+
+The NVMe extension allows direct access from the FPGA to NVMe-based storaged devices. It is documented [here](tapasco-nvme.md).
+
 ### Alveo U50/U280
 
 #### SFPPLUS
@@ -179,6 +183,10 @@ The Alveo U50/U280 provide(s) one/two QSFP28 Ports (0 - 1).
 #### SVM
 
 The Shared Virtual Memory (SVM) extensions is documented [here](tapasco-svm.md).
+
+#### NVMe
+
+The NVMe extension allows direct access from the FPGA to NVMe-based storaged devices. It is documented [here](tapasco-nvme.md).
 
 ### Versal
 
