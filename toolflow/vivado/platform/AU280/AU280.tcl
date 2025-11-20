@@ -189,6 +189,10 @@ namespace eval platform {
     insert_regslice "host_mmu" [tapasco::is_feature_enabled "SVM"] "/host/M_MMU" "/memory/S_MMU" "/clocks_and_resets/host_clk" "/clocks_and_resets/host_interconnect_aresetn" ""
     insert_regslice "host_rdma" [expr [tapasco::is_feature_enabled "SVM"] && [tapasco::get_feature_option "SVM" "pcie_e2e"] == "true"] "/host/M_RDMA" "/memory/S_RDMA" "/clocks_and_resets/host_clk" "/clocks_and_resets/host_interconnect_aresetn" ""
 
+    # regslices if NVMe plugin is active and DDR is used
+    set use_ddr [expr {[tapasco::is_feature_enabled "NVME"] && [tapasco::get_feature_option "NVME" "memory" "none"] == "on-board-dram"}]
+    insert_regslice "nvme_ddr" $use_ddr "/nvme/M_DDR_NVME" "/memory/S_DDR_NVME" "/clocks_and_resets/mem_clk" "/clocks_and_resets/mem_interconnect_aresetn" ""
+
     if {[is_regslice_enabled "pe" false]} {
       set ips [get_bd_cells /arch/target_ip_*]
       foreach ip $ips {

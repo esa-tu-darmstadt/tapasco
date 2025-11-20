@@ -237,6 +237,10 @@ namespace eval platform {
       insert_regslice "host_network" true "/host/M_NETWORK" "/network/S_NETWORK" "/clocks_and_resets/design_clk" "/clocks_and_resets/design_interconnect_aresetn" ""
     }
 
+    # regslices if NVMe plugin is active and DDR is used
+    set use_ddr [expr {[tapasco::is_feature_enabled "NVME"] && [tapasco::get_feature_option "NVME" "memory" "none"] == "on-board-dram"}]
+    insert_regslice "nvme_ddr" $use_ddr "/nvme/M_DDR_NVME" "/memory/S_DDR_NVME" "/clocks_and_resets/mem_clk" "/clocks_and_resets/mem_interconnect_aresetn" ""
+
     if {[is_regslice_enabled "pe" false]} {
       set ips [get_bd_cells /arch/target_ip_*]
       foreach ip $ips {

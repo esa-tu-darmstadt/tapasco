@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2023 Embedded Systems and Applications, TU Darmstadt.
+ * Copyright (c) 2014-2025 Embedded Systems and Applications, TU Darmstadt.
  *
  * This file is part of TaPaSCo
  * (see https://github.com/esa-tu-darmstadt/tapasco).
@@ -18,35 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#![recursion_limit = "1024"]
+pub mod plugin;
 
-#[macro_use]
-extern crate log;
-#[macro_use]
-extern crate getset;
-#[macro_use]
-extern crate nix;
-extern crate chrono;
-#[macro_use]
-extern crate snafu;
-extern crate bytes;
-extern crate crossbeam;
-extern crate env_logger;
-extern crate lockfree;
-
-pub mod allocator;
-pub mod debug;
-pub mod device;
-pub mod dma;
-pub mod dma_user_space;
-pub mod ffi;
-pub mod interrupt;
-pub mod job;
-pub mod pe;
-pub mod scheduler;
-pub mod vfio;
-pub mod tlkm;
-pub mod sim_client;
-pub mod protos;
-pub mod mmap_mut;
-pub mod plugins;
+// list available plugins
+pub mod nvme;

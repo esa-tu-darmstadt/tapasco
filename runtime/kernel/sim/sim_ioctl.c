@@ -35,6 +35,10 @@ long sim_ioctl_dma_buffer_allocate(struct tlkm_device *inst, struct tlkm_dma_buf
 long sim_ioctl_dma_buffer_free(struct tlkm_device *inst, struct tlkm_dma_buffer_op __user *param);
 long sim_ioctl_dma_buffer_to_dev(struct tlkm_device *inst, struct tlkm_dma_buffer_op __user *param);
 long sim_ioctl_dma_buffer_from_dev(struct tlkm_device *inst, struct tlkm_dma_buffer_op __user *param);
+long sim_ioctl_kernel_buffer_allocate(struct tlkm_device *inst, struct tlkm_gp_buffer_allocate_cmd *cmd);
+long sim_ioctl_kernel_buffer_free(struct tlkm_device *inst, struct tlkm_dma_buffer_op *cmd);
+long sim_ioctl_kernel_buffer_map(struct tlkm_device *inst, struct tlkm_gp_buffer_map_cmd *cmd);
+long sim_ioctl_kernel_buffer_unmap(struct tlkm_device *inst, struct tlkm_dma_buffer_op *cmd);
 
 
 static inline long sim_ioctl_info(struct tlkm_device *inst,
@@ -83,6 +87,41 @@ long sim_ioctl_dma_buffer_from_dev(struct tlkm_device *inst,
 				    struct tlkm_dma_buffer_op __user *param)
 {
 	ERR("Eventfd for platform interrupts is not implemented, yet.");
+	return -EFAULT;
+}
+
+long sim_ioctl_kernel_buffer_allocate(struct tlkm_device *inst,
+				       struct tlkm_gp_buffer_allocate_cmd *cmd)
+{
+	ERR("General purpose kernel buffer not available in simulation.");
+	return -EFAULT;
+}
+
+long sim_ioctl_kernel_buffer_free(struct tlkm_device *inst,
+				   struct tlkm_dma_buffer_op *cmd)
+{
+	ERR("General purpose kernel buffer not available in simulation.");
+	return -EFAULT;
+}
+
+long sim_ioctl_kernel_buffer_map(struct tlkm_device *inst,
+				  struct tlkm_gp_buffer_map_cmd *cmd)
+{
+	ERR("General purpose kernel buffer not available in simulation.");
+	return -EFAULT;
+}
+
+long sim_ioctl_kernel_buffer_unmap(struct tlkm_device *inst,
+				    struct tlkm_dma_buffer_op *cmd)
+{
+	ERR("General purpose kernel buffer not available in simulation.");
+	return -EFAULT;
+}
+
+static inline long sim_ioctl_bar_addr(struct tlkm_device *inst,
+				    struct tlkm_bar_addr_cmd *cmd)
+{
+	DEVERR(inst->dev_id, "BAR address not available in simulation");
 	return -EFAULT;
 }
 

@@ -79,4 +79,6 @@ dict set stdcomps   tapasco_mmu          vlnv   "esa.informatik.tu-darmstadt.de:
 dict set stdcomps   page_dma             vlnv   "esa.informatik.tu-darmstadt.de:user:PageDMA:1.0"
 dict set stdcomps   network_page_dma     vlnv   "esa.informatik.tu-darmstadt.de:user:NetworkPageDMA:1.0"
 dict set stdcomps   eth_flow_ctrl        vlnv   "esa.informatik.tu-darmstadt.de:user:EthernetFlowControl:1.0"
+dict set stdcomps   nvme_streamer_uram   vlnv   "esa.informatik.tu-darmstadt.de:user:NvmeStreamerUram:1.0"
+dict set stdcomps   nvme_streamer_dram   vlnv   "esa.informatik.tu-darmstadt.de:user:NvmeStreamerDram:1.0"
 dict set stdcomps   axi_dbg_hub          vlnv   "xilinx.com:ip:axi_dbg_hub:2.0"

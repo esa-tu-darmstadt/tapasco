@@ -30,6 +30,10 @@ long pcie_ioctl_dma_buffer_allocate(struct tlkm_device *inst, struct tlkm_dma_bu
 long pcie_ioctl_dma_buffer_free(struct tlkm_device *inst, struct tlkm_dma_buffer_op __user *param);
 long pcie_ioctl_dma_buffer_to_dev(struct tlkm_device *inst, struct tlkm_dma_buffer_op __user *param);
 long pcie_ioctl_dma_buffer_from_dev(struct tlkm_device *inst, struct tlkm_dma_buffer_op __user *param);
+long pcie_ioctl_kernel_buffer_allocate(struct tlkm_device *inst, struct tlkm_gp_buffer_allocate_cmd *cmd);
+long pcie_ioctl_kernel_buffer_free(struct tlkm_device *inst, struct tlkm_dma_buffer_op *cmd);
+long pcie_ioctl_kernel_buffer_map(struct tlkm_device *inst, struct tlkm_gp_buffer_map_cmd *cmd);
+long pcie_ioctl_kernel_buffer_unmap(struct tlkm_device *inst, struct tlkm_dma_buffer_op *cmd);
 
 static inline long pcie_ioctl_info(struct tlkm_device *inst,
 				   struct tlkm_device_info *info)
@@ -180,6 +184,120 @@ long pcie_ioctl_dma_buffer_from_dev(struct tlkm_device *inst,
 		pdev->dma_buffer[param->buffer_id].direction,
 		pdev->dma_buffer[param->buffer_id].size);
 
+	return 0;
+}
+
+long pcie_ioctl_kernel_buffer_allocate(struct tlkm_device *inst,
+				       struct tlkm_gp_buffer_allocate_cmd *cmd)
+{
+	struct gp_buf *new, *tail;
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)inst->private_data;
+
+	if (cmd->size > 4UL << 20)
+		return -ENOMEM;
+
+	new = devm_kzalloc(&pdev->pdev->dev, sizeof(*new), GFP_KERNEL);
+	if (!new) {
+		ERR("Failed to allocate list entry");
+		return -ENOMEM;
+	}
+
+	new->size = cmd->size;
+	new->buf = kmalloc(cmd->size, GFP_KERNEL);
+	if (!new->buf) {
+		devm_kfree(&pdev->pdev->dev, new);
+		ERR("Failed to allocate kernel buffer of size 0x%zx", cmd->size);
+		return -ENOMEM;
+	}
+
+	if (list_empty(&pdev->gp_buffer)) {
+		new->buffer_id = 1;
+	} else {
+		tail = list_entry(pdev->gp_buffer.prev, struct gp_buf, list);
+		new->buffer_id = tail->buffer_id + 1;
+	}
+	list_add_tail(&new->list, &pdev->gp_buffer);
+	cmd->buffer_id = new->buffer_id;
+	return 0;
+}
+
+long pcie_ioctl_kernel_buffer_free(struct tlkm_device *inst,
+				   struct tlkm_dma_buffer_op *cmd)
+{
+	struct gp_buf *old;
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)inst->private_data;
+
+	list_for_each_entry(old, &pdev->gp_buffer, list) {
+		if (old->buffer_id == cmd->buffer_id) {
+			list_del(&old->list);
+			if (old->dev_addr) {
+				dma_unmap_single(&pdev->pdev->dev, old->dev_addr,
+						 old->size, DMA_FROM_DEVICE);
+			}
+			kfree(old->buf);
+			devm_kfree(&pdev->pdev->dev, old);
+		}
+		return 0;
+	}
+	return -ENOENT;
+}
+
+long pcie_ioctl_kernel_buffer_map(struct tlkm_device *inst,
+				  struct tlkm_gp_buffer_map_cmd *cmd)
+{
+	struct gp_buf *buf;
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)inst->private_data;
+
+	list_for_each_entry(buf, &pdev->gp_buffer, list) {
+		if (buf->buffer_id == cmd->buffer_id) {
+			buf->dev_addr = dma_map_single(&pdev->pdev->dev, buf->buf,
+						       buf->size, DMA_TO_DEVICE);
+			if (dma_mapping_error(&pdev->pdev->dev, buf->dev_addr)) {
+				ERR("Failed to map kernel buffer for DMA");
+				return -ENOMEM;
+			}
+			cmd->dev_addr = buf->dev_addr;
+			return 0;
+		}
+	}
+	return -ENOENT;
+}
+
+long pcie_ioctl_kernel_buffer_unmap(struct tlkm_device *inst,
+				    struct tlkm_dma_buffer_op *cmd)
+{
+	struct gp_buf *buf;
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)inst->private_data;
+
+	list_for_each_entry(buf, &pdev->gp_buffer, list) {
+		if (buf->buffer_id == cmd->buffer_id) {
+			dma_unmap_single(&pdev->pdev->dev, buf->dev_addr,
+					 buf->size, DMA_FROM_DEVICE);
+			buf->dev_addr = 0;
+			return 0;
+		}
+	}
+	return -ENOENT;
+}
+
+static inline long pcie_ioctl_bar_addr(struct tlkm_device *inst,
+				       struct tlkm_bar_addr_cmd *cmd)
+{
+	struct tlkm_pcie_device *pdev =
+		(struct tlkm_pcie_device *)inst->private_data;
+
+	if (cmd->bar_idx == 0)
+		cmd->bar_addr = pdev->phy_addr_bar0;
+	else if (cmd->bar_idx == 2 && pci_resource_len(pdev->pdev, 2) > 0)
+		cmd->bar_addr = pci_resource_start(pdev->pdev, 2);
+	else if (cmd->bar_idx == 4 && pci_resource_len(pdev->pdev, 4) > 0)
+		cmd->bar_addr = pci_resource_start(pdev->pdev, 4);
+	else
+		return -ENOENT;
 	return 0;
 }
 

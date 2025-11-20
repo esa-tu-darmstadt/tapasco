@@ -917,6 +917,16 @@ struct Tapasco {
     return default_legacy_caps & cap;
   }
 
+  /**
+   * Returns a pointer to the plugin object specified as type parameter
+   *
+   * CAUTION: Plugin pointer may become invalid as soon as the related
+   * TaPaSCo device is out-of-scope and/or is destroyed
+   */
+  template<typename T>
+  T get_plugin() {
+    return T::get_instance(this->device_internal.get_device());
+  }
 private:
 
   /* {@ Callback generation methods. */

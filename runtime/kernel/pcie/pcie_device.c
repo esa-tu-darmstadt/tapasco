@@ -65,6 +65,7 @@ static int claim_device(struct tlkm_pcie_device *pdev)
 		goto error_pci_req;
 	}
 
+	INIT_LIST_HEAD(&pdev->gp_buffer);
 	dev_set_drvdata(&dev->dev, pdev);
 
 	/* read out pci bar 0 settings */
@@ -479,6 +480,7 @@ void pcie_device_miscdev_close(struct tlkm_device *dev)
 		(struct tlkm_pcie_device *)dev->private_data;
 
 	int i;
+	struct gp_buf *buf, *tmp;
 
 #if defined(EN_SVM) && LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0)
 	dev_addr_t mmu_base;
@@ -493,6 +495,14 @@ void pcie_device_miscdev_close(struct tlkm_device *dev)
 				pdev->dma_buffer[i].size);
 			pdev->dma_buffer[i].size = 0;
 		}
+	}
+	list_for_each_entry_safe(buf, tmp, &pdev->gp_buffer, list) {
+		if (buf->dev_addr)
+			dma_unmap_single(&pdev->pdev->dev, buf->dev_addr,
+					 buf->size, DMA_FROM_DEVICE);
+		kfree(buf->buf);
+		list_del(&buf->list);
+		devm_kfree(&pdev->pdev->dev, buf);
 	}
 
 #if defined(EN_SVM) && LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0)
