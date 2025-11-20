@@ -238,9 +238,7 @@ namespace eval platform {
     }
 
     # regslices if NVMe plugin is active and DDR is used
-    set nvme_ddr_type [tapasco::get_feature_option "NVME" "ddr" "none"]
-    puts $nvme_ddr_type
-    set use_ddr [expr {[tapasco::is_feature_enabled "NVME"] && [tapasco::get_feature_option "NVME" "ddr" "none"] == "local"}]
+    set use_ddr [expr {[tapasco::is_feature_enabled "NVME"] && [tapasco::get_feature_option "NVME" "memory" "none"] == "on-board-dram"}]
     insert_regslice "nvme_ddr" $use_ddr "/nvme/M_DDR_NVME" "/memory/S_DDR_NVME" "/clocks_and_resets/mem_clk" "/clocks_and_resets/mem_interconnect_aresetn" ""
 
     if {[is_regslice_enabled "pe" false]} {

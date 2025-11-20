@@ -24,14 +24,16 @@ if {[tapasco::is_feature_enabled "NVME"]} {
       error "ERROR: NVME feature not suppoerted on specified platform"
     }
 
-    set ddr_opt [tapasco::get_feature_option "NVME" "ddr" "none"]
-    puts "ddr_opt: $ddr_opt"
-    if {$ddr_opt == "local"} {
-      puts "Use local DDR memory"
-    } elseif {$ddr_opt == "host" } {
-      puts "Use host DDR memory"
+    set mem_opt [tapasco::get_feature_option "NVME" "memory" "none"]
+    if {$mem_opt == "on-board-dram"} {
+      puts "Use FPGA on-board DRAM for data transfer"
+    } elseif {$mem_opt == "host-dram" } {
+      puts "Use host DRAM for data transfer"
+    } elseif {$mem_opt == "uram"} {
+      puts "Use integrated URAM for data transfer"
     } else {
-      puts "Do not use DDR memory"
+      error "ERROR: Invalid memory option for NVMe extension."
+      exit 1
     }
 
     set pcie_aclk [tapasco::subsystem::get_port "host" "clk"]
@@ -51,20 +53,20 @@ if {[tapasco::is_feature_enabled "NVME"]} {
     set s_write_cmd [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 "S_NVME_WR_CMD"]
     set m_read_rsp [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 "M_NVME_RD_RSP"]
     set m_write_rsp [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 "M_NVME_WR_RSP"]
-    if {$ddr_opt == "none" || $ddr_opt == "local"} {
+    if {$mem_opt == "uram" || $mem_opt == "on-board-dram"} {
       # connection is not used if we use data buffers in host memory
       set s_nvme_data [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_NVME_DATA"]
     }
-    if {$ddr_opt == "local" || $ddr_opt == "host"} {
+    if {$mem_opt == "on-board-dram" || $mem_opt == "host-dram"} {
       set m_nvme_ddr [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_DDR_NVME"]
     }
 
     # create NVMeStreamer
-    if {$ddr_opt == "none"} {
+    if {$mem_opt == "uram"} {
       set nvmestr [tapasco::ip::create_nvme_streamer_uram nvme_streamer_uram_0]
     } else {
       set nvmestr [tapasco::ip::create_nvme_streamer_dram nvme_streamer_dram_0]
-      if {$ddr_opt == "host"} {
+      if {$mem_opt == "host-dram"} {
         set_property CONFIG.host_ddr 0x1 $nvmestr
       } else {
         set_property CONFIG.host_ddr 0x0 $nvmestr
@@ -107,11 +109,11 @@ if {[tapasco::is_feature_enabled "NVME"]} {
     connect_bd_intf_net [get_bd_intf_pins $nvmestr/M_AXIS_WRITE] [get_bd_intf_pins $axis_wr_rsp_rs/S_AXIS]
     connect_bd_intf_net [get_bd_intf_pins $axis_wr_rsp_rs/M_AXIS] [get_bd_intf_pins $axis_wr_rsp_ic/S00_AXIS]
     connect_bd_intf_net [get_bd_intf_pins $axis_wr_rsp_ic/M00_AXIS] $m_write_rsp
-    if {$ddr_opt == "none"} {
+    if {$mem_opt == "uram"} {
       connect_bd_intf_net $s_nvme_data [get_bd_intf_pins $nvmestr/S_AXI_URAM_PRP]
     } else {
       connect_bd_intf_net [get_bd_intf_pins $nvmestr/M_AXI_DDR_NVMe] $m_nvme_ddr
-      if {$ddr_opt == "local"} {
+      if {$mem_opt == "on-board-dram"} {
         # connection is not used if we use data buffers in host memory
         connect_bd_intf_net $s_nvme_data [get_bd_intf_pins $nvmestr/S_AXI_PCIe]
       }
@@ -160,7 +162,7 @@ if {[tapasco::is_feature_enabled "NVME"]} {
 
     platform::nvme::add_host_ports
     platform::nvme::add_arch_ports
-    if {$ddr_opt == "local"} {
+    if {$mem_opt == "on-board-dram"} {
       platform::nvme::add_mem_ports
     }
   }
@@ -177,18 +179,18 @@ namespace eval nvme {
     puts "Add host ports for NVME plugin"
     set inst [current_bd_instance .]
     current_bd_instance "/host"
-    set ddr_opt [tapasco::get_feature_option "NVME" "ddr" "none"]
+    set mem_opt [tapasco::get_feature_option "NVME" "memory" "none"]
 
     set m_nvme_queues [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_NVME_QUEUES"]
     set m_nvme_ctrl [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_NVME_CTRL"]
-    if {$ddr_opt == "none" || $ddr_opt == "local"} {
+    if {$mem_opt == "uram" || $mem_opt == "on-board-dram"} {
       set m_nvme_data [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 "M_NVME_DATA"]
     }
     set out_ic [get_bd_cells out_ic]
     set in_ic [get_bd_cells in_ic]
 
     set num_mi_out_old [get_property CONFIG.NUM_MI $out_ic]
-    if {$ddr_opt == "host"} {
+    if {$mem_opt == "host-dram"} {
       set num_mi_out [expr "$num_mi_out_old + 2"]
     } else {
       set num_mi_out [expr "$num_mi_out_old + 3"]
@@ -199,11 +201,11 @@ namespace eval nvme {
 
     connect_bd_intf_net [get_bd_intf_pins $out_ic/[format "M%02d_AXI" $num_mi_out_old]] $m_nvme_queues
     connect_bd_intf_net [get_bd_intf_pins $out_ic/[format "M%02d_AXI" [expr "$num_mi_out_old + 1"]]] $m_nvme_ctrl
-    if {$ddr_opt == "none" || $ddr_opt == "local"} {
+    if {$mem_opt == "uram" || $mem_opt == "on-board-dram"} {
       connect_bd_intf_net [get_bd_intf_pins $out_ic/[format "M%02d_AXI" [expr "$num_mi_out_old + 2"]]] $m_nvme_data
     }
 
-    if {$ddr_opt == "local"} {
+    if {$mem_opt == "on-board-dram"} {
       set pcie [get_bd_cells axi_pcie3_0]
       set_property -dict [list \
         CONFIG.pf0_bar2_enabled {true} \
@@ -216,11 +218,11 @@ namespace eval nvme {
     }
 
     set s_ssd [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_NVME_DOORBELL"]
-    if {$ddr_opt == "host"} {
+    if {$mem_opt == "host-dram"} {
       set s_ddr_pcie [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 "S_DDR_NVME"]
     }
     set num_si_in_old [get_property CONFIG.NUM_SI $in_ic]
-    if {$ddr_opt == "host"} {
+    if {$mem_opt == "host-dram"} {
       # additional connection from StreamAdapter to host memory over PCIe
       set num_si_in [expr "$num_si_in_old + 2"]
     } else {
@@ -230,7 +232,7 @@ namespace eval nvme {
       CONFIG.NUM_SI $num_si_in \
     ] $in_ic
     connect_bd_intf_net [get_bd_intf_pins $in_ic/[format "S%02d_AXI" $num_si_in_old]] $s_ssd
-    if {$ddr_opt == "host"} {
+    if {$mem_opt == "host-dram"} {
       connect_bd_intf_net [get_bd_intf_pins $in_ic/[format "S%02d_AXI" [expr "$num_si_in_old + 1"]]] $s_ddr_pcie
     }
 
@@ -267,7 +269,6 @@ namespace eval nvme {
     }
 
     set rd_cmd_match [get_bd_intf_pins -of_objects $pes -filter "vlnv == xilinx.com:interface:axis_rtl:1.0 && MODE == Master && PATH =~ *$rd_cmd_intf"]
-    puts "Specified read command interface: $rd_cmd_intf"
     if {[llength $rd_cmd_match] < 1} {
       error "ERROR: Specified AXI stream interface for NVME read commands not found"
     } else {
@@ -342,13 +343,13 @@ namespace eval nvme {
   proc addressmap {{args {}}} {
     if {[tapasco::is_feature_enabled "NVME"]} {
       set args [lappend args "M_NVME_QUEUES" [list 0x60000 0x10000 0 "PLATFORM_COMPONENT_NVME_QUEUES"]]
-      set ddr_opt [tapasco::get_feature_option "NVME" "ddr" "none"]
-      if {$ddr_opt == "none"} {
+      set mem_opt [tapasco::get_feature_option "NVME" "memory" "none"]
+      if {$mem_opt == "uram"} {
         set args [lappend args "M_NVME_DATA" [list 0x1000000 0 0x1000000 "PLATFORM_COMPONENT_NVME_DATA"]]
       } else {
         set args [lappend args "M_NVME_DATA" [list 0x8000000 0 0x8000000 ""]]
       }
-      if {$ddr_opt == "none"} {
+      if {$mem_opt == "uram"} {
         set args [lappend args "M_NVME_CTRL" [list 0x70000 0x10000 0 "PLATFORM_COMPONENT_NVME_CTRL"]]
       } else {
         set args [lappend args "M_NVME_CTRL" [list 0x100000 0 0x80000 "PLATFORM_COMPONENT_NVME_CTRL"]]

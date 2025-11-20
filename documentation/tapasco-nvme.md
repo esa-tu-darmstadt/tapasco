@@ -74,8 +74,8 @@ First, you need to specify the AXI4 Stream interfaces of your PE which are used 
 Use the `axis_read_command`, `axis_write_command`, `axis_read_response` and `axis_write_response` options and pass the name
 of the respective PE interfaces.
 
-Use the `ddr` option to specify which memory should be used to buffer NVMe data transfers. Available values are `"local"` for
-FPGA on-board DDR, `"host"` for host memory, and `"none"` if you want to use URAM.
+Use the `memory` option to specify which memory should be used to buffer NVMe data transfers. Available values are `"on-board-dram"` for
+FPGA on-board DRAM, `"host-dram"` for host memory, and `"uram"` if you want to use URAM.
 
 Optionally, you may set the PCIe address of the NVMe controller using the `ssd_base_address` option. This setting can be overwritten
 later using the [runtime plugin](#runtime).
@@ -83,7 +83,7 @@ later using the [runtime plugin](#runtime).
 A complete `compose` command could look like this:
 
 ```bash
-tapasco compose [NvmeTestPE x 1] @ 100 MHz -p AU280 --features 'NVME {axis_read_command: "AXIS_RD_CMD", axis_write_command: "AXIS_WR_CMD", axis_read_response: "AXIS_RD_RSP", axis_write_respose: "AXIS_WR_RSP", ddr: "none", ssd_base_address: 0x54000000}' 
+tapasco compose [NvmeTestPE x 1] @ 100 MHz -p AU280 --features 'NVME {axis_read_command: "AXIS_RD_CMD", axis_write_command: "AXIS_WR_CMD", axis_read_response: "AXIS_RD_RSP", axis_write_response: "AXIS_WR_RSP", memory: "uram", ssd_base_address: 0x54000000}'
 ```
 
 Or the corresponding plugin section in the JSON job file:
@@ -96,8 +96,8 @@ Or the corresponding plugin section in the JSON job file:
     "axis_read_command": "AXIS_RD_CMD",
     "axis_write_command": "AXIS_WR_CMD",
     "axis_read_response": "AXIS_RD_RSP",
-    "axis_write_respose": "AXIS_WR_RSP",
-    "ddr": "none",
+    "axis_write_response": "AXIS_WR_RSP",
+    "memory": "uram",
     "ssd_base_address": "0x54000000"
   }
 }
