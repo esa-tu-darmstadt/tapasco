@@ -853,7 +853,7 @@ impl Device {
     }
 
     /// Returns a reference to the runtime plugin being passed as type
-    pub fn get_plugin<T: Plugin + 'static>(&self) -> Result<&T> {
+    pub fn get_plugin<T: Plugin>(&self) -> Result<&T> {
         for plugin in &self.plugins {
             if let Some(p) = plugin.as_any().downcast_ref::<T>() {
                 return Ok(p);
@@ -863,7 +863,7 @@ impl Device {
     }
 
     /// Returns a mutable reference to the runtime plugin being passed as type
-    pub fn get_plugin_mut<T: Plugin + 'static>(&mut self) -> Result<&mut T> {
+    pub fn get_plugin_mut<T: Plugin>(&mut self) -> Result<&mut T> {
         for plugin in &mut self.plugins {
             if let Some(p) = plugin.as_any_mut().downcast_mut::<T>() {
                 return Ok(p);
