@@ -557,6 +557,7 @@ tapasco_compose_zcu111:
     PLATFORM: "zcu111"
     VIVADO_VERSION: "2023.2"
     XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+    LD_PRELOAD: "/usr/lib64/libudev.so.1"
   extends: .tapasco_compose_no_synth
 
 tapasco_compose_ultra96v2:
