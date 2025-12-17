@@ -70,6 +70,8 @@
     lappend ignored "/host/zynqmp/SAXIGP4/HP2_DDR_LOW"
     lappend ignored "/host/zynqmp/SAXIGP4/HP2_LPS_OCM"
     lappend ignored "/host/zynqmp/SAXIGP4/HP2_PCIE_LOW"
+    lappend ignored "/host/zynqmp/SAXIGP4/HP2_PCIE_HIGH1"
+    lappend ignored "/host/zynqmp/SAXIGP4/HP2_PCIE_HIGH2"
     lappend ignored "/host/zynqmp/SAXIGP4/HP2_QSPI"
     return $ignored
   }
