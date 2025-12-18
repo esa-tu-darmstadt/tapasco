@@ -502,6 +502,13 @@ tapasco_compose_24_1:
     LD_PRELOAD: "/usr/lib64/libudev.so.1"
   extends: .tapasco_compose
 
+tapasco_compose_24_2:
+  variables:
+    VIVADO_VERSION: "2024.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+    LD_PRELOAD: "/usr/lib64/libudev.so.1"
+  extends: .tapasco_compose
+
 tapasco_compose_pcie:
   variables:
     VIVADO_VERSION: "2018.3"
@@ -543,6 +550,14 @@ tapasco_compose_vck5000:
 tapasco_compose_netfpga_sume:
   variables:
     PLATFORM: "netfpga_sume"
+  extends: .tapasco_compose_no_synth
+
+tapasco_compose_zcu111:
+  variables:
+    PLATFORM: "zcu111"
+    VIVADO_VERSION: "2023.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
+    LD_PRELOAD: "/usr/lib64/libudev.so.1"
   extends: .tapasco_compose_no_synth
 
 tapasco_compose_ultra96v2:

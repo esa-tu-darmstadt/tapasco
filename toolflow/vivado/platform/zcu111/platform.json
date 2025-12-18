@@ -1,0 +1,12 @@
+{
+	"Name" : "zcu111",
+	"Description" : "Xilinx Zynq UltraScale+ RFSoC ZCU111 Evaluation Kit",
+	"TclLibrary" : "zcu111.tcl",
+	"Part" : "xczu28dr-ffvg1517-2-e",
+	"BoardPart" : "xilinx.com:zcu111:part0",
+	"BoardPreset" : "ZCU111",
+	"TargetUtilization" : 97,
+	"Benchmark" : "zcu111.benchmark",
+    "HostFrequency": 300.0,
+    "MemFrequency": 300.0
+}
