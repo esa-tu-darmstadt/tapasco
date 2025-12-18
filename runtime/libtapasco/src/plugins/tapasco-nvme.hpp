@@ -23,7 +23,7 @@
 
 #include <tapasco.hpp>
 
-using namespace tapasco;
+namespace tapasco {
 
 /**
  * C++ Wrapper class for NVMe runtime plugin.
@@ -129,5 +129,7 @@ private:
   TapascoNvmePlugin(NvmePlugin *p) : plugin(p) {}
   NvmePlugin *plugin;
 };
+
+} /* namespace tapasco */
 
 #endif /* TAPASCO_NVME_HPP__ */
