@@ -40,7 +40,7 @@
   foreach f [glob -nocomplain -directory "$::env(TAPASCO_HOME_TCL)/platform/${platform_dirname}/plugins" "*.tcl"] {
     source -notrace $f
   }
-
+  
   proc max_masters {} {
     return [list [::tapasco::get_platform_num_slots]]
   }
@@ -375,4 +375,8 @@
 
   proc get_pe_base_address {} {
     return 0x02000000;
+  }
+
+  proc create_clocks {name num_clocks freqs} {
+    tapasco::create_clocks_ultrascale $name $num_clocks $freqs
   }

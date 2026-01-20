@@ -36,4 +36,4 @@ namespace eval custom_constraints {
   }
 }
 
-tapasco::register_plugin "platform::custom_constraints::parse_constraints_file" "pre-arch"
+tapasco::register_plugin "platform::custom_constraints::parse_constraints_file" "pre-platform"
