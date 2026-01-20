@@ -26,7 +26,7 @@
 #SBATCH -t @@TIMELIMIT@@
 #SBATCH --comment="@@COMMENT@@"
 
-source @@TAPASCO_HOME@@/setup.sh
+source @@TAPASCO_HOME@@/tapasco-setup.sh
 
 # user commands begin here
 echo "SLURM job #$SLURM_JOB_ID started at $(date)"

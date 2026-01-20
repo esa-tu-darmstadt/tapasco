@@ -22,7 +22,6 @@
 package tapasco.jobs.executors
 
 import java.util.concurrent.Semaphore
-
 import tapasco.Logging
 import tapasco.activity.hls.HighLevelSynthesizer
 import tapasco.activity.hls.HighLevelSynthesizer.Implementation._
@@ -30,12 +29,18 @@ import tapasco.activity.hls.HighLevelSynthesizer._
 import tapasco.base._
 import tapasco.filemgmt.FileAssetManager
 import tapasco.jobs._
+import tapasco.slurm.Slurm
+import tapasco.slurm.Slurm.Completed
 import tapasco.task._
 
 protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
   private implicit final val logger = Logging.logger(getClass)
+  private[this] val _slurm = Slurm.enabled
 
-  def execute(job: HighLevelSynthesisJob)(implicit cfg: Configuration, tsk: Tasks): Boolean = {
+  def execute(job: HighLevelSynthesisJob)(implicit cfg: Configuration, tsk: Tasks): Boolean =
+    if (!_slurm) nodeExecution(job) else slurmExecution(job)
+
+  def nodeExecution(job: HighLevelSynthesisJob)(implicit cfg: Configuration, tsk: Tasks): Boolean = {
     val signal = new Semaphore(0)
     val runs: Seq[(Kernel, Target)] = for {
       a <- job.architectures.toSeq.sortBy(_.name)
@@ -93,5 +98,40 @@ protected object HighLevelSynthesis extends Executor[HighLevelSynthesisJob] {
 
     // success, if all tasks were successful
     ((tasks ++ importTasks) map (_.result) fold true) (_ && _)
+  }
+
+  def slurmExecution(job: HighLevelSynthesisJob)
+                    (implicit cfg: Configuration, tsk: Tasks): Boolean = {
+
+    val name = job.kernels.map(_.name).fold("hls")(_++"-"++_)
+    val outDir = FileAssetManager.TAPASCO_WORK_DIR.resolve("Slurm").resolve("HLS").resolve(name)
+    // needed for resource-based scheduling
+    val consumer = new HighLevelSynthesisTask(
+      job.kernels.head,
+      Target(job.architectures.head, job.platforms.head),
+      cfg,
+      VivadoHLS,
+      _ => ()
+    )
+
+    // define SLURM job
+    val sjob = Slurm.Job(
+      name     = name,
+      log      = outDir.resolve("tapasco.log"),
+      slurmLog = outDir.resolve("slurm-hls.log"),
+      errorLog = outDir.resolve("hls-slurm.errors.log"),
+      consumer = consumer,
+      maxHours = HighLevelSynthesisTask.MAX_SYNTH_HOURS,
+      job      = job,
+      cfg_file = outDir.resolve("slurm-hls.cfg")
+    )
+
+    // execute sbatch to enqueue job, then wait for it
+    val r = Slurm(sjob)(cfg) match {
+      case Some(id) => Slurm.waitFor(id) == Completed()
+      case None => false
+    }
+    FileAssetManager.reset()
+    r
   }
 }
