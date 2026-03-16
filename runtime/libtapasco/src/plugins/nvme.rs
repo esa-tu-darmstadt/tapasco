@@ -29,7 +29,8 @@ use crate::plugins::plugin::{Plugin};
 use crate::{declare_plugin};
 use crate::device::Device;
 use crate::ffi::update_last_error;
-use crate::plugins::nvme::Error::NVMeNotAvailableError;
+use crate::plugins::nvme::Error::{NVMeNotAvailableError, NoURAMOffsetError};
+use crate::plugins::plugin::Error::PluginInitializationError;
 use crate::tlkm::{tlkm_bar_addr_cmd, tlkm_gp_buffer_allocate_cmd, tlkm_gp_buffer_map_cmd};
 use crate::tlkm::{tlkm_ioctl_bar_addr, tlkm_ioctl_kernel_buffer_allocate, tlkm_ioctl_kernel_buffer_map};
 
@@ -50,6 +51,9 @@ pub enum Error {
 
     #[snafu(display("Failed to allocate buffer in off-chip memory: {}", source))]
     OffChipAllocationError { source: crate::allocator::Error },
+
+    #[snafu(display("URAM offset not available in status core"))]
+    NoURAMOffsetError {},
 }
 
 type Result<T, E = Error> = std::result::Result<T, E>;
@@ -69,11 +73,10 @@ impl From<Error> for crate::plugins::plugin::Error {
 
 #[derive(Debug)]
 pub struct NvmePlugin {
-    available: bool,
     enabled: bool,
     nvme_offset: usize,
     queue_base_addr: u64,
-    memory: Mutex<Arc<MmapMut>>,
+    memory: Option<Mutex<Arc<MmapMut>>>,
     _buffer_ids: Vec<usize>,
 }
 
@@ -123,13 +126,9 @@ impl Plugin for NvmePlugin {
         let mut nvme_offset = 0;
         let mut queue_offset = 0;
         let mut data_offset = 0;
-        let mut available = false;
-        let mut buffer_ids = Vec::new();
         for comp in &device.status().platform {
             if comp.name == "PLATFORM_COMPONENT_NVME_CTRL" {
-                trace!("NVMe component found");
                 nvme_offset = comp.offset;
-                available = true;
             } else if comp.name == "PLATFORM_COMPONENT_NVME_QUEUES" {
                 queue_offset = comp.offset;
             } else if comp.name == "PLATFORM_COMPONENT_NVME_DATA" {
@@ -137,188 +136,193 @@ impl Plugin for NvmePlugin {
             }
         }
 
-        // retrieve ID of NVMe Streamer IP
-        let nvme_memory = Mutex::new(memory.clone());
-        let id = if available {
+        if nvme_offset != 0 && queue_offset != 0 {
+            trace!("NVMe components found");
+            let mut buffer_ids = Vec::new();
+            let nvme_memory = Mutex::new(memory.clone());
             let csr_memory = nvme_memory.lock()
                 .map_err(|e| Error::from(e))?;
-            unsafe {
+
+            // retrieve ID of NVMe Streamer IP
+            let id = unsafe {
                 let ptr: *mut NvmeStreamerIP = csr_memory
                     .as_ptr()
                     .offset(nvme_offset as isize) as _;
                 read_volatile(&(*ptr).id)
-            }
-        } else { 0 };
+            };
 
-        // disable Streamer IP (state recovery)
-        if available {
-            let csr_memory = nvme_memory.lock()
-                .map_err(|e| Error::from(e))?;
+            // disable Streamer IP (state recovery)
             unsafe {
                 let ptr: *mut NvmeStreamerIP = csr_memory
                     .as_ptr()
                     .offset(nvme_offset as isize) as _;
                 write_volatile(&mut (*ptr).enabled, 0);
             }
-        }
 
-        // retrieve PCIe address of FPGA's BARs for computing the queues' addresses
-        let mut bar_addr_cmd = tlkm_bar_addr_cmd {
-            bar_idx: 0,
-            bar_addr: 0,
-        };
-        unsafe {
-            tlkm_ioctl_bar_addr(tlkm_file.as_raw_fd(), &mut bar_addr_cmd)
-                .context(IOCTLSnafu {})?;
-        }
-        let bar0 = bar_addr_cmd.bar_addr;
-        let bar2 = if id ==  LOCAL_DDR_STREAMER_ID {
-            bar_addr_cmd.bar_idx = 2;
-            bar_addr_cmd.bar_addr = 0;
+            // retrieve PCIe address of FPGA's BARs for computing the queues' addresses
+            let mut bar_addr_cmd = tlkm_bar_addr_cmd {
+                bar_idx: 0,
+                bar_addr: 0,
+            };
             unsafe {
                 tlkm_ioctl_bar_addr(tlkm_file.as_raw_fd(), &mut bar_addr_cmd)
                     .context(IOCTLSnafu {})?;
             }
-            bar_addr_cmd.bar_addr
-        } else { 0 };
-        let queue_base_addr = if available {
-            bar0 + queue_offset
-        } else { 0 };
+            let bar0 = bar_addr_cmd.bar_addr;
+            let queue_base_addr = bar0 + queue_offset;
 
-        if id == LOCAL_DDR_STREAMER_ID {
-            trace!("NVMe streamer IP uses FPGA-local DDR memory");
-            let csr_memory = nvme_memory.lock()
-                .map_err(|e| Error::from(e))?;
+            if id == LOCAL_DDR_STREAMER_ID {
+                trace!("NVMe streamer IP uses FPGA-local DDR memory");
 
-            // set PCIe PRP list address
-            unsafe {
-                let ptr: *mut NvmeStreamerIP = csr_memory
-                    .as_ptr()
-                    .offset(nvme_offset as isize) as _;
-                write_volatile(&mut (*ptr).prp_addr, bar0 + nvme_offset + (256u64 << 10));
-            }
-
-            // allocate memory in FPGA on-board DRAM and write BAR2 address
-            let addr = device
-                .default_memory()
-                .context(NoOffChipMemorySnafu {})?
-                .allocator()
-                .lock()
-                .map_err(|e| Error::from(e))?
-                .allocate(128u64 << 20, None).context(OffChipAllocationSnafu {})?;
-
-            unsafe {
-                let ptr: *mut NvmeStreamerIP = csr_memory
-                    .as_ptr()
-                    .offset(nvme_offset as isize) as _;
-                write_volatile(&mut (*ptr).pcie_read_base, bar2 + addr);
-                write_volatile(&mut (*ptr).pcie_write_base, bar2 + addr + (64u64 << 20));
-                write_volatile(&mut (*ptr).ddr_read_base, addr);
-                write_volatile(&mut (*ptr).ddr_write_base, addr + (64u64 << 20));
-            }
-        } else if id == HOST_STREAMER_ID {
-            trace!("NVMe streamer IP uses host memory");
-            // allocate buffer in host DRAM and write address to config regs
-            let csr_memory = nvme_memory.lock()
-                .map_err(|e| Error::from(e))?;
-
-            // set PCIe PRP list address
-            unsafe {
-                let ptr: *mut NvmeStreamerIP = csr_memory
-                    .as_ptr()
-                    .offset(nvme_offset as isize) as _;
-                write_volatile(&mut (*ptr).prp_addr, bar0 + nvme_offset + (256u64 << 10));
-            }
-
-            // allocate DMA buffers in host DDR and write CSRs with PCIe addresses
-            for i in 0..16 {
-                let mut alloc_cmd = tlkm_gp_buffer_allocate_cmd {
-                    size: 4 << 20,
-                    buffer_id: 0,
-                };
+                bar_addr_cmd.bar_idx = 2;
+                bar_addr_cmd.bar_addr = 0;
                 unsafe {
-                    tlkm_ioctl_kernel_buffer_allocate(tlkm_file.as_raw_fd(), &mut alloc_cmd)
+                    tlkm_ioctl_bar_addr(tlkm_file.as_raw_fd(), &mut bar_addr_cmd)
                         .context(IOCTLSnafu {})?;
                 }
-                buffer_ids.push(alloc_cmd.buffer_id);
-                let mut map_cmd = tlkm_gp_buffer_map_cmd {
-                    buffer_id: alloc_cmd.buffer_id,
-                    dev_addr: 0,
-                };
+                let bar2 = bar_addr_cmd.bar_addr;
+
+                // set PCIe PRP list address
                 unsafe {
-                    tlkm_ioctl_kernel_buffer_map(tlkm_file.as_raw_fd(), &mut map_cmd)
-                        .context(IOCTLSnafu {})?;
+                    let ptr: *mut NvmeStreamerIP = csr_memory
+                        .as_ptr()
+                        .offset(nvme_offset as isize) as _;
+                    write_volatile(&mut (*ptr).prp_addr, bar0 + nvme_offset + (256u64 << 10));
+                }
+
+                // allocate memory in FPGA on-board DRAM and write BAR2 address
+                let addr = device
+                    .default_memory()
+                    .context(NoOffChipMemorySnafu {})?
+                    .allocator()
+                    .lock()
+                    .map_err(|e| Error::from(e))?
+                    .allocate(128u64 << 20, None).context(OffChipAllocationSnafu {})?;
+
+                unsafe {
+                    let ptr: *mut NvmeStreamerIP = csr_memory
+                        .as_ptr()
+                        .offset(nvme_offset as isize) as _;
+                    write_volatile(&mut (*ptr).pcie_read_base, bar2 + addr);
+                    write_volatile(&mut (*ptr).pcie_write_base, bar2 + addr + (64u64 << 20));
+                    write_volatile(&mut (*ptr).ddr_read_base, addr);
+                    write_volatile(&mut (*ptr).ddr_write_base, addr + (64u64 << 20));
+                }
+            } else if id == HOST_STREAMER_ID {
+                trace!("NVMe streamer IP uses host memory");
+                // allocate buffer in host DRAM and write address to config regs
+                // set PCIe PRP list address
+                unsafe {
+                    let ptr: *mut NvmeStreamerIP = csr_memory
+                        .as_ptr()
+                        .offset(nvme_offset as isize) as _;
+                    write_volatile(&mut (*ptr).prp_addr, bar0 + nvme_offset + (256u64 << 10));
+                }
+
+                // allocate DMA buffers in host DDR and write CSRs with PCIe addresses
+                for i in 0..16 {
+                    let mut alloc_cmd = tlkm_gp_buffer_allocate_cmd {
+                        size: 4 << 20,
+                        buffer_id: 0,
+                    };
+                    unsafe {
+                        tlkm_ioctl_kernel_buffer_allocate(tlkm_file.as_raw_fd(), &mut alloc_cmd)
+                            .context(IOCTLSnafu {})?;
+                    }
+                    buffer_ids.push(alloc_cmd.buffer_id);
+                    let mut map_cmd = tlkm_gp_buffer_map_cmd {
+                        buffer_id: alloc_cmd.buffer_id,
+                        dev_addr: 0,
+                    };
+                    unsafe {
+                        tlkm_ioctl_kernel_buffer_map(tlkm_file.as_raw_fd(), &mut map_cmd)
+                            .context(IOCTLSnafu {})?;
+                    }
+                    unsafe {
+                        let ptr: *mut NvmeStreamerIP = csr_memory
+                            .as_ptr()
+                            .offset(nvme_offset as isize) as _;
+                        write_volatile(&mut (*ptr).pcie_read_base_host[i], map_cmd.dev_addr);
+                    }
+                    trace!("Allocated buffer with device address 0x{:x} and ID {}",
+                    map_cmd.dev_addr, alloc_cmd.buffer_id);
+                }
+                for i in 0..16 {
+                    let mut alloc_cmd = tlkm_gp_buffer_allocate_cmd {
+                        size: 4 << 20,
+                        buffer_id: 0,
+                    };
+                    unsafe {
+                        tlkm_ioctl_kernel_buffer_allocate(tlkm_file.as_raw_fd(), &mut alloc_cmd)
+                            .context(IOCTLSnafu {})?;
+                    }
+                    buffer_ids.push(alloc_cmd.buffer_id);
+                    let mut map_cmd = tlkm_gp_buffer_map_cmd {
+                        buffer_id: alloc_cmd.buffer_id,
+                        dev_addr: 0,
+                    };
+                    unsafe {
+                        tlkm_ioctl_kernel_buffer_map(tlkm_file.as_raw_fd(), &mut map_cmd)
+                            .context(IOCTLSnafu {})?;
+                    }
+                    unsafe {
+                        let ptr: *mut NvmeStreamerIP = csr_memory
+                            .as_ptr()
+                            .offset(nvme_offset as isize) as _;
+                        write_volatile(&mut (*ptr).pcie_write_base_host[i], map_cmd.dev_addr);
+                    }
+                    trace!("Allocated buffer with device address 0x{:x} and ID {}",
+                    map_cmd.dev_addr, alloc_cmd.buffer_id);
+                }
+            } else if id == URAM_STREAMER_ID {
+                trace!("NVMe streamer IP uses URAM");
+                if data_offset == 0 {
+                    return Err(PluginInitializationError {
+                        source: Box::new(NoURAMOffsetError {})
+                    });
                 }
                 unsafe {
                     let ptr: *mut NvmeStreamerIP = csr_memory
                         .as_ptr()
                         .offset(nvme_offset as isize) as _;
-                    write_volatile(&mut (*ptr).pcie_read_base_host[i], map_cmd.dev_addr);
+                    write_volatile(&mut (*ptr).bram_addr, bar0 + data_offset);
                 }
-                trace!("Allocated buffer with device address 0x{:x} and ID {}",
-                    map_cmd.dev_addr, alloc_cmd.buffer_id);
             }
-            for i in 0..16 {
-                let mut alloc_cmd = tlkm_gp_buffer_allocate_cmd {
-                    size: 4 << 20,
-                    buffer_id: 0,
-                };
-                unsafe {
-                    tlkm_ioctl_kernel_buffer_allocate(tlkm_file.as_raw_fd(), &mut alloc_cmd)
-                        .context(IOCTLSnafu {})?;
-                }
-                buffer_ids.push(alloc_cmd.buffer_id);
-                let mut map_cmd = tlkm_gp_buffer_map_cmd {
-                    buffer_id: alloc_cmd.buffer_id,
-                    dev_addr: 0,
-                };
-                unsafe {
-                    tlkm_ioctl_kernel_buffer_map(tlkm_file.as_raw_fd(), &mut map_cmd)
-                        .context(IOCTLSnafu {})?;
-                }
-                unsafe {
-                    let ptr: *mut NvmeStreamerIP = csr_memory
-                        .as_ptr()
-                        .offset(nvme_offset as isize) as _;
-                    write_volatile(&mut (*ptr).pcie_write_base_host[i], map_cmd.dev_addr);
-                }
-                trace!("Allocated buffer with device address 0x{:x} and ID {}",
-                    map_cmd.dev_addr, alloc_cmd.buffer_id);
-            }
-        } else if id == URAM_STREAMER_ID {
-            trace!("NVMe streamer IP uses URAM");
-            let csr_memory = nvme_memory.lock()
-                .map_err(|e| Error::from(e))?;
+
+            // set default namespace ID
             unsafe {
                 let ptr: *mut NvmeStreamerIP = csr_memory
                     .as_ptr()
                     .offset(nvme_offset as isize) as _;
-                write_volatile(&mut (*ptr).bram_addr, bar0 + data_offset);
+                write_volatile(&mut (*ptr).nsid, 1);
             }
-        }
 
-        let new = Self {
-            available,
-            enabled: false,
-            nvme_offset: nvme_offset as usize,
-            queue_base_addr,
-            memory: nvme_memory,
-            _buffer_ids: buffer_ids,
-        };
 
-        // set default namespace ID
-        if available {
-            new.set_nvme_namespace_id(1)?;
             info!("NVMe plugin available and initialized for current device");
+
+            drop(csr_memory);
+            Ok(Box::new(Self {
+                enabled: false,
+                nvme_offset: nvme_offset as usize,
+                queue_base_addr,
+                memory: Some(nvme_memory),
+                _buffer_ids: buffer_ids,
+            }))
         } else {
             trace!("NVMe plugin not available for current device");
+            Ok(Box::new(Self {
+                enabled: false,
+                nvme_offset: 0,
+                queue_base_addr: 0,
+                memory: None,
+                _buffer_ids: Vec::new(),
+            }))
         }
-        Ok(Box::new(new))
     }
 
     /// Check whether NVMe plugin is available in loaded bitstream
     fn is_available(&self) -> bool {
-        self.available
+        self.memory.is_some()
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -337,62 +341,70 @@ impl Drop for NvmePlugin {
 impl NvmePlugin {
     /// Set PCIe address of NVMe controller
     pub fn set_nvme_pcie_addr(&self, addr: u64) -> Result<()> {
-        if self.available {
-            // set PCIe addresses of doorbell registers
-            let csr_memory = self.memory.lock()?;
-            let sq_tail_db = addr + 0x1008;
-            let cq_head_db = addr + 0x100c;
-            unsafe {
-                let ptr: *mut NvmeStreamerIP = csr_memory
-                    .as_ptr()
-                    .offset(self.nvme_offset as isize) as _;
-                write_volatile(&mut (*ptr).nvme_sq_tail_db, sq_tail_db);
-                write_volatile(&mut (*ptr).nvme_cq_head_db, cq_head_db);
-            }
-            Ok(())
-        } else { Err(NVMeNotAvailableError {}) }
+        match &self.memory {
+            Some(mem) => {
+                // set PCIe addresses of doorbell registers
+                let csr_memory = mem.lock()?;
+                let sq_tail_db = addr + 0x1008;
+                let cq_head_db = addr + 0x100c;
+                unsafe {
+                    let ptr: *mut NvmeStreamerIP = csr_memory
+                        .as_ptr()
+                        .offset(self.nvme_offset as isize) as _;
+                    write_volatile(&mut (*ptr).nvme_sq_tail_db, sq_tail_db);
+                    write_volatile(&mut (*ptr).nvme_cq_head_db, cq_head_db);
+                }
+                Ok(())},
+            None => { Err(NVMeNotAvailableError {}) }
+        }
     }
 
     /// Returns tuple with PCIe addresses of submission queue (first element)
     /// and completion queue (second element)
     pub fn get_queue_base_addr(&self) -> Result<(u64, u64)> {
-        if self.available {
-            let sq_base = self.queue_base_addr;
-            let cq_base = self.queue_base_addr + 0x1000;
-            Ok((sq_base, cq_base))
-        } else { Err(NVMeNotAvailableError {}) }
+        match &self.memory {
+            Some(_mem) => {
+                let sq_base = self.queue_base_addr;
+                let cq_base = self.queue_base_addr + 0x1000;
+                Ok((sq_base, cq_base))},
+            None => { Err(NVMeNotAvailableError {}) }
+        }
     }
 
     /// Set namespace ID to be used for data transfers
     pub fn set_nvme_namespace_id(&self, namespace_id: u64) -> Result<()> {
-        if self.available {
-            let csr_memory = self.memory.lock()?;
-            unsafe {
-                let ptr: *mut NvmeStreamerIP = csr_memory
-                    .as_ptr()
-                    .offset(self.nvme_offset as isize) as _;
-                write_volatile(&mut (*ptr).nsid, namespace_id);
-            }
-            Ok(())
-        } else { Err(NVMeNotAvailableError {}) }
-    }
-
-    /// (un)set enable flag of NVMe Streamer IP
-    fn set_enable(&mut self, enable: bool) -> Result<()> {
-        if self.available {
-            if !self.enabled && enable || self.enabled && !enable {
-                let en_u64 = if enable { 1 } else { 0 };
-                let csr_memory = self.memory.lock()?;
+        match &self.memory {
+            Some(mem) => {
+                let csr_memory = mem.lock()?;
                 unsafe {
                     let ptr: *mut NvmeStreamerIP = csr_memory
                         .as_ptr()
                         .offset(self.nvme_offset as isize) as _;
-                    write_volatile(&mut (*ptr).enabled, en_u64);
+                    write_volatile(&mut (*ptr).nsid, namespace_id);
                 }
-                self.enabled = enable;
-            }
-            Ok(())
-        } else { Err(NVMeNotAvailableError {}) }
+                Ok(())},
+            None => { Err(NVMeNotAvailableError {}) }
+        }
+    }
+
+    /// (un)set enable flag of NVMe Streamer IP
+    fn set_enable(&mut self, enable: bool) -> Result<()> {
+        match &self.memory {
+            Some(mem) => {
+                if !self.enabled && enable || self.enabled && !enable {
+                    let en_u64 = if enable { 1 } else { 0 };
+                    let csr_memory = mem.lock()?;
+                    unsafe {
+                        let ptr: *mut NvmeStreamerIP = csr_memory
+                            .as_ptr()
+                            .offset(self.nvme_offset as isize) as _;
+                        write_volatile(&mut (*ptr).enabled, en_u64);
+                    }
+                    self.enabled = enable;
+                }
+                Ok(())},
+            None => { Err(NVMeNotAvailableError {}) }
+        }
     }
 
     /// enable NVMe Streamer IP and plugin
