@@ -67,6 +67,11 @@ parser.add_argument(
     '--list-adapter',
     help='list available programming adapters (PCIe only)',
     action='store_true')
+parser.add_argument(
+    '--disable-link',
+    help='disable downlink in PCIe root port (PCIe only)',
+    metavar='PCIE_BDF',
+    action='store')
 args = parser.parse_args()
 
 if 'TAPASCO_HOME_RUNTIME' not in os.environ:
@@ -107,7 +112,8 @@ program = '-p' if args.mode == 'normal' or args.mode == 'program' else ''
 hotplug = '-h' if args.mode == 'normal' or args.mode == 'hotplug' else ''
 adapter = "-a {}".format(args.adapter) if args.adapter and len(args.adapter) > 0 else ''
 listadapter = '-l' if args.list_adapter else ''
+disablelink = "-r {}".format(args.disable_link) if args.disable_link and len(args.disable_link) > 0 else ''
 
-cmd = '$TAPASCO_HOME_RUNTIME/scripts/$TAPASCO_PLATFORM/bit_reload.sh {0} {1} {2} {3} {4} {5} {6} {7}'.format(
-    verb, reld, nold, hotplug, program, adapter, listadapter, args.bitstream)
+cmd = '$TAPASCO_HOME_RUNTIME/scripts/$TAPASCO_PLATFORM/bit_reload.sh {0} {1} {2} {3} {4} {5} {6} {7} {8}'.format(
+    verb, reld, nold, hotplug, program, adapter, listadapter, disablelink, args.bitstream)
 subprocess.call([cmd], shell=True)

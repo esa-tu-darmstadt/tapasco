@@ -43,6 +43,7 @@ Program PCIe based FPGAs in JTAG chain with BITSTREAM.
 	-a <ADAPTER>	select programming adapter
 	-l	list available programming adapters
 	-h	hotplug the device
+	-r <PCIe BDF>	disable PCIe downlink in root port
 EOF
 }
 
@@ -85,10 +86,11 @@ NOLOADD=0
 HOTPLUG=0
 PROGRAM=0
 ADAPTER="NOADAPTER"
+PCIEBDF="NOBDF"
 LISTADAPTER=0
 
 OPTIND=1
-while getopts vdnhpa:l opt; do
+while getopts vdnhpa:lr: opt; do
 	case $opt in
 		v)
 			VERBOSE=1
@@ -110,6 +112,9 @@ while getopts vdnhpa:l opt; do
 			;;
 		l)
 			LISTADAPTER=1
+			;;
+		r)
+			PCIEBDF="$OPTARG"
 			;;
 		*)
 			echo "unknown option: $opt"
@@ -136,6 +141,26 @@ then
 
 	# program the device
 	if [ $LISTADAPTER -gt 0 ] || [ $PROGRAM -gt 0 ]; then
+
+		# check PCIe BDF format and disable downlink
+		if [ "$PCIEBDF" != "NOBDF" ]; then
+			if [[ ! "$PCIEBDF" =~ ^[0-9a-fA-F]{4}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}\.[0-7]$ ]]; then
+				echo "PCIe BDF has invalid format: expecting format DDDD:BB:SS.F"
+				exit
+			fi
+
+			# get root port and check for existence
+			ROOTPORT=$(basename $(dirname $(readlink -f /sys/bus/pci/devices/$PCIEBDF)))
+			echo "ROOTPORT: $ROOTPORT"
+			if [ ! -d "/sys/bus/pci/devices/$ROOTPORT" ]; then
+				echo "Could not find matching PCIe root port: is PCIe BDF correct?"
+				exit
+			fi
+
+			# disable downlink in PCIe root port
+			sudo setpci -s $ROOTPORT CAP_EXP+0x10.w=10:10
+		fi
+
 		set +e
 		if [ $LISTADAPTER -gt 0 ] || [ $VERBOSE -gt 0 ]; then
 			vivado -nolog -nojournal -notrace -mode tcl -source $BITLOAD_SCRIPT -tclargs --bit $BITSTREAM --adapter $ADAPTER --list-adapter $LISTADAPTER
@@ -159,6 +184,12 @@ then
 			exit $VIVADORET
 		fi
 		echo "bitstream programmed successfully!"
+
+		# enable downlink in PCIe root port
+		if [ "$PCIEBDF" != "NOBDF" ]; then
+			# enable downlink in PCIe root port
+			sudo setpci -s $ROOTPORT CAP_EXP+0x10.w=00:10
+		fi
 
 	fi
 
