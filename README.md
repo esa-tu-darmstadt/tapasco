@@ -169,7 +169,7 @@ Getting Started - Build a TaPaSCo design
     *   HDL flow: `tapasco import path/to/ZIP as <ID> -p <PLATFORM>` will import the corresponding ZIP file as a new HDL-based core. The Kernel-ID is set from <ID> and the optional flag `-p <PLATFORM>` determines for which platform the kernel will be available. If it is omitted, it will be made available for all platforms which may take a lot of time.
     *   HLS flow: `tapasco hls <KERNEL> -p <PLATFORM>` will perform hls according to the `kernel.json`. The resulting HLS-based core will be made available for the platform given by `-p <PLATFORM>`. Again, `-p` can be omitted. HLS-Kernels are generally located in `$TAPASCO_WORKDIR/kernel`. If you want to add kernels you can create either symlink or copy them into the folder. Additionally, the folder can be temporarily changed using the optional `--kernelDir path/to/kernels` flag like this: `tapasco --kernelDir path/to/kernels hls <KERNEL> -p <PLATFORM>`
 2.  Create a composition: `tapasco compose [<KERNEL> x <COUNT>] @ <NUM> MHz -p <PLATFORM>`
-3.  Load the bitstream: `tapasco-load-bitstream <BITSTREAM>`
+3.  Load the bitstream (see below for more details): `tapasco-load-bitstream <BITSTREAM>`
 4.  Implement your host software
     *   C API
     *   C++ API
@@ -183,6 +183,15 @@ Getting Started - Build a Software-Interface
 2.  Load your bitstream: `tapasco-load-bitstream my-design.bit --reload-driver`. To do this, you have to source `vivado` and `tapasco-setup.sh`.
 3.  Write a C/C++ executable that interfaces with your design accordingly. To get a better understanding of this, you might want to refer to the collection of examples and the corresponding README which is located in `$TAPASCO_HOME/runtime/examples`
 4.  Build and Compile your Software.
+
+### Tips and Tricks for Server Environments
+
+- Always use the `--reload-driver` option to ensure correct user access permissions for the device file after programming.
+- If multiple devices are attached to the same server, you must select the correct programming adapter using the `--adapter <adapter_id>` argument of `tapasco-load-bitstream`. You can list all available adapters with `tapasco-load-bitstream my-design.bit --verbose --list-adapters`. Using only the last few characters of the adapter ID is sufficient.
+- Recent server CPUs often handle PCIe errors more strictly. Reprogramming the FPGA may trigger a system reboot or cause the device to no longer be detected afterward. To mitigate this, use the `--disable-link` argument with the PCIe BDF of the FPGA, which temporarily disables the PCIe link during programming. You can find the PCIe BDF using `lspci` by looking for Xilinx devices in the output. A complete command may look like this:
+```
+tapasco-load-bitstream my-design.bit --verbose --reload-driver --adapter 3HNA --disable-link 0000:71:00.0
+```
 
 Getting Started - Build a Boot Image
 --------------------------------------------

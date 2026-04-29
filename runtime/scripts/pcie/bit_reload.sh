@@ -151,13 +151,13 @@ then
 
 			# get root port and check for existence
 			ROOTPORT=$(basename $(dirname $(readlink -f /sys/bus/pci/devices/$PCIEBDF)))
-			echo "ROOTPORT: $ROOTPORT"
 			if [ ! -d "/sys/bus/pci/devices/$ROOTPORT" ]; then
 				echo "Could not find matching PCIe root port: is PCIe BDF correct?"
 				exit
 			fi
 
 			# disable downlink in PCIe root port
+			echo "Disable down link of PCIe root port $ROOTPORT"
 			sudo setpci -s $ROOTPORT CAP_EXP+0x10.w=10:10
 		fi
 
