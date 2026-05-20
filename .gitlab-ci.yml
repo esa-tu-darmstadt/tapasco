@@ -11,135 +11,134 @@ stages:
   - build_runtime
   - build_hw
 
-.test_tapasco_centos:
+.test_tapasco:
   stage: test_scala_toolflow
   retry: 2
   dependencies: []
   tags:
     - High
   script:
-    - yum -y install which java-openjdk findutils
     - ./tapasco-init.sh && source tapasco-setup.sh
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
     - ./gradlew test
+
+.test_tapasco_rockylinux:
+  extends: .test_tapasco
 
 test_tapasco_rockylinux_8:
   image: rockylinux:8
-  extends: .test_tapasco_centos
+  before_script:
+    - dnf -y install which java-17-openjdk-devel findutils
+  extends: .test_tapasco_rockylinux
+
+test_tapasco_rockylinux_9:
+  image: rockylinux:9
+  before_script:
+    - dnf -y install which java-21-openjdk-devel findutils
+  extends: .test_tapasco_rockylinux
+
+test_tapasco_rockylinux_10:
+  image: rockylinux/rockylinux:10
+  before_script:
+    - dnf -y install which java-25-openjdk-devel findutils
+  extends: .test_tapasco_rockylinux
 
 .test_tapasco_ubuntu:
-  stage: test_scala_toolflow
-  retry: 2
-  dependencies: []
-  tags:
-    - High
-  script:
+  before_script:
     - apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install unzip git zip findutils curl default-jdk
-    - ./tapasco-init.sh && source tapasco-setup.sh
-    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
-    - ./gradlew test
-
-test_tapasco_ubuntu_18_04:
-  image: ubuntu:18.04
-  extends: .test_tapasco_ubuntu
-
-test_tapasco_ubuntu_20_04:
-  image: ubuntu:20.04
-  extends: .test_tapasco_ubuntu
+  extends: .test_tapasco
 
 test_tapasco_ubuntu_22_04:
   image: ubuntu:22.04
+  before_script:
+    - apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install unzip git zip findutils curl openjdk-17-jdk
+  extends: .test_tapasco_ubuntu
+
+test_tapasco_ubuntu_24_04:
+  image: ubuntu:24.04
+  extends: .test_tapasco_ubuntu
+
+test_tapasco_ubuntu_26_04:
+  image: ubuntu:26.04
   extends: .test_tapasco_ubuntu
 
 .test_tapasco_fedora:
-  stage: test_scala_toolflow
-  retry: 2
-  tags:
-    - High
-  before_script:
-    - dnf -y install which java-openjdk findutils
-  script:
-    - ./tapasco-init.sh && source tapasco-setup.sh
-    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
-    - ./gradlew test
+  extends: .test_tapasco
 
-test_tapasco_fedora_36:
-  image: fedora:36
+test_tapasco_fedora_44:
+  image: fedora:44
   extends: .test_tapasco_fedora
   before_script:
-  - dnf -y install which findutils java-11-openjdk
+  - dnf -y install which findutils java-25-openjdk-devel
 
-.build_scala_tapasco_centos:
+.build_scala_tapasco:
   stage: build_scala_toolflow
   retry: 2
   dependencies: []
   tags:
     - High
-  before_script:
-    - yum -y install which java-openjdk findutils
+  variables:
+    PACKAGE_TYPE: ""
   script:
     - ./tapasco-init.sh && source tapasco-setup.sh
     - cd ${TAPASCO_HOME_TOOLFLOW}/scala
     - tapasco-build-toolflow
-    - ./gradlew buildRPM
+    - ./gradlew $PACKAGE_TYPE
+
+.build_scala_tapasco_rockylinux:
+  variables:
+    PACKAGE_TYPE: "buildRPM"
   artifacts:
     paths:
       - toolflow/scala/build/distributions/tapasco-2025-12.x86_64.rpm
+  extends: .build_scala_tapasco
 
 build_scala_tapasco_rockylinux_8:
   image: rockylinux:8
-  extends: .build_scala_tapasco_centos
-
-.build_scala_tapasco_fedora:
-  stage: build_scala_toolflow
-  retry: 2
-  dependencies: []
-  tags:
-    - High
   before_script:
-    - dnf -y install which java-openjdk findutils
-  script:
-    - ./tapasco-init.sh && source tapasco-setup.sh
-    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
-    - tapasco-build-toolflow
-    - ./gradlew buildRPM
-  artifacts:
-    paths:
-      - toolflow/scala/build/distributions/tapasco-2025-12.x86_64.rpm
+    - dnf -y install which java-17-openjdk-devel findutils
+  extends: .build_scala_tapasco_rockylinux
 
-build_scala_tapasco_fedora_36:
-  image: fedora:36
-  extends: .build_scala_tapasco_fedora
+build_scala_tapasco_rockylinux_9:
+  image: rockylinux:9
   before_script:
-    - dnf -y install which findutils java-11-openjdk
+    - dnf -y install which java-21-openjdk-devel findutils
+  extends: .build_scala_tapasco_rockylinux
+
+build_scala_tapasco_rockylinux_10:
+  image: rockylinux/rockylinux:10
+  before_script:
+    - dnf -y install which java-25-openjdk-devel findutils
+  extends: .build_scala_tapasco_rockylinux
+
+build_scala_tapasco_fedora_44:
+  image: fedora:44
+  before_script:
+    - dnf -y install which java-25-openjdk-devel findutils
+  extends: .build_scala_tapasco_rockylinux
 
 .build_scala_tapasco_ubuntu:
-  stage: build_scala_toolflow
-  retry: 2
-  dependencies: []
-  tags:
-    - High
+  variables:
+    PACKAGE_TYPE: "buildDEB"
   before_script:
-    - apt-get -y update && apt-get -y install default-jdk findutils
-  script:
-    - ./tapasco-init.sh && source tapasco-setup.sh
-    - cd ${TAPASCO_HOME_TOOLFLOW}/scala
-    - tapasco-build-toolflow
-    - ./gradlew buildDEB
+    - apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install default-jdk findutils
   artifacts:
     paths:
       - toolflow/scala/build/distributions/tapasco_2025-12_amd64.deb
-
-build_scala_tapasco_ubuntu_18_04:
-  image: ubuntu:18.04
-  extends: .build_scala_tapasco_ubuntu
-
-build_scala_tapasco_ubuntu_20_04:
-  image: ubuntu:20.04
-  extends: .build_scala_tapasco_ubuntu
+  extends: .build_scala_tapasco
 
 build_scala_tapasco_ubuntu_22_04:
   image: ubuntu:22.04
+  before_script:
+    - apt-get -y update && DEBIAN_FRONTEND=noninteractive apt-get -y install openjdk-17-jdk findutils
+  extends: .build_scala_tapasco_ubuntu
+
+build_scala_tapasco_ubuntu_24_04:
+  image: ubuntu:24.04
+  extends: .build_scala_tapasco_ubuntu
+
+build_scala_tapasco_ubuntu_26_04:
+  image: ubuntu:26.04
   extends: .build_scala_tapasco_ubuntu
 
 # build kernel module
@@ -160,28 +159,16 @@ build_scala_tapasco_ubuntu_22_04:
     paths:
       - runtime/kernel/tlkm.ko
 
-build_kernel_ubuntu_18_04:
-  image: ubuntu:18.04
-  extends: .build_kernel_ubuntu
-
-build_kernel_ubuntu_20_04:
-  image: ubuntu:20.04
-  extends: .build_kernel_ubuntu
-
 build_kernel_ubuntu_22_04:
   image: ubuntu:22.04
   extends: .build_kernel_ubuntu
 
-build_kernel_ubuntu_18_04_debug:
-  variables:
-    MODE: "all"
-  image: ubuntu:18.04
+build_kernel_ubuntu_24_04:
+  image: ubuntu:24.04
   extends: .build_kernel_ubuntu
 
-build_kernel_ubuntu_20_04_debug:
-  variables:
-    MODE: "all"
-  image: ubuntu:20.04
+build_kernel_ubuntu_26_04:
+  image: ubuntu:26.04
   extends: .build_kernel_ubuntu
 
 build_kernel_ubuntu_22_04_debug:
@@ -190,18 +177,36 @@ build_kernel_ubuntu_22_04_debug:
   image: ubuntu:22.04
   extends: .build_kernel_ubuntu
 
+build_kernel_ubuntu_24_04_debug:
+  variables:
+    MODE: "all"
+  image: ubuntu:24.04
+  extends: .build_kernel_ubuntu
+
+build_kernel_ubuntu_26_04_debug:
+  variables:
+    MODE: "all"
+  image: ubuntu:26.04
+  extends: .build_kernel_ubuntu
+
 build_kernel_arm32v7_debug:
   stage: build_kernel
   variables:
     MODE: "all"
-  image: arm32v7/ubuntu:18.04
+  image:
+    name: ubuntu:22.04
+    docker:
+      platform: linux/arm
   extends: .build_kernel_ubuntu
 
 build_kernel_arm64v8_debug:
   stage: build_kernel
   variables:
     MODE: "all"
-  image: arm64v8/ubuntu:18.04
+  image:
+    name: ubuntu:22.04
+    docker:
+      platform: linux/arm64
   extends: .build_kernel_ubuntu
 
 .build_kernel_fedora:
@@ -230,14 +235,34 @@ build_kernel_rockylinux_8_debug:
     MODE: "all"
   extends: .build_kernel_fedora
 
-build_kernel_fedora_36:
-  image: fedora:36
+build_kernel_rockylinux_9:
+  image: rockylinux:9
   extends: .build_kernel_fedora
 
-build_kernel_fedora_36_debug:
+build_kernel_rockylinux_9_debug:
+  image: rockylinux:9
   variables:
     MODE: "all"
-  image: fedora:36
+  extends: .build_kernel_fedora
+
+build_kernel_rockylinux_10:
+  image: rockylinux/rockylinux:10
+  extends: .build_kernel_fedora
+
+build_kernel_rockylinux_10_debug:
+  image: rockylinux/rockylinux:10
+  variables:
+    MODE: "all"
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_44:
+  image: fedora:44
+  extends: .build_kernel_fedora
+
+build_kernel_fedora_44_debug:
+  variables:
+    MODE: "all"
+  image: fedora:44
   extends: .build_kernel_fedora
 
 .build_tapasco:
@@ -261,7 +286,17 @@ build_kernel_fedora_36_debug:
   variables:
     PACKAGE_TYPE: "RPM"
   before_script:
-    - dnf -y update libarchive
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python3 libatomic git rpm-build curl protobuf-compiler protobuf
+  artifacts:
+    paths:
+      - build/tapasco-*-Linux.rpm
+  extends: .build_tapasco
+
+.build_tapasco_rockylinux:
+  variables:
+    PACKAGE_TYPE: "RPM"
+  before_script:
+    - dnf -y install epel-release && dnf config-manager --set-enable crb
     - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python3 libatomic git rpm-build curl protobuf-compiler protobuf
   artifacts:
     paths:
@@ -275,18 +310,41 @@ build_tapasco_rockylinux_8:
 build_tapasco_rockylinux_8_debug:
   variables:
     MODE: "debug"
-  image: rockylinux:8
+  extends: build_tapasco_rockylinux_8
+
+build_tapasco_rockylinux_9:
+  image: rockylinux:9
+  before_script:
+    - dnf -y install epel-release && dnf config-manager --set-enable crb
+    - dnf -y install --allowerasing kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python3 libatomic git rpm-build curl protobuf-compiler protobuf
   extends: .build_tapasco_fedora
 
-build_tapasco_fedora_36:
-  image: fedora:36
-  extends: .build_tapasco_fedora
-
-build_tapasco_fedora_36_debug:
+build_tapasco_rockylinux_9_debug:
   variables:
     MODE: "debug"
-  image: fedora:36
+  extends: build_tapasco_rockylinux_9
+
+build_tapasco_rockylinux_10:
+  image: rockylinux/rockylinux:10
+  before_script:
+    - dnf -y install epel-release && dnf config-manager --set-enable crb
+    - dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake ncurses-devel python3 libatomic git rpm-build curl protobuf-compiler protobuf
   extends: .build_tapasco_fedora
+
+build_tapasco_rockylinux_10_debug:
+  variables:
+    MODE: "debug"
+  image: rockylinux/rockylinux:10
+  extends: build_tapasco_rockylinux_10
+
+build_tapasco_fedora_44:
+  image: fedora:44
+  extends: .build_tapasco_fedora
+
+build_tapasco_fedora_44_debug:
+  variables:
+    MODE: "debug"
+  extends: build_tapasco_fedora_44
 
 .build_tapasco_ubuntu:
   variables:
@@ -298,50 +356,32 @@ build_tapasco_fedora_36_debug:
       - build/tapasco-*-Linux.deb
   extends: .build_tapasco
 
-build_tapasco_ubuntu_18_04:
-  image: ubuntu:18.04
-  extends: .build_tapasco_ubuntu
-
-build_tapasco_ubuntu_20_04:
-  image: ubuntu:20.04
-  extends: .build_tapasco_ubuntu
-
 build_tapasco_ubuntu_22_04:
   image: ubuntu:22.04
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_16_04_cross:
+build_tapasco_ubuntu_24_04:
+  image: ubuntu:24.04
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_26_04:
+  image: ubuntu:26.04
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_22_04_cross:
   variables:
     TARGET: "zynq"
-  image: ubuntu:xenial
+  image: ubuntu:22.04
   before_script:
-    - apt-get -y update && apt-get -y install wget unzip build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
-    - wget https://github.com/protocolbuffers/protobuf/releases/download/v22.3/protoc-22.3-linux-x86_64.zip
-    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local bin/protoc
-    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local 'include/*'
+    - apt-get -y update && apt-get -y install wget unzip build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf protobuf-compiler
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_16_04_clang:
+build_tapasco_ubuntu_22_04_clang:
   variables:
     TARGET: "clang"
-  image: ubuntu:xenial
+  image: ubuntu:22.04
   before_script:
-    - apt-get -y update && apt-get -y install wget unzip build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git clang
-    - wget https://github.com/protocolbuffers/protobuf/releases/download/v22.3/protoc-22.3-linux-x86_64.zip
-    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local bin/protoc
-    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local 'include/*'
-  extends: .build_tapasco_ubuntu
-
-build_tapasco_ubuntu_18_04_debug:
-  variables:
-    MODE: "debug"
-  image: ubuntu:18.04
-  extends: .build_tapasco_ubuntu
-
-build_tapasco_ubuntu_20_04_debug:
-  variables:
-    MODE: "debug"
-  image: ubuntu:20.04
+    - apt-get -y update && apt-get -y install wget unzip build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git clang protobuf-compiler
   extends: .build_tapasco_ubuntu
 
 build_tapasco_ubuntu_22_04_debug:
@@ -350,34 +390,45 @@ build_tapasco_ubuntu_22_04_debug:
   image: ubuntu:22.04
   extends: .build_tapasco_ubuntu
 
-build_tapasco_ubuntu_16_04_cross_debug:
+build_tapasco_ubuntu_24_04_debug:
+  variables:
+    MODE: "debug"
+  image: ubuntu:24.04
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_26_04_debug:
+  variables:
+    MODE: "debug"
+  image: ubuntu:26.04
+  extends: .build_tapasco_ubuntu
+
+build_tapasco_ubuntu_22_04_cross_debug:
   variables:
     MODE: "debug"
     TARGET: "zynq"
-  image: ubuntu:xenial
+  image: ubuntu:22.04
   before_script:
-    - apt-get -y update && apt-get -y install wget unzip build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
-    - wget https://github.com/protocolbuffers/protobuf/releases/download/v22.3/protoc-22.3-linux-x86_64.zip
-    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local bin/protoc
-    - unzip -o protoc-22.3-linux-x86_64.zip -d /usr/local 'include/*'
+    - apt-get -y update && apt-get -y install wget unzip build-essential linux-headers-generic python3 cmake curl libelf-dev libncurses-dev git rpm gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf protobuf-compiler
   extends: .build_tapasco_ubuntu
 
 tapasco_compose_ubuntu:
   stage: build_hw
   retry: 2
   variables:
-    VIVADO_VERSION: "2019.1"
-    XILINX_VIVADO: "/opt/cad/xilinx/vivado/Vivado/${VIVADO_VERSION}"
+    VIVADO_VERSION: "2023.1"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
     XILINXD_LICENSE_FILE: "/opt/cad/keys/xilinx"
+    LD_PRELOAD: "/usr/lib/x86_64-linux-gnu/libudev.so.1"
   tags:
     - CAD
-  image: ubuntu:18.04
+  image: ubuntu:22.04
   dependencies:
-    - build_scala_tapasco_ubuntu_18_04
+    - build_scala_tapasco_ubuntu_22_04
   script:
     - source $XILINX_VIVADO/settings64.sh
     - apt-get -y update
     - DEBIAN_FRONTEND=noninteractive apt-get -y install libtinfo5 build-essential tzdata
+    - apt install -y locales && locale-gen en_US.UTF-8 && update-locale LANG=en_US.UTF-8 && export LC_ALL=en_US.UTF-8
     - apt -y install ./toolflow/scala/build/distributions/tapasco_2025-12_amd64.deb
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
