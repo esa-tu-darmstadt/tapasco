@@ -39,7 +39,9 @@ add_custom_command(
          ${CMAKE_CURRENT_BINARY_DIR}/json11/json11.hpp
   COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/json11
   COMMAND git clone https://github.com/dropbox/json11.git
-          ${CMAKE_CURRENT_BINARY_DIR}/json11)
+          ${CMAKE_CURRENT_BINARY_DIR}/json11
+  COMMAND git -C ${CMAKE_CURRENT_BINARY_DIR}/json11 apply
+          $(TAPASCO_HOME_RUNTIME)/examples/C++/tapasco-benchmark/json11.patch)
 
 include(GNUInstallDirs)
 

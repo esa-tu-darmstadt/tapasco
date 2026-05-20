@@ -209,7 +209,6 @@ int run_arraysum(tapasco::Tapasco *tapasco, tapasco::PEId arraysum_id)
 
 int run_arrayupdate(tapasco::Tapasco *tapasco, tapasco::PEId arrayupdate_id)
 {
-	int errs = 0;
 	std::cout << "Run arrayupdate using on-demand page migrations (ODPMs) ..." << std::endl;
 	for (int run = 0; run < RUNS; ++run) {
 		// Generate array for arrayupdate
@@ -230,7 +229,6 @@ int run_arrayupdate(tapasco::Tapasco *tapasco, tapasco::PEId arrayupdate_id)
 		job();
 
 		int iter_errs = check_arrayupdate(arr);
-		errs += iter_errs;
 		std::cout << "RUN " << run << " " << (iter_errs == 0 ? "OK" : "NOT OK")
 			  << std::endl;
 		delete[] arr;
@@ -258,7 +256,6 @@ int run_arrayupdate(tapasco::Tapasco *tapasco, tapasco::PEId arrayupdate_id)
 		job();
 
 		int iter_errs = check_arrayupdate(arr);
-		errs += iter_errs;
 		std::cout << "RUN " << run << " " << (iter_errs == 0 ? "OK" : "NOT OK")
 			  << std::endl;
 		delete[] arr;
