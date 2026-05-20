@@ -25,6 +25,7 @@
 #include "tlkm_logging.h"
 #include "tlkm_perfc.h"
 #include "pcie/pcie_device.h"
+#include "common/eventfd_compat.h"
 
 // register offsets of QDMA core
 #define QDMA_TRQ_SEL_FMAP	0x400UL
@@ -202,12 +203,7 @@ irqreturn_t qdma_intr_handler_read(int irq, void *data)
 	volatile struct qdma_trq_sel_queue_pf *intr_ack_regs;
 
 	if (mapping->eventfd != 0) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
-		eventfd_signal(mapping->eventfd, 1);
-#else
-		// Linux commit 3652117 removes argument from eventfd_signal
-		eventfd_signal(mapping->eventfd);
-#endif
+		compat_eventfd_signal(mapping->eventfd, 1);
 	}
 	intr_ack_regs = (volatile struct qdma_trq_sel_queue_pf *)pdev->ack_register_aws;
 	intr_ack_regs->qdma_dmap_sel_c2h_dsc_pidx_0 = QDMA_IRQ_ARM;
@@ -221,12 +217,7 @@ irqreturn_t qdma_intr_handler_write(int irq, void *data)
 	volatile struct qdma_trq_sel_queue_pf *intr_ack_regs;
 
 	if (mapping->eventfd != 0) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
-		eventfd_signal(mapping->eventfd, 1);
-#else
-		// Linux commit 3652117 removes argument from eventfd_signal
-		eventfd_signal(mapping->eventfd);
-#endif
+		compat_eventfd_signal(mapping->eventfd, 1);
 	}
 	intr_ack_regs = (volatile struct qdma_trq_sel_queue_pf *)pdev->ack_register_aws;
 	intr_ack_regs->qdma_dmap_sel_h2c_dsc_pidx_0 = QDMA_IRQ_ARM;
@@ -240,9 +231,6 @@ irqreturn_t qdma_intr_handler_c2h_stream(int irq, void *data)
 	struct qdma_cmpl_status cmpl_stat;
 	volatile struct qdma_trq_sel_queue_pf *intr_ack_regs;
 	uint32_t pidx, cidx, idx_diff;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
-	uint32_t i;
-#endif
 
 	cmpl_stat = *((struct qdma_cmpl_status *)&pdev->cmpt_ring[QDMA_CMPT_RING_SZ - 1]);
 	pidx = cmpl_stat.pidx;
@@ -250,13 +238,7 @@ irqreturn_t qdma_intr_handler_c2h_stream(int irq, void *data)
 	idx_diff = (pidx < cidx) ? ((pidx + QDMA_CMPT_RING_SZ - 1) - cidx) : (pidx - cidx);
 
 	if (mapping->eventfd != 0) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
-		eventfd_signal(mapping->eventfd, idx_diff);
-#else
-		// Linux commit 3652117 removes argument from eventfd_signal
-		for (i = 0; i < idx_diff; ++i)
-			eventfd_signal(mapping->eventfd);
-#endif
+		compat_eventfd_signal(mapping->eventfd, idx_diff);
 	}
 	intr_ack_regs = (volatile struct qdma_trq_sel_queue_pf *)pdev->ack_register_aws;
 	intr_ack_regs->qdma_dmap_sel_wrb_cidx_1 = QDMA_DMAP_SEL_CMPT_TRIG_USER | QDMA_DMAP_SEL_CMPT_IRQ_EN | QDMA_DMAP_SEL_CMPT_WRB_EN | pidx;
@@ -270,12 +252,7 @@ irqreturn_t qdma_intr_handler_h2c_stream(int irq, void *data)
 	volatile struct qdma_trq_sel_queue_pf *intr_ack_regs;
 
 	if (mapping->eventfd != 0) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
-		eventfd_signal(mapping->eventfd, 1);
-#else
-		// Linux commit 3652117 removes argument from eventfd_signal
-		eventfd_signal(mapping->eventfd);
-#endif
+		compat_eventfd_signal(mapping->eventfd, 1);
 	}
 	intr_ack_regs = (volatile struct qdma_trq_sel_queue_pf *)pdev->ack_register_aws;
 	intr_ack_regs->qdma_dmap_sel_h2c_dsc_pidx_1 = QDMA_IRQ_ARM;

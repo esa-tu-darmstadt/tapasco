@@ -28,6 +28,7 @@
 #include "pcie/pcie.h"
 #include "pcie/pcie_irq_aws.h"
 #include "pcie/pcie_device.h"
+#include "common/eventfd_compat.h"
 
 #define IRQS_PER_CONTROLLER 32
 #define NUM_DIRECT_IRQS 4
@@ -110,12 +111,7 @@ irqreturn_t aws_irq_handler(int irq, void *data)
 				}
 			}
 			if (m_start->irq_no == slot_shifted) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
-				eventfd_signal(m_start->eventfd, 1);
-#else
-				// Linux commit 3652117 removes argument from eventfd_signal
-				eventfd_signal(m_start->eventfd);
-#endif
+				compat_eventfd_signal(m_start->eventfd, 1);
 			} else {
 				// Got interrupt for unregistered interrupt
 				LOG(TLKM_LF_IRQ,
