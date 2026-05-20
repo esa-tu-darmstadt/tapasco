@@ -407,7 +407,7 @@ tapasco_compose_ubuntu:
     - export LC_ALL=en_US.UTF-8
     - source $XILINX_VIVADO/settings64.sh
     - which vivado
-    - which vivado_hls || which vitis_hls
+    - which vivado_hls || which vitis_hls || which vitis-run
     - dnf -y install toolflow/scala/build/distributions/tapasco-2025-12.x86_64.rpm
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh

@@ -72,18 +72,27 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
       if(hlsCommand.isEmpty){
         // If the command to use for HLS is still undefined, try to auto-detect it
         if(!detectHLSCommand()){
-          logger.error("Neither vitis_hls nor vivado_hls were available on the PATH")
+          logger.error("Neither vitis_hls, vivado_hls nor vitis-run were available on the PATH")
           OtherError(HighLevelSynthesizerLog(logfile), new RuntimeException())
         }
       }
-      val vivado_hls_cmd = Seq("timeout", (cfg.hlsTimeOut getOrElse (24 * 60 * 60)).toString, hlsCommand.get,
-        "-f", script.toString,
-        "-l", logfile.toString)
-      val process = Process(vivado_hls_cmd, script.getParent.toFile)
-      val vivadoRet = InterruptibleProcess(process,
-         waitMillis = Some(( cfg.hlsTimeOut getOrElse (24 * 60 * 60) ) * 1000 + 1000) )
-        .!(ProcessLogger(line => logger.trace("Vivado HLS: {}", line),
-          line => logger.trace("Vivado HLS ERR: {}", line)))
+      val hlsCmd = buildHLSCommand(hlsCommand.get, script, logfile, cfg.hlsTimeOut getOrElse (24 * 60 * 60))
+      val process = Process(hlsCmd, script.getParent.toFile)
+      val logWriter = if (hlsCommand.contains("vitis-run")) Some(new FileWriter(logfile.toString, true)) else None
+      val vivadoRet = try {
+        InterruptibleProcess(process,
+           waitMillis = Some(( cfg.hlsTimeOut getOrElse (24 * 60 * 60) ) * 1000 + 1000) )
+          .!(ProcessLogger(line => {
+              logWriter foreach { _.append(line).append(NL).flush() }
+              logger.trace("Vivado HLS: {}", line)
+            },
+            line => {
+              logWriter foreach { _.append(line).append(NL).flush() }
+              logger.trace("Vivado HLS ERR: {}", line)
+            }))
+      } finally {
+        logWriter foreach (_.close())
+      }
       lt.closeAll
       logger.debug("Vivado HLS finished with exit code %d".format(vivadoRet))
       vivadoRet match {
@@ -214,28 +223,32 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
 
   private var hlsCommand : Option[String] = None
 
+  private[hls] def buildHLSCommand(command: String, script: Path, logfile: Path, timeout: Int): Seq[String] = {
+    val args = command match {
+      case "vitis-run" => Seq("--mode", "hls", "--tcl", "--input_file", script.toString)
+      case _ => Seq("-f", script.toString, "-l", logfile.toString)
+    }
+    Seq("timeout", timeout.toString, command) ++ args
+  }
+
+  private[hls] def selectHLSCommand(isAvailable: Seq[String] => Boolean): Option[String] =
+    Seq("vitis_hls", "vivado_hls", "vitis-run").find {
+      case "vitis-run" => isAvailable(Seq("vitis-run", "--mode", "hls", "--help"))
+      case command => isAvailable(Seq(command, "-version"))
+    }
+
   private def detectHLSCommand(): Boolean = {
-    // Vivado/Vitis 2020.2 has renamed vivado_hls to vitis_hls, but the interfaces are still compatible.
-    // We try to detect the correct command here by trying to run each command and see which gives us
-    // a zero return value.
-    try {
-      if(Seq("vitis_hls", "-version").! == 0) {
-        hlsCommand = Some("vitis_hls")
-        return true
+    // Vivado/Vitis 2020.2 renamed vivado_hls to vitis_hls.
+    // Vitis 2025.1+ uses vitis-run in HLS mode instead of a dedicated vitis_hls frontend.
+    hlsCommand = selectHLSCommand { command =>
+      try {
+        command.! == 0
+      } catch {
+        case _ : Throwable =>
+          logger.trace("{} not available", command.headOption getOrElse "HLS command")
+          false
       }
-    } catch {
-      // If vitis_hls is not available, the test might result in an exception that we catch here.
-      case _ : Throwable => logger.trace("vitis_hls not available")
     }
-    try{
-      if(Seq("vivado_hls", "-version").! == 0){
-        hlsCommand = Some("vivado_hls")
-        return true
-      }
-    } catch {
-      // If vivado_hls is not available, the test might result in an exception that we catch here.
-      case _ : Throwable => logger.trace("vivado_hls not available")
-    }
-    return false
+    hlsCommand.nonEmpty
   }
 }
