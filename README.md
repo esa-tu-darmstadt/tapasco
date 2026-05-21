@@ -25,7 +25,7 @@ We welcome contributions from anyone interested in this field, check the [contri
 Supported FPGA devices
 ----------------------
 
-* Zynq-based: PYNQ-Z1, ZC706, ZedBoard, Ultra96V2, ZCU102
+* Zynq-based: PYNQ-Z1, ZC706, ZedBoard, Ultra96V2, ZCU102, ZCU111
 * PCIe cards: VC709, NetFPGA-SUME, VCU108, VCU118, VCU1525, Alveo U50, Alveo U250, Alveo U280, BittWare XUP-VVH, PRO DESIGN HAWK, VCK5000
 
 
@@ -34,9 +34,8 @@ System Requirements
 TaPaSCo is known to work in this environment:
 
 *   Intel x86_64 arch
-*   Linux kernel 4.4+
-*   CentOS 8, Fedora 30+, Ubuntu 16.04+
-*   Fedora 24/25 does not support debug mode due to GCC bug
+*   Linux kernel 4.18+
+*   RockyLinux 8+, Fedora 42+, Ubuntu 22.04+
 *   Bash Shell 4.2.x+
 
 Other setups likely work as well, but are untested.
@@ -46,11 +45,11 @@ Prerequisites for Toolflow
 To use TaPaSCo, you'll need working installations of
 
 *   Vivado Design Suite 2017.4 or newer
-*   Java SDK 8 - 11
+*   Java SDK 17+
 *   git
 *   python3
 *   GCC newer than 5.x.x for C++11 support
-*   *OPTIONAL:* Local Installation of gradle 5.0+, if you do not want to use the included wrapper.
+*   *OPTIONAL:* Local Installation of gradle 8.4+, if you do not want to use the included wrapper.
 
 If you want to use the High-Level Synthesis flow for generating custom IP
 cores, you will also need:
@@ -71,7 +70,7 @@ When using *Ubuntu*, ensure that the following packages are installed:
 * git
 * findutils
 * curl
-* default-jdk
+* default-jdk (openjdk-17-jdk on Ubuntu 22.04)
 
 ```
 apt-get -y install unzip git zip findutils curl default-jdk
@@ -80,11 +79,11 @@ apt-get -y install unzip git zip findutils curl default-jdk
 When using *Fedora*, ensure that the following packages are installed:
 
 * which
-* java-openjdk
+* java-xx-openjdk-devel (xx = 17/21/25 depending on Fedora version)
 * findutils
 
 ```
-dnf -y install which java-openjdk findutils
+dnf -y install which java-25-openjdk-devel findutils
 ```
 
 Prerequisites for Simulation
@@ -136,6 +135,14 @@ dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake python3
 *Arch*:
 ```
 pacman -S linux-headers make gcc libelf libatomic_ops cmake python3 git protobuf
+```
+
+*RockyLinux*:
+
+Code-Ready Builder (CRB) repository must be enabled in RockyLinux 9+ to install protobuf compiler:
+```
+dnf -y install epel-release && dnf config-manager --set-enable crb # RockyLinux 9+ only
+dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake python3 libatomic git rpm-build protobuf-compiler
 ```
 
 *Rust*:
