@@ -68,7 +68,7 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
       // we cannot set the log file path for vitis-run so just adapt it
       val logfile =
         if (hlsCommand.get == "vitis-run") {
-          baselogfile.resolve("logs").resolve("hls_run_tcl.log")
+          baselogfile.resolveSibling("logs").resolve("hls_run_tcl.log")
         } else {
           baselogfile
         }
