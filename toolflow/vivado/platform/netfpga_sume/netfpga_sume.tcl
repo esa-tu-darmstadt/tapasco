@@ -20,6 +20,11 @@
 namespace eval platform {
   set platform_dirname "netfpga_sume"
 
+  if { [::tapasco::vivado_is_newer "2025.2"] } {
+    puts "ERROR: Vivado [version -short] does no longer support NetFPGA SUME."
+    exit 1
+  }
+
   source $::env(TAPASCO_HOME_TCL)/platform/pcie/pcie_base.tcl
 
   proc create_mig_core {name} {

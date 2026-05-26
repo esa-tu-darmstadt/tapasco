@@ -567,6 +567,16 @@ tapasco_compose_25_1:
     LD_PRELOAD: "/usr/lib64/libudev.so.1"
   extends: .tapasco_compose
 
+tapasco_compose_25_2:
+  variables:
+    VIVADO_VERSION: "2025.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/${VIVADO_VERSION}/Vivado/"
+    LD_PRELOAD: "/usr/lib64/libudev.so.1"
+  image: rockylinux/rockylinux:10
+  dependencies:
+    - build_scala_tapasco_rockylinux_10
+  extends: .tapasco_compose
+
 tapasco_compose_pcie:
   variables:
     VIVADO_VERSION: "2018.3"
