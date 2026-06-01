@@ -29,6 +29,7 @@
 #include "pcie/pcie_irq.h"
 #include "pcie/pcie_device.h"
 #include "pcie/pcie_qdma.h"
+#include "common/eventfd_compat.h"
 
 int pcie_irqs_init(struct tlkm_device *dev, struct list_head *interrupts)
 {
@@ -65,12 +66,7 @@ irqreturn_t intr_handler_platform(int irq, void *data)
 	struct tlkm_irq_mapping *mapping = (struct tlkm_irq_mapping *)data;
 	struct tlkm_pcie_device *dev = mapping->dev->private_data;
 	if (mapping->eventfd != 0) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
-		eventfd_signal(mapping->eventfd, 1);
-#else
-		// Linux commit 3652117 removes argument from eventfd_signal
-		eventfd_signal(mapping->eventfd);
-#endif
+		compat_eventfd_signal(mapping->eventfd, 1);
 	}
 	dev->ack_register[0] = mapping->irq_no;
 	return IRQ_HANDLED;
