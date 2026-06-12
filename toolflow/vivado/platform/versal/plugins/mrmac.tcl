@@ -104,13 +104,11 @@ namespace eval sfpplus {
         set bytewidth 48
       }
       # parameter MRMAC_DATA_PATH_INTERFACE_C0 is for MRMAC:1.5
-      set datawidth_v1 [list {256b Non-Segmented} {384b Non-Segmented} {384b Segmented}]
       # parameter MRMAC_DATA_PATH_INTERFACE_PORT0_C0 is for MRMAC:2.1
       set datawidth_v2 [list {Low Latency 256b Non-Segmented} {Independent 384b Non-Segmented} {Independent 384b Segmented}]
       puts "MRMAC configured to datawidth [lindex $datawidth_v2 $dw_index]"
       set_property -dict [list \
         CONFIG.MRMAC_LOCATION_C0 [lindex [platform::mrmac::get_mrmac_locations] $port] \
-        CONFIG.MRMAC_DATA_PATH_INTERFACE_C0 [lindex $datawidth_v1 $dw_index] \
         CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT0_C0 [lindex $datawidth_v2 $dw_index] \
         CONFIG.GT_REF_CLK_FREQ_C0 [platform::mrmac::get_refclk_freq] \
         CONFIG.GT_CH0_TX_REFCLK_FREQUENCY_C0 [platform::mrmac::get_refclk_freq] \
