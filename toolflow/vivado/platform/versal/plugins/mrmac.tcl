@@ -99,6 +99,10 @@ namespace eval sfpplus {
         set bitwidth 384
         set bytewidth 48
       } elseif {$datawidth == "384segmented"} {
+        if {[::tapasco::vivado_is_newer "2025.1"] != 1} {
+          puts "ERROR: 348 bit segmented mode of MRMAC requires at least Vivado 2025.1 due to missing ports of the IP."
+          exit 1
+        }
         set dw_index 2
         set bitwidth 384
         set bytewidth 48
