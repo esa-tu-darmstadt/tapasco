@@ -82,9 +82,6 @@ namespace eval sfpplus {
       set name [dict get $physical_ports $port]
       puts "Port name $port: $name"
 
-      set old_bd_cells [get_bd_cells]
-      set mrmac [tapasco::ip::create_mrmac "mrmac_$name"]
-
       # valid options 256, 384, 384segmented
       set datawidth [tapasco::get_feature_option "SFPPLUS" "datawidth" "256"]
       set dw_index 0
@@ -107,11 +104,34 @@ namespace eval sfpplus {
         set bitwidth 384
         set bytewidth 48
       }
-      # parameter MRMAC_DATA_PATH_INTERFACE_C0 is for MRMAC:1.5
       # parameter MRMAC_DATA_PATH_INTERFACE_PORT0_C0 is for MRMAC:2.1
       set datawidth_v2 [list {Low Latency 256b Non-Segmented} {Independent 384b Non-Segmented} {Independent 384b Segmented}]
       puts "MRMAC configured to datawidth [lindex $datawidth_v2 $dw_index]"
-      set_property -dict [list \
+
+      # ref clock at /
+      set ref_port [create_bd_intf_port -vlnv xilinx.com:interface:diff_clock_rtl:1.0 -mode Slave qsfp${port}_ref]
+      puts $ref_port
+      puts  [get_bd_intf_pins util_ds_buf_0/CLK_IN_D]
+      set subcell [create_bd_cell -type hier $old_bd/mrmac_${name}_cell]
+      current_bd_instance $subcell
+
+      # create cells if BD automation is not in use
+      set mrmac [tapasco::ip::create_mrmac "mrmac_$name"]
+      set ds_buf [create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 util_ds_buf_1]
+      set_property CONFIG.C_BUF_TYPE {IBUFDSGTE} $ds_buf
+      set mbufs [list \
+        [create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 mbufg_gt_0] \
+        [create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 mbufg_gt_1] \
+        [create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 mbufg_gt_1_1] \
+        [create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 mbufg_gt_1_2] \
+        [create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 mbufg_gt_1_3]]
+      foreach mbuf $mbufs {
+        set_property CONFIG.C_BUF_TYPE {MBUFG_GT} $mbuf
+      }
+      set const_one [tapasco::ip::create_constant xlconst_mbufg_0 1 1]
+      set gt_quad_base [create_bd_cell -type ip -vlnv xilinx.com:ip:gt_quad_base:1.1 gt_quad_base]
+
+      set mrmac_config [list \
         CONFIG.MRMAC_LOCATION_C0 [lindex [platform::mrmac::get_mrmac_locations] $port] \
         CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT0_C0 [lindex $datawidth_v2 $dw_index] \
         CONFIG.GT_REF_CLK_FREQ_C0 [platform::mrmac::get_refclk_freq] \
@@ -122,35 +142,32 @@ namespace eval sfpplus {
         CONFIG.GT_CH2_TX_REFCLK_FREQUENCY_C0 [platform::mrmac::get_refclk_freq] \
         CONFIG.GT_CH2_RX_REFCLK_FREQUENCY_C0 [platform::mrmac::get_refclk_freq] \
         CONFIG.GT_CH3_TX_REFCLK_FREQUENCY_C0 [platform::mrmac::get_refclk_freq] \
-        CONFIG.GT_CH3_RX_REFCLK_FREQUENCY_C0 [platform::mrmac::get_refclk_freq] \
-      ] $mrmac
-
-      apply_bd_automation -rule xilinx.com:bd_rule:mrmac -config { DataPath_Interface_Connection {Auto} Lane0_selection {NULL} Lane1_selection {NULL} Lane2_selection {NULL} Lane3_selection {NULL} Quad0_selection {NULL} Quad1_selection {NULL} Quad2_selection {NULL} Quad3_selection {NULL}} $mrmac
-
-      # ref clock at /
-      set ref_port [create_bd_intf_port -vlnv xilinx.com:interface:diff_clock_rtl:1.0 -mode Slave qsfp${port}_ref]
-
-      set current_bd_cells [get_bd_cells]
-      puts $old_bd_cells
-      # delete all external connections from block automation
-      foreach cell $current_bd_cells {
-        if {[lsearch $old_bd_cells $cell] == -1} {
-          delete_bd_objs -quiet [get_bd_ports -of_objects [get_bd_nets -of_objects [get_bd_pins -of_objects $cell]]]
-          delete_bd_objs -quiet [get_bd_intf_ports -of_objects [get_bd_intf_nets -of_objects [get_bd_intf_pins -of_objects $cell]]]
-        }
+        CONFIG.GT_CH3_RX_REFCLK_FREQUENCY_C0 [platform::mrmac::get_refclk_freq]
+      ]
+      if {[::tapasco::vivado_is_newer "2024.1"] == 1} {
+        lappend mrmac_config CONFIG.MRMAC_IS_GT_WIZ_OLD "1"
       }
-      puts $ref_port
-      puts  [get_bd_intf_pins util_ds_buf_0/CLK_IN_D]
-      set subcell [create_bd_cell -type hier $old_bd/mrmac_${name}_cell]
-      connect_bd_intf_net [get_bd_intf_ports $ref_port] [get_bd_intf_pins util_ds_buf_0/CLK_IN_D]
-      # move all newly created cells to subsystem
-      foreach cell $current_bd_cells {
-        if {[lsearch $old_bd_cells $cell] == -1} {
-          # move cell into network subsystem
-          move_bd_cells [get_bd_cell $subcell] $cell
-        }
+      puts "MRMAC config: $mrmac_config"
+      set_property -dict $mrmac_config $mrmac
+
+      # connect cells
+      connect_bd_intf_net [get_bd_intf_ports $ref_port] [get_bd_intf_pins $ds_buf/CLK_IN_D]
+      connect_bd_net [get_bd_pins $ds_buf/IBUF_OUT] [get_bd_pins $gt_quad_base/GT_REFCLK0]
+      for {set i 0} {$i < 4} {incr i} {
+        connect_bd_intf_net [get_bd_intf_pins $mrmac/gt_tx_serdes_interface_$i] [get_bd_intf_pins $gt_quad_base/TX${i}_GT_IP_Interface]
+        connect_bd_intf_net [get_bd_intf_pins $mrmac/gt_rx_serdes_interface_$i] [get_bd_intf_pins $gt_quad_base/RX${i}_GT_IP_Interface]
       }
-      current_bd_instance $subcell
+      foreach mbuf $mbufs {
+        connect_bd_net [get_bd_pins $const_one/dout] [get_bd_pins $mbuf/MBUFG_GT_CE]
+      }
+      connect_bd_net [get_bd_pins $gt_quad_base/ch0_txoutclk] [get_bd_pins [lindex $mbufs 0]/MBUFG_GT_I]
+      connect_bd_net [get_bd_pins $mrmac/tx_clr_out_0] [get_bd_pins [lindex $mbufs 0]/MBUFG_GT_CLR]
+      connect_bd_net [get_bd_pins $mrmac/tx_clrb_leaf_out_0] [get_bd_pins [lindex $mbufs 0]/MBUFG_GT_CLRB_LEAF]
+      for {set i 0} {$i < 4} {incr i} {
+        connect_bd_net [get_bd_pins $gt_quad_base/ch${i}_rxoutclk] [get_bd_pins [lindex $mbufs [expr "$i + 1"]]/MBUFG_GT_I]
+        connect_bd_net [get_bd_pins $mrmac/rx_clr_out_$i] [get_bd_pins [lindex $mbufs [expr "$i + 1"]]/MBUFG_GT_CLR]
+        connect_bd_net [get_bd_pins $mrmac/rx_clrb_leaf_out_$i] [get_bd_pins [lindex $mbufs [expr "$i + 1"]]/MBUFG_GT_CLRB_LEAF]
+      }
 
       # create user clock for independent clocking modes
       if {$datawidth == "256"} {
@@ -162,7 +179,7 @@ namespace eval sfpplus {
           set user_clk_tx [get_bd_pins bufg_gt_0/usrclk]
           set user_clk_rx [get_bd_pins bufg_gt_1/usrclk]
         }
-      } elseif {$datawidth == "384"} {
+      } else {
         if {$datawidth == "384"} {
           set freq {390.625}
         } elseif {$datawidth == "384segmented"} {
