@@ -35,5 +35,5 @@ dict set stdcomps   hbm              vlnv   "xilinx.com:ip:hbm:1.0"
 dict set stdcomps   versal_cips      vlnv   "xilinx.com:ip:versal_cips:3.4"
 dict set stdcomps   axi_noc          vlnv   "xilinx.com:ip:axi_noc:1.1"
 dict set stdcomps   qdma             vlnv   "xilinx.com:ip:qdma:5.0"
-dict set stdcomps   mrmac            vlnv   "xilinx.com:ip:mrmac:2.3"
+dict set stdcomps   mrmac            vlnv   "xilinx.com:ip:mrmac:3.2"
 
