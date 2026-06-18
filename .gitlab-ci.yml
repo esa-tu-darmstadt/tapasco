@@ -572,7 +572,7 @@ tapasco_compose_25_2:
     VIVADO_VERSION: "2025.2"
     XILINX_VIVADO: "/opt/cad/xilinx/vitis/${VIVADO_VERSION}/Vivado/"
     LD_PRELOAD: "/usr/lib64/libudev.so.1"
-  image: rockylinux/rockylinux:10
+  image: rockylinux/rockylinux:10.1
   dependencies:
     - build_scala_tapasco_rockylinux_10
   extends: .tapasco_compose
