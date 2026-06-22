@@ -21,6 +21,11 @@ namespace eval platform {
 
   set platform_dirname "vcu108"
 
+  if { [::tapasco::vivado_is_newer "2025.2"] } {
+    puts "ERROR: Vivado [version -short] does no longer support VCU108."
+    exit 1
+  }
+
   source $::env(TAPASCO_HOME_TCL)/platform/pcie/pcie_base.tcl
 
   proc create_mig_core {name} {

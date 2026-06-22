@@ -458,7 +458,7 @@ tapasco_compose_ubuntu:
     - export LC_ALL=en_US.UTF-8
     - source $XILINX_VIVADO/settings64.sh
     - which vivado
-    - which vivado_hls || which vitis_hls
+    - which vivado_hls || which vitis_hls || which vitis-run
     - dnf -y install toolflow/scala/build/distributions/tapasco-2025-12.x86_64.rpm
     - /opt/tapasco/tapasco-init-toolflow.sh
     - source tapasco-setup-toolflow.sh
@@ -558,6 +558,23 @@ tapasco_compose_24_2:
     VIVADO_VERSION: "2024.2"
     XILINX_VIVADO: "/opt/cad/xilinx/vitis/Vivado/${VIVADO_VERSION}"
     LD_PRELOAD: "/usr/lib64/libudev.so.1"
+  extends: .tapasco_compose
+
+tapasco_compose_25_1:
+  variables:
+    VIVADO_VERSION: "2025.1"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/${VIVADO_VERSION}/Vivado/"
+    LD_PRELOAD: "/usr/lib64/libudev.so.1"
+  extends: .tapasco_compose
+
+tapasco_compose_25_2:
+  variables:
+    VIVADO_VERSION: "2025.2"
+    XILINX_VIVADO: "/opt/cad/xilinx/vitis/${VIVADO_VERSION}/Vivado/"
+    LD_PRELOAD: "/usr/lib64/libudev.so.1"
+  image: rockylinux/rockylinux:10.1
+  dependencies:
+    - build_scala_tapasco_rockylinux_10
   extends: .tapasco_compose
 
 tapasco_compose_pcie:

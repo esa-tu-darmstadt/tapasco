@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2025 Embedded Systems and Applications, TU Darmstadt.
+# Copyright (c) 2014-2026 Embedded Systems and Applications, TU Darmstadt.
 #
 # This file is part of TaPaSCo
 # (see https://github.com/esa-tu-darmstadt/tapasco).
@@ -35,5 +35,5 @@ dict set stdcomps   hbm              vlnv   "xilinx.com:ip:hbm:1.0"
 dict set stdcomps   versal_cips      vlnv   "xilinx.com:ip:versal_cips:3.4"
 dict set stdcomps   axi_noc          vlnv   "xilinx.com:ip:axi_noc:1.1"
 dict set stdcomps   qdma             vlnv   "xilinx.com:ip:qdma:5.0"
-dict set stdcomps   mrmac            vlnv   "xilinx.com:ip:mrmac:3.1"
+dict set stdcomps   mrmac            vlnv   "xilinx.com:ip:mrmac:3.2"
 
