@@ -402,7 +402,7 @@ package object json {
       (JsPath \ "CoreDir").readNullable[Path].map(_ getOrElse BasePathManager.DEFAULT_DIR_CORES) ~
       (JsPath \ "CompositionDir").readNullable[Path].map(_ getOrElse BasePathManager.DEFAULT_DIR_COMPOSITIONS) ~
       (JsPath \ "LogFile").readNullable[Path] ~
-      (JsPath \ "Slurm").readNullable[Boolean].map(_ getOrElse false) ~
+      (JsPath \ "Slurm").readNullable[String] ~
       (JsPath \ "Parallel").readNullable[Boolean].map(_ getOrElse false) ~
       (JsPath \ "MaxThreads").readNullable[Int] ~
       (JsPath \ "MaxTasks").readNullable[Int] ~
@@ -419,7 +419,7 @@ package object json {
       (JsPath \ "CoreDir").write[Path] ~
       (JsPath \ "CompositionDir").write[Path] ~
       (JsPath \ "LogFile").writeNullable[Path] ~
-      (JsPath \ "Slurm").write[Boolean] ~
+      (JsPath \ "Slurm").writeNullable[String] ~
       (JsPath \ "Parallel").write[Boolean] ~
       (JsPath \ "MaxThreads").writeNullable[Int] ~
       (JsPath \ "MaxTasks").writeNullable[Int] ~
@@ -437,6 +437,21 @@ package object json {
   }
 
   /* Configuration @} */
+
+  /* @{ SlurmRemoteConfig */
+  implicit val slurmRemoteConfigReads: Reads[SlurmRemoteConfig] = (
+      (JsPath \ "Name").read[String](minimumLength(length = 1)) ~
+      (JsPath \ "SlurmHost").read[String](minimumLength(length = 1)) ~
+      (JsPath \ "WorkstationHost").read[String](minimumLength(length = 1)) ~
+      (JsPath \ "Workdir").read[Path] ~
+      (JsPath \ "TapascoInstallDir").read[Path] ~
+      (JsPath \ "JobFile").read[String](minimumLength(length = 1)) ~
+      (JsPath \ "SbatchOptions").readNullable[String].map(_.getOrElse("")) ~
+      (JsPath \ "PreambleScript").readNullable[String] ~
+      (JsPath \ "PostambleScript").readNullable[String]
+    ) (SlurmRemoteConfig.apply _)
+  /* SlurmRemoteConfig @} */
+
 }
 
 // vim: foldmarker=@{,@} foldmethod=marker foldlevel=0

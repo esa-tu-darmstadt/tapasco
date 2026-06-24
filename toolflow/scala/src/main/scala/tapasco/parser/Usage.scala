@@ -88,7 +88,8 @@ configuration via `tapasco -n config.json`.
       Arg("--logFile FILE", "Path to output log file") &
       Arg("--configFile FILE", "Path to Json file with Configuration") &
       Arg("--jobsFile FILE", "Path to Json file with Jobs array") &
-      Arg("--slurm", "Activate SLURM cluster execution (requires sbatch)") &
+      Arg("--slurm TEMPLATE", "Activate SLURM cluster execution." ~
+        "TEMPLATE describes a remote SLURM node, use 'local' for local execution (requires sbatch).") &
       Arg("--parallel", "Execute all jobs in parallel (careful!)") &
       Arg("--maxThreads NUM", "Limit internal parallelism of tasks (e.g., Vivado)" ~
         "to the given number of threads.") &

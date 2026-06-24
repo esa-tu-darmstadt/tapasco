@@ -28,18 +28,20 @@ package tapasco.jobs.executors
 
 import java.util.concurrent.Semaphore
 
+import tapasco.activity.composers.Composer
 import tapasco.base._
 import tapasco.filemgmt._
 import tapasco.jobs.{ComposeJob, HighLevelSynthesisJob}
+import tapasco.slurm.Slurm.Completed
 import tapasco.task._
+import tapasco.slurm._
 
 private object Compose extends Executor[ComposeJob] {
   private implicit val logger = tapasco.Logging.logger(getClass)
+  private[this] val _slurm = Slurm.enabled
 
   def execute(job: ComposeJob)
              (implicit cfg: Configuration, tsk: Tasks): Boolean = {
-    val signal = new Semaphore(0)
-
     logger.trace("composition: {}", job.composition)
 
     // first, collect all kernels and trigger HLS if not built yet
@@ -74,7 +76,18 @@ private object Compose extends Executor[ComposeJob] {
       logger.info("all HLS tasks finished successfully, beginning compose run...")
       logger.debug("job: {}", job)
 
-      val composeTasks = for {
+      if (!_slurm) nodeExecution(job) else slurmExecution(job)
+    } else {
+      logger.error("HLS tasks failed, aborting composition")
+      false
+    }
+  }
+
+  private def nodeExecution(job: ComposeJob)
+             (implicit cfg: Configuration, tsk: Tasks): Boolean = {
+    val signal = new Semaphore(0)
+
+    val composeTasks = for {
         p <- job.platforms
         a <- job.architectures
         t = Target(a, p)
@@ -104,10 +117,40 @@ private object Compose extends Executor[ComposeJob] {
 
       // successful, if all successful
       (composeTasks map (_.result) fold true) (_ && _)
-    } else {
-      logger.error("HLS tasks failed, aborting composition")
-      false
+  }
+
+  private def slurmExecution(job: ComposeJob)
+             (implicit cfg: Configuration, tsk: Tasks): Boolean = {
+
+    val ComposeJob(c, f, i, _, _, _, _, _, _, _) = job
+    val name = c.composition.map(_.kernel).fold("compose")(_ ++ "-" ++ _)
+    val outDir = FileAssetManager.TAPASCO_WORK_DIR.resolve("Slurm").resolve("Compose").resolve(name)
+    // needed for resource-based scheduling
+    val consumer = new ComposeTask(
+        composition = c,
+        designFrequency = f,
+        implementation = Composer.Implementation(i),
+        target = Target(job.architectures.head, job.platforms.head),
+        onComplete = _ => ()
+      )
+
+    // define SLURM job
+    val sjob = Slurm.Job(
+      name     = name,
+      log      = outDir.resolve("tapasco.log"),
+      slurmLog = outDir.resolve("slurm-compose.log"),
+      errorLog = outDir.resolve("slurm-compose.errors.log"),
+      consumer = consumer,
+      maxHours = ComposeTask.MAX_COMPOSE_HOURS,
+      comment  = Some(outDir.toString),
+      job      = job,
+      cfg_file = outDir.resolve("slurm-compose.cfg")
+    )
+
+    // start slurm job and wait for finish
+    Slurm(sjob)(cfg) match {
+      case Some(id) => Slurm.waitFor(id) == Completed()
+      case None => false
     }
   }
 }
-
