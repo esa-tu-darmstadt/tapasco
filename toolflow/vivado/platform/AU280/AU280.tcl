@@ -30,6 +30,11 @@ namespace eval platform {
     exit 1
   }
 
+  proc get_platform_name {} {
+    return "AU280"
+  }
+
+
   source $::env(TAPASCO_HOME_TCL)/platform/pcie/pcie_base.tcl
 
   if {[tapasco::is_feature_enabled "HBM"]} {
