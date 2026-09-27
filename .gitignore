@@ -38,6 +38,7 @@ toolflow/boot/pynq
 toolflow/boot/zc706
 toolflow/boot/zedboard
 toolflow/boot/zcu102/
+toolflow/boot/kr260
 boot/rootfs.img
 boot/uenv/uEnv-pynq.txt
 project/build.properties

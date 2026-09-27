@@ -1,0 +1,12 @@
+setenv bootdev "${devtype} ${devnum}:${distro_bootpart}"
+echo "Booting from ${bootdev}"
+
+setenv bootargs $bootargs root=/dev/sda2 rw rootwait vfio_platform.reset_required=0 cma=800M arm-smmu.disable_bypass=0 clk_ignore_unused
+
+echo "Loading kernel -> ${kernel_addr_r}"
+load ${bootdev} ${kernel_addr_r} Image
+
+echo "Loading dtb -> ${fdt_addr_r}"
+load ${bootdev} ${fdt_addr_r} system.dtb
+
+booti ${kernel_addr_r} - ${fdt_addr_r}

@@ -41,7 +41,7 @@ Usage: ${0##*/} BOARD VERSION [DISK SIZE] [DEVICE]
 Build a boot image for the given BOARD and VERSION (git tag). If DEVICE is
 given, repartition the device as a bootable SD card (WARNING: all data will
 be lost).
-	BOARD		one of zc706, zedboard, pyng, zcu102 or ultra96v2
+	BOARD		one of zc706, zedboard, pyng, zcu102, ultra96v2, or kr260
 	VERSION		Vivado Design Suite version, e.g., 2019.2
 	DISK SIZE	Size of the image in MiB (optional, default: 5120)
 	DEVICE		SD card device, e.g., /dev/sdb (optional)
@@ -78,9 +78,11 @@ check_board() {
 
 		"ultra96v2") ;;
 
+		"kr260") ;;
+
 		*)
 			echo "unknown board: $BOARD"
-			echo "select one of zedboard, zc706, pynq, zcu102 or ultra96v2"
+			echo "select one of zedboard, zc706, pynq, zcu102, ultra96v2, or kr260"
 			print_usage
 			;;
 	esac
@@ -215,6 +217,9 @@ build_u-boot() {
                 #prevent -dirty tag in uboot version
                 touch .scmversion
 				;;
+            "kr260")
+                DEVICE_TREE="zynqmp-smk-k26-revA-sck-kr-g-revB"
+                ;;
 			*)
 				return $(error_ret "unknown board: $BOARD")
 				;;
@@ -224,12 +229,35 @@ build_u-boot() {
 		if [[ $ARCH == arm ]]; then
 			DEFCONFIG=xilinx_zynq_virt_defconfig
 		else
-			DEFCONFIG=xilinx_zynqmp_virt_defconfig
+			case $BOARD in
+				"kr260")
+					DEFCONFIG="xilinx_zynqmp_kria_defconfig"
+					;;
+				*)
+					DEFCONFIG="xilinx_zynqmp_virt_defconfig"
+					;;
+			esac
+			#DEFCONFIG="xilinx_zynqmp_virt_defconfig"
 		fi
+		cp $DIR/u-boot-xlnx/configs/$DEFCONFIG $DIR/u-boot-xlnx/configs/tapasco_defconfig ||
+			return $(error_ret "$LINENO: could not copy defconfig $DEFCONFIG")
+		DEFCONFIG="tapasco_defconfig"
 		if [[ $ARCH == arm ]]; then
 			echo "CONFIG_OF_EMBED=y" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
 			echo "# CONFIG_OF_SEPARATE is not set" >> $DIR/u-boot-xlnx/configs/$DEFCONFIG
 		fi
+		case $BOARD in
+			"kr260")
+				cat >> $DIR/u-boot-xlnx/configs/$DEFCONFIG <<EOF
+CONFIG_USB3320=y
+CONFIG_USB5744=y
+CONFIG_USB2244=y
+CONFIG_ENV_IS_IN_FAT=n
+CONFIG_ENV_IS_IN_SPI_FLASH=n
+CONFIG_OF_LIST="$DEVICE_TREE"
+EOF
+				;;
+		esac
 		make CROSS_COMPILE=$CROSS_COMPILE $DEFCONFIG DEVICE_TREE=$DEVICE_TREE ||
 			return $(error_ret "$LINENO: could not make defconfig $DEFCONFIG")
 		if [[ $ARCH != arm64 ]]; then
@@ -271,7 +299,9 @@ build_linux() {
             #name for tapasco specific defconfig file
 			DEFCONFIG=tapasco_zynqmp_defconfig
             #base tapasco specific config on current version of zynqmp defconfig
+            #linux-xlnx v2025.1 and newer no longer have a zynqmp-specific config, use xilinx_defconfig in that case
 			cp $DIR/linux-xlnx/arch/arm64/configs/xilinx_zynqmp_defconfig $DIR/linux-xlnx/arch/arm64/configs/$DEFCONFIG ||
+				cp $DIR/linux-xlnx/arch/arm64/configs/xilinx_defconfig $DIR/linux-xlnx/arch/arm64/configs/$DEFCONFIG ||
 				return $(error_ret "$LINENO: could not duplicate zynqmp defconfig")
 
 			CONFIGFILE="$DIR/linux-xlnx/arch/arm64/configs/$DEFCONFIG"
@@ -285,14 +315,28 @@ build_linux() {
 			append_if_not_exists 'CONFIG_ARM_SMMU=y' $CONFIGFILE
 			append_if_not_exists 'CONFIG_USB_RTL8152=y' $CONFIGFILE
 			append_if_not_exists 'CONFIG_USB_USBNET=y' $CONFIGFILE
-			
+			append_if_not_exists 'CONFIG_SQUASHFS=y' $CONFIGFILE
+			append_if_not_exists 'CONFIG_SQUASHFS_XATTR=y' $CONFIGFILE
+			append_if_not_exists 'CONFIG_SQUASHFS_ZLIB=y' $CONFIGFILE
+			append_if_not_exists 'CONFIG_SQUASHFS_LZ4=y' $CONFIGFILE
+			append_if_not_exists 'CONFIG_SQUASHFS_LZO=y' $CONFIGFILE
+			append_if_not_exists 'CONFIG_SQUASHFS_XZ=y' $CONFIGFILE
+			append_if_not_exists 'CONFIG_SQUASHFS_ZSTD=y' $CONFIGFILE
+
 			#uncomment the following for debugging
 			# append_if_not_exists 'CONFIG_FTRACE=y' $CONFIGFILE
 			# append_if_not_exists 'CONFIG_FUNCTION_TRACER=y' $CONFIGFILE
 			# append_if_not_exists 'CONFIG_FUNCTION_GRAPH_TRACER=y' $CONFIGFILE
 			# append_if_not_exists 'CONFIG_DYNAMIC_FTRACE=y' $CONFIGFILE
 			# append_if_not_exists 'CONFIG_STACK_TRACER=y' $CONFIGFILE
-			
+			# append_if_not_exists 'CONFIG_BPF=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_BPF_SYSCALL=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_BPF_JIT=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_KPROBES=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_KRETPROBES=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_KALLSYMS=y' $CONFIGFILE
+			# append_if_not_exists 'CONFIG_KALLSYMS_ALL=y' $CONFIGFILE
+
 			cd $DIR/linux-xlnx
             case $BOARD in
 				"zcu102")
@@ -302,6 +346,9 @@ build_linux() {
 			esac
 			if [[ "$VERSION" == "2023.1" || "$VERSION" == "2023.2" ]]; then
 				git apply $SCRIPTDIR/misc/linux_6.1_vfio_patch.patch || error_exit "VFIO patch failed!"
+			fi
+			if [[ "$VERSION" == "2025.1" ]]; then
+                git apply $SCRIPTDIR/misc/0001-include-uapi-linux-xlnx-ai-engine.h-fix-CONFIG_XILIN.patch || error_exit "2025.1 header patch failed!"
 			fi
 			touch .scmversion #prevent -dirty tag in kernel version
 			make CROSS_COMPILE=$CROSS_COMPILE ARCH=arm64 $DEFCONFIG ||
@@ -319,6 +366,10 @@ build_linux() {
 					cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/zynqmp-zcu102-rev1.1.dtb $DIR/devicetree.dtb ||
 						return $(error_ret "$LINENO: could not copy device tree")
 					;;
+                "kr260")
+                    cp $DIR/linux-xlnx/arch/arm64/boot/dts/xilinx/zynqmp-smk-k26-revA-sck-kr-g-revB.dtb $DIR/devicetree.dtb ||
+                        return $(error_ret "$LINENO: could not copy device tree")
+                    ;;
 			esac
 		else
 			echo "$DIR/linux-xlnx/arch/arm64/boot/Image already exists, skipping."
@@ -334,7 +385,7 @@ build_ssbl() {
 			DTC=$DIR/linux-xlnx/scripts/dtc/dtc
 			make CROSS_COMPILE=$CROSS_COMPILE DTC=$DTC HOSTCFLAGS=$HOSTCFLAGS HOSTLDFLAGS="$HOSTLDFLAGS" u-boot -j $JOBCOUNT ||
 				return $(error_ret "$LINENO: could not build u-boot")
-		else	
+		else
             if [[ -z "${DEVICE_TREE}" ]]; then
                 echo "Env variable DEVICE_TREE not set"
                 echo "Setting DEVICE_TREE based on $BOARD"
@@ -353,6 +404,9 @@ build_ssbl() {
                         ;;
                     "zcu102")
                         DEVICE_TREE="zynqmp-zcu102-rev1.1"
+                        ;;
+                    "kr260")
+                        DEVICE_TREE="zynqmp-smk-k26-revA-sck-kr-g-revB"
                         ;;
                     *)
                         return $(error_ret "unknown board: $BOARD")
@@ -481,12 +535,29 @@ if {[dict exists \$platform "BoardPart"]} {
 	set board_part [lindex \$parts [expr [llength \$parts] - 1]]
 	set_property board_part \$board_part [current_project]
 }
+if {[dict exists \$platform "BoardConnections"]} {
+    set board_conns [dict get \$platform "BoardConnections"]
+    set_property board_connections \$board_conns [current_project]
+}
 create_bd_design -quiet "system"
 set board_preset {}
 if {[dict exists \$platform "BoardPreset"]} {
 	set board_preset [dict get \$platform "BoardPreset"]
 }
 set ps [tapasco::ip::create_ultra_ps "zynqmp" \$board_preset 100]
+set_property -dict [list \
+    CONFIG.PSU__FPGA_PL1_ENABLE {1} \
+    CONFIG.PSU__USE__S_AXI_GP0 {1}  \
+    CONFIG.PSU__USE__S_AXI_GP2 {0}  \
+    CONFIG.PSU__USE__S_AXI_GP4 {1}  \
+    CONFIG.PSU__CRL_APB__PL0_REF_CTRL__FREQMHZ {100} \
+    CONFIG.PSU__CRL_APB__PL1_REF_CTRL__FREQMHZ {10} \
+    CONFIG.PSU__USE__IRQ0 {1} \
+    CONFIG.PSU__USE__IRQ1 {1} \
+    CONFIG.PSU__HIGH_ADDRESS__ENABLE {1} \
+    CONFIG.PSU__USE__M_AXI_GP0 {1} \
+    CONFIG.PSU__USE__M_AXI_GP1 {1} \
+    CONFIG.PSU__USE__M_AXI_GP2 {0} ] \$ps
 apply_bd_automation -rule xilinx.com:bd_rule:zynq_ultra_ps_e -config {apply_board_preset "1" } \$ps
 set clk [lindex [get_bd_pins -of_objects \$ps -filter { TYPE == clk && DIR == O }] 0]
 connect_bd_net \$clk [get_bd_pins -of_objects \$ps -filter { TYPE == clk && DIR == I}]
@@ -499,7 +570,12 @@ puts "XSA in $BOARD.xsa, done"
 exit
 EOF
 			cat > hsi.tcl << EOF
-hsi generate_app -hw [hsi open_hw_design $BOARD.xsa] -proc psu_cortexa53_0 -os standalone -app zynqmp_fsbl -compile -sw fsbl -dir .
+hsi::open_hw_design $BOARD.xsa
+set fsbl_design [hsi::create_sw_design -proc psu_cortexa53_0 -os standalone -app zynqmp_fsbl -name fsbl]
+common::set_property APP_COMPILER "aarch64-none-elf-gcc" \$fsbl_design
+common::set_property -name APP_COMPILER_FLAGS -value "-DRSA_SUPPORT -DFSBL_DEBUG_DETAILED" -objects \$fsbl_design
+hsi::add_library libmetal
+hsi::generate_app -dir . -compile
 EOF
 		fi
 
@@ -532,10 +608,18 @@ build_arm_trusted_firmware() {
 	if [[ ! -f $DIR/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf ]]; then
 		echo "Building Arm Trusted Firmware for ZynqMP ..."
 		cd $DIR/arm-trusted-firmware
+		case $BOARD in
+            "kr260")
+                ATF_USE_UART="ZYNQMP_CONSOLE=cadence1"
+                ;;
+            *)
+                ATF_USE_UART=""
+                ;;
+		esac
 		if [[ "$VERSION" == "2023.1" || "$VERSION" == "2023.2" ]]; then
-			make CROSS_COMPILE=aarch64-none-elf- PLAT=zynqmp DEBUG=0 bl31
+			make CROSS_COMPILE=aarch64-none-elf- PLAT=zynqmp DEBUG=0 bl31 $ATF_USE_UART
 		else
-			make CROSS_COMPILE=$CROSS_COMPILE PLAT=zynqmp RESET_TO_BL31=1
+			make CROSS_COMPILE=$CROSS_COMPILE PLAT=zynqmp RESET_TO_BL31=1 $ATF_USE_UART
 		fi
 	else
 		echo "$BOARD/arm-trusted-firmware/build/zynqmp/release/bl31/bl31.elf already exists, skipping."
@@ -599,8 +683,13 @@ build_devtree() {
 		"ultra96v2")
 			#work around: Re-compile dts from dtb generated by linux-build and add tapasco related interrupts
 			$DIR/linux-xlnx/scripts/dtc/dtc -I dtb -O dts -o $DIR/devicetree.dts $DIR/devicetree.dtb
+			echo "/include/ \"$SCRIPTDIR/misc/tapasco_zynqmp_reserve_cma.dtsi\"" >> $DIR/devicetree.dts
 			;;
 		"zcu102")
+			$DIR/linux-xlnx/scripts/dtc/dtc -I dtb -O dts -o $DIR/devicetree.dts $DIR/devicetree.dtb
+			echo "/include/ \"$SCRIPTDIR/misc/tapasco_zynqmp_reserve_cma.dtsi\"" >> $DIR/devicetree.dts
+			;;
+        "kr260")
 			$DIR/linux-xlnx/scripts/dtc/dtc -I dtb -O dts -o $DIR/devicetree.dts $DIR/devicetree.dtb
 			;;
 	esac
@@ -782,20 +871,20 @@ echo 'auto eth0' >> /etc/network/interfaces
 echo 'iface eth0 inet dhcp' >> /etc/network/interfaces
 
 # prepare header files
-cd /usr/src/linux-headers-*-tapasco/
+cd /usr/src/linux-headers-*-tapasco*/
 make clean
 make scripts
 # recompile scripts needed for custom kernel modules
 make modules_prepare
 make headers_install
-# install the previously compiled kernel modules 
-cp -r lib/modules /lib/modules
-cd /lib/modules/*-tapasco
+# install the previously compiled kernel modules
+mkdir -p /lib/modules
+cp -r lib/modules/* /lib/modules
+cd /lib/modules/*-tapasco*
 # remove broken links
-rm -f build
-rm -f source
+rm -rf build source
 #
-ln -s /usr/src/linux-headers-*-tapasco/ build
+ln -s /usr/src/linux-headers-*-tapasco*/ build
 
 git clone https://github.com/esa-tu-darmstadt/tapasco.git /home/tapasco/tapasco
 chown -R tapasco /home/tapasco/tapasco
@@ -813,7 +902,7 @@ EOF"
 ################################################################################
 
 if [ -z ${CROSS_COMPILE+x} ]; then
-	if [[ $BOARD == ultra96v2 ]] || [[ $BOARD == zcu102 ]]; then
+	if [[ $BOARD == ultra96v2 ]] || [[ $BOARD == zcu102 ]] || [[ $BOARD == kr260 ]]; then
 		CROSS_COMPILE=aarch64-linux-gnu-
 		ARCH=arm64
 	else
@@ -839,7 +928,7 @@ if [ "$OMIT_ROOT" = false ] ; then
     [[ -n $SUDOPW ]] || error_exit "sudo password may not be empty"
     dusudo true || error_exit "sudo password seems to be wrong?"
 fi
-if [ "$OMIT_ROOT" = false ] ; then 
+if [ "$OMIT_ROOT" = false ] ; then
 	check_image_tools
 fi
 mkdir -p $LOGDIR 2> /dev/null
@@ -936,3 +1025,14 @@ if [ "$OMIT_ROOT" = false ] ; then
     fi
 
 fi
+
+case $BOARD in
+	"kr260")
+		echo ""
+		echo "IMPORTANT: Before using your Kria board with TaPaSCo, please flash"
+		echo "$DIR/BOOT.BIN"
+		echo "to the active QSPI boot image slot using the Boot Image Recovery Tool."
+		echo "To run the tool, hold the FWUEN button of the carrier board while"
+		echo "powering it on and follow the instructions printed to UART1."
+		;;
+esac
