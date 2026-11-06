@@ -145,8 +145,7 @@ namespace eval sfpplus {
 
       connect_bd_intf_net $gt_refclk [get_bd_intf_pins $core/gt_ref_clk]
       connect_bd_net [get_bd_pins $core/sys_reset] [get_bd_pins dclk_reset/peripheral_reset]
-      make_bd_intf_pins_external [get_bd_intf_pins $core/gt_rx]
-      make_bd_intf_pins_external [get_bd_intf_pins $core/gt_tx]
+      make_bd_intf_pins_external [get_bd_intf_pins $core/gt_serial_port]
       connect_bd_net [get_bd_pins $core/dclk] [get_bd_pins dclk_wiz/clk_out1]
 
       # Connect core

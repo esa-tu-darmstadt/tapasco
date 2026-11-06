@@ -25,7 +25,7 @@ We welcome contributions from anyone interested in this field, check the [contri
 Supported FPGA devices
 ----------------------
 
-* Zynq-based: PYNQ-Z1, ZC706, ZedBoard, Ultra96V2, ZCU102
+* Zynq-based: PYNQ-Z1, ZC706, ZedBoard, Ultra96V2, ZCU102, ZCU111
 * PCIe cards: VC709, NetFPGA-SUME, VCU108, VCU118, VCU1525, Alveo U50, Alveo U250, Alveo U280, BittWare XUP-VVH, PRO DESIGN HAWK, VCK5000
 
 
@@ -34,9 +34,8 @@ System Requirements
 TaPaSCo is known to work in this environment:
 
 *   Intel x86_64 arch
-*   Linux kernel 4.4+
-*   CentOS 8, Fedora 30+, Ubuntu 16.04+
-*   Fedora 24/25 does not support debug mode due to GCC bug
+*   Linux kernel 4.18+
+*   RockyLinux 8+, Fedora 42+, Ubuntu 22.04+
 *   Bash Shell 4.2.x+
 
 Other setups likely work as well, but are untested.
@@ -46,11 +45,11 @@ Prerequisites for Toolflow
 To use TaPaSCo, you'll need working installations of
 
 *   Vivado Design Suite 2017.4 or newer
-*   Java SDK 8 - 11
+*   Java SDK 17+
 *   git
 *   python3
 *   GCC newer than 5.x.x for C++11 support
-*   *OPTIONAL:* Local Installation of gradle 5.0+, if you do not want to use the included wrapper.
+*   *OPTIONAL:* Local Installation of gradle 8.4+, if you do not want to use the included wrapper.
 
 If you want to use the High-Level Synthesis flow for generating custom IP
 cores, you will also need:
@@ -71,7 +70,7 @@ When using *Ubuntu*, ensure that the following packages are installed:
 * git
 * findutils
 * curl
-* default-jdk
+* default-jdk (openjdk-17-jdk on Ubuntu 22.04)
 
 ```
 apt-get -y install unzip git zip findutils curl default-jdk
@@ -80,11 +79,11 @@ apt-get -y install unzip git zip findutils curl default-jdk
 When using *Fedora*, ensure that the following packages are installed:
 
 * which
-* java-openjdk
+* java-xx-openjdk-devel (xx = 17/21/25 depending on Fedora version)
 * findutils
 
 ```
-dnf -y install which java-openjdk findutils
+dnf -y install which java-25-openjdk-devel findutils
 ```
 
 Prerequisites for Simulation
@@ -138,6 +137,14 @@ dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake python3
 pacman -S linux-headers make gcc libelf libatomic_ops cmake python3 git protobuf
 ```
 
+*RockyLinux*:
+
+Code-Ready Builder (CRB) repository must be enabled in RockyLinux 9+ to install protobuf compiler:
+```
+dnf -y install epel-release && dnf config-manager --set-enable crb # RockyLinux 9+ only
+dnf -y install kernel-devel make gcc gcc-c++ elfutils-libelf-devel cmake python3 libatomic git rpm-build protobuf-compiler
+```
+
 *Rust*:
 
 The runtime uses Rust and requires a recent version of it. The versions provided by most distributions is too old. We recommend the official way of installing Rust through [rustup][4]:
@@ -169,7 +176,7 @@ Getting Started - Build a TaPaSCo design
     *   HDL flow: `tapasco import path/to/ZIP as <ID> -p <PLATFORM>` will import the corresponding ZIP file as a new HDL-based core. The Kernel-ID is set from <ID> and the optional flag `-p <PLATFORM>` determines for which platform the kernel will be available. If it is omitted, it will be made available for all platforms which may take a lot of time.
     *   HLS flow: `tapasco hls <KERNEL> -p <PLATFORM>` will perform hls according to the `kernel.json`. The resulting HLS-based core will be made available for the platform given by `-p <PLATFORM>`. Again, `-p` can be omitted. HLS-Kernels are generally located in `$TAPASCO_WORKDIR/kernel`. If you want to add kernels you can create either symlink or copy them into the folder. Additionally, the folder can be temporarily changed using the optional `--kernelDir path/to/kernels` flag like this: `tapasco --kernelDir path/to/kernels hls <KERNEL> -p <PLATFORM>`
 2.  Create a composition: `tapasco compose [<KERNEL> x <COUNT>] @ <NUM> MHz -p <PLATFORM>`
-3.  Load the bitstream: `tapasco-load-bitstream <BITSTREAM>`
+3.  Load the bitstream (see below for more details): `tapasco-load-bitstream <BITSTREAM>`
 4.  Implement your host software
     *   C API
     *   C++ API
@@ -183,6 +190,15 @@ Getting Started - Build a Software-Interface
 2.  Load your bitstream: `tapasco-load-bitstream my-design.bit --reload-driver`. To do this, you have to source `vivado` and `tapasco-setup.sh`.
 3.  Write a C/C++ executable that interfaces with your design accordingly. To get a better understanding of this, you might want to refer to the collection of examples and the corresponding README which is located in `$TAPASCO_HOME/runtime/examples`
 4.  Build and Compile your Software.
+
+### Tips and Tricks for Server Environments
+
+- Always use the `--reload-driver` option to ensure correct user access permissions for the device file after programming.
+- If multiple devices are attached to the same server, you must select the correct programming adapter using the `--adapter <adapter_id>` argument of `tapasco-load-bitstream`. You can list all available adapters with `tapasco-load-bitstream my-design.bit --verbose --list-adapters`. Using only the last few characters of the adapter ID is sufficient.
+- Recent server CPUs often handle PCIe errors more strictly. Reprogramming the FPGA may trigger a system reboot or cause the device to no longer be detected afterward. To mitigate this, use the `--disable-link` argument with the PCIe BDF of the FPGA, which temporarily disables the PCIe link during programming. You can find the PCIe BDF using `lspci` by looking for Xilinx devices in the output. A complete command may look like this:
+```
+tapasco-load-bitstream my-design.bit --verbose --reload-driver --adapter 3HNA --disable-link 0000:71:00.0
+```
 
 Getting Started - Build a Boot Image
 --------------------------------------------

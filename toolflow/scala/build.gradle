@@ -35,7 +35,7 @@ plugins {
     id 'scala'
     id 'application'
     // Netflix provided plug-in for OS packaging
-    id "com.netflix.nebula.ospackage" version "11.10.1"
+    id "com.netflix.nebula.ospackage" version "12.3.0"
 }
 
 repositories {

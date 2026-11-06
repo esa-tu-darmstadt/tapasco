@@ -247,10 +247,19 @@ namespace eval ::tapasco::ip {
   # @return bd_cell of the instance.
   proc create_xlconcat {name inputs} {
     variable stdcomps
+
+    # switch to inline HDL on recent Vivado versions
+    if {[::tapasco::vivado_is_newer "2025.1"] == 1} {
+      set vlnv [dict get $stdcomps ilconcat vlnv]
+      set type inline_hdl
+    } else {
+      set vlnv [dict get $stdcomps xlconcat vlnv]
+      set type ip
+    }
+
     puts "Creating xlconcat $name with $inputs ..."
     puts "  VLNV: [dict get $stdcomps xlconcat vlnv]"
-
-    set xlconcat [create_bd_cell -type ip -vlnv [dict get $stdcomps xlconcat vlnv] $name]
+    set xlconcat [create_bd_cell -type $type -vlnv $vlnv $name]
     set_property -dict [list CONFIG.NUM_PORTS $inputs] $xlconcat
     return $xlconcat
   }
@@ -262,10 +271,19 @@ namespace eval ::tapasco::ip {
   # @return bd_cell of the instance.
   proc create_xlslice {name width bit} {
     variable stdcomps
-    puts "Creating xlslice $name with $width-bit width and bit $bit selected ..."
-    puts "  VLNV: [dict get $stdcomps xlslice vlnv]"
 
-    set xlslice [create_bd_cell -type ip -vlnv [dict get $stdcomps xlslice vlnv] $name]
+    # switch to inline HDL on recent Vivado versions
+    if {[::tapasco::vivado_is_newer "2025.1"] == 1} {
+      set vlnv [dict get $stdcomps ilslice vlnv]
+      set type inline_hdl
+    } else {
+      set vlnv [dict get $stdcomps xlslice vlnv]
+      set type ip
+    }
+
+    puts "Creating xlslice $name with $width-bit width and bit $bit selected ..."
+    puts "  VLNV: $vlnv"
+    set xlslice [create_bd_cell -type $type -vlnv $vlnv $name]
     set_property -dict [list CONFIG.DIN_WIDTH $width CONFIG.DIN_TO $bit CONFIG.DIN_FROM $bit CONFIG.DOUT_WIDTH 1] $xlslice
     return $xlslice
   }
@@ -277,10 +295,19 @@ namespace eval ::tapasco::ip {
   # @return bd_cell of the instance.
   proc create_constant {name width value} {
     variable stdcomps
-    puts "Creating xlconstant $name with $width-bit width and value $value ..."
-    puts "  VLNV: [dict get $stdcomps xlconst vlnv]"
 
-    set xlconst [create_bd_cell -type ip -vlnv [dict get $stdcomps xlconst vlnv] $name]
+    # switch to inline HDL on recent Vivado versions
+    if {[::tapasco::vivado_is_newer "2025.1"] == 1} {
+      set vlnv [dict get $stdcomps ilconst vlnv]
+      set type inline_hdl
+    } else {
+      set vlnv [dict get $stdcomps xlconst vlnv]
+      set type ip
+    }
+
+    puts "Creating xlconstant $name with $width-bit width and value $value ..."
+    puts "  VLNV: $vlnv"
+    set xlconst [create_bd_cell -type $type -vlnv $vlnv $name]
     set_property -dict [list CONFIG.CONST_WIDTH $width CONFIG.CONST_VAL $value] $xlconst
     return $xlconst
   }

@@ -82,9 +82,6 @@ namespace eval sfpplus {
       set name [dict get $physical_ports $port]
       puts "Port name $port: $name"
 
-      set old_bd_cells [get_bd_cells]
-      set mrmac [tapasco::ip::create_mrmac "mrmac_$name"]
-
       # valid options 256, 384, 384segmented
       set datawidth [tapasco::get_feature_option "SFPPLUS" "datawidth" "256"]
       set dw_index 0
@@ -99,18 +96,43 @@ namespace eval sfpplus {
         set bitwidth 384
         set bytewidth 48
       } elseif {$datawidth == "384segmented"} {
+        if {[::tapasco::vivado_is_newer "2025.1"] != 1} {
+          puts "ERROR: 348 bit segmented mode of MRMAC requires at least Vivado 2025.1 due to missing ports of the IP."
+          exit 1
+        }
         set dw_index 2
         set bitwidth 384
         set bytewidth 48
       }
-      # parameter MRMAC_DATA_PATH_INTERFACE_C0 is for MRMAC:1.5
-      set datawidth_v1 [list {256b Non-Segmented} {384b Non-Segmented} {384b Segmented}]
       # parameter MRMAC_DATA_PATH_INTERFACE_PORT0_C0 is for MRMAC:2.1
       set datawidth_v2 [list {Low Latency 256b Non-Segmented} {Independent 384b Non-Segmented} {Independent 384b Segmented}]
       puts "MRMAC configured to datawidth [lindex $datawidth_v2 $dw_index]"
-      set_property -dict [list \
+
+      # ref clock at /
+      set ref_port [create_bd_intf_port -vlnv xilinx.com:interface:diff_clock_rtl:1.0 -mode Slave qsfp${port}_ref]
+      puts $ref_port
+      puts  [get_bd_intf_pins util_ds_buf_0/CLK_IN_D]
+      set subcell [create_bd_cell -type hier $old_bd/mrmac_${name}_cell]
+      current_bd_instance $subcell
+
+      # create cells if BD automation is not in use
+      set mrmac [tapasco::ip::create_mrmac "mrmac_$name"]
+      set ds_buf [create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 util_ds_buf_1]
+      set_property CONFIG.C_BUF_TYPE {IBUFDSGTE} $ds_buf
+      set mbufs [list \
+        [create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 mbufg_gt_0] \
+        [create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 mbufg_gt_1] \
+        [create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 mbufg_gt_1_1] \
+        [create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 mbufg_gt_1_2] \
+        [create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.2 mbufg_gt_1_3]]
+      foreach mbuf $mbufs {
+        set_property CONFIG.C_BUF_TYPE {MBUFG_GT} $mbuf
+      }
+      set const_one [tapasco::ip::create_constant xlconst_mbufg_0 1 1]
+      set gt_quad_base [create_bd_cell -type ip -vlnv xilinx.com:ip:gt_quad_base:1.1 gt_quad_base]
+
+      set mrmac_config [list \
         CONFIG.MRMAC_LOCATION_C0 [lindex [platform::mrmac::get_mrmac_locations] $port] \
-        CONFIG.MRMAC_DATA_PATH_INTERFACE_C0 [lindex $datawidth_v1 $dw_index] \
         CONFIG.MRMAC_DATA_PATH_INTERFACE_PORT0_C0 [lindex $datawidth_v2 $dw_index] \
         CONFIG.GT_REF_CLK_FREQ_C0 [platform::mrmac::get_refclk_freq] \
         CONFIG.GT_CH0_TX_REFCLK_FREQUENCY_C0 [platform::mrmac::get_refclk_freq] \
@@ -120,35 +142,32 @@ namespace eval sfpplus {
         CONFIG.GT_CH2_TX_REFCLK_FREQUENCY_C0 [platform::mrmac::get_refclk_freq] \
         CONFIG.GT_CH2_RX_REFCLK_FREQUENCY_C0 [platform::mrmac::get_refclk_freq] \
         CONFIG.GT_CH3_TX_REFCLK_FREQUENCY_C0 [platform::mrmac::get_refclk_freq] \
-        CONFIG.GT_CH3_RX_REFCLK_FREQUENCY_C0 [platform::mrmac::get_refclk_freq] \
-      ] $mrmac
-
-      apply_bd_automation -rule xilinx.com:bd_rule:mrmac -config { DataPath_Interface_Connection {Auto} Lane0_selection {NULL} Lane1_selection {NULL} Lane2_selection {NULL} Lane3_selection {NULL} Quad0_selection {NULL} Quad1_selection {NULL} Quad2_selection {NULL} Quad3_selection {NULL}} $mrmac
-
-      # ref clock at /
-      set ref_port [create_bd_intf_port -vlnv xilinx.com:interface:diff_clock_rtl:1.0 -mode Slave qsfp${port}_ref]
-
-      set current_bd_cells [get_bd_cells]
-      puts $old_bd_cells
-      # delete all external connections from block automation
-      foreach cell $current_bd_cells {
-        if {[lsearch $old_bd_cells $cell] == -1} {
-          delete_bd_objs -quiet [get_bd_ports -of_objects [get_bd_nets -of_objects [get_bd_pins -of_objects $cell]]]
-          delete_bd_objs -quiet [get_bd_intf_ports -of_objects [get_bd_intf_nets -of_objects [get_bd_intf_pins -of_objects $cell]]]
-        }
+        CONFIG.GT_CH3_RX_REFCLK_FREQUENCY_C0 [platform::mrmac::get_refclk_freq]
+      ]
+      if {[::tapasco::vivado_is_newer "2024.1"] == 1} {
+        lappend mrmac_config CONFIG.MRMAC_IS_GT_WIZ_OLD "1"
       }
-      puts $ref_port
-      puts  [get_bd_intf_pins util_ds_buf_0/CLK_IN_D]
-      set subcell [create_bd_cell -type hier $old_bd/mrmac_${name}_cell]
-      connect_bd_intf_net [get_bd_intf_ports $ref_port] [get_bd_intf_pins util_ds_buf_0/CLK_IN_D]
-      # move all newly created cells to subsystem
-      foreach cell $current_bd_cells {
-        if {[lsearch $old_bd_cells $cell] == -1} {
-          # move cell into network subsystem
-          move_bd_cells [get_bd_cell $subcell] $cell
-        }
+      puts "MRMAC config: $mrmac_config"
+      set_property -dict $mrmac_config $mrmac
+
+      # connect cells
+      connect_bd_intf_net [get_bd_intf_ports $ref_port] [get_bd_intf_pins $ds_buf/CLK_IN_D]
+      connect_bd_net [get_bd_pins $ds_buf/IBUF_OUT] [get_bd_pins $gt_quad_base/GT_REFCLK0]
+      for {set i 0} {$i < 4} {incr i} {
+        connect_bd_intf_net [get_bd_intf_pins $mrmac/gt_tx_serdes_interface_$i] [get_bd_intf_pins $gt_quad_base/TX${i}_GT_IP_Interface]
+        connect_bd_intf_net [get_bd_intf_pins $mrmac/gt_rx_serdes_interface_$i] [get_bd_intf_pins $gt_quad_base/RX${i}_GT_IP_Interface]
       }
-      current_bd_instance $subcell
+      foreach mbuf $mbufs {
+        connect_bd_net [get_bd_pins $const_one/dout] [get_bd_pins $mbuf/MBUFG_GT_CE]
+      }
+      connect_bd_net [get_bd_pins $gt_quad_base/ch0_txoutclk] [get_bd_pins [lindex $mbufs 0]/MBUFG_GT_I]
+      connect_bd_net [get_bd_pins $mrmac/tx_clr_out_0] [get_bd_pins [lindex $mbufs 0]/MBUFG_GT_CLR]
+      connect_bd_net [get_bd_pins $mrmac/tx_clrb_leaf_out_0] [get_bd_pins [lindex $mbufs 0]/MBUFG_GT_CLRB_LEAF]
+      for {set i 0} {$i < 4} {incr i} {
+        connect_bd_net [get_bd_pins $gt_quad_base/ch${i}_rxoutclk] [get_bd_pins [lindex $mbufs [expr "$i + 1"]]/MBUFG_GT_I]
+        connect_bd_net [get_bd_pins $mrmac/rx_clr_out_$i] [get_bd_pins [lindex $mbufs [expr "$i + 1"]]/MBUFG_GT_CLR]
+        connect_bd_net [get_bd_pins $mrmac/rx_clrb_leaf_out_$i] [get_bd_pins [lindex $mbufs [expr "$i + 1"]]/MBUFG_GT_CLRB_LEAF]
+      }
 
       # create user clock for independent clocking modes
       if {$datawidth == "256"} {
@@ -160,7 +179,7 @@ namespace eval sfpplus {
           set user_clk_tx [get_bd_pins bufg_gt_0/usrclk]
           set user_clk_rx [get_bd_pins bufg_gt_1/usrclk]
         }
-      } elseif {$datawidth == "384"} {
+      } else {
         if {$datawidth == "384"} {
           set freq {390.625}
         } elseif {$datawidth == "384segmented"} {
@@ -257,58 +276,32 @@ namespace eval sfpplus {
       connect_bd_net [get_bd_pins $mrmac/tx_axis_tready_0] [get_bd_pins $axis_tx_reg/m_axis_tready]
       connect_bd_net [get_bd_pins $mrmac/tx_axis_tvalid_0] [get_bd_pins $axis_tx_reg/m_axis_tvalid]
       # 256/384 bit tdata
-      set tx_data_slice0 [tapasco::ip::create_xlslice tx_data_slice0 $bitwidth 0]
-      set tx_data_slice1 [tapasco::ip::create_xlslice tx_data_slice1 $bitwidth 0]
-      set tx_data_slice2 [tapasco::ip::create_xlslice tx_data_slice2 $bitwidth 0]
-      set tx_data_slice3 [tapasco::ip::create_xlslice tx_data_slice3 $bitwidth 0]
-      set_property -dict [list CONFIG.DIN_FROM  {63} CONFIG.DIN_TO   {0} CONFIG.DIN_WIDTH $bitwidth CONFIG.DOUT_WIDTH {64}] $tx_data_slice0
-      set_property -dict [list CONFIG.DIN_FROM {127} CONFIG.DIN_TO  {64} CONFIG.DIN_WIDTH $bitwidth CONFIG.DOUT_WIDTH {64}] $tx_data_slice1
-      set_property -dict [list CONFIG.DIN_FROM {191} CONFIG.DIN_TO {128} CONFIG.DIN_WIDTH $bitwidth CONFIG.DOUT_WIDTH {64}] $tx_data_slice2
-      set_property -dict [list CONFIG.DIN_FROM {255} CONFIG.DIN_TO {192} CONFIG.DIN_WIDTH $bitwidth CONFIG.DOUT_WIDTH {64}] $tx_data_slice3
-      connect_bd_net [get_bd_pins $axis_tx_reg/m_axis_tdata] [get_bd_pins $tx_data_slice0/Din] [get_bd_pins $tx_data_slice1/Din] [get_bd_pins $tx_data_slice2/Din] [get_bd_pins $tx_data_slice3/Din]
-      connect_bd_net [get_bd_pins $tx_data_slice0/Dout] [get_bd_pins $mrmac/tx_axis_tdata0]
-      connect_bd_net [get_bd_pins $tx_data_slice1/Dout] [get_bd_pins $mrmac/tx_axis_tdata1]
-      connect_bd_net [get_bd_pins $tx_data_slice2/Dout] [get_bd_pins $mrmac/tx_axis_tdata2]
-      connect_bd_net [get_bd_pins $tx_data_slice3/Dout] [get_bd_pins $mrmac/tx_axis_tdata3]
-      if {$bitwidth > 256} {
-        set tx_data_slice4 [tapasco::ip::create_xlslice tx_data_slice4 $bitwidth 0]
-        set tx_data_slice5 [tapasco::ip::create_xlslice tx_data_slice5 $bitwidth 0]
-        set_property -dict [list CONFIG.DIN_FROM {319} CONFIG.DIN_TO {256} CONFIG.DIN_WIDTH $bitwidth CONFIG.DOUT_WIDTH {64}] $tx_data_slice4
-        set_property -dict [list CONFIG.DIN_FROM {383} CONFIG.DIN_TO {320} CONFIG.DIN_WIDTH $bitwidth CONFIG.DOUT_WIDTH {64}] $tx_data_slice5
-        connect_bd_net [get_bd_pins $axis_tx_reg/m_axis_tdata] [get_bd_pins $tx_data_slice4/Din] [get_bd_pins $tx_data_slice5/Din]
-        connect_bd_net [get_bd_pins $tx_data_slice4/Dout] [get_bd_pins $mrmac/tx_axis_tdata4]
-        connect_bd_net [get_bd_pins $tx_data_slice5/Dout] [get_bd_pins $mrmac/tx_axis_tdata5]
+      for {set i 0} {$i < 6} {incr i} {
+        if {$i < 4 || $bitwidth > 256} {
+          set tx_data_slice [tapasco::ip::create_xlslice tx_data_slice$i $bitwidth 0]
+          set_property -dict [list CONFIG.DIN_FROM  [expr "($i+1)*64-1"] CONFIG.DIN_TO [expr "$i*64"] CONFIG.DIN_WIDTH $bitwidth CONFIG.DOUT_WIDTH {64}] $tx_data_slice
+          connect_bd_net [get_bd_pins $axis_tx_reg/m_axis_tdata] [get_bd_pins $tx_data_slice/Din]
+          connect_bd_net [get_bd_pins $tx_data_slice/Dout] [get_bd_pins $mrmac/tx_axis_tdata$i]
+        }
       }
       # 32/48 bit tkeep
-      set tx_keep_slice0 [tapasco::ip::create_xlslice tx_keep_slice0 $bytewidth 0]
-      set tx_keep_slice1 [tapasco::ip::create_xlslice tx_keep_slice1 $bytewidth 0]
-      set tx_keep_slice2 [tapasco::ip::create_xlslice tx_keep_slice2 $bytewidth 0]
-      set tx_keep_slice3 [tapasco::ip::create_xlslice tx_keep_slice3 $bytewidth 0]
-      set_property -dict [list CONFIG.DIN_FROM  {7} CONFIG.DIN_TO  {0} CONFIG.DIN_WIDTH $bytewidth CONFIG.DOUT_WIDTH {8}] $tx_keep_slice0
-      set_property -dict [list CONFIG.DIN_FROM {15} CONFIG.DIN_TO  {8} CONFIG.DIN_WIDTH $bytewidth CONFIG.DOUT_WIDTH {8}] $tx_keep_slice1
-      set_property -dict [list CONFIG.DIN_FROM {23} CONFIG.DIN_TO {16} CONFIG.DIN_WIDTH $bytewidth CONFIG.DOUT_WIDTH {8}] $tx_keep_slice2
-      set_property -dict [list CONFIG.DIN_FROM {31} CONFIG.DIN_TO {24} CONFIG.DIN_WIDTH $bytewidth CONFIG.DOUT_WIDTH {8}] $tx_keep_slice3
-      connect_bd_net [get_bd_pins $axis_tx_reg/m_axis_tkeep] [get_bd_pins $tx_keep_slice0/Din] [get_bd_pins $tx_keep_slice1/Din] [get_bd_pins $tx_keep_slice2/Din] [get_bd_pins $tx_keep_slice3/Din]
-      connect_bd_net [get_bd_pins $tx_keep_slice1/Dout] [get_bd_pins $mrmac/tx_axis_tkeep_user1]
-      connect_bd_net [get_bd_pins $tx_keep_slice2/Dout] [get_bd_pins $mrmac/tx_axis_tkeep_user2]
-      connect_bd_net [get_bd_pins $tx_keep_slice3/Dout] [get_bd_pins $mrmac/tx_axis_tkeep_user3]
-      if {$bitwidth > 256} {
-        set tx_keep_slice4 [tapasco::ip::create_xlslice tx_keep_slice4 $bytewidth 0]
-        set tx_keep_slice5 [tapasco::ip::create_xlslice tx_keep_slice5 $bytewidth 0]
-        set_property -dict [list CONFIG.DIN_FROM {39} CONFIG.DIN_TO {32} CONFIG.DIN_WIDTH $bytewidth CONFIG.DOUT_WIDTH {8}] $tx_keep_slice4
-        set_property -dict [list CONFIG.DIN_FROM {47} CONFIG.DIN_TO {40} CONFIG.DIN_WIDTH $bytewidth CONFIG.DOUT_WIDTH {8}] $tx_keep_slice5
-        connect_bd_net [get_bd_pins $axis_tx_reg/m_axis_tkeep] [get_bd_pins $tx_keep_slice4/Din] [get_bd_pins $tx_keep_slice5/Din]
-        connect_bd_net [get_bd_pins $tx_keep_slice4/Dout] [get_bd_pins $mrmac/tx_axis_tkeep_user4]
-        connect_bd_net [get_bd_pins $tx_keep_slice5/Dout] [get_bd_pins $mrmac/tx_axis_tkeep_user5]
-      }
-      # set keep[8:10] to 0
-      set tx_keep_concat0 [tapasco::ip::create_xlconcat tx_keep_concat0 2]
       set tx_keep_zero [tapasco::ip::create_constant tx_keep_zero0 3 0]
-      set_property -dict [list CONFIG.IN1_WIDTH.VALUE_SRC USER CONFIG.IN0_WIDTH.VALUE_SRC USER] $tx_keep_concat0
-      set_property -dict [list CONFIG.NUM_PORTS {2} CONFIG.IN0_WIDTH {8} CONFIG.IN1_WIDTH {3}] $tx_keep_concat0
-      connect_bd_net [get_bd_pins $tx_keep_slice0/Dout] [get_bd_pins $tx_keep_concat0/In0]
-      connect_bd_net [get_bd_pins $tx_keep_zero/dout] [get_bd_pins $tx_keep_concat0/In1]
-      connect_bd_net [get_bd_pins $tx_keep_concat0/dout] [get_bd_pins $mrmac/tx_axis_tkeep_user0]
+      for {set i 0} {$i < 6} {incr i} {
+        if {$i < 4 || $bitwidth > 256} {
+          set tx_keep_slice [tapasco::ip::create_xlslice tx_keep_slice$i $bytewidth 0]
+          set_property -dict [list CONFIG.DIN_FROM [expr "($i+1)*8-1"] CONFIG.DIN_TO [expr "$i*8"] CONFIG.DIN_WIDTH $bytewidth CONFIG.DOUT_WIDTH {8}] $tx_keep_slice
+          set tx_keep_concat [tapasco::ip::create_xlconcat tx_keep_concat$i 2]
+          set_property -dict [list CONFIG.IN1_WIDTH.VALUE_SRC USER CONFIG.IN0_WIDTH.VALUE_SRC USER] $tx_keep_concat
+          set_property -dict [list CONFIG.NUM_PORTS {2} CONFIG.IN0_WIDTH {8} CONFIG.IN1_WIDTH {3}] $tx_keep_concat
+
+          # set keep[8:10] to 0
+          connect_bd_net [get_bd_pins $axis_tx_reg/m_axis_tkeep] [get_bd_pins $tx_keep_slice/Din]
+          connect_bd_net [get_bd_pins $tx_keep_slice/Dout] [get_bd_pins $tx_keep_concat/In0]
+          connect_bd_net [get_bd_pins $tx_keep_zero/dout] [get_bd_pins $tx_keep_concat/In1]
+          connect_bd_net [get_bd_pins $tx_keep_concat/dout] [get_bd_pins $mrmac/tx_axis_tkeep_user$i]
+        }
+      }
+
       # RX
       # combine the MRMAC stream ports
       set axis_rx [get_bd_intf_pins /network/AXIS_RX_${name}]
@@ -329,32 +322,29 @@ namespace eval sfpplus {
       set_property -dict [list CONFIG.IN3_WIDTH.VALUE_SRC USER CONFIG.IN2_WIDTH.VALUE_SRC USER CONFIG.IN1_WIDTH.VALUE_SRC USER CONFIG.IN0_WIDTH.VALUE_SRC USER] $rx_data_concat
       set_property -dict [list CONFIG.NUM_PORTS $rx_port_count CONFIG.IN0_WIDTH {64} CONFIG.IN1_WIDTH {64} CONFIG.IN2_WIDTH {64} CONFIG.IN3_WIDTH {64} CONFIG.IN4_WIDTH {64} CONFIG.IN5_WIDTH {64}] $rx_data_concat
       connect_bd_net [get_bd_pins $axis_rx_reg/s_axis_tdata] [get_bd_pins $rx_data_concat/dout]
-      connect_bd_net [get_bd_pins $rx_data_concat/In0] [get_bd_pins $mrmac/rx_axis_tdata0]
-      connect_bd_net [get_bd_pins $rx_data_concat/In1] [get_bd_pins $mrmac/rx_axis_tdata1]
-      connect_bd_net [get_bd_pins $rx_data_concat/In2] [get_bd_pins $mrmac/rx_axis_tdata2]
-      connect_bd_net [get_bd_pins $rx_data_concat/In3] [get_bd_pins $mrmac/rx_axis_tdata3]
-      if {$bitwidth > 256} {
-        connect_bd_net [get_bd_pins $rx_data_concat/In4] [get_bd_pins $mrmac/rx_axis_tdata4]
-        connect_bd_net [get_bd_pins $rx_data_concat/In5] [get_bd_pins $mrmac/rx_axis_tdata5]
+      for {set i 0} {$i < $rx_port_count} {incr i} {
+        connect_bd_net [get_bd_pins $rx_data_concat/In$i] [get_bd_pins $mrmac/rx_axis_tdata$i]
       }
       # 32/48 bit tkeep
       set rx_keep_concat [tapasco::ip::create_xlconcat rx_keep_concat $rx_port_count]
       set_property -dict [list CONFIG.IN3_WIDTH.VALUE_SRC USER CONFIG.IN2_WIDTH.VALUE_SRC USER CONFIG.IN1_WIDTH.VALUE_SRC USER CONFIG.IN0_WIDTH.VALUE_SRC USER] $rx_keep_concat
       set_property -dict [list CONFIG.NUM_PORTS $rx_port_count CONFIG.IN0_WIDTH {8} CONFIG.IN1_WIDTH {8} CONFIG.IN2_WIDTH {8} CONFIG.IN3_WIDTH {8} CONFIG.IN4_WIDTH {8} CONFIG.IN5_WIDTH {8}] $rx_keep_concat
       connect_bd_net [get_bd_pins $axis_rx_reg/s_axis_tkeep] [get_bd_pins $rx_keep_concat/dout]
-      connect_bd_net [get_bd_pins $rx_keep_concat/In0] [get_bd_pins $mrmac/rx_axis_tkeep_user0]
-      connect_bd_net [get_bd_pins $rx_keep_concat/In1] [get_bd_pins $mrmac/rx_axis_tkeep_user1]
-      connect_bd_net [get_bd_pins $rx_keep_concat/In2] [get_bd_pins $mrmac/rx_axis_tkeep_user2]
-      connect_bd_net [get_bd_pins $rx_keep_concat/In3] [get_bd_pins $mrmac/rx_axis_tkeep_user3]
-      if {$bitwidth > 256} {
-        connect_bd_net [get_bd_pins $rx_keep_concat/In4] [get_bd_pins $mrmac/rx_axis_tkeep_user4]
-        connect_bd_net [get_bd_pins $rx_keep_concat/In5] [get_bd_pins $mrmac/rx_axis_tkeep_user5]
+      for {set i 0} {$i < $rx_port_count} {incr i} {
+        set rx_keep_slice [tapasco::ip::create_xlslice rx_keep_slice$i 11 0]
+        set_property -dict [list CONFIG.DIN_FROM {7} CONFIG.DIN_TO {0} CONFIG.DIN_WIDTH {11} CONFIG.DOUT_WIDTH {8}] $rx_keep_slice
+        connect_bd_net [get_bd_pins $mrmac/rx_axis_tkeep_user$i] [get_bd_pins $rx_keep_slice/Din]
+        connect_bd_net [get_bd_pins $rx_keep_slice/Dout] [get_bd_pins $rx_keep_concat/In$i]
       }
 
       connect_bd_net $user_clk_rx [get_bd_pins $axis_rx_reg/aclk] \
           [get_bd_pins /network/sfp_rx_clock_${name}]
-      connect_bd_net $user_clk_tx [get_bd_pins $axis_tx_reg/aclk] \
-          [get_bd_pins /network/sfp_tx_clock_${name}]
+      connect_bd_net $user_clk_tx [get_bd_pins $axis_tx_reg/aclk]
+      if {$user_clk_rx == $user_clk_tx} {
+        connect_bd_net [get_bd_pins /network/sfp_rx_clock_${name}] [get_bd_pins /network/sfp_tx_clock_${name}]
+      } else {
+        connect_bd_net $user_clk_tx [get_bd_pins /network/sfp_tx_clock_${name}]
+      }
       connect_bd_net [get_bd_pins $mrmac/gt_rx_reset_done_out] [get_bd_pins $axis_rx_reg/aresetn] \
           [get_bd_pins /network/sfp_rx_resetn_${name}]
       connect_bd_net [get_bd_pins $mrmac/gt_tx_reset_done_out] [get_bd_pins $axis_tx_reg/aresetn] \

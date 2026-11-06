@@ -28,6 +28,7 @@
 #include "tlkm_logging.h"
 #include "tlkm_slots.h"
 #include "zynq_irq.h"
+#include "common/eventfd_compat.h"
 
 #define IRQS_PER_CONTROLLER 32
 
@@ -63,12 +64,7 @@ static irqreturn_t zynq_irq_handler(int irq, void *data)
 				}
 			}
 			if (m_start->irq_no == slot) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 8, 0)
-				eventfd_signal(m_start->eventfd, 1);
-#else
-				// Linux commit 3652117 removes argument from eventfd_signal
-				eventfd_signal(m_start->eventfd);
-#endif
+				compat_eventfd_signal(m_start->eventfd, 1);
 			} else {
 				// Got interrupt for unregistered interrupt
 				LOG(TLKM_LF_IRQ,

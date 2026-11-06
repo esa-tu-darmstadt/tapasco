@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-cmake_minimum_required(VERSION 3.5.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 include(${CMAKE_CURRENT_LIST_DIR}/../../../cmake/Tapasco.cmake NO_POLICY_SCOPE)
 project(tapasco-benchmark)
 
@@ -39,7 +39,9 @@ add_custom_command(
          ${CMAKE_CURRENT_BINARY_DIR}/json11/json11.hpp
   COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/json11
   COMMAND git clone https://github.com/dropbox/json11.git
-          ${CMAKE_CURRENT_BINARY_DIR}/json11)
+          ${CMAKE_CURRENT_BINARY_DIR}/json11
+  COMMAND git -C ${CMAKE_CURRENT_BINARY_DIR}/json11 apply
+          $(TAPASCO_HOME_RUNTIME)/examples/C++/tapasco-benchmark/json11.patch)
 
 include(GNUInstallDirs)
 

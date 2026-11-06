@@ -56,8 +56,22 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
     val lt = new LogTrackingFileWatcher(Some(logger))
     val outzip = outputZipFile(k, t)
     val script = cfg.outputDir(k, t).resolve("hls").resolve("%s.tcl".format(t.ad.name))
-    val logfile = logFile(k, t)
+    val baselogfile = logFile(k, t)
     if (!outzip.toFile.exists) {
+      if (hlsCommand.isEmpty) {
+        // If the command to use for HLS is still undefined, try to auto-detect it
+        if (!detectHLSCommand()) {
+          logger.error("Neither vitis_hls nor vivado_hls were available on the PATH")
+          OtherError(HighLevelSynthesizerLog(baselogfile), new RuntimeException())
+        }
+      }
+      // we cannot set the log file path for vitis-run so just adapt it
+      val logfile =
+        if (hlsCommand.get == "vitis-run") {
+          baselogfile.resolveSibling("logs").resolve("hls_run_tcl.log")
+        } else {
+          baselogfile
+        }
       Files.createDirectories(script.getParent) // make output dirs
       new FileWriter(script.toString).append(makeScript(k, t)).close() // write Tcl file
       val runName = "'%s' for %s".format(k.name, t.toString)
@@ -69,16 +83,16 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
       }
 
       // execute Vivado HLS (max. runtime: 1 day)
-      if(hlsCommand.isEmpty){
-        // If the command to use for HLS is still undefined, try to auto-detect it
-        if(!detectHLSCommand()){
-          logger.error("Neither vitis_hls nor vivado_hls were available on the PATH")
-          OtherError(HighLevelSynthesizerLog(logfile), new RuntimeException())
+      val vivado_hls_cmd =
+        if (hlsCommand.get == "vitis-run") {
+          Seq("timeout", (cfg.hlsTimeOut getOrElse (24 * 60 * 60)).toString, hlsCommand.get,
+            "--mode", "hls",
+            "--tcl", script.toString)
+        } else {
+          Seq("timeout", (cfg.hlsTimeOut getOrElse (24 * 60 * 60)).toString, hlsCommand.get,
+            "-f", script.toString,
+            "-l", logfile.toString)
         }
-      }
-      val vivado_hls_cmd = Seq("timeout", (cfg.hlsTimeOut getOrElse (24 * 60 * 60)).toString, hlsCommand.get,
-        "-f", script.toString,
-        "-l", logfile.toString)
       val process = Process(vivado_hls_cmd, script.getParent.toFile)
       val vivadoRet = InterruptibleProcess(process,
          waitMillis = Some(( cfg.hlsTimeOut getOrElse (24 * 60 * 60) ) * 1000 + 1000) )
@@ -109,7 +123,7 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
       }
     } else {
       logger.info("core '%s' already exists in %s, skipping".format(k.name, cfg.outputDir(k, t)))
-      Success(HighLevelSynthesizerLog(logfile), outzip)
+      Success(HighLevelSynthesizerLog(baselogfile), outzip)
     }
   } catch {
     case e: Exception =>
@@ -235,6 +249,15 @@ private object VivadoHighLevelSynthesis extends HighLevelSynthesizer {
     } catch {
       // If vivado_hls is not available, the test might result in an exception that we catch here.
       case _ : Throwable => logger.trace("vivado_hls not available")
+    }
+    try {
+      if(Seq("vitis-run", "--version").! == 0) {
+        hlsCommand = Some("vitis-run")
+        return true
+      }
+    } catch {
+      // If vitis-run is not available, the test might result in an exception that we catch here.
+      case _ : Throwable => logger.trace("vitis-run not available")
     }
     return false
   }
