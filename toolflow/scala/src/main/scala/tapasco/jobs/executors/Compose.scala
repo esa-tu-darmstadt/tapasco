@@ -88,7 +88,8 @@ private object Compose extends Executor[ComposeJob] {
         skipSynth = if (p.name == "sim") Some(true) else job.skipSynthesis,
         effortLevel = job.effortLevel.getOrElse("normal"),
         onComplete = _ => signal.release(),
-        deleteOnFail = job.deleteProjects
+        deleteOnFail = job.deleteProjects,
+        extraPlugins = job.extraPlugins getOrElse Seq()
       )
 
       composeTasks foreach {

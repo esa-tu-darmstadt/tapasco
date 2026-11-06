@@ -188,7 +188,10 @@ configuration via `tapasco -n config.json`.
           Arg("aggressive_performance", "maximal optimization for performance") &
           Arg("aggressive_area", "maximal optimization for area")) &
         Arg("--skipSynthesis", "For testing purposes, execute composition without final" ~
-          "synthesis and bitstream generation")) &
+          "synthesis and bitstream generation") &
+        Arg("--extraPlugins PATH+", "list of additional Tcl plugin files, or directories" ~
+          "whose *.tcl files, are sourced as platform plugins (in addition to the" ~
+          "platform's plugins directory); quote a path that contains one of ,;:")) &
       "" &
       s"NOTE: Currently the  total number of PEs must be <= ${PLATFORM_NUM_SLOTS}." &
       s"IMPORTANT: The maximum runtime of a compose job is limited is limited dependent on the platform.")

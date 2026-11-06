@@ -54,7 +54,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
 
   /** @inheritdoc*/
   def compose(bd: Composition, target: Target, f: Heuristics.Frequency = 0, effortLevel: String,
-              features: Seq[Feature] = Seq(), skipSynth: Boolean) (implicit cfg: Configuration): Composer.Result = {
+              features: Seq[Feature] = Seq(), skipSynth: Boolean, extraPlugins: Seq[Path] = Seq())
+             (implicit cfg: Configuration): Composer.Result = {
     logger.debug("VivadoComposer uses at most {} threads", cfg.maxThreads getOrElse "unlimited")
     // create output struct
     val frequency = checkFrequency(f, target.pd)
@@ -73,7 +74,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       target = target,
       composition = composition(bd, target),
       effort = effortLevel,
-      skipSynth = skipSynth)
+      skipSynth = skipSynth,
+      extraPlugins = extraPlugins)
 
     logger.info("Vivado starting run {}: show progress with `vivado_progress {}`", files.runName: Any, files.logFile)
     files.logFile.toFile.delete
@@ -192,7 +194,11 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
 
   /** Writes the .tcl script for Vivado. */
   private def mkTclScript(fromTemplate: Path, to: Path, projectName: String, header: String, target: Target,
-                          composition: String, effort: String, skipSynth: Boolean): Unit = {
+                          composition: String, effort: String, skipSynth: Boolean,
+                          extraPlugins: Seq[Path]): Unit = {
+    // relative paths are taken relative to the current working directory of this tapasco run, not Vivado's
+    for (p <- extraPlugins if !java.nio.file.Files.exists(p))
+      logger.warn("extra plugin '{}' does not exist (resolved to '{}')", p: Any, p.toAbsolutePath.normalize)
     // needles for template
     val needles: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map(
       "PROJECT_NAME" -> "microarch",
@@ -207,7 +213,8 @@ class VivadoComposer()(implicit cfg: Configuration) extends Composer {
       "ARCHITECTURE_TCL" -> target.ad.tclLibrary.toString,
       "COMPOSITION" -> composition,
       "EFFORT_LEVEL" -> effort.toUpperCase,
-      "SKIP_SYNTH" -> (if (skipSynth) "true" else "false")
+      "SKIP_SYNTH" -> (if (skipSynth) "true" else "false"),
+      "EXTRA_PLUGINS" -> (extraPlugins map (d => "{" + d.toAbsolutePath.normalize + "}") mkString " ")
     )
 
     // write Tcl script

@@ -44,6 +44,25 @@ source -notrace @@ARCHITECTURE_TCL@@
 source -notrace "$env(TAPASCO_HOME_TCL)/platform/common/platform.tcl"
 source -notrace @@PLATFORM_TCL@@
 
+# source the job's ExtraPlugins: Tcl files, or directories of which every *.tcl file is sourced; like the platform's own
+# plugins directory this happens inside the platform namespace (plugins register as platform::<name>::<proc>)
+namespace eval platform {
+  foreach extra_plugin [list @@EXTRA_PLUGINS@@] {
+    if {[file isdirectory $extra_plugin]} {
+      set extra_plugin_files [lsort [glob -nocomplain -directory $extra_plugin "*.tcl"]]
+    } elseif {[file isfile $extra_plugin]} {
+      set extra_plugin_files [list $extra_plugin]
+    } else {
+      puts "ERROR: extra plugin '$extra_plugin' is neither a file nor a directory"
+      exit 1
+    }
+    foreach f $extra_plugin_files {
+      puts "Sourcing extra plugin $f ..."
+      source -notrace $f
+    }
+  }
+}
+
 # event: post-init
 tapasco::call_plugins "post-init"
 

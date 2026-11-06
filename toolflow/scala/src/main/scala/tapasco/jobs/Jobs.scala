@@ -69,6 +69,8 @@ final case class BulkImportJob(csvFile: Path) extends Job("bulkimport")
   * @param debugMode       Debug mode name (opt.).
   * @param effortLevel     Synthesis effort level (opt.).
   * @param skipSynthesis   Skip final synthesis and bitstream generation (opt.).
+  * @param deleteProjects  Delete the Vivado project files after the run (opt.).
+  * @param extraPlugins    Additional plugin files (or directories of *.tcl files) sourced as platform plugins (opt.).
   **/
 final case class ComposeJob(
                              composition: Composition,
@@ -80,7 +82,8 @@ final case class ComposeJob(
                              debugMode: Option[String] = None,
                              effortLevel: Option[String] = None,
                              skipSynthesis: Option[Boolean] = None,
-                             deleteProjects: Option[Boolean] = None) extends Job("compose") {
+                             deleteProjects: Option[Boolean] = None,
+                             extraPlugins: Option[Seq[Path]] = None) extends Job("compose") {
   /** Returns the selected composer tool implementation. */
   lazy val implementation: Composer.Implementation = Composer.Implementation(_implementation)
 
