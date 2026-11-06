@@ -27,6 +27,8 @@
   **/
 package tapasco.activity.composers
 
+import java.nio.file.Path
+
 import tapasco.base._
 import tapasco.dse._
 import tapasco.reports._
@@ -48,11 +50,14 @@ trait Composer {
     * @param f         target design frequency (PE speed)
     * @param features  Features (optional)
     * @param skipSynth Skip final synthesis and bitstream generation (optional)
+    * @param extraPlugins Additional plugin files (or directories of *.tcl files) sourced as platform plugins (optional)
+    * @param extraConstraints Additional XDC files (or directories of *.xdc files) added to the Vivado project (optional)
     * @param cfg       implicit Configuration instance
     * @return Composer.Result with error code / additional data
     */
   def compose(bd: Composition, target: Target, f: Double = 0, effortLevel: String, features: Seq[Feature] = Seq(),
-              skipSynth: Boolean) (implicit cfg: Configuration): Result
+              skipSynth: Boolean, extraPlugins: Seq[Path] = Seq(), extraConstraints: Seq[Path] = Seq())
+             (implicit cfg: Configuration): Result
 
   /** Removes all intermediate files for the run, leaving results.
     *

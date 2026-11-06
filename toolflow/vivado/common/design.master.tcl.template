@@ -44,6 +44,25 @@ source -notrace @@ARCHITECTURE_TCL@@
 source -notrace "$env(TAPASCO_HOME_TCL)/platform/common/platform.tcl"
 source -notrace @@PLATFORM_TCL@@
 
+# source the job's ExtraPlugins: Tcl files, or directories of which every *.tcl file is sourced; like the platform's own
+# plugins directory this happens inside the platform namespace (plugins register as platform::<name>::<proc>)
+namespace eval platform {
+  foreach extra_plugin [list @@EXTRA_PLUGINS@@] {
+    if {[file isdirectory $extra_plugin]} {
+      set extra_plugin_files [lsort [glob -nocomplain -directory $extra_plugin "*.tcl"]]
+    } elseif {[file isfile $extra_plugin]} {
+      set extra_plugin_files [list $extra_plugin]
+    } else {
+      puts "ERROR: extra plugin '$extra_plugin' is neither a file nor a directory"
+      exit 1
+    }
+    foreach f $extra_plugin_files {
+      puts "Sourcing extra plugin $f ..."
+      source -notrace $f
+    }
+  }
+}
+
 # event: post-init
 tapasco::call_plugins "post-init"
 
@@ -112,6 +131,23 @@ if {[llength [info commands platform::generate_wrapper]] == 0} {
 } else {
   # create platform specific wrapper
   platform::generate_wrapper
+}
+
+# add the job's ExtraConstraints: XDC files, or directories of which every *.xdc file is added, to the constraints
+# fileset (used in synthesis and implementation, processed after the platform's own constraints)
+foreach extra_constraints [list @@EXTRA_CONSTRAINTS@@] {
+  if {[file isdirectory $extra_constraints]} {
+    set extra_constraints_files [lsort [glob -nocomplain -directory $extra_constraints "*.xdc"]]
+  } elseif {[file isfile $extra_constraints]} {
+    set extra_constraints_files [list $extra_constraints]
+  } else {
+    puts "ERROR: extra constraints '$extra_constraints' are neither a file nor a directory"
+    exit 1
+  }
+  foreach f $extra_constraints_files {
+    puts "Adding extra constraints $f ..."
+    add_files -fileset constrs_1 -norecurse $f
+  }
 }
 
 tapasco::call_plugins "post-wrapper"

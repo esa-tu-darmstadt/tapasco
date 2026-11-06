@@ -21,6 +21,8 @@
  */
 package tapasco.parser
 
+import java.nio.file.Path
+
 import fastparse.all._
 import tapasco.base._
 import tapasco.jobs._
@@ -45,7 +47,8 @@ private object ComposeParser {
   private val jobid = identity[ComposeJob] _
 
   private def options: Parser[ComposeJob => ComposeJob] =
-    (implementation | architectures | platforms | features | debugMode | skipSynth | effortLevel | delProj).rep
+    (implementation | architectures | platforms | features | debugMode | skipSynth | effortLevel | delProj |
+      extraPlugins | extraConstraints).rep
       .map(opts => (opts map (applyOption _) fold jobid) (_ andThen _))
 
   private val effortModes: Set[String] = Set("fastest", "fast", "normal",
@@ -53,6 +56,18 @@ private object ComposeParser {
 
   private def skipSynth: Parser[(String, Boolean)] =
     (longOption("skipSynthesis", "SkipSynthesis") ~ ws) map { case s => (s, true) }
+
+  // unlike `path`, a list element stops at the list separators (quote a path that contains one of them)
+  private def pluginPath: Parser[Path] =
+    (quotedString | string("")).filter(p => tryToPath(p).nonEmpty).map(toPath _).opaque("plugin file or directory")
+
+  private def extraPlugins: Parser[(String, Seq[Path])] =
+    (longOption("extraPlugins", "ExtraPlugins") ~ ws ~/ seqOne(pluginPath) ~ ws)
+      .opaque(s"list of plugin files or directories separated by one of $seqSepChars")
+
+  private def extraConstraints: Parser[(String, Seq[Path])] =
+    (longOption("extraConstraints", "ExtraConstraints") ~ ws ~/ seqOne(pluginPath) ~ ws)
+      .opaque(s"list of XDC files or directories separated by one of $seqSepChars")
 
   private def applyOption(opt: (String, _)): ComposeJob => ComposeJob =
     opt match {
@@ -69,6 +84,8 @@ private object ComposeParser {
         _.copy(effortLevel = Some("normal"))
       }
       case ("SkipSynthesis", s: Boolean) => _.copy(skipSynthesis = Some(s))
+      case ("ExtraPlugins", ds: Seq[Path@unchecked]) => _.copy(extraPlugins = Some(ds))
+      case ("ExtraConstraints", cs: Seq[Path@unchecked]) => _.copy(extraConstraints = Some(cs))
       case o => throw new Exception(s"parsed illegal option: $o")
     }
 }

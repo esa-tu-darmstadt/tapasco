@@ -60,15 +60,18 @@ final case class BulkImportJob(csvFile: Path) extends Job("bulkimport")
   * a fixed design frequency. Composition is performed for each [[tapasco.base.Target]],
   * i.e., each combination of [[tapasco.base.Architecture]] and [[tapasco.base.Platform]] given.
   *
-  * @param composition     Composition to synthesize micro-architecture for.
-  * @param designFrequency Operating frequency of PEs in the design.
-  * @param _implementation Composer Implementation (e.g., Vivado).
-  * @param _architectures  Name list of [[tapasco.base.Architecture]] instances.
-  * @param _platforms      Name list of [[tapasco.base.Platform]] instances.
-  * @param features        List of [[tapasco.base.Feature]] configurations for the design (opt.).
-  * @param debugMode       Debug mode name (opt.).
-  * @param effortLevel     Synthesis effort level (opt.).
-  * @param skipSynthesis   Skip final synthesis and bitstream generation (opt.).
+  * @param composition      Composition to synthesize micro-architecture for.
+  * @param designFrequency  Operating frequency of PEs in the design.
+  * @param _implementation  Composer Implementation (e.g., Vivado).
+  * @param _architectures   Name list of [[tapasco.base.Architecture]] instances.
+  * @param _platforms       Name list of [[tapasco.base.Platform]] instances.
+  * @param features         List of [[tapasco.base.Feature]] configurations for the design (opt.).
+  * @param debugMode        Debug mode name (opt.).
+  * @param effortLevel      Synthesis effort level (opt.).
+  * @param skipSynthesis    Skip final synthesis and bitstream generation (opt.).
+  * @param deleteProjects   Delete the Vivado project files after the run (opt.).
+  * @param extraPlugins     Additional plugin files (or directories of *.tcl files) sourced as platform plugins (opt.).
+  * @param extraConstraints Additional XDC files (or directories of *.xdc files) added to the Vivado project (opt.).
   **/
 final case class ComposeJob(
                              composition: Composition,
@@ -80,7 +83,9 @@ final case class ComposeJob(
                              debugMode: Option[String] = None,
                              effortLevel: Option[String] = None,
                              skipSynthesis: Option[Boolean] = None,
-                             deleteProjects: Option[Boolean] = None) extends Job("compose") {
+                             deleteProjects: Option[Boolean] = None,
+                             extraPlugins: Option[Seq[Path]] = None,
+                             extraConstraints: Option[Seq[Path]] = None) extends Job("compose") {
   /** Returns the selected composer tool implementation. */
   lazy val implementation: Composer.Implementation = Composer.Implementation(_implementation)
 
