@@ -50,7 +50,8 @@ class ComposeTask(composition: Composition,
                   val deleteOnFail: Option[Boolean] = None,
                   private val effortLevel: String = "normal",
                   val onComplete: Boolean => Unit,
-                  extraPlugins: Seq[Path] = Seq())
+                  extraPlugins: Seq[Path] = Seq(),
+                  extraConstraints: Seq[Path] = Seq())
                  (implicit cfg: Configuration) extends Task with LogTracking {
   private[this] implicit val _logger = tapasco.Logging.logger(getClass)
   private[this] val _slurm = Slurm.enabled
@@ -74,7 +75,7 @@ class ComposeTask(composition: Composition,
     if (debugMode.isEmpty) {
       _composerResult = Some(try {
         composer.compose(composition, target, designFrequency, effortLevel, features getOrElse Seq(),
-                         skipSynth getOrElse false, extraPlugins)
+                         skipSynth getOrElse false, extraPlugins, extraConstraints)
       }
       catch {
         case e: Exception =>
@@ -116,7 +117,8 @@ class ComposeTask(composition: Composition,
     val cmpsJob = ComposeJob(
       composition, designFrequency, implementation.toString, Some(Seq(target.ad.name)), Some(Seq(target.pd.name)),
       features, debugMode, skipSynthesis = skipSynth, effortLevel = Some(effortLevel),
-      extraPlugins = if (extraPlugins.isEmpty) None else Some(extraPlugins)
+      extraPlugins = if (extraPlugins.isEmpty) None else Some(extraPlugins),
+      extraConstraints = if (extraConstraints.isEmpty) None else Some(extraConstraints)
     )
     // define SLURM job
     val job = Slurm.Job(

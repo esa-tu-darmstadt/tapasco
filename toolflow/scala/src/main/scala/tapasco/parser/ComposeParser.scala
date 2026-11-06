@@ -48,7 +48,7 @@ private object ComposeParser {
 
   private def options: Parser[ComposeJob => ComposeJob] =
     (implementation | architectures | platforms | features | debugMode | skipSynth | effortLevel | delProj |
-      extraPlugins).rep
+      extraPlugins | extraConstraints).rep
       .map(opts => (opts map (applyOption _) fold jobid) (_ andThen _))
 
   private val effortModes: Set[String] = Set("fastest", "fast", "normal",
@@ -64,6 +64,10 @@ private object ComposeParser {
   private def extraPlugins: Parser[(String, Seq[Path])] =
     (longOption("extraPlugins", "ExtraPlugins") ~ ws ~/ seqOne(pluginPath) ~ ws)
       .opaque(s"list of plugin files or directories separated by one of $seqSepChars")
+
+  private def extraConstraints: Parser[(String, Seq[Path])] =
+    (longOption("extraConstraints", "ExtraConstraints") ~ ws ~/ seqOne(pluginPath) ~ ws)
+      .opaque(s"list of XDC files or directories separated by one of $seqSepChars")
 
   private def applyOption(opt: (String, _)): ComposeJob => ComposeJob =
     opt match {
@@ -81,6 +85,7 @@ private object ComposeParser {
       }
       case ("SkipSynthesis", s: Boolean) => _.copy(skipSynthesis = Some(s))
       case ("ExtraPlugins", ds: Seq[Path@unchecked]) => _.copy(extraPlugins = Some(ds))
+      case ("ExtraConstraints", cs: Seq[Path@unchecked]) => _.copy(extraConstraints = Some(cs))
       case o => throw new Exception(s"parsed illegal option: $o")
     }
 }

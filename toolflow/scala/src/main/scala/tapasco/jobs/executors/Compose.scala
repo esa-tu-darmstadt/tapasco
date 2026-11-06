@@ -89,7 +89,8 @@ private object Compose extends Executor[ComposeJob] {
         effortLevel = job.effortLevel.getOrElse("normal"),
         onComplete = _ => signal.release(),
         deleteOnFail = job.deleteProjects,
-        extraPlugins = job.extraPlugins getOrElse Seq()
+        extraPlugins = job.extraPlugins getOrElse Seq(),
+        extraConstraints = job.extraConstraints getOrElse Seq()
       )
 
       composeTasks foreach {

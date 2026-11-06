@@ -133,6 +133,23 @@ if {[llength [info commands platform::generate_wrapper]] == 0} {
   platform::generate_wrapper
 }
 
+# add the job's ExtraConstraints: XDC files, or directories of which every *.xdc file is added, to the constraints
+# fileset (used in synthesis and implementation, processed after the platform's own constraints)
+foreach extra_constraints [list @@EXTRA_CONSTRAINTS@@] {
+  if {[file isdirectory $extra_constraints]} {
+    set extra_constraints_files [lsort [glob -nocomplain -directory $extra_constraints "*.xdc"]]
+  } elseif {[file isfile $extra_constraints]} {
+    set extra_constraints_files [list $extra_constraints]
+  } else {
+    puts "ERROR: extra constraints '$extra_constraints' are neither a file nor a directory"
+    exit 1
+  }
+  foreach f $extra_constraints_files {
+    puts "Adding extra constraints $f ..."
+    add_files -fileset constrs_1 -norecurse $f
+  }
+}
+
 tapasco::call_plugins "post-wrapper"
 
 # skip platform generation if flag was provided

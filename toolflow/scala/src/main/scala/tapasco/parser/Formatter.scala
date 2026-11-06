@@ -109,7 +109,7 @@ class StringFormatter extends Formatter[String] {
       if (line.length + word.length > width) {
         line +: wordwrap(rest, "")(width)
       } else {
-        wordwrap(s.drop(word.length), line ++ word)(width)
+        wordwrap(rest.drop(word.length), line ++ word)(width)
       }
   }
 
