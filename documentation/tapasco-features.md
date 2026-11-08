@@ -217,6 +217,28 @@ In host software, use the ```makeInputStream()``` and ```makeOutputStream()``` w
 
 **Note**: Currently the feature only supports one input and one output stream.
 
+#### PDI Loader
+
+The PDI Loader simplifies the interface for triggering Partial Dynamic Reconfigurations from the Programmable Logic. 
+
+To use, you must provide a master of the `PDILoad` interface (see the
+[PDILoader documentation](../toolflow/vivado/common/ip/PDILoader/README.md) for the ports, a SystemVerilog
+stub and the error codes): a start handshake carrying the address of the PDI, and a finish handshake
+carrying the result.
+
+The PDI file must be copied to the DDR memory of the card beforehand, and upon triggering a reload, the plugin's IP Core starts it by sending the necessary commands to the PLM.
+The plugin then waits for the reload to finish, and notifies the user. 
+
+```
+PDI-Loader {
+  "interface": <port_name>
+}
+```
+
+**Note**: The address handed over is the one the PLM sees, not the device address TaPaSCo's allocator returns:
+on the VCK5000 `0x100_0000_0000` still needs to be added to it. The remaining properties
+(`ipi_channel`, `timeout_cycles`, `ila`) are described in the PDILoader documentation.
+
 #### SFPPLUS
 The configuration for this feature can be found [here](sfpplus.md)
 The VCK5000 has two QSFP28 Ports (0 - 1), the PRODESIGN HAWK provides four QSFP-DD Ports (0 - 3).
